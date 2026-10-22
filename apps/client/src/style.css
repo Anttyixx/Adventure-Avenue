@@ -436,9 +436,15 @@ input[type='range'] {
   gap: 6px;
   flex-wrap: wrap;
 }
+.pc-top,
+.money {
+  flex-wrap: nowrap;
+  white-space: nowrap;
+}
 .pname {
   font-family: var(--head);
   font-size: 16px;
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -460,6 +466,7 @@ input[type='range'] {
   display: flex;
   gap: 2px;
   flex: none;
+  align-items: center;
 }
 .suits img {
   width: 14px;
@@ -467,9 +474,15 @@ input[type='range'] {
   image-rendering: pixelated;
 }
 .wild {
+  display: inline-flex;
+  align-items: center;
+  margin-right: 3px;
+}
+.wild-n {
   font-family: var(--pixel);
-  font-size: 11px;
+  font-size: 10px;
   color: #c9a7ff;
+  margin-left: 1px;
 }
 .tag {
   font-size: 10px;
@@ -1211,7 +1224,7 @@ input[type='range'] {
     font-size: 11px;
   }
   .cards-wrap {
-    width: 205px;
+    width: 215px;
   }
   .cards {
     gap: 4px;
@@ -1244,13 +1257,27 @@ input[type='range'] {
   .seat,
   .lvl {
     font-size: 10px;
+    padding: 0 3px;
+  }
+  .pc-top {
+    gap: 4px;
+  }
+  .pc-top .suits {
+    gap: 1px;
+  }
+  .money {
+    gap: 4px;
+  }
+  .money .lbl {
+    font-size: 10px;
   }
   .money .nw,
   .money .cash {
     font-size: 12px;
+    margin-right: 2px;
   }
   .bottom-left {
-    max-width: calc(100vw - 235px);
+    max-width: calc(100vw - 245px);
   }
   .action-bar {
     padding: 6px 8px;

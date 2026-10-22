@@ -18,7 +18,7 @@ import {
 } from '@aa/engine';
 import type { BoardView } from '../board';
 import { squareName } from '../names';
-import { portraitURL, suitIconURL } from '../sprites';
+import { portraitURL, suitIconURL, wildIconURL } from '../sprites';
 import { clear, fmt, h } from './dom';
 import { marketView } from './market';
 
@@ -194,10 +194,7 @@ export class Hud {
     const nwEl = h('span', { class: 'nw' }, fmt(prev.nw));
     const cashEl = h('span', { class: 'cash' }, fmt(prev.cash));
     const pct = Math.max(0, Math.min(100, (nw / G.target) * 100));
-    const extras = [
-      p.wild ? h('span', { class: 'wild' }, `+${p.wild} wild`) : null,
-      ...tags.map((t) => h('span', { class: 'tag' }, t)),
-    ];
+    const extras = tags.map((t) => h('span', { class: 'tag' }, t));
     el.append(
       h('img', { class: 'portrait', src: portraitURL(p.ch, color), alt: '' }),
       h(
@@ -212,10 +209,18 @@ export class Hud {
           h(
             'span',
             { class: 'suits' },
+            p.wild
+              ? h(
+                  'span',
+                  { class: 'wild', title: `${p.wild} Suit Yourself card${p.wild > 1 ? 's' : ''}` },
+                  h('img', { src: wildIconURL(), alt: 'Wild' }),
+                  p.wild > 1 ? h('span', { class: 'wild-n' }, `x${p.wild}`) : null,
+                )
+              : null,
             ...SUITS.map((_, i) => h('img', { src: suitIconURL(i, p.suits[i]), alt: SUITS[i] })),
           ),
         ),
-        extras.some(Boolean) ? h('div', { class: 'pc-row' }, ...extras) : null,
+        extras.length ? h('div', { class: 'pc-row' }, ...extras) : null,
         h('div', { class: 'bar-track' }, h('div', { class: 'bar-fill', style: `width:${pct}%` })),
         h(
           'div',

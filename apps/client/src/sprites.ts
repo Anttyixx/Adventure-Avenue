@@ -186,3 +186,23 @@ export function drawPixelCoin(ctx: CanvasRenderingContext2D, x: number, y: numbe
     }
   });
 }
+
+/** Pixel Suit Yourself (wild) card icon: a purple card with a gold star, sized like the suit icons. */
+const WILD_PIX = ['.ccccc.', '.ccscc.', '.csssc.', '.ccscc.', '.cscsc.', '.ccccc.', '.ccccc.'];
+let wildIcon = '';
+export function wildIconURL(scale = 3): string {
+  if (wildIcon) return wildIcon;
+  const cv = document.createElement('canvas');
+  cv.width = 7 * scale;
+  cv.height = 7 * scale;
+  const ctx = cv.getContext('2d')!;
+  WILD_PIX.forEach((row, y) => {
+    for (let x = 0; x < 7; x++) {
+      if (row[x] === '.') continue;
+      ctx.fillStyle = row[x] === 's' ? '#ffd166' : '#9b5de5';
+      ctx.fillRect(x * scale, y * scale, scale, scale);
+    }
+  });
+  wildIcon = cv.toDataURL();
+  return wildIcon;
+}
