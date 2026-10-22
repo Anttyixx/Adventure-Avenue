@@ -331,10 +331,10 @@ input[type='range'] {
   position: absolute;
   left: 10px;
   bottom: 10px;
-  width: min(560px, calc(100vw - 340px));
-  min-width: 300px;
+  max-width: min(560px, calc(100vw - 340px));
   display: flex;
   flex-direction: column;
+  align-items: flex-start;
   gap: 6px;
   pointer-events: none;
 }
@@ -354,7 +354,7 @@ input[type='range'] {
 }
 .action-bar {
   padding: 10px 12px;
-  min-height: 48px;
+  max-width: 100%;
 }
 .action-bar:empty {
   display: none;
@@ -454,6 +454,12 @@ input[type='range'] {
 .lvl {
   background: var(--pc);
   color: #fff;
+}
+.pc-top .suits {
+  margin-left: auto;
+  display: flex;
+  gap: 2px;
+  flex: none;
 }
 .suits img {
   width: 14px;
@@ -1187,9 +1193,7 @@ input[type='range'] {
 }
 .hud.upright .bottom-left {
   left: 6px;
-  right: 6px;
-  width: auto;
-  min-width: 0;
+  max-width: calc(100vw - 12px);
   bottom: var(--cards-h, 6px);
 }
 
@@ -1220,6 +1224,12 @@ input[type='range'] {
     width: 28px;
     height: 21px;
   }
+  .pc-top .suits {
+    margin-left: auto;
+    display: flex;
+    gap: 2px;
+    flex: none;
+  }
   .suits img {
     width: 11px;
     height: 11px;
@@ -1240,8 +1250,7 @@ input[type='range'] {
     font-size: 12px;
   }
   .bottom-left {
-    width: calc(100vw - 235px);
-    min-width: 220px;
+    max-width: calc(100vw - 235px);
   }
   .action-bar {
     padding: 6px 8px;

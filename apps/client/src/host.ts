@@ -298,13 +298,10 @@ export class HotSeat implements GameIO {
           (id) => hud.resolvePrompt(id),
           routes,
         );
-        const node = await hud.prompt(
-          `${p.name} rolled ${req.steps}. Choose where to stop.`,
-          req.dests.map((d) => ({
-            label: squareName(G, G.nodes[d.node]),
-            value: d.node,
-            hover: (on: boolean) => this.board.previewRoute(on ? d.node : null),
-          })),
+        // The glowing squares are the choices; the bar only explains what to do.
+        const node = await hud.prompt<number>(
+          `${p.name} rolled ${req.steps}. Tap a glowing square to move there.`,
+          [],
           color,
         );
         this.board.clearChoices();

@@ -191,10 +191,13 @@ export class Hud {
     if (p.boon > 0) tags.push(`${p.boon === K.boom ? 'Boom' : 'Boon'} ${Math.round(p.boon * 100)}%`);
     if (p.boost > 1) tags.push('Fees +30%');
     if (p.bankrupt) tags.push('Bankrupt');
-    const seat = p.cpu ? 'CPU' : `P${p.slot + 1}`;
     const nwEl = h('span', { class: 'nw' }, fmt(prev.nw));
     const cashEl = h('span', { class: 'cash' }, fmt(prev.cash));
     const pct = Math.max(0, Math.min(100, (nw / G.target) * 100));
+    const extras = [
+      p.wild ? h('span', { class: 'wild' }, `+${p.wild} wild`) : null,
+      ...tags.map((t) => h('span', { class: 'tag' }, t)),
+    ];
     el.append(
       h('img', { class: 'portrait', src: portraitURL(p.ch, color), alt: '' }),
       h(
@@ -202,18 +205,17 @@ export class Hud {
         { class: 'pc-main' },
         h(
           'div',
-          { class: 'pc-row' },
+          { class: 'pc-row pc-top' },
           h('span', { class: 'pname' }, p.name),
-          h('span', { class: 'seat' }, seat),
+          p.cpu ? null : h('span', { class: 'seat' }, `P${p.slot + 1}`),
           h('span', { class: 'lvl' }, `Lv ${p.level}`),
+          h(
+            'span',
+            { class: 'suits' },
+            ...SUITS.map((_, i) => h('img', { src: suitIconURL(i, p.suits[i]), alt: SUITS[i] })),
+          ),
         ),
-        h(
-          'div',
-          { class: 'pc-row suits' },
-          ...SUITS.map((_, i) => h('img', { src: suitIconURL(i, p.suits[i]), alt: SUITS[i] })),
-          p.wild ? h('span', { class: 'wild' }, `+${p.wild} wild`) : null,
-          ...tags.map((t) => h('span', { class: 'tag' }, t)),
-        ),
+        extras.some(Boolean) ? h('div', { class: 'pc-row' }, ...extras) : null,
         h('div', { class: 'bar-track' }, h('div', { class: 'bar-fill', style: `width:${pct}%` })),
         h(
           'div',

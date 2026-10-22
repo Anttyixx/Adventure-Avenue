@@ -58,7 +58,7 @@ export class BoardView {
   cam = { x: WORLD_W / 2, y: WORLD_H / 2, z: 1 };
   camTarget = { x: WORLD_W / 2, y: WORLD_H / 2, z: 1 };
   mode: ViewMode = 'follow';
-  autoFull = false;
+  fitIds: number[] = [];
   insets: Insets = { top: 0, right: 0, bottom: 0, left: 0 };
   followPid = -1;
   activePid = -1;
@@ -322,7 +322,7 @@ export class BoardView {
     this.onPick = onPick;
     this.routes = routes ?? new Map();
     this.hoverRoute = null;
-    this.autoFull = this.needsFull(ids);
+    this.fitIds = ids;
   }
 
   clearChoices() {
@@ -330,22 +330,30 @@ export class BoardView {
     this.onPick = null;
     this.routes = new Map();
     this.hoverRoute = null;
-    this.autoFull = false;
+    this.fitIds = [];
   }
 
   previewRoute(id: number | null) {
     this.hoverRoute = id != null ? (this.routes.get(id) ?? null) : null;
   }
 
-  /** The camera shows the full board when a choice needs it. */
-  needsFull(ids: number[]) {
-    if (ids.length > 4) return true;
-    if (!this.G) return false;
-    const r = this.followRect();
-    return ids.some((id) => {
-      const c = squareCenter(this.G!.nodes[id]);
-      return c.x < r.x0 + 40 || c.x > r.x1 - 40 || c.y < r.y0 + 40 || c.y > r.y1 - 40;
-    });
+  /**
+   * While a choice is open in follow view, the camera zooms out just enough to frame the
+   * player and every glowing square.
+   */
+  choiceView() {
+    const G = this.G!;
+    const pts = this.fitIds.map((id) => squareCenter(G.nodes[id]));
+    if (this.followPid >= 0) pts.push(this.tokenPos(this.followPid));
+    const pad = 70;
+    const x0 = Math.min(...pts.map((p) => p.x)) - pad;
+    const x1 = Math.max(...pts.map((p) => p.x)) + pad;
+    const y0 = Math.min(...pts.map((p) => p.y)) - pad;
+    const y1 = Math.max(...pts.map((p) => p.y)) + pad;
+    const { aw, ah } = this.focusArea();
+    const z = Math.max(this.fitZoom(), Math.min(this.followZoom(), aw / (x1 - x0), ah / (y1 - y0)));
+    const c = this.clampCenter((x0 + x1) / 2, (y0 + y1) / 2, z);
+    return { x: c.x, y: c.y, z };
   }
 
   // ------------------------------------------------------------ camera
@@ -373,15 +381,6 @@ export class BoardView {
     return Math.min(this.w / WORLD_W, this.h / WORLD_H) * (small ? 1.9 : 1.4);
   }
 
-  /** World rect visible in the uncovered area if following. */
-  followRect() {
-    const z = this.followZoom();
-    const { aw, ah } = this.focusArea();
-    const t = this.tokenPos(this.followPid);
-    const c = this.clampCenter(t.x, t.y, z);
-    return { x0: c.x - aw / 2 / z, x1: c.x + aw / 2 / z, y0: c.y - ah / 2 / z, y1: c.y + ah / 2 / z };
-  }
-
   clampCenter(x: number, y: number, z: number) {
     const { fx, fy } = this.focusArea();
     // Visible world extents left/right of the focus point.
@@ -403,8 +402,10 @@ export class BoardView {
   }
 
   updateCamera() {
-    const full = this.mode === 'full' || this.autoFull || this.followPid < 0 || this.G?.over;
-    if (full) {
+    const full = this.mode === 'full' || this.followPid < 0 || this.G?.over;
+    if (!full && this.fitIds.length) {
+      this.camTarget = this.choiceView();
+    } else if (full) {
       const z = this.fitZoom();
       const c = this.clampCenter(WORLD_W / 2, WORLD_H / 2, z);
       this.camTarget = { x: c.x, y: c.y, z };
