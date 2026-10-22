@@ -1,0 +1,374 @@
+/**
+ * The venture grid and arcade minigames. Each one is a modal that can take a human's input
+ * (pick a panel, stop the reels, pick a block, back a racer) and then reveal the engine's result.
+ */
+import {
+  DERBY_LENGTH,
+  DERBY_RACERS,
+  MEMORY_SHOW_MS,
+  PLAYER_COLORS,
+  REEL_LENGTH,
+  REEL_TICK_MS,
+  type GameState,
+  type MemoryPrize,
+  type ReelSymbol,
+} from '@aa/engine';
+import { portraitURL } from '../sprites';
+import { clear, h } from './dom';
+import type { Hud } from './hud';
+
+const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+function okButton(label = 'OK'): { el: HTMLButtonElement; done: Promise<void> } {
+  let res!: () => void;
+  const done = new Promise<void>((r) => (res = r));
+  const el = h('button', { class: 'btn main', onclick: () => res() }, label);
+  setTimeout(() => el.focus(), 30);
+  return { el, done };
+}
+
+/** Wait for OK from a human, or a short delay for CPU-only results. */
+async function confirm(row: HTMLElement, human: boolean, speed: number) {
+  if (human) {
+    const ok = okButton();
+    row.append(ok.el);
+    const key = (e: KeyboardEvent) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        ok.el.click();
+      }
+    };
+    window.addEventListener('keydown', key);
+    await ok.done;
+    window.removeEventListener('keydown', key);
+  } else await wait(1700 * speed);
+}
+
+// ------------------------------------------------------------------ venture grid
+
+export class VentureView {
+  m: ReturnType<Hud['modal']>;
+  grid = h('div', { class: 'vgrid' });
+  info = h('div', { class: 'v-info' });
+  row = h('div', { class: 'btn-row' });
+  panels: HTMLButtonElement[] = [];
+  private resolvePick: ((i: number) => void) | null = null;
+
+  constructor(
+    hud: Hud,
+    private G: GameState,
+    pid: number,
+  ) {
+    const p = G.players[pid];
+    this.m = hud.modal(`Venture · ${p.name}`, h('div', { class: 'venture' }, this.grid, this.info, this.row));
+    for (let i = 0; i < 64; i++) {
+      const b = h('button', { class: 'panel' }) as HTMLButtonElement;
+      b.onclick = () => {
+        if (this.resolvePick && G.vg.owner[i] < 0) {
+          const r = this.resolvePick;
+          this.resolvePick = null;
+          this.grid.classList.remove('picking');
+          r(i);
+        }
+      };
+      this.panels.push(b);
+      this.grid.append(b);
+    }
+    this.paint(G.vg.owner);
+    this.info.textContent = 'Flip a panel.';
+  }
+
+  paint(owner: number[]) {
+    owner.forEach((o, i) => {
+      const b = this.panels[i];
+      b.classList.toggle('flipped', o >= 0);
+      b.style.background = o >= 0 ? PLAYER_COLORS[this.G.players[o].color] : '';
+      b.disabled = o >= 0;
+    });
+  }
+
+  pick(): Promise<number> {
+    this.grid.classList.add('picking');
+    return new Promise((r) => (this.resolvePick = r));
+  }
+
+  async reveal(panel: number, title: string, text: string, line: number, human: boolean, speed: number) {
+    this.paint(this.G.vg.owner);
+    const b = this.panels[panel];
+    b.classList.add('flip');
+    await wait(350 * speed);
+    clear(this.info);
+    this.info.append(
+      h(
+        'div',
+        { class: 'vcard pop' },
+        h('div', { class: 'vc-title' }, title),
+        h('div', { class: 'vc-text' }, text),
+        line >= 4 ? h('div', { class: 'vc-line' }, `Line of ${line}!`) : null,
+      ),
+    );
+    await confirm(this.row, human, speed);
+    this.m.close();
+  }
+}
+
+// ------------------------------------------------------------------ Lucky Reels
+
+const SYMBOL_EL: Record<ReelSymbol, () => HTMLElement> = {
+  seven: () => h('span', { class: 'sym seven' }, '7'),
+  coin: () => h('span', { class: 'sym coin' }, 'G'),
+  wild: () => h('span', { class: 'sym wild' }, '★'),
+  stock: () => h('span', { class: 'sym stock' }, '↗'),
+};
+
+export class ReelsView {
+  m: ReturnType<Hud['modal']>;
+  reels: HTMLElement[] = [];
+  row = h('div', { class: 'btn-row' });
+  result = h('div', { class: 'g-result' });
+  private idx = [0, 0, 0];
+  private stopped = [false, false, false];
+  private timer = 0;
+
+  constructor(
+    hud: Hud,
+    private strips: ReelSymbol[][],
+    name: string,
+  ) {
+    const wrap = h('div', { class: 'reels' });
+    for (let i = 0; i < 3; i++) {
+      const r = h('div', { class: 'reel' });
+      this.reels.push(r);
+      wrap.append(r);
+      this.idx[i] = Math.floor(Math.random() * REEL_LENGTH);
+    }
+    this.m = hud.modal(
+      `Lucky Reels · ${name}`,
+      h(
+        'div',
+        { class: 'game' },
+        h(
+          'p',
+          { class: 'hint' },
+          'Three 7s, three coins, three wilds or three stocks win big. Any pair wins a little.',
+        ),
+        wrap,
+        this.result,
+        this.row,
+      ),
+    );
+    this.draw();
+  }
+
+  private draw() {
+    this.reels.forEach((r, i) => {
+      clear(r);
+      r.append(SYMBOL_EL[this.strips[i][this.idx[i] % REEL_LENGTH]]());
+      r.classList.toggle('stopped', this.stopped[i]);
+    });
+  }
+
+  /** Human play: reels cycle every 120 ms; each press stops the next reel. */
+  play(): Promise<number[]> {
+    return new Promise((resolve) => {
+      const btn = h('button', { class: 'btn main' }, 'Stop') as HTMLButtonElement;
+      this.row.append(btn);
+      setTimeout(() => btn.focus(), 30);
+      this.timer = window.setInterval(() => {
+        for (let i = 0; i < 3; i++) if (!this.stopped[i]) this.idx[i] = (this.idx[i] + 1) % REEL_LENGTH;
+        this.draw();
+      }, REEL_TICK_MS);
+      btn.onclick = () => {
+        const i = this.stopped.indexOf(false);
+        this.stopped[i] = true;
+        this.draw();
+        if (i === 2) {
+          clearInterval(this.timer);
+          btn.remove();
+          resolve(this.idx.slice());
+        }
+      };
+    });
+  }
+
+  async show(result: ReelSymbol[], prize: string, human: boolean, speed: number) {
+    clearInterval(this.timer);
+    this.stopped = [true, true, true];
+    this.reels.forEach((r, i) => {
+      clear(r);
+      r.append(SYMBOL_EL[result[i]]());
+      r.classList.add('stopped');
+    });
+    this.result.textContent = prize;
+    this.result.classList.add('pop');
+    await confirm(this.row, human, speed);
+    this.m.close();
+  }
+}
+
+// ------------------------------------------------------------------ Memory Blocks
+
+const PRIZE_TEXT: Record<MemoryPrize, string> = {
+  shopsUp: 'Shops +10%',
+  gold: 'Gold',
+  wild: 'Wild card',
+  shopsDown: 'Shops -5%',
+  small: '20G',
+};
+
+export class MemoryView {
+  m: ReturnType<Hud['modal']>;
+  grid = h('div', { class: 'mgrid' });
+  row = h('div', { class: 'btn-row' });
+  result = h('div', { class: 'g-result' });
+  blocks: HTMLButtonElement[] = [];
+
+  constructor(hud: Hud, prizes: MemoryPrize[], name: string) {
+    this.m = hud.modal(
+      `Memory Blocks · ${name}`,
+      h(
+        'div',
+        { class: 'game' },
+        h('p', { class: 'hint' }, 'Remember where the prizes are, then pick one.'),
+        this.grid,
+        this.result,
+        this.row,
+      ),
+    );
+    prizes.forEach((p) => {
+      const b = h('button', { class: `block show ${p}` }, PRIZE_TEXT[p]) as HTMLButtonElement;
+      this.blocks.push(b);
+      this.grid.append(b);
+    });
+  }
+
+  async hide(speed: number) {
+    await wait(MEMORY_SHOW_MS * Math.max(0.6, speed));
+    this.blocks.forEach((b) => b.classList.remove('show'));
+  }
+
+  async play(): Promise<number> {
+    await this.hide(1);
+    return new Promise((resolve) => {
+      this.grid.classList.add('picking');
+      this.blocks.forEach((b, i) => {
+        b.onclick = () => {
+          this.grid.classList.remove('picking');
+          this.blocks.forEach((x) => (x.onclick = null));
+          resolve(i);
+        };
+      });
+    });
+  }
+
+  async show(picked: number, prize: string, human: boolean, speed: number) {
+    this.blocks[picked].classList.add('show', 'picked', 'pop');
+    await wait(500 * speed);
+    this.blocks.forEach((b) => b.classList.add('show'));
+    this.result.textContent = prize;
+    this.result.classList.add('pop');
+    await confirm(this.row, human, speed);
+    this.m.close();
+  }
+}
+
+// ------------------------------------------------------------------ Coin Derby
+
+export class DerbyView {
+  m: ReturnType<Hud['modal']>;
+  track = h('div', { class: 'track' });
+  row = h('div', { class: 'btn-row' });
+  result = h('div', { class: 'g-result' });
+  lanes: { runner: HTMLElement; tag: HTMLElement; coins: HTMLElement }[] = [];
+
+  constructor(
+    hud: Hud,
+    private G: GameState,
+    name: string,
+  ) {
+    this.m = hud.modal(
+      `Coin Derby · ${name}`,
+      h(
+        'div',
+        { class: 'game' },
+        h('p', { class: 'hint' }, 'Each coin pays its backer 10G; the winner pays 100G x level.'),
+        this.track,
+        this.result,
+        this.row,
+      ),
+      { wide: true },
+    );
+    for (let i = 0; i < DERBY_RACERS; i++) {
+      const runner = h('div', { class: 'runner' }, String(i + 1));
+      const tag = h('div', { class: 'lane-tag' }, `Racer ${i + 1}`);
+      const coins = h('div', { class: 'lane-coins' }, '');
+      this.lanes.push({ runner, tag, coins });
+      this.track.append(h('div', { class: 'lane' }, tag, h('div', { class: 'lane-run' }, runner), coins));
+    }
+  }
+
+  pick(): Promise<number> {
+    return new Promise((resolve) => {
+      for (let i = 0; i < DERBY_RACERS; i++) {
+        this.row.append(
+          h(
+            'button',
+            {
+              class: 'btn',
+              onclick: () => {
+                clear(this.row);
+                resolve(i);
+              },
+            },
+            `Back racer ${i + 1}`,
+          ),
+        );
+      }
+    });
+  }
+
+  async race(
+    backers: number[],
+    frames: number[][],
+    coins: number[],
+    winner: number,
+    human: boolean,
+    speed: number,
+  ) {
+    clear(this.row);
+    backers.forEach((pid, i) => {
+      const l = this.lanes[i];
+      clear(l.tag);
+      if (pid >= 0) {
+        const p = this.G.players[pid];
+        l.tag.append(
+          h('img', { class: 'portrait tiny', src: portraitURL(p.ch, PLAYER_COLORS[p.color]), alt: '' }),
+          p.name,
+        );
+        l.runner.style.background = PLAYER_COLORS[p.color];
+      } else l.tag.append(`Racer ${i + 1}`);
+    });
+    const step = Math.max(8, Math.round(36 * speed));
+    const seen = new Array(DERBY_RACERS).fill(0);
+    const total = frames.length;
+    for (let f = 0; f < total; f++) {
+      frames[f].forEach((x, i) => {
+        this.lanes[i].runner.style.left = `calc(${(x / DERBY_LENGTH) * 100}% - ${(x / DERBY_LENGTH) * 28}px)`;
+        // Reveal coins gradually as the race runs.
+        const c = Math.floor((coins[i] * f) / total);
+        if (c > seen[i]) {
+          seen[i] = c;
+          this.lanes[i].coins.textContent = `${c} coins`;
+        }
+      });
+      await wait(step);
+    }
+    coins.forEach((c, i) => (this.lanes[i].coins.textContent = `${c} coins`));
+    this.lanes[winner].runner.classList.add('winner');
+    const wp = backers[winner] >= 0 ? this.G.players[backers[winner]] : null;
+    this.result.textContent = `Racer ${winner + 1} wins${wp ? ` for ${wp.name}` : ''}!`;
+    this.result.classList.add('pop');
+    await confirm(this.row, human, speed);
+    this.m.close();
+  }
+}

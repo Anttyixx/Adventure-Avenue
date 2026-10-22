@@ -108,7 +108,8 @@ function decide(G: GameState, req: DecisionRequest): unknown {
           const c = G.nodes[id];
           if (c.t === 'plot' && c.b === 'checkpoint' && c.owner >= 0 && c.owner !== p.id) s -= c.toll / 5;
         }
-        if ((sq.t === 'shop' || sq.t === 'plot') && sq.owner < 0 && p.cash > (sq.value || K.plotCost)) s += 15;
+        if ((sq.t === 'shop' || sq.t === 'plot') && sq.owner < 0 && p.cash > (sq.value || K.plotCost))
+          s += 15;
         if (sq.owner >= 0 && sq.owner !== p.id) s -= squareFee(G, sq, p) / 10;
         if (sq.t === 'venture') s += 5;
         s += rand(G);
@@ -197,7 +198,9 @@ function decide(G: GameState, req: DecisionRequest): unknown {
       }
       if (req.purpose === 'agency') {
         const g = bestGroup(G, p);
-        const opts = req.options.filter((id) => (g < 0 || G.nodes[id].g === g) && p.cash - G.nodes[id].value >= C.agencyKeep);
+        const opts = req.options.filter(
+          (id) => (g < 0 || G.nodes[id].g === g) && p.cash - G.nodes[id].value >= C.agencyKeep,
+        );
         return opts.length ? opts[0] : null;
       }
       // forcedBuyout

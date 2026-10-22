@@ -589,7 +589,13 @@ export class Game {
         const options = G.nodes
           .filter((s) => !(s.t === 'plot' && s.b === 'balloon' && s.owner === p.id))
           .map((s) => s.id);
-        const to = await this.ask({ kind: 'pickSquare', pid: p.id, purpose: 'balloon', options, optional: true });
+        const to = await this.ask({
+          kind: 'pickSquare',
+          pid: p.id,
+          purpose: 'balloon',
+          options,
+          optional: true,
+        });
         if (to == null || !options.includes(to)) return;
         await this.log(`${p.name} took the balloon.`, p.id);
         await this.warp(p, to);
@@ -607,9 +613,17 @@ export class Game {
         return;
       }
       case 'agency': {
-        const options = G.nodes.filter((s) => s.t === 'shop' && s.owner < 0 && s.value <= p.cash).map((s) => s.id);
+        const options = G.nodes
+          .filter((s) => s.t === 'shop' && s.owner < 0 && s.value <= p.cash)
+          .map((s) => s.id);
         if (!options.length) return;
-        const id = await this.ask({ kind: 'pickSquare', pid: p.id, purpose: 'agency', options, optional: true });
+        const id = await this.ask({
+          kind: 'pickSquare',
+          pid: p.id,
+          purpose: 'agency',
+          options,
+          optional: true,
+        });
         if (id == null || !options.includes(id)) return;
         const target = G.nodes[id];
         if (p.cash >= target.value) await this.buySquare(p, target, target.value, null, 'bought');
@@ -691,11 +705,18 @@ export class Game {
     const b = G.players[o.to];
     if (!a || !b || a === b || a.bankrupt || b.bankrupt) return false;
     if (!Array.isArray(o.give) || !Array.isArray(o.get)) return false;
-    if (o.cashGive < 0 || o.cashGet < 0 || o.cashGive > Math.max(0, a.cash) || o.cashGet > Math.max(0, b.cash))
+    if (
+      o.cashGive < 0 ||
+      o.cashGet < 0 ||
+      o.cashGive > Math.max(0, a.cash) ||
+      o.cashGet > Math.max(0, b.cash)
+    )
       return false;
     if (!o.give.length && !o.get.length && !o.cashGive && !o.cashGet) return false;
     if (new Set(o.give).size !== o.give.length || new Set(o.get).size !== o.get.length) return false;
-    return o.give.every((id) => G.nodes[id]?.owner === a.id) && o.get.every((id) => G.nodes[id]?.owner === b.id);
+    return (
+      o.give.every((id) => G.nodes[id]?.owner === a.id) && o.get.every((id) => G.nodes[id]?.owner === b.id)
+    );
   }
 
   async trade(offer: TradeOffer) {
@@ -876,5 +897,4 @@ export class Game {
   randomOf<T>(arr: T[]): T | undefined {
     return arr.length ? arr[randInt(this.G, arr.length)] : undefined;
   }
-
 }

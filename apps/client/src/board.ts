@@ -1,0 +1,1333 @@
+/**
+ * The HD board: a 1300 x 800 logical canvas with 100-unit squares, scaled to the container
+ * and devicePixelRatio. The static board is cached offscreen and redrawn only when the state
+ * changes; each frame draws the cache, then highlights, sprites, coins, floating text and the die.
+ */
+import { PLAYER_COLORS, SUITS, isClosed, squareFee, type GameState, type Square } from '@aa/engine';
+import { drawPixelCoin, SPRITE_H, SPRITE_W, spriteFrames, SUIT_CHARS } from './sprites';
+
+export const WORLD_W = 1300;
+export const WORLD_H = 800;
+const CELL = 100;
+const TILE = 86;
+
+export const squareCenter = (sq: { x: number; y: number }) => ({
+  x: 50 + sq.x * CELL + CELL / 2,
+  y: 50 + sq.y * CELL + CELL / 2,
+});
+
+const reducedMotion = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+const ease = (t: number) => (t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2);
+
+interface Token {
+  x: number;
+  y: number;
+  hop: number;
+  walking: boolean;
+  visible: boolean;
+}
+
+interface Fx {
+  t0: number;
+  dur: number;
+  draw(ctx: CanvasRenderingContext2D, k: number, now: number): void;
+}
+
+export interface Insets {
+  top: number;
+  right: number;
+  bottom: number;
+  left: number;
+}
+
+export type ViewMode = 'follow' | 'full';
+
+export class BoardView {
+  canvas: HTMLCanvasElement;
+  ctx: CanvasRenderingContext2D;
+  G: GameState | null = null;
+  tokens = new Map<number, Token>();
+  fx: Fx[] = [];
+  screenFx: Fx[] = [];
+  dirty = true;
+  cache: HTMLCanvasElement = document.createElement('canvas');
+  cacheScale = 0;
+
+  // Camera: world point at the focus, and zoom in CSS px per world unit.
+  cam = { x: WORLD_W / 2, y: WORLD_H / 2, z: 1 };
+  camTarget = { x: WORLD_W / 2, y: WORLD_H / 2, z: 1 };
+  mode: ViewMode = 'follow';
+  autoFull = false;
+  insets: Insets = { top: 0, right: 0, bottom: 0, left: 0 };
+  followPid = -1;
+  activePid = -1;
+  stepsLeft = 0;
+
+  // Highlights for choices
+  glow: number[] = [];
+  glowColor = '#fff';
+  routes = new Map<number, number[]>();
+  hoverRoute: number[] | null = null;
+  walkTarget = -1;
+  onPick: ((id: number) => void) | null = null;
+  onHover: ((id: number | null, cx: number, cy: number) => void) | null = null;
+
+  die: { value: number; t0: number; rolling: boolean; until: number } | null = null;
+  w = 0;
+  h = 0;
+  dpr = 1;
+  private raf = 0;
+  private alive = true;
+
+  constructor(private host: HTMLElement) {
+    this.canvas = document.createElement('canvas');
+    this.canvas.className = 'board-canvas';
+    host.appendChild(this.canvas);
+    this.ctx = this.canvas.getContext('2d')!;
+    this.resize();
+    window.addEventListener('resize', this.resize);
+    this.canvas.addEventListener('pointermove', this.pointerMove);
+    this.canvas.addEventListener('pointerleave', () => this.onHover?.(null, 0, 0));
+    this.canvas.addEventListener('click', this.click);
+    this.raf = requestAnimationFrame(this.frame);
+  }
+
+  destroy() {
+    this.alive = false;
+    cancelAnimationFrame(this.raf);
+    window.removeEventListener('resize', this.resize);
+    this.canvas.remove();
+  }
+
+  // ------------------------------------------------------------ state
+
+  setState(G: GameState) {
+    this.G = G;
+    this.dirty = true;
+    for (const p of G.players) {
+      if (!this.tokens.has(p.id)) {
+        const c = this.slotPos(p.id, p.node);
+        this.tokens.set(p.id, { x: c.x, y: c.y, hop: 0, walking: false, visible: true });
+      }
+    }
+    this.snapTokens();
+  }
+
+  /** Put every non-walking token at its square (with slot offsets when sharing). */
+  snapTokens() {
+    if (!this.G) return;
+    for (const p of this.G.players) {
+      const t = this.tokens.get(p.id)!;
+      t.visible = !p.bankrupt;
+      if (t.walking) continue;
+      const c = this.slotPos(p.id, p.node);
+      t.x = c.x;
+      t.y = c.y;
+    }
+  }
+
+  slotPos(pid: number, node: number) {
+    const G = this.G!;
+    const sq = G.nodes[node];
+    const c = squareCenter(sq);
+    const here = G.players.filter((q) => !q.bankrupt && q.node === node).map((q) => q.id);
+    if (here.length <= 1) return { x: c.x, y: c.y - 12 };
+    const i = Math.max(0, here.indexOf(pid));
+    const offs = [
+      [-18, -16],
+      [18, -16],
+      [-18, 14],
+      [18, 14],
+    ];
+    return { x: c.x + offs[i % 4][0], y: c.y + offs[i % 4][1] - 4 };
+  }
+
+  tokenPos(pid: number) {
+    const t = this.tokens.get(pid);
+    return t ? { x: t.x, y: t.y } : { x: WORLD_W / 2, y: WORLD_H / 2 };
+  }
+
+  bankPos() {
+    const bank = this.G?.nodes.find((s) => s.t === 'bank');
+    return bank ? squareCenter(bank) : { x: WORLD_W / 2, y: WORLD_H - 100 };
+  }
+
+  // ------------------------------------------------------------ animation helpers
+
+  speed = 1;
+
+  wait(ms: number) {
+    return new Promise<void>((r) => setTimeout(r, ms * this.speed));
+  }
+
+  async step(pid: number, to: number, left: number) {
+    const t = this.tokens.get(pid)!;
+    const from = { x: t.x, y: t.y };
+    const dest = squareCenter(this.G!.nodes[to]);
+    dest.y -= 12;
+    this.stepsLeft = left;
+    t.walking = true;
+    const dur = 260 * this.speed;
+    const t0 = performance.now();
+    await new Promise<void>((resolve) => {
+      const tick = () => {
+        const k = Math.min(1, (performance.now() - t0) / dur);
+        const e = ease(k);
+        t.x = from.x + (dest.x - from.x) * e;
+        t.y = from.y + (dest.y - from.y) * e;
+        t.hop = Math.sin(k * Math.PI) * 14;
+        if (k < 1 && this.alive) requestAnimationFrame(tick);
+        else resolve();
+      };
+      tick();
+    });
+    t.hop = 0;
+    if (left === 0) {
+      t.walking = false;
+      this.stepsLeft = 0;
+      this.snapTokens();
+    }
+  }
+
+  async warp(pid: number, to: number) {
+    const t = this.tokens.get(pid)!;
+    const dest = this.slotPos(pid, to);
+    const from = { x: t.x, y: t.y };
+    t.walking = true;
+    const dur = 520 * this.speed;
+    const t0 = performance.now();
+    await new Promise<void>((resolve) => {
+      const tick = () => {
+        const k = Math.min(1, (performance.now() - t0) / dur);
+        const e = ease(k);
+        t.x = from.x + (dest.x - from.x) * e;
+        t.y = from.y + (dest.y - from.y) * e;
+        t.hop = Math.sin(k * Math.PI) * 90;
+        if (k < 1 && this.alive) requestAnimationFrame(tick);
+        else resolve();
+      };
+      tick();
+    });
+    t.hop = 0;
+    t.walking = false;
+    this.snapTokens();
+    this.ring(to, '#ffffff');
+  }
+
+  /** A ring that grows and fades on a square. Gold rings also burst 8 pixel sparkles. */
+  ring(sqId: number, color: string, sparkles = false) {
+    if (!this.G) return;
+    const c = squareCenter(this.G.nodes[sqId]);
+    this.fx.push({
+      t0: performance.now(),
+      dur: 700,
+      draw: (ctx, k) => {
+        ctx.save();
+        ctx.globalAlpha = 1 - k;
+        ctx.strokeStyle = color;
+        ctx.lineWidth = 6 * (1 - k) + 1;
+        const s = TILE / 2 + 4 + k * 26;
+        roundRect(ctx, c.x - s, c.y - s, s * 2, s * 2, 14);
+        ctx.stroke();
+        if (sparkles) {
+          ctx.fillStyle = '#ffe066';
+          for (let i = 0; i < 8; i++) {
+            const a = (i / 8) * Math.PI * 2;
+            const r = 30 + k * 50;
+            ctx.fillRect(c.x + Math.cos(a) * r - 3, c.y + Math.sin(a) * r - 3, 6, 6);
+          }
+        }
+        ctx.restore();
+      },
+    });
+  }
+
+  floatText(x: number, y: number, text: string, color: string) {
+    this.fx.push({
+      t0: performance.now(),
+      dur: 1300,
+      draw: (ctx, k) => {
+        const s = this.worldToScreen(x, y - 40 - k * 50);
+        ctx.save();
+        ctx.setTransform(this.dpr, 0, 0, this.dpr, 0, 0);
+        ctx.globalAlpha = k < 0.75 ? 1 : 1 - (k - 0.75) / 0.25;
+        ctx.font = '22px "Lilita One", sans-serif';
+        ctx.textAlign = 'center';
+        ctx.lineWidth = 5;
+        ctx.strokeStyle = 'rgba(16,26,51,0.85)';
+        ctx.strokeText(text, s.x, s.y);
+        ctx.fillStyle = color;
+        ctx.fillText(text, s.x, s.y);
+        ctx.restore();
+      },
+    });
+  }
+
+  coins(from: { x: number; y: number }, to: { x: number; y: number }, n: number) {
+    const count = Math.max(1, Math.min(8, n));
+    for (let i = 0; i < count; i++) {
+      const delay = i * 60;
+      const arc = 60 + Math.random() * 40;
+      this.fx.push({
+        t0: performance.now() + delay,
+        dur: 650,
+        draw: (ctx, k) => {
+          if (k <= 0) return;
+          const e = ease(k);
+          const x = from.x + (to.x - from.x) * e;
+          const y = from.y + (to.y - from.y) * e - Math.sin(k * Math.PI) * arc;
+          drawPixelCoin(ctx, x, y, 3.2);
+        },
+      });
+    }
+  }
+
+  confetti(pid: number) {
+    const p = this.tokenPos(pid);
+    const parts = Array.from({ length: 40 }, () => ({
+      vx: (Math.random() - 0.5) * 260,
+      vy: -200 - Math.random() * 220,
+      c: ['#ff5d73', '#ffd166', '#4cc9f0', '#80ed99', '#c77dff'][Math.floor(Math.random() * 5)],
+    }));
+    this.fx.push({
+      t0: performance.now(),
+      dur: 1500,
+      draw: (ctx, k) => {
+        const t = k * 1.5;
+        ctx.save();
+        ctx.globalAlpha = 1 - k;
+        for (const q of parts) {
+          ctx.fillStyle = q.c;
+          ctx.fillRect(p.x + q.vx * t - 3, p.y - 30 + q.vy * t + 300 * t * t - 3, 6, 6);
+        }
+        ctx.restore();
+      },
+    });
+  }
+
+  async rollDie(value: number) {
+    const dur = (reducedMotion() ? 200 : 650) * this.speed;
+    this.die = { value, t0: performance.now(), rolling: true, until: performance.now() + dur };
+    await this.wait(reducedMotion() ? 200 : 650);
+    this.die = { value, t0: performance.now(), rolling: false, until: performance.now() + 1100 };
+    await this.wait(380);
+  }
+
+  // ------------------------------------------------------------ choices
+
+  setChoices(ids: number[], color: string, onPick: (id: number) => void, routes?: Map<number, number[]>) {
+    this.glow = ids;
+    this.glowColor = color;
+    this.onPick = onPick;
+    this.routes = routes ?? new Map();
+    this.hoverRoute = null;
+    this.autoFull = this.needsFull(ids);
+  }
+
+  clearChoices() {
+    this.glow = [];
+    this.onPick = null;
+    this.routes = new Map();
+    this.hoverRoute = null;
+    this.autoFull = false;
+  }
+
+  previewRoute(id: number | null) {
+    this.hoverRoute = id != null ? (this.routes.get(id) ?? null) : null;
+  }
+
+  /** The camera shows the full board when a choice needs it. */
+  needsFull(ids: number[]) {
+    if (ids.length > 4) return true;
+    if (!this.G) return false;
+    const r = this.followRect();
+    return ids.some((id) => {
+      const c = squareCenter(this.G!.nodes[id]);
+      return c.x < r.x0 + 40 || c.x > r.x1 - 40 || c.y < r.y0 + 40 || c.y > r.y1 - 40;
+    });
+  }
+
+  // ------------------------------------------------------------ camera
+
+  setMode(m: ViewMode) {
+    this.mode = m;
+  }
+
+  focusArea() {
+    const { top, right, bottom, left } = this.insets;
+    const aw = Math.max(120, this.w - left - right);
+    const ah = Math.max(120, this.h - top - bottom);
+    return { fx: left + aw / 2, fy: top + ah / 2, aw, ah };
+  }
+
+  fitZoom() {
+    const { aw, ah } = this.focusArea();
+    const safe = Math.min(aw / WORLD_W, ah / WORLD_H);
+    const whole = Math.min(this.w / WORLD_W, this.h / WORLD_H);
+    return Math.max(safe, whole * 0.8);
+  }
+
+  followZoom() {
+    const small = Math.min(this.w, this.h) < 520;
+    return Math.min(this.w / WORLD_W, this.h / WORLD_H) * (small ? 1.9 : 1.4);
+  }
+
+  /** World rect visible in the uncovered area if following. */
+  followRect() {
+    const z = this.followZoom();
+    const { aw, ah } = this.focusArea();
+    const t = this.tokenPos(this.followPid);
+    const c = this.clampCenter(t.x, t.y, z);
+    return { x0: c.x - aw / 2 / z, x1: c.x + aw / 2 / z, y0: c.y - ah / 2 / z, y1: c.y + ah / 2 / z };
+  }
+
+  clampCenter(x: number, y: number, z: number) {
+    const { fx, fy } = this.focusArea();
+    // Visible world extents left/right of the focus point.
+    // Clamp against the uncovered area so tokens never sit under the overlays.
+    const { aw, ah } = this.focusArea();
+    void fx;
+    void fy;
+    const left = aw / 2 / z;
+    const right = left;
+    const up = ah / 2 / z;
+    const down = up;
+    const cx =
+      left + right >= WORLD_W
+        ? WORLD_W / 2 - (right - left) / 2
+        : Math.min(Math.max(x, left), WORLD_W - right);
+    const cy =
+      up + down >= WORLD_H ? WORLD_H / 2 - (down - up) / 2 : Math.min(Math.max(y, up), WORLD_H - down);
+    return { x: cx, y: cy };
+  }
+
+  updateCamera() {
+    const full = this.mode === 'full' || this.autoFull || this.followPid < 0 || this.G?.over;
+    if (full) {
+      const z = this.fitZoom();
+      const c = this.clampCenter(WORLD_W / 2, WORLD_H / 2, z);
+      this.camTarget = { x: c.x, y: c.y, z };
+    } else {
+      const z = this.followZoom();
+      const t = this.tokenPos(this.followPid);
+      const c = this.clampCenter(t.x, t.y, z);
+      this.camTarget = { x: c.x, y: c.y, z };
+    }
+    const k = reducedMotion() ? 1 : 0.12;
+    this.cam.x += (this.camTarget.x - this.cam.x) * k;
+    this.cam.y += (this.camTarget.y - this.cam.y) * k;
+    this.cam.z += (this.camTarget.z - this.cam.z) * k;
+  }
+
+  worldToScreen(x: number, y: number) {
+    const { fx, fy } = this.focusArea();
+    return { x: (x - this.cam.x) * this.cam.z + fx, y: (y - this.cam.y) * this.cam.z + fy };
+  }
+
+  screenToWorld(x: number, y: number) {
+    const { fx, fy } = this.focusArea();
+    return { x: (x - fx) / this.cam.z + this.cam.x, y: (y - fy) / this.cam.z + this.cam.y };
+  }
+
+  squareAt(clientX: number, clientY: number): number | null {
+    if (!this.G) return null;
+    const r = this.canvas.getBoundingClientRect();
+    const w = this.screenToWorld(clientX - r.left, clientY - r.top);
+    for (const sq of this.G.nodes) {
+      const c = squareCenter(sq);
+      if (Math.abs(w.x - c.x) <= TILE / 2 + 4 && Math.abs(w.y - c.y) <= TILE / 2 + 4) return sq.id;
+    }
+    return null;
+  }
+
+  private pointerMove = (e: PointerEvent) => {
+    const id = this.squareAt(e.clientX, e.clientY);
+    this.canvas.style.cursor = id != null && this.glow.includes(id) ? 'pointer' : 'default';
+    if (this.routes.size) this.previewRoute(id != null && this.glow.includes(id) ? id : null);
+    this.onHover?.(id, e.clientX, e.clientY);
+  };
+
+  private click = (e: MouseEvent) => {
+    const id = this.squareAt(e.clientX, e.clientY);
+    if (id != null && this.glow.includes(id) && this.onPick) {
+      const f = this.onPick;
+      f(id);
+      return;
+    }
+    if (id != null) this.onHover?.(id, e.clientX, e.clientY);
+  };
+
+  private resize = () => {
+    const r = this.host.getBoundingClientRect();
+    this.w = Math.max(1, r.width);
+    this.h = Math.max(1, r.height);
+    this.dpr = Math.min(3, window.devicePixelRatio || 1);
+    this.canvas.width = Math.round(this.w * this.dpr);
+    this.canvas.height = Math.round(this.h * this.dpr);
+    this.canvas.style.width = `${this.w}px`;
+    this.canvas.style.height = `${this.h}px`;
+  };
+
+  // ------------------------------------------------------------ frame
+
+  private frame = (now: number) => {
+    if (!this.alive) return;
+    this.raf = requestAnimationFrame(this.frame);
+    if (!this.G) return;
+    if (this.host.clientWidth !== Math.round(this.w) || this.host.clientHeight !== Math.round(this.h))
+      this.resize();
+    this.updateCamera();
+    const ctx = this.ctx;
+    const want = Math.min(3, Math.max(1, Math.ceil(this.camTarget.z * this.dpr * 2) / 2));
+    if (this.dirty || want !== this.cacheScale) this.renderStatic(want);
+
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.fillStyle = '#5e9e48';
+    ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+    const { fx, fy } = this.focusArea();
+    const z = this.cam.z * this.dpr;
+    ctx.setTransform(
+      z,
+      0,
+      0,
+      z,
+      (fx - this.cam.x * this.cam.z) * this.dpr,
+      (fy - this.cam.y * this.cam.z) * this.dpr,
+    );
+    ctx.imageSmoothingEnabled = true;
+    ctx.drawImage(this.cache, 0, 0, WORLD_W, WORLD_H);
+
+    const motion = !reducedMotion();
+    if (motion) this.drawAmbient(ctx, now);
+    this.drawClosed(ctx, now, motion);
+    this.drawGlow(ctx, now);
+    this.drawRoute(ctx);
+    this.drawTokens(ctx, now, motion);
+
+    this.fx = this.fx.filter((f) => {
+      const k = (now - f.t0) / f.dur;
+      if (k > 1) return false;
+      f.draw(ctx, Math.max(0, k), now);
+      return true;
+    });
+    // Screen-space overlays
+    ctx.setTransform(this.dpr, 0, 0, this.dpr, 0, 0);
+    this.drawDie(ctx, now);
+  };
+
+  private drawAmbient(ctx: CanvasRenderingContext2D, now: number) {
+    const t = now / 1000;
+    // Drifting cloud shadows
+    ctx.save();
+    ctx.fillStyle = 'rgba(20,40,30,0.07)';
+    for (let i = 0; i < 3; i++) {
+      const x = ((t * 12 + i * 520) % (WORLD_W + 600)) - 300;
+      const y = 140 + i * 230;
+      ctx.beginPath();
+      ctx.ellipse(x, y, 170, 60, 0, 0, Math.PI * 2);
+      ctx.ellipse(x + 110, y + 20, 120, 50, 0, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.restore();
+    // Pond shimmer
+    ctx.save();
+    ctx.strokeStyle = 'rgba(255,255,255,0.55)';
+    ctx.lineWidth = 2;
+    for (let i = 0; i < 4; i++) {
+      const ph = (t * 0.6 + i * 0.25) % 1;
+      ctx.globalAlpha = Math.sin(ph * Math.PI) * 0.8;
+      const x = 330 + i * 34 - 50;
+      const y = 238 + (i % 2) * 22;
+      ctx.beginPath();
+      ctx.moveTo(x, y);
+      ctx.lineTo(x + 18, y);
+      ctx.stroke();
+    }
+    ctx.restore();
+    // Fountain spray
+    ctx.save();
+    const fxp = { x: 650, y: 552 };
+    for (let i = 0; i < 10; i++) {
+      const ph = (t * 1.2 + i / 10) % 1;
+      const a = (i / 10) * Math.PI * 2;
+      ctx.globalAlpha = 1 - ph;
+      ctx.fillStyle = '#e6f8ff';
+      ctx.fillRect(
+        fxp.x + Math.cos(a) * ph * 30 - 2,
+        fxp.y - 18 - Math.sin(ph * Math.PI) * 26 + ph * 10,
+        4,
+        4,
+      );
+    }
+    ctx.strokeStyle = 'rgba(255,255,255,0.6)';
+    ctx.lineWidth = 2;
+    const rp = (t * 0.5) % 1;
+    ctx.globalAlpha = 1 - rp;
+    ctx.beginPath();
+    ctx.ellipse(fxp.x, fxp.y + 6, 18 + rp * 26, 7 + rp * 10, 0, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.restore();
+    // Bank coin glint every few seconds
+    const g = (t % 4) / 4;
+    if (g < 0.2) {
+      const b = this.bankPos();
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(b.x, b.y - 8, 24, 0, Math.PI * 2);
+      ctx.clip();
+      ctx.fillStyle = 'rgba(255,255,255,0.7)';
+      const gx = b.x - 40 + (g / 0.2) * 80;
+      ctx.beginPath();
+      ctx.moveTo(gx, b.y - 40);
+      ctx.lineTo(gx + 10, b.y - 40);
+      ctx.lineTo(gx - 10, b.y + 30);
+      ctx.lineTo(gx - 20, b.y + 30);
+      ctx.fill();
+      ctx.restore();
+    }
+  }
+
+  private drawClosed(ctx: CanvasRenderingContext2D, now: number, motion: boolean) {
+    const G = this.G!;
+    for (const sq of G.nodes) {
+      if (sq.owner < 0 || !isClosed(G.players[sq.owner])) continue;
+      const c = squareCenter(sq);
+      ctx.fillStyle = 'rgba(10,15,40,0.45)';
+      roundRect(ctx, c.x - TILE / 2, c.y - TILE / 2, TILE, TILE, 12);
+      ctx.fill();
+      ctx.font = '700 18px "Pixelify Sans", monospace';
+      ctx.fillStyle = '#e6ecff';
+      for (let i = 0; i < 2; i++) {
+        const ph = motion ? (now / 1600 + i * 0.5 + sq.id * 0.13) % 1 : 0.3 + i * 0.3;
+        ctx.globalAlpha = Math.sin(ph * Math.PI);
+        ctx.fillText('z', c.x + 8 + i * 10 + ph * 6, c.y - 6 - ph * 26);
+      }
+      ctx.globalAlpha = 1;
+    }
+  }
+
+  private drawGlow(ctx: CanvasRenderingContext2D, now: number) {
+    if (!this.glow.length) return;
+    const pulse = 0.55 + 0.45 * Math.sin(now / 220);
+    for (const id of this.glow) {
+      const c = squareCenter(this.G!.nodes[id]);
+      ctx.save();
+      ctx.shadowColor = this.glowColor;
+      ctx.shadowBlur = 24 * pulse;
+      ctx.strokeStyle = this.glowColor;
+      ctx.lineWidth = 6;
+      ctx.globalAlpha = 0.6 + 0.4 * pulse;
+      roundRect(ctx, c.x - TILE / 2 - 3, c.y - TILE / 2 - 3, TILE + 6, TILE + 6, 14);
+      ctx.stroke();
+      ctx.restore();
+    }
+  }
+
+  private drawRoute(ctx: CanvasRenderingContext2D) {
+    const G = this.G!;
+    const path = this.hoverRoute;
+    if (path && this.followPid >= 0) {
+      const start = squareCenter(G.nodes[G.players[this.followPid].node]);
+      ctx.save();
+      ctx.setLineDash([6, 10]);
+      ctx.strokeStyle = this.glowColor;
+      ctx.lineWidth = 5;
+      ctx.beginPath();
+      ctx.moveTo(start.x, start.y);
+      for (const id of path) {
+        const c = squareCenter(G.nodes[id]);
+        ctx.lineTo(c.x, c.y);
+      }
+      ctx.stroke();
+      ctx.setLineDash([]);
+      path.forEach((id, i) => {
+        const c = squareCenter(G.nodes[id]);
+        ctx.fillStyle = this.glowColor;
+        ctx.beginPath();
+        ctx.arc(c.x, c.y + 26, 13, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#fff';
+        ctx.font = '16px "Lilita One", sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(String(i + 1), c.x, c.y + 27);
+      });
+      ctx.restore();
+    }
+    if (this.walkTarget >= 0) {
+      const c = squareCenter(G.nodes[this.walkTarget]);
+      ctx.save();
+      ctx.setLineDash([8, 6]);
+      ctx.strokeStyle = this.glowColor;
+      ctx.lineWidth = 4;
+      roundRect(ctx, c.x - TILE / 2 - 5, c.y - TILE / 2 - 5, TILE + 10, TILE + 10, 16);
+      ctx.stroke();
+      ctx.restore();
+    }
+  }
+
+  private drawTokens(ctx: CanvasRenderingContext2D, now: number, motion: boolean) {
+    const G = this.G!;
+    // Pixel sprites are drawn in device space at a whole-number scale with smoothing off.
+    const px = Math.max(1, Math.round(this.cam.z * this.dpr * 3));
+    const order = G.players.slice().sort((a, b) => this.tokens.get(a.id)!.y - this.tokens.get(b.id)!.y);
+    ctx.save();
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.imageSmoothingEnabled = false;
+    for (const p of order) {
+      const t = this.tokens.get(p.id)!;
+      if (!t.visible) continue;
+      const s = this.worldToScreen(t.x, t.y - t.hop);
+      const sx = Math.round(s.x * this.dpr);
+      const sy = Math.round(s.y * this.dpr);
+      const frames = spriteFrames(p.ch, PLAYER_COLORS[p.color]);
+      const walkFrame = t.walking ? Math.floor(now / 110) % 2 : 0;
+      const bob = !t.walking && motion ? Math.round(Math.sin(now / 400 + p.id * 1.7) * 0.5 + 0.5) : 0;
+      const w = SPRITE_W * px;
+      const h = SPRITE_H * px;
+      // Soft HD shadow
+      const shadowY = Math.round(this.worldToScreen(t.x, t.y).y * this.dpr) + h / 2;
+      ctx.fillStyle = 'rgba(0,0,0,0.25)';
+      ctx.beginPath();
+      ctx.ellipse(sx, shadowY, w * 0.42, px * 1.6, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.drawImage(frames[walkFrame], sx - w / 2, sy - h / 2 - bob * px, w, h);
+      if (p.id === this.activePid && !G.over) {
+        const ay = sy - h / 2 - px * 5 + (motion ? Math.round(Math.sin(now / 180) * 1.5) * px : 0);
+        ctx.fillStyle = PLAYER_COLORS[p.color];
+        for (let r = 0; r < 3; r++) ctx.fillRect(sx - (3 - r) * px, ay + r * px, (3 - r) * 2 * px, px);
+        if (this.stepsLeft > 0) {
+          const bx = sx + w / 2 + px * 2;
+          const by = sy - h / 2;
+          const rad = 11 * this.dpr;
+          ctx.fillStyle = '#101a33';
+          ctx.beginPath();
+          ctx.arc(bx, by, rad, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.fillStyle = '#fff';
+          ctx.font = `${14 * this.dpr}px "Lilita One", sans-serif`;
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText(String(this.stepsLeft), bx, by + this.dpr);
+        }
+      }
+    }
+    ctx.restore();
+  }
+
+  private drawDie(ctx: CanvasRenderingContext2D, now: number) {
+    if (!this.die || now > this.die.until) return;
+    const d = this.die;
+    const pos = this.worldToScreen(this.tokenPos(this.activePid).x, this.tokenPos(this.activePid).y);
+    const x = Math.min(this.w - 50, Math.max(50, pos.x + 70));
+    const y = Math.min(this.h - 50, Math.max(50, pos.y - 70));
+    const face = d.rolling ? 1 + (Math.floor(now / 70) % 6) : d.value;
+    let sx = 1;
+    let sy = 1;
+    let dy = 0;
+    if (d.rolling) dy = -Math.abs(Math.sin(now / 90)) * 16;
+    else {
+      const k = Math.min(1, (now - d.t0) / 350);
+      sx = 1 + Math.sin(k * Math.PI) * 0.25;
+      sy = 1 - Math.sin(k * Math.PI) * 0.2;
+    }
+    const s = 52;
+    ctx.save();
+    ctx.translate(x, y + dy);
+    ctx.scale(sx, sy);
+    ctx.rotate(d.rolling ? Math.sin(now / 60) * 0.3 : 0);
+    ctx.fillStyle = 'rgba(0,0,0,0.25)';
+    roundRect(ctx, -s / 2 + 3, -s / 2 + 5, s, s, 10);
+    ctx.fill();
+    ctx.fillStyle = '#fff';
+    roundRect(ctx, -s / 2, -s / 2, s, s, 10);
+    ctx.fill();
+    ctx.strokeStyle = '#101a33';
+    ctx.lineWidth = 3;
+    ctx.stroke();
+    ctx.fillStyle = face === 1 ? '#e5484d' : '#101a33';
+    const pips: Record<number, number[][]> = {
+      1: [[0, 0]],
+      2: [
+        [-1, -1],
+        [1, 1],
+      ],
+      3: [
+        [-1, -1],
+        [0, 0],
+        [1, 1],
+      ],
+      4: [
+        [-1, -1],
+        [1, -1],
+        [-1, 1],
+        [1, 1],
+      ],
+      5: [
+        [-1, -1],
+        [1, -1],
+        [0, 0],
+        [-1, 1],
+        [1, 1],
+      ],
+      6: [
+        [-1, -1],
+        [1, -1],
+        [-1, 0],
+        [1, 0],
+        [-1, 1],
+        [1, 1],
+      ],
+    };
+    for (const [px, py] of pips[face]) {
+      ctx.beginPath();
+      ctx.arc(px * 13, py * 13, face === 1 ? 8 : 5.5, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.restore();
+  }
+
+  // ------------------------------------------------------------ static board
+
+  private renderStatic(scale: number) {
+    const G = this.G!;
+    this.dirty = false;
+    this.cacheScale = scale;
+    const cv = this.cache;
+    cv.width = Math.round(WORLD_W * scale);
+    cv.height = Math.round(WORLD_H * scale);
+    const ctx = cv.getContext('2d')!;
+    ctx.setTransform(scale, 0, 0, scale, 0, 0);
+    drawScenery(ctx, G);
+    for (const sq of G.nodes) drawSquare(ctx, G, sq);
+  }
+}
+
+// ------------------------------------------------------------------ drawing helpers
+
+export function roundRect(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  r: number,
+) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.arcTo(x + w, y, x + w, y + h, r);
+  ctx.arcTo(x + w, y + h, x, y + h, r);
+  ctx.arcTo(x, y + h, x, y, r);
+  ctx.arcTo(x, y, x + w, y, r);
+  ctx.closePath();
+}
+
+function seeded(seed: number) {
+  let s = seed;
+  return () => {
+    s = (s * 16807) % 2147483647;
+    return (s - 1) / 2147483646;
+  };
+}
+
+function drawScenery(ctx: CanvasRenderingContext2D, G: GameState) {
+  // Grass with tufts
+  const grd = ctx.createLinearGradient(0, 0, 0, WORLD_H);
+  grd.addColorStop(0, '#9edb73');
+  grd.addColorStop(1, '#86c95f');
+  ctx.fillStyle = grd;
+  ctx.fillRect(0, 0, WORLD_W, WORLD_H);
+  const r = seeded(42);
+  ctx.fillStyle = 'rgba(60,120,40,0.18)';
+  for (let i = 0; i < 260; i++) {
+    const x = r() * WORLD_W;
+    const y = r() * WORLD_H;
+    ctx.fillRect(x, y, 3, 7);
+    ctx.fillRect(x + 4, y + 2, 3, 5);
+  }
+
+  // Roads along every edge
+  ctx.lineCap = 'round';
+  for (const [w, c] of [
+    [44, '#c9b07a'],
+    [36, '#efe0b6'],
+  ] as [number, string][]) {
+    ctx.strokeStyle = c;
+    ctx.lineWidth = w;
+    for (const sq of G.nodes) {
+      const a = squareCenter(sq);
+      for (const n of sq.nb) {
+        if (n < sq.id) continue;
+        const b = squareCenter(G.nodes[n]);
+        ctx.beginPath();
+        ctx.moveTo(a.x, a.y);
+        ctx.lineTo(b.x, b.y);
+        ctx.stroke();
+      }
+    }
+  }
+
+  // Pond (upper park)
+  ctx.fillStyle = '#5aa0d8';
+  ctx.beginPath();
+  ctx.ellipse(350, 250, 150, 62, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = '#7dc0ee';
+  ctx.beginPath();
+  ctx.ellipse(340, 243, 128, 48, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = '#4caf50';
+  for (const [x, y] of [
+    [260, 262],
+    [420, 230],
+  ]) {
+    ctx.beginPath();
+    ctx.ellipse(x, y, 12, 7, 0.3, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  // Fountain (lower park)
+  ctx.fillStyle = '#d9d4c7';
+  ctx.beginPath();
+  ctx.arc(650, 555, 52, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = '#7dc0ee';
+  ctx.beginPath();
+  ctx.arc(650, 555, 40, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = '#bdb6a4';
+  ctx.fillRect(644, 528, 12, 30);
+  ctx.beginPath();
+  ctx.arc(650, 528, 10, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Flower beds
+  const bed = (x: number, y: number, w: number, h: number) => {
+    ctx.fillStyle = '#7a5a3a';
+    roundRect(ctx, x, y, w, h, 10);
+    ctx.fill();
+    const fr = seeded(Math.round(x * 7 + y));
+    for (let i = 0; i < (w * h) / 180; i++) {
+      ctx.fillStyle = ['#ff6b8b', '#ffd166', '#ffffff', '#c77dff'][Math.floor(fr() * 4)];
+      ctx.fillRect(x + 6 + fr() * (w - 14), y + 5 + fr() * (h - 12), 5, 5);
+    }
+  };
+  bed(560, 180, 150, 34);
+  bed(560, 280, 150, 34);
+  bed(800, 600, 140, 30);
+  bed(380, 600, 140, 30);
+
+  // Trees
+  const tree = (x: number, y: number, s = 1) => {
+    ctx.fillStyle = 'rgba(0,0,0,0.15)';
+    ctx.beginPath();
+    ctx.ellipse(x + 4, y + 22 * s, 22 * s, 8 * s, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#7a4f2a';
+    ctx.fillRect(x - 4 * s, y, 8 * s, 22 * s);
+    ctx.fillStyle = '#3f9a45';
+    ctx.beginPath();
+    ctx.arc(x, y - 6 * s, 24 * s, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#58b85a';
+    ctx.beginPath();
+    ctx.arc(x - 7 * s, y - 13 * s, 13 * s, 0, Math.PI * 2);
+    ctx.fill();
+  };
+  for (const [x, y, s] of [
+    [800, 200, 1],
+    [900, 260, 1.1],
+    [1010, 205, 0.9],
+    [1060, 290, 1],
+    [190, 200, 0.9],
+    [210, 560, 1],
+    [300, 520, 0.8],
+    [1000, 520, 1.1],
+    [1080, 600, 0.9],
+    [500, 520, 0.8],
+    [760, 300, 0.8],
+  ])
+    tree(x, y, s);
+}
+
+const SPECIAL_LABEL: Record<string, string> = {
+  bank: 'BANK',
+  venture: 'VENTURE',
+  change: 'CHANGE',
+  roll: 'ROLL ON',
+  break: 'BREAK',
+  boon: 'BOON',
+  boom: 'BOOM',
+  broker: 'STOCKS',
+  back: 'BACKSTREET',
+  arcade: 'ARCADE',
+  cannon: 'CANNON',
+};
+
+const BUILDING_LABEL: Record<string, string> = {
+  checkpoint: 'CHECKPOINT',
+  circus: 'CIRCUS',
+  balloon: 'BALLOON',
+  tax: 'TAX OFFICE',
+  home: 'HOME',
+  agency: 'ESTATE',
+  star3: '3-STAR',
+};
+
+function pill(ctx: CanvasRenderingContext2D, x: number, y: number, text: string, bg: string, fg = '#fff') {
+  ctx.font = '17px "Lilita One", sans-serif';
+  const w = Math.max(40, ctx.measureText(text).width + 16);
+  ctx.fillStyle = bg;
+  roundRect(ctx, x - w / 2, y - 12, w, 24, 12);
+  ctx.fill();
+  ctx.fillStyle = fg;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(text, x, y + 1);
+}
+
+function label(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  text: string,
+  color = '#26314f',
+  size = 12,
+) {
+  ctx.font = `700 ${size}px "Atkinson Hyperlegible", sans-serif`;
+  ctx.fillStyle = color;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(text, x, y);
+}
+
+function house(ctx: CanvasRenderingContext2D, x: number, y: number, color: string) {
+  ctx.fillStyle = color;
+  ctx.beginPath();
+  ctx.moveTo(x - 18, y - 2);
+  ctx.lineTo(x, y - 18);
+  ctx.lineTo(x + 18, y - 2);
+  ctx.closePath();
+  ctx.fill();
+  ctx.fillRect(x - 13, y - 3, 26, 18);
+  ctx.fillStyle = 'rgba(255,255,255,0.85)';
+  ctx.fillRect(x - 4, y + 4, 8, 11);
+}
+
+export function darken(hex: string, f = 0.7) {
+  const n = parseInt(hex.slice(1), 16);
+  const c = [(n >> 16) & 255, (n >> 8) & 255, n & 255].map((v) => Math.round(v * f));
+  return `rgb(${c[0]},${c[1]},${c[2]})`;
+}
+
+function buildingIcon(ctx: CanvasRenderingContext2D, b: string, x: number, y: number) {
+  ctx.save();
+  ctx.lineWidth = 3;
+  switch (b) {
+    case 'checkpoint':
+      ctx.fillStyle = '#e5484d';
+      ctx.fillRect(x - 22, y - 6, 44, 8);
+      ctx.fillStyle = '#fff';
+      for (let i = -18; i < 22; i += 12) ctx.fillRect(x + i, y - 6, 6, 8);
+      ctx.fillStyle = '#5b6478';
+      ctx.fillRect(x - 24, y - 14, 6, 26);
+      break;
+    case 'circus':
+      ctx.fillStyle = '#e5484d';
+      ctx.beginPath();
+      ctx.moveTo(x - 22, y + 12);
+      ctx.lineTo(x, y - 18);
+      ctx.lineTo(x + 22, y + 12);
+      ctx.fill();
+      ctx.fillStyle = '#fff';
+      ctx.beginPath();
+      ctx.moveTo(x - 8, y + 12);
+      ctx.lineTo(x, y - 18);
+      ctx.lineTo(x + 8, y + 12);
+      ctx.fill();
+      break;
+    case 'balloon':
+      ctx.fillStyle = '#ff8fb1';
+      ctx.beginPath();
+      ctx.arc(x, y - 6, 15, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = '#7a4f2a';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.moveTo(x - 8, y + 6);
+      ctx.lineTo(x - 5, y + 13);
+      ctx.moveTo(x + 8, y + 6);
+      ctx.lineTo(x + 5, y + 13);
+      ctx.stroke();
+      ctx.fillStyle = '#a0703a';
+      ctx.fillRect(x - 6, y + 12, 12, 7);
+      break;
+    case 'tax':
+      ctx.fillStyle = '#8a94a8';
+      ctx.fillRect(x - 20, y - 4, 40, 20);
+      ctx.beginPath();
+      ctx.moveTo(x - 24, y - 4);
+      ctx.lineTo(x, y - 18);
+      ctx.lineTo(x + 24, y - 4);
+      ctx.fill();
+      ctx.fillStyle = '#fff';
+      for (let i = -14; i <= 14; i += 9) ctx.fillRect(x + i - 2, y, 4, 14);
+      break;
+    case 'home':
+      house(ctx, x, y, '#ef8f4a');
+      break;
+    case 'agency':
+      ctx.fillStyle = '#4a7bd1';
+      ctx.fillRect(x - 16, y - 16, 32, 32);
+      ctx.fillStyle = '#fff';
+      for (let i = 0; i < 3; i++)
+        for (let j = 0; j < 3; j++) ctx.fillRect(x - 12 + i * 9, y - 12 + j * 9, 6, 6);
+      break;
+    case 'star3':
+      for (let i = -1; i <= 1; i++) star(ctx, x + i * 15, y - (i === 0 ? 6 : 0), 8, '#f5b301');
+      ctx.fillStyle = '#d24d7a';
+      ctx.fillRect(x - 20, y + 6, 40, 10);
+      break;
+  }
+  ctx.restore();
+}
+
+function star(ctx: CanvasRenderingContext2D, x: number, y: number, r: number, c: string) {
+  ctx.fillStyle = c;
+  ctx.beginPath();
+  for (let i = 0; i < 10; i++) {
+    const a = (i / 10) * Math.PI * 2 - Math.PI / 2;
+    const rr = i % 2 ? r * 0.45 : r;
+    ctx.lineTo(x + Math.cos(a) * rr, y + Math.sin(a) * rr);
+  }
+  ctx.fill();
+}
+
+function specialIcon(ctx: CanvasRenderingContext2D, G: GameState, sq: Square, x: number, y: number) {
+  ctx.save();
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  switch (sq.t) {
+    case 'bank':
+      ctx.fillStyle = '#c98a12';
+      ctx.beginPath();
+      ctx.arc(x, y, 26, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#ffd84a';
+      ctx.beginPath();
+      ctx.arc(x, y, 21, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#9a6a0a';
+      ctx.font = '28px "Lilita One", sans-serif';
+      ctx.fillText('G', x, y + 2);
+      break;
+    case 'venture':
+    case 'broker':
+      if (sq.t === 'broker' && G.rules === 'standard') {
+        ctx.strokeStyle = '#30a46c';
+        ctx.lineWidth = 5;
+        ctx.beginPath();
+        ctx.moveTo(x - 22, y + 12);
+        ctx.lineTo(x - 8, y - 2);
+        ctx.lineTo(x + 4, y + 6);
+        ctx.lineTo(x + 22, y - 14);
+        ctx.stroke();
+        ctx.fillStyle = '#30a46c';
+        ctx.beginPath();
+        ctx.moveTo(x + 24, y - 18);
+        ctx.lineTo(x + 12, y - 16);
+        ctx.lineTo(x + 22, y - 6);
+        ctx.fill();
+        break;
+      }
+      ctx.fillStyle = '#7b4bd6';
+      roundRect(ctx, x - 16, y - 21, 32, 42, 6);
+      ctx.fill();
+      ctx.fillStyle = '#fff';
+      ctx.font = '28px "Lilita One", sans-serif';
+      ctx.fillText('?', x, y + 2);
+      break;
+    case 'spade':
+    case 'heart':
+    case 'diamond':
+    case 'club': {
+      const i = (SUITS as string[]).indexOf(sq.t);
+      ctx.fillStyle = i === 1 || i === 2 ? '#e5484d' : '#3a3f5c';
+      ctx.font = '46px "Atkinson Hyperlegible", serif';
+      ctx.fillText(SUIT_CHARS[i], x, y + 2);
+      break;
+    }
+    case 'change': {
+      const i = G.changeSuit;
+      ctx.strokeStyle = '#8a94a8';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.arc(x, y, 24, 0.3, Math.PI * 1.7);
+      ctx.stroke();
+      ctx.fillStyle = i === 1 || i === 2 ? '#e5484d' : '#3a3f5c';
+      ctx.font = '32px "Atkinson Hyperlegible", serif';
+      ctx.fillText(SUIT_CHARS[i], x, y + 2);
+      break;
+    }
+    case 'roll':
+      ctx.fillStyle = '#fff';
+      ctx.strokeStyle = '#26314f';
+      ctx.lineWidth = 3;
+      roundRect(ctx, x - 17, y - 17, 34, 34, 7);
+      ctx.fill();
+      ctx.stroke();
+      ctx.fillStyle = '#26314f';
+      for (const [a, b] of [
+        [-8, -8],
+        [0, 0],
+        [8, 8],
+      ]) {
+        ctx.beginPath();
+        ctx.arc(x + a, y + b, 3.5, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      break;
+    case 'break':
+      ctx.fillStyle = '#fff';
+      ctx.strokeStyle = '#7a4f2a';
+      ctx.lineWidth = 3;
+      roundRect(ctx, x - 16, y - 10, 26, 26, 5);
+      ctx.fill();
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.arc(x + 13, y + 3, 7, -Math.PI / 2, Math.PI / 2);
+      ctx.stroke();
+      ctx.strokeStyle = '#b0b8c8';
+      ctx.beginPath();
+      ctx.moveTo(x - 6, y - 14);
+      ctx.quadraticCurveTo(x - 1, y - 20, x - 6, y - 26);
+      ctx.moveTo(x + 2, y - 14);
+      ctx.quadraticCurveTo(x + 7, y - 20, x + 2, y - 26);
+      ctx.stroke();
+      break;
+    case 'boon':
+    case 'boom':
+      ctx.fillStyle = sq.t === 'boon' ? '#30a46c' : '#d6409f';
+      ctx.font = '26px "Lilita One", sans-serif';
+      ctx.fillText(sq.t === 'boon' ? '20%' : '50%', x, y + 2);
+      break;
+    case 'back':
+      ctx.strokeStyle = '#5b6478';
+      ctx.lineWidth = 5;
+      ctx.beginPath();
+      ctx.moveTo(x - 20, y + 10);
+      ctx.quadraticCurveTo(x, y - 30, x + 18, y - 2);
+      ctx.stroke();
+      ctx.fillStyle = '#5b6478';
+      ctx.beginPath();
+      ctx.moveTo(x + 26, y - 8);
+      ctx.lineTo(x + 20, y + 8);
+      ctx.lineTo(x + 10, y - 4);
+      ctx.fill();
+      break;
+    case 'arcade':
+      ctx.fillStyle = '#26314f';
+      roundRect(ctx, x - 22, y, 44, 16, 6);
+      ctx.fill();
+      ctx.fillStyle = '#5b6478';
+      ctx.fillRect(x - 3, y - 18, 6, 20);
+      ctx.fillStyle = '#e5484d';
+      ctx.beginPath();
+      ctx.arc(x, y - 18, 8, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#ffd166';
+      ctx.beginPath();
+      ctx.arc(x + 14, y + 8, 4, 0, Math.PI * 2);
+      ctx.fill();
+      break;
+    case 'cannon':
+      ctx.fillStyle = '#3a3f5c';
+      ctx.save();
+      ctx.translate(x - 2, y + 4);
+      ctx.rotate(-0.6);
+      roundRect(ctx, -6, -9, 34, 18, 8);
+      ctx.fill();
+      ctx.restore();
+      ctx.fillStyle = '#7a4f2a';
+      ctx.beginPath();
+      ctx.arc(x - 6, y + 12, 9, 0, Math.PI * 2);
+      ctx.fill();
+      break;
+  }
+  ctx.restore();
+}
+
+function drawSquare(ctx: CanvasRenderingContext2D, G: GameState, sq: Square) {
+  const c = squareCenter(sq);
+  const x = c.x - TILE / 2;
+  const y = c.y - TILE / 2;
+  const owner = sq.owner >= 0 ? G.players[sq.owner] : null;
+  const ownerColor = owner ? PLAYER_COLORS[owner.color] : '';
+  const district = sq.d >= 0 ? G.districts[sq.d] : null;
+
+  // Shadow + tile
+  ctx.fillStyle = 'rgba(0,0,0,0.18)';
+  roundRect(ctx, x + 2, y + 5, TILE, TILE, 12);
+  ctx.fill();
+  const vacant = sq.t === 'plot' && !sq.b;
+  ctx.fillStyle = vacant ? 'rgba(255,255,255,0.55)' : sq.t === 'bank' ? '#fff6d6' : '#fdfbf5';
+  roundRect(ctx, x, y, TILE, TILE, 12);
+  ctx.fill();
+
+  if (district) {
+    ctx.save();
+    roundRect(ctx, x, y, TILE, TILE, 12);
+    ctx.clip();
+    ctx.fillStyle = district.color;
+    ctx.fillRect(x, y, TILE, 16);
+    ctx.restore();
+  }
+
+  if (sq.t === 'shop') {
+    house(ctx, c.x, c.y - 2, district ? darken(district.color, 0.62) : '#888');
+    if (owner) pill(ctx, c.x, c.y + 28, `${squareFee(G, sq)}G`, ownerColor);
+    else label(ctx, c.x, c.y + 28, `${sq.value}G`, '#26314f', 16);
+  } else if (sq.t === 'plot') {
+    if (!sq.b) {
+      ctx.save();
+      ctx.setLineDash([7, 5]);
+      ctx.strokeStyle = '#6b7590';
+      ctx.lineWidth = 2.5;
+      roundRect(ctx, x + 4, y + 4, TILE - 8, TILE - 8, 10);
+      ctx.stroke();
+      ctx.restore();
+      label(ctx, c.x, c.y + 4, 'VACANT', '#4a5470', 14);
+    } else {
+      buildingIcon(ctx, sq.b, c.x, c.y - 4);
+      label(ctx, c.x, c.y + 13, BUILDING_LABEL[sq.b], '#4a5470', 9);
+      const fee = sq.b === 'tax' ? '10%' : sq.b === 'agency' ? 'Break' : `${squareFee(G, sq)}G`;
+      if (owner) pill(ctx, c.x, c.y + 30, fee, ownerColor);
+    }
+  } else {
+    specialIcon(ctx, G, sq, c.x, c.y - 6);
+    const t = sq.t === 'broker' && G.rules === 'easy' ? 'VENTURE' : (SPECIAL_LABEL[sq.t] ?? '');
+    label(ctx, c.x, c.y + 30, t, '#4a5470', t.length > 8 ? 9 : 11);
+  }
+
+  // Owner ring and pennant
+  if (owner) {
+    ctx.strokeStyle = ownerColor;
+    ctx.lineWidth = 5;
+    roundRect(ctx, x + 1.5, y + 1.5, TILE - 3, TILE - 3, 11);
+    ctx.stroke();
+    ctx.fillStyle = '#5b6478';
+    ctx.fillRect(x + TILE - 12, y - 14, 3, 24);
+    ctx.fillStyle = ownerColor;
+    ctx.beginPath();
+    ctx.moveTo(x + TILE - 9, y - 14);
+    ctx.lineTo(x + TILE + 8, y - 8);
+    ctx.lineTo(x + TILE - 9, y - 2);
+    ctx.fill();
+  } else {
+    ctx.strokeStyle = 'rgba(38,49,79,0.18)';
+    ctx.lineWidth = 2;
+    roundRect(ctx, x + 1, y + 1, TILE - 2, TILE - 2, 11);
+    ctx.stroke();
+  }
+}

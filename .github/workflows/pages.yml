@@ -1,0 +1,74 @@
+# Builds the client and publishes it to the gh-pages branch:
+#   main -> site root      (https://<owner>.github.io/<repo>/)
+#   dev  -> /dev/ preview  (https://<owner>.github.io/<repo>/dev/)
+# GitHub Pages must be set to "Deploy from a branch" -> gh-pages / (root).
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches: [main, dev]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: pages-deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm test
+      - run: npm run build
+      - name: Publish to gh-pages
+        env:
+          BRANCH: ${{ github.ref_name }}
+          TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          SRC="$GITHUB_WORKSPACE/apps/client/dist"
+          SITE="$RUNNER_TEMP/site"
+          URL="https://x-access-token:${TOKEN}@github.com/${REPO}.git"
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          if git ls-remote --exit-code --heads "$URL" gh-pages >/dev/null 2>&1; then
+            git clone --depth 1 --branch gh-pages "$URL" "$SITE"
+          else
+            mkdir -p "$SITE"
+            git -C "$SITE" init -b gh-pages
+            git -C "$SITE" remote add origin "$URL"
+          fi
+          cd "$SITE"
+          if [ "$BRANCH" = "main" ]; then
+            # Replace the live site but keep the dev preview.
+            find . -mindepth 1 -maxdepth 1 ! -name .git ! -name dev -exec rm -rf {} +
+            cp -r "$SRC"/. .
+          else
+            rm -rf dev
+            mkdir dev
+            cp -r "$SRC"/. dev/
+            if [ ! -f index.html ]; then
+              cat > index.html <<'HTML'
+          <!doctype html><meta charset="utf-8"><title>Adventure Avenue</title>
+          <meta http-equiv="refresh" content="0; url=./dev/">
+          <p>The stable build has not been published yet. <a href="./dev/">Play the dev build</a>.</p>
+          HTML
+            fi
+          fi
+          touch .nojekyll
+          git add -A
+          if git diff --cached --quiet; then
+            echo "Nothing to deploy"
+          else
+            git commit -m "Deploy ${BRANCH} @ ${GITHUB_SHA::7}"
+            git push origin gh-pages
+          fi

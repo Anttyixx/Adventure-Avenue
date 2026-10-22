@@ -1,1 +1,53 @@
-# Adventure-Avenue
+# Adventure Avenue
+
+A browser board game in the spirit of Fortune Street: roll one die, move around a branching town,
+buy and grow shops, trade district stocks, collect the four suits for promotions, and race to reach
+the target net worth and get back to the bank. 1-4 players, hot-seat, with CPU players filling
+empty seats.
+
+- **Play the stable build:** https://anttyixx.github.io/Adventure-Avenue/
+- **Play the dev build:** https://anttyixx.github.io/Adventure-Avenue/dev/
+
+## Branches
+
+| Branch | What it is                                      | Deployed to |
+| ------ | ----------------------------------------------- | ----------- |
+| `dev`  | Work in progress; every change lands here first | `/dev/`     |
+| `main` | Stable builds, promoted from `dev`              | site root   |
+
+## Development
+
+```bash
+npm install
+npm run dev        # client at http://localhost:5173
+npm test           # rules engine tests + 1,000 simulated CPU matches
+npm run lint
+npm run typecheck
+npm run build      # apps/client/dist
+npm run sim -- 500 # CPU-only balance simulation
+```
+
+## Project layout
+
+```
+packages/engine/   UI-free rules engine: state, board data, formulas, turn flow, cards, CPU, tests
+  src/constants.ts every balance number
+  src/boards/town.ts the 44-square board as data
+  src/cards.ts     venture deck as data + effect functions
+apps/client/       Vite + TypeScript client: canvas board, pixel sprites, HTML/CSS overlays
+apps/server/       planned online multiplayer server
+docs/spec.md       the game spec
+reference/         the original prototype (to be added)
+```
+
+## Status
+
+Following the build plan in `docs/spec.md`:
+
+1. Repo and tooling: done (npm workspaces, TypeScript, Vite, Vitest, ESLint, Prettier, CI).
+2. Rules engine: done (unit tests + 1,000-match CPU simulation).
+3. Local hot-seat client: done (playable end to end).
+4. Server and rooms: not started.
+5. Resilience: not started.
+6. Content and art: generated sprites for now.
+7. Balance and polish: ongoing.

@@ -170,8 +170,12 @@ describe('auctions and trades', () => {
     const { G } = makeGame();
     const shop = at(G, 6, 0);
     shop.owner = 1;
-    expect(cpuAcceptsTrade(G, { from: 0, to: 1, give: [], get: [shop.id], cashGive: 250, cashGet: 0 })).toBe(true);
-    expect(cpuAcceptsTrade(G, { from: 0, to: 1, give: [], get: [shop.id], cashGive: 200, cashGet: 0 })).toBe(false);
+    expect(cpuAcceptsTrade(G, { from: 0, to: 1, give: [], get: [shop.id], cashGive: 250, cashGet: 0 })).toBe(
+      true,
+    );
+    expect(cpuAcceptsTrade(G, { from: 0, to: 1, give: [], get: [shop.id], cashGive: 200, cashGet: 0 })).toBe(
+      false,
+    );
   });
 });
 

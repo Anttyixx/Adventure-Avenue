@@ -41,10 +41,16 @@ export type DistrictPurpose = 'free20' | 'up20' | 'down20';
 
 /** Map of decision kind -> [request payload, answer]. */
 export interface DecisionMap {
-  preRoll: [{ canStock: boolean; canAuction: boolean; canRenovate: boolean; canTrade: boolean }, PreRollAction];
+  preRoll: [
+    { canStock: boolean; canAuction: boolean; canRenovate: boolean; canTrade: boolean },
+    PreRollAction,
+  ];
   path: [{ dests: Route[]; steps: number }, number];
   buyShop: [{ sq: number; price: number }, boolean];
-  build: [{ sq: number; options: { b: BuildingKey; cost: number }[]; renovate?: boolean }, BuildingKey | null];
+  build: [
+    { sq: number; options: { b: BuildingKey; cost: number }[]; renovate?: boolean },
+    BuildingKey | null,
+  ];
   invest: [{ shops: { sq: number; room: number }[]; max: number }, { sq: number; amount: number } | null];
   buyout: [{ sq: number; price: number }, boolean];
   circusUpgrade: [{ sq: number; cost: number; tier: number }, boolean];

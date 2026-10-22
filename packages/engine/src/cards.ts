@@ -218,7 +218,13 @@ const list: Card[] = [
         .filter((s) => isShopLike(s) && s.owner >= 0 && s.owner !== p.id && s.value * 5 <= p.cash)
         .map((s) => s.id);
       if (!options.length) return;
-      const id = await g.ask({ kind: 'pickSquare', pid: p.id, purpose: 'forcedBuyout', options, optional: true });
+      const id = await g.ask({
+        kind: 'pickSquare',
+        pid: p.id,
+        purpose: 'forcedBuyout',
+        options,
+        optional: true,
+      });
       if (id == null || !options.includes(id)) return;
       await g.buyout(p, g.G.nodes[id]);
     },
@@ -280,13 +286,7 @@ const list: Card[] = [
     title: 'Stock tax',
     text: 'Pay 2G for every share you hold.',
     std: true,
-    run: (g, p) =>
-      g.pay(
-        p,
-        null,
-        p.shares.reduce((s, n) => s + n, 0) * 2,
-        'Stock tax',
-      ),
+    run: (g, p) => g.pay(p, null, p.shares.reduce((s, n) => s + n, 0) * 2, 'Stock tax'),
   },
   {
     id: 'buy10off',
@@ -314,4 +314,3 @@ export const CARD_LIST = list;
 export function buildDeck(rules: RuleSet): string[] {
   return list.filter((c) => rules === 'standard' || !c.std).map((c) => c.id);
 }
-

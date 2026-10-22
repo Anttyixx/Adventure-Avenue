@@ -34,7 +34,8 @@ export async function luckyReels(g: Game, p: Player) {
   );
   const stops = await g.ask({ kind: 'reels', pid: p.id, strips });
   const result = strips.map((strip, i) => {
-    const n = Array.isArray(stops) && Number.isFinite(stops[i]) ? Math.floor(stops[i]) : randInt(G, REEL_LENGTH);
+    const n =
+      Array.isArray(stops) && Number.isFinite(stops[i]) ? Math.floor(stops[i]) : randInt(G, REEL_LENGTH);
     return strip[((n % REEL_LENGTH) + REEL_LENGTH) % REEL_LENGTH];
   });
   const L = p.level;

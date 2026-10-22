@@ -79,7 +79,10 @@ export const K = {
     star3Chance: 0.5,
     star3Keep: 500,
     buildKeep: 150,
-    buildWeights: { tax: 3, checkpoint: 2, circus: 2, home: 1, agency: 1, balloon: 1 } as Record<string, number>,
+    buildWeights: { tax: 3, checkpoint: 2, circus: 2, home: 1, agency: 1, balloon: 1 } as Record<
+      string,
+      number
+    >,
     investChance: 0.8,
     investAbove: 900,
     investFloor: 600,

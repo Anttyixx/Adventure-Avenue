@@ -27,9 +27,17 @@ export interface SimResult {
 }
 
 /** Play one CPU-only match to the end. Guards against runaway matches. */
-export async function simulate(rules: RuleSet, seed: number, target = 5000, roundCap = 0): Promise<SimResult> {
+export async function simulate(
+  rules: RuleSet,
+  seed: number,
+  target = 5000,
+  roundCap = 0,
+): Promise<SimResult> {
   const G = newGame({ rules, target, roundCap, seats: cpuSeats(4), seed });
-  const game = new Game(G, cpuIO(() => G));
+  const game = new Game(
+    G,
+    cpuIO(() => G),
+  );
   let turns = 0;
   while (!G.over) {
     await game.playTurn();
