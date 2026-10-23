@@ -4,7 +4,8 @@
  * changes; each frame draws the cache, then highlights, sprites, coins, floating text and the die.
  */
 import { PLAYER_COLORS, SUITS, isClosed, squareFee, type GameState, type Square } from '@aa/engine';
-import { drawPixelCoin, SPRITE_H, SPRITE_W, spriteFrames, SUIT_CHARS } from './sprites';
+import { drawCoin, drawSparkle, SUIT_CHARS } from './icons';
+import { SPRITE_H, SPRITE_W, spriteFrames } from './sprites';
 
 export const WORLD_W = 1300;
 export const WORLD_H = 800;
@@ -215,7 +216,7 @@ export class BoardView {
     this.ring(to, '#ffffff');
   }
 
-  /** A ring that grows and fades on a square. Gold rings also burst 8 pixel sparkles. */
+  /** A ring that grows and fades on a square. Gold rings also burst 8 sparkles. */
   ring(sqId: number, color: string, sparkles = false) {
     if (!this.G) return;
     const c = squareCenter(this.G.nodes[sqId]);
@@ -231,11 +232,10 @@ export class BoardView {
         roundRect(ctx, c.x - s, c.y - s, s * 2, s * 2, 14);
         ctx.stroke();
         if (sparkles) {
-          ctx.fillStyle = '#ffe066';
           for (let i = 0; i < 8; i++) {
             const a = (i / 8) * Math.PI * 2;
             const r = 30 + k * 50;
-            ctx.fillRect(c.x + Math.cos(a) * r - 3, c.y + Math.sin(a) * r - 3, 6, 6);
+            drawSparkle(ctx, c.x + Math.cos(a) * r, c.y + Math.sin(a) * r, 8 * (1 - k * 0.5), '#ffe066');
           }
         }
         ctx.restore();
@@ -277,7 +277,7 @@ export class BoardView {
           const e = ease(k);
           const x = from.x + (to.x - from.x) * e;
           const y = from.y + (to.y - from.y) * e - Math.sin(k * Math.PI) * arc;
-          drawPixelCoin(ctx, x, y, 3.2);
+          drawCoin(ctx, x, y, 9);
         },
       });
     }
@@ -289,6 +289,8 @@ export class BoardView {
       vx: (Math.random() - 0.5) * 260,
       vy: -200 - Math.random() * 220,
       c: ['#ff5d73', '#ffd166', '#4cc9f0', '#80ed99', '#c77dff'][Math.floor(Math.random() * 5)],
+      spin: (Math.random() - 0.5) * 14,
+      w: 5 + Math.random() * 5,
     }));
     this.fx.push({
       t0: performance.now(),
@@ -298,8 +300,13 @@ export class BoardView {
         ctx.save();
         ctx.globalAlpha = 1 - k;
         for (const q of parts) {
+          ctx.save();
+          ctx.translate(p.x + q.vx * t, p.y - 30 + q.vy * t + 300 * t * t);
+          ctx.rotate(q.spin * t);
           ctx.fillStyle = q.c;
-          ctx.fillRect(p.x + q.vx * t - 3, p.y - 30 + q.vy * t + 300 * t * t - 3, 6, 6);
+          roundRect(ctx, -q.w / 2, -2, q.w, 4, 2);
+          ctx.fill();
+          ctx.restore();
         }
         ctx.restore();
       },
@@ -597,7 +604,7 @@ export class BoardView {
       ctx.fillStyle = 'rgba(10,15,40,0.45)';
       roundRect(ctx, c.x - TILE / 2, c.y - TILE / 2, TILE, TILE, 12);
       ctx.fill();
-      ctx.font = '700 18px "Pixelify Sans", monospace';
+      ctx.font = '20px "Lilita One", sans-serif';
       ctx.fillStyle = '#e6ecff';
       for (let i = 0; i < 2; i++) {
         const ph = motion ? (now / 1600 + i * 0.5 + sq.id * 0.13) % 1 : 0.3 + i * 0.3;
@@ -695,9 +702,23 @@ export class BoardView {
       ctx.fill();
       ctx.drawImage(frames[walkFrame], sx - w / 2, sy - h / 2 - bob * px, w, h);
       if (p.id === this.activePid && !G.over) {
-        const ay = sy - h / 2 - px * 5 + (motion ? Math.round(Math.sin(now / 180) * 1.5) * px : 0);
+        // Smooth marker arrow above the active player.
+        const aw = 9 * this.dpr;
+        const ay = sy - h / 2 - 20 * this.dpr + (motion ? Math.sin(now / 180) * 3 * this.dpr : 0);
+        ctx.save();
+        ctx.imageSmoothingEnabled = true;
+        ctx.beginPath();
+        ctx.moveTo(sx - aw, ay);
+        ctx.lineTo(sx + aw, ay);
+        ctx.lineTo(sx, ay + aw * 1.15);
+        ctx.closePath();
+        ctx.lineJoin = 'round';
+        ctx.lineWidth = 3 * this.dpr;
+        ctx.strokeStyle = '#fff';
+        ctx.stroke();
         ctx.fillStyle = PLAYER_COLORS[p.color];
-        for (let r = 0; r < 3; r++) ctx.fillRect(sx - (3 - r) * px, ay + r * px, (3 - r) * 2 * px, px);
+        ctx.fill();
+        ctx.restore();
         if (this.stepsLeft > 0) {
           const bx = sx + w / 2 + px * 2;
           const by = sy - h / 2;

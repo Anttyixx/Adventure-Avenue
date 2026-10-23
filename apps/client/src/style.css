@@ -11,7 +11,6 @@
   --radius: 14px;
   --head: 'Lilita One', 'Trebuchet MS', sans-serif;
   --body: 'Atkinson Hyperlegible', system-ui, sans-serif;
-  --pixel: 'Pixelify Sans', monospace;
 }
 
 * {
@@ -451,10 +450,11 @@ input[type='range'] {
 }
 .seat,
 .lvl {
-  font-family: var(--pixel);
+  font-family: var(--head);
   font-size: 12px;
-  padding: 0 5px;
-  border-radius: 4px;
+  letter-spacing: 0.3px;
+  padding: 1px 6px;
+  border-radius: 999px;
   background: rgba(255, 255, 255, 0.1);
 }
 .lvl {
@@ -469,9 +469,8 @@ input[type='range'] {
   align-items: center;
 }
 .suits img {
-  width: 14px;
-  height: 14px;
-  image-rendering: pixelated;
+  width: 15px;
+  height: 15px;
 }
 .wild {
   display: inline-flex;
@@ -479,7 +478,7 @@ input[type='range'] {
   margin-right: 3px;
 }
 .wild-n {
-  font-family: var(--pixel);
+  font-family: var(--head);
   font-size: 10px;
   color: #c9a7ff;
   margin-left: 1px;
@@ -1054,7 +1053,7 @@ input[type='range'] {
   box-shadow: 0 0 12px 4px var(--accent);
 }
 .lane-coins {
-  font-family: var(--pixel);
+  font-family: var(--head);
   color: var(--accent);
 }
 

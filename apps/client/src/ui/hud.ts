@@ -18,7 +18,8 @@ import {
 } from '@aa/engine';
 import type { BoardView } from '../board';
 import { squareName } from '../names';
-import { portraitURL, suitIconURL, wildIconURL } from '../sprites';
+import { suitIconURL, wildIconURL } from '../icons';
+import { portraitURL } from '../sprites';
 import { clear, fmt, h } from './dom';
 import { marketView } from './market';
 

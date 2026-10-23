@@ -17,7 +17,7 @@ import {
 import { BoardView } from './board';
 import { squareName } from './names';
 import { clearSave, saveGame } from './save';
-import { SUIT_CHARS } from './sprites';
+import { SUIT_CHARS } from './icons';
 import { fmt, h } from './ui/dom';
 import { DerbyView, MemoryView, ReelsView, VentureView } from './ui/games';
 import { Hud, type PromptButton } from './ui/hud';

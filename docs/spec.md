@@ -498,8 +498,9 @@ renovating, stock dumps against a leader. These are good targets for a "hard" CP
 
 ## Interface and art
 
-One rule decides every asset: pixel art for characters and the things they carry (suits, coins, wild
-cards, coin effects), HD for the board and the interface.
+One rule decides every asset: only the player character sprites are pixel art. Everything else,
+including the board, the interface, suits, wild cards, coins and effects, is HD (vector). _(Changed
+by the owner on Oct 23, 2026; the original spec drew suits, coins and wild cards as pixel art.)_
 
 **Board (HD canvas).** Logical size 1300 x 800 with 100-unit squares, scaled to the container and to
 devicePixelRatio. The static board (grass, roads, pond, fountain, flower beds, trees, every square)
