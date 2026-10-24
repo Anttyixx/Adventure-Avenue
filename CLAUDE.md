@@ -6,6 +6,9 @@ A Fortune Street-style board game for the browser. Spec: `docs/spec.md`.
 
 - Work happens on `dev`. Only merge/push to `main` when the owner says the build is stable.
 - Pushing `dev` deploys the preview to `/dev/` on GitHub Pages; pushing `main` deploys the site root.
+- After every change, end the reply with the playable link for the branch that was updated:
+  - `dev`: https://anttyixx.github.io/Adventure-Avenue/dev/
+  - `main`: https://anttyixx.github.io/Adventure-Avenue/
 
 ## Layout
 
