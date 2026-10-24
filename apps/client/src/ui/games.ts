@@ -14,6 +14,7 @@ import {
   type ReelSymbol,
 } from '@aa/engine';
 import { portraitURL } from '../sprites';
+import { TIMING as T } from '../timing';
 import { clear, h } from './dom';
 import type { Hud } from './hud';
 
@@ -41,7 +42,7 @@ async function confirm(row: HTMLElement, human: boolean, speed: number) {
     window.addEventListener('keydown', key);
     await ok.done;
     window.removeEventListener('keydown', key);
-  } else await wait(1700 * speed);
+  } else await wait(T.cpuResult * speed);
 }
 
 // ------------------------------------------------------------------ venture grid
@@ -96,7 +97,7 @@ export class VentureView {
     this.paint(this.G.vg.owner);
     const b = this.panels[panel];
     b.classList.add('flip');
-    await wait(350 * speed);
+    await wait(T.ventureFlip * speed);
     clear(this.info);
     this.info.append(
       h(
@@ -263,7 +264,7 @@ export class MemoryView {
 
   async show(picked: number, prize: string, human: boolean, speed: number) {
     this.blocks[picked].classList.add('show', 'picked', 'pop');
-    await wait(500 * speed);
+    await wait(T.memoryReveal * speed);
     this.blocks.forEach((b) => b.classList.add('show'));
     this.result.textContent = prize;
     this.result.classList.add('pop');

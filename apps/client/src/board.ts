@@ -6,6 +6,7 @@
 import { PLAYER_COLORS, SUITS, isClosed, squareFee, type GameState, type Square } from '@aa/engine';
 import { drawCoin, drawSparkle, SUIT_CHARS } from './icons';
 import { SPRITE_H, SPRITE_W, spriteFrames } from './sprites';
+import { TIMING as T } from './timing';
 
 export const WORLD_W = 1300;
 export const WORLD_H = 800;
@@ -169,7 +170,7 @@ export class BoardView {
     dest.y -= 12;
     this.stepsLeft = left;
     t.walking = true;
-    const dur = 260 * this.speed;
+    const dur = T.step * this.speed;
     const t0 = performance.now();
     await new Promise<void>((resolve) => {
       const tick = () => {
@@ -196,7 +197,7 @@ export class BoardView {
     const dest = this.slotPos(pid, to);
     const from = { x: t.x, y: t.y };
     t.walking = true;
-    const dur = 520 * this.speed;
+    const dur = T.warp * this.speed;
     const t0 = performance.now();
     await new Promise<void>((resolve) => {
       const tick = () => {
@@ -314,11 +315,16 @@ export class BoardView {
   }
 
   async rollDie(value: number) {
-    const dur = (reducedMotion() ? 200 : 650) * this.speed;
-    this.die = { value, t0: performance.now(), rolling: true, until: performance.now() + dur };
-    await this.wait(reducedMotion() ? 200 : 650);
-    this.die = { value, t0: performance.now(), rolling: false, until: performance.now() + 1100 };
-    await this.wait(380);
+    const roll = reducedMotion() ? 250 : T.dieRoll;
+    this.die = { value, t0: performance.now(), rolling: true, until: performance.now() + roll * this.speed };
+    await this.wait(roll);
+    this.die = {
+      value,
+      t0: performance.now(),
+      rolling: false,
+      until: performance.now() + (T.dieHold + 700) * this.speed,
+    };
+    await this.wait(T.dieHold);
   }
 
   // ------------------------------------------------------------ choices

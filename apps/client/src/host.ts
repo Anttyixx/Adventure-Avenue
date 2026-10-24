@@ -18,6 +18,7 @@ import { BoardView } from './board';
 import { squareName } from './names';
 import { clearSave, saveGame } from './save';
 import { SUIT_CHARS } from './icons';
+import { FAST_CPU_SPEED, TIMING as T } from './timing';
 import { fmt, h } from './ui/dom';
 import { DerbyView, MemoryView, ReelsView, VentureView } from './ui/games';
 import { Hud, type PromptButton } from './ui/hud';
@@ -132,7 +133,7 @@ export class HotSeat implements GameIO {
 
   updateSpeed() {
     const p = this.game.current;
-    this.speed = this.fast && p?.cpu ? 0.3 : 1;
+    this.speed = this.fast && p?.cpu ? FAST_CPU_SPEED : 1;
     this.board.speed = this.speed;
   }
 
@@ -239,7 +240,7 @@ export class HotSeat implements GameIO {
           new Map(req.dests.map((d) => [d.node, d.path])),
         );
         this.board.previewRoute(ans as number);
-        await this.wait(650);
+        await this.wait(T.cpuPath);
         this.board.clearChoices();
         this.board.walkTarget = ans as number;
         this.board.glowColor = PLAYER_COLORS[p.color];
@@ -247,7 +248,7 @@ export class HotSeat implements GameIO {
       }
       case 'preRoll':
         this.hud.status(`${p.name} is thinking...`, p.color);
-        await this.wait(300);
+        await this.wait(T.cpuPreRoll);
         break;
       case 'venturePanel':
       case 'reels':
@@ -255,7 +256,7 @@ export class HotSeat implements GameIO {
       case 'pickRacer':
         break;
       default:
-        await this.wait(350);
+        await this.wait(T.cpuDecision);
     }
   }
 
@@ -306,6 +307,7 @@ export class HotSeat implements GameIO {
         );
         this.board.clearChoices();
         this.board.walkTarget = node;
+        await this.wait(T.afterChoice);
         return node;
       }
 
@@ -444,13 +446,13 @@ export class HotSeat implements GameIO {
         hud.activePid = e.pid;
         this.updateSpeed();
         this.refresh();
-        hud.banner(`${p.name}'s turn`, PLAYER_COLORS[p.color], 900);
+        hud.banner(`${p.name}'s turn`, PLAYER_COLORS[p.color], T.turnBanner);
         hud.status(`${p.name}'s turn`, p.color);
-        await this.wait(p.cpu ? 500 : 250);
+        await this.wait(p.cpu ? T.turnStartCpu : T.turnStartHuman);
         break;
       }
       case 'roundStart':
-        hud.banner(`Round ${e.round}`, '#ffd166', 1000);
+        hud.banner(`Round ${e.round}`, '#ffd166', T.roundBanner);
         this.refresh();
         break;
       case 'roll':
@@ -467,6 +469,7 @@ export class HotSeat implements GameIO {
       case 'land':
         board.ring(e.sq, '#ffffff');
         board.walkTarget = -1;
+        await this.wait(T.land);
         break;
       case 'money': {
         const from = this.playerPos(e.from);
@@ -475,18 +478,18 @@ export class HotSeat implements GameIO {
         if (e.to >= 0) board.floatText(to.x, to.y, `+${fmt(e.amount)}`, '#7cf29a');
         if (e.from >= 0) board.floatText(from.x, from.y + 22, `-${fmt(e.amount)}`, '#ff8a8a');
         this.refresh();
-        await this.wait(220);
+        await this.wait(T.money);
         break;
       }
       case 'owner':
         if (e.owner >= 0) board.ring(e.sq, '#ffd166', true);
         this.refresh();
-        await this.wait(250);
+        await this.wait(T.owner);
         break;
       case 'value':
         for (const id of e.sqs) board.ring(id, '#ffd166', true);
         this.refresh();
-        await this.wait(200);
+        await this.wait(T.value);
         break;
       case 'suit': {
         const pos = board.tokenPos(e.pid);
@@ -497,15 +500,19 @@ export class HotSeat implements GameIO {
           e.suit === 1 || e.suit === 2 ? '#ff6b6b' : '#ffffff',
         );
         this.refresh();
-        await this.wait(250);
+        await this.wait(T.suit);
         break;
       }
       case 'promote': {
         const p = G.players[e.pid];
         board.confetti(e.pid);
-        hud.banner(`${p.name} reached level ${e.level}! +${fmt(e.salary)}`, PLAYER_COLORS[p.color], 1600);
+        hud.banner(
+          `${p.name} reached level ${e.level}! +${fmt(e.salary)}`,
+          PLAYER_COLORS[p.color],
+          T.promoteBanner,
+        );
         this.refresh();
-        await this.wait(900);
+        await this.wait(T.promote);
         break;
       }
       case 'venture': {
@@ -547,16 +554,16 @@ export class HotSeat implements GameIO {
         break;
       case 'bankrupt': {
         const p = G.players[e.pid];
-        hud.banner(`${p.name} went bankrupt!`, '#e5484d', 2000);
+        hud.banner(`${p.name} went bankrupt!`, '#e5484d', T.bankruptBanner);
         this.refresh();
-        await this.wait(800);
+        await this.wait(T.bankrupt);
         break;
       }
       case 'gameOver':
         clearSave();
         board.activePid = -1;
         this.refresh();
-        await this.wait(600);
+        await this.wait(T.gameOver);
         showResults(hud, G, () => {
           this.destroy();
           this.onExit();
