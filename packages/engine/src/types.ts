@@ -81,9 +81,19 @@ export interface Player {
   stats: Stats;
 }
 
+export type LogKind =
+  'move' | 'money' | 'property' | 'card' | 'suit' | 'stock' | 'arcade' | 'effect' | 'alert';
+
 export interface LogLine {
   text: string;
+  /** The player the line is about (their color), if any. */
   color?: number;
+  /** Turn the line belongs to: the round and the index into `order` of the player taking it. */
+  round?: number;
+  turn?: number;
+  kind?: LogKind;
+  /** Other players affected by this action. */
+  involves?: number[];
 }
 
 export interface District {

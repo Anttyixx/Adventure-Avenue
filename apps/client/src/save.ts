@@ -14,8 +14,8 @@ export interface SaveInfo {
 export function saveGame(G: GameState) {
   try {
     const state = cloneState(G);
-    // Temporary effects reset at the start of the saved turn anyway; keep the last 30 log lines.
-    state.log = state.log.slice(0, 30);
+    // Temporary effects reset at the start of the saved turn anyway; keep the last 120 log lines.
+    state.log = state.log.slice(0, 120);
     localStorage.setItem(SAVE_KEY, JSON.stringify({ state, savedAt: Date.now() } satisfies SaveInfo));
   } catch {
     /* storage full or unavailable */

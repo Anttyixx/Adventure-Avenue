@@ -59,6 +59,7 @@ const list: Card[] = [
       const n = rollDie(g.G);
       await g.emit({ type: 'roll', pid: p.id, value: n });
       await g.pay(null, p, 50 * n, 'Venture');
+      await g.log(`${p.name} rolled ${n} and the bank paid ${50 * n}G.`, p.id, 'money');
     },
   },
   {
@@ -69,28 +70,46 @@ const list: Card[] = [
       const n = rollDie(g.G);
       await g.emit({ type: 'roll', pid: p.id, value: n });
       const q = g.leader(p);
-      if (q) await g.pay(q, p, 40 * n, 'Venture');
+      if (q) {
+        await g.pay(q, p, 40 * n, 'Venture');
+        await g.log(`${p.name} rolled ${n} and took ${40 * n}G from ${q.name}.`, p.id, 'money', [q.id]);
+      }
     },
   },
   {
     id: 'lose10',
     title: 'Pickpocket',
     text: 'Lose 10% of your cash.',
-    run: (g, p) => g.pay(p, null, Math.floor(Math.max(0, p.cash) * 0.1), 'Venture'),
+    run: async (g, p) => {
+      const amt = Math.floor(Math.max(0, p.cash) * 0.1);
+      await g.pay(p, null, amt, 'Venture');
+      await g.log(`${p.name} lost ${amt}G.`, p.id, 'money');
+    },
   },
   {
     id: 'giveAll30',
     title: 'Party time',
     text: 'Give every other player 30G.',
     run: async (g, p) => {
-      for (const q of g.G.players) if (q !== p && !q.bankrupt) await g.pay(p, q, 30, 'Venture');
+      const others = g.G.players.filter((q) => q !== p && !q.bankrupt);
+      for (const q of others) await g.pay(p, q, 30, 'Venture');
+      await g.log(
+        `${p.name} gave everyone 30G.`,
+        p.id,
+        'money',
+        others.map((q) => q.id),
+      );
     },
   },
   {
     id: 'halfSalary',
     title: 'Bonus pay',
     text: 'Receive half a salary.',
-    run: (g, p) => g.pay(null, p, Math.floor(salary(g.G, p) / 2), 'Venture'),
+    run: async (g, p) => {
+      const amt = Math.floor(salary(g.G, p) / 2);
+      await g.pay(null, p, amt, 'Venture');
+      await g.log(`${p.name} received ${amt}G in bonus pay.`, p.id, 'money');
+    },
   },
   {
     id: 'giveLast',
@@ -98,14 +117,22 @@ const list: Card[] = [
     text: 'Give 10% of your cash to the player in last place.',
     run: async (g, p) => {
       const q = g.last(p);
-      if (q) await g.pay(p, q, Math.floor(Math.max(0, p.cash) * 0.1), 'Venture');
+      if (q) {
+        const amt = Math.floor(Math.max(0, p.cash) * 0.1);
+        await g.pay(p, q, amt, 'Venture');
+        await g.log(`${p.name} gave ${amt}G to ${q.name}.`, p.id, 'money', [q.id]);
+      }
     },
   },
   {
     id: 'perProperty',
     title: 'Property dividend',
     text: 'Receive 30G for every property you own.',
-    run: (g, p) => g.pay(null, p, 30 * ownedSquares(g.G, p.id).length, 'Venture'),
+    run: async (g, p) => {
+      const amt = 30 * ownedSquares(g.G, p.id).length;
+      await g.pay(null, p, amt, 'Venture');
+      if (amt) await g.log(`${p.name} received ${amt}G for their properties.`, p.id, 'money');
+    },
   },
   // Shop value
   {
@@ -129,7 +156,7 @@ const list: Card[] = [
     text: "A random district's shops rise 15% in value.",
     run: async (g) => {
       const d = randInt(g.G, g.G.districts.length);
-      await g.log(`${g.G.districts[d].name} is booming!`);
+      await g.log(`${g.G.districts[d].name} is booming!`, undefined, 'property');
       await g.scaleShops(
         g.G.nodes.filter((s) => s.d === d && isShopLike(s)),
         1.15,
@@ -155,7 +182,7 @@ const list: Card[] = [
       await g.emit({ type: 'roll', pid: p.id, value: n });
       if (n % 2) p.closed = true;
       else for (const q of g.G.players) if (q !== p) q.closed = true;
-      await g.log(n % 2 ? `${p.name}'s shops close.` : `Everyone else's shops close.`, p.id);
+      await g.log(n % 2 ? `${p.name}'s shops close.` : `Everyone else's shops close.`, p.id, 'effect');
     },
   },
   {
@@ -240,7 +267,7 @@ const list: Card[] = [
       const d = await g.ask({ kind: 'pickDistrict', pid: p.id, purpose: 'free20', options });
       const dd = options.includes(d) ? d : 0;
       p.shares[dd] += 20;
-      await g.log(`${p.name} received 20 ${g.G.districts[dd].name} shares.`, p.id);
+      await g.log(`${p.name} received 20 ${g.G.districts[dd].name} shares.`, p.id, 'stock');
     },
   },
   {
@@ -254,7 +281,7 @@ const list: Card[] = [
       const dd = options.includes(d) ? d : 0;
       g.G.factor[dd] *= 1.2;
       clampFactor(g.G, dd);
-      await g.log(`${g.G.districts[dd].name} stock rose to ${stockPrice(g.G, dd)}G.`, p.id);
+      await g.log(`${g.G.districts[dd].name} stock rose to ${stockPrice(g.G, dd)}G.`, p.id, 'stock');
     },
   },
   {
@@ -268,7 +295,7 @@ const list: Card[] = [
       const dd = options.includes(d) ? d : 0;
       g.G.factor[dd] *= 0.8;
       clampFactor(g.G, dd);
-      await g.log(`${g.G.districts[dd].name} stock fell to ${stockPrice(g.G, dd)}G.`, p.id);
+      await g.log(`${g.G.districts[dd].name} stock fell to ${stockPrice(g.G, dd)}G.`, p.id, 'stock');
     },
   },
   {

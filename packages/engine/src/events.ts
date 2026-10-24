@@ -3,6 +3,7 @@
  * would broadcast them. The state has already been updated when an event arrives.
  */
 import type { MemoryPrize, ReelSymbol, TradeOffer } from './decisions';
+import type { LogLine } from './types';
 
 export type GameEvent =
   | { type: 'turnStart'; pid: number; round: number }
@@ -30,5 +31,5 @@ export type GameEvent =
   | { type: 'trade'; offer: TradeOffer; accepted: boolean }
   | { type: 'bankrupt'; pid: number }
   | { type: 'gameOver'; winner: number; reason: string }
-  | { type: 'log'; text: string; color?: number }
+  | ({ type: 'log' } & LogLine)
   | { type: 'notice'; text: string; pid?: number };

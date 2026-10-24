@@ -39,7 +39,15 @@ import {
   vacate,
 } from './rules';
 import { resetVentureGrid } from './setup';
-import { SUITS, type BuildingKey, type GameState, type Player, type Square } from './types';
+import {
+  SUITS,
+  type BuildingKey,
+  type GameState,
+  type LogKind,
+  type LogLine,
+  type Player,
+  type Square,
+} from './types';
 
 export interface GameIO {
   decide<T extends DecisionKind>(req: DecisionRequest<T>): Promise<DecisionAnswer<T>>;
@@ -84,10 +92,14 @@ export class Game {
     await this.io.emit(e);
   }
 
-  async log(text: string, color?: number) {
-    this.G.log.unshift({ text, color });
-    if (this.G.log.length > 60) this.G.log.length = 60;
-    await this.emit({ type: 'log', text, color });
+  /** Add a log line to the current turn. `involves` lists other players the action affects. */
+  async log(text: string, color?: number, kind?: LogKind, involves?: number[]) {
+    const line: LogLine = { text, color, round: this.G.round, turn: this.G.turn, kind };
+    const others = (involves ?? []).filter((id) => id >= 0 && id !== color);
+    if (others.length) line.involves = [...new Set(others)];
+    this.G.log.unshift(line);
+    if (this.G.log.length > 300) this.G.log.length = 300;
+    await this.emit({ type: 'log', ...line });
   }
 
   /** Move money. `from`/`to` null means the bank. */
@@ -154,7 +166,7 @@ export class Game {
     G.winner = winner.id;
     G.endReason = reason;
     G.hist.push(G.players.map((q) => netWorth(G, q)));
-    await this.log(`${winner.name} wins! ${reason}.`, winner.id);
+    await this.log(`${winner.name} wins! ${reason}.`, winner.id, 'alert');
     await this.emit({ type: 'gameOver', winner: winner.id, reason });
   }
 
@@ -192,7 +204,7 @@ export class Game {
     sq.lv = 0;
     sq.toll = K.toll0;
     await this.emit({ type: 'value', sqs: [sq.id] });
-    await this.log(`${p.name} renovated into a ${buildingName(b)}.`, p.id);
+    await this.log(`${p.name} renovated into a ${buildingName(b)}.`, p.id, 'property');
     this.expandAndAnnounce(p.id, sq.g);
   }
 
@@ -201,7 +213,7 @@ export class Game {
   async rollAndMove(p: Player) {
     const n = rollDie(this.G);
     await this.emit({ type: 'roll', pid: p.id, value: n });
-    await this.log(`${p.name} rolled a ${n}.`, p.id);
+    await this.log(`${p.name} rolled a ${n}.`, p.id, 'move');
     await this.move(p, n);
   }
 
@@ -312,7 +324,7 @@ export class Game {
     if (si < 0 || p.suits[si]) return;
     p.suits[si] = true;
     await this.emit({ type: 'suit', pid: p.id, suit: si });
-    await this.log(`${p.name} collected the ${SUITS[si]}.`, p.id);
+    await this.log(`${p.name} collected the ${SUITS[si]}.`, p.id, 'suit');
   }
 
   async bankVisit(p: Player, landed: boolean) {
@@ -334,7 +346,7 @@ export class Game {
     p.stats.salary += pay;
     await this.pay(null, p, pay, 'Salary');
     await this.emit({ type: 'promote', pid: p.id, level: p.level, salary: pay });
-    await this.log(`${p.name} was promoted to level ${p.level} and earned ${pay}G.`, p.id);
+    await this.log(`${p.name} was promoted to level ${p.level} and earned ${pay}G.`, p.id, 'suit');
   }
 
   // ---------------------------------------------------------------- landing
@@ -363,13 +375,17 @@ export class Game {
         return this.rollAgain(p);
       case 'break':
         p.onBreak = true;
-        await this.log(`${p.name} takes a break: their shops close until their next turn.`, p.id);
+        await this.log(`${p.name} takes a break: their shops close until their next turn.`, p.id, 'effect');
         return;
       case 'boon':
       case 'boom': {
         const rate = sq.t === 'boon' ? K.boon : K.boom;
         p.boon = Math.max(p.boon, rate);
-        await this.log(`${p.name} earns ${rate * 100}% commission on every fee until their next turn.`, p.id);
+        await this.log(
+          `${p.name} earns ${rate * 100}% commission on every fee until their next turn.`,
+          p.id,
+          'effect',
+        );
         return;
       }
       case 'broker':
@@ -378,7 +394,7 @@ export class Game {
       case 'back': {
         const other = G.nodes.find((s) => s.t === 'back' && s.id !== sq.id);
         if (other) {
-          await this.log(`${p.name} slipped down the backstreet.`, p.id);
+          await this.log(`${p.name} slipped down the backstreet.`, p.id, 'move');
           await this.warp(p, other.id);
         }
         return;
@@ -392,11 +408,11 @@ export class Game {
 
   async rollAgain(p: Player) {
     if (this.chain >= K.rollChainMax) {
-      await this.log(`${p.name} has rolled enough this turn.`, p.id);
+      await this.log(`${p.name} has rolled enough this turn.`, p.id, 'move');
       return;
     }
     this.chain++;
-    await this.log(`${p.name} rolls again!`, p.id);
+    await this.log(`${p.name} rolls again!`, p.id, 'move');
     await this.rollAndMove(p);
   }
 
@@ -407,7 +423,7 @@ export class Game {
     let target = await this.ask({ kind: 'cannonTarget', pid: p.id, options });
     if (!options.includes(target)) target = options[0];
     const q = G.players[target];
-    await this.log(`${p.name} was fired from the cannon to ${q.name}.`, p.id);
+    await this.log(`${p.name} was fired from the cannon to ${q.name}.`, p.id, 'move', [q.id]);
     await this.warp(p, q.node);
     const dest = G.nodes[q.node];
     if (SUIT_TYPES.includes(dest.t) || dest.t === 'change') await this.collectSuit(p, dest);
@@ -433,7 +449,7 @@ export class Game {
     const G = this.G;
     const owner = G.players[sq.owner];
     if (isClosed(owner)) {
-      await this.log(`${owner.name}'s shop is closed. No fee!`, p.id);
+      await this.log(`${owner.name}'s shop is closed. No fee!`, p.id, 'effect', [owner.id]);
       return;
     }
     await this.chargeFee(p, sq, shopFee(G, sq));
@@ -450,14 +466,14 @@ export class Game {
     const price = sq.value * K.buyoutX;
     await this.pay(p, owner, sq.value * K.buyoutOwnerX, 'Buyout');
     await this.pay(p, null, price - sq.value * K.buyoutOwnerX, 'Buyout');
-    await this.log(`${p.name} bought out ${owner.name}'s shop for ${price}G.`, p.id);
+    await this.log(`${p.name} bought out ${owner.name}'s shop for ${price}G.`, p.id, 'property', [owner.id]);
     await this.transfer(sq, p.id);
   }
 
   /** Buy an unowned square: pay `price` to `seller` (null = bank) and run expansion. */
   async buySquare(p: Player, sq: Square, price: number, seller: Player | null, verb: string) {
     await this.pay(p, seller, price, 'Purchase');
-    await this.log(`${p.name} ${verb} a shop for ${price}G.`, p.id);
+    await this.log(`${p.name} ${verb} a shop for ${price}G.`, p.id, 'property');
     await this.transfer(sq, p.id);
   }
 
@@ -486,7 +502,7 @@ export class Game {
     await this.pay(p, null, amount, 'Investment');
     sq.value += amount;
     await this.emit({ type: 'value', sqs: [sq.id] });
-    await this.log(`${p.name} invested ${amount}G.`, p.id);
+    await this.log(`${p.name} invested ${amount}G.`, p.id, 'property');
   }
 
   /** A rival pays a fee on `sq`; dividends and commissions are paid on the fee actually paid. */
@@ -497,7 +513,7 @@ export class Game {
     await this.pay(payer, owner, fee, 'Fee');
     payer.stats.feesPaid += fee;
     owner.stats.feesEarned += fee;
-    await this.log(`${payer.name} paid ${owner.name} ${fee}G.`, payer.id);
+    await this.log(`${payer.name} paid ${owner.name} ${fee}G.`, payer.id, 'money', [owner.id]);
     if (G.rules === 'standard' && sq.d >= 0) {
       for (const q of G.players) {
         if (q.id === payer.id || q.bankrupt || q.shares[sq.d] <= 0) continue;
@@ -505,6 +521,7 @@ export class Game {
         if (div > 0) {
           q.stats.dividends += div;
           await this.pay(null, q, div, 'Dividend');
+          await this.log(`${q.name} earned ${div}G in dividends.`, q.id, 'stock');
         }
       }
     }
@@ -514,6 +531,7 @@ export class Game {
       if (com > 0) {
         q.stats.commission += com;
         await this.pay(null, q, com, 'Commission');
+        await this.log(`${q.name} earned ${com}G in commission.`, q.id, 'money');
       }
     }
   }
@@ -542,14 +560,14 @@ export class Game {
       sq.value = cost;
       sq.lv = 0;
       sq.toll = K.toll0;
-      await this.log(`${p.name} built a ${buildingName(b)}.`, p.id);
+      await this.log(`${p.name} built a ${buildingName(b)}.`, p.id, 'property');
       await this.transfer(sq, p.id);
       return;
     }
     if (sq.owner === p.id) return this.ownPlot(p, sq);
     const owner = G.players[sq.owner];
     if (isClosed(owner)) {
-      await this.log(`${owner.name}'s ${buildingName(sq.b!)} is closed.`, p.id);
+      await this.log(`${owner.name}'s ${buildingName(sq.b!)} is closed.`, p.id, 'effect', [owner.id]);
       return;
     }
     switch (sq.b) {
@@ -557,7 +575,12 @@ export class Game {
         return this.payToll(p, sq);
       case 'agency':
         p.onBreak = true;
-        await this.log(`${p.name} was talked into a break at the Estate Agency. Their shops close.`, p.id);
+        await this.log(
+          `${p.name} was talked into a break at ${owner.name}'s Estate Agency. Their shops close.`,
+          p.id,
+          'effect',
+          [owner.id],
+        );
         return;
       case 'star3':
         return this.rivalShop(p, sq);
@@ -582,7 +605,11 @@ export class Game {
         sq.lv++;
         sq.value += cost;
         await this.emit({ type: 'value', sqs: [sq.id] });
-        await this.log(`${p.name} upgraded the circus. Show fee is now ${K.circus[sq.lv]}G.`, p.id);
+        await this.log(
+          `${p.name} upgraded the circus. Show fee is now ${K.circus[sq.lv]}G.`,
+          p.id,
+          'property',
+        );
         return;
       }
       case 'balloon': {
@@ -597,18 +624,23 @@ export class Game {
           optional: true,
         });
         if (to == null || !options.includes(to)) return;
-        await this.log(`${p.name} took the balloon.`, p.id);
+        await this.log(`${p.name} took the balloon.`, p.id, 'move');
         await this.warp(p, to);
         return this.landAfterWarp(p);
       }
       case 'tax': {
         const amt = Math.floor(Math.max(0, netWorth(G, p)) * K.taxOwner);
-        await this.log(`The Tax Office pays ${p.name} a ${amt}G rebate.`, p.id);
+        await this.log(`The Tax Office pays ${p.name} a ${amt}G rebate.`, p.id, 'money');
         return this.pay(null, p, amt, 'Tax rebate');
       }
       case 'home': {
         const others = G.players.filter((q) => q.id !== p.id && !q.bankrupt);
-        await this.log(`${p.name} called everyone home!`, p.id);
+        await this.log(
+          `${p.name} called everyone home!`,
+          p.id,
+          'move',
+          others.map((q) => q.id),
+        );
         for (const q of others) await this.warp(q, sq.id);
         return;
       }
@@ -657,10 +689,10 @@ export class Game {
       text: card.text,
       line,
     });
-    await this.log(`Venture: ${card.title}`, p.id);
+    await this.log(`Venture card: ${card.title}. ${card.text}`, p.id, 'card');
     const bonus = lineBonus(line);
     if (bonus) {
-      await this.log(`${p.name} made a line of ${line} and earned ${bonus}G.`, p.id);
+      await this.log(`${p.name} made a line of ${line} and earned ${bonus}G.`, p.id, 'card');
       await this.pay(null, p, bonus, 'Line bonus');
     }
     await card.run(this, p);
@@ -682,7 +714,7 @@ export class Game {
     await this.pay(p, null, cost, 'Stock');
     p.shares[d] += n;
     bumpFactor(G, d, true, n);
-    await this.log(`${p.name} bought ${n} ${G.districts[d].name} shares for ${cost}G.`, p.id);
+    await this.log(`${p.name} bought ${n} ${G.districts[d].name} shares for ${cost}G.`, p.id, 'stock');
   }
 
   async sellStock(p: Player, d: number, n: number, premium: number) {
@@ -694,7 +726,7 @@ export class Game {
     p.shares[d] -= n;
     bumpFactor(G, d, false, n);
     await this.pay(null, p, amount, 'Stock sale');
-    await this.log(`${p.name} sold ${n} ${G.districts[d].name} shares for ${amount}G.`, p.id);
+    await this.log(`${p.name} sold ${n} ${G.districts[d].name} shares for ${amount}G.`, p.id, 'stock');
   }
 
   // ---------------------------------------------------------------- trades and auctions
@@ -748,9 +780,9 @@ export class Game {
         await this.expandAndAnnounce(a.id, g);
         await this.expandAndAnnounce(b.id, g);
       }
-      await this.log(`${a.name} and ${b.name} made a trade.`, a.id);
+      await this.log(`${a.name} and ${b.name} made a trade.`, a.id, 'property', [b.id]);
     } else {
-      await this.log(`${b.name} declined ${a.name}'s trade.`, b.id);
+      await this.log(`${b.name} declined ${a.name}'s trade.`, a.id, 'property', [b.id]);
     }
     await this.emit({ type: 'trade', offer, accepted: !!accepted });
   }
@@ -758,7 +790,7 @@ export class Game {
   async voluntaryAuction(p: Player, sqId: number) {
     const sq = this.G.nodes[sqId];
     if (!sq || sq.owner !== p.id || !isProperty(sq)) return;
-    await this.log(`${p.name} put a property up for auction.`, p.id);
+    await this.log(`${p.name} put a property up for auction.`, p.id, 'property');
     await this.auction(sq, p, sq.value);
   }
 
@@ -807,13 +839,13 @@ export class Game {
       }
     }
     if (highBidder < 0) {
-      await this.log('Nobody bid. No sale.');
+      await this.log('Nobody bid. No sale.', seller?.id, 'property');
       await this.emit({ type: 'auctionEnd', sq: sq.id, winner: -1, price: 0 });
       return;
     }
     const w = G.players[highBidder];
     await this.pay(w, seller, high, 'Auction');
-    await this.log(`${w.name} won the auction for ${high}G.`, w.id);
+    await this.log(`${w.name} won the auction for ${high}G.`, w.id, 'property', seller ? [seller.id] : []);
     await this.transfer(sq, w.id);
     await this.emit({ type: 'auctionEnd', sq: sq.id, winner: w.id, price: high });
   }
@@ -850,7 +882,7 @@ export class Game {
       } else {
         const sq = G.nodes[a.id];
         await this.pay(null, p, a.amount, 'Sold to bank');
-        await this.log(`${p.name} sold a property to the bank for ${a.amount}G.`, p.id);
+        await this.log(`${p.name} sold a property to the bank for ${a.amount}G.`, p.id, 'property');
         if (sq.t === 'plot') {
           vacate(sq);
           await this.emit({ type: 'owner', sq: sq.id, owner: -1 });
@@ -872,7 +904,7 @@ export class Game {
       await this.emit({ type: 'owner', sq: sq.id, owner: -1 });
     }
     p.shares = p.shares.map(() => 0);
-    await this.log(`${p.name} went bankrupt!`, p.id);
+    await this.log(`${p.name} went bankrupt!`, p.id, 'alert');
     await this.emit({ type: 'bankrupt', pid: p.id });
     const best = ranking(G)[0];
     if (best) await this.endGame(best, `${p.name} went bankrupt`);

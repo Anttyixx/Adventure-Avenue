@@ -21,6 +21,7 @@ import { squareName } from '../names';
 import { suitIconURL, wildIconURL } from '../icons';
 import { portraitURL } from '../sprites';
 import { clear, fmt, h } from './dom';
+import { logView } from './log';
 import { marketView } from './market';
 
 export interface PromptButton<T> {
@@ -258,6 +259,9 @@ export class Hud {
   }
 
   renderDrawer() {
+    // Keep the reader's place when the drawer refreshes during a turn.
+    const keep = this.drawer.querySelector('.log-list')?.scrollTop ?? 0;
+    const keepDrawer = this.drawer.scrollTop;
     clear(this.drawer);
     if (!this.drawerMode) return;
     const close = h(
@@ -266,23 +270,14 @@ export class Hud {
       'Close',
     );
     if (this.drawerMode === 'log') {
+      const G = this.G;
       this.drawer.append(
         h('div', { class: 'drawer-head' }, h('h3', null, 'Game log'), close),
-        h(
-          'div',
-          { class: 'log-list' },
-          ...this.G.log.map((l) =>
-            h(
-              'div',
-              { class: 'log-line' },
-              l.color != null && l.color >= 0
-                ? h('span', { class: 'dot', style: `background:${PLAYER_COLORS[l.color]}` })
-                : null,
-              l.text,
-            ),
-          ),
-        ),
+        logView(G, `${G.round}:${G.turn}`),
       );
+      const list = this.drawer.querySelector('.log-list');
+      if (list) list.scrollTop = keep;
+      this.drawer.scrollTop = keepDrawer;
     } else {
       this.drawer.append(
         h('div', { class: 'drawer-head' }, h('h3', null, 'Stock market'), close),

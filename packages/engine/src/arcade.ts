@@ -18,7 +18,7 @@ export const DERBY_LENGTH = 100;
 
 export async function playArcade(g: Game, p: Player) {
   const which = randInt(g.G, 3);
-  await g.log(`${p.name} visits the arcade.`, p.id);
+  await g.log(`${p.name} visits the arcade.`, p.id, 'arcade');
   if (which === 0) return luckyReels(g, p);
   if (which === 1) return memoryBlocks(g, p);
   return coinDerby(g, p);
@@ -70,7 +70,7 @@ export async function luckyReels(g: Game, p: Player) {
     await g.pay(null, p, K.reels.pair * L, 'Lucky Reels');
   }
   await g.emit({ type: 'reels', pid: p.id, result, prize });
-  await g.log(`Lucky Reels: ${prize}.`, p.id);
+  await g.log(`Lucky Reels: ${p.name} won ${prize}.`, p.id, 'arcade');
 }
 
 export async function memoryBlocks(g: Game, p: Player) {
@@ -112,7 +112,7 @@ export async function memoryBlocks(g: Game, p: Player) {
       break;
   }
   await g.emit({ type: 'memory', pid: p.id, prizes, picked, prize: text });
-  await g.log(`Memory Blocks: ${text}.`, p.id);
+  await g.log(`Memory Blocks: ${p.name} won ${text}.`, p.id, 'arcade');
 }
 
 export async function coinDerby(g: Game, p: Player) {
@@ -153,8 +153,11 @@ export async function coinDerby(g: Game, p: Player) {
     if (!q) continue;
     let amount = coins[i] * K.derby.perCoin;
     if (i === winner) amount += K.derby.winner * q.level;
-    if (amount > 0) await g.pay(null, q, amount, 'Coin Derby');
+    if (amount > 0) {
+      await g.pay(null, q, amount, 'Coin Derby');
+      await g.log(`${q.name} won ${amount}G in the Coin Derby.`, q.id, 'arcade');
+    }
   }
   const wq = backers[winner] >= 0 ? G.players[backers[winner]] : null;
-  await g.log(`Coin Derby: racer ${winner + 1} won${wq ? ` for ${wq.name}` : ''}!`, wq?.id);
+  await g.log(`Coin Derby: racer ${winner + 1} won${wq ? ` for ${wq.name}` : ''}!`, wq?.id, 'arcade');
 }

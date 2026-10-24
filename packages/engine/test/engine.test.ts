@@ -196,3 +196,17 @@ describe('simulation', () => {
     expect(r.reason).toMatch(/Round limit/);
   });
 });
+
+describe('log', () => {
+  it('tags lines with the turn they belong to, their kind and the other players involved', async () => {
+    const { G, game } = makeGame('standard', (r) => (r.kind === 'buyout' ? false : undefined));
+    const [a, b] = G.players;
+    const shop = at(G, 6, 0);
+    shop.owner = b.id;
+    G.round = 3;
+    G.turn = 2;
+    await game.landShop(a, shop);
+    const line = G.log.find((l) => l.text.includes('paid'))!;
+    expect(line).toMatchObject({ color: a.id, round: 3, turn: 2, kind: 'money', involves: [b.id] });
+  });
+});
