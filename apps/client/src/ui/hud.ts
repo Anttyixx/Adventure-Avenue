@@ -57,6 +57,8 @@ export class Hud {
   activePid = -1;
   drawerMode: 'market' | 'log' | null = null;
   cardsHidden = false;
+  /** Extra space covered on the left (e.g. the UI Lab panel). */
+  leftInset = 0;
   private shown = new Map<number, { nw: number; cash: number }>();
   private cardEls = new Map<number, HTMLElement>();
   private promptResolve: ((v: any) => void) | null = null;
@@ -143,7 +145,7 @@ export class Hud {
     let right = 0;
     if (!this.cardsHidden && !portraitStack && cards.width) right = Math.min(W * 0.4, W - cards.left + 8);
     const bottom = window.innerHeight - Math.min(bar.top, portraitStack ? cards.top : bar.top) + 4;
-    this.board.insets = { top: title.bottom + 6, right, bottom: Math.max(0, bottom), left: 0 };
+    this.board.insets = { top: title.bottom + 6, right, bottom: Math.max(0, bottom), left: this.leftInset };
   }
 
   // ------------------------------------------------------------ state rendering

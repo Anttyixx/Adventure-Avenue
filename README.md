@@ -15,6 +15,13 @@ empty seats.
 | `dev`  | Work in progress; every change lands here first | `/dev/`     |
 | `main` | Stable builds, promoted from `dev`              | site root   |
 
+## Testing UI elements
+
+Test builds (anything but `main`) show a build badge in the bottom-right corner. Tap it 5 times
+to open the dev menu, which links to the **UI Lab**: a page for viewing and triggering every UI
+element (player cards, prompts, banners, board effects, dialogs, the venture grid, minigames, the
+log, the market and the results screen). Direct link: `/dev/#ui-lab`.
+
 ## Development
 
 ```bash

@@ -377,7 +377,7 @@ input[type='range'] {
 .cards-wrap {
   position: absolute;
   right: 10px;
-  bottom: 10px;
+  bottom: calc(10px + var(--badge-h, 0px));
   width: 300px;
   display: flex;
   flex-direction: column;
@@ -1297,7 +1297,7 @@ input[type='range'] {
 .hud.upright .cards-wrap {
   left: 6px;
   right: 6px;
-  bottom: 6px;
+  bottom: calc(6px + var(--badge-h, 0px));
   width: auto;
 }
 .hud.upright .cards {
@@ -1407,5 +1407,132 @@ input[type='range'] {
   *::after {
     animation: none !important;
     transition: none !important;
+  }
+}
+
+/* ------------------------------------------------------------ build badge and dev menu */
+
+.build-badge {
+  position: fixed;
+  right: 6px;
+  bottom: 4px;
+  z-index: 30;
+  height: 20px;
+  padding: 0 9px;
+  border: 1px solid var(--glass-line);
+  border-radius: 999px;
+  background: rgba(16, 26, 51, 0.88);
+  color: var(--muted);
+  font-size: 11px;
+  cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.build-badge b {
+  color: var(--accent);
+  margin-right: 4px;
+}
+.badge-hint {
+  color: var(--text);
+}
+.dev-wrap {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background: rgba(5, 10, 25, 0.55);
+}
+.dev-menu {
+  width: min(520px, 100%);
+  max-height: 100%;
+  overflow: auto;
+  padding: 16px;
+  background: rgba(16, 26, 51, 0.97);
+}
+.dev-menu h4 {
+  margin: 14px 0 6px;
+  font-family: var(--head);
+  font-weight: 400;
+  color: var(--accent);
+}
+.dev-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 6px;
+}
+
+/* ------------------------------------------------------------ UI Lab */
+
+.lab-panel {
+  position: absolute;
+  top: 56px;
+  left: 10px;
+  width: 310px;
+  max-height: calc(100% - 200px);
+  display: flex;
+  flex-direction: column;
+  z-index: 6;
+  background: rgba(16, 26, 51, 0.92);
+}
+.lab-panel.collapsed .lab-body {
+  display: none;
+}
+.lab-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--glass-line);
+}
+.lab-head h3 {
+  margin: 0;
+  font-family: var(--head);
+  font-weight: 400;
+  color: var(--accent);
+}
+.lab-body {
+  overflow: auto;
+  padding: 4px 10px 10px;
+}
+.lab-sec {
+  padding: 6px 0 8px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+.lab-sec h4 {
+  margin: 4px 0;
+  font-family: var(--head);
+  font-weight: 400;
+}
+.lab-sec .hint {
+  margin: 0 0 4px;
+}
+.lab-sec.flash {
+  animation: labflash 1.6s ease-out;
+  border-radius: 8px;
+}
+@keyframes labflash {
+  0%,
+  40% {
+    background: rgba(255, 209, 102, 0.18);
+  }
+}
+.lab-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 4px;
+}
+.lab-row .btn.small {
+  font-size: 12px;
+  padding: 5px 8px;
+}
+@media (max-height: 500px), (max-width: 760px) {
+  .lab-panel {
+    width: 250px;
+    top: 44px;
+    max-height: calc(100% - 120px);
   }
 }

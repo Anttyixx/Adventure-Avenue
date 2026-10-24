@@ -93,12 +93,21 @@ export class BoardView {
     this.canvas.addEventListener('pointerleave', () => this.onHover?.(null, 0, 0));
     this.canvas.addEventListener('click', this.click);
     this.raf = requestAnimationFrame(this.frame);
+    // The static board is cached; redraw it once the web fonts arrive so labels use them.
+    document.fonts?.ready.then(() => (this.dirty = true));
+    document.fonts?.addEventListener('loadingdone', this.fontsLoaded);
+    for (const f of ['20px "Lilita One"', '700 12px "Atkinson Hyperlegible"']) void document.fonts?.load(f);
   }
+
+  private fontsLoaded = () => {
+    this.dirty = true;
+  };
 
   destroy() {
     this.alive = false;
     cancelAnimationFrame(this.raf);
     window.removeEventListener('resize', this.resize);
+    document.fonts?.removeEventListener('loadingdone', this.fontsLoaded);
     this.canvas.remove();
   }
 
