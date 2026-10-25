@@ -571,8 +571,8 @@ zoom, more on small screens) and eased smoothly as they move. It frames the play
 screen not covered by overlays, so tokens never sit under the cards or action bar, and it stops
 panning at the board edge. The camera switches to the full board automatically when a choice needs
 it (more than 4 glowing squares, or a glowing square outside the follow view), and always when the
-game ends. The "Full board" / "Follow player" button (or the V key) toggles the view, and the choice
-is saved per device. The die and on-board pop-ups are drawn at screen size so they stay readable at
+game ends. The "Full board" / "Follow player" button (or the V key) toggles the view for the current
+game; every game (new or continued) starts in Follow player. The die and on-board pop-ups are drawn at screen size so they stay readable at
 any zoom. Taps on the board are converted through the camera so square picking works in both views.
 
 Phone held sideways: the same overlays in compact form. Phone held upright: a "turn your phone

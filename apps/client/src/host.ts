@@ -35,7 +35,6 @@ import {
 } from './ui/modals';
 import { showResults } from './ui/results';
 
-const VIEW_KEY = 'adventure-avenue-view';
 const FAST_KEY = 'adventure-avenue-fast';
 
 const never = <T>() => new Promise<T>(() => {});
@@ -76,9 +75,9 @@ export class HotSeat implements GameIO {
     this.game = new Game(G, this);
     this.board.setState(G);
     this.hud.render(G);
-    const view = readPref(VIEW_KEY) === 'full' ? 'full' : 'follow';
-    this.board.setMode(view);
-    this.hud.setViewLabel(view);
+    // Every game starts following the player; Full board only lasts for the current game.
+    this.board.setMode('follow');
+    this.hud.setViewLabel('follow');
     this.fast = readPref(FAST_KEY) === '1';
     this.hud.setFastLabel(this.fast);
     window.addEventListener('keydown', this.onKey);
@@ -123,7 +122,6 @@ export class HotSeat implements GameIO {
     const m = this.board.mode === 'follow' ? 'full' : 'follow';
     this.board.setMode(m);
     this.hud.setViewLabel(m);
-    writePref(VIEW_KEY, m);
   }
 
   toggleFast() {
