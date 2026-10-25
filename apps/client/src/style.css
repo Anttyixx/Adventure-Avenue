@@ -525,7 +525,7 @@ input[type='range'] {
   top: 56px;
   right: 10px;
   bottom: 10px;
-  width: min(560px, calc(100vw - 20px));
+  width: min(780px, calc(100vw - 20px));
   padding: 12px;
   display: none;
   flex-direction: column;
@@ -850,80 +850,218 @@ input[type='range'] {
   line-height: 1.45;
 }
 
-/* market */
+/* market: map + district/player grid on top, shop cards below */
 .market {
-  display: grid;
-  grid-template-columns: 170px 1fr;
-  gap: 12px;
-  margin-top: 10px;
-}
-.m-list {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 10px;
+  margin-top: 10px;
+  outline: none;
 }
-.m-item {
+.m-top {
   display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 7px 8px;
-  border-radius: 8px;
-  border: 1px solid transparent;
-  background: rgba(255, 255, 255, 0.05);
-  cursor: pointer;
-  text-align: left;
+  gap: 12px;
+  align-items: flex-start;
 }
-.m-item b {
-  margin-left: auto;
-  font-family: var(--head);
-  font-weight: 400;
-}
-.m-item.sel {
-  border-color: var(--accent);
-  background: rgba(255, 209, 102, 0.1);
-}
-.m-panel {
-  min-width: 0;
+.m-map {
+  flex: none;
+  padding: 4px;
+  border-radius: 12px;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid var(--glass-line);
 }
 .minimap {
   display: block;
-  max-width: 100%;
-  border-radius: 8px;
-  background: rgba(0, 0, 0, 0.25);
 }
-.holdings {
+.m-grid-wrap {
+  flex: 1;
+  min-width: 0;
+  overflow-x: auto;
+}
+.m-grid {
   width: 100%;
-  border-collapse: collapse;
-  font-size: 12px;
-  margin-top: 8px;
+  border-collapse: separate;
+  border-spacing: 3px 2px;
+  font-size: 13px;
 }
-.holdings th,
-.holdings td,
-.totals th,
-.totals td {
+.m-grid th,
+.m-grid td {
+  padding: 4px 6px;
+  text-align: center;
+  white-space: nowrap;
+}
+.m-grid tbody tr:not(.m-arrow-row) {
+  cursor: pointer;
+}
+.m-grid .m-dname {
   text-align: left;
-  padding: 4px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  font-weight: 700;
+  border-radius: 8px 0 0 8px;
 }
-.holdings th,
-.totals th {
-  color: var(--muted);
+.m-grid tbody .m-dname {
+  background: rgba(255, 255, 255, 0.06);
+}
+.m-grid .m-dname .swatch {
+  margin-right: 6px;
+  vertical-align: -1px;
+}
+.m-price-h {
+  font-family: var(--head);
   font-weight: 400;
+  color: var(--accent);
+  font-size: 12px;
 }
-.holdings tr.dim {
+.coin-ico {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  margin-right: 4px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #fff2a8, #ffd23f 55%, #d99a0b);
+  color: #9a6a0a;
+  font-size: 10px;
+  vertical-align: -3px;
+}
+.m-price {
+  font-family: var(--head);
+  font-size: 15px;
+  background: rgba(255, 209, 102, 0.1);
+}
+.m-ph {
+  border-radius: 8px 8px 0 0;
+  background: var(--pc);
+  padding: 3px 4px 0 !important;
+}
+.m-ph img {
+  display: block;
+  margin: 0 auto;
+  width: 34px;
+  height: 26px;
+  image-rendering: pixelated;
+}
+.m-ph.out {
   opacity: 0.4;
 }
-.share-bar {
-  height: 6px;
-  width: 60px;
-  border-radius: 3px;
-  background: rgba(255, 255, 255, 0.1);
-  overflow: hidden;
+.m-cell {
+  font-family: var(--head);
+  font-size: 15px;
+  background: color-mix(in srgb, var(--pc) 16%, transparent);
+  border-left: 2px solid var(--pc);
+  border-right: 2px solid var(--pc);
 }
-.share-bar div {
-  height: 100%;
+.m-grid tbody tr:nth-last-child(2) .m-cell {
+  border-bottom: 2px solid var(--pc);
+  border-radius: 0 0 8px 8px;
+}
+.m-grid tr.sel td {
+  background: linear-gradient(#ffe08f, #f5b301);
+  color: #3b2a00;
+}
+.m-grid tr.sel .m-dname .swatch {
+  box-shadow: 0 0 0 1px #3b2a00;
+}
+.m-grid tbody tr:not(.sel):not(.m-arrow-row):hover td {
+  filter: brightness(1.25);
+}
+.m-arrow {
+  border: 0;
+  background: transparent;
+  color: #7cf29a;
+  font-size: 14px;
+  cursor: pointer;
+  padding: 0 4px;
+  width: 100%;
+}
+.m-arrow-row td {
+  padding: 0 !important;
+  background: none !important;
+}
+.m-strip {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding-bottom: 2px;
+}
+.m-labels,
+.m-shop {
+  display: grid;
+  grid-template-rows: 52px repeat(3, 22px);
+  align-items: center;
+  flex: none;
+  border-radius: 12px;
+  padding: 6px 10px;
+}
+.m-labels {
+  background: rgba(255, 255, 255, 0.92);
+  color: #26314f;
+  font-weight: 700;
+  font-size: 13px;
+  text-align: right;
+}
+.m-labels span:nth-child(1) {
+  grid-row: 2;
+}
+.m-labels span:nth-child(2) {
+  grid-row: 3;
+}
+.m-labels span:nth-child(3) {
+  grid-row: 4;
+}
+.m-shop {
+  min-width: 96px;
+  background: rgba(255, 255, 255, 0.92);
+  color: #26314f;
+  border: 3px solid var(--pc);
+  text-align: right;
+}
+.m-shop b {
+  font-family: var(--head);
+  font-weight: 400;
+  font-size: 15px;
+}
+.m-shop-top {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+.m-shop-top small {
+  font-size: 10px;
+  font-weight: 700;
+  color: #4a5470;
+  max-width: 90px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.m-shop-ico {
+  width: 34px;
+  height: 30px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--dc);
+}
+.m-shop-ico svg {
+  width: 22px;
+  height: 22px;
+  fill: #fff;
+}
+.m-shop-ico.vacant {
+  background: transparent;
+  border: 2px dashed #6b7590;
+  width: 52px;
+}
+.m-shop-ico.vacant span {
+  font-size: 9px;
+  font-weight: 700;
+  color: #4a5470;
 }
 .m-foot {
+  margin: 0;
   font-size: 12px;
   color: var(--muted);
 }
@@ -1206,6 +1344,16 @@ input[type='range'] {
   border-collapse: collapse;
   font-size: 12px;
 }
+.totals th,
+.totals td {
+  text-align: left;
+  padding: 4px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+.totals th {
+  color: var(--muted);
+  font-weight: 400;
+}
 
 /* banners */
 .banner-layer {
@@ -1389,12 +1537,19 @@ input[type='range'] {
     padding: 7px 11px;
     font-size: 14px;
   }
-  .market {
-    grid-template-columns: 1fr;
+  .m-map {
+    display: none;
   }
-  .m-list {
-    flex-direction: row;
-    flex-wrap: wrap;
+  .m-grid {
+    font-size: 12px;
+  }
+  .m-ph img {
+    width: 26px;
+    height: 20px;
+  }
+  .m-labels,
+  .m-shop {
+    grid-template-rows: 44px repeat(3, 19px);
   }
   .banner {
     font-size: 18px;

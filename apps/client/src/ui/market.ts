@@ -1,46 +1,87 @@
 /**
- * Stock screen: district list beside a panel for the selected district with a mini map,
- * a holdings table and a footer note. Used by the market drawer and the buy/sell modals.
+ * Stock screen, laid out like the original game's market:
+ * - top left: a mini map of the board with the selected district highlighted;
+ * - top right: a district x player grid with each district's share price and every
+ *   player's holdings (the selected district's row is highlighted);
+ * - bottom: one card per square in the selected district with its shop value, the fee a
+ *   rival pays there, and how much more can be invested (max. capital).
+ * Used by the market drawer and the buy/sell stock dialogs.
  */
-import { K, PLAYER_COLORS, stockPrice, type GameState } from '@aa/engine';
+import {
+  BUILDINGS,
+  K,
+  PLAYER_COLORS,
+  investRoom,
+  isShopLike,
+  squareFee,
+  stockPrice,
+  type GameState,
+  type Square,
+} from '@aa/engine';
+import { portraitURL } from '../sprites';
 import { clear, fmt, h } from './dom';
+
+/** Remember the last district viewed so the drawer keeps it when it refreshes mid-turn. */
+let lastSelected = 0;
 
 export function marketView(
   G: GameState,
   initial: number | null,
   onSelect?: (d: number) => void,
 ): HTMLElement {
-  let sel = initial ?? 0;
+  let sel = Math.min(initial ?? lastSelected, G.districts.length - 1);
   const root = h('div', { class: 'market' });
-  const list = h('div', { class: 'm-list' });
-  const panel = h('div', { class: 'm-panel' });
-  root.append(list, panel);
+  const top = h('div', { class: 'm-top' });
+  const mapWrap = h('div', { class: 'm-map' });
+  const grid = h('div', { class: 'm-grid-wrap' });
+  const shops = h('div', { class: 'm-shops' });
+  const foot = h('p', { class: 'm-foot' });
+  top.append(mapWrap, grid);
+  root.append(top, shops, foot);
+
+  const select = (d: number) => {
+    sel = (d + G.districts.length) % G.districts.length;
+    lastSelected = sel;
+    onSelect?.(sel);
+    draw();
+  };
 
   const draw = () => {
-    clear(list);
-    G.districts.forEach((d, i) => {
-      const b = h(
-        'button',
-        { class: `m-item ${i === sel ? 'sel' : ''}`, onclick: () => ((sel = i), onSelect?.(i), draw()) },
-        h('span', { class: 'swatch', style: `background:${d.color}` }),
-        h('span', { class: 'm-name' }, d.name),
-        h('b', null, fmt(stockPrice(G, i))),
-      );
-      list.append(b);
-    });
-    clear(panel);
-    panel.append(miniMap(G, sel), holdings(G, sel), footer(G, sel));
+    clear(mapWrap);
+    mapWrap.append(miniMap(G, sel, select));
+    clear(grid);
+    grid.append(holdingsGrid(G, sel, select));
+    clear(shops);
+    shops.append(shopStrip(G, sel));
+    const total = G.players.reduce((s, p) => s + p.shares[sel], 0);
+    const unowned = G.nodes.filter((s) => s.d === sel && s.owner < 0).length;
+    foot.textContent =
+      `${G.districts[sel].name}: ${unowned} unowned square${unowned === 1 ? '' : 's'}, ${total} shares held. ` +
+      `Every fee paid here pays each other shareholder fee x shares / ${K.divDivisor}.`;
   };
+
+  // Up/down arrow keys move between districts while the screen is open.
+  root.tabIndex = 0;
+  root.addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+      e.preventDefault();
+      select(sel + (e.key === 'ArrowUp' ? -1 : 1));
+    }
+  });
+
   draw();
   return root;
 }
 
-function miniMap(G: GameState, d: number): HTMLElement {
-  const cell = 22;
+// ------------------------------------------------------------------ mini map
+
+function miniMap(G: GameState, d: number, select: (d: number) => void): HTMLElement {
+  const cell = 21;
+  const pad = 6;
   const cv = h('canvas', { class: 'minimap' }) as HTMLCanvasElement;
   const dpr = Math.min(3, window.devicePixelRatio || 1);
-  const W = 12 * cell + 8;
-  const H = 7 * cell + 8;
+  const W = 12 * cell + pad * 2;
+  const H = 7 * cell + pad * 2;
   cv.width = W * dpr;
   cv.height = H * dpr;
   cv.style.width = `${W}px`;
@@ -48,106 +89,194 @@ function miniMap(G: GameState, d: number): HTMLElement {
   const ctx = cv.getContext('2d')!;
   ctx.scale(dpr, dpr);
   const pos = (sq: { x: number; y: number }) => ({
-    x: 4 + sq.x * cell + cell / 2,
-    y: 4 + sq.y * cell + cell / 2,
+    x: pad + sq.x * cell + cell / 2,
+    y: pad + sq.y * cell + cell / 2,
   });
+
+  // Roads
+  ctx.strokeStyle = 'rgba(255,255,255,0.18)';
+  ctx.lineWidth = 4;
+  for (const sq of G.nodes) {
+    for (const n of sq.nb) {
+      if (n < sq.id) continue;
+      const a = pos(sq);
+      const b = pos(G.nodes[n]);
+      ctx.beginPath();
+      ctx.moveTo(a.x, a.y);
+      ctx.lineTo(b.x, b.y);
+      ctx.stroke();
+    }
+  }
+  const s = cell - 5;
   for (const sq of G.nodes) {
     const c = pos(sq);
     const inD = sq.d === d;
-    ctx.fillStyle = inD ? G.districts[d].color : 'rgba(255,255,255,0.14)';
-    ctx.fillRect(c.x - 8, c.y - 8, 16, 16);
-    if (inD && sq.t === 'plot' && !sq.b) {
+    const isProp = sq.d >= 0;
+    ctx.globalAlpha = isProp && !inD ? 0.45 : 1;
+    ctx.fillStyle = isProp ? G.districts[sq.d].color : '#3a4670';
+    ctx.beginPath();
+    ctx.roundRect(c.x - s / 2, c.y - s / 2, s, s, 3);
+    ctx.fill();
+    ctx.globalAlpha = 1;
+    if (sq.t === 'plot' && !sq.b) {
       ctx.setLineDash([3, 2]);
       ctx.strokeStyle = '#fff';
-      ctx.strokeRect(c.x - 8, c.y - 8, 16, 16);
+      ctx.lineWidth = 1;
+      ctx.strokeRect(c.x - s / 2 + 1, c.y - s / 2 + 1, s - 2, s - 2);
       ctx.setLineDash([]);
     }
-    if (inD && sq.owner >= 0) {
-      const p = G.players[sq.owner];
-      ctx.strokeStyle = PLAYER_COLORS[p.color];
-      ctx.lineWidth = 3;
-      ctx.strokeRect(c.x - 9, c.y - 9, 18, 18);
+    if (sq.owner >= 0) {
+      ctx.strokeStyle = PLAYER_COLORS[G.players[sq.owner].color];
+      ctx.lineWidth = inD ? 3 : 2;
+      ctx.beginPath();
+      ctx.roundRect(c.x - s / 2 - 1, c.y - s / 2 - 1, s + 2, s + 2, 4);
+      ctx.stroke();
+    }
+    if (inD) {
       ctx.fillStyle = '#101a33';
-      ctx.font = '700 10px "Atkinson Hyperlegible", sans-serif';
+      ctx.font = '11px "Lilita One", sans-serif';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      ctx.fillText(p.name[0]?.toUpperCase() ?? '?', c.x, c.y + 1);
+      const p = sq.owner >= 0 ? G.players[sq.owner] : null;
+      ctx.fillText(p ? (p.name[0]?.toUpperCase() ?? '') : '', c.x, c.y + 1);
     }
     if (sq.t === 'bank') {
       ctx.fillStyle = '#ffd84a';
-      ctx.font = '700 11px "Lilita One", sans-serif';
+      ctx.font = '12px "Lilita One", sans-serif';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
       ctx.fillText('G', c.x, c.y + 1);
     }
   }
-  for (const p of G.players) {
-    if (p.bankrupt) continue;
+  // Players
+  G.players.forEach((p, i) => {
+    if (p.bankrupt) return;
     const c = pos(G.nodes[p.node]);
     ctx.fillStyle = PLAYER_COLORS[p.color];
+    ctx.strokeStyle = '#fff';
+    ctx.lineWidth = 1.5;
     ctx.beginPath();
-    ctx.arc(c.x + 6 - p.id * 4, c.y + 9, 3, 0, Math.PI * 2);
+    ctx.arc(c.x - 6 + (i % 2) * 12, c.y - 6 + Math.floor(i / 2) * 12, 3.6, 0, Math.PI * 2);
     ctx.fill();
-  }
-  cv.title = '';
-  cv.addEventListener('mousemove', (e) => {
-    const r = cv.getBoundingClientRect();
-    const x = Math.floor((e.clientX - r.left - 4) / cell);
-    const y = Math.floor((e.clientY - r.top - 4) / cell);
-    const sq = G.nodes.find((s) => s.x === x && s.y === y);
-    cv.title =
-      sq && (sq.t === 'shop' || sq.t === 'plot')
-        ? `${G.districts[sq.d]?.name ?? ''}: ${sq.owner >= 0 ? G.players[sq.owner].name : 'unowned'}, ${fmt(sq.value)}`
-        : '';
+    ctx.stroke();
   });
-  return h('div', { class: 'm-map' }, cv);
+
+  // Hover shows the square; clicking a district square selects that district.
+  const hit = (e: MouseEvent) => {
+    const r = cv.getBoundingClientRect();
+    const x = Math.floor((e.clientX - r.left - pad) / cell);
+    const y = Math.floor((e.clientY - r.top - pad) / cell);
+    return G.nodes.find((q) => q.x === x && q.y === y);
+  };
+  cv.addEventListener('mousemove', (e) => {
+    const sq = hit(e);
+    cv.title =
+      sq && sq.d >= 0
+        ? `${G.districts[sq.d].name}: ${sq.owner >= 0 ? G.players[sq.owner].name : 'for sale'}, ${fmt(sq.value)}`
+        : '';
+    cv.style.cursor = sq && sq.d >= 0 ? 'pointer' : 'default';
+  });
+  cv.addEventListener('click', (e) => {
+    const sq = hit(e);
+    if (sq && sq.d >= 0) select(sq.d);
+  });
+  return cv;
 }
 
-function holdings(G: GameState, d: number): HTMLElement {
-  const price = stockPrice(G, d);
-  const total = G.players.reduce((s, p) => s + p.shares[d], 0);
-  const rows = G.players.map((p) => {
-    const owned = G.nodes.filter((s) => s.d === d && s.owner === p.id).length;
-    const n = p.shares[d];
-    const pct = total ? (n / total) * 100 : 0;
-    return h(
+// ------------------------------------------------------------------ district x player grid
+
+function holdingsGrid(G: GameState, sel: number, select: (d: number) => void): HTMLElement {
+  const players = G.players;
+  const head = h(
+    'tr',
+    null,
+    h(
+      'th',
+      { class: 'm-dname' },
+      h('button', { class: 'm-arrow', onclick: () => select(sel - 1), title: 'Previous district' }, '▲'),
+    ),
+    h('th', { class: 'm-price-h' }, h('span', { class: 'coin-ico' }, 'G'), 'Price'),
+    ...players.map((p) =>
+      h(
+        'th',
+        { class: `m-ph ${p.bankrupt ? 'out' : ''}`, style: `--pc:${PLAYER_COLORS[p.color]}`, title: p.name },
+        h('img', { src: portraitURL(p.ch, PLAYER_COLORS[p.color]), alt: p.name }),
+      ),
+    ),
+  );
+  const rows = G.districts.map((dist, d) =>
+    h(
       'tr',
-      { class: owned || n ? '' : 'dim' },
-      h('td', null, h('span', { class: 'dot', style: `background:${PLAYER_COLORS[p.color]}` }), p.name),
-      h('td', null, String(owned)),
-      h('td', null, String(n)),
-      h('td', null, fmt(n * price)),
+      { class: d === sel ? 'sel' : '', onclick: () => select(d) },
       h(
         'td',
-        null,
+        { class: 'm-dname' },
+        h('span', { class: 'swatch', style: `background:${dist.color}` }),
+        dist.name,
+      ),
+      h('td', { class: 'm-price' }, fmt(stockPrice(G, d))),
+      ...players.map((p) =>
         h(
-          'div',
-          { class: 'share-bar' },
-          h('div', { style: `width:${pct}%;background:${PLAYER_COLORS[p.color]}` }),
+          'td',
+          { class: 'm-cell', style: `--pc:${PLAYER_COLORS[p.color]}` },
+          p.shares[d] ? String(p.shares[d]) : '–',
         ),
       ),
-    );
-  });
-  return h(
-    'table',
-    { class: 'holdings' },
-    h(
-      'thead',
-      null,
-      h('tr', null, ...['Player', 'Squares', 'Shares', 'Value', 'Share'].map((t) => h('th', null, t))),
     ),
-    h('tbody', null, ...rows),
   );
+  const foot = h(
+    'tr',
+    { class: 'm-arrow-row' },
+    h(
+      'td',
+      { class: 'm-dname' },
+      h('button', { class: 'm-arrow', onclick: () => select(sel + 1), title: 'Next district' }, '▼'),
+    ),
+    h('td', { colspan: String(players.length + 1) }),
+  );
+  return h('table', { class: 'm-grid' }, h('thead', null, head), h('tbody', null, ...rows, foot));
 }
 
-function footer(G: GameState, d: number): HTMLElement {
-  const sqs = G.nodes.filter((s) => s.d === d);
-  const unowned = sqs.filter((s) => s.owner < 0).length;
-  const total = G.players.reduce((s, p) => s + p.shares[d], 0);
+// ------------------------------------------------------------------ shops in the district
+
+function shopStrip(G: GameState, d: number): HTMLElement {
+  const squares = G.nodes.filter((s) => s.d === d);
+  const labels = h(
+    'div',
+    { class: 'm-labels' },
+    h('span', null, 'Shop value'),
+    h('span', null, 'Shop fee'),
+    h('span', null, 'Max. capital'),
+  );
+  return h('div', { class: 'm-strip' }, labels, ...squares.map((sq) => shopCard(G, sq)));
+}
+
+function shopCard(G: GameState, sq: Square): HTMLElement {
+  const owner = sq.owner >= 0 ? G.players[sq.owner] : null;
+  const color = owner ? PLAYER_COLORS[owner.color] : 'rgba(255,255,255,0.25)';
+  const vacant = sq.t === 'plot' && !sq.b;
+  const building = sq.t === 'plot' && sq.b ? BUILDINGS.find((b) => b.b === sq.b)!.name : null;
+  const shopLike = isShopLike(sq);
+  const fee = !owner ? '–' : sq.b === 'tax' ? '10%' : sq.b === 'agency' ? 'Break' : fmt(squareFee(G, sq));
+  const room = owner && shopLike ? fmt(investRoom(G, sq)) : '–';
+  const icon = h('div', {
+    class: `m-shop-ico ${vacant ? 'vacant' : ''}`,
+    style: `--dc:${G.districts[sq.d].color}`,
+  });
+  icon.innerHTML = vacant
+    ? '<span>VACANT</span>'
+    : '<svg viewBox="0 0 24 24"><path d="M3 11.5 12 4l9 7.5V20a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z"/></svg>';
   return h(
-    'p',
-    { class: 'm-foot' },
-    `${unowned} unowned square${unowned === 1 ? '' : 's'} · ${total} shares held · `,
-    `Every fee paid here pays each other shareholder floor(fee x shares / ${K.divDivisor}).`,
+    'div',
+    { class: `m-shop ${owner ? 'owned' : ''}`, style: `--pc:${color}` },
+    h(
+      'div',
+      { class: 'm-shop-top' },
+      icon,
+      h('small', null, owner ? owner.name : building ? building : vacant ? 'Plot' : 'For sale'),
+    ),
+    h('b', null, vacant ? '–' : fmt(sq.value)),
+    h('b', null, fee),
+    h('b', null, room),
   );
 }
