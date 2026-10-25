@@ -17,6 +17,7 @@ import {
   type Player,
 } from '@aa/engine';
 import type { BoardView } from '../board';
+import { soundButton } from './soundpanel';
 import { squareName } from '../names';
 import { suitIconURL, wildIconURL } from '../icons';
 import { portraitURL } from '../sprites';
@@ -97,6 +98,7 @@ export class Hud {
     );
     if (document.fullscreenEnabled) this.toolbar.append(fs);
     this.toolbar.append(
+      soundButton('btn small'),
       h('button', { class: 'btn small', onclick: cb.onRules }, 'Rules'),
       h('button', { class: 'btn small danger', onclick: cb.onQuit }, 'Quit'),
     );

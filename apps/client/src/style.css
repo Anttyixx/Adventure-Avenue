@@ -2516,3 +2516,65 @@ input[type='range'] {
   right: 10px;
   z-index: 61;
 }
+
+/* ------------------------------------------------------------ sound settings */
+
+.snd-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.snd-icon {
+  display: inline-flex;
+}
+.snd-btn.muted .snd-icon {
+  color: var(--bad);
+}
+.menu-sound {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  z-index: 2;
+  background: rgba(16, 26, 51, 0.6);
+}
+.setup-sound {
+  margin-left: auto;
+  background: rgba(16, 26, 51, 0.6);
+}
+.snd-pop {
+  position: fixed;
+  z-index: 200;
+  width: min(300px, calc(100vw - 16px));
+  padding: 12px 14px;
+  animation: pop-in 0.15s ease-out;
+}
+@keyframes pop-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+}
+.snd-head {
+  font-family: var(--head);
+  font-size: 18px;
+  color: var(--accent);
+  margin-bottom: 8px;
+}
+.snd-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.snd-row {
+  display: grid;
+  grid-template-columns: 62px 1fr 42px;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+}
+.snd-val {
+  text-align: right;
+  color: var(--muted);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}

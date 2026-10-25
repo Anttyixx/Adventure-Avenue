@@ -16,6 +16,8 @@ import { BUILT_IN, getBoard, listBoards, pickBoardFile, readBoardFile, saveBoard
 import { portraitURL, randomLook } from '../sprites';
 import { loadSave } from '../save';
 import { titleScene } from './menu';
+import { closeSoundPopover, soundButton } from './soundpanel';
+import { sound } from '../audio';
 import { clear, fmt, h } from './dom';
 
 const NAMES = [
@@ -98,6 +100,7 @@ export function setupScreen(root: HTMLElement, handlers: SetupHandlers) {
   };
   shuffle();
 
+  sound.music('menu');
   const scene = titleScene(false);
   const wrap = h('div', { class: 'setup-wrap' });
   const el = h('div', { class: 'setup' }, scene.el, wrap);
@@ -271,6 +274,7 @@ export function setupScreen(root: HTMLElement, handlers: SetupHandlers) {
         { class: 'setup-head' },
         h('button', { class: 'btn ghost small back', onclick: () => handlers.onBack() }, '‹ Menu'),
         h('h2', null, 'New game'),
+        soundButton('btn small ghost setup-sound'),
       ),
       h(
         'div',
@@ -379,6 +383,7 @@ export function setupScreen(root: HTMLElement, handlers: SetupHandlers) {
   draw();
   return () => {
     document.removeEventListener('keydown', onKey);
+    closeSoundPopover();
     scene.stop();
     el.remove();
   };

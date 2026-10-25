@@ -590,6 +590,21 @@ API where available.
 Pixelify Sans only for pixel-themed labels. A dark navy UI shell around a bright daytime board.
 Player colors: red, blue, green, gold; district colors are pastels so they don't clash with owners.
 
+## Sound and music
+
+All audio is synthesized in the browser with the Web Audio API (`apps/client/src/audio.ts`); there
+are no audio files. Browsers only allow sound after the player touches the page, so audio starts
+on the first tap or key press.
+
+- **Music:** two looping chiptune tracks: a relaxed one for the main menu, setup and board editor,
+  and a bouncier one during games. The music stops for the winning fanfare at the end of a game.
+- **Effects:** button clicks, dice roll, each step, landing, gaining and paying money, buying a
+  shop, a shop's value going up, collecting a suit, promotion, venture cards, warps, the start of a
+  human player's turn, a new round, bankruptcy and the win fanfare.
+- **Settings:** a speaker button on the main menu, game setup and in-game toolbar opens Music and
+  Effects volume sliders and a Mute switch. Settings are saved per device. Audio pauses while the
+  tab is hidden.
+
 ## Save and resume
 
 The prototype saves a snapshot at the start of every turn, so a match can always be resumed from the

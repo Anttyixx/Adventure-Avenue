@@ -35,6 +35,8 @@ import { clear, fmt, h } from './dom';
 import { DerbyView, MemoryView, ReelsView, VentureView } from './games';
 import { Hud } from './hud';
 import { mainMenu } from './menu';
+import { soundButton, soundControls } from './soundpanel';
+import { SFX_NAMES, TRACK_NAMES, sound, type Track } from '../audio';
 import { setupScreen } from './start';
 import {
   answerTradeModal,
@@ -722,6 +724,21 @@ export async function openLab(app: HTMLElement, section?: string) {
         refresh();
       }),
     );
+  }
+
+  // Sound effects, music and the volume settings.
+  {
+    const s = addSection('sound', 'Sound', 'Tap the page once first: browsers only play sound after a tap.');
+    row(s, ...SFX_NAMES.map((n) => btn(n, () => sound.play(n))));
+    row(
+      s,
+      ...(Object.keys(TRACK_NAMES) as Track[]).map((t) =>
+        btn(`Music: ${TRACK_NAMES[t]}`, () => sound.music(t)),
+      ),
+      btn('Stop music', () => sound.music(null)),
+    );
+    row(s, soundButton('btn small', 'Sound popover'));
+    s.append(soundControls());
   }
 
   // Full screens: the main menu and game setup open over the lab with a way back.

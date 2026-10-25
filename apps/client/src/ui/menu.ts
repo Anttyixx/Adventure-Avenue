@@ -6,7 +6,9 @@ import { PLAYER_COLORS } from '@aa/engine';
 import { propertyIconURL, SHOP_TIERS } from '../art';
 import { randomLook, SPRITE_H, SPRITE_W, spriteFrames } from '../sprites';
 import { loadSave, type SaveInfo } from '../save';
+import { sound } from '../audio';
 import { h } from './dom';
+import { closeSoundPopover, soundButton } from './soundpanel';
 
 const TOWN_COLORS = ['#f2a7a0', '#9fd3f0', '#a8e0a0', '#f5d77a', '#cdb4f0', '#f7bfdc', '#8fe3d6'];
 
@@ -75,6 +77,7 @@ function ago(t: number): string {
 
 /** The title screen. `save` overrides the stored save (the UI Lab uses it to preview both states). */
 export function mainMenu(root: HTMLElement, handlers: MenuHandlers, save: SaveInfo | null = loadSave()) {
+  sound.music('menu');
   const scene = titleScene();
   const s = save?.state;
   const cont = h(
@@ -106,6 +109,7 @@ export function mainMenu(root: HTMLElement, handlers: MenuHandlers, save: SaveIn
     'div',
     { class: 'menu' },
     scene.el,
+    soundButton('btn menu-sound', 'Sound'),
     h(
       'div',
       { class: 'menu-center' },
@@ -132,6 +136,7 @@ export function mainMenu(root: HTMLElement, handlers: MenuHandlers, save: SaveIn
   );
   root.append(el);
   return () => {
+    closeSoundPopover();
     scene.stop();
     el.remove();
   };

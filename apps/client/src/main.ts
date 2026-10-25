@@ -1,4 +1,5 @@
 import { K, cloneState, newGame, type BoardDef } from '@aa/engine';
+import { sound } from './audio';
 import { HotSeat } from './host';
 import { randomLook } from './sprites';
 import { installDevBadge } from './ui/devmenu';
@@ -50,6 +51,7 @@ function play(G: ReturnType<typeof newGame>, onExit = showStart, saving = true) 
 }
 
 function showEditor(board: BoardDef | null) {
+  sound.music('menu');
   history.replaceState(null, '', '#editor');
   openEditor(app, board, {
     onExit() {
@@ -73,6 +75,15 @@ function showEditor(board: BoardDef | null) {
 }
 
 installDevBadge();
+// A soft click for every button press.
+document.addEventListener(
+  'click',
+  (e) => {
+    const b = (e.target as HTMLElement).closest?.('button');
+    if (b && !b.disabled) sound.play('click');
+  },
+  true,
+);
 const lab = location.hash.match(/^#ui-lab(?:\/(\w+))?/);
 if (lab) void openLab(app, lab[1]);
 else if (location.hash.startsWith('#editor')) showEditor(null);

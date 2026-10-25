@@ -34,6 +34,8 @@ import {
   tradeModal,
 } from './ui/modals';
 import { showResults } from './ui/results';
+import { sound } from './audio';
+import { closeSoundPopover } from './ui/soundpanel';
 
 const FAST_KEY = 'adventure-avenue-fast';
 
@@ -89,6 +91,7 @@ export class HotSeat implements GameIO {
   }
 
   async start() {
+    sound.music('game');
     try {
       await this.game.run();
     } catch (err) {
@@ -105,6 +108,7 @@ export class HotSeat implements GameIO {
 
   destroy() {
     this.dead = true;
+    closeSoundPopover();
     window.removeEventListener('keydown', this.onKey);
     window.removeEventListener('resize', this.checkOrientation);
     this.board.destroy();
@@ -448,27 +452,33 @@ export class HotSeat implements GameIO {
         hud.activePid = e.pid;
         this.updateSpeed();
         this.refresh();
+        if (!p.cpu) sound.play('turn');
         hud.banner(`${p.name}'s turn`, PLAYER_COLORS[p.color], T.turnBanner);
         hud.status(`${p.name}'s turn`, p.color);
         await this.wait(p.cpu ? T.turnStartCpu : T.turnStartHuman);
         break;
       }
       case 'roundStart':
+        sound.play('round');
         hud.banner(`Round ${e.round}`, '#ffd166', T.roundBanner);
         this.refresh();
         break;
       case 'roll':
+        sound.play('roll');
         await board.rollDie(e.value);
         break;
       case 'step':
+        sound.play('step');
         await board.step(e.pid, e.to, e.left);
         if (e.left === 0) board.walkTarget = -1;
         break;
       case 'warp':
+        sound.play('warp');
         await board.warp(e.pid, e.to);
         this.refresh();
         break;
       case 'land':
+        sound.play('land');
         board.ring(e.sq, '#ffffff');
         board.walkTarget = -1;
         await this.wait(T.land);
@@ -476,6 +486,7 @@ export class HotSeat implements GameIO {
       case 'money': {
         const from = this.playerPos(e.from);
         const to = this.playerPos(e.to);
+        sound.play(e.to >= 0 && (e.from < 0 || !G.players[e.to].cpu) ? 'coin' : 'pay');
         board.coins(from, to, Math.ceil(e.amount / 50));
         if (e.to >= 0) board.floatText(to.x, to.y, `+${fmt(e.amount)}`, '#7cf29a');
         if (e.from >= 0) board.floatText(from.x, from.y + 22, `-${fmt(e.amount)}`, '#ff8a8a');
@@ -484,16 +495,21 @@ export class HotSeat implements GameIO {
         break;
       }
       case 'owner':
-        if (e.owner >= 0) board.ring(e.sq, '#ffd166', true);
+        if (e.owner >= 0) {
+          sound.play('buy');
+          board.ring(e.sq, '#ffd166', true);
+        }
         this.refresh();
         await this.wait(T.owner);
         break;
       case 'value':
+        sound.play('grow');
         for (const id of e.sqs) board.ring(id, '#ffd166', true);
         this.refresh();
         await this.wait(T.value);
         break;
       case 'suit': {
+        sound.play('suit');
         const pos = board.tokenPos(e.pid);
         board.floatText(
           pos.x,
@@ -507,6 +523,7 @@ export class HotSeat implements GameIO {
       }
       case 'promote': {
         const p = G.players[e.pid];
+        sound.play('promote');
         board.confetti(e.pid);
         hud.banner(
           `${p.name} reached level ${e.level}! +${fmt(e.salary)}`,
@@ -519,6 +536,7 @@ export class HotSeat implements GameIO {
       }
       case 'venture': {
         const p = G.players[e.pid];
+        sound.play('venture');
         const view = this.venture ?? new VentureView(hud, G, e.pid);
         this.venture = null;
         await view.reveal(e.panel, e.title, e.text, e.line, !p.cpu, this.speed);
@@ -556,6 +574,7 @@ export class HotSeat implements GameIO {
         break;
       case 'bankrupt': {
         const p = G.players[e.pid];
+        sound.play('bankrupt');
         hud.banner(`${p.name} went bankrupt!`, '#e5484d', T.bankruptBanner);
         this.refresh();
         await this.wait(T.bankrupt);
@@ -563,6 +582,8 @@ export class HotSeat implements GameIO {
       }
       case 'gameOver':
         if (this.saving) clearSave();
+        sound.music(null);
+        sound.play('win');
         board.activePid = -1;
         this.refresh();
         await this.wait(T.gameOver);
