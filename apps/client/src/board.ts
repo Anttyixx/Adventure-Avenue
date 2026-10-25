@@ -1039,17 +1039,42 @@ function label(
   ctx.fillText(text, x, y);
 }
 
-function house(ctx: CanvasRenderingContext2D, x: number, y: number, color: string) {
-  ctx.fillStyle = color;
+/** A house icon. Owned houses are drawn in the owner's color, outlined, with their initial. */
+function house(ctx: CanvasRenderingContext2D, x: number, y: number, color: string, initial?: string) {
+  ctx.save();
   ctx.beginPath();
   ctx.moveTo(x - 18, y - 2);
   ctx.lineTo(x, y - 18);
   ctx.lineTo(x + 18, y - 2);
+  ctx.lineTo(x + 13, y - 2);
+  ctx.lineTo(x + 13, y + 15);
+  ctx.lineTo(x - 13, y + 15);
+  ctx.lineTo(x - 13, y - 2);
   ctx.closePath();
+  ctx.fillStyle = color;
   ctx.fill();
-  ctx.fillRect(x - 13, y - 3, 26, 18);
-  ctx.fillStyle = 'rgba(255,255,255,0.85)';
-  ctx.fillRect(x - 4, y + 4, 8, 11);
+  if (initial) {
+    ctx.lineJoin = 'round';
+    ctx.lineWidth = 2.5;
+    ctx.strokeStyle = darken(color, 0.6);
+    ctx.stroke();
+    ctx.fillStyle = '#fff';
+    ctx.font = '15px "Lilita One", sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(initial, x, y + 6);
+  } else {
+    ctx.fillStyle = 'rgba(255,255,255,0.85)';
+    ctx.fillRect(x - 4, y + 4, 8, 11);
+  }
+  ctx.restore();
+}
+
+/** Mix a color with white: k = 0 is white, 1 is the color. */
+export function tint(hex: string, k: number) {
+  const n = parseInt(hex.slice(1), 16);
+  const c = [(n >> 16) & 255, (n >> 8) & 255, n & 255].map((v) => Math.round(255 + (v - 255) * k));
+  return `rgb(${c[0]},${c[1]},${c[2]})`;
 }
 
 export function darken(hex: string, f = 0.7) {
@@ -1058,12 +1083,20 @@ export function darken(hex: string, f = 0.7) {
   return `rgb(${c[0]},${c[1]},${c[2]})`;
 }
 
-function buildingIcon(ctx: CanvasRenderingContext2D, b: string, x: number, y: number) {
+/** Building icons use the owner's color as their main color so ownership reads at a glance. */
+function buildingIcon(
+  ctx: CanvasRenderingContext2D,
+  b: string,
+  x: number,
+  y: number,
+  main: string,
+  initial: string,
+) {
   ctx.save();
   ctx.lineWidth = 3;
   switch (b) {
     case 'checkpoint':
-      ctx.fillStyle = '#e5484d';
+      ctx.fillStyle = main;
       ctx.fillRect(x - 22, y - 6, 44, 8);
       ctx.fillStyle = '#fff';
       for (let i = -18; i < 22; i += 12) ctx.fillRect(x + i, y - 6, 6, 8);
@@ -1071,7 +1104,7 @@ function buildingIcon(ctx: CanvasRenderingContext2D, b: string, x: number, y: nu
       ctx.fillRect(x - 24, y - 14, 6, 26);
       break;
     case 'circus':
-      ctx.fillStyle = '#e5484d';
+      ctx.fillStyle = main;
       ctx.beginPath();
       ctx.moveTo(x - 22, y + 12);
       ctx.lineTo(x, y - 18);
@@ -1085,7 +1118,7 @@ function buildingIcon(ctx: CanvasRenderingContext2D, b: string, x: number, y: nu
       ctx.fill();
       break;
     case 'balloon':
-      ctx.fillStyle = '#ff8fb1';
+      ctx.fillStyle = main;
       ctx.beginPath();
       ctx.arc(x, y - 6, 15, 0, Math.PI * 2);
       ctx.fill();
@@ -1101,7 +1134,7 @@ function buildingIcon(ctx: CanvasRenderingContext2D, b: string, x: number, y: nu
       ctx.fillRect(x - 6, y + 12, 12, 7);
       break;
     case 'tax':
-      ctx.fillStyle = '#8a94a8';
+      ctx.fillStyle = main;
       ctx.fillRect(x - 20, y - 4, 40, 20);
       ctx.beginPath();
       ctx.moveTo(x - 24, y - 4);
@@ -1112,10 +1145,10 @@ function buildingIcon(ctx: CanvasRenderingContext2D, b: string, x: number, y: nu
       for (let i = -14; i <= 14; i += 9) ctx.fillRect(x + i - 2, y, 4, 14);
       break;
     case 'home':
-      house(ctx, x, y, '#ef8f4a');
+      house(ctx, x, y, main, initial);
       break;
     case 'agency':
-      ctx.fillStyle = '#4a7bd1';
+      ctx.fillStyle = main;
       ctx.fillRect(x - 16, y - 16, 32, 32);
       ctx.fillStyle = '#fff';
       for (let i = 0; i < 3; i++)
@@ -1123,7 +1156,7 @@ function buildingIcon(ctx: CanvasRenderingContext2D, b: string, x: number, y: nu
       break;
     case 'star3':
       for (let i = -1; i <= 1; i++) star(ctx, x + i * 15, y - (i === 0 ? 6 : 0), 8, '#f5b301');
-      ctx.fillStyle = '#d24d7a';
+      ctx.fillStyle = main;
       ctx.fillRect(x - 20, y + 6, 40, 10);
       break;
   }
@@ -1308,7 +1341,13 @@ function drawSquare(ctx: CanvasRenderingContext2D, G: GameState, sq: Square) {
   roundRect(ctx, x + 2, y + 5, TILE, TILE, 12);
   ctx.fill();
   const vacant = sq.t === 'plot' && !sq.b;
-  ctx.fillStyle = vacant ? 'rgba(255,255,255,0.55)' : sq.t === 'bank' ? '#fff6d6' : '#fdfbf5';
+  ctx.fillStyle = vacant
+    ? 'rgba(255,255,255,0.55)'
+    : owner
+      ? tint(ownerColor, 0.22)
+      : sq.t === 'bank'
+        ? '#fff6d6'
+        : '#fdfbf5';
   roundRect(ctx, x, y, TILE, TILE, 12);
   ctx.fill();
 
@@ -1322,7 +1361,8 @@ function drawSquare(ctx: CanvasRenderingContext2D, G: GameState, sq: Square) {
   }
 
   if (sq.t === 'shop') {
-    house(ctx, c.x, c.y - 2, district ? darken(district.color, 0.62) : '#888');
+    if (owner) house(ctx, c.x, c.y - 2, ownerColor, owner.name[0]?.toUpperCase());
+    else house(ctx, c.x, c.y - 2, district ? darken(district.color, 0.62) : '#888');
     if (owner) pill(ctx, c.x, c.y + 28, `${squareFee(G, sq)}G`, ownerColor);
     else label(ctx, c.x, c.y + 28, `${sq.value}G`, '#26314f', 16);
   } else if (sq.t === 'plot') {
@@ -1336,7 +1376,14 @@ function drawSquare(ctx: CanvasRenderingContext2D, G: GameState, sq: Square) {
       ctx.restore();
       label(ctx, c.x, c.y + 4, 'VACANT', '#4a5470', 14);
     } else {
-      buildingIcon(ctx, sq.b, c.x, c.y - 4);
+      buildingIcon(
+        ctx,
+        sq.b,
+        c.x,
+        c.y - 4,
+        owner ? ownerColor : '#8a94a8',
+        owner?.name[0]?.toUpperCase() ?? '',
+      );
       label(ctx, c.x, c.y + 13, BUILDING_LABEL[sq.b], '#4a5470', 9);
       const fee = sq.b === 'tax' ? '10%' : sq.b === 'agency' ? 'Break' : `${squareFee(G, sq)}G`;
       if (owner) pill(ctx, c.x, c.y + 30, fee, ownerColor);

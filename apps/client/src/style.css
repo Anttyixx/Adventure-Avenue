@@ -1045,10 +1045,29 @@ input[type='range'] {
   justify-content: center;
   background: var(--dc);
 }
+.m-shop-ico {
+  position: relative;
+}
 .m-shop-ico svg {
   width: 22px;
   height: 22px;
   fill: #fff;
+}
+.m-shop-ico.owned svg {
+  width: 26px;
+  height: 26px;
+}
+.m-shop-ico.owned b {
+  position: absolute;
+  inset: 9px 0 0;
+  text-align: center;
+  font-family: var(--head);
+  font-weight: 400;
+  font-size: 13px;
+  color: var(--dc);
+}
+.m-shop.owned {
+  background: color-mix(in srgb, var(--pc) 18%, #fff);
 }
 .m-shop-ico.vacant {
   background: transparent;

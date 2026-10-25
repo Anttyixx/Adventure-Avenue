@@ -21,6 +21,10 @@ import {
 import { portraitURL } from '../sprites';
 import { clear, fmt, h } from './dom';
 
+/** Unowned squares use neutral greys so they never look like a player's color. */
+const UNOWNED = '#d5dae6';
+const UNOWNED_ICON = '#9aa3b8';
+
 /** Remember the last district viewed so the drawer keeps it when it refreshes mid-turn. */
 let lastSelected = 0;
 
@@ -113,7 +117,9 @@ function miniMap(G: GameState, d: number, select: (d: number) => void): HTMLElem
     const inD = sq.d === d;
     const isProp = sq.d >= 0;
     ctx.globalAlpha = isProp && !inD ? 0.45 : 1;
-    ctx.fillStyle = isProp ? G.districts[sq.d].color : '#3a4670';
+    // Owned squares take the owner's color; unowned property is a neutral light grey so it is
+    // never mistaken for a player's color.
+    ctx.fillStyle = sq.owner >= 0 ? PLAYER_COLORS[G.players[sq.owner].color] : isProp ? UNOWNED : '#3a4670';
     ctx.beginPath();
     ctx.roundRect(c.x - s / 2, c.y - s / 2, s, s, 3);
     ctx.fill();
@@ -125,15 +131,14 @@ function miniMap(G: GameState, d: number, select: (d: number) => void): HTMLElem
       ctx.strokeRect(c.x - s / 2 + 1, c.y - s / 2 + 1, s - 2, s - 2);
       ctx.setLineDash([]);
     }
-    if (sq.owner >= 0) {
-      ctx.strokeStyle = PLAYER_COLORS[G.players[sq.owner].color];
-      ctx.lineWidth = inD ? 3 : 2;
-      ctx.beginPath();
-      ctx.roundRect(c.x - s / 2 - 1, c.y - s / 2 - 1, s + 2, s + 2, 4);
-      ctx.stroke();
-    }
     if (inD) {
-      ctx.fillStyle = '#101a33';
+      // Outline the selected district's squares in gold, like the selected row.
+      ctx.strokeStyle = '#ffd166';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.roundRect(c.x - s / 2 - 2, c.y - s / 2 - 2, s + 4, s + 4, 5);
+      ctx.stroke();
+      ctx.fillStyle = sq.owner >= 0 ? '#fff' : '#101a33';
       ctx.font = '11px "Lilita One", sans-serif';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
@@ -259,13 +264,15 @@ function shopCard(G: GameState, sq: Square): HTMLElement {
   const shopLike = isShopLike(sq);
   const fee = !owner ? '–' : sq.b === 'tax' ? '10%' : sq.b === 'agency' ? 'Break' : fmt(squareFee(G, sq));
   const room = owner && shopLike ? fmt(investRoom(G, sq)) : '–';
+  // Owned squares show a house in the owner's color with their initial.
   const icon = h('div', {
-    class: `m-shop-ico ${vacant ? 'vacant' : ''}`,
-    style: `--dc:${G.districts[sq.d].color}`,
+    class: `m-shop-ico ${vacant ? 'vacant' : ''} ${owner ? 'owned' : ''}`,
+    style: `--dc:${owner ? color : UNOWNED_ICON}`,
   });
   icon.innerHTML = vacant
     ? '<span>VACANT</span>'
-    : '<svg viewBox="0 0 24 24"><path d="M3 11.5 12 4l9 7.5V20a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z"/></svg>';
+    : '<svg viewBox="0 0 24 24"><path d="M3 11.5 12 4l9 7.5V20a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1z"/></svg>' +
+      (owner ? `<b>${(owner.name[0] ?? '').toUpperCase()}</b>` : '');
   return h(
     'div',
     { class: `m-shop ${owner ? 'owned' : ''}`, style: `--pc:${color}` },
