@@ -987,7 +987,7 @@ input[type='range'] {
 .m-labels,
 .m-shop {
   display: grid;
-  grid-template-rows: 52px repeat(3, 22px);
+  grid-template-rows: 66px repeat(3, 22px);
   align-items: center;
   flex: none;
   border-radius: 12px;
@@ -1068,6 +1068,15 @@ input[type='range'] {
 }
 .m-shop.owned {
   background: color-mix(in srgb, var(--pc) 18%, #fff);
+}
+.m-shop-ico.art {
+  background: transparent;
+  width: 52px;
+  height: 44px;
+}
+.m-shop-ico.art img {
+  width: 52px;
+  height: 45px;
 }
 .m-shop-ico.vacant {
   background: transparent;
@@ -1568,7 +1577,7 @@ input[type='range'] {
   }
   .m-labels,
   .m-shop {
-    grid-template-rows: 44px repeat(3, 19px);
+    grid-template-rows: 60px repeat(3, 19px);
   }
   .banner {
     font-size: 18px;
@@ -1709,4 +1718,31 @@ input[type='range'] {
     top: 44px;
     max-height: calc(100% - 120px);
   }
+}
+
+.art-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.art-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.9);
+  color: #26314f;
+}
+.art-row img {
+  width: 64px;
+  height: 55px;
+}
+.art-name {
+  width: 120px;
+  display: flex;
+  flex-direction: column;
+}
+.art-name small {
+  color: #4a5470;
 }

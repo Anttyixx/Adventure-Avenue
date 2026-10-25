@@ -18,6 +18,7 @@ import {
   type GameState,
   type Square,
 } from '@aa/engine';
+import { SHOP_TIERS, SHOP_TIER_NAMES, STAR3_TIERS, STAR3_TIER_NAMES, propertyIconURL, tierFor } from '../art';
 import { portraitURL } from '../sprites';
 import { clear, fmt, h } from './dom';
 
@@ -269,10 +270,25 @@ function shopCard(G: GameState, sq: Square): HTMLElement {
     class: `m-shop-ico ${vacant ? 'vacant' : ''} ${owner ? 'owned' : ''}`,
     style: `--dc:${owner ? color : UNOWNED_ICON}`,
   });
-  icon.innerHTML = vacant
-    ? '<span>VACANT</span>'
-    : '<svg viewBox="0 0 24 24"><path d="M3 11.5 12 4l9 7.5V20a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1z"/></svg>' +
-      (owner ? `<b>${(owner.name[0] ?? '').toUpperCase()}</b>` : '');
+  const initial = owner ? (owner.name[0] ?? '').toUpperCase() : undefined;
+  if (vacant) icon.innerHTML = '<span>VACANT</span>';
+  else if (sq.t === 'shop' || sq.b === 'star3') {
+    // Shops and 3-Star Shops use the same value-based art as the board.
+    const star3 = sq.b === 'star3';
+    const tier = tierFor(sq.value, star3 ? STAR3_TIERS : SHOP_TIERS);
+    icon.classList.add('art');
+    icon.title = star3 ? STAR3_TIER_NAMES[tier] : SHOP_TIER_NAMES[tier];
+    icon.append(
+      h('img', {
+        src: propertyIconURL(star3 ? 'star3' : 'shop', tier, owner ? color : UNOWNED_ICON, initial),
+        alt: icon.title,
+      }),
+    );
+  } else {
+    icon.innerHTML =
+      '<svg viewBox="0 0 24 24"><path d="M3 11.5 12 4l9 7.5V20a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1z"/></svg>' +
+      (initial ? `<b>${initial}</b>` : '');
+  }
   return h(
     'div',
     { class: `m-shop ${owner ? 'owned' : ''}`, style: `--pc:${color}` },

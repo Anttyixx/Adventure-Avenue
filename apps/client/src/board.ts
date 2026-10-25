@@ -4,6 +4,7 @@
  * changes; each frame draws the cache, then highlights, sprites, coins, floating text and the die.
  */
 import { PLAYER_COLORS, SUITS, isClosed, squareFee, type GameState, type Square } from '@aa/engine';
+import { SHOP_TIERS, STAR3_TIERS, darken, drawShop, drawStar3, tierFor, tint } from './art';
 import { drawCoin, drawSparkle, SUIT_CHARS } from './icons';
 import { SPRITE_H, SPRITE_W, spriteFrames } from './sprites';
 import { TIMING as T } from './timing';
@@ -1070,19 +1071,6 @@ function house(ctx: CanvasRenderingContext2D, x: number, y: number, color: strin
   ctx.restore();
 }
 
-/** Mix a color with white: k = 0 is white, 1 is the color. */
-export function tint(hex: string, k: number) {
-  const n = parseInt(hex.slice(1), 16);
-  const c = [(n >> 16) & 255, (n >> 8) & 255, n & 255].map((v) => Math.round(255 + (v - 255) * k));
-  return `rgb(${c[0]},${c[1]},${c[2]})`;
-}
-
-export function darken(hex: string, f = 0.7) {
-  const n = parseInt(hex.slice(1), 16);
-  const c = [(n >> 16) & 255, (n >> 8) & 255, n & 255].map((v) => Math.round(v * f));
-  return `rgb(${c[0]},${c[1]},${c[2]})`;
-}
-
 /** Building icons use the owner's color as their main color so ownership reads at a glance. */
 function buildingIcon(
   ctx: CanvasRenderingContext2D,
@@ -1154,24 +1142,8 @@ function buildingIcon(
       for (let i = 0; i < 3; i++)
         for (let j = 0; j < 3; j++) ctx.fillRect(x - 12 + i * 9, y - 12 + j * 9, 6, 6);
       break;
-    case 'star3':
-      for (let i = -1; i <= 1; i++) star(ctx, x + i * 15, y - (i === 0 ? 6 : 0), 8, '#f5b301');
-      ctx.fillStyle = main;
-      ctx.fillRect(x - 20, y + 6, 40, 10);
-      break;
   }
   ctx.restore();
-}
-
-function star(ctx: CanvasRenderingContext2D, x: number, y: number, r: number, c: string) {
-  ctx.fillStyle = c;
-  ctx.beginPath();
-  for (let i = 0; i < 10; i++) {
-    const a = (i / 10) * Math.PI * 2 - Math.PI / 2;
-    const rr = i % 2 ? r * 0.45 : r;
-    ctx.lineTo(x + Math.cos(a) * rr, y + Math.sin(a) * rr);
-  }
-  ctx.fill();
 }
 
 function specialIcon(ctx: CanvasRenderingContext2D, G: GameState, sq: Square, x: number, y: number) {
@@ -1361,8 +1333,16 @@ function drawSquare(ctx: CanvasRenderingContext2D, G: GameState, sq: Square) {
   }
 
   if (sq.t === 'shop') {
-    if (owner) house(ctx, c.x, c.y - 2, ownerColor, owner.name[0]?.toUpperCase());
-    else house(ctx, c.x, c.y - 2, district ? darken(district.color, 0.62) : '#888');
+    // The design grows with the shop's value; owned shops use the owner's color.
+    const tier = tierFor(sq.value, SHOP_TIERS);
+    drawShop(
+      ctx,
+      c.x,
+      c.y - 4,
+      tier,
+      owner ? ownerColor : (district?.color ?? '#8a94a8'),
+      owner?.name[0]?.toUpperCase(),
+    );
     if (owner) pill(ctx, c.x, c.y + 28, `${squareFee(G, sq)}G`, ownerColor);
     else label(ctx, c.x, c.y + 28, `${sq.value}G`, '#26314f', 16);
   } else if (sq.t === 'plot') {
@@ -1375,6 +1355,12 @@ function drawSquare(ctx: CanvasRenderingContext2D, G: GameState, sq: Square) {
       ctx.stroke();
       ctx.restore();
       label(ctx, c.x, c.y + 4, 'VACANT', '#4a5470', 14);
+    } else if (sq.b === 'star3') {
+      // The 3-Star Shop has its own designs that grow with its value.
+      const tier = tierFor(sq.value, STAR3_TIERS);
+      drawStar3(ctx, c.x, c.y - 2, tier, owner ? ownerColor : '#8a94a8', owner?.name[0]?.toUpperCase());
+      const fee = `${squareFee(G, sq)}G`;
+      if (owner) pill(ctx, c.x, c.y + 30, fee, ownerColor);
     } else {
       buildingIcon(
         ctx,

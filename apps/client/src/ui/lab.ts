@@ -28,6 +28,7 @@ import {
   type ReelSymbol,
   type TradeOffer,
 } from '@aa/engine';
+import { SHOP_TIERS, SHOP_TIER_NAMES, STAR3_TIERS, STAR3_TIER_NAMES, propertyIconURL } from '../art';
 import { BoardView } from '../board';
 import { randomLook } from '../sprites';
 import { clear, fmt, h } from './dom';
@@ -52,6 +53,7 @@ export const LAB_SECTIONS = [
   { id: 'board', title: 'Board effects' },
   { id: 'dialogs', title: 'Dialogs' },
   { id: 'games', title: 'Venture & arcade' },
+  { id: 'art', title: 'Property designs' },
   { id: 'panels', title: 'Log, market & results' },
 ] as const;
 
@@ -637,6 +639,85 @@ export async function openLab(app: HTMLElement, section?: string) {
         }
         await view.race(backers, frames, coins, pos.indexOf(Math.max(...pos)), true, 1);
         result('Derby pick', pick);
+      }),
+    );
+  }
+
+  // Property designs
+  {
+    const s = addSection(
+      'art',
+      'Property designs',
+      'Shops change design as their value grows; so does the 3-Star Shop.',
+    );
+    row(
+      s,
+      btn('Design gallery', () => {
+        const grid = (kind: 'shop' | 'star3', tiers: number[], names: string[]) =>
+          h(
+            'div',
+            { class: 'art-grid' },
+            ...tiers.map((min, t) =>
+              h(
+                'div',
+                { class: 'art-row' },
+                h('div', { class: 'art-name' }, h('b', null, names[t]), h('small', null, `from ${fmt(min)}`)),
+                h('img', {
+                  src: propertyIconURL(kind, t, kind === 'shop' ? G.districts[t % 7].color : '#9aa3b8'),
+                  alt: '',
+                }),
+                ...G.players.map((p) =>
+                  h('img', {
+                    src: propertyIconURL(kind, t, PLAYER_COLORS[p.color], p.name[0]?.toUpperCase()),
+                    alt: p.name,
+                    title: p.name,
+                  }),
+                ),
+              ),
+            ),
+          );
+        const m = hud.modal(
+          'Property designs',
+          h(
+            'div',
+            null,
+            h('p', { class: 'hint' }, 'Unowned first, then each player color.'),
+            h('h4', null, 'Shops'),
+            grid('shop', SHOP_TIERS, SHOP_TIER_NAMES),
+            h('h4', null, '3-Star Shop'),
+            grid('star3', STAR3_TIERS, STAR3_TIER_NAMES),
+          ),
+          { wide: true, onClose: () => m.close() },
+        );
+      }),
+    );
+    row(
+      s,
+      btn("Grow target's shops +300G", () => {
+        const shops = ownedShops(G, cur().id);
+        if (!shops.length) {
+          const free = G.nodes.find((n) => n.t === 'shop' && n.owner < 0);
+          if (free) free.owner = cur().id;
+        }
+        for (const sq of ownedShops(G, cur().id)) sq.value += 300;
+        for (const sq of ownedShops(G, cur().id)) board.ring(sq.id, '#ffd166', true);
+        refresh();
+      }),
+      btn("Shrink target's shops -300G", () => {
+        for (const sq of ownedShops(G, cur().id))
+          sq.value = Math.max(sq.t === 'plot' ? K.star3Cost : sq.base, sq.value - 300);
+        refresh();
+      }),
+      btn('Build a 3-Star Shop', () => {
+        const plot =
+          G.nodes.find((n) => n.t === 'plot' && (!n.b || n.owner === cur().id)) ??
+          G.nodes.find((n) => n.t === 'plot');
+        if (!plot) return hud.tick('This board has no plots (Easy rules).');
+        if (plot.b !== 'star3') plot.value = K.star3Cost;
+        plot.owner = cur().id;
+        plot.b = 'star3';
+        board.ring(plot.id, '#ffd166', true);
+        refresh();
       }),
     );
   }
