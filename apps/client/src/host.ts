@@ -142,7 +142,9 @@ export class HotSeat implements GameIO {
   quit() {
     if (
       !this.G.over &&
-      !window.confirm('Quit to the start screen? The game is saved at the start of each turn.')
+      !window.confirm(
+        'Quit to the main menu? The game is saved at the start of each turn, so you can continue it later.',
+      )
     )
       return;
     this.destroy();

@@ -4,20 +4,38 @@ import { randomLook } from './sprites';
 import { installDevBadge } from './ui/devmenu';
 import { openEditor } from './ui/editor';
 import { openLab } from './ui/lab';
-import { startScreen } from './ui/start';
+import { mainMenu } from './ui/menu';
+import { setupScreen } from './ui/start';
 import './style.css';
 
 const app = document.getElementById('app')!;
 
 function showStart() {
-  const close = startScreen(app, {
-    onStart(opts) {
+  const close = mainMenu(app, {
+    onStart() {
       close();
-      play(newGame(opts));
+      showSetup();
     },
     onContinue(save) {
       close();
       play(cloneState(save.state));
+    },
+    onEditor() {
+      close();
+      showEditor(null);
+    },
+  });
+}
+
+function showSetup() {
+  const close = setupScreen(app, {
+    onStart(opts) {
+      close();
+      play(newGame(opts));
+    },
+    onBack() {
+      close();
+      showStart();
     },
     onEditor(board) {
       close();

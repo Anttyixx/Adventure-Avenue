@@ -462,7 +462,7 @@ per-player totals for fees earned, fees paid, salary, dividends and commission. 
 
 ## Rule sets and match options
 
-All options are chosen on the start screen; the rule set only changes how the board is built at game
+All options are chosen on the game setup screen; the rule set only changes how the board is built at game
 start, so every other system checks one flag (`rules`).
 
 |                                       | Standard                      | Easy                      |
@@ -474,9 +474,16 @@ start, so every other system checks one flag (`rules`).
 | Venture deck                          | All 30 cards                  | 23 cards (no stock cards) |
 | Lucky Reels "three stocks"            | 10 shares                     | 150G                      |
 
-**Start screen options:**
+**Main menu:** the title screen has **Start**, which opens game setup, and **Continue**, which
+resumes the saved game (it shows the round, board and players, and is greyed out when there is no
+save). A Board editor link sits below them.
 
-- **Players:** 1 to 4 humans (the Start button sits above this selector).
+**Game setup options** (Start game sits in a bar pinned to the bottom of the screen):
+
+- **Board:** a carousel of the built-in boards followed by the player's saved boards. Arrows,
+  swiping, the arrow keys or the dots move through it, and it loops from the last board back to
+  the first. Import board file and Board editor sit under it.
+- **Players:** 1 to 4 humans.
 - **Fill empty seats with CPU:** on by default, giving 4 seats total.
 - **Target net worth:** 4,000G (quick), 5,000G (default), 7,000G, 10,000G (long).
 - **Round limit:** none (default), 15, 20 or 30.
@@ -484,10 +491,9 @@ start, so every other system checks one flag (`rules`).
   12 characters; the characters `< > & " ' \`` and `\` are removed; leave it blank to keep the
   suggested name), and typed names are remembered for the next game. In the online build, validate
   names on the server; "Shuffle characters" rerolls them.
-- **Continue saved game:** shown when a save exists (see Save and resume).
 
 In-game: a Fast CPU toggle speeds up CPU turns and animations, Rules opens a summary, Quit returns to
-the start screen.
+the main menu.
 
 ## CPU players
 
@@ -595,8 +601,8 @@ last turn boundary.
   character look, cash, level, suits, wilds, shares, position, `prev`, bankrupt, stats).
 - **Not saved:** temporary effects (break, closed, boon, boost) because they reset at the start of
   the saved turn anyway; sprites and portraits, which are regenerated from the character look.
-- **Where:** browser localStorage. The start screen shows "Continue saved game (round N, names)" when
-  one exists. The save is deleted when a match ends.
+- **Where:** browser localStorage. The main menu's Continue button resumes it (and is greyed out
+  when there is none). The save is deleted when a match ends.
 - **Resume:** rebuild the board for the saved rule set, apply the square and player data, then start
   the main loop at the saved turn.
 

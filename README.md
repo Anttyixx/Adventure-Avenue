@@ -17,12 +17,12 @@ empty seats.
 
 ## Custom boards
 
-Players can build their own boards on a **square or hex grid** in the **board editor** (start screen → Board editor, or
+Players can build their own boards on a **square or hex grid** in the **board editor** (main menu → Board editor, or
 `/dev/#editor`): paint squares on a grid, set up districts and shop values, and fix any problems
 the editor lists. Neighboring squares connect automatically (4 neighbors on a square grid, 6 on
 a hex grid); the Links tool cuts a connection.
 Boards can be saved in the browser (**My boards**), exported as `.aaboard.json` files to share,
-and imported again from the editor or the start screen. The start screen's **Board** picker
+and imported again from the editor or game setup. The **Board** carousel in game setup
 chooses which board a game uses. The file format and validation rules live in
 `packages/engine/src/boards/format.ts`.
 

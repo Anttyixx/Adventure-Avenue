@@ -34,6 +34,8 @@ import { randomLook } from '../sprites';
 import { clear, fmt, h } from './dom';
 import { DerbyView, MemoryView, ReelsView, VentureView } from './games';
 import { Hud } from './hud';
+import { mainMenu } from './menu';
+import { setupScreen } from './start';
 import {
   answerTradeModal,
   auctionPickModal,
@@ -719,6 +721,55 @@ export async function openLab(app: HTMLElement, section?: string) {
         board.ring(plot.id, '#ffd166', true);
         refresh();
       }),
+    );
+  }
+
+  // Full screens: the main menu and game setup open over the lab with a way back.
+  {
+    const s = addSection('screens', 'Menus', 'Opens over the lab. Buttons on the screen report here.');
+    const overlay = (open: (holder: HTMLElement, done: (msg: string) => void) => () => void) => {
+      const holder = h('div', { class: 'lab-screen' });
+      root.append(holder);
+      let close = () => {};
+      const done = (msg: string) => {
+        close();
+        holder.remove();
+        hud.tick(msg);
+      };
+      close = open(holder, done);
+      holder.append(
+        h(
+          'button',
+          { class: 'btn small lab-back', onclick: () => done('Closed the screen.') },
+          'Back to UI Lab',
+        ),
+      );
+    };
+    const menu = (withSave: boolean) =>
+      overlay((holder, done) =>
+        mainMenu(
+          holder,
+          {
+            onStart: () => done('Main menu: Start pressed.'),
+            onContinue: () => done('Main menu: Continue pressed.'),
+            onEditor: () => done('Main menu: Board editor pressed.'),
+          },
+          withSave ? { state: cloneState(G), savedAt: Date.now() - 12 * 60000 } : null,
+        ),
+      );
+    row(
+      s,
+      btn('Main menu (saved game)', () => menu(true)),
+      btn('Main menu (no save)', () => menu(false)),
+      btn('Game setup', () =>
+        overlay((holder, done) =>
+          setupScreen(holder, {
+            onStart: (o) => done(`Setup: start on ${o.board?.name} with ${o.seats.length} players.`),
+            onBack: () => done('Setup: back to menu.'),
+            onEditor: () => done('Setup: board editor pressed.'),
+          }),
+        ),
+      ),
     );
   }
 
