@@ -1,7 +1,7 @@
 import { cpuDecide } from './cpu';
 import { Game, type GameIO } from './engine';
 import { newGame } from './setup';
-import type { GameState, MatchOptions, RuleSet } from './types';
+import type { BoardDef, GameState, MatchOptions, RuleSet } from './types';
 
 /** An IO where every seat is answered by the CPU rules and events are dropped. */
 export function cpuIO(getState: () => GameState): GameIO {
@@ -32,8 +32,9 @@ export async function simulate(
   seed: number,
   target = 5000,
   roundCap = 0,
+  board?: BoardDef,
 ): Promise<SimResult> {
-  const G = newGame({ rules, target, roundCap, seats: cpuSeats(4), seed });
+  const G = newGame({ rules, target, roundCap, seats: cpuSeats(4), seed, board });
   const game = new Game(
     G,
     cpuIO(() => G),

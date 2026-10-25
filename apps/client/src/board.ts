@@ -9,8 +9,12 @@ import { drawCoin, drawSparkle, SUIT_CHARS } from './icons';
 import { SPRITE_H, SPRITE_W, spriteFrames } from './sprites';
 import { TIMING as T } from './timing';
 
-export const WORLD_W = 1300;
-export const WORLD_H = 800;
+/** World size for a board: 100 units per grid cell plus a 50-unit margin all round. */
+export function worldSize(G: { cols?: number; rows?: number } | null) {
+  return { w: (G?.cols ?? 12) * 100 + 100, h: (G?.rows ?? 7) * 100 + 100 };
+}
+
+const isTown = (G: GameState | null) => !G || G.boardId === 'town';
 const CELL = 100;
 const TILE = 86;
 
@@ -47,6 +51,14 @@ export interface Insets {
 export type ViewMode = 'follow' | 'full';
 
 export class BoardView {
+  /** World size in board units: 100 per grid cell plus a 50-unit margin. */
+  get ww() {
+    return worldSize(this.G).w;
+  }
+  get wh() {
+    return worldSize(this.G).h;
+  }
+
   canvas: HTMLCanvasElement;
   ctx: CanvasRenderingContext2D;
   G: GameState | null = null;
@@ -58,8 +70,8 @@ export class BoardView {
   cacheScale = 0;
 
   // Camera: world point at the focus, and zoom in CSS px per world unit.
-  cam = { x: WORLD_W / 2, y: WORLD_H / 2, z: 1 };
-  camTarget = { x: WORLD_W / 2, y: WORLD_H / 2, z: 1 };
+  cam = { x: 650, y: 400, z: 1 };
+  camTarget = { x: 650, y: 400, z: 1 };
   mode: ViewMode = 'follow';
   fitIds: number[] = [];
   insets: Insets = { top: 0, right: 0, bottom: 0, left: 0 };
@@ -157,12 +169,12 @@ export class BoardView {
 
   tokenPos(pid: number) {
     const t = this.tokens.get(pid);
-    return t ? { x: t.x, y: t.y } : { x: WORLD_W / 2, y: WORLD_H / 2 };
+    return t ? { x: t.x, y: t.y } : { x: this.ww / 2, y: this.wh / 2 };
   }
 
   bankPos() {
     const bank = this.G?.nodes.find((s) => s.t === 'bank');
-    return bank ? squareCenter(bank) : { x: WORLD_W / 2, y: WORLD_H - 100 };
+    return bank ? squareCenter(bank) : { x: this.ww / 2, y: this.wh - 100 };
   }
 
   // ------------------------------------------------------------ animation helpers
@@ -394,14 +406,14 @@ export class BoardView {
 
   fitZoom() {
     const { aw, ah } = this.focusArea();
-    const safe = Math.min(aw / WORLD_W, ah / WORLD_H);
-    const whole = Math.min(this.w / WORLD_W, this.h / WORLD_H);
+    const safe = Math.min(aw / this.ww, ah / this.wh);
+    const whole = Math.min(this.w / this.ww, this.h / this.wh);
     return Math.max(safe, whole * 0.8);
   }
 
   followZoom() {
     const small = Math.min(this.w, this.h) < 520;
-    return Math.min(this.w / WORLD_W, this.h / WORLD_H) * (small ? 1.9 : 1.4);
+    return Math.min(this.w / this.ww, this.h / this.wh) * (small ? 1.9 : 1.4);
   }
 
   clampCenter(x: number, y: number, z: number) {
@@ -416,11 +428,11 @@ export class BoardView {
     const up = ah / 2 / z;
     const down = up;
     const cx =
-      left + right >= WORLD_W
-        ? WORLD_W / 2 - (right - left) / 2
-        : Math.min(Math.max(x, left), WORLD_W - right);
+      left + right >= this.ww
+        ? this.ww / 2 - (right - left) / 2
+        : Math.min(Math.max(x, left), this.ww - right);
     const cy =
-      up + down >= WORLD_H ? WORLD_H / 2 - (down - up) / 2 : Math.min(Math.max(y, up), WORLD_H - down);
+      up + down >= this.wh ? this.wh / 2 - (down - up) / 2 : Math.min(Math.max(y, up), this.wh - down);
     return { x: cx, y: cy };
   }
 
@@ -430,7 +442,7 @@ export class BoardView {
       this.camTarget = this.choiceView();
     } else if (full) {
       const z = this.fitZoom();
-      const c = this.clampCenter(WORLD_W / 2, WORLD_H / 2, z);
+      const c = this.clampCenter(this.ww / 2, this.wh / 2, z);
       this.camTarget = { x: c.x, y: c.y, z };
     } else {
       const z = this.followZoom();
@@ -520,7 +532,7 @@ export class BoardView {
       (fy - this.cam.y * this.cam.z) * this.dpr,
     );
     ctx.imageSmoothingEnabled = true;
-    ctx.drawImage(this.cache, 0, 0, WORLD_W, WORLD_H);
+    ctx.drawImage(this.cache, 0, 0, this.ww, this.wh);
 
     const motion = !reducedMotion();
     if (motion) this.drawAmbient(ctx, now);
@@ -546,7 +558,7 @@ export class BoardView {
     ctx.save();
     ctx.fillStyle = 'rgba(20,40,30,0.07)';
     for (let i = 0; i < 3; i++) {
-      const x = ((t * 12 + i * 520) % (WORLD_W + 600)) - 300;
+      const x = ((t * 12 + i * 520) % (this.ww + 600)) - 300;
       const y = 140 + i * 230;
       ctx.beginPath();
       ctx.ellipse(x, y, 170, 60, 0, 0, Math.PI * 2);
@@ -554,6 +566,12 @@ export class BoardView {
       ctx.fill();
     }
     ctx.restore();
+    if (isTown(this.G)) this.drawTownAmbient(ctx, t);
+    // Bank coin glint every few seconds
+    this.drawBankGlint(ctx, t);
+  }
+
+  private drawTownAmbient(ctx: CanvasRenderingContext2D, t: number) {
     // Pond shimmer
     ctx.save();
     ctx.strokeStyle = 'rgba(255,255,255,0.55)';
@@ -592,7 +610,9 @@ export class BoardView {
     ctx.ellipse(fxp.x, fxp.y + 6, 18 + rp * 26, 7 + rp * 10, 0, 0, Math.PI * 2);
     ctx.stroke();
     ctx.restore();
-    // Bank coin glint every few seconds
+  }
+
+  private drawBankGlint(ctx: CanvasRenderingContext2D, t: number) {
     const g = (t % 4) / 4;
     if (g < 0.2) {
       const b = this.bankPos();
@@ -833,13 +853,18 @@ export class BoardView {
     this.dirty = false;
     this.cacheScale = scale;
     const cv = this.cache;
-    cv.width = Math.round(WORLD_W * scale);
-    cv.height = Math.round(WORLD_H * scale);
+    cv.width = Math.round(this.ww * scale);
+    cv.height = Math.round(this.wh * scale);
     const ctx = cv.getContext('2d')!;
     ctx.setTransform(scale, 0, 0, scale, 0, 0);
-    drawScenery(ctx, G);
-    for (const sq of G.nodes) drawSquare(ctx, G, sq);
+    paintBoard(ctx, G);
   }
+}
+
+/** Draw the static board (scenery, roads and every square) in world units. Used by the editor too. */
+export function paintBoard(ctx: CanvasRenderingContext2D, G: GameState) {
+  drawScenery(ctx, G);
+  for (const sq of G.nodes) drawSquare(ctx, G, sq);
 }
 
 // ------------------------------------------------------------------ drawing helpers
@@ -869,7 +894,61 @@ function seeded(seed: number) {
   };
 }
 
+function drawTree(ctx: CanvasRenderingContext2D, x: number, y: number, s = 1) {
+  ctx.fillStyle = 'rgba(0,0,0,0.15)';
+  ctx.beginPath();
+  ctx.ellipse(x + 4, y + 22 * s, 22 * s, 8 * s, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = '#7a4f2a';
+  ctx.fillRect(x - 4 * s, y, 8 * s, 22 * s);
+  ctx.fillStyle = '#3f9a45';
+  ctx.beginPath();
+  ctx.arc(x, y - 6 * s, 24 * s, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = '#58b85a';
+  ctx.beginPath();
+  ctx.arc(x - 7 * s, y - 13 * s, 13 * s, 0, Math.PI * 2);
+  ctx.fill();
+}
+
+function drawBed(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number) {
+  ctx.fillStyle = '#7a5a3a';
+  roundRect(ctx, x, y, w, h, 10);
+  ctx.fill();
+  const fr = seeded(Math.round(x * 7 + y));
+  for (let i = 0; i < (w * h) / 180; i++) {
+    ctx.fillStyle = ['#ff6b8b', '#ffd166', '#ffffff', '#c77dff'][Math.floor(fr() * 4)];
+    ctx.fillRect(x + 6 + fr() * (w - 14), y + 5 + fr() * (h - 12), 5, 5);
+  }
+}
+
+/** Custom boards: trees, flower beds and small ponds in the empty cells, the same every time. */
+function drawCustomDecor(ctx: CanvasRenderingContext2D, G: GameState) {
+  const used = new Set(G.nodes.map((n) => `${n.x},${n.y}`));
+  const r = seeded(97 + (G.cols ?? 12) * 31 + (G.rows ?? 7) * 17 + G.nodes.length);
+  for (let y = 0; y < (G.rows ?? 7); y++) {
+    for (let x = 0; x < (G.cols ?? 12); x++) {
+      if (used.has(`${x},${y}`)) continue;
+      const cx = 50 + x * 100 + 50;
+      const cy = 50 + y * 100 + 50;
+      const roll = r();
+      if (roll < 0.12) {
+        ctx.fillStyle = '#5aa0d8';
+        ctx.beginPath();
+        ctx.ellipse(cx, cy, 38, 24, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#7dc0ee';
+        ctx.beginPath();
+        ctx.ellipse(cx - 3, cy - 3, 30, 17, 0, 0, Math.PI * 2);
+        ctx.fill();
+      } else if (roll < 0.3) drawBed(ctx, cx - 40, cy - 14, 80, 28);
+      else if (roll < 0.75) drawTree(ctx, cx - 14 + r() * 28, cy - 8 + r() * 16, 0.75 + r() * 0.35);
+    }
+  }
+}
+
 function drawScenery(ctx: CanvasRenderingContext2D, G: GameState) {
+  const { w: WORLD_W, h: WORLD_H } = worldSize(G);
   // Grass with tufts
   const grd = ctx.createLinearGradient(0, 0, 0, WORLD_H);
   grd.addColorStop(0, '#9edb73');
@@ -904,6 +983,11 @@ function drawScenery(ctx: CanvasRenderingContext2D, G: GameState) {
         ctx.stroke();
       }
     }
+  }
+
+  if (!isTown(G)) {
+    drawCustomDecor(ctx, G);
+    return;
   }
 
   // Pond (upper park)
@@ -941,38 +1025,14 @@ function drawScenery(ctx: CanvasRenderingContext2D, G: GameState) {
   ctx.fill();
 
   // Flower beds
-  const bed = (x: number, y: number, w: number, h: number) => {
-    ctx.fillStyle = '#7a5a3a';
-    roundRect(ctx, x, y, w, h, 10);
-    ctx.fill();
-    const fr = seeded(Math.round(x * 7 + y));
-    for (let i = 0; i < (w * h) / 180; i++) {
-      ctx.fillStyle = ['#ff6b8b', '#ffd166', '#ffffff', '#c77dff'][Math.floor(fr() * 4)];
-      ctx.fillRect(x + 6 + fr() * (w - 14), y + 5 + fr() * (h - 12), 5, 5);
-    }
-  };
+  const bed = (x: number, y: number, w: number, h: number) => drawBed(ctx, x, y, w, h);
   bed(560, 180, 150, 34);
   bed(560, 280, 150, 34);
   bed(800, 600, 140, 30);
   bed(380, 600, 140, 30);
 
   // Trees
-  const tree = (x: number, y: number, s = 1) => {
-    ctx.fillStyle = 'rgba(0,0,0,0.15)';
-    ctx.beginPath();
-    ctx.ellipse(x + 4, y + 22 * s, 22 * s, 8 * s, 0, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.fillStyle = '#7a4f2a';
-    ctx.fillRect(x - 4 * s, y, 8 * s, 22 * s);
-    ctx.fillStyle = '#3f9a45';
-    ctx.beginPath();
-    ctx.arc(x, y - 6 * s, 24 * s, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.fillStyle = '#58b85a';
-    ctx.beginPath();
-    ctx.arc(x - 7 * s, y - 13 * s, 13 * s, 0, Math.PI * 2);
-    ctx.fill();
-  };
+  const tree = (x: number, y: number, s = 1) => drawTree(ctx, x, y, s);
   for (const [x, y, s] of [
     [800, 200, 1],
     [900, 260, 1.1],

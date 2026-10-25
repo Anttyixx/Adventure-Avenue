@@ -10,5 +10,6 @@ export * from './cards';
 export * from './cpu';
 export * from './arcade';
 export { BOARDS, TOWN } from './boards/town';
-export type { BoardDef } from './boards/town';
+
 export * from './headless';
+export * from './boards/format';

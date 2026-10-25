@@ -110,6 +110,10 @@ export interface GameState {
   turn: number;
   order: number[];
   boardId: string;
+  /** Board name and grid size (older saves predate these: Town, 12 x 7). */
+  boardName?: string;
+  cols?: number;
+  rows?: number;
   nodes: Square[];
   groups: number[][];
   districts: District[];
@@ -140,4 +144,32 @@ export interface MatchOptions {
   seats: SeatConfig[];
   seed?: number;
   boardId?: string;
+  /** A custom board to play on; overrides `boardId`. */
+  board?: BoardDef;
+}
+
+export interface BoardSquareDef {
+  x: number;
+  y: number;
+  t: SquareType;
+  /** District index for shops and plots. */
+  d?: number;
+  base?: number;
+  /** Standard rules: this district square starts as a vacant plot. */
+  plot?: boolean;
+}
+
+/** A board as data: squares on a grid, districts and the connections between squares. */
+export interface BoardDef {
+  id: string;
+  name: string;
+  author?: string;
+  cols: number;
+  rows: number;
+  districts: District[];
+  squares: BoardSquareDef[];
+  /** Pairs of indices into `squares` that are connected. */
+  edges: [number, number][];
+  /** Index of the bank square (start position). */
+  bank: number;
 }

@@ -9,7 +9,7 @@ export const PLAYER_COLORS = ['#e5484d', '#3e7bfa', '#30a46c', '#f0b429'];
 export const PLAYER_COLOR_NAMES = ['red', 'blue', 'green', 'gold'];
 
 export function newGame(opts: MatchOptions): GameState {
-  const board = BOARDS[opts.boardId ?? 'town'];
+  const board = opts.board ?? BOARDS[opts.boardId ?? 'town'];
   const seed = opts.seed ?? Math.floor(Math.random() * 2 ** 31);
   const nodes: Square[] = board.squares.map((s, id) => {
     const isPlot = !!s.plot && opts.rules === 'standard';
@@ -63,9 +63,12 @@ export function newGame(opts: MatchOptions): GameState {
     turn: 0,
     order: [],
     boardId: board.id,
+    boardName: board.name,
+    cols: board.cols,
+    rows: board.rows,
     nodes,
     groups: [],
-    districts: board.districts,
+    districts: board.districts.map((d) => ({ ...d })),
     factor: board.districts.map(() => 1),
     changeSuit: 0,
     vg: { cards: [], owner: [] },

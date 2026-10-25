@@ -2,7 +2,17 @@
  * Start screen: player count, CPU fill, target, round limit, rule set, characters and names,
  * and "Continue saved game" when a save exists.
  */
-import { K, PLAYER_COLORS, type CharLook, type MatchOptions, type RuleSet } from '@aa/engine';
+import {
+  K,
+  PLAYER_COLORS,
+  validateBoard,
+  type BoardDef,
+  type CharLook,
+  type MatchOptions,
+  type RuleSet,
+} from '@aa/engine';
+import { boardThumb } from './thumb';
+import { BUILT_IN, getBoard, listBoards, pickBoardFile, readBoardFile, saveBoard } from '../boardstore';
 import { portraitURL, randomLook } from '../sprites';
 import { loadSave, type SaveInfo } from '../save';
 import { clear, fmt, h } from './dom';
@@ -55,6 +65,8 @@ function writeJSON(key: string, v: unknown) {
 export interface StartHandlers {
   onStart(opts: MatchOptions): void;
   onContinue(save: SaveInfo): void;
+  /** Open the board editor, optionally on an existing board. */
+  onEditor(board: BoardDef | null): void;
 }
 
 export function startScreen(root: HTMLElement, handlers: StartHandlers) {
@@ -64,12 +76,15 @@ export function startScreen(root: HTMLElement, handlers: StartHandlers) {
     target: K.defaultTarget as number,
     roundCap: 0,
     rules: 'standard' as RuleSet,
+    boardId: 'town',
   });
   let humans = saved.humans;
   let fill = saved.fill;
   let target = saved.target;
   let roundCap = saved.roundCap;
   let rules: RuleSet = saved.rules;
+  let boardId: string = getBoard(saved.boardId) ? saved.boardId : 'town';
+  let notice = '';
   const typed: string[] = readJSON(NAMES_KEY, ['', '', '', '']);
   let looks: CharLook[] = [];
   let suggested: string[] = [];
@@ -107,6 +122,91 @@ export function startScreen(root: HTMLElement, handlers: StartHandlers) {
       ),
     );
 
+  /** Board choice: the built-in board, saved boards, importing a file, and the editor. */
+  const boardPicker = () => {
+    const saved = listBoards();
+    const playable = (b: BoardDef) => validateBoard(b).errors.length === 0;
+    const select = h(
+      'select',
+      {
+        class: 'board-select',
+        onchange: (e: Event) => {
+          boardId = (e.target as HTMLSelectElement).value;
+          notice = '';
+          draw();
+        },
+      },
+      h(
+        'optgroup',
+        { label: 'Built-in' },
+        ...BUILT_IN.map((b) => h('option', { value: b.id, selected: b.id === boardId }, b.name)),
+      ),
+      saved.length
+        ? h(
+            'optgroup',
+            { label: 'My boards' },
+            ...saved.map((b) =>
+              h(
+                'option',
+                { value: b.id, selected: b.id === boardId, disabled: !playable(b.board) },
+                b.board.name + (playable(b.board) ? '' : ' (has problems)'),
+              ),
+            ),
+          )
+        : null,
+    );
+    const board = getBoard(boardId) ?? BUILT_IN[0];
+    const custom = !BUILT_IN.some((b) => b.id === board.id);
+    const importBtn = h('button', { class: 'btn small' }, 'Import board file');
+    importBtn.onclick = async () => {
+      const file = await pickBoardFile();
+      if (!file) return;
+      const res = await readBoardFile(file);
+      if (!res.board) {
+        notice = res.error ?? 'Could not read that file.';
+      } else if (res.check?.errors.length) {
+        saveBoard(res.board);
+        notice = `Imported "${res.board.name}", but it needs fixing before it can be played: ${res.check.errors[0]} Open it in the board editor.`;
+      } else {
+        saveBoard(res.board);
+        boardId = res.board.id;
+        notice = `Imported "${res.board.name}" and saved it to My boards.`;
+      }
+      draw();
+    };
+    return h(
+      'div',
+      { class: 'opt board-pick' },
+      h('div', { class: 'opt-label' }, 'Board'),
+      h(
+        'div',
+        { class: 'board-row' },
+        boardThumb(board, 180, 100),
+        h(
+          'div',
+          { class: 'board-side' },
+          select,
+          h(
+            'small',
+            { class: 'hint' },
+            `${board.squares.length} squares · ${board.districts.length} districts${board.author ? ` · by ${board.author}` : ''}`,
+          ),
+          h(
+            'div',
+            { class: 'btn-row left' },
+            importBtn,
+            h(
+              'button',
+              { class: 'btn small', onclick: () => handlers.onEditor(custom ? board : null) },
+              custom ? 'Edit this board' : 'Board editor',
+            ),
+          ),
+        ),
+      ),
+      notice ? h('p', { class: 'hint board-notice' }, notice) : null,
+    );
+  };
+
   const draw = () => {
     clear(el);
     const save = loadSave();
@@ -119,8 +219,9 @@ export function startScreen(root: HTMLElement, handlers: StartHandlers) {
         return { name, cpu: !human, ch: looks[i] };
       });
       writeJSON(NAMES_KEY, typed);
-      writeJSON(OPTS_KEY, { humans, fill, target, roundCap, rules });
-      handlers.onStart({ rules, target, roundCap, seats: seatList });
+      writeJSON(OPTS_KEY, { humans, fill, target, roundCap, rules, boardId });
+      const board = getBoard(boardId) ?? BUILT_IN[0];
+      handlers.onStart({ rules, target, roundCap, seats: seatList, board });
     };
     el.append(
       h(
@@ -184,6 +285,7 @@ export function startScreen(root: HTMLElement, handlers: StartHandlers) {
             ? 'Standard: districts, vacant plots and the stock market.'
             : 'Easy: rows of connected shops, no plots and no stock market.',
         ),
+        boardPicker(),
         h(
           'div',
           { class: 'seats' },

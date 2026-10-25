@@ -1,28 +1,6 @@
-import type { District, SquareType } from '../types';
+import type { BoardDef, BoardSquareDef, District, SquareType } from '../types';
 
-export interface BoardSquareDef {
-  x: number;
-  y: number;
-  t: SquareType;
-  /** District index for shops and plots. */
-  d?: number;
-  base?: number;
-  /** Standard rules: this district square starts as a vacant plot. */
-  plot?: boolean;
-}
-
-export interface BoardDef {
-  id: string;
-  name: string;
-  cols: number;
-  rows: number;
-  districts: District[];
-  squares: BoardSquareDef[];
-  /** Pairs of indices into `squares` that are connected. */
-  edges: [number, number][];
-  /** Index of the bank square (start position). */
-  bank: number;
-}
+export type { BoardDef, BoardSquareDef } from '../types';
 
 const districts: District[] = [
   { name: 'Brick Row', color: '#f2a7a0' },

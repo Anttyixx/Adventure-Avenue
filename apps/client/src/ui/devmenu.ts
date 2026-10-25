@@ -114,6 +114,22 @@ function openDevMenu() {
           },
           save ? `Delete saved game (round ${save.state.round})` : 'No saved game',
         ),
+        h(
+          'button',
+          {
+            class: 'btn',
+            onclick: () => {
+              if (
+                !inLab &&
+                !confirm('Open the board editor? A game in progress is saved at the start of each turn.')
+              )
+                return;
+              location.hash = '#editor';
+              location.reload();
+            },
+          },
+          'Board editor',
+        ),
         h('button', { class: 'btn', onclick: () => location.reload() }, 'Reload page'),
       ),
     ),

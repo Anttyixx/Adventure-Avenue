@@ -81,12 +81,15 @@ export function marketView(
 // ------------------------------------------------------------------ mini map
 
 function miniMap(G: GameState, d: number, select: (d: number) => void): HTMLElement {
-  const cell = 21;
+  const cols = G.cols ?? 12;
+  const rows = G.rows ?? 7;
+  // Shrink cells on big boards so the map keeps about the same size.
+  const cell = Math.max(10, Math.min(21, Math.floor(260 / cols), Math.floor(150 / rows)));
   const pad = 6;
   const cv = h('canvas', { class: 'minimap' }) as HTMLCanvasElement;
   const dpr = Math.min(3, window.devicePixelRatio || 1);
-  const W = 12 * cell + pad * 2;
-  const H = 7 * cell + pad * 2;
+  const W = cols * cell + pad * 2;
+  const H = rows * cell + pad * 2;
   cv.width = W * dpr;
   cv.height = H * dpr;
   cv.style.width = `${W}px`;

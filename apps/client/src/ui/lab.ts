@@ -749,6 +749,10 @@ export async function openLab(app: HTMLElement, section?: string) {
         hud.tick(`Now round ${G.round}.`);
       }),
       btn('New sample game', () => location.reload()),
+      btn('Open board editor', () => {
+        location.hash = '#editor';
+        location.reload();
+      }),
     );
   }
 

@@ -15,6 +15,16 @@ empty seats.
 | `dev`  | Work in progress; every change lands here first | `/dev/`     |
 | `main` | Stable builds, promoted from `dev`              | site root   |
 
+## Custom boards
+
+Players can build their own boards in the **board editor** (start screen → Board editor, or
+`/dev/#editor`): paint squares on a grid, set up districts and shop values, and fix any problems
+the editor lists. Neighboring squares connect automatically; the Links tool cuts a connection.
+Boards can be saved in the browser (**My boards**), exported as `.aaboard.json` files to share,
+and imported again from the editor or the start screen. The start screen's **Board** picker
+chooses which board a game uses. The file format and validation rules live in
+`packages/engine/src/boards/format.ts`.
+
 ## Testing UI elements
 
 Test builds (anything but `main`) show a build badge in the bottom-right corner. Tap it 5 times

@@ -17,6 +17,10 @@ A Fortune Street-style board game for the browser. Spec: `docs/spec.md`.
   `GameIO.emit`; it never touches the DOM.
 - `apps/client` - Vite + TypeScript hot-seat client (canvas board, HTML/CSS overlays).
 - `apps/server` - planned online server (not built yet).
+- Boards are data (`BoardDef`). Custom boards are built in the board editor
+  (`apps/client/src/ui/editor.ts`, `#editor`), saved in localStorage (`boardstore.ts`) and
+  exported/imported as `.aaboard.json` files. The file format and the playability rules are in
+  `packages/engine/src/boards/format.ts`; `newGame({ board })` plays on any valid board.
 - Dev/test builds show a build badge in the bottom-right corner; tapping it 5 times opens the dev
   menu. The UI Lab (`#ui-lab`, code in `apps/client/src/ui/lab.ts`) shows every UI element with
   controls to trigger it. When adding a new UI element, add a control for it to the UI Lab.

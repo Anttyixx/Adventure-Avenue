@@ -59,6 +59,8 @@ export class HotSeat implements GameIO {
     parent: HTMLElement,
     public G: GameState,
     private onExit: () => void,
+    /** Test plays from the board editor do not touch the saved game. */
+    private saving = true,
   ) {
     this.root = h('div', { class: 'game' });
     parent.append(this.root);
@@ -438,7 +440,7 @@ export class HotSeat implements GameIO {
     const hud = this.hud;
     switch (e.type) {
       case 'turnStart': {
-        saveGame(G);
+        if (this.saving) saveGame(G);
         const p = G.players[e.pid];
         board.activePid = e.pid;
         board.followPid = e.pid;
@@ -560,7 +562,7 @@ export class HotSeat implements GameIO {
         break;
       }
       case 'gameOver':
-        clearSave();
+        if (this.saving) clearSave();
         board.activePid = -1;
         this.refresh();
         await this.wait(T.gameOver);
