@@ -594,7 +594,10 @@ Player colors: red, blue, green, gold; district colors are pastels so they don't
 
 All audio is synthesized in the browser with the Web Audio API (`apps/client/src/audio.ts`); there
 are no audio files. Browsers only allow sound after the player touches the page, so audio starts
-on the first tap or key press.
+on the first tap or key press (phones only count a finished tap, so the client listens for
+`touchend`/`click` too, and keeps listening in case iOS interrupts audio later). On iPhone the
+page asks for the "playback" audio session (or plays a silent looping clip on older iOS) so the
+ring/silent switch does not mute the game; the in-game Mute switch still does.
 
 - **Music:** two looping chiptune tracks: a relaxed one for the main menu, setup and board editor,
   and a bouncier one during games. The music stops for the winning fanfare at the end of a game.

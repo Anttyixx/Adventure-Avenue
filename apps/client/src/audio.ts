@@ -190,6 +190,30 @@ const SONGS: Record<Track, Song> = {
 
 type Voice = 'lead' | 'bass' | 'pad';
 
+/** A short silent 8 kHz mono WAV as a data URL. */
+function silentWav(): string {
+  const samples = 800;
+  const bytes = new Uint8Array(44 + samples);
+  const v = new DataView(bytes.buffer);
+  const text = (at: number, t: string) => [...t].forEach((c, i) => (bytes[at + i] = c.charCodeAt(0)));
+  text(0, 'RIFF');
+  v.setUint32(4, 36 + samples, true);
+  text(8, 'WAVEfmt ');
+  v.setUint32(16, 16, true);
+  v.setUint16(20, 1, true); // PCM
+  v.setUint16(22, 1, true); // mono
+  v.setUint32(24, 8000, true);
+  v.setUint32(28, 8000, true);
+  v.setUint16(32, 1, true);
+  v.setUint16(34, 8, true); // 8-bit: silence is 128
+  text(36, 'data');
+  v.setUint32(40, samples, true);
+  bytes.fill(128, 44);
+  let bin = '';
+  bytes.forEach((b) => (bin += String.fromCharCode(b)));
+  return `data:audio/wav;base64,${btoa(bin)}`;
+}
+
 class AudioEngine {
   prefs = loadPrefs();
   private ctx: AudioContext | null = null;
@@ -206,21 +230,66 @@ class AudioEngine {
   private listeners = new Set<() => void>();
 
   constructor() {
+    // Phones only count some events as a user gesture that may start audio (a finger lifting,
+    // a click), so listen to all of them and keep listening: iOS can also interrupt audio later
+    // (a call, the lock screen) and it needs another tap to come back.
     const unlock = () => {
       this.ensure();
-      if (this.ctx?.state === 'suspended') void this.ctx.resume();
-      if (this.ctx?.state === 'running') {
-        window.removeEventListener('pointerdown', unlock, true);
-        window.removeEventListener('keydown', unlock, true);
+      this.playThroughSilentSwitch();
+      const ctx = this.ctx;
+      if (ctx && ctx.state !== 'running' && !document.hidden) {
+        // Older Safari also wants a sound started inside the gesture before it unlocks.
+        const kick = ctx.createBufferSource();
+        kick.buffer = ctx.createBuffer(1, 1, 22050);
+        kick.connect(ctx.destination);
+        kick.start(0);
+        void ctx.resume().catch(() => {});
       }
     };
-    window.addEventListener('pointerdown', unlock, true);
-    window.addEventListener('keydown', unlock, true);
+    for (const ev of ['pointerdown', 'pointerup', 'touchend', 'click', 'keydown'])
+      window.addEventListener(ev, unlock, { capture: true, passive: true });
     document.addEventListener('visibilitychange', () => {
       if (!this.ctx) return;
-      if (document.hidden) void this.ctx.suspend();
-      else void this.ctx.resume();
+      if (document.hidden) {
+        void this.ctx.suspend();
+        this.silent?.pause();
+      } else {
+        void this.ctx.resume().catch(() => {});
+        if (this.silent) void this.silent.play().catch(() => {});
+      }
     });
+  }
+
+  /** Looping silent clip that makes iOS treat the page as media playback (see below). */
+  private silent: HTMLAudioElement | null = null;
+
+  /**
+   * iPhones mute Web Audio when the ring/silent switch is on. Asking for the "playback" audio
+   * session (iOS 17+), or on older iOS playing a silent media clip, lets the game's sound play
+   * like a video's would. Players can still turn it off with the Mute switch.
+   */
+  private playThroughSilentSwitch() {
+    const session = (navigator as unknown as { audioSession?: { type: string } }).audioSession;
+    if (session) {
+      if (session.type !== 'playback') session.type = 'playback';
+      return;
+    }
+    if (
+      !/iPad|iPhone|iPod/.test(navigator.userAgent) &&
+      !(navigator.maxTouchPoints > 1 && /Mac/.test(navigator.userAgent))
+    )
+      return;
+    if (!this.silent) {
+      this.silent = new Audio(silentWav());
+      this.silent.loop = true;
+      this.silent.setAttribute('playsinline', '');
+    }
+    if (this.silent.paused) void this.silent.play().catch(() => {});
+  }
+
+  /** True once the browser lets the game play sound. */
+  get ready() {
+    return this.ctx?.state === 'running';
   }
 
   /** Create the audio graph (only after a user gesture). */
@@ -232,6 +301,7 @@ class AudioEngine {
     if (!AC) return;
     const ctx = new AC();
     this.ctx = ctx;
+    ctx.onstatechange = () => this.listeners.forEach((f) => f());
     this.master = ctx.createGain();
     const comp = ctx.createDynamicsCompressor();
     comp.threshold.value = -14;

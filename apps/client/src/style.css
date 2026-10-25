@@ -2578,3 +2578,7 @@ input[type='range'] {
   font-size: 12px;
   font-variant-numeric: tabular-nums;
 }
+.snd-status {
+  margin: 0;
+  color: var(--accent);
+}

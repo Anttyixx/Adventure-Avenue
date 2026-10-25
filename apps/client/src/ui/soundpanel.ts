@@ -35,9 +35,17 @@ export function soundControls(): HTMLElement {
   };
   const mute = h('input', { type: 'checkbox', checked: sound.prefs.muted }) as HTMLInputElement;
   mute.onchange = () => sound.set({ muted: mute.checked });
+  const status = h('p', { class: 'hint snd-status' });
+  const sync = () => {
+    status.hidden = sound.ready;
+    status.textContent = 'Sound is off until you tap the page.';
+  };
+  sync();
+  const off = sound.onChange(() => (status.isConnected ? sync() : off()));
   return h(
     'div',
     { class: 'snd-controls' },
+    status,
     slider('Music', 'music'),
     slider('Effects', 'sfx'),
     h('label', { class: 'check snd-mute' }, mute, 'Mute all sound'),
