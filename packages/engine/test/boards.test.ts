@@ -1,4 +1,6 @@
 import { describe, expect, it } from 'vitest';
+import { BUILT_IN_BOARDS } from '../src/boards/builtin';
+import { fromMap } from '../src/boards/maps';
 import { TOWN } from '../src/boards/town';
 import {
   autoEdges,
@@ -229,5 +231,41 @@ describe('hex boards', () => {
       const r = await simulate(i % 2 ? 'easy' : 'standard', i + 1, 4000, 0, b);
       expect(r.winner).toBeGreaterThanOrEqual(0);
     }
+  });
+});
+
+describe('built-in boards', () => {
+  it.each(BUILT_IN_BOARDS.map((b) => [b.name, b] as const))('%s is valid with no warnings', (_, b) => {
+    expect(validateBoard(b)).toEqual({ errors: [], warnings: [] });
+    expect(new Set(BUILT_IN_BOARDS.map((x) => x.id)).size).toBe(BUILT_IN_BOARDS.length);
+  });
+
+  it.each(BUILT_IN_BOARDS.map((b) => [b.name, b] as const))(
+    'plays CPU games to the end on %s',
+    async (_, b) => {
+      for (let i = 0; i < 10; i++) {
+        const r = await simulate(i % 2 ? 'easy' : 'standard', i + 1, 4000, 0, b);
+        expect(r.winner).toBeGreaterThanOrEqual(0);
+      }
+    },
+  );
+
+  it('reads text maps', () => {
+    const b = fromMap({
+      id: 'm',
+      name: 'Map',
+      layout: 'square',
+      districts: [{ name: 'A', color: '#fff', base: 100 }],
+      map: ['B0a', 'S.H', 'D0C'],
+    });
+    expect(b.cols).toBe(3);
+    expect(b.bank).toBe(0);
+    expect(b.squares.filter((s) => s.t === 'shop').map((s) => [s.base, !!s.plot])).toEqual([
+      [100, false],
+      [120, true],
+      [140, false],
+    ]);
+    expect(b.edges).toHaveLength(8);
+    expect(() => fromMap({ ...b, layout: 'square', districts: [], map: ['B?'] })).toThrow(/unknown/);
   });
 });

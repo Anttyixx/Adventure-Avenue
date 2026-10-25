@@ -1,8 +1,15 @@
 /**
  * Player-made boards: saved in this browser, exported as `.aaboard.json` files and imported
- * back. The built-in Town board is always available and cannot be changed.
+ * back. The built-in boards are always available and cannot be changed.
  */
-import { TOWN, boardFromFile, boardToFile, validateBoard, type BoardCheck, type BoardDef } from '@aa/engine';
+import {
+  BUILT_IN_BOARDS,
+  boardFromFile,
+  boardToFile,
+  validateBoard,
+  type BoardCheck,
+  type BoardDef,
+} from '@aa/engine';
 
 const KEY = 'adventure-avenue-boards';
 
@@ -12,7 +19,7 @@ export interface SavedBoard {
   board: BoardDef;
 }
 
-export const BUILT_IN: BoardDef[] = [TOWN];
+export const BUILT_IN: BoardDef[] = BUILT_IN_BOARDS;
 
 export function newBoardId() {
   return `b${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;

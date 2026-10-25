@@ -7,7 +7,7 @@
  */
 import {
   BOARD_LIMITS,
-  TOWN,
+  BUILT_IN_BOARDS,
   autoEdges,
   edgeKey,
   newGame,
@@ -980,11 +980,13 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
         opt('Hex loop', 'A simple loop on a hex grid.', () => hexLoop()),
         opt('Blank square grid', 'An empty 12 x 7 square grid.', () => blankBoard()),
         opt('Blank hex grid', 'An empty 14 x 9 hex grid.', () => blankBoard(14, 9, 'hex')),
-        opt('Copy of Town', 'The built-in board, to remix.', () => ({
-          ...structuredClone(TOWN),
-          id: newBoardId(),
-          name: 'Town remix',
-        })),
+        ...BUILT_IN_BOARDS.map((b) =>
+          opt(`Copy of ${b.name}`, `The built-in ${b.layout ?? 'square'} board, to remix.`, () => ({
+            ...structuredClone(b),
+            id: newBoardId(),
+            name: `${b.name} remix`,
+          })),
+        ),
       ),
     );
   };

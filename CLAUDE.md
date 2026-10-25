@@ -17,7 +17,8 @@ A Fortune Street-style board game for the browser. Spec: `docs/spec.md`.
   `GameIO.emit`; it never touches the DOM.
 - `apps/client` - Vite + TypeScript hot-seat client (canvas board, HTML/CSS overlays).
 - `apps/server` - planned online server (not built yet).
-- Boards are data (`BoardDef`). Custom boards are built in the board editor
+- Boards are data (`BoardDef`). Built-in boards are listed in `boards/builtin.ts`; all but Town are
+  drawn as text maps in `boards/maps.ts`. Custom boards are built in the board editor
   (`apps/client/src/ui/editor.ts`, `#editor`), saved in localStorage (`boardstore.ts`) and
   exported/imported as `.aaboard.json` files. The file format and the playability rules are in
   `packages/engine/src/boards/format.ts`; `newGame({ board })` plays on any valid board.

@@ -83,5 +83,3 @@ export const TOWN: BoardDef = {
   edges,
   bank: at(6, 6),
 };
-
-export const BOARDS: Record<string, BoardDef> = { town: TOWN };

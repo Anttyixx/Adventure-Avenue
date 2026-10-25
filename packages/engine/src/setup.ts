@@ -1,5 +1,5 @@
 import { K } from './constants';
-import { BOARDS } from './boards/town';
+import { BOARDS } from './boards/builtin';
 import { buildDeck } from './cards';
 import { shuffle } from './rng';
 import { computeRows, netWorth } from './rules';

@@ -9,7 +9,9 @@ export * from './engine';
 export * from './cards';
 export * from './cpu';
 export * from './arcade';
-export { BOARDS, TOWN } from './boards/town';
+export { TOWN } from './boards/town';
+export { BOARDS, BUILT_IN_BOARDS } from './boards/builtin';
+export { CORAL_ISLE, CROSSROADS, HARBOR, TWIN_LAKES } from './boards/maps';
 
 export * from './headless';
 export * from './boards/format';

@@ -149,6 +149,11 @@ squares). Each board uses a square grid (4 neighbors per cell) or a hex grid (po
 hexagons, odd rows shifted half a cell right, 6 neighbors per cell); the file stores it as
 `layout`, and files without one are square.
 
+**Built-in boards.** Town (square, 12 x 7), Harbor (square, 14 x 9: a ring and a market loop
+joined by two roads), Crossroads City (square, 16 x 11: a ring cut into quarters by two
+avenues), Twin Lakes (hex: two lakes with Main Street between them) and Coral Isle (hex: an
+island coast with two roads inland). Each can be copied into the editor to remix.
+
 **Movement rules:**
 
 1. Roll one die (1-6). The server or rules engine rolls, never the client.
