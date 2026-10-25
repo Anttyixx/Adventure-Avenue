@@ -1,5 +1,6 @@
 /** Small schematic picture of a board, for the board picker and saved-board lists. */
 import type { BoardDef } from '@aa/engine';
+import { cellCenter, tileShape, worldSize } from '../geometry';
 
 const TYPE_COLOR: Record<string, string> = {
   bank: '#ffd23f',
@@ -17,8 +18,10 @@ export function boardThumb(board: BoardDef, maxW = 220, maxH = 130): HTMLCanvasE
     Math.min(Math.floor(maxW / (board.cols + 1)), Math.floor(maxH / (board.rows + 1))),
   );
   const pad = cell / 2;
-  const W = board.cols * cell + pad * 2;
-  const H = board.rows * cell + pad * 2;
+  const k = cell / 100;
+  const world = worldSize(board);
+  const W = (world.w - 100) * k + pad * 2;
+  const H = (world.h - 100) * k + pad * 2;
   const dpr = Math.min(3, window.devicePixelRatio || 1);
   const cv = document.createElement('canvas');
   cv.className = 'thumb';
@@ -30,10 +33,10 @@ export function boardThumb(board: BoardDef, maxW = 220, maxH = 130): HTMLCanvasE
   ctx.scale(dpr, dpr);
   ctx.fillStyle = '#7fc25a';
   ctx.fillRect(0, 0, W, H);
-  const pos = (s: { x: number; y: number }) => ({
-    x: pad + s.x * cell + cell / 2,
-    y: pad + s.y * cell + cell / 2,
-  });
+  const pos = (s: { x: number; y: number }) => {
+    const c = cellCenter(board.layout, s.x, s.y);
+    return { x: pad + (c.x - 50) * k, y: pad + (c.y - 50) * k };
+  };
   ctx.strokeStyle = '#efe0b6';
   ctx.lineWidth = Math.max(2, cell * 0.35);
   ctx.lineCap = 'round';
@@ -55,8 +58,7 @@ export function boardThumb(board: BoardDef, maxW = 220, maxH = 130): HTMLCanvasE
           ? '#ffffff'
           : (board.districts[sq.d ?? -1]?.color ?? '#cccccc')
         : (TYPE_COLOR[sq.t] ?? '#fdfbf5');
-    ctx.beginPath();
-    ctx.roundRect(c.x - s / 2, c.y - s / 2, s, s, Math.max(1, s * 0.2));
+    tileShape(ctx, board.layout, c.x, c.y, s / 2, Math.max(1, s * 0.2));
     ctx.fill();
     if (sq.t === 'shop' && sq.plot) {
       ctx.strokeStyle = board.districts[sq.d ?? -1]?.color ?? '#888';

@@ -64,6 +64,7 @@ export function newGame(opts: MatchOptions): GameState {
     order: [],
     boardId: board.id,
     boardName: board.name,
+    layout: board.layout ?? 'square',
     cols: board.cols,
     rows: board.rows,
     nodes,

@@ -19,6 +19,7 @@ import {
   type Square,
 } from '@aa/engine';
 import { SHOP_TIERS, SHOP_TIER_NAMES, STAR3_TIERS, STAR3_TIER_NAMES, propertyIconURL, tierFor } from '../art';
+import { cellAt, cellCenter, tileShape, worldSize } from '../geometry';
 import { portraitURL } from '../sprites';
 import { clear, fmt, h } from './dom';
 
@@ -88,18 +89,21 @@ function miniMap(G: GameState, d: number, select: (d: number) => void): HTMLElem
   const pad = 6;
   const cv = h('canvas', { class: 'minimap' }) as HTMLCanvasElement;
   const dpr = Math.min(3, window.devicePixelRatio || 1);
-  const W = cols * cell + pad * 2;
-  const H = rows * cell + pad * 2;
+  // Scale board space (100 units per cell) down to the map.
+  const k = cell / 100;
+  const world = worldSize(G);
+  const W = (world.w - 100) * k + pad * 2;
+  const H = (world.h - 100) * k + pad * 2;
   cv.width = W * dpr;
   cv.height = H * dpr;
   cv.style.width = `${W}px`;
   cv.style.height = `${H}px`;
   const ctx = cv.getContext('2d')!;
   ctx.scale(dpr, dpr);
-  const pos = (sq: { x: number; y: number }) => ({
-    x: pad + sq.x * cell + cell / 2,
-    y: pad + sq.y * cell + cell / 2,
-  });
+  const pos = (sq: { x: number; y: number }) => {
+    const c = cellCenter(G.layout, sq.x, sq.y);
+    return { x: pad + (c.x - 50) * k, y: pad + (c.y - 50) * k };
+  };
 
   // Roads
   ctx.strokeStyle = 'rgba(255,255,255,0.18)';
@@ -124,23 +128,22 @@ function miniMap(G: GameState, d: number, select: (d: number) => void): HTMLElem
     // Owned squares take the owner's color; unowned property is a neutral light grey so it is
     // never mistaken for a player's color.
     ctx.fillStyle = sq.owner >= 0 ? PLAYER_COLORS[G.players[sq.owner].color] : isProp ? UNOWNED : '#3a4670';
-    ctx.beginPath();
-    ctx.roundRect(c.x - s / 2, c.y - s / 2, s, s, 3);
+    tileShape(ctx, G.layout, c.x, c.y, s / 2, 3);
     ctx.fill();
     ctx.globalAlpha = 1;
     if (sq.t === 'plot' && !sq.b) {
       ctx.setLineDash([3, 2]);
       ctx.strokeStyle = '#fff';
       ctx.lineWidth = 1;
-      ctx.strokeRect(c.x - s / 2 + 1, c.y - s / 2 + 1, s - 2, s - 2);
+      tileShape(ctx, G.layout, c.x, c.y, s / 2 - 1, 2);
+      ctx.stroke();
       ctx.setLineDash([]);
     }
     if (inD) {
       // Outline the selected district's squares in gold, like the selected row.
       ctx.strokeStyle = '#ffd166';
       ctx.lineWidth = 2;
-      ctx.beginPath();
-      ctx.roundRect(c.x - s / 2 - 2, c.y - s / 2 - 2, s + 4, s + 4, 5);
+      tileShape(ctx, G.layout, c.x, c.y, s / 2 + 2, 5);
       ctx.stroke();
       ctx.fillStyle = sq.owner >= 0 ? '#fff' : '#101a33';
       ctx.font = '11px "Lilita One", sans-serif';
@@ -173,9 +176,14 @@ function miniMap(G: GameState, d: number, select: (d: number) => void): HTMLElem
   // Hover shows the square; clicking a district square selects that district.
   const hit = (e: MouseEvent) => {
     const r = cv.getBoundingClientRect();
-    const x = Math.floor((e.clientX - r.left - pad) / cell);
-    const y = Math.floor((e.clientY - r.top - pad) / cell);
-    return G.nodes.find((q) => q.x === x && q.y === y);
+    const c = cellAt(
+      G.layout,
+      cols,
+      rows,
+      (e.clientX - r.left - pad) / k + 50,
+      (e.clientY - r.top - pad) / k + 50,
+    );
+    return c ? G.nodes.find((q) => q.x === c.x && q.y === c.y) : undefined;
   };
   cv.addEventListener('mousemove', (e) => {
     const sq = hit(e);

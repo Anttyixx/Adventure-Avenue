@@ -3,25 +3,29 @@
  * and devicePixelRatio. The static board is cached offscreen and redrawn only when the state
  * changes; each frame draws the cache, then highlights, sprites, coins, floating text and the die.
  */
-import { PLAYER_COLORS, SUITS, isClosed, squareFee, type GameState, type Square } from '@aa/engine';
+import {
+  PLAYER_COLORS,
+  SUITS,
+  isClosed,
+  squareFee,
+  type BoardLayout,
+  type GameState,
+  type Square,
+} from '@aa/engine';
+import { cellCenter, tileShape, tileTop, worldSize } from './geometry';
 import { SHOP_TIERS, STAR3_TIERS, darken, drawShop, drawStar3, tierFor, tint } from './art';
 import { drawCoin, drawSparkle, SUIT_CHARS } from './icons';
 import { SPRITE_H, SPRITE_W, spriteFrames } from './sprites';
 import { TIMING as T } from './timing';
 
-/** World size for a board: 100 units per grid cell plus a 50-unit margin all round. */
-export function worldSize(G: { cols?: number; rows?: number } | null) {
-  return { w: (G?.cols ?? 12) * 100 + 100, h: (G?.rows ?? 7) * 100 + 100 };
-}
+export { worldSize };
+
+/** Center of a square's cell for the board's layout. */
+export const squareCenter = (sq: { x: number; y: number }, layout?: BoardLayout) =>
+  cellCenter(layout, sq.x, sq.y);
 
 const isTown = (G: GameState | null) => !G || G.boardId === 'town';
-const CELL = 100;
 const TILE = 86;
-
-export const squareCenter = (sq: { x: number; y: number }) => ({
-  x: 50 + sq.x * CELL + CELL / 2,
-  y: 50 + sq.y * CELL + CELL / 2,
-});
 
 const reducedMotion = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
@@ -51,6 +55,11 @@ export interface Insets {
 export type ViewMode = 'follow' | 'full';
 
 export class BoardView {
+  /** Center of a square on this board. */
+  center(sq: { x: number; y: number }) {
+    return cellCenter(this.G?.layout, sq.x, sq.y);
+  }
+
   /** World size in board units: 100 per grid cell plus a 50-unit margin. */
   get ww() {
     return worldSize(this.G).w;
@@ -154,7 +163,7 @@ export class BoardView {
   slotPos(pid: number, node: number) {
     const G = this.G!;
     const sq = G.nodes[node];
-    const c = squareCenter(sq);
+    const c = this.center(sq);
     const here = G.players.filter((q) => !q.bankrupt && q.node === node).map((q) => q.id);
     if (here.length <= 1) return { x: c.x, y: c.y - 12 };
     const i = Math.max(0, here.indexOf(pid));
@@ -174,7 +183,7 @@ export class BoardView {
 
   bankPos() {
     const bank = this.G?.nodes.find((s) => s.t === 'bank');
-    return bank ? squareCenter(bank) : { x: this.ww / 2, y: this.wh - 100 };
+    return bank ? this.center(bank) : { x: this.ww / 2, y: this.wh - 100 };
   }
 
   // ------------------------------------------------------------ animation helpers
@@ -188,7 +197,7 @@ export class BoardView {
   async step(pid: number, to: number, left: number) {
     const t = this.tokens.get(pid)!;
     const from = { x: t.x, y: t.y };
-    const dest = squareCenter(this.G!.nodes[to]);
+    const dest = this.center(this.G!.nodes[to]);
     dest.y -= 12;
     this.stepsLeft = left;
     t.walking = true;
@@ -242,7 +251,7 @@ export class BoardView {
   /** A ring that grows and fades on a square. Gold rings also burst 8 sparkles. */
   ring(sqId: number, color: string, sparkles = false) {
     if (!this.G) return;
-    const c = squareCenter(this.G.nodes[sqId]);
+    const c = this.center(this.G.nodes[sqId]);
     this.fx.push({
       t0: performance.now(),
       dur: 700,
@@ -252,7 +261,7 @@ export class BoardView {
         ctx.strokeStyle = color;
         ctx.lineWidth = 6 * (1 - k) + 1;
         const s = TILE / 2 + 4 + k * 26;
-        roundRect(ctx, c.x - s, c.y - s, s * 2, s * 2, 14);
+        tileShape(ctx, this.G?.layout, c.x, c.y, s, 14);
         ctx.stroke();
         if (sparkles) {
           for (let i = 0; i < 8; i++) {
@@ -378,7 +387,7 @@ export class BoardView {
    */
   choiceView() {
     const G = this.G!;
-    const pts = this.fitIds.map((id) => squareCenter(G.nodes[id]));
+    const pts = this.fitIds.map((id) => this.center(G.nodes[id]));
     if (this.followPid >= 0) pts.push(this.tokenPos(this.followPid));
     const pad = 70;
     const x0 = Math.min(...pts.map((p) => p.x)) - pad;
@@ -471,8 +480,10 @@ export class BoardView {
     const r = this.canvas.getBoundingClientRect();
     const w = this.screenToWorld(clientX - r.left, clientY - r.top);
     for (const sq of this.G.nodes) {
-      const c = squareCenter(sq);
-      if (Math.abs(w.x - c.x) <= TILE / 2 + 4 && Math.abs(w.y - c.y) <= TILE / 2 + 4) return sq.id;
+      const c = this.center(sq);
+      if (this.G.layout === 'hex') {
+        if (Math.hypot(w.x - c.x, w.y - c.y) <= TILE / 2 + 6) return sq.id;
+      } else if (Math.abs(w.x - c.x) <= TILE / 2 + 4 && Math.abs(w.y - c.y) <= TILE / 2 + 4) return sq.id;
     }
     return null;
   }
@@ -636,9 +647,9 @@ export class BoardView {
     const G = this.G!;
     for (const sq of G.nodes) {
       if (sq.owner < 0 || !isClosed(G.players[sq.owner])) continue;
-      const c = squareCenter(sq);
+      const c = this.center(sq);
       ctx.fillStyle = 'rgba(10,15,40,0.45)';
-      roundRect(ctx, c.x - TILE / 2, c.y - TILE / 2, TILE, TILE, 12);
+      tileShape(ctx, G.layout, c.x, c.y, TILE / 2, 12);
       ctx.fill();
       ctx.font = '20px "Lilita One", sans-serif';
       ctx.fillStyle = '#e6ecff';
@@ -655,14 +666,14 @@ export class BoardView {
     if (!this.glow.length) return;
     const pulse = 0.55 + 0.45 * Math.sin(now / 220);
     for (const id of this.glow) {
-      const c = squareCenter(this.G!.nodes[id]);
+      const c = this.center(this.G!.nodes[id]);
       ctx.save();
       ctx.shadowColor = this.glowColor;
       ctx.shadowBlur = 24 * pulse;
       ctx.strokeStyle = this.glowColor;
       ctx.lineWidth = 6;
       ctx.globalAlpha = 0.6 + 0.4 * pulse;
-      roundRect(ctx, c.x - TILE / 2 - 3, c.y - TILE / 2 - 3, TILE + 6, TILE + 6, 14);
+      tileShape(ctx, this.G!.layout, c.x, c.y, TILE / 2 + 3, 14);
       ctx.stroke();
       ctx.restore();
     }
@@ -672,7 +683,7 @@ export class BoardView {
     const G = this.G!;
     const path = this.hoverRoute;
     if (path && this.followPid >= 0) {
-      const start = squareCenter(G.nodes[G.players[this.followPid].node]);
+      const start = this.center(G.nodes[G.players[this.followPid].node]);
       ctx.save();
       ctx.setLineDash([6, 10]);
       ctx.strokeStyle = this.glowColor;
@@ -680,13 +691,13 @@ export class BoardView {
       ctx.beginPath();
       ctx.moveTo(start.x, start.y);
       for (const id of path) {
-        const c = squareCenter(G.nodes[id]);
+        const c = this.center(G.nodes[id]);
         ctx.lineTo(c.x, c.y);
       }
       ctx.stroke();
       ctx.setLineDash([]);
       path.forEach((id, i) => {
-        const c = squareCenter(G.nodes[id]);
+        const c = this.center(G.nodes[id]);
         ctx.fillStyle = this.glowColor;
         ctx.beginPath();
         ctx.arc(c.x, c.y + 26, 13, 0, Math.PI * 2);
@@ -700,12 +711,12 @@ export class BoardView {
       ctx.restore();
     }
     if (this.walkTarget >= 0) {
-      const c = squareCenter(G.nodes[this.walkTarget]);
+      const c = this.center(G.nodes[this.walkTarget]);
       ctx.save();
       ctx.setLineDash([8, 6]);
       ctx.strokeStyle = this.glowColor;
       ctx.lineWidth = 4;
-      roundRect(ctx, c.x - TILE / 2 - 5, c.y - TILE / 2 - 5, TILE + 10, TILE + 10, 16);
+      tileShape(ctx, G.layout, c.x, c.y, TILE / 2 + 5, 16);
       ctx.stroke();
       ctx.restore();
     }
@@ -929,10 +940,9 @@ function drawCustomDecor(ctx: CanvasRenderingContext2D, G: GameState) {
   for (let y = 0; y < (G.rows ?? 7); y++) {
     for (let x = 0; x < (G.cols ?? 12); x++) {
       if (used.has(`${x},${y}`)) continue;
-      const cx = 50 + x * 100 + 50;
-      const cy = 50 + y * 100 + 50;
+      const { x: cx, y: cy } = cellCenter(G.layout, x, y);
       const roll = r();
-      if (roll < 0.12) {
+      if (roll < 0.05) {
         ctx.fillStyle = '#5aa0d8';
         ctx.beginPath();
         ctx.ellipse(cx, cy, 38, 24, 0, 0, Math.PI * 2);
@@ -941,8 +951,8 @@ function drawCustomDecor(ctx: CanvasRenderingContext2D, G: GameState) {
         ctx.beginPath();
         ctx.ellipse(cx - 3, cy - 3, 30, 17, 0, 0, Math.PI * 2);
         ctx.fill();
-      } else if (roll < 0.3) drawBed(ctx, cx - 40, cy - 14, 80, 28);
-      else if (roll < 0.75) drawTree(ctx, cx - 14 + r() * 28, cy - 8 + r() * 16, 0.75 + r() * 0.35);
+      } else if (roll < 0.13) drawBed(ctx, cx - 40, cy - 14, 80, 28);
+      else if (roll < 0.5) drawTree(ctx, cx - 14 + r() * 28, cy - 8 + r() * 16, 0.75 + r() * 0.35);
     }
   }
 }
@@ -973,10 +983,10 @@ function drawScenery(ctx: CanvasRenderingContext2D, G: GameState) {
     ctx.strokeStyle = c;
     ctx.lineWidth = w;
     for (const sq of G.nodes) {
-      const a = squareCenter(sq);
+      const a = squareCenter(sq, G.layout);
       for (const n of sq.nb) {
         if (n < sq.id) continue;
-        const b = squareCenter(G.nodes[n]);
+        const b = squareCenter(G.nodes[n], G.layout);
         ctx.beginPath();
         ctx.moveTo(a.x, a.y);
         ctx.lineTo(b.x, b.y);
@@ -1361,16 +1371,19 @@ function specialIcon(ctx: CanvasRenderingContext2D, G: GameState, sq: Square, x:
 }
 
 function drawSquare(ctx: CanvasRenderingContext2D, G: GameState, sq: Square) {
-  const c = squareCenter(sq);
+  const L = G.layout;
+  const c = squareCenter(sq, L);
   const x = c.x - TILE / 2;
   const y = c.y - TILE / 2;
+  // Top edge of the tile (the point of a hex sits higher than a square's edge).
+  const top = c.y - tileTop(L, TILE / 2);
   const owner = sq.owner >= 0 ? G.players[sq.owner] : null;
   const ownerColor = owner ? PLAYER_COLORS[owner.color] : '';
   const district = sq.d >= 0 ? G.districts[sq.d] : null;
 
   // Shadow + tile
   ctx.fillStyle = 'rgba(0,0,0,0.18)';
-  roundRect(ctx, x + 2, y + 5, TILE, TILE, 12);
+  tileShape(ctx, L, c.x + 2, c.y + 5, TILE / 2, 12);
   ctx.fill();
   const vacant = sq.t === 'plot' && !sq.b;
   ctx.fillStyle = vacant
@@ -1380,15 +1393,15 @@ function drawSquare(ctx: CanvasRenderingContext2D, G: GameState, sq: Square) {
       : sq.t === 'bank'
         ? '#fff6d6'
         : '#fdfbf5';
-  roundRect(ctx, x, y, TILE, TILE, 12);
+  tileShape(ctx, L, c.x, c.y, TILE / 2, 12);
   ctx.fill();
 
   if (district) {
     ctx.save();
-    roundRect(ctx, x, y, TILE, TILE, 12);
+    tileShape(ctx, L, c.x, c.y, TILE / 2, 12);
     ctx.clip();
     ctx.fillStyle = district.color;
-    ctx.fillRect(x, y, TILE, 16);
+    ctx.fillRect(x - 10, top, TILE + 20, c.y - 27 - top);
     ctx.restore();
   }
 
@@ -1411,7 +1424,7 @@ function drawSquare(ctx: CanvasRenderingContext2D, G: GameState, sq: Square) {
       ctx.setLineDash([7, 5]);
       ctx.strokeStyle = '#6b7590';
       ctx.lineWidth = 2.5;
-      roundRect(ctx, x + 4, y + 4, TILE - 8, TILE - 8, 10);
+      tileShape(ctx, L, c.x, c.y, TILE / 2 - 4, 10);
       ctx.stroke();
       ctx.restore();
       label(ctx, c.x, c.y + 4, 'VACANT', '#4a5470', 14);
@@ -1444,20 +1457,21 @@ function drawSquare(ctx: CanvasRenderingContext2D, G: GameState, sq: Square) {
   if (owner) {
     ctx.strokeStyle = ownerColor;
     ctx.lineWidth = 5;
-    roundRect(ctx, x + 1.5, y + 1.5, TILE - 3, TILE - 3, 11);
+    tileShape(ctx, L, c.x, c.y, TILE / 2 - 1.5, 11);
     ctx.stroke();
     ctx.fillStyle = '#5b6478';
-    ctx.fillRect(x + TILE - 12, y - 14, 3, 24);
+    const py = L === 'hex' ? top + 12 : y;
+    ctx.fillRect(x + TILE - 12, py - 14, 3, 24);
     ctx.fillStyle = ownerColor;
     ctx.beginPath();
-    ctx.moveTo(x + TILE - 9, y - 14);
-    ctx.lineTo(x + TILE + 8, y - 8);
-    ctx.lineTo(x + TILE - 9, y - 2);
+    ctx.moveTo(x + TILE - 9, py - 14);
+    ctx.lineTo(x + TILE + 8, py - 8);
+    ctx.lineTo(x + TILE - 9, py - 2);
     ctx.fill();
   } else {
     ctx.strokeStyle = 'rgba(38,49,79,0.18)';
     ctx.lineWidth = 2;
-    roundRect(ctx, x + 1, y + 1, TILE - 2, TILE - 2, 11);
+    tileShape(ctx, L, c.x, c.y, TILE / 2 - 1, 11);
     ctx.stroke();
   }
 }

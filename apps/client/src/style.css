@@ -2028,3 +2028,6 @@ input[type='range'] {
     font-size: 11px;
   }
 }
+.ed-layout .btn {
+  flex: 1;
+}

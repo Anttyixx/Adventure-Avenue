@@ -2,17 +2,17 @@
  * Custom boards: the file format players export and import, the rules a board must follow to
  * be playable, and helpers the board editor uses.
  */
-import type { BoardDef, BoardSquareDef, District, SquareType } from '../types';
+import type { BoardDef, BoardLayout, BoardSquareDef, District, SquareType } from '../types';
 
 export const BOARD_FILE_FORMAT = 'adventure-avenue-board';
 export const BOARD_FILE_VERSION = 1;
 
 export const BOARD_LIMITS = {
   minCols: 4,
-  maxCols: 20,
+  maxCols: 32,
   minRows: 4,
-  maxRows: 14,
-  maxSquares: 140,
+  maxRows: 20,
+  maxSquares: 320,
   minProperties: 4,
   maxDistricts: 8,
   minBase: 50,
@@ -46,6 +46,8 @@ export interface BoardFile {
   version: number;
   name: string;
   author?: string;
+  /** Missing in files from before hex boards: those are square. */
+  layout?: BoardLayout;
   cols: number;
   rows: number;
   districts: District[];
@@ -60,20 +62,46 @@ export interface BoardCheck {
 
 const where = (s: { x: number; y: number }) => `(${s.x + 1}, ${s.y + 1})`;
 
-/** Connect every pair of squares in orthogonally neighboring cells, except pairs in `cuts`. */
+/** The cells next to (x, y): 4 on a square grid, 6 on a hex grid (odd rows shifted right). */
+export function neighborCells(layout: BoardLayout | undefined, x: number, y: number): [number, number][] {
+  if (layout !== 'hex')
+    return [
+      [x + 1, y],
+      [x - 1, y],
+      [x, y + 1],
+      [x, y - 1],
+    ];
+  const s = y & 1; // odd rows sit half a cell to the right
+  return [
+    [x + 1, y],
+    [x - 1, y],
+    [x - 1 + s, y - 1],
+    [x + s, y - 1],
+    [x - 1 + s, y + 1],
+    [x + s, y + 1],
+  ];
+}
+
+export function areNeighbors(
+  layout: BoardLayout | undefined,
+  a: { x: number; y: number },
+  b: { x: number; y: number },
+) {
+  return neighborCells(layout, a.x, a.y).some(([x, y]) => x === b.x && y === b.y);
+}
+
+/** Connect every pair of squares in neighboring cells, except pairs in `cuts`. */
 export function autoEdges(
   squares: { x: number; y: number }[],
   cuts: Set<string> = new Set(),
+  layout: BoardLayout = 'square',
 ): [number, number][] {
   const at = new Map(squares.map((s, i) => [`${s.x},${s.y}`, i]));
   const edges: [number, number][] = [];
   squares.forEach((s, i) => {
-    for (const [dx, dy] of [
-      [1, 0],
-      [0, 1],
-    ]) {
-      const j = at.get(`${s.x + dx},${s.y + dy}`);
-      if (j != null && !cuts.has(edgeKey(s, squares[j]))) edges.push([i, j]);
+    for (const [x, y] of neighborCells(layout, s.x, s.y)) {
+      const j = at.get(`${x},${y}`);
+      if (j != null && j > i && !cuts.has(edgeKey(s, squares[j]))) edges.push([i, j]);
     }
   });
   return edges;
@@ -155,7 +183,7 @@ export function validateBoard(def: BoardDef): BoardCheck {
       errors.push('The board has a broken connection.');
       continue;
     }
-    if (Math.abs(sq[a].x - sq[b].x) + Math.abs(sq[a].y - sq[b].y) !== 1)
+    if (!areNeighbors(def.layout, sq[a], sq[b]))
       errors.push(`Squares ${where(sq[a])} and ${where(sq[b])} are connected but not next to each other.`);
     nb[a].push(b);
     nb[b].push(a);
@@ -196,6 +224,7 @@ export function boardToFile(def: BoardDef): BoardFile {
     version: BOARD_FILE_VERSION,
     name: def.name,
     author: def.author,
+    layout: def.layout ?? 'square',
     cols: def.cols,
     rows: def.rows,
     districts: def.districts.map((d) => ({ name: d.name, color: d.color })),
@@ -264,6 +293,7 @@ export function boardFromFile(data: unknown, id: string): { board?: BoardDef; er
       id,
       name,
       author: typeof f.author === 'string' ? f.author.slice(0, 32) : undefined,
+      layout: f.layout === 'hex' ? 'hex' : 'square',
       cols: Math.floor(f.cols),
       rows: Math.floor(f.rows),
       districts,

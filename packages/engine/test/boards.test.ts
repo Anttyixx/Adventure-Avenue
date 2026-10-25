@@ -1,6 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import { TOWN } from '../src/boards/town';
-import { autoEdges, boardFromFile, boardToFile, edgeKey, validateBoard } from '../src/boards/format';
+import {
+  autoEdges,
+  boardFromFile,
+  boardToFile,
+  edgeKey,
+  neighborCells,
+  validateBoard,
+} from '../src/boards/format';
 import { simulate } from '../src/headless';
 import type { BoardDef, BoardSquareDef } from '../src/types';
 
@@ -106,6 +113,119 @@ describe('custom boards', () => {
     const b = ringBoard();
     expect(validateBoard(b).errors).toEqual([]);
     for (let i = 0; i < 40; i++) {
+      const r = await simulate(i % 2 ? 'easy' : 'standard', i + 1, 4000, 0, b);
+      expect(r.winner).toBeGreaterThanOrEqual(0);
+    }
+  });
+});
+
+/** The winding Lakeside loop from the hex mockup, in hex offset coordinates. */
+function hexBoard(): BoardDef {
+  const axial = [
+    [0, 0],
+    [1, 0],
+    [2, 0],
+    [3, 0],
+    [4, -1],
+    [5, -1],
+    [6, -2],
+    [7, -2],
+    [8, -3],
+    [9, -4],
+    [9, -5],
+    [10, -6],
+    [10, -7],
+    [10, -8],
+    [9, -8],
+    [9, -9],
+    [8, -9],
+    [7, -9],
+    [6, -9],
+    [5, -9],
+    [4, -8],
+    [3, -8],
+    [2, -8],
+    [1, -7],
+    [0, -7],
+    [-1, -6],
+    [-2, -5],
+    [-2, -4],
+    [-3, -3],
+    [-3, -2],
+    [-3, -1],
+    [-2, -1],
+    [-2, 0],
+    [-1, 0],
+  ];
+  // Axial -> odd-row offset; shift rows by an even amount so row parity is kept.
+  const cells = axial.map(([q, r]) => [q + (r - (r & 1)) / 2 + 8, r + 10]);
+  const special: Record<number, BoardSquareDef['t']> = {
+    0: 'bank',
+    3: 'venture',
+    7: 'spade',
+    13: 'heart',
+    20: 'diamond',
+    27: 'club',
+    30: 'venture',
+  };
+  const squares: BoardSquareDef[] = cells.map(([x, y], i) =>
+    special[i]
+      ? { x, y, t: special[i] }
+      : { x, y, t: 'shop', d: Math.floor(i / 9), base: 160 + (i % 5) * 20 },
+  );
+  return {
+    id: 'hex',
+    name: 'Lakeside',
+    layout: 'hex',
+    cols: 16,
+    rows: 11,
+    districts: ['A', 'B', 'C', 'D'].map((name, i) => ({
+      name,
+      color: ['#f2a7a0', '#9fd3f0', '#a8e0a0', '#f5d77a'][i],
+    })),
+    squares,
+    edges: autoEdges(squares, new Set(), 'hex'),
+    bank: 0,
+  };
+}
+
+describe('hex boards', () => {
+  it('has six neighbors per cell, and neighbors are mutual', () => {
+    for (const [x, y] of [
+      [3, 4],
+      [3, 5],
+      [0, 0],
+    ]) {
+      const nb = neighborCells('hex', x, y);
+      expect(nb).toHaveLength(6);
+      for (const [nx, ny] of nb) expect(neighborCells('hex', nx, ny)).toContainEqual([x, y]);
+    }
+  });
+
+  it('connects the winding loop as a single ring', () => {
+    const b = hexBoard();
+    expect(b.edges).toHaveLength(b.squares.length);
+    expect(validateBoard(b).errors).toEqual([]);
+  });
+
+  it('keeps the layout through the file format, and old files load as square', () => {
+    const file = JSON.parse(JSON.stringify(boardToFile(hexBoard())));
+    expect(boardFromFile(file, 'x').board!.layout).toBe('hex');
+    delete file.layout;
+    expect(boardFromFile(file, 'x').board!.layout).toBe('square');
+  });
+
+  it('rejects square-style links on a hex board that are not neighbors', () => {
+    const b = hexBoard();
+    // (x, y) and (x + 1, y + 1) are neighbors on an odd row but not on an even row.
+    b.squares.push({ x: 0, y: 0, t: 'arcade' }, { x: 1, y: 1, t: 'arcade' });
+    b.edges = [...b.edges, [b.squares.length - 2, b.squares.length - 1]];
+    expect(validateBoard(b).errors.join(' ')).toMatch(/not next to each other/);
+  });
+
+  it('plays CPU games to the end on a hex board', async () => {
+    const b = hexBoard();
+    for (let i = 0; i < 30; i++) {
       const r = await simulate(i % 2 ? 'easy' : 'standard', i + 1, 4000, 0, b);
       expect(r.winner).toBeGreaterThanOrEqual(0);
     }

@@ -13,10 +13,12 @@ import {
   newGame,
   validateBoard,
   type BoardDef,
+  type BoardLayout,
   type BoardSquareDef,
   type SquareType,
 } from '@aa/engine';
-import { paintBoard, roundRect, squareCenter, worldSize } from '../board';
+import { paintBoard, worldSize } from '../board';
+import { cellAt, cellCenter, tileShape } from '../geometry';
 import {
   deleteBoard,
   exportBoard,
@@ -95,10 +97,11 @@ const DISTRICT_NAMES = [
   'Maple Court',
 ];
 
-function blankBoard(cols = 12, rows = 7): BoardDef {
+function blankBoard(cols = 12, rows = 7, layout: BoardLayout = 'square'): BoardDef {
   return {
     id: newBoardId(),
     name: 'My board',
+    layout,
     cols,
     rows,
     districts: [
@@ -146,6 +149,106 @@ function starterLoop(cols = 10, rows = 6): BoardDef {
   return b;
 }
 
+/**
+ * A hex starter: a winding loop around a lake with a shortcut across, written in axial hex
+ * steps and converted to the editor's offset grid.
+ */
+function hexStarter(): BoardDef {
+  const loop = [
+    [0, 0],
+    [1, 0],
+    [2, 0],
+    [3, 0],
+    [4, -1],
+    [5, -1],
+    [6, -2],
+    [7, -2],
+    [8, -3],
+    [9, -4],
+    [9, -5],
+    [10, -6],
+    [10, -7],
+    [10, -8],
+    [9, -8],
+    [9, -9],
+    [8, -9],
+    [7, -9],
+    [6, -9],
+    [5, -9],
+    [4, -8],
+    [3, -8],
+    [2, -8],
+    [1, -7],
+    [0, -7],
+    [-1, -6],
+    [-2, -5],
+    [-2, -4],
+    [-3, -3],
+    [-3, -2],
+    [-3, -1],
+    [-2, -1],
+    [-2, 0],
+    [-1, 0],
+  ];
+  const shortcut = [
+    [4, -2],
+    [5, -3],
+    [6, -4],
+    [7, -5],
+    [8, -6],
+    [8, -7],
+  ];
+  // Axial -> odd-row offset; rows shift by an even amount so the half-cell offsets stay put.
+  const cell = ([q, r]: number[]) => ({ x: q + (r - (r & 1)) / 2 + 8, y: r + 10 });
+  const special: Record<number, SquareType> = {
+    0: 'bank',
+    3: 'venture',
+    7: 'spade',
+    10: 'roll',
+    13: 'venture',
+    16: 'heart',
+    19: 'boon',
+    22: 'venture',
+    24: 'diamond',
+    26: 'break',
+    30: 'club',
+    32: 'cannon',
+  };
+  const b = blankBoard(17, 12, 'hex');
+  b.name = 'Lakeside';
+  b.districts = DISTRICT_NAMES.slice(0, 6).map((name, i) => ({ name, color: DISTRICT_COLORS[i] }));
+  const district = (i: number) => (i < 5 || i > 30 ? 0 : i < 10 ? 1 : i < 16 ? 2 : i < 23 ? 3 : 4);
+  b.squares = loop.map((c, i) => {
+    const t = special[i];
+    if (t) return { ...cell(c), t };
+    return {
+      ...cell(c),
+      t: 'shop',
+      d: district(i),
+      base: 160 + ((i * 3) % 8) * 20,
+      ...(i === 9 || i === 28 ? { plot: true } : {}),
+    };
+  });
+  const kinds: SquareType[] = ['shop', 'shop', 'boom', 'shop', 'shop', 'broker'];
+  shortcut.forEach((c, j) =>
+    b.squares.push(
+      kinds[j] === 'shop' ? { ...cell(c), t: 'shop', d: 5, base: 320 + j * 20 } : { ...cell(c), t: kinds[j] },
+    ),
+  );
+  b.edges = autoEdges(b.squares, new Set(), 'hex');
+  b.bank = 0;
+  return b;
+}
+
+/** A ring around the edge of a hex grid, to start a hex board from. */
+function hexLoop(cols = 11, rows = 7): BoardDef {
+  const b = starterLoop(cols, rows);
+  b.layout = 'hex';
+  b.name = 'Hex loop';
+  b.edges = autoEdges(b.squares, new Set(), 'hex');
+  return b;
+}
+
 export interface EditorHandlers {
   onExit(): void;
   onPlay(board: BoardDef): void;
@@ -161,7 +264,7 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
       cuts = new Set();
       return;
     }
-    const auto = autoEdges(board.squares);
+    const auto = autoEdges(board.squares, new Set(), board.layout);
     const have = new Set(board.edges.map(([a, b]) => edgeKey(board.squares[a], board.squares[b])));
     cuts = new Set(
       auto
@@ -220,7 +323,7 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
   // ------------------------------------------------------------ model helpers
 
   const recompute = () => {
-    board.edges = autoEdges(board.squares, cuts);
+    board.edges = autoEdges(board.squares, cuts, board.layout);
     board.bank = board.squares.findIndex((s) => s.t === 'bank');
   };
   const snapshot = () => {
@@ -243,6 +346,7 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
     changed();
   };
   const indexAt = (x: number, y: number) => board.squares.findIndex((s) => s.x === x && s.y === y);
+  const center = (c: { x: number; y: number }) => cellCenter(board.layout, c.x, c.y);
 
   const place = (x: number, y: number) => {
     const i = indexAt(x, y);
@@ -325,16 +429,16 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
     for (let y = 0; y < board.rows; y++)
       for (let x = 0; x < board.cols; x++) {
         if (used.has(`${x},${y}`)) continue;
-        const c = squareCenter({ x, y });
-        roundRect(ctx, c.x - 40, c.y - 40, 80, 80, 12);
+        const c = center({ x, y });
+        tileShape(ctx, board.layout, c.x, c.y, 40, 12);
         ctx.stroke();
       }
     ctx.setLineDash([]);
     // Links
     if (tool === 'link') {
       for (const [a, b, key] of neighborPairs()) {
-        const pa = squareCenter(board.squares[a]);
-        const pb = squareCenter(board.squares[b]);
+        const pa = center(board.squares[a]);
+        const pb = center(board.squares[b]);
         const mx = (pa.x + pb.x) / 2;
         const my = (pa.y + pb.y) / 2;
         const cut = cuts.has(key);
@@ -360,18 +464,18 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
     }
     // Hover and selection
     if (hover && tool !== 'link') {
-      const c = squareCenter(hover);
+      const c = center(hover);
       ctx.lineWidth = 4;
       ctx.strokeStyle = tool === 'erase' ? '#e5484d' : '#ffd166';
-      roundRect(ctx, c.x - 46, c.y - 46, 92, 92, 14);
+      tileShape(ctx, board.layout, c.x, c.y, 46, 14);
       ctx.stroke();
     }
     if (selected != null && board.squares[selected]) {
-      const c = squareCenter(board.squares[selected]);
+      const c = center(board.squares[selected]);
       ctx.lineWidth = 5;
       ctx.strokeStyle = '#4cc9f0';
       ctx.setLineDash([10, 6]);
-      roundRect(ctx, c.x - 48, c.y - 48, 96, 96, 15);
+      tileShape(ctx, board.layout, c.x, c.y, 48, 15);
       ctx.stroke();
       ctx.setLineDash([]);
     }
@@ -380,14 +484,14 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
     ctx.font = '16px "Atkinson Hyperlegible", sans-serif';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    for (let x = 0; x < board.cols; x++) ctx.fillText(String(x + 1), 100 + x * 100, 22);
-    for (let y = 0; y < board.rows; y++) ctx.fillText(String(y + 1), 22, 100 + y * 100);
+    for (let x = 0; x < board.cols; x++) ctx.fillText(String(x + 1), center({ x, y: 0 }).x, 22);
+    for (let y = 0; y < board.rows; y++) ctx.fillText(String(y + 1), 22, center({ x: 0, y }).y);
   };
 
   /** Every pair of squares in neighboring cells, with its link key. */
   const neighborPairs = (): [number, number, string][] => {
     const out: [number, number, string][] = [];
-    for (const [a, b] of autoEdges(board.squares))
+    for (const [a, b] of autoEdges(board.squares, new Set(), board.layout))
       out.push([a, b, edgeKey(board.squares[a], board.squares[b])]);
     return out;
   };
@@ -398,9 +502,7 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
   };
   const toCell = (e: PointerEvent | MouseEvent) => {
     const w = toWorld(e);
-    const x = Math.floor((w.x - 50) / 100);
-    const y = Math.floor((w.y - 50) / 100);
-    return x >= 0 && y >= 0 && x < board.cols && y < board.rows ? { x, y } : null;
+    return cellAt(board.layout, board.cols, board.rows, w.x, w.y);
   };
 
   let painting = false;
@@ -410,8 +512,8 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
     if (tool === 'link') {
       const w = toWorld(e);
       for (const [a, b, key] of neighborPairs()) {
-        const pa = squareCenter(board.squares[a]);
-        const pb = squareCenter(board.squares[b]);
+        const pa = center(board.squares[a]);
+        const pb = center(board.squares[b]);
         if (Math.hypot((pa.x + pb.x) / 2 - w.x, (pa.y + pb.y) / 2 - w.y) < 24) {
           snapshot();
           if (cuts.has(key)) cuts.delete(key);
@@ -544,8 +646,47 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
       board.author = author.value.trim() || undefined;
       drawInspector();
     };
+    // Grid layout: square or hex. Squares keep their cells; connections are recalculated.
+    const layoutBtn = (l: BoardLayout, label: string) =>
+      h(
+        'button',
+        {
+          class: `btn small ${(board.layout ?? 'square') === l ? 'on' : 'ghost'}`,
+          onclick: () => {
+            if ((board.layout ?? 'square') === l) return;
+            if (
+              board.squares.length &&
+              !confirm(
+                `Switch to a ${label.toLowerCase()}? Squares stay in their cells, but which squares connect will change.`,
+              )
+            )
+              return;
+            snapshot();
+            board.layout = l;
+            cuts = new Set();
+            changed();
+            say(
+              l === 'hex'
+                ? 'Hex grid: each tile can connect to six neighbors.'
+                : 'Square grid: each tile connects up, down, left and right.',
+            );
+          },
+        },
+        label,
+      );
     inspector.append(
       h('h4', null, 'Board'),
+      h(
+        'div',
+        { class: 'ed-field' },
+        h('span', null, 'Grid'),
+        h(
+          'div',
+          { class: 'ed-row ed-layout' },
+          layoutBtn('square', 'Square grid'),
+          layoutBtn('hex', 'Hex grid'),
+        ),
+      ),
       h('div', { class: 'ed-row' }, field('Columns', cols), field('Rows', rows)),
       field('Made by', author),
     );
@@ -834,8 +975,11 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
       h(
         'div',
         { class: 'pick-list' },
-        opt('Starter loop', 'A playable loop around the edge to build on.', () => starterLoop()),
-        opt('Blank grid', 'An empty 12 x 7 grid.', () => blankBoard()),
+        opt('Starter loop (square)', 'A playable loop around the edge to build on.', () => starterLoop()),
+        opt('Lakeside (hex)', 'A winding hex road around a lake, with a shortcut.', () => hexStarter()),
+        opt('Hex loop', 'A simple loop on a hex grid.', () => hexLoop()),
+        opt('Blank square grid', 'An empty 12 x 7 square grid.', () => blankBoard()),
+        opt('Blank hex grid', 'An empty 14 x 9 hex grid.', () => blankBoard(14, 9, 'hex')),
         opt('Copy of Town', 'The built-in board, to remix.', () => ({
           ...structuredClone(TOWN),
           id: newBoardId(),

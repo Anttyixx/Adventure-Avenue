@@ -112,6 +112,7 @@ export interface GameState {
   boardId: string;
   /** Board name and grid size (older saves predate these: Town, 12 x 7). */
   boardName?: string;
+  layout?: BoardLayout;
   cols?: number;
   rows?: number;
   nodes: Square[];
@@ -159,11 +160,19 @@ export interface BoardSquareDef {
   plot?: boolean;
 }
 
+/**
+ * How cells sit on the grid. `square`: a plain grid, 4 neighbors per cell. `hex`: pointy-top
+ * hexagons in offset rows (every odd row shifted half a cell right), 6 neighbors per cell.
+ */
+export type BoardLayout = 'square' | 'hex';
+
 /** A board as data: squares on a grid, districts and the connections between squares. */
 export interface BoardDef {
   id: string;
   name: string;
   author?: string;
+  /** Grid shape; boards without one are square. */
+  layout?: BoardLayout;
   cols: number;
   rows: number;
   districts: District[];

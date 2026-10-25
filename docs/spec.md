@@ -144,7 +144,10 @@ in the browser, and export/import them as `.aaboard.json` files (format tag
 connections). Squares in neighboring cells connect automatically; single connections can be
 cut. A board is playable only if it has exactly one bank, every suit (or a change-of-suit
 square), at least 4 shops, every shop in a district with a 50-2,000G value, backstreets in
-pairs, and every square reachable from the bank. Grids range from 4 x 4 to 20 x 14.
+pairs, and every square reachable from the bank. Grids range from 4 x 4 to 32 x 20 (up to 320
+squares). Each board uses a square grid (4 neighbors per cell) or a hex grid (pointy-top
+hexagons, odd rows shifted half a cell right, 6 neighbors per cell); the file stores it as
+`layout`, and files without one are square.
 
 **Movement rules:**
 
