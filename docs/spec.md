@@ -138,6 +138,14 @@ the left and right sides, creating two forks.
 Store boards as data (square list with type, position, district, neighbors) so new boards need no
 code changes.
 
+**Custom boards (added Oct 2026).** Players build boards in the in-game board editor, save them
+in the browser, and export/import them as `.aaboard.json` files (format tag
+`adventure-avenue-board`, version 1: name, author, grid size, districts, squares and
+connections). Squares in neighboring cells connect automatically; single connections can be
+cut. A board is playable only if it has exactly one bank, every suit (or a change-of-suit
+square), at least 4 shops, every shop in a district with a 50-2,000G value, backstreets in
+pairs, and every square reachable from the bank. Grids range from 4 x 4 to 20 x 14.
+
 **Movement rules:**
 
 1. Roll one die (1-6). The server or rules engine rolls, never the client.
