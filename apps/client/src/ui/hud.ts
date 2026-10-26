@@ -1,5 +1,5 @@
 /**
- * Dark-glass overlays floating over the board: title pill, top-right toolbar, ticker and
+ * Dark-glass overlays floating over the board: top-right toolbar, ticker (opens the log) and
  * action bar, player cards, market/log drawer, tooltip, modals and banners.
  */
 import {
@@ -46,20 +46,21 @@ export interface HudCallbacks {
 
 export class Hud {
   root: HTMLElement;
-  title = h('div', { class: 'title-pill glass' });
   toolbar = h('div', { class: 'toolbar' });
   /** Current zoom; tapping it zooms back in on the player. */
   zoomChip = h('button', { class: 'zoom-chip', title: 'Zoom: scroll, pinch or - / +. Tap to reset.' });
-  ticker = h('div', { class: 'ticker glass' });
+  /** The last action; tapping it opens the game log above it. */
+  ticker = h('div', { class: 'ticker glass', role: 'button', tabindex: '0', 'aria-expanded': 'false' });
+  /** Round, target and rules, shown at the top of the game menu. */
+  gameInfo = h('div', { class: 'gm-info' });
   bar = h('div', { class: 'action-bar glass' });
   /** The current player's options, centered near the bottom of the board. */
   ask = h('div', { class: 'prompt-center glass' });
   cardsWrap = h('div', { class: 'cards-wrap' });
   cards = h('div', { class: 'cards' });
   cardsToggle = h('button', { class: 'btn small ghost cards-toggle' }, 'Hide');
-  /** The game log, opened from the toggle above the player cards. */
+  /** The game log, opened from the ticker in the bottom left. */
   logBox = h('div', { class: 'log-panel glass' });
-  logToggle = h('button', { class: 'btn small ghost cards-toggle' }, 'Log');
   logOpen = false;
   roomBtn = h('button', { class: 'btn small ghost cards-toggle', hidden: true }, 'Room');
   drawer = h('div', { class: 'drawer glass' });
@@ -87,15 +88,16 @@ export class Hud {
     cb: HudCallbacks,
   ) {
     this.root = h('div', { class: 'hud' });
-    const bottomLeft = h('div', { class: 'bottom-left' }, this.ticker, this.bar);
-    this.cardsWrap.append(
-      this.logBox,
-      h('div', { class: 'cards-head' }, this.roomBtn, this.logToggle, this.cardsToggle),
-      this.cards,
-    );
-    this.logToggle.onclick = () => this.toggleLog();
+    const bottomLeft = h('div', { class: 'bottom-left' }, this.logBox, this.ticker, this.bar);
+    this.cardsWrap.append(h('div', { class: 'cards-head' }, this.roomBtn, this.cardsToggle), this.cards);
+    this.ticker.onclick = () => this.toggleLog();
+    this.ticker.onkeydown = (e) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        this.toggleLog();
+      }
+    };
     this.root.append(
-      this.title,
       this.toolbar,
       bottomLeft,
       this.ask,
@@ -152,6 +154,7 @@ export class Hud {
     this.fastBtn.className = 'gm-item gm-toggle';
     this.menu.append(
       h('div', { class: 'gm-head' }, 'Menu'),
+      this.gameInfo,
       item('Rules', close(this.cb.onRules)),
       item(
         'Stock market',
@@ -229,16 +232,27 @@ export class Hud {
   updateInsets() {
     const W = window.innerWidth;
     const portraitStack = this.root.classList.contains('upright');
-    const bar = this.bar.parentElement!.getBoundingClientRect();
+    const bottomLeft = this.bar.parentElement!;
     const ask = this.ask.getBoundingClientRect();
+    // When the options would cover the ticker (narrow screens, long lines), the ticker and log
+    // move up to sit just above them.
+    const tick = this.ticker.getBoundingClientRect();
+    const covered = ask.height > 0 && tick.width > 0 && tick.right > ask.left && tick.left < ask.right;
+    bottomLeft.style.bottom = covered ? `${window.innerHeight - ask.top + 6}px` : '';
+    const bar = bottomLeft.getBoundingClientRect();
     const cards = this.cardsWrap.getBoundingClientRect();
-    const title = this.title.getBoundingClientRect();
+    const tools = this.toolbar.getBoundingClientRect();
     if (portraitStack) this.root.style.setProperty('--cards-h', `${this.cardsWrap.offsetHeight + 6}px`);
     let right = 0;
     if (!this.cardsHidden && !portraitStack && cards.width) right = Math.min(W * 0.4, W - cards.left + 8);
-    const top = Math.min(bar.top, ask.height ? ask.top : Infinity, portraitStack ? cards.top : Infinity);
+    // A lifted ticker is left out, so a new ticker line never moves the camera.
+    const top = Math.min(
+      covered ? Infinity : bar.top,
+      ask.height ? ask.top : Infinity,
+      portraitStack ? cards.top : Infinity,
+    );
     const bottom = window.innerHeight - top + 4;
-    this.board.insets = { top: title.bottom + 6, right, bottom: Math.max(0, bottom), left: this.leftInset };
+    this.board.insets = { top: tools.bottom + 6, right, bottom: Math.max(0, bottom), left: this.leftInset };
     // Center the options between the left edge (or lab panel) and the player cards.
     this.root.style.setProperty('--free-left', `${this.leftInset}px`);
     this.root.style.setProperty('--free-right', `${right}px`);
@@ -251,24 +265,12 @@ export class Hud {
     const roundText = G.roundCap
       ? `Round ${Math.min(G.round, G.roundCap)} / ${G.roundCap}`
       : `Round ${G.round}`;
-    this.title.innerHTML = '';
-    this.title.append(
-      h('span', { class: 'logo' }, 'Adventure Avenue'),
-      h('span', { class: 'sep' }, roundText),
-      h('span', { class: 'sep' }, `Target ${fmt(G.target)}`),
-      h('span', { class: 'sep' }, G.rules === 'standard' ? 'Standard' : 'Easy'),
+    clear(this.gameInfo);
+    this.gameInfo.append(
+      h('span', null, roundText),
+      h('span', null, `Target ${fmt(G.target)}`),
+      h('span', null, G.rules === 'standard' ? 'Standard' : 'Easy'),
     );
-    // Whose turn it is, always visible at the top.
-    const cur = this.activePid >= 0 && !G.over ? G.players[this.activePid] : null;
-    if (cur)
-      this.title.append(
-        h(
-          'span',
-          { class: 'turn-chip', style: `--pc:${PLAYER_COLORS[cur.color]}` },
-          h('img', { src: portraitURL(cur.ch, PLAYER_COLORS[cur.color]), alt: '' }),
-          `${cur.name}'s turn`,
-        ),
-      );
     this.toolbar.querySelector('.market-btn')?.toggleAttribute('hidden', G.rules !== 'standard');
     this.renderCards();
     if (this.drawerMode) this.renderDrawer();
@@ -401,8 +403,9 @@ export class Hud {
       color != null && color >= 0
         ? h('span', { class: 'dot', style: `background:${PLAYER_COLORS[color]}` })
         : null;
-    const line = h('div', { class: 'tick-line rise' }, dot, text);
-    this.ticker.append(line);
+    const line = h('div', { class: 'tick-line rise' }, dot, h('span', { class: 'tick-text' }, text));
+    this.ticker.append(line, h('span', { class: 'tick-more', 'aria-hidden': 'true' }));
+    this.updateInsets();
     if (this.drawerMode === 'log') this.renderDrawer();
     if (this.logOpen) this.renderLog();
   }
@@ -447,11 +450,11 @@ export class Hud {
     };
   }
 
-  /** Open or close the game log above the player cards. */
+  /** Open or close the game log above the ticker. */
   toggleLog(open = !this.logOpen) {
     this.logOpen = open;
-    this.cardsWrap.classList.toggle('log-open', open);
-    this.logToggle.classList.toggle('on', open);
+    this.root.classList.toggle('log-open', open);
+    this.ticker.setAttribute('aria-expanded', String(open));
     this.renderLog(true);
     this.updateInsets();
   }

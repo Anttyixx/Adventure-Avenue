@@ -553,8 +553,7 @@ tile has a solid border in its district's color; an owned tile is filled with it
 player is drawn larger. Money everywhere ends in a small gold coin instead of "G". A shop whose
 value changes swells with a green "+" or red "-" label. Property choices (investing, trades,
 auctions, renovations, debt sales, buyout and agency cards, the cannon) are made by tapping the
-board; the rest of the board dims. The log opens above the player cards, newest entries at the
-bottom; online games show a "Room ABCD" button there too. A player holding all four suits has
+board; the rest of the board dims. Online games show a "Room ABCD" button above the player cards. A player holding all four suits has
 glowing suits on their card. Arcade games and venture picks open for everyone, so other players
 watch them being played; their result screen closes by itself or with Close.
 
@@ -598,11 +597,13 @@ payer to payee; floating text shows money changes.
 | Interface       | Prompts and the ticker rise in, dialogs ease in, venture and Memory Blocks panels flip, revealed cards pop, main buttons give a small nudge | New prompt, dialog or reveal                              |
 
 **Layout.** The board fills the whole game screen edge to edge, and everything else floats over it
-as dark glass overlays. Top left: a title pill with the round, target and rule set. Top right: the
-zoom chip and the Menu button. Bottom left: the latest-log ticker
-above the action bar. Bottom right: the player cards stacked vertically (net worth, cash, level,
-suits and progress bar), with a Hide/Show toggle so players can clear the board. The stock market and
-game log live in a slide-out drawer on the right.
+as dark glass overlays. Top right: the zoom chip and the Menu button (the menu
+also shows the round, target and rule set). Bottom left: a ticker with the last action, above
+the action bar; tapping it opens the game log above it (turn by turn, newest at the bottom,
+scrollable back to the start of the game), and it moves up above the options when they would
+cover it. Bottom right: the player cards stacked vertically (net worth, cash, level,
+suits and progress bar), with a Hide/Show toggle so players can clear the board. The stock market lives in a
+slide-out drawer on the right.
 
 **Camera.** The camera always follows the active player, centered on screen and zoomed in (about
 1.65x the fit-to-screen zoom, more on small screens), eased smoothly as they move; it keeps the
