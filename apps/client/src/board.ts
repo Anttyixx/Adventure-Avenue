@@ -54,6 +54,8 @@ export interface Insets {
 
 /** Zoom-out level (0-1) past which the camera blends from the player to the board's center. */
 const ZOOM_BLEND = 0.55;
+/** Fully zoomed out shows this much more than the whole board fitting the screen. */
+const ZOOM_OUT_EXTRA = 1.25;
 
 export class BoardView {
   /** Center of a square on this board. */
@@ -536,7 +538,7 @@ export class BoardView {
   /** Zoom level for a zoomOut value: eased from the follow zoom to the whole board. */
   zoomFor(out: number) {
     const near = this.followZoom();
-    const far = Math.min(near, this.fitZoom());
+    const far = Math.min(near, this.fitZoom() / ZOOM_OUT_EXTRA);
     return near * Math.pow(far / near, out);
   }
 

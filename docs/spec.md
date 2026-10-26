@@ -606,7 +606,7 @@ game log live in a slide-out drawer on the right.
 1.65x the fit-to-screen zoom, more on small screens), eased smoothly as they move, and stops panning
 at the board edge. The mouse wheel, a pinch, or the - and + keys zoom out to show more of the map;
 zooming out past about halfway, the camera gradually lets go of the player and drifts to the
-board's center, until at full zoom-out the whole board is centered. While a choice is open the
+board's center, until at full zoom-out the whole board is centered with room to spare (`ZOOM_OUT_EXTRA`: 25% further out than fitting the screen). While a choice is open the
 camera zooms out just enough to frame the player and every glowing square (never closer than the
 player's own zoom). The game-over view shows the whole board. The die and on-board pop-ups are
 drawn at screen size so they stay readable at any zoom. Taps on the board are converted through the
