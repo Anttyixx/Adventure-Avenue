@@ -57,7 +57,7 @@ export const CHANGELOG: ChangelogEntry[] = [
       },
     ],
     extras: [
-      'Zoom out much further',
+      'Zoom out further',
       'Active player always centered',
       'Zoom % chip in the top right (tap to reset): 200% close up to 100% far out, in 5% steps',
       'Brighter district colors',

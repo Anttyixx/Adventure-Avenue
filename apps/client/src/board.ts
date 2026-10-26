@@ -56,10 +56,10 @@ export interface Insets {
 const ZOOM_BLEND = 0.55;
 /** Fully zoomed out shows this much more than the whole board fitting the screen. */
 const ZOOM_OUT_EXTRA = 1.25;
-/** One wheel notch or key press: 1/10 of the range, shown as 5% on the zoom chip. */
-export const ZOOM_STEP = 0.1;
-/** Furthest zoom-out: twice as far (in steps) as fitting the whole board. */
-const ZOOM_MAX_OUT = 2;
+/** Furthest zoom-out: 1.3x as far (in steps) as fitting the whole board. */
+const ZOOM_MAX_OUT = 1.3;
+/** One wheel notch or key press: 1/20 of the range, shown as 5% on the zoom chip. */
+export const ZOOM_STEP = ZOOM_MAX_OUT / 20;
 
 export class BoardView {
   /** Center of a square on this board. */
@@ -668,11 +668,11 @@ export class BoardView {
     if (this.host.clientWidth !== Math.round(this.w) || this.host.clientHeight !== Math.round(this.h))
       this.resize();
     this.updateCamera();
-    // The chip reads 200% fully zoomed in, 150% for the whole board and 100% fully zoomed out.
+    // The chip reads 200% fully zoomed in and 100% fully zoomed out (the whole board is ~123%).
     const near = this.followZoom();
     const far = this.zoomFor(1);
     const out = far < near ? Math.log(this.cam.z / near) / Math.log(far / near) : 0;
-    const pct = Math.round(200 - 50 * Math.min(ZOOM_MAX_OUT, Math.max(0, out)));
+    const pct = Math.round(200 - (100 * Math.min(ZOOM_MAX_OUT, Math.max(0, out))) / ZOOM_MAX_OUT);
     if (pct !== this.zoomPct) {
       this.zoomPct = pct;
       this.onZoom?.(pct);
