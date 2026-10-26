@@ -975,7 +975,7 @@ export class BoardView {
       const t = this.tokens.get(p.id)!;
       if (!t.visible) continue;
       const active = p.id === this.activePid && !G.over;
-      const px = base * (active ? 1.43 : this.activePid >= 0 ? 0.765 : 1);
+      const px = base * (active ? 1.573 : this.activePid >= 0 ? 0.6885 : 1);
       const ground = this.worldToScreen(t.x, t.y);
       const sx = Math.round(ground.x * this.dpr);
       const color = PLAYER_COLORS[p.color];
