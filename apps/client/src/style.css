@@ -2944,8 +2944,9 @@ input[type='range'] {
   right: 0;
   margin: 0 auto;
   width: max-content;
-  /* Centered on the screen, never under the player cards. */
-  max-width: min(920px, calc(100% - 2 * max(var(--free-left, 0px), var(--free-right, 0px)) - 20px));
+  /* Centered on the screen edge to edge, above anything it meets (like the player cards). */
+  max-width: min(920px, calc(100% - 20px));
+  z-index: 6;
   height: var(--ab-h);
   box-sizing: border-box;
   display: flex;
@@ -3052,13 +3053,10 @@ input[type='range'] {
   max-width: calc(100vw - 12px);
 }
 @media (max-height: 500px), (max-width: 760px) {
-  /* Small screens: centered in the room left of the player cards. */
   .prompt-center {
     --ab-h: 64px;
     bottom: 8px;
-    left: var(--free-left, 0px);
-    right: var(--free-right, 0px);
-    max-width: calc(100% - var(--free-left, 0px) - var(--free-right, 0px) - 12px);
+    max-width: calc(100% - 12px);
     gap: 10px;
     padding: 0 8px 0 12px;
   }
