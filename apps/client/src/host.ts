@@ -625,7 +625,7 @@ export class HotSeat implements GameIO {
     switch (e.type) {
       case 'turnStart': {
         this.link?.turnStart(this.seq, G);
-        if (this.saving) saveGame(G);
+        if (this.saving) saveGame(G, this.link?.saveInfo?.());
         const p = G.players[e.pid];
         board.activePid = e.pid;
         board.followPid = e.pid;

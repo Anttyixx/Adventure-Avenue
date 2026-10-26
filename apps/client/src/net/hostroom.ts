@@ -12,6 +12,7 @@ import {
   type GameState,
   type SeatConfig,
 } from '@aa/engine';
+import type { OnlineSave, SaveInfo } from '../save';
 import type { GameLink } from './link';
 import { openPeer, peerErrorText, type DataConnection, type Peer } from './peer';
 import {
@@ -76,10 +77,11 @@ export class HostRoom implements GameLink {
   }
 
   /** Open a room with a fresh code (retrying if the code is taken). */
-  static async open(hostName: string, hostLook: CharLook): Promise<HostRoom> {
+  static async open(hostName: string, hostLook: CharLook, wanted?: string): Promise<HostRoom> {
     let lastErr: unknown;
-    for (let i = 0; i < 5; i++) {
-      const code = newRoomCode();
+    for (let i = 0; i < 6; i++) {
+      // Try the wanted code first (reopening a saved game), then fresh ones.
+      const code = i === 0 && wanted ? wanted : newRoomCode();
       try {
         const peer = await openPeer(roomPeerId(code));
         return new HostRoom(code, peer, hostName, hostLook);
@@ -89,6 +91,57 @@ export class HostRoom implements GameLink {
       }
     }
     throw new Error(peerErrorText(lastErr as { type?: string }));
+  }
+
+  /**
+   * Reopen a saved online game: same room code if it is free, every seat as it was. Players
+   * who played from other devices rejoin with the code (and the same name, or from the same
+   * device); until then a CPU plays for them.
+   */
+  static async reopen(save: SaveInfo): Promise<HostRoom> {
+    const online = save.online!;
+    const G = cloneState(save.state);
+    const host = online.seats.find((s) => s.kind === 'host');
+    const hp = G.players[host?.pid ?? 0];
+    const room = await HostRoom.open(hp.name, hp.ch, online.code);
+    room.seats = G.players.map((p) => {
+      const s = online.seats.find((x) => x.pid === p.id);
+      const base = { name: p.name, look: p.ch, pid: p.id };
+      if (p.cpu) return { ...base, kind: 'cpu' as const, online: false };
+      if (!s || s.kind !== 'remote') return { ...base, kind: s?.kind ?? ('host' as const), online: true };
+      return { ...base, kind: 'remote' as const, online: false, token: s.token };
+    });
+    room.settings = {
+      boardName: G.boardName ?? '',
+      rules: G.rules,
+      target: G.target,
+      roundCap: G.roundCap,
+      fill: true,
+    };
+    room.started = true;
+    room.G = G;
+    room.snap = { state: cloneState(G), seq: 0, answers: [], you: [] };
+    return room;
+  }
+
+  /** The game a reopened room continues. */
+  get game(): GameState | null {
+    return this.G;
+  }
+
+  /** What to keep in the save so the game can be reopened online. */
+  saveInfo(): OnlineSave {
+    return {
+      code: this.code,
+      seats: this.seats
+        .filter((s) => s.pid >= 0 && (s.kind === 'host' || s.kind === 'local' || s.kind === 'remote'))
+        .map((s) => ({
+          pid: s.pid,
+          kind: s.kind as 'host' | 'local' | 'remote',
+          name: s.name,
+          token: s.token,
+        })),
+    };
   }
 
   onChange(f: () => void) {

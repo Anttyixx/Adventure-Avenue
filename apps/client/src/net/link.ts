@@ -3,6 +3,7 @@
  * how answers travel. The host and guest rooms implement it.
  */
 import type { DecisionRequest, GameState } from '@aa/engine';
+import type { OnlineSave } from '../save';
 import type { Answer } from './protocol';
 
 /** Who answers a player's decisions on this device. */
@@ -25,6 +26,8 @@ export interface GameLink {
   behind(seq: number): boolean;
   /** Called at every turn start (host: snapshot + hash; guest: hash check). */
   turnStart(seq: number, G: GameState): void;
+  /** Host: the room details to keep in the save, so the game can be reopened online. */
+  saveInfo?(): OnlineSave;
   /** Leave the game (closes connections). */
   leave(): void;
 }

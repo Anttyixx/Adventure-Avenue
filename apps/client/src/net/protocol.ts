@@ -13,7 +13,7 @@ import type { CharLook, GameState, RuleSet } from '@aa/engine';
 /** Protocol version: a joiner on a different version is turned away. */
 export const NET_VERSION = 3;
 
-export type SeatKind = 'host' | 'local' | 'remote' | 'open';
+export type SeatKind = 'host' | 'local' | 'remote' | 'open' | 'cpu';
 
 export interface LobbySeat {
   kind: SeatKind;

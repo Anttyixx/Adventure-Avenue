@@ -685,12 +685,14 @@ answers since, which the guest replays.
 **Disconnects:** a guest who drops is played by a CPU until they come back; rejoining with the
 same code on the same device (a per-device token) gives them their seat back and replays the
 current turn. Guests retry the connection for about two minutes. If the host leaves, the game
-ends for everyone; the host's device keeps the save (continuing it later plays it as a hot-seat
-game on that device).
+ends for everyone; the host's device keeps the save, which also remembers the room code and who
+played from which device. Continue on the host's main menu reopens the same room code (a new one
+if it was taken) and shows who is back; friends rejoin with the code and the same name (or from
+the same device), and the host resumes. Anyone not back yet is played by a CPU until they join.
 
 **Not done yet:** turn timer, chat/emotes, a relay (TURN) server for networks that block direct
-connections, letting guests answer trades and auction bids while it is not their turn without
-waiting for their copy to catch up, and resuming a saved game online.
+connections, and letting guests answer trades and auction bids while it is not their turn without
+waiting for their copy to catch up.
 
 ## Feature interactions
 

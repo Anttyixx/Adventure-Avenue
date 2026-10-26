@@ -7,7 +7,8 @@ import type { GuestRoom } from './net/guestroom';
 import type { HostRoom } from './net/hostroom';
 import type { StartInfo } from './net/protocol';
 import { h } from './ui/dom';
-import { joinScreen, onlineHub } from './ui/online';
+import { joinScreen, onlineHub, resumeLobby } from './ui/online';
+import type { SaveInfo } from './save';
 import { randomLook } from './sprites';
 import { installDevBadge } from './ui/devmenu';
 import { openEditor } from './ui/editor';
@@ -26,7 +27,8 @@ function showStart() {
     },
     onContinue(save) {
       close();
-      play(cloneState(save.state));
+      if (save.online) void resumeOnline(save);
+      else play(cloneState(save.state));
     },
     onOnline() {
       close();
@@ -105,6 +107,45 @@ async function hostOnline() {
     },
     room,
   );
+}
+
+/** Reopen a saved online game: the same room code, and friends rejoin before the host resumes. */
+async function resumeOnline(save: SaveInfo) {
+  const wait = h('div', { class: 'net-wait' }, h('span', { class: 'spinner' }), 'Reopening the room...');
+  app.append(wait);
+  let room: HostRoom;
+  try {
+    const { HostRoom } = await import('./net/hostroom');
+    room = await HostRoom.reopen(save);
+  } catch (err) {
+    wait.remove();
+    window.alert(`${(err as Error).message} The game is still saved; try Continue again.`);
+    showStart();
+    return;
+  }
+  wait.remove();
+  const close = resumeLobby(app, room, save.online!.code, {
+    onResume() {
+      close();
+      const game = new HotSeat(
+        app,
+        room.game!,
+        () => {
+          room.leave();
+          showStart();
+        },
+        true,
+        room,
+      );
+      room.onNotice = (text) => game.hud.banner(text, '#ffd166', 3500);
+      void game.start();
+    },
+    onBack() {
+      close();
+      room.leave();
+      showStart();
+    },
+  });
 }
 
 function showJoin(code = '') {

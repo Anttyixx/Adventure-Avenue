@@ -12,6 +12,16 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: '2026-10-26-continue-online',
+    date: 'Oct 26, 2026',
+    title: 'Continue online games',
+    items: [
+      'The host can Continue a saved online game: the same room code opens again.',
+      'Friends rejoin with the code and the same name (or their old invite link), then the host resumes.',
+      'Anyone not back yet is played by a CPU until they join.',
+    ],
+  },
+  {
     id: '2026-10-26-whats-new',
     date: 'Oct 26, 2026',
     title: "What's new",

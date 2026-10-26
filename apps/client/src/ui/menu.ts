@@ -95,7 +95,7 @@ export function mainMenu(root: HTMLElement, handlers: MenuHandlers, save: SaveIn
       'span',
       { class: 'menu-btn-sub' },
       s
-        ? `Round ${s.round}${s.boardName ? ` · ${s.boardName}` : ''} · saved ${ago(save!.savedAt)}`
+        ? `${save!.online ? `Online game · room ${save!.online.code} · ` : ''}Round ${s.round}${s.boardName ? ` · ${s.boardName}` : ''} · saved ${ago(save!.savedAt)}`
         : 'No game in progress',
     ),
     s

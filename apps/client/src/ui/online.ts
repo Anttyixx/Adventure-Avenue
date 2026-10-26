@@ -5,7 +5,8 @@
 import { PLAYER_COLORS, type CharLook } from '@aa/engine';
 import { sound } from '../audio';
 import type { GuestEvents, GuestRoom } from '../net/guestroom';
-import { cleanCode, type LobbyInfo, type StartInfo } from '../net/protocol';
+import type { HostRoom } from '../net/hostroom';
+import { cleanCode, inviteURL, type LobbyInfo, type StartInfo } from '../net/protocol';
 import { portraitURL, randomLook } from '../sprites';
 import { clear, fmt, h } from './dom';
 import { titleScene } from './menu';
@@ -252,9 +253,13 @@ export function lobbySeats(lobby: LobbyInfo, mine: number, kick?: (i: number) =>
           : 'Open · waiting for a friend'
         : s.kind === 'host'
           ? 'Host'
-          : s.online
-            ? 'Joined'
-            : 'Reconnecting...';
+          : s.kind === 'cpu'
+            ? 'CPU'
+            : s.kind === 'local'
+              ? "On the host's device"
+              : s.online
+                ? 'Joined'
+                : 'Not back yet · a CPU plays for now';
       return h(
         'div',
         { class: `lobby-seat ${open ? 'open' : ''}`, style: `--pc:${PLAYER_COLORS[i]}` },
@@ -273,4 +278,75 @@ export function lobbySeats(lobby: LobbyInfo, mine: number, kick?: (i: number) =>
       );
     }),
   );
+}
+
+export interface ResumeHandlers {
+  onResume(): void;
+  onBack(): void;
+}
+
+/**
+ * Reopening a saved online game: the room is open again and players rejoin with the code (and
+ * the same name). The host resumes when ready; anyone not back yet is played by a CPU.
+ */
+export function resumeLobby(
+  root: HTMLElement,
+  room: Pick<HostRoom, 'code' | 'lobby' | 'onChange'>,
+  oldCode: string,
+  handlers: ResumeHandlers,
+) {
+  const card = h('section', { class: 'setup-panel glass join-card resume-card' });
+  const f = frame('Continue online game', () => handlers.onBack(), card);
+  root.append(f.el);
+  let copied = false;
+  const share = async () => {
+    const url = inviteURL(room.code);
+    try {
+      if (navigator.share && 'ontouchstart' in window)
+        await navigator.share({ title: 'Adventure Avenue', url });
+      else {
+        await navigator.clipboard.writeText(url);
+        copied = true;
+        draw();
+      }
+    } catch {
+      /* cancelled */
+    }
+  };
+  const draw = () => {
+    clear(card);
+    const lobby = room.lobby();
+    const missing = lobby.seats.filter((x) => x.kind === 'remote' && !x.online).length;
+    card.append(
+      h(
+        'div',
+        { class: 'room-code' },
+        h('small', null, 'Room code'),
+        h('b', null, room.code),
+        h('button', { class: 'btn small', onclick: share }, copied ? 'Copied!' : 'Share invite'),
+      ),
+      h(
+        'p',
+        { class: 'hint' },
+        room.code === oldCode
+          ? 'Your friends rejoin the same way as before: Play online, Join a game, this code and the same name (or their old invite link).'
+          : `The old code ${oldCode} was taken, so this game has a new one. Friends join with it and the same name as before.`,
+      ),
+      lobbySeats(lobby, -1),
+      h(
+        'button',
+        { class: 'btn main big', onclick: () => handlers.onResume() },
+        missing ? `Resume game (${missing} not back yet)` : 'Resume game',
+      ),
+      missing
+        ? h('p', { class: 'hint' }, 'Players who are not back yet are played by a CPU until they join.')
+        : '',
+    );
+  };
+  const off = room.onChange(draw);
+  draw();
+  return () => {
+    off();
+    f.close();
+  };
 }

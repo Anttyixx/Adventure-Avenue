@@ -38,7 +38,7 @@ import { DerbyView, MemoryView, ReelsView, VentureView } from './games';
 import { Hud } from './hud';
 import { mainMenu } from './menu';
 import { openWhatsNew } from './whatsnew';
-import { joinScreen, lobbySeats, onlineHub } from './online';
+import { joinScreen, lobbySeats, onlineHub, resumeLobby } from './online';
 import { soundButton, soundControls } from './soundpanel';
 import { SFX_NAMES, TRACK_NAMES, sound, type Track } from '../audio';
 import { setupScreen } from './start';
@@ -887,6 +887,27 @@ export async function openLab(app: HTMLElement, section?: string) {
             'ABCD',
           ),
         ),
+      ),
+      btn('Online: continue saved game', () =>
+        overlay((holder, done) => {
+          const lobby = () => ({
+            boardName: G.boardName ?? 'Town',
+            rules: G.rules,
+            target: G.target,
+            roundCap: G.roundCap,
+            fill: true,
+            seats: G.players.map((p, i) => ({
+              kind: i === 0 ? ('host' as const) : p.cpu ? ('cpu' as const) : ('remote' as const),
+              name: p.name,
+              look: p.ch,
+              online: i === 0 || i === 1,
+            })),
+          });
+          return resumeLobby(holder, { code: 'KQZD', lobby, onChange: () => () => true }, 'KQZD', {
+            onResume: () => done('Resume game pressed.'),
+            onBack: () => done('Back pressed.'),
+          });
+        }),
       ),
       btn('Online: lobby seats', () =>
         overlay((holder) => {
