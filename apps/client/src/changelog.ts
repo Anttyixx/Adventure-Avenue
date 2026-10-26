@@ -41,6 +41,11 @@ export const CHANGELOG: ChangelogEntry[] = [
         text: 'Characters face the way they walk and have a soft shadow around them, so they stand out from the board. Player cards show their whole head, with their place next to the name.',
       },
       {
+        tag: 'better',
+        title: 'Easier to follow',
+        text: "When shops close, the view pulls back to the whole board and their shutters roll down one by one. Everything that happens gets about a second, there's a short pause between turns, and the active player grows (and the others shrink) smoothly.",
+      },
+      {
         tag: 'new',
         title: 'Credits',
         text: 'A new Credits button on the main menu thanks the artists and makers whose work the game uses, with links to their pages.',

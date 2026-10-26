@@ -387,6 +387,7 @@ export class Game {
       case 'break':
         p.onBreak = true;
         await this.log(`${p.name} takes a break: their shops close until their next turn.`, p.id, 'effect');
+        await this.emit({ type: 'closed', pids: [p.id] });
         return;
       case 'boon':
       case 'boom': {
@@ -600,6 +601,7 @@ export class Game {
           'effect',
           [owner.id],
         );
+        await this.emit({ type: 'closed', pids: [p.id] });
         break;
       case 'star3':
         return this.rivalShop(p, sq);

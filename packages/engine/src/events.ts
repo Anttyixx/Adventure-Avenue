@@ -51,6 +51,8 @@ export type GameEvent =
   | { type: 'auctionBid'; sq: number; pid: number; bid: number; raised: boolean }
   | { type: 'auctionEnd'; sq: number; winner: number; price: number }
   | { type: 'trade'; offer: TradeOffer; accepted: boolean }
+  /** These players' shops just closed until their next turn. */
+  | { type: 'closed'; pids: number[] }
   | { type: 'bankrupt'; pid: number }
   | { type: 'gameOver'; winner: number; reason: string }
   | ({ type: 'log' } & LogLine)

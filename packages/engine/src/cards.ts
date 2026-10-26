@@ -180,6 +180,7 @@ const list: Card[] = [
     text: "Everyone's shops close until their next turn. Then roll again.",
     run: async (g, p) => {
       for (const q of g.G.players) q.closed = true;
+      await g.emit({ type: 'closed', pids: g.G.players.filter((q) => !q.bankrupt).map((q) => q.id) });
       await g.rollAgain(p);
     },
   },
@@ -193,6 +194,8 @@ const list: Card[] = [
       if (n % 2) p.closed = true;
       else for (const q of g.G.players) if (q !== p) q.closed = true;
       await g.log(n % 2 ? `${p.name}'s shops close.` : `Everyone else's shops close.`, p.id, 'effect');
+      const shut = n % 2 ? [p] : g.G.players.filter((q) => q !== p && !q.bankrupt);
+      await g.emit({ type: 'closed', pids: shut.map((q) => q.id) });
     },
   },
   {

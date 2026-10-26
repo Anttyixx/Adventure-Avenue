@@ -488,6 +488,16 @@ export async function openLab(app: HTMLElement, section?: string) {
       btn('Gold ring + sparkles', () => board.ring(cur().node, '#ffd166', true)),
       btn('White ring', () => board.ring(cur().node, '#ffffff')),
       btn('Confetti', () => board.confetti(cur().id)),
+      btn('Shops closing', async () => {
+        // Close the target player's shops for the animation, then open them again.
+        const p = cur();
+        const was = p.closed;
+        p.closed = true;
+        board.setState(G);
+        await board.closeShops(G.nodes.filter((n) => n.owner === p.id).map((n) => n.id));
+        p.closed = was;
+        board.setState(G);
+      }),
       btn('Suit pickup text', () => board.floatText(pos().x, pos().y, '♥', '#ff6b6b')),
       btn('Suit collected in passing', () => board.collectFx(cur().id, '♠', '#ffffff')),
       btn('Shop value rises', () => {

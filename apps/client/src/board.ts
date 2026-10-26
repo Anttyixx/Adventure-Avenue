@@ -39,6 +39,8 @@ interface Token {
   visible: boolean;
   /** Which way the character faces: the way it is walking, or toward the viewer at rest. */
   facing: Facing;
+  /** Drawn size, easing toward bigger for the active player and smaller for the others. */
+  size: number;
 }
 
 interface Fx {
@@ -108,6 +110,11 @@ export class BoardView {
   followPid = -1;
   activePid = -1;
   stepsLeft = 0;
+  /** While set, the camera shows the whole board (e.g. to watch shops close), whatever the zoom. */
+  overviewHold = false;
+  /** Squares whose shutters are coming down: when each starts closing. */
+  private closing = new Map<number, number>();
+  private lastFrame = 0;
 
   // Highlights for choices
   glow: number[] = [];
@@ -175,7 +182,15 @@ export class BoardView {
     for (const p of G.players) {
       if (!this.tokens.has(p.id)) {
         const c = this.slotPos(p.id, p.node);
-        this.tokens.set(p.id, { x: c.x, y: c.y, hop: 0, walking: false, visible: true, facing: Facing.Down });
+        this.tokens.set(p.id, {
+          x: c.x,
+          y: c.y,
+          hop: 0,
+          walking: false,
+          visible: true,
+          facing: Facing.Down,
+          size: 1,
+        });
       }
     }
     this.snapTokens();
@@ -283,6 +298,22 @@ export class BoardView {
     t.walking = false;
     this.snapTokens();
     this.ring(to, '#ffffff');
+  }
+
+  /**
+   * Shops closing: zoom out to the whole board, bring each shop's shutter down in turn, then go
+   * back to the player's zoom.
+   */
+  async closeShops(sqs: number[]) {
+    if (!sqs.length) return;
+    this.overviewHold = true;
+    await this.wait(T.closeZoom);
+    const t0 = performance.now();
+    sqs.forEach((id, i) => this.closing.set(id, t0 + i * T.closeStagger * this.speed));
+    await this.wait(T.closeStagger * (sqs.length - 1) + T.closeShutter + T.closeHold);
+    for (const id of sqs) this.closing.delete(id);
+    this.overviewHold = false;
+    await this.wait(T.closeZoom);
   }
 
   /** A ring that grows and fades on a square. Gold rings also burst 8 sparkles. */
@@ -588,7 +619,7 @@ export class BoardView {
   }
 
   updateCamera() {
-    const out = this.followPid < 0 || this.G?.over ? 1 : this.zoomOut;
+    const out = this.followPid < 0 || this.G?.over || this.overviewHold ? 1 : this.zoomOut;
     const z = this.zoomFor(out);
     // The active player sits in the middle of the screen (the grass carries on past the board).
     let follow = this.followPid >= 0 ? this.tokenPos(this.followPid) : { x: this.ww / 2, y: this.wh / 2 };
@@ -601,7 +632,7 @@ export class BoardView {
     }
     // Zoomed out, the camera gradually lets go of the player and eases to the board's center
     // (straight to it for the game-over overview).
-    const overview = this.followPid < 0 || !!this.G?.over;
+    const overview = this.followPid < 0 || !!this.G?.over || this.overviewHold;
     const t = overview ? 1 : Math.min(1, Math.max(0, (out - ZOOM_BLEND) / (ZOOM_BLEND_END - ZOOM_BLEND)));
     const b = t * t * (3 - 2 * t);
     const c = { x: follow.x + (this.ww / 2 - follow.x) * b, y: follow.y + (this.wh / 2 - follow.y) * b };
@@ -813,6 +844,48 @@ export class BoardView {
     for (const sq of G.nodes) {
       if (sq.owner < 0 || !isClosed(G.players[sq.owner])) continue;
       const c = this.center(sq);
+      const start = this.closing.get(sq.id);
+      if (start != null) {
+        // The shutter rolls down from the top of the tile, slats and all, then thumps shut.
+        const k = motion ? Math.min(1, Math.max(0, (now - start) / (T.closeShutter * this.speed))) : 1;
+        if (k <= 0) continue;
+        const e = 1 - Math.pow(1 - k, 3);
+        const top = c.y - TILE / 2;
+        const hgt = TILE * e;
+        ctx.save();
+        tileShape(ctx, G.layout, c.x, c.y, TILE / 2, 12);
+        ctx.clip();
+        ctx.fillStyle = 'rgba(10,15,40,0.62)';
+        ctx.fillRect(c.x - TILE / 2, top, TILE, hgt);
+        ctx.strokeStyle = 'rgba(230,236,255,0.35)';
+        ctx.lineWidth = 2;
+        for (let y = top + 9; y < top + hgt - 2; y += 9) {
+          ctx.beginPath();
+          ctx.moveTo(c.x - TILE / 2 + 6, y);
+          ctx.lineTo(c.x + TILE / 2 - 6, y);
+          ctx.stroke();
+        }
+        ctx.fillStyle = '#e6ecff';
+        ctx.fillRect(c.x - TILE / 2, top + hgt - 4, TILE, 4);
+        ctx.restore();
+        if (k >= 1) {
+          const pop = Math.min(1, (now - start - T.closeShutter * this.speed) / 220);
+          ctx.save();
+          ctx.globalAlpha = pop;
+          ctx.translate(c.x, c.y);
+          ctx.scale(0.7 + 0.3 * pop, 0.7 + 0.3 * pop);
+          ctx.font = '19px "Lilita One", sans-serif';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.lineWidth = 4;
+          ctx.strokeStyle = '#101a33';
+          ctx.strokeText('CLOSED', 0, 0);
+          ctx.fillStyle = '#ff8a8a';
+          ctx.fillText('CLOSED', 0, 0);
+          ctx.restore();
+        }
+        continue;
+      }
       ctx.fillStyle = 'rgba(10,15,40,0.45)';
       tileShape(ctx, G.layout, c.x, c.y, TILE / 2, 12);
       ctx.fill();
@@ -961,6 +1034,8 @@ export class BoardView {
 
   private drawTokens(ctx: CanvasRenderingContext2D, now: number, motion: boolean) {
     const G = this.G!;
+    const dt = Math.min(100, now - (this.lastFrame || now));
+    this.lastFrame = now;
     // Pixel sprites are drawn in device space with smoothing off.
     const base = this.cam.z * this.dpr * 1.35;
     // The active player is drawn last (on top) and bigger; the others a little smaller.
@@ -975,7 +1050,10 @@ export class BoardView {
       const t = this.tokens.get(p.id)!;
       if (!t.visible) continue;
       const active = p.id === this.activePid && !G.over;
-      const px = base * (active ? 1.573 : this.activePid >= 0 ? 0.6885 : 1);
+      // Grow into the active size, or shrink out of it, over a fraction of a second.
+      const want = active ? 1.573 : this.activePid >= 0 ? 0.6885 : 1;
+      t.size = motion ? t.size + (want - t.size) * (1 - Math.exp(-dt / 140)) : want;
+      const px = base * t.size;
       const ground = this.worldToScreen(t.x, t.y);
       const sx = Math.round(ground.x * this.dpr);
       const color = PLAYER_COLORS[p.color];

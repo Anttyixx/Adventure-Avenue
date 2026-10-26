@@ -625,6 +625,8 @@ export class HotSeat implements GameIO {
     const hud = this.hud;
     switch (e.type) {
       case 'turnStart': {
+        // A beat at the end of the previous turn before the next player starts.
+        if (board.activePid >= 0 && board.activePid !== e.pid) await this.wait(T.turnEnd);
         this.link?.turnStart(this.seq, G);
         if (this.saving) saveGame(G, this.link?.saveInfo?.());
         const p = G.players[e.pid];
@@ -783,6 +785,12 @@ export class HotSeat implements GameIO {
       case 'trade':
         this.refresh();
         break;
+      case 'closed': {
+        this.refresh();
+        const shut = G.nodes.filter((sq) => e.pids.includes(sq.owner)).map((sq) => sq.id);
+        await board.closeShops(shut);
+        break;
+      }
       case 'bankrupt': {
         const p = G.players[e.pid];
         sound.play('bankrupt');

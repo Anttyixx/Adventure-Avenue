@@ -593,6 +593,15 @@ before the name so it never covers the character.
 every 120 ms (idle frames every 260 ms). The active player has a bobbing pixel arrow and a remaining-steps badge. Pixel coins fly from
 payer to payee; floating text shows money changes.
 
+**Shops closing.** When a player's shops close (break square, Estate Agency, the Holiday and Odd or
+even venture cards; the engine emits `closed`), the camera pulls back to the whole board, each of
+their shops' shutters rolls down in turn with a "CLOSED" stamp, then the camera returns to the
+player's zoom (timings `close*` in `timing.ts`).
+
+**Pacing.** Most events get about a second to themselves (landing, money, ownership and value
+changes, suits), and a turn ends with a one-second pause before the next player's turn. When the
+active player changes, tokens ease to their new sizes (the active one larger, the rest smaller).
+
 **Small animations** (all turned off when the system asks for reduced motion):
 
 | Where           | Animation                                                                                                                                   | Trigger                                                   |
