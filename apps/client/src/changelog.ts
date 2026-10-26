@@ -2,12 +2,26 @@
  * Player-facing release notes, newest first, shown in "What's new" on the main menu. Add an
  * entry at the top with every update players will notice. The `id` must be unique: the menu
  * shows a "New" badge until the player has opened the latest one.
+ *
+ * Each entry lists its biggest changes first as `features` (cards with a short heading), then
+ * smaller ones as `extras` (compact chips). Fold similar changes into one feature.
  */
+export type ChangeTag = 'new' | 'better' | 'rules' | 'online' | 'fix';
+
+export interface ChangelogFeature {
+  tag: ChangeTag;
+  title: string;
+  text: string;
+}
+
 export interface ChangelogEntry {
   id: string;
   date: string;
   title: string;
-  items: string[];
+  /** Most important first. */
+  features: ChangelogFeature[];
+  /** Small changes, one short phrase each. */
+  extras?: string[];
 }
 
 export const CHANGELOG: ChangelogEntry[] = [
@@ -15,92 +29,151 @@ export const CHANGELOG: ChangelogEntry[] = [
     id: '2026-10-26-camera-trades',
     date: 'Oct 26, 2026',
     title: 'Zoom, trade screen and auction timer',
-    items: [
-      'The camera always follows the player. Scroll, pinch or press - and + to see more of the map; zoomed far out, the whole board centers.',
-      'Trades and auctions open a screen with the whole board on the left: pick your partner first, then tap properties.',
-      'A new auction window with a 12-second bid timer; when time runs out it counts as a pass.',
-      'Stronger district colors, shown as a glow inside each tile.',
-      'Checkpoint tolls are paid as you walk past, without stopping.',
-      'Passing the bank only matters when you level up (then you can buy stock). Landing on it always lets you buy stock.',
-      'To win, come back to the bank with the target net worth: leveling up past it on this visit is not enough.',
-      'In debt, sell just the shares you need from any districts.',
-      'Venture panels nobody picked are grey; change-of-suit squares are off the built-in boards for now.',
-      'Online: reloading the page puts you straight back in the game, the menu offers Rejoin, and friends can take their seat in a continued game even after it resumes.',
-      'Tile info pop-ups stay on screen.',
+    features: [
+      {
+        tag: 'new',
+        title: 'Trade and auction screen',
+        text: 'Pick your partner first, then tap properties on a view of the whole board. Nothing is hidden behind the interface.',
+      },
+      {
+        tag: 'new',
+        title: 'Auction timer',
+        text: 'A new auction window with a 12-second clock. Run out of time and it counts as a pass.',
+      },
+      {
+        tag: 'better',
+        title: 'Zoom the map',
+        text: 'The camera always follows the player. Scroll, pinch or press - and + to see more; zoomed far out, the whole board centers.',
+      },
+      {
+        tag: 'rules',
+        title: 'Bank and winning',
+        text: 'Passing the bank only matters when you level up. Landing always lets you buy stock. To win, arrive at the bank with the target net worth.',
+      },
+      {
+        tag: 'online',
+        title: 'Easier rejoining',
+        text: 'Reloading puts you straight back in. The menu offers Rejoin, and friends can take their seat after a continued game resumes.',
+      },
+    ],
+    extras: [
+      'Brighter district colors',
+      'Checkpoint tolls paid while walking past',
+      'Sell only the shares you need in debt',
+      'Grey venture panels until picked',
+      'Change-of-suit squares off built-in boards',
+      'Tile pop-ups stay on screen',
+      'Easier-to-read What'"'"'s new',
     ],
   },
   {
     id: '2026-10-26-continue-online',
     date: 'Oct 26, 2026',
     title: 'Continue any game online',
-    items: [
-      'Continue now opens a room for every saved game, even one played on a single device.',
-      "Friends join with the room code and their player's name to take over that seat.",
-      'The host can Continue a saved online game: the same room code opens again.',
-      'Friends rejoin with the code and the same name (or their old invite link), then the host resumes.',
-      'Anyone not back yet is played by a CPU until they join.',
+    features: [
+      {
+        tag: 'online',
+        title: 'Take a local game online',
+        text: "Continue opens a room for every saved game. Friends join with the code and their player's name to take that seat.",
+      },
+      {
+        tag: 'online',
+        title: 'Reopen saved online games',
+        text: 'The same room code opens again. Friends rejoin with the code and the same name; a CPU plays for anyone not back yet.',
+      },
+      {
+        tag: 'new',
+        title: "What's new",
+        text: 'This page! See what changed in each update from the main menu.',
+      },
     ],
-  },
-  {
-    id: '2026-10-26-whats-new',
-    date: 'Oct 26, 2026',
-    title: "What's new",
-    items: ['This page! See what changed in each update from the main menu.'],
   },
   {
     id: '2026-10-26-board-first',
     date: 'Oct 26, 2026',
     title: 'Pick on the board, live auctions and 5 players',
-    items: [
-      'Trades, auctions, renovations, debt sales and the cannon are chosen by tapping the board.',
-      'Answer a trade with a counter-offer (up to 3 rounds).',
-      'Auctions open a live window for everyone; bid right from it.',
-      "Watch other players' arcade games and venture picks as they happen.",
-      'Up to 5 players per game.',
-      'The board is centered with seamless grass, district color areas, name tags over players and gold coins for money.',
-      'The log opens above the player cards (newest at the bottom); online games show the room code.',
-      'All four suits glow when you can level up at the bank.',
+    features: [
+      {
+        tag: 'better',
+        title: 'Choose on the board',
+        text: 'Trades, auctions, renovations, debt sales and the cannon are picked by tapping the board.',
+      },
+      {
+        tag: 'new',
+        title: 'Live auctions and counter-offers',
+        text: 'Everyone bids from a live auction window. Answer a trade with a counter-offer (up to 3 rounds).',
+      },
+      { tag: 'new', title: 'Up to 5 players', text: 'Room for one more at the table.' },
+      {
+        tag: 'better',
+        title: 'Watch other players',
+        text: "See other players' arcade games and venture picks as they happen.",
+      },
+    ],
+    extras: [
+      'Centered board with seamless grass',
+      'Name tags over players',
+      'Gold coins for money',
+      'Log above the player cards',
+      'Room code shown in online games',
+      'Suits glow when you can level up',
     ],
   },
   {
     id: '2026-10-26-playtest',
     date: 'Oct 26, 2026',
     title: 'Clearer turns and fairer boards',
-    items: [
-      'Player cards show cash, net worth, rank and money popups.',
-      'Your options sit in the middle of the screen; choices glow with pins on the board.',
-      'Invest right on the board, with a preview of what it does.',
-      'Buy with stock and property as backup, and settle at the end of your turn.',
-      'Venture lines of 4+ pay 10G per panel.',
-      'A banner and faster music when someone can win.',
-      'Every board has the bank in the middle and 4 properties per district.',
-      'Rejoining online games works, and arcade screens are fixed.',
+    features: [
+      {
+        tag: 'better',
+        title: 'Clearer turns',
+        text: 'Your options sit in the middle of the screen, choices glow with pins on the board, and player cards show cash, net worth and rank.',
+      },
+      {
+        tag: 'rules',
+        title: 'Buy now, settle later',
+        text: 'Buy with stock and property as backup, and settle any debt at the end of your turn.',
+      },
+      {
+        tag: 'better',
+        title: 'Fairer boards',
+        text: 'Every board has the bank in the middle and 4 properties per district.',
+      },
+    ],
+    extras: [
+      'Invest right on the board',
+      'Venture lines of 4+ pay 10G per panel',
+      'Banner and faster music when someone can win',
+      'Rejoining and arcade fixes',
     ],
   },
   {
-    id: '2026-10-26-online',
-    date: 'Oct 26, 2026',
-    title: 'Play online',
-    items: [
-      'Host a game and share a 4-letter room code; friends join from their own devices.',
-      'If someone drops, a CPU plays for them until they rejoin.',
+    id: '2026-10-25-online',
+    date: 'Oct 25-26, 2026',
+    title: 'Play online, sound and new boards',
+    features: [
+      {
+        tag: 'online',
+        title: 'Play online',
+        text: 'Host a game and share a 4-letter room code; friends join from their own devices. A CPU fills in if someone drops.',
+      },
+      {
+        tag: 'new',
+        title: 'Board editor',
+        text: 'Build your own square or hex boards and share them as files.',
+      },
+      {
+        tag: 'new',
+        title: 'Four new boards',
+        text: 'Harbor, Crossroads City, Twin Lakes and Coral Isle.',
+      },
+      {
+        tag: 'new',
+        title: 'Sound and music',
+        text: 'Sound effects and background music, with volume and mute in the speaker menu.',
+      },
     ],
-  },
-  {
-    id: '2026-10-25-sound',
-    date: 'Oct 25, 2026',
-    title: 'Sound and music',
-    items: ['Sound effects and background music, with volume and mute in the speaker menu.'],
-  },
-  {
-    id: '2026-10-25-menus',
-    date: 'Oct 25, 2026',
-    title: 'New menus and boards',
-    items: [
-      'A new main menu with Start and Continue, and a board carousel in game setup.',
-      'Four new boards: Harbor, Crossroads City, Twin Lakes and Coral Isle.',
-      'Build your own square or hex boards in the board editor and share them as files.',
-    ],
+    extras: ['New main menu with Start and Continue', 'Board carousel in game setup'],
   },
 ];
 
