@@ -4,11 +4,12 @@
  */
 import { PLAYER_COLORS } from '@aa/engine';
 import { propertyIconURL, SHOP_TIERS } from '../art';
-import { randomLook, SPRITE_H, SPRITE_W, spriteFrames } from '../sprites';
+import { Facing, FRAME_H, FRAME_W, drawCharacter, shuffledCharacters } from '../sprites';
 import { loadGuest, loadSave, type GuestSave, type SaveInfo } from '../save';
 import { sound } from '../audio';
 import { h } from './dom';
 import { hasUnseenUpdate } from '../changelog';
+import { openCredits } from './credits';
 import { openWhatsNew } from './whatsnew';
 import { closeSoundPopover, soundButton } from './soundpanel';
 
@@ -31,22 +32,22 @@ export function titleScene(walkers = true): { el: HTMLElement; stop: () => void 
   const people: HTMLCanvasElement[] = [];
   let timer = 0;
   if (walkers) {
-    const frames = PLAYER_COLORS.map((c) => spriteFrames(randomLook(), c));
-    frames.forEach((_, i) => {
-      const cv = h('canvas', { class: 'walker', width: SPRITE_W, height: SPRITE_H, style: `--i:${i}` });
+    const cast = shuffledCharacters(5);
+    cast.forEach((_, i) => {
+      const cv = h('canvas', { class: 'walker', width: FRAME_W, height: FRAME_H, style: `--i:${i}` });
       people.push(cv);
     });
     let tick = 0;
     const step = () => {
       people.forEach((cv, i) => {
         const ctx = cv.getContext('2d')!;
-        ctx.clearRect(0, 0, SPRITE_W, SPRITE_H);
-        ctx.drawImage(frames[i][(tick + i) % 2], 0, 0);
+        ctx.clearRect(0, 0, FRAME_W, FRAME_H);
+        drawCharacter(ctx, cast[i], true, Facing.Right, tick + i, FRAME_W / 2, FRAME_H, 1);
       });
       tick++;
     };
     step();
-    if (!matchMedia('(prefers-reduced-motion: reduce)').matches) timer = window.setInterval(step, 260);
+    if (!matchMedia('(prefers-reduced-motion: reduce)').matches) timer = window.setInterval(step, 140);
   }
   const el = h(
     'div',
@@ -165,6 +166,7 @@ export function mainMenu(root: HTMLElement, handlers: MenuHandlers, save: SaveIn
           { class: 'menu-small' },
           whatsNew,
           h('button', { class: 'btn ghost menu-editor', onclick: () => handlers.onEditor() }, 'Board editor'),
+          h('button', { class: 'btn ghost menu-editor', onclick: () => openCredits(root) }, 'Credits'),
         ),
       ),
     ),

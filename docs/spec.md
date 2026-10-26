@@ -89,7 +89,7 @@ depends on rendering.
 
 | Field                                      | Meaning                                                                        |
 | ------------------------------------------ | ------------------------------------------------------------------------------ |
-| `id`, `slot`, `name`, `ch`, `color`, `cpu` | Identity; `ch` = character look (style, hair, skin, accent)                    |
+| `id`, `slot`, `name`, `ch`, `color`, `cpu` | Identity; `ch` = character id (e.g. `farmer`; see Characters)                  |
 | `cash`, `level`                            | Ready cash (can go negative mid-turn) and promotion level, starting at 1       |
 | `suits`, `wild`                            | Four booleans and a count of Suit Yourself cards                               |
 | `shares`                                   | number[7]: shares held per district                                            |
@@ -500,7 +500,9 @@ start, so every other system checks one flag (`rules`).
 
 **Main menu:** the title screen has **Start**, which opens game setup, and **Continue**, which
 resumes the saved game (it shows the round, board and players, and is greyed out when there is no
-save). A Board editor link sits below them.
+save). What's new, Board editor and Credits links sit below them. **Credits** lists everyone whose
+work the game uses (art, fonts, libraries; data in `apps/client/src/credits.ts`), one card each with
+what was used, the license and links to their pages.
 
 **Game setup options** (Start game sits in a bar pinned to the bottom of the screen):
 
@@ -511,10 +513,13 @@ save). A Board editor link sits below them.
 - **Humans on this device:** 1 up to the number of players; the remaining seats are CPUs.
 - **Target net worth:** 4,000G (quick), 5,000G (default), 7,000G, 10,000G (long).
 - **Round limit:** none (default), 15, 20 or 30.
-- **Characters:** each seat gets a random character and name. Each human seat has a name box (up to
-  12 characters; the characters `< > & " ' \`` and `\` are removed; leave it blank to keep the
-  suggested name), and typed names are remembered for the next game. In the online build, validate
-  names on the server; "Shuffle characters" rerolls them.
+- **Characters:** each seat starts with a different random character and a name. Tapping a human
+  seat's character opens the character picker (all nine characters; ones other humans have are
+  greyed out with their name, so no two players share one; a CPU holding the picked one switches
+  to a free one). "Shuffle characters" rerolls them. Characters cannot change once the game
+  starts. Each human seat has a name box (up to 12 characters; the characters `< > & " ' \`` and
+  `\` are removed; leave it blank to keep the suggested name), and typed names are remembered for
+  the next game. In the online build, validate names on the server.
 
 In-game, the Menu button (top right) opens a menu with Rules (a summary), a Fast CPU
 toggle (speeds up CPU turns and animations), Full screen, the Sound sliders and mute, and a red Quit
@@ -573,13 +578,17 @@ cache, then highlights, sprites, coins, floating text and the die.
 - Hover (or tap) any square for a tooltip: owner, value, fee, max value, buyout price, group
   ownership, district stock price.
 
-**Characters (pixel).** 12 x 14 sprites with two walk frames, drawn with smoothing off at a
-whole-number device-pixel scale, with a soft HD shadow. Each character is generated from a head style
-(6), hair color, skin tone and accent color; the body uses the player's color. For the real build,
-replace with hand-made 24 x 32 sprites (4 directions x 4 frames) and 48 x 48 portraits.
+**Characters (pixel).** Nine townsfolk from Franuka's "Medieval townsfolk" pack (CC BY 4.0,
+credited in Credits): Farmer, Fisherman, Blacksmith, Merchant, Alchemist, Barmaid, Bartender, Red
+Cap and Blue Cap (`apps/client/src/sprites.ts`, sheets in `apps/client/src/assets/townsfolk/`).
+Each has an idle and a walk sheet of 32 x 48 frames, 4 frames per row and one row per facing (down,
+left, right, up). On the board they play the walk cycle facing the way they move and the idle cycle
+facing the viewer at rest, drawn with smoothing off on a base disc in the player's color, with a
+soft dark shadow in the sprite's own shape all round them to lift them off the tiles. Portraits
+(player cards, log, lobby) are a head-and-shoulders crop of the first idle frame.
 
-**Motion.** Tokens tween between squares (260 ms, eased, with a hop) and flip walk frames every
-110 ms. The active player has a bobbing pixel arrow and a remaining-steps badge. Pixel coins fly from
+**Motion.** Tokens tween between squares (260 ms, eased, with a hop) and step through walk frames
+every 120 ms (idle frames every 260 ms). The active player has a bobbing pixel arrow and a remaining-steps badge. Pixel coins fly from
 payer to payee; floating text shows money changes.
 
 **Small animations** (all turned off when the system asks for reduced motion):
@@ -588,7 +597,7 @@ payer to payee; floating text shows money changes.
 | --------------- | ------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------- |
 | Board (ambient) | Drifting cloud shadows, pond shimmer, fountain ripples and spray, a glint across the bank coin every few seconds                            | Always                                                    |
 | Closed squares  | Floating "z" letters                                                                                                                        | Owner on a break                                          |
-| Characters      | 1-pixel idle bob, offset per player                                                                                                         | Standing still                                            |
+| Characters      | Idle animation, offset per player                                                                                                           | Standing still                                            |
 | Square          | Gold ring that grows and fades, plus 8 pixel sparkles                                                                                       | Bought, built, bought out, traded, auctioned, or expanded |
 | Square          | White ring pulse                                                                                                                            | Landing, or arriving by warp                              |
 | Player          | Pixel confetti burst                                                                                                                        | Promotion                                                 |
@@ -660,9 +669,10 @@ last turn boundary.
 - **What is saved:** rules, target, round limit, round, turn index, turn order, stock factors,
   change-of-suit index, venture grid, the last 30 log lines, net worth history, every square's
   `[owner, value, building, circus tier, toll]`, and each player's persistent fields (identity,
-  character look, cash, level, suits, wilds, shares, position, `prev`, bankrupt, stats).
+  character, cash, level, suits, wilds, shares, position, `prev`, bankrupt, stats). Saves from
+  before characters were picked get a different townsfolk character per player on load.
 - **Not saved:** temporary effects (break, closed, boon, boost) because they reset at the start of
-  the saved turn anyway; sprites and portraits, which are regenerated from the character look.
+  the saved turn anyway; sprites and portraits, which are drawn from the character id.
 - **Where:** browser localStorage. The main menu's Continue button resumes it (and is greyed out
   when there is none). The save is deleted when a match ends.
 - **Resume:** rebuild the board for the saved rule set, apply the square and player data, then start
@@ -683,7 +693,10 @@ authority. Code: `apps/client/src/net/` (protocol, PeerJS wrapper, host and gues
 **Rooms:** Main menu → Play online → Host a game opens a room with a 4-letter code (letters
 without I/L/O) and the host's lobby (game setup in online mode: board carousel, rules, room code
 with a Share/Copy invite link, the seat list). Friends tap Join a game and type the code, or open
-an invite link (`?join=CODE`). Seats fill in order (up to 3 guests); the host can remove a guest.
+an invite link (`?join=CODE`). Seats fill in order (up to 4 guests); the host can remove a guest.
+Everyone picks a character in the lobby (guests also on the join form); the host keeps them unique,
+giving a joiner whose pick is taken a free one and refusing a change to a taken one, and CPUs get
+characters no player has.
 Empty seats become CPUs on start if "Fill empty seats with CPU" is on; otherwise the game has
 only the people in the room (at least 2).
 
@@ -811,7 +824,7 @@ each milestone ends with something playable.
 5. **Resilience.** Turn timer with safe defaults, reconnect with session tokens, snapshots per turn
    (and an action log for replays), rate limits and input validation.
    - Done when: killing a browser mid-turn and rejoining resumes the seat.
-6. **Content and art.** Replace generated sprites with the custom cast (24 x 32, 4 directions), HD
+6. **Content and art.** Player characters done (townsfolk, 4 directions); HD
    tile art per board theme, sound and music, the results screen, a second board defined purely as
    data.
 7. **Balance and polish.** Use the simulation from step 2 to tune salary, target and fees so

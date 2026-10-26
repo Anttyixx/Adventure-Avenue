@@ -406,10 +406,7 @@ export class DerbyView {
       clear(l.tag);
       if (pid >= 0) {
         const p = this.G.players[pid];
-        l.tag.append(
-          h('img', { class: 'portrait tiny', src: portraitURL(p.ch, PLAYER_COLORS[p.color]), alt: '' }),
-          p.name,
-        );
+        l.tag.append(h('img', { class: 'portrait tiny', src: portraitURL(p.ch), alt: '' }), p.name);
         l.runner.style.background = PLAYER_COLORS[p.color];
       } else l.tag.append(`Racer ${i + 1}`);
     });

@@ -9,7 +9,7 @@ import { cleanCode, type StartInfo } from './net/protocol';
 import { h } from './ui/dom';
 import { joinScreen, onlineHub, resumeLobby } from './ui/online';
 import { clearGuest, guestInGame, loadGuest, setGuestInGame, type SaveInfo } from './save';
-import { randomLook } from './sprites';
+import { freeCharacter, loadCharacters, shuffledCharacters } from './sprites';
 import { installDevBadge } from './ui/devmenu';
 import { openEditor } from './ui/editor';
 import { openLab } from './ui/lab';
@@ -72,7 +72,7 @@ async function hostOnline() {
   try {
     // The networking code loads only when someone plays online.
     const { HostRoom } = await import('./net/hostroom');
-    room = await HostRoom.open('Host', randomLook());
+    room = await HostRoom.open('Host', freeCharacter([]));
   } catch (err) {
     wait.remove();
     showOnline((err as Error).message);
@@ -255,10 +255,11 @@ function showEditor(board: BoardDef | null) {
     },
     onPlay(b) {
       // Test play: one human against three CPUs, then back to the editor.
+      const chars = shuffledCharacters(4);
       const seats = ['You', 'Rosa', 'Milo', 'Juno'].map((name, i) => ({
         name,
         cpu: i > 0,
-        ch: randomLook(),
+        ch: chars[i],
       }));
       play(
         newGame({ rules: 'standard', target: K.defaultTarget, roundCap: 0, seats, board: b }),
@@ -281,18 +282,25 @@ document.addEventListener(
   },
   true,
 );
-const lab = location.hash.match(/^#ui-lab(?:\/(\w+))?/);
-const joinCode = new URLSearchParams(location.search).get('join');
-if (lab) void openLab(app, lab[1]);
-else if (location.hash.startsWith('#editor')) showEditor(null);
-else if (guestInGame() && loadGuest() && (!joinCode || cleanCode(joinCode) === loadGuest()!.code)) {
-  // This tab was in an online game as a guest: reloading goes straight back in.
-  const g = loadGuest()!;
-  showJoin(g.code, { name: g.name });
-} else if (joinCode) {
-  // An invite link: open the join form with the code filled in, then tidy the address bar.
-  const q = new URLSearchParams(location.search);
-  q.delete('join');
-  history.replaceState(null, '', location.pathname + (q.size ? `?${q}` : '') + location.hash);
-  showJoin(joinCode);
-} else showStart();
+function route() {
+  const lab = location.hash.match(/^#ui-lab(?:\/(\w+))?/);
+  const joinCode = new URLSearchParams(location.search).get('join');
+  if (lab) void openLab(app, lab[1]);
+  else if (location.hash.startsWith('#editor')) showEditor(null);
+  else if (guestInGame() && loadGuest() && (!joinCode || cleanCode(joinCode) === loadGuest()!.code)) {
+    // This tab was in an online game as a guest: reloading goes straight back in.
+    const g = loadGuest()!;
+    showJoin(g.code, { name: g.name });
+  } else if (joinCode) {
+    // An invite link: open the join form with the code filled in, then tidy the address bar.
+    const q = new URLSearchParams(location.search);
+    q.delete('join');
+    history.replaceState(null, '', location.pathname + (q.size ? `?${q}` : '') + location.hash);
+    showJoin(joinCode);
+  } else showStart();
+}
+
+// Characters are drawn from image sheets, so load them before the first screen.
+loadCharacters()
+  .catch((err) => console.error(err))
+  .finally(route);

@@ -42,12 +42,8 @@ export interface Square {
   toll: number;
 }
 
-export interface CharLook {
-  head: number;
-  hair: number;
-  skin: number;
-  accent: number;
-}
+/** Which character a player plays as: an id from the client's character list (e.g. "farmer"). */
+export type CharId = string;
 
 export interface Stats {
   feesEarned: number;
@@ -61,7 +57,7 @@ export interface Player {
   id: number;
   slot: number;
   name: string;
-  ch: CharLook;
+  ch: CharId;
   /** Index into PLAYER_COLORS. */
   color: number;
   cpu: boolean;
@@ -135,7 +131,7 @@ export interface GameState {
 export interface SeatConfig {
   name: string;
   cpu: boolean;
-  ch: CharLook;
+  ch: CharId;
 }
 
 export interface MatchOptions {

@@ -323,7 +323,7 @@ export class Hud {
       h(
         'div',
         { class: 'pc-side' },
-        h('img', { class: 'portrait', src: portraitURL(p.ch, color), alt: '' }),
+        h('img', { class: 'portrait', src: portraitURL(p.ch), alt: '' }),
         rank && !p.bankrupt
           ? h('span', { class: `rank r${rank}`, title: `Rank ${rank}` }, ordinal(rank))
           : '',
@@ -577,10 +577,7 @@ export class Hud {
             'div',
             { class: 'tt-owner', style: owner ? `--pc:${PLAYER_COLORS[owner.color]}` : '' },
             owner
-              ? [
-                  h('img', { src: portraitURL(owner.ch, PLAYER_COLORS[owner.color]), alt: '' }),
-                  `Owned by ${owner.name}`,
-                ]
+              ? [h('img', { src: portraitURL(owner.ch), alt: '' }), `Owned by ${owner.name}`]
               : 'For sale',
           )
         : '',
@@ -699,7 +696,7 @@ export class Hud {
         h(
           'div',
           { class: 'pass' },
-          h('img', { class: 'portrait big', src: portraitURL(p.ch, PLAYER_COLORS[p.color], 8), alt: '' }),
+          h('img', { class: 'portrait big', src: portraitURL(p.ch, 8), alt: '' }),
           h(
             'p',
             null,

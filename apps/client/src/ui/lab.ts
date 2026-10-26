@@ -32,13 +32,15 @@ import {
 } from '@aa/engine';
 import { SHOP_TIERS, SHOP_TIER_NAMES, STAR3_TIERS, STAR3_TIER_NAMES, propertyIconURL } from '../art';
 import { BoardView, ZOOM_STEP } from '../board';
-import { randomLook } from '../sprites';
+import { CHARACTERS, shuffledCharacters } from '../sprites';
 import { clear, fmt, h } from './dom';
 import { DerbyView, MemoryView, ReelsView, VentureView } from './games';
 import { Hud } from './hud';
 import { clearGuest, loadGuest, saveGuest } from '../save';
 import { mainMenu } from './menu';
 import { openWhatsNew } from './whatsnew';
+import { openCredits } from './credits';
+import { pickCharacter } from './charpick';
 import { joinScreen, lobbySeats, onlineHub, resumeLobby } from './online';
 import { soundButton, soundControls } from './soundpanel';
 import { SFX_NAMES, TRACK_NAMES, sound, type Track } from '../audio';
@@ -78,11 +80,12 @@ const rnd = (n: number) => Math.floor(Math.random() * n);
 /** A sample match; `playSample` then plays a few rounds so cards, the board and the log have content. */
 function sampleState(): GameState {
   const names = ['Rosa', 'Milo', 'Juno', 'Kai'];
+  const chars = shuffledCharacters(names.length);
   return newGame({
     rules: 'standard',
     target: 5000,
     roundCap: 0,
-    seats: names.map((name) => ({ name, cpu: true, ch: randomLook() })),
+    seats: names.map((name, i) => ({ name, cpu: true, ch: chars[i] })),
   });
 }
 
@@ -857,6 +860,19 @@ export async function openLab(app: HTMLElement, section?: string) {
       btn('Main menu (no save)', () => menu(false)),
       btn('Main menu (rejoin offer)', () => menu(false, true)),
       btn("What's new", () => openWhatsNew(document.body)),
+      btn('Credits', () => openCredits(document.body)),
+      btn('Character picker', async () => {
+        // Rosa and Milo have the first two characters, so those show as taken.
+        const id = await pickCharacter({
+          current: CHARACTERS[2].id,
+          taken: new Map([
+            [CHARACTERS[0].id, 'Rosa'],
+            [CHARACTERS[1].id, 'Milo'],
+          ]),
+          color: PLAYER_COLORS[2],
+        });
+        result('Character picker', id ?? undefined);
+      }),
       btn('Game setup', () =>
         overlay((holder, done) =>
           setupScreen(holder, {

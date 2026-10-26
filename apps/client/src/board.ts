@@ -15,7 +15,7 @@ import {
 import { cellCenter, tileShape, tileTop, worldSize } from './geometry';
 import { SHOP_TIERS, STAR3_TIERS, darken, drawShop, drawStar3, tierFor, tint } from './art';
 import { drawCoin, drawSparkle, SUIT_CHARS } from './icons';
-import { SPRITE_H, SPRITE_W, spriteFrames } from './sprites';
+import { Facing, FRAME_H, FRAME_W, drawCharacter, facingFor } from './sprites';
 import { TIMING as T } from './timing';
 
 export { worldSize };
@@ -37,6 +37,8 @@ interface Token {
   hop: number;
   walking: boolean;
   visible: boolean;
+  /** Which way the character faces: the way it is walking, or toward the viewer at rest. */
+  facing: Facing;
 }
 
 interface Fx {
@@ -173,7 +175,7 @@ export class BoardView {
     for (const p of G.players) {
       if (!this.tokens.has(p.id)) {
         const c = this.slotPos(p.id, p.node);
-        this.tokens.set(p.id, { x: c.x, y: c.y, hop: 0, walking: false, visible: true });
+        this.tokens.set(p.id, { x: c.x, y: c.y, hop: 0, walking: false, visible: true, facing: Facing.Down });
       }
     }
     this.snapTokens();
@@ -234,6 +236,7 @@ export class BoardView {
     dest.y -= 12;
     this.stepsLeft = left;
     t.walking = true;
+    t.facing = facingFor(dest.x - from.x, dest.y - from.y);
     const dur = T.step * this.speed;
     const t0 = performance.now();
     await new Promise<void>((resolve) => {
@@ -251,6 +254,7 @@ export class BoardView {
     t.hop = 0;
     if (left === 0) {
       t.walking = false;
+      t.facing = Facing.Down;
       this.stepsLeft = 0;
       this.snapTokens();
     }
@@ -957,8 +961,8 @@ export class BoardView {
 
   private drawTokens(ctx: CanvasRenderingContext2D, now: number, motion: boolean) {
     const G = this.G!;
-    // Pixel sprites are drawn in device space at a whole-number scale with smoothing off.
-    const base = this.cam.z * this.dpr * 3;
+    // Pixel sprites are drawn in device space with smoothing off.
+    const base = this.cam.z * this.dpr * 1.35;
     // The active player is drawn last (on top) and bigger; the others a little smaller.
     const order = G.players
       .slice()
@@ -971,43 +975,47 @@ export class BoardView {
       const t = this.tokens.get(p.id)!;
       if (!t.visible) continue;
       const active = p.id === this.activePid && !G.over;
-      const px = Math.max(1, Math.round(base * (active ? 1.3 : this.activePid >= 0 ? 0.85 : 1)));
-      const s = this.worldToScreen(t.x, t.y - t.hop);
-      const sx = Math.round(s.x * this.dpr);
-      const sy = Math.round(s.y * this.dpr);
+      const px = base * (active ? 1.3 : this.activePid >= 0 ? 0.85 : 1);
+      const ground = this.worldToScreen(t.x, t.y);
+      const sx = Math.round(ground.x * this.dpr);
       const color = PLAYER_COLORS[p.color];
-      const frames = spriteFrames(p.ch, color);
-      const walkFrame = t.walking ? Math.floor(now / 110) % 2 : 0;
-      const bob = !t.walking && motion ? Math.round(Math.sin(now / 400 + p.id * 1.7) * 0.5 + 0.5) : 0;
-      const w = SPRITE_W * px;
-      const h = SPRITE_H * px;
-      // A base disc in the player's color with a white rim, so tokens stand out on any tile.
-      const footY = Math.round(this.worldToScreen(t.x, t.y).y * this.dpr) + h / 2;
+      // Walk cycle while moving; the idle cycle (offset per player) at rest.
+      const frame = motion ? Math.floor(now / (t.walking ? 120 : 260)) + (t.walking ? 0 : p.id) : 0;
+      const w = FRAME_W * px;
+      const h = FRAME_H * px;
+      // The base disc sits where the old, smaller tokens stood their feet.
+      const footY = Math.round((ground.y + 21 * this.cam.z) * this.dpr);
+      const sy = footY - t.hop * this.cam.z * this.dpr;
       ctx.save();
       ctx.imageSmoothingEnabled = true;
       ctx.fillStyle = 'rgba(0,0,0,0.28)';
       ctx.beginPath();
-      ctx.ellipse(sx, footY + px * 0.8, w * 0.52, px * 2.4, 0, 0, Math.PI * 2);
+      ctx.ellipse(sx, footY + px * 1.2, w * 0.4, px * 4.5, 0, 0, Math.PI * 2);
       ctx.fill();
       ctx.beginPath();
-      ctx.ellipse(sx, footY, w * 0.48, px * 2, 0, 0, Math.PI * 2);
+      ctx.ellipse(sx, footY, w * 0.36, px * 3.8, 0, 0, Math.PI * 2);
       ctx.fillStyle = color;
       ctx.fill();
-      ctx.lineWidth = Math.max(2, px * 0.7);
+      ctx.lineWidth = Math.max(2, px * 1.2);
       ctx.strokeStyle = '#fff';
       ctx.stroke();
       if (active && motion) {
         const k = (now % 1400) / 1400;
         ctx.globalAlpha = 1 - k;
         ctx.beginPath();
-        ctx.ellipse(sx, footY, w * (0.5 + k * 0.5), px * (2 + k * 2), 0, 0, Math.PI * 2);
+        ctx.ellipse(sx, footY, w * (0.38 + k * 0.4), px * (3.8 + k * 3.5), 0, 0, Math.PI * 2);
         ctx.strokeStyle = color;
         ctx.lineWidth = 3 * this.dpr;
         ctx.stroke();
         ctx.globalAlpha = 1;
       }
       ctx.restore();
-      ctx.drawImage(frames[walkFrame], sx - w / 2, sy - h / 2 - bob * px, w, h);
+      // A soft shadow in the sprite's own shape, all round it, to lift it off the board.
+      ctx.save();
+      ctx.shadowColor = 'rgba(10, 16, 30, 0.75)';
+      ctx.shadowBlur = Math.max(4, px * 4);
+      drawCharacter(ctx, p.ch, t.walking, t.facing, frame, sx, sy + px * 3, px);
+      ctx.restore();
       // Name tag above the character.
       {
         const fs = (active ? 14 : 11) * this.dpr;
@@ -1015,7 +1023,7 @@ export class BoardView {
         ctx.imageSmoothingEnabled = true;
         ctx.font = `${fs}px "Lilita One", sans-serif`;
         const tw = ctx.measureText(p.name).width + fs * 0.9;
-        const ty = sy - h / 2 - bob * px - (active ? 34 : 8) * this.dpr;
+        const ty = sy - h + px * 3 - (active ? 34 : 8) * this.dpr;
         ctx.fillStyle = color;
         ctx.strokeStyle = 'rgba(255,255,255,0.9)';
         ctx.lineWidth = 1.5 * this.dpr;
@@ -1032,7 +1040,7 @@ export class BoardView {
       if (active) {
         // Smooth marker arrow above the active player.
         const aw = 9 * this.dpr;
-        const ay = sy - h / 2 - 20 * this.dpr + (motion ? Math.sin(now / 180) * 3 * this.dpr : 0);
+        const ay = sy - h + px * 3 - 20 * this.dpr + (motion ? Math.sin(now / 180) * 3 * this.dpr : 0);
         ctx.save();
         ctx.imageSmoothingEnabled = true;
         ctx.beginPath();
@@ -1048,8 +1056,8 @@ export class BoardView {
         ctx.fill();
         ctx.restore();
         if (this.stepsLeft > 0) {
-          const bx = sx + w / 2 + px * 2;
-          const by = sy - h / 2;
+          const bx = sx + w * 0.42;
+          const by = sy - h * 0.75;
           const rad = 11 * this.dpr;
           ctx.fillStyle = '#101a33';
           ctx.beginPath();

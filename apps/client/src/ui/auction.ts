@@ -89,7 +89,7 @@ export class AuctionView {
         h(
           'span',
           { class: 'au-leader', style: `--pc:${PLAYER_COLORS[p.color]}` },
-          h('img', { src: portraitURL(p.ch, PLAYER_COLORS[p.color]), alt: '' }),
+          h('img', { src: portraitURL(p.ch), alt: '' }),
           p.name,
         ),
       );
@@ -105,7 +105,7 @@ export class AuctionView {
             class: `au-bidder ${st === 'Out' ? 'out' : ''} ${pid === this.highBidder ? 'lead' : ''} ${pid === this.waitingFor ? 'deciding' : ''}`,
             style: `--pc:${PLAYER_COLORS[p.color]}`,
           },
-          h('img', { src: portraitURL(p.ch, PLAYER_COLORS[p.color]), alt: '' }),
+          h('img', { src: portraitURL(p.ch), alt: '' }),
           h('span', { class: 'au-name' }, p.name),
           h(
             'span',
@@ -216,7 +216,7 @@ export class AuctionView {
         h(
           'span',
           { class: 'au-leader', style: `--pc:${PLAYER_COLORS[p.color]}` },
-          h('img', { src: portraitURL(p.ch, PLAYER_COLORS[p.color]), alt: '' }),
+          h('img', { src: portraitURL(p.ch), alt: '' }),
           `${p.name} wins`,
         ),
       );

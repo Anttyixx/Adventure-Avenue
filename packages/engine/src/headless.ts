@@ -15,7 +15,7 @@ export function cpuSeats(n = 4): MatchOptions['seats'] {
   return Array.from({ length: n }, (_, i) => ({
     name: `CPU ${i + 1}`,
     cpu: true,
-    ch: { head: i, hair: i, skin: i, accent: i },
+    ch: `cpu${i}`,
   }));
 }
 

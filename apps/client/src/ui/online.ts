@@ -2,13 +2,14 @@
  * Online play screens: the hub (host or join), the join form, and the lobby a guest waits in
  * until the host starts. The host's lobby lives in game setup (start.ts, online mode).
  */
-import { PLAYER_COLORS, type CharLook } from '@aa/engine';
+import { PLAYER_COLORS, type CharId } from '@aa/engine';
 import { sound } from '../audio';
 import type { GuestEvents, GuestRoom } from '../net/guestroom';
 import type { HostRoom } from '../net/hostroom';
 import { cleanCode, inviteURL, type LobbyInfo, type StartInfo } from '../net/protocol';
 import { saveGuest } from '../save';
-import { portraitURL, randomLook } from '../sprites';
+import { freeCharacter, portraitURL } from '../sprites';
+import { charButton, pickCharacter } from './charpick';
 import { clear, fmt, h } from './dom';
 import { titleScene } from './menu';
 import { closeSoundPopover, soundButton } from './soundpanel';
@@ -111,7 +112,7 @@ export interface JoinHandlers {
  * `rejoin` fills in the name too and connects straight away (coming back to a game).
  */
 export function joinScreen(root: HTMLElement, handlers: JoinHandlers, code = '', rejoin?: { name: string }) {
-  const look: CharLook = randomLook();
+  let look: CharId = freeCharacter([]);
   let room: GuestRoom | null = null;
   let busy = false;
   let error = '';
@@ -203,13 +204,20 @@ export function joinScreen(root: HTMLElement, handlers: JoinHandlers, code = '',
       card.append(...guestLobby(room, lobby));
       return;
     }
+    const pick = async () => {
+      const id = await pickCharacter({ current: look, taken: new Map(), color: PLAYER_COLORS[1] });
+      if (id) {
+        look = id;
+        draw();
+      }
+    };
     const btn = h(
       'button',
       { class: 'btn main big', disabled: busy, onclick: join },
       busy ? 'Connecting...' : 'Join',
     );
     card.append(
-      h('img', { class: 'join-portrait', src: portraitURL(look, PLAYER_COLORS[1], 6), alt: '' }),
+      charButton(look, 'big join-char', () => void pick()),
       h('label', { class: 'opt' }, h('div', { class: 'opt-label' }, 'Room code'), codeIn),
       h('label', { class: 'opt' }, h('div', { class: 'opt-label' }, 'Your name'), nameIn),
       ...(error ? [h('p', { class: 'join-error' }, error)] : []),
@@ -237,7 +245,17 @@ function guestLobby(room: GuestRoom, lobby: LobbyInfo | null): HTMLElement[] {
       h('b', null, lobby.boardName),
       ` · ${rules} · Target ${fmt(lobby.target)}${lobby.roundCap ? ` · ${lobby.roundCap} rounds` : ''}`,
     ),
-    lobbySeats(lobby, room.seat),
+    lobbySeats(lobby, room.seat, undefined, (i) => {
+      // Characters other players have can't be picked; CPUs fill in with whatever is left.
+      const taken = new Map<CharId, string>();
+      lobby.seats.forEach((st, j) => {
+        if (j !== i && st.look && st.kind !== 'open' && st.kind !== 'cpu') taken.set(st.look, st.name);
+      });
+      void pickCharacter({ current: lobby.seats[i].look ?? '', taken, color: PLAYER_COLORS[i] }).then(
+        (id) => id && room.setLook(id),
+      );
+    }),
+    h('p', { class: 'hint' }, 'Tap your picture to pick a different character before the game starts.'),
     h(
       'p',
       { class: 'waiting' },
@@ -247,8 +265,16 @@ function guestLobby(room: GuestRoom, lobby: LobbyInfo | null): HTMLElement[] {
   ];
 }
 
-/** The seat list, shared by the host's and the guests' lobbies. */
-export function lobbySeats(lobby: LobbyInfo, mine: number, kick?: (i: number) => void): HTMLElement {
+/**
+ * The seat list, shared by the host's and the guests' lobbies. With `pick`, the player's own
+ * seat (`mine`) has a button to change character.
+ */
+export function lobbySeats(
+  lobby: LobbyInfo,
+  mine: number,
+  kick?: (i: number) => void,
+  pick?: (i: number) => void,
+): HTMLElement {
   return h(
     'div',
     { class: 'lobby-seats' },
@@ -270,9 +296,11 @@ export function lobbySeats(lobby: LobbyInfo, mine: number, kick?: (i: number) =>
       return h(
         'div',
         { class: `lobby-seat ${open ? 'open' : ''}`, style: `--pc:${PLAYER_COLORS[i]}` },
-        s.look
-          ? h('img', { class: 'portrait', src: portraitURL(s.look, PLAYER_COLORS[i], 4), alt: '' })
-          : h('span', { class: 'portrait empty' }, '?'),
+        s.look && pick && i === mine
+          ? charButton(s.look, 'small', () => pick(i))
+          : s.look
+            ? h('img', { class: 'portrait', src: portraitURL(s.look, 4), alt: '' })
+            : h('span', { class: 'portrait empty' }, '?'),
         h(
           'span',
           { class: 'lobby-seat-text' },

@@ -3,6 +3,7 @@
  * can always be resumed from the last turn boundary.
  */
 import { cloneState, type GameState } from '@aa/engine';
+import { CHARACTERS, freeCharacter } from './sprites';
 
 const SAVE_KEY = 'adventure-avenue-save-v1';
 
@@ -36,6 +37,14 @@ export function loadSave(): SaveInfo | null {
     if (!raw) return null;
     const s = JSON.parse(raw) as SaveInfo;
     if (s?.state?.version !== 1 || s.state.over) return null;
+    // Games saved before characters were picked from the townsfolk get different ones each.
+    const players = s.state.players;
+    for (const p of players)
+      if (!CHARACTERS.some((c) => c.id === p.ch))
+        p.ch = freeCharacter(
+          players.filter((q) => q !== p).map((q) => q.ch),
+          () => p.id / players.length,
+        );
     return s;
   } catch {
     return null;

@@ -26,6 +26,28 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: '2026-10-26-townsfolk',
+    date: 'Oct 26, 2026',
+    title: 'New characters',
+    features: [
+      {
+        tag: 'new',
+        title: 'Pick your character',
+        text: 'Nine hand-drawn townsfolk with idle and walking animations. Tap your picture in game setup or the online lobby to choose one; no two players can have the same character, and it stays yours for the whole game.',
+      },
+      {
+        tag: 'better',
+        title: 'Easier to spot on the board',
+        text: 'Characters face the way they walk and have a soft shadow around them, so they stand out from the board.',
+      },
+      {
+        tag: 'new',
+        title: 'Credits',
+        text: 'A new Credits button on the main menu thanks the artists and makers whose work the game uses, with links to their pages.',
+      },
+    ],
+  },
+  {
     id: '2026-10-26-camera-trades',
     date: 'Oct 26, 2026',
     title: 'Zoom, trade screen and auction timer',

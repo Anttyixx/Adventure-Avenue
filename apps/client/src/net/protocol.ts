@@ -8,17 +8,17 @@
  * the right seat and broadcasts it. Once per turn the host sends a hash of its state so a copy
  * that drifted can ask for the turn's starting state and replay from there.
  */
-import type { CharLook, GameState, RuleSet } from '@aa/engine';
+import type { CharId, GameState, RuleSet } from '@aa/engine';
 
 /** Protocol version: a joiner on a different version is turned away. */
-export const NET_VERSION = 3;
+export const NET_VERSION = 4;
 
 export type SeatKind = 'host' | 'local' | 'remote' | 'open' | 'cpu';
 
 export interface LobbySeat {
   kind: SeatKind;
   name: string;
-  look: CharLook | null;
+  look: CharId | null;
   /** False while a joined player's connection is lost. */
   online: boolean;
 }
@@ -50,7 +50,9 @@ export interface StartInfo {
 }
 
 export type ToHost =
-  | { t: 'hello'; v: number; token: string; name: string; look: CharLook }
+  | { t: 'hello'; v: number; token: string; name: string; look: CharId }
+  /** Pick a different character in the lobby (refused if someone else has it). */
+  | { t: 'look'; look: CharId }
   | { t: 'answer'; seq: number; ans: unknown }
   | { t: 'resync' }
   | { t: 'bye' };

@@ -7,12 +7,13 @@ import {
   PLAYER_COLORS,
   cloneState,
   cpuDecide,
-  type CharLook,
+  type CharId,
   type DecisionRequest,
   type GameState,
   type SeatConfig,
 } from '@aa/engine';
 import type { OnlineSave, SaveInfo } from '../save';
+import { CHARACTERS, freeCharacter } from '../sprites';
 import type { GameLink } from './link';
 import { openPeer, peerErrorText, type DataConnection, type Peer } from './peer';
 import {
@@ -61,7 +62,7 @@ export class HostRoom implements GameLink {
     public code: string,
     private peer: Peer,
     hostName: string,
-    hostLook: CharLook,
+    hostLook: CharId,
   ) {
     this.seats = [
       { kind: 'host', name: hostName, look: hostLook, online: true, pid: -1 },
@@ -77,7 +78,7 @@ export class HostRoom implements GameLink {
   }
 
   /** Open a room with a fresh code (retrying if the code is taken). */
-  static async open(hostName: string, hostLook: CharLook, wanted?: string): Promise<HostRoom> {
+  static async open(hostName: string, hostLook: CharId, wanted?: string): Promise<HostRoom> {
     let lastErr: unknown;
     for (let i = 0; i < 6; i++) {
       // Try the wanted code first (reopening a saved game), then fresh ones.
@@ -173,8 +174,26 @@ export class HostRoom implements GameLink {
     this.changed();
   }
 
-  setHost(name: string, look: CharLook) {
+  setHost(name: string, look: CharId) {
     Object.assign(this.seats[0], { name, look });
+    this.changed();
+  }
+
+  /** Characters held by players (not CPUs or open seats), except seat `but`. */
+  private takenLooks(but: number): CharId[] {
+    return this.seats.flatMap((s, i) =>
+      i !== but && s.look && s.kind !== 'open' && s.kind !== 'cpu' ? [s.look] : [],
+    );
+  }
+
+  private lookFree(look: unknown, but: number): look is CharId {
+    return CHARACTERS.some((c) => c.id === look) && !this.takenLooks(but).includes(look as CharId);
+  }
+
+  /** A joined player picks another character; refused (the lobby re-sent) if it is taken. */
+  private relook(seat: Seat, look: unknown) {
+    if (this.started) return;
+    if (this.lookFree(look, this.seats.indexOf(seat))) seat.look = look;
     this.changed();
   }
 
@@ -213,7 +232,8 @@ export class HostRoom implements GameLink {
     if (msg.t === 'hello') return this.hello(conn, msg);
     const seat = this.seats.find((s) => s.conn === conn);
     if (!seat) return;
-    if (msg.t === 'answer' && typeof msg.seq === 'number') this.answered(seat, msg.seq, msg.ans);
+    if (msg.t === 'look') this.relook(seat, msg.look);
+    else if (msg.t === 'answer' && typeof msg.seq === 'number') this.answered(seat, msg.seq, msg.ans);
     else if (msg.t === 'resync' && this.snap) this.send(seat, { t: 'start', start: this.startFor(seat) });
     else if (msg.t === 'bye') this.dropped(conn);
   }
@@ -283,7 +303,8 @@ export class HostRoom implements GameLink {
     this.seats[i] = {
       kind: 'remote',
       name: name || 'Player',
-      look: msg.look,
+      // Their pick, unless someone already has it.
+      look: this.lookFree(msg.look, -1) ? msg.look : freeCharacter(this.takenLooks(-1)),
       online: true,
       token: msg.token,
       conn,
@@ -316,14 +337,20 @@ export class HostRoom implements GameLink {
 
   // ------------------------------------------------------------ starting
 
-  /** The seats to start the game with (open seats become CPUs, or are dropped). */
-  seatConfigs(cpuName: (i: number) => string, cpuLook: (i: number) => CharLook, fill: boolean): SeatConfig[] {
+  /**
+   * The seats to start the game with (open seats become CPUs, or are dropped). CPUs get
+   * characters no player has.
+   */
+  seatConfigs(cpuName: (i: number) => string, fill: boolean): SeatConfig[] {
     const out: SeatConfig[] = [];
+    const used = this.takenLooks(-1);
     this.seats.forEach((s, i) => {
       if (s.kind === 'open') {
         if (!fill) return;
         s.pid = out.length;
-        out.push({ name: cpuName(i), cpu: true, ch: cpuLook(i) });
+        const ch = freeCharacter(used);
+        used.push(ch);
+        out.push({ name: cpuName(i), cpu: true, ch });
         return;
       }
       s.pid = out.length;

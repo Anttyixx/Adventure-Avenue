@@ -1,6 +1,6 @@
 /**
  * Game setup (opened from Start on the main menu): a looping carousel of boards, the rules,
- * player count, CPU fill, characters and names.
+ * player count, CPU fill, characters (each player picks a different one) and names.
  */
 import {
   K,
@@ -8,13 +8,14 @@ import {
   PLAYER_COLORS,
   validateBoard,
   type BoardDef,
-  type CharLook,
+  type CharId,
   type MatchOptions,
   type RuleSet,
 } from '@aa/engine';
 import { boardThumb } from './thumb';
 import { BUILT_IN, getBoard, listBoards, pickBoardFile, readBoardFile, saveBoard } from '../boardstore';
-import { portraitURL, randomLook } from '../sprites';
+import { freeCharacter, shuffledCharacters } from '../sprites';
+import { charButton, pickCharacter } from './charpick';
 import { loadSave } from '../save';
 import { titleScene } from './menu';
 import type { HostRoom } from '../net/hostroom';
@@ -103,14 +104,32 @@ export function setupScreen(root: HTMLElement, handlers: SetupHandlers, room: Ho
   /** Direction of the last carousel move, so only that redraw animates the slide. */
   let slide: 'next' | 'prev' | '' = '';
   const typed: string[] = readJSON(NAMES_KEY, []);
-  let looks: CharLook[] = [];
+  let looks: CharId[] = [];
   let suggested: string[] = [];
   const shuffle = () => {
-    looks = PLAYER_COLORS.map(() => randomLook());
+    looks = shuffledCharacters(PLAYER_COLORS.length);
     const pool = NAMES.slice();
     suggested = PLAYER_COLORS.map(() => pool.splice(Math.floor(Math.random() * pool.length), 1)[0]);
   };
   shuffle();
+  /**
+   * Give seat `i` a character. A CPU seat that had it switches to a free one; human seats never
+   * share, because the picker greys out what other humans have.
+   */
+  const setLook = (i: number, id: CharId) => {
+    looks[i] = id;
+    looks.forEach((l, j) => {
+      if (j !== i && l === id) looks[j] = freeCharacter(looks.filter((_, k) => k !== j));
+    });
+  };
+  /** Open the picker for seat `i`; `humanNames` maps the other human seats to their names. */
+  const choose = async (i: number, others: Map<CharId, string>, after: () => void) => {
+    const id = await pickCharacter({ current: looks[i], taken: others, color: PLAYER_COLORS[i] });
+    if (id) {
+      setLook(i, id);
+      after();
+    }
+  };
 
   sound.music('menu');
   const scene = titleScene(false);
@@ -301,12 +320,7 @@ export function setupScreen(root: HTMLElement, handlers: SetupHandlers, room: Ho
     if (!room) return;
     clear(lobbyBox);
     lobbyBox.append(
-      h(
-        'div',
-        { class: 'panel-head' },
-        h('h3', null, 'Players'),
-        h('button', { class: 'btn ghost small', onclick: () => (shuffle(), draw()) }, 'Shuffle characters'),
-      ),
+      h('div', { class: 'panel-head' }, h('h3', null, 'Players')),
       h(
         'div',
         { class: 'room-code' },
@@ -323,7 +337,18 @@ export function setupScreen(root: HTMLElement, handlers: SetupHandlers, room: Ho
         { class: 'hint' },
         'Friends open the game, tap Play online, then Join a game and type this code.',
       ),
-      h('label', { class: 'opt' }, h('div', { class: 'opt-label' }, 'Your name'), hostName),
+      h(
+        'div',
+        { class: 'host-me' },
+        charButton(looks[0], 'big', () => {
+          const taken = new Map<CharId, string>();
+          room.lobby().seats.forEach((st, j) => {
+            if (j > 0 && st.look && st.kind !== 'open') taken.set(st.look, st.name);
+          });
+          void choose(0, taken, draw);
+        }),
+        h('label', { class: 'opt' }, h('div', { class: 'opt-label' }, 'Your name'), hostName),
+      ),
       lobbySeats(room.lobby(), 0, (i) => room.kick(i)),
       h(
         'label',
@@ -360,11 +385,7 @@ export function setupScreen(root: HTMLElement, handlers: SetupHandlers, room: Ho
       if (room) {
         writeJSON(NAMES_KEY, typed);
         writeJSON(OPTS_KEY, { humans, fill, total, target, roundCap, rules, boardId });
-        const list = room.seatConfigs(
-          (i) => suggested[i],
-          (i) => looks[i],
-          fill,
-        );
+        const list = room.seatConfigs((i) => suggested[i], fill);
         handlers.onStart({ rules, target, roundCap, seats: list, board });
         return;
       }
@@ -480,10 +501,13 @@ export function setupScreen(root: HTMLElement, handlers: SetupHandlers, room: Ho
                         oninput: (e: Event) => (typed[i] = cleanName((e.target as HTMLInputElement).value)),
                       }) as HTMLInputElement)
                     : h('span', { class: 'name cpu' }, suggested[i]);
+                  const others = new Map<CharId, string>();
+                  for (let j = 0; j < humans; j++)
+                    if (j !== i) others.set(looks[j], cleanName(typed[j] || '') || suggested[j]);
                   return h(
                     'div',
                     { class: 'seat-card', style: `--pc:${PLAYER_COLORS[i]}` },
-                    h('img', { class: 'portrait', src: portraitURL(looks[i], PLAYER_COLORS[i], 5), alt: '' }),
+                    charButton(looks[i], '', human ? () => void choose(i, others, draw) : null),
                     input,
                     h('span', { class: 'seat-tag' }, human ? `P${i + 1}` : 'CPU'),
                   );

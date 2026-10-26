@@ -79,7 +79,7 @@ export function logView(G: GameState, currentKey: string): HTMLElement {
     const head = h(
       'div',
       { class: 'turn-head' },
-      p ? h('img', { class: 'portrait tiny', src: portraitURL(p.ch, color), alt: '' }) : null,
+      p ? h('img', { class: 'portrait tiny', src: portraitURL(p.ch), alt: '' }) : null,
       h('b', { style: `color:${color}` }, p ? `${p.name}'s turn` : 'Earlier'),
       g.round != null ? h('span', { class: 'turn-round' }, `Round ${g.round}`) : null,
       live ? h('span', { class: 'turn-live' }, 'Now') : null,
@@ -109,7 +109,7 @@ export function logView(G: GameState, currentKey: string): HTMLElement {
                   return h(
                     'span',
                     { class: 'who', style: `--pc:${qc}`, title: q.name },
-                    h('img', { src: portraitURL(q.ch, qc), alt: '' }),
+                    h('img', { src: portraitURL(q.ch), alt: '' }),
                     q.name,
                   );
                 }),

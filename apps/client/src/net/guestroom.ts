@@ -3,7 +3,7 @@
  * plays a copy of the game in step with the host. If the connection drops it keeps trying to
  * get back in, and the host sends the current turn to replay from.
  */
-import type { CharLook, DecisionRequest, GameState } from '@aa/engine';
+import type { CharId, DecisionRequest, GameState } from '@aa/engine';
 import type { GameLink } from './link';
 import { connectTo, openPeer, peerErrorText, type DataConnection, type Peer } from './peer';
 import {
@@ -50,12 +50,12 @@ export class GuestRoom implements GameLink {
     private peer: Peer,
     private conn: DataConnection,
     private name: string,
-    private look: CharLook,
+    private look: CharId,
     public on: GuestEvents,
   ) {}
 
   /** Join a room. Resolves once the host has given us a seat. */
-  static async join(code: string, name: string, look: CharLook, on: GuestEvents): Promise<GuestRoom> {
+  static async join(code: string, name: string, look: CharId, on: GuestEvents): Promise<GuestRoom> {
     let peer: Peer | null = null;
     try {
       peer = await openPeer();
@@ -96,6 +96,12 @@ export class GuestRoom implements GameLink {
       conn.on('error', () => this.lost(conn));
       this.send({ t: 'hello', v: NET_VERSION, token: this.token, name: this.name, look: this.look });
     });
+  }
+
+  /** Ask the host for a different character (lobby only). */
+  setLook(look: CharId) {
+    this.look = look;
+    this.send({ t: 'look', look });
   }
 
   private send(msg: ToHost) {

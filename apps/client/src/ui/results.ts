@@ -19,7 +19,7 @@ export function showResults(hud: Hud, G: GameState, onNew: () => void) {
         h(
           'li',
           { style: `--pc:${PLAYER_COLORS[p.color]}` },
-          h('img', { class: 'portrait', src: portraitURL(p.ch, PLAYER_COLORS[p.color]), alt: '' }),
+          h('img', { class: 'portrait', src: portraitURL(p.ch), alt: '' }),
           h('b', null, p.name),
           h('span', null, p.bankrupt ? 'Bankrupt' : fmt(netWorth(G, p))),
           h('small', null, `Level ${p.level}`),

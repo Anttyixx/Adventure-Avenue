@@ -217,7 +217,7 @@ function holdingsGrid(G: GameState, sel: number, select: (d: number) => void): H
       h(
         'th',
         { class: `m-ph ${p.bankrupt ? 'out' : ''}`, style: `--pc:${PLAYER_COLORS[p.color]}`, title: p.name },
-        h('img', { src: portraitURL(p.ch, PLAYER_COLORS[p.color]), alt: p.name }),
+        h('img', { src: portraitURL(p.ch), alt: p.name }),
       ),
     ),
   );

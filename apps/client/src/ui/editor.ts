@@ -398,7 +398,7 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
       rules: 'standard',
       target: 5000,
       roundCap: 0,
-      seats: [{ name: 'Editor', cpu: true, ch: { head: 0, hair: 0, skin: 0, accent: 0 } }],
+      seats: [{ name: 'Editor', cpu: true, ch: 'farmer' }],
       board: { ...board, id: 'custom:editor', bank: Math.max(0, board.bank) },
       seed: 1,
     });
