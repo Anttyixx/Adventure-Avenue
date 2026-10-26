@@ -688,7 +688,10 @@ current turn. Guests retry the connection for about two minutes. If the host lea
 ends for everyone; the host's device keeps the save, which also remembers the room code and who
 played from which device. Continue on the host's main menu reopens the same room code (a new one
 if it was taken) and shows who is back; friends rejoin with the code and the same name (or from
-the same device), and the host resumes. Anyone not back yet is played by a CPU until they join.
+the same device), and the host resumes. Anyone not back yet is played by a CPU until they join. A game that was only ever played on
+one device can go online the same way: Continue always reopens a room, every human seat starts on
+the host's device, and a friend who joins (before the host resumes) with that player's exact name
+takes the seat over. Without a connection, such a game simply continues on the device.
 
 **Not done yet:** turn timer, chat/emotes, a relay (TURN) server for networks that block direct
 connections, and letting guests answer trades and auction bids while it is not their turn without

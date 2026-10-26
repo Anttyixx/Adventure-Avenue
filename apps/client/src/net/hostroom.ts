@@ -99,11 +99,18 @@ export class HostRoom implements GameLink {
    * device); until then a CPU plays for them.
    */
   static async reopen(save: SaveInfo): Promise<HostRoom> {
-    const online = save.online!;
     const G = cloneState(save.state);
-    const host = online.seats.find((s) => s.kind === 'host');
+    // A game that was played on one device: every human seat is on this device for now, and a
+    // friend can take one over by joining with that player's name.
+    const online: OnlineSave = save.online ?? {
+      code: '',
+      seats: G.players
+        .filter((p) => !p.cpu)
+        .map((p) => ({ pid: p.id, kind: 'local' as const, name: p.name })),
+    };
+    const host = online.seats.find((s) => s.kind === 'host') ?? online.seats[0];
     const hp = G.players[host?.pid ?? 0];
-    const room = await HostRoom.open(hp.name, hp.ch, online.code);
+    const room = await HostRoom.open(hp.name, hp.ch, online.code || undefined);
     room.seats = G.players.map((p) => {
       const s = online.seats.find((x) => x.pid === p.id);
       const base = { name: p.name, look: p.ch, pid: p.id };
@@ -122,6 +129,13 @@ export class HostRoom implements GameLink {
     room.G = G;
     room.snap = { state: cloneState(G), seq: 0, answers: [], you: [] };
     return room;
+  }
+
+  /** Set once the reopened game is running: from then on only remote seats can be rejoined. */
+  private running = false;
+
+  markRunning() {
+    this.running = true;
   }
 
   /** The game a reopened room continues. */
@@ -230,7 +244,18 @@ export class HostRoom implements GameLink {
         String(msg.name ?? '')
           .trim()
           .toLowerCase();
+    const nameOf = (s: Seat) =>
+      s.name.toLowerCase() ===
+      String(msg.name ?? '')
+        .trim()
+        .toLowerCase();
+    // Before a reopened game resumes, a friend can take over a seat played on the host's
+    // device by joining with that player's name (this is how a local game goes online).
+    const claim =
+      !this.running && this.G ? this.seats.find((s) => s.kind === 'local' && nameOf(s)) : undefined;
+    if (claim) claim.kind = 'remote';
     const back =
+      claim ??
       this.seats.find((s) => s.kind === 'remote' && s.token === msg.token) ??
       this.seats.find((s) => s.kind === 'remote' && sameName(s));
     if (back) {
@@ -250,8 +275,7 @@ export class HostRoom implements GameLink {
     if (this.started) {
       reply({
         t: 'reject',
-        reason:
-          'This game has already started. To take your seat back, join with the same name you used before.',
+        reason: 'This game has already started. To join, use the exact name of your player in this game.',
       });
       return;
     }

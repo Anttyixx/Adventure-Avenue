@@ -27,8 +27,8 @@ function showStart() {
     },
     onContinue(save) {
       close();
-      if (save.online) void resumeOnline(save);
-      else play(cloneState(save.state));
+      // Every saved game reopens as a room, so friends can join (or rejoin) before it resumes.
+      void resumeOnline(save);
     },
     onOnline() {
       close();
@@ -119,14 +119,20 @@ async function resumeOnline(save: SaveInfo) {
     room = await HostRoom.reopen(save);
   } catch (err) {
     wait.remove();
-    window.alert(`${(err as Error).message} The game is still saved; try Continue again.`);
-    showStart();
+    if (save.online) {
+      window.alert(`${(err as Error).message} The game is still saved; try Continue again.`);
+      showStart();
+    } else {
+      // No connection: a game from one device simply continues on this device.
+      play(cloneState(save.state));
+    }
     return;
   }
   wait.remove();
-  const close = resumeLobby(app, room, save.online!.code, {
+  const close = resumeLobby(app, room, save.online?.code ?? '', {
     onResume() {
       close();
+      room.markRunning();
       const game = new HotSeat(
         app,
         room.game!,

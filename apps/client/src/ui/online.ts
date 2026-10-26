@@ -256,7 +256,7 @@ export function lobbySeats(lobby: LobbyInfo, mine: number, kick?: (i: number) =>
           : s.kind === 'cpu'
             ? 'CPU'
             : s.kind === 'local'
-              ? "On the host's device"
+              ? `On the host's device · a friend can join as "${s.name}"`
               : s.online
                 ? 'Joined'
                 : 'Not back yet · a CPU plays for now';
@@ -296,7 +296,7 @@ export function resumeLobby(
   handlers: ResumeHandlers,
 ) {
   const card = h('section', { class: 'setup-panel glass join-card resume-card' });
-  const f = frame('Continue online game', () => handlers.onBack(), card);
+  const f = frame('Continue game', () => handlers.onBack(), card);
   root.append(f.el);
   let copied = false;
   const share = async () => {
@@ -328,9 +328,11 @@ export function resumeLobby(
       h(
         'p',
         { class: 'hint' },
-        room.code === oldCode
-          ? 'Your friends rejoin the same way as before: Play online, Join a game, this code and the same name (or their old invite link).'
-          : `The old code ${oldCode} was taken, so this game has a new one. Friends join with it and the same name as before.`,
+        !oldCode
+          ? 'Friends can join this game: Play online, Join a game, this code, and the name of their player in the game. Seats nobody takes stay on this device.'
+          : room.code === oldCode
+            ? 'Your friends rejoin the same way as before: Play online, Join a game, this code and the same name (or their old invite link).'
+            : `The old code ${oldCode} was taken, so this game has a new one. Friends join with it and the same name as before.`,
       ),
       lobbySeats(lobby, -1),
       h(

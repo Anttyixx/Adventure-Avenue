@@ -14,8 +14,10 @@ export const CHANGELOG: ChangelogEntry[] = [
   {
     id: '2026-10-26-continue-online',
     date: 'Oct 26, 2026',
-    title: 'Continue online games',
+    title: 'Continue any game online',
     items: [
+      'Continue now opens a room for every saved game, even one played on a single device.',
+      "Friends join with the room code and their player's name to take over that seat.",
       'The host can Continue a saved online game: the same room code opens again.',
       'Friends rejoin with the code and the same name (or their old invite link), then the host resumes.',
       'Anyone not back yet is played by a CPU until they join.',
