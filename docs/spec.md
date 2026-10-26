@@ -599,7 +599,9 @@ payer to payee; floating text shows money changes.
 **Action bar.** The current player's options (and most yes/no questions: buying a shop, a buyout,
 upgrading a circus, selling a property in debt, bidding) appear in the action bar: one row of a
 fixed height (92px; 64px on small screens) centered at the bottom of the screen edge to edge, as
-wide as its content, and drawn above the player cards where it meets them.
+wide as its content up to a maximum that leaves a gap to the player cards on either side.
+On small screens that room is narrow, so the question sits above the buttons (which scroll
+sideways when there are many).
 The question sits on the left, the buttons on the right; rich questions show a title and their
 numbers as a compact strip of facts. It slides up when a question is asked and back down once it
 is answered, and is hidden otherwise. Choices with more to them (stock amounts, investing,

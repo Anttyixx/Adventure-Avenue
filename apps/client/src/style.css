@@ -2944,9 +2944,8 @@ input[type='range'] {
   right: 0;
   margin: 0 auto;
   width: max-content;
-  /* Centered on the screen edge to edge, above anything it meets (like the player cards). */
-  max-width: min(920px, calc(100% - 20px));
-  z-index: 6;
+  /* Centered on the screen edge to edge, but no wider than leaves a gap to the player cards. */
+  max-width: min(920px, calc(100% - 2 * (max(var(--free-left, 0px), var(--free-right, 0px)) + 14px)));
   height: var(--ab-h);
   box-sizing: border-box;
   display: flex;
@@ -3053,36 +3052,63 @@ input[type='range'] {
   max-width: calc(100vw - 12px);
 }
 @media (max-height: 500px), (max-width: 760px) {
+  /* Small screens: the room between the edge and the cards is narrow, so the question sits
+     above the buttons (which scroll sideways if there are many). */
   .prompt-center {
-    --ab-h: 64px;
+    --ab-h: 78px;
     bottom: 8px;
-    max-width: calc(100% - 12px);
-    gap: 10px;
-    padding: 0 8px 0 12px;
+    max-width: calc(100% - 2 * (max(var(--free-left, 0px), var(--free-right, 0px)) + 8px));
+    min-width: min(240px, calc(100% - 16px));
+    flex-direction: column;
+    align-items: stretch;
+    justify-content: center;
+    gap: 5px;
+    padding: 5px 8px;
   }
   .prompt-center .prompt-text {
-    font-size: 13px;
+    flex: none;
+    font-size: 12px;
     line-height: 1.25;
   }
   .prompt-center .prompt-text:not(.rich) {
-    -webkit-line-clamp: 3;
+    -webkit-line-clamp: 2;
+  }
+  .prompt-center .btn-row {
+    max-width: none;
+    justify-content: center;
+  }
+  .prompt-center .btn-row:has(> :nth-child(4)) {
+    justify-content: flex-start;
   }
   .prompt-center .btn {
-    font-size: 14px;
-    padding: 6px 12px;
+    font-size: 13px;
+    padding: 5px 11px;
+  }
+  .prompt-center .rich-body {
+    gap: 2px;
   }
   .prompt-center .rich-title {
-    font-size: 14px;
+    font-size: 13px;
+  }
+  .prompt-center .facts {
+    flex-wrap: nowrap;
+    max-height: none;
   }
   .prompt-center .fact {
-    padding: 1px 6px;
+    padding: 0 6px;
   }
   .prompt-center .fact span {
     font-size: 10px;
   }
   .prompt-center .fact b,
   .prompt-center .fact.big b {
-    font-size: 12px;
+    font-size: 11px;
+  }
+  /* Rich questions with a sentence instead of facts keep to one line here. */
+  .prompt-center .rich-body {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 }
 @media (prefers-reduced-motion: reduce) {
