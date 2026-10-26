@@ -58,6 +58,7 @@ export const CHANGELOG: ChangelogEntry[] = [
     ],
     extras: [
       'Zoom out 25% further',
+      'Active player always centered',
       'Brighter district colors',
       'Checkpoint tolls paid while walking past',
       'Sell only the shares you need in debt',

@@ -485,23 +485,34 @@ export class BoardView {
   }
 
   /**
-   * While a choice is open in follow view, the camera zooms out just enough to frame the
-   * player and every glowing square.
+   * While a choice is open, the zoom that keeps the player centered and still frames every
+   * glowing square around them. When the choices are too spread out for that, the view centers
+   * on all of them instead.
    */
-  choiceView() {
+  choiceView(at: { x: number; y: number }) {
     const G = this.G!;
-    const pts = this.fitIds.map((id) => this.center(G.nodes[id]));
-    if (this.followPid >= 0) pts.push(this.tokenPos(this.followPid));
     const pad = 70;
-    const x0 = Math.min(...pts.map((p) => p.x)) - pad;
-    const x1 = Math.max(...pts.map((p) => p.x)) + pad;
-    // Extra room above for the pins and labels over the choices.
-    const y0 = Math.min(...pts.map((p) => p.y)) - pad - (this.glow.length ? 90 : 0);
-    const y1 = Math.max(...pts.map((p) => p.y)) + pad;
+    let dx = pad;
+    let dy = pad;
+    for (const id of this.fitIds) {
+      const c = this.center(G.nodes[id]);
+      dx = Math.max(dx, Math.abs(c.x - at.x) + pad);
+      // Extra room above for the pins and labels over the choices.
+      dy = Math.max(dy, Math.abs(c.y - at.y) + pad + (this.glow.length && c.y <= at.y ? 90 : 0));
+    }
     const { aw, ah } = this.focusArea();
-    const z = Math.max(this.fitZoom(), Math.min(this.followZoom(), aw / (x1 - x0), ah / (y1 - y0)));
-    const c = this.clampCenter((x0 + x1) / 2, (y0 + y1) / 2, z);
-    return { x: c.x, y: c.y, z };
+    const z = Math.min(aw / (2 * dx), ah / (2 * dy));
+    if (z >= this.zoomFor(1)) return { ...at, z };
+    const pts = [at, ...this.fitIds.map((id) => this.center(G.nodes[id]))];
+    const xs = pts.map((p) => p.x);
+    const ys = pts.map((p) => p.y);
+    const w = Math.max(...xs) - Math.min(...xs) + pad * 2;
+    const h = Math.max(...ys) - Math.min(...ys) + pad * 2 + 90;
+    return {
+      x: (Math.min(...xs) + Math.max(...xs)) / 2,
+      y: (Math.min(...ys) + Math.max(...ys)) / 2 - 45,
+      z: Math.max(this.zoomFor(1), Math.min(aw / w, ah / h)),
+    };
   }
 
   // ------------------------------------------------------------ camera
@@ -561,45 +572,22 @@ export class BoardView {
     return Math.min(this.w / this.ww, this.h / this.wh) * (small ? 2.2 : 1.65);
   }
 
-  clampCenter(x: number, y: number, z: number) {
-    const { fx, fy } = this.focusArea();
-    // Visible world extents left/right of the focus point.
-    // Clamp against the uncovered area so tokens never sit under the overlays.
-    const { aw, ah } = this.focusArea();
-    void fx;
-    void fy;
-    const left = aw / 2 / z;
-    const right = left;
-    const up = ah / 2 / z;
-    const down = up;
-    const cx =
-      left + right >= this.ww
-        ? this.ww / 2 - (right - left) / 2
-        : Math.min(Math.max(x, left), this.ww - right);
-    const cy =
-      up + down >= this.wh ? this.wh / 2 - (down - up) / 2 : Math.min(Math.max(y, up), this.wh - down);
-    return { x: cx, y: cy };
-  }
-
   updateCamera() {
     const out = this.followPid < 0 || this.G?.over ? 1 : this.zoomOut;
     const z = this.zoomFor(out);
+    // The active player sits in the middle of the screen (the grass carries on past the board).
     let follow = this.followPid >= 0 ? this.tokenPos(this.followPid) : { x: this.ww / 2, y: this.wh / 2 };
     let fz = z;
     if (this.fitIds.length && out < 1) {
       // A choice is open: zoom out just enough to frame it (never closer than the player chose).
-      const v = this.choiceView();
+      const v = this.choiceView(follow);
       follow = v;
       fz = Math.min(z, v.z);
     }
     // Zoomed far out, the camera lets go of the player and eases to the board's center.
     const t = Math.min(1, Math.max(0, (out - ZOOM_BLEND) / (1 - ZOOM_BLEND)));
     const b = t * t * (3 - 2 * t);
-    const c = this.clampCenter(
-      follow.x + (this.ww / 2 - follow.x) * b,
-      follow.y + (this.wh / 2 - follow.y) * b,
-      fz,
-    );
+    const c = { x: follow.x + (this.ww / 2 - follow.x) * b, y: follow.y + (this.wh / 2 - follow.y) * b };
     this.camTarget = { x: c.x, y: c.y, z: fz };
     const k = reducedMotion() ? 1 : 0.12;
     this.cam.x += (this.camTarget.x - this.cam.x) * k;
