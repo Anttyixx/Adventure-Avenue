@@ -1,5 +1,5 @@
 import { execSync } from 'node:child_process';
-import { defineConfig } from 'vite';
+import { defineConfig, type Plugin } from 'vite';
 
 /** Branch, commit and time of this build, shown in the build badge. CI provides the GitHub values. */
 function buildInfo() {
@@ -19,9 +19,22 @@ function buildInfo() {
   };
 }
 
+const info = buildInfo();
+
+/** Writes version.json next to index.html so open pages can tell a newer build was deployed. */
+function versionFile(): Plugin {
+  return {
+    name: 'version-file',
+    generateBundle() {
+      this.emitFile({ type: 'asset', fileName: 'version.json', source: JSON.stringify(info) });
+    },
+  };
+}
+
 // Relative base so the build works from any GitHub Pages sub-path (/, /dev/, ...).
 export default defineConfig({
   base: './',
   build: { outDir: 'dist', emptyOutDir: true },
-  define: { __BUILD__: JSON.stringify(buildInfo()) },
+  define: { __BUILD__: JSON.stringify(info) },
+  plugins: [versionFile()],
 });
