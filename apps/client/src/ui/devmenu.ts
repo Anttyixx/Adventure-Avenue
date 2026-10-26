@@ -1,6 +1,7 @@
 /**
  * Build badge (bottom-right corner) and the hidden dev menu: tap the badge 5 times to open it.
- * Only shown on test builds; the stable build hides both.
+ * Only shown on test builds, and not during a game (the UI Lab still shows it); the stable build
+ * hides both.
  */
 import { BUILD, IS_DEV_BUILD } from '../build';
 import { clearSave, loadSave } from '../save';
@@ -28,7 +29,7 @@ export function installDevBadge() {
     hint,
   );
   document.body.append(badge);
-  document.documentElement.style.setProperty('--badge-h', '26px');
+  document.documentElement.classList.add('has-badge');
 
   let taps: number[] = [];
   badge.addEventListener('click', () => {

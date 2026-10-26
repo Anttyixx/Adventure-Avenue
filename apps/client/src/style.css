@@ -2203,6 +2203,17 @@ input[type='range'] {
 
 /* ------------------------------------------------------------ build badge and dev menu */
 
+.has-badge {
+  --badge-h: 26px;
+}
+/* Hidden during a game (the UI Lab keeps it, it opens the dev menu there). */
+.has-badge:has(.hud):not(:has(.lab-panel)) {
+  --badge-h: 0px;
+}
+.has-badge:has(.hud):not(:has(.lab-panel)) .build-badge {
+  display: none;
+}
+
 .build-badge {
   position: fixed;
   right: 6px;
