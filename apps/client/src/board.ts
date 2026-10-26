@@ -58,6 +58,8 @@ const ZOOM_BLEND = 0.55;
 const ZOOM_OUT_EXTRA = 1.25;
 /** One wheel notch or key press: 1/10 of the range, shown as 5% on the zoom chip. */
 export const ZOOM_STEP = 0.1;
+/** Furthest zoom-out: twice as far (in steps) as fitting the whole board. */
+const ZOOM_MAX_OUT = 2;
 
 export class BoardView {
   /** Center of a square on this board. */
@@ -88,8 +90,8 @@ export class BoardView {
   camTarget = { x: 650, y: 400, z: 1 };
   /**
    * How far the player has zoomed out with the wheel or a pinch: 0 = close on the active
-   * player, 1 = the whole board. Past ZOOM_BLEND the camera stops following and drifts to the
-   * board's center.
+   * player, 1 = the whole board with room around it, up to ZOOM_MAX_OUT for further still. Past
+   * ZOOM_BLEND the camera stops following and drifts to the board's center.
    */
   zoomOut = 0;
   private pinch = new Map<number, { x: number; y: number }>();
@@ -115,7 +117,7 @@ export class BoardView {
   walkTarget = -1;
   onPick: ((id: number) => void) | null = null;
   onHover: ((id: number | null, cx: number, cy: number) => void) | null = null;
-  /** Called when the shown zoom changes: 100% fully zoomed in on the player, 50% fully out. */
+  /** Called when the shown zoom changes: 200% fully zoomed in on the player, 100% fully out. */
   onZoom: ((pct: number) => void) | null = null;
   private zoomPct = 0;
 
@@ -524,7 +526,7 @@ export class BoardView {
 
   /** Zoom out (positive) or in (negative) by `d`, where 1 is the whole range. */
   zoomBy(d: number) {
-    this.zoomOut = Math.min(1, Math.max(0, this.zoomOut + d));
+    this.zoomOut = Math.min(ZOOM_MAX_OUT, Math.max(0, this.zoomOut + d));
   }
 
   private wheel = (e: WheelEvent) => {
@@ -666,11 +668,11 @@ export class BoardView {
     if (this.host.clientWidth !== Math.round(this.w) || this.host.clientHeight !== Math.round(this.h))
       this.resize();
     this.updateCamera();
-    // The chip reads 100% fully zoomed in and 50% fully zoomed out, in even steps.
+    // The chip reads 200% fully zoomed in, 150% for the whole board and 100% fully zoomed out.
     const near = this.followZoom();
     const far = this.zoomFor(1);
     const out = far < near ? Math.log(this.cam.z / near) / Math.log(far / near) : 0;
-    const pct = Math.round(100 - 50 * Math.min(1, Math.max(0, out)));
+    const pct = Math.round(200 - 50 * Math.min(ZOOM_MAX_OUT, Math.max(0, out)));
     if (pct !== this.zoomPct) {
       this.zoomPct = pct;
       this.onZoom?.(pct);
