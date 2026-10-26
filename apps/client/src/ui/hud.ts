@@ -81,6 +81,7 @@ export class Hud {
   private pops = new Map<number, number>();
   private cardEls = new Map<number, HTMLElement>();
   private promptResolve: ((v: any) => void) | null = null;
+  private askHide = 0;
   private mainButton: HTMLButtonElement | null = null;
   fastBtn = h('button', { class: 'btn small' });
 
@@ -233,7 +234,11 @@ export class Hud {
     const W = window.innerWidth;
     const portraitStack = this.root.classList.contains('upright');
     const bottomLeft = this.bar.parentElement!;
-    const ask = this.ask.getBoundingClientRect();
+    // Where the action bar sits once shown (layout box, so the slide animation does not count).
+    const a = this.ask;
+    const ask = a.classList.contains('show')
+      ? { top: a.offsetTop, height: a.offsetHeight, left: a.offsetLeft, right: a.offsetLeft + a.offsetWidth }
+      : { top: 0, height: 0, left: 0, right: 0 };
     // When the options would cover the ticker (narrow screens, long lines), the ticker and log
     // move up to sit just above them.
     const tick = this.ticker.getBoundingClientRect();
@@ -600,11 +605,17 @@ export class Hud {
 
   // ------------------------------------------------------------ action bar
 
-  /** Show the current player's options. `text` may be rich content (tables, chips). */
+  /**
+   * Show the current player's options in the action bar: one fixed-height row centered at the
+   * bottom of the screen, as wide as its content, sliding in and out. `text` may be rich content
+   * (a title and a strip of facts).
+   */
   prompt<T>(text: string | Node, buttons: PromptButton<T>[], color?: number): Promise<T> {
     this.cancelPrompt();
     clear(this.bar);
     clear(this.ask);
+    clearTimeout(this.askHide);
+    this.ask.classList.add('show');
     const head = h('div', { class: 'prompt-text rise' });
     if (color != null) {
       head.append(h('span', { class: 'dot', style: `background:${PLAYER_COLORS[color]}` }));
@@ -654,7 +665,10 @@ export class Hud {
     this.promptResolve = null;
     this.mainButton = null;
     clear(this.bar);
-    clear(this.ask);
+    // Slide out, then empty it (unless a new prompt took its place meanwhile).
+    this.ask.classList.remove('show');
+    clearTimeout(this.askHide);
+    this.askHide = window.setTimeout(() => clear(this.ask), 260);
     this.updateInsets();
   }
 

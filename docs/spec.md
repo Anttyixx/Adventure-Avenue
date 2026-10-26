@@ -596,6 +596,15 @@ before the name so it never covers the character.
 every 120 ms (idle frames every 260 ms). The active player has a bobbing pixel arrow and a remaining-steps badge. Pixel coins fly from
 payer to payee; floating text shows money changes.
 
+**Action bar.** The current player's options (and most yes/no questions: buying a shop, a buyout,
+upgrading a circus, selling a property in debt, bidding) appear in the action bar: one row of a
+fixed height (92px; 64px on small screens) centered at the bottom of the screen, as wide as its
+content but never under the player cards (on small screens it centers in the room left of them).
+The question sits on the left, the buttons on the right; rich questions show a title and their
+numbers as a compact strip of facts. It slides up when a question is asked and back down once it
+is answered, and is hidden otherwise. Choices with more to them (stock amounts, investing,
+building, trades, auctions, arcade games) open their own windows.
+
 **Highlighted squares.** Squares a player can pick (or that a choice would affect) get a tint in the
 player's color, a white outline that pulses with a glow in that color, and white rings that keep
 spreading out from them and fading, so the eye goes straight to them; everything else dims.

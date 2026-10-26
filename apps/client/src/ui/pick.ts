@@ -170,7 +170,7 @@ export async function debtOnBoard(
       p.color,
       titled(
         `${p.name} is ${fmt(-p.cash)} in debt`,
-        `${stocks.length ? 'Sell some stock, or tap' : 'Tap'} a property to sell it to the bank for ${K.debtSale * 100}% of its value.`,
+        `${stocks.length ? 'Sell stock, or tap' : 'Tap'} a property to sell it for ${K.debtSale * 100}% of its value.`,
       ),
       stocks.length ? [{ label: `Sell stock (worth ${fmt(stockValue)})`, value: 'stock', main: true }] : [],
       { labels, cancel: '' },
