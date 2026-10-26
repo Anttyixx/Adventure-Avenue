@@ -56,14 +56,14 @@ export interface Insets {
 const ZOOM_OUT_EXTRA = 1.25;
 /** Furthest zoom-out: 1.3x as far (in steps) as fitting the whole board. */
 const ZOOM_MAX_OUT = 1.3;
-/** One wheel notch or key press: 1/20 of the range, shown as 5% on the zoom chip. */
-export const ZOOM_STEP = ZOOM_MAX_OUT / 20;
+/** One wheel notch or key press: 1/30 of the range, shown as 5% on the zoom chip. */
+export const ZOOM_STEP = ZOOM_MAX_OUT / 30;
 /**
- * Between 175% and 150% on the zoom chip (a quarter and half of the way out) the camera moves
- * from the player to the board's center; from 150% out it stays on the board's center.
+ * From 250% to 200% on the zoom chip the camera stays on the player; between 200% and 150% (a
+ * third and two thirds of the way out) it moves to the board's center, and stays there below.
  */
-const ZOOM_BLEND = ZOOM_MAX_OUT * 0.25;
-const ZOOM_BLEND_END = ZOOM_MAX_OUT * 0.5;
+const ZOOM_BLEND = ZOOM_MAX_OUT / 3;
+const ZOOM_BLEND_END = (ZOOM_MAX_OUT * 2) / 3;
 
 export class BoardView {
   /** Center of a square on this board. */
@@ -121,7 +121,7 @@ export class BoardView {
   walkTarget = -1;
   onPick: ((id: number) => void) | null = null;
   onHover: ((id: number | null, cx: number, cy: number) => void) | null = null;
-  /** Called when the shown zoom changes: 200% fully zoomed in on the player, 100% fully out. */
+  /** Called when the shown zoom changes: 250% fully zoomed in on the player, 100% fully out. */
   onZoom: ((pct: number) => void) | null = null;
   private zoomPct = 0;
 
@@ -674,11 +674,11 @@ export class BoardView {
     if (this.host.clientWidth !== Math.round(this.w) || this.host.clientHeight !== Math.round(this.h))
       this.resize();
     this.updateCamera();
-    // The chip reads 200% fully zoomed in and 100% fully zoomed out (the whole board is ~123%).
+    // The chip reads 250% fully zoomed in and 100% fully zoomed out (the whole board is ~135%).
     const near = this.followZoom();
     const far = this.zoomFor(1);
     const out = far < near ? Math.log(this.cam.z / near) / Math.log(far / near) : 0;
-    const pct = Math.round(200 - (100 * Math.min(ZOOM_MAX_OUT, Math.max(0, out))) / ZOOM_MAX_OUT);
+    const pct = Math.round(250 - (150 * Math.min(ZOOM_MAX_OUT, Math.max(0, out))) / ZOOM_MAX_OUT);
     if (pct !== this.zoomPct) {
       this.zoomPct = pct;
       this.onZoom?.(pct);
