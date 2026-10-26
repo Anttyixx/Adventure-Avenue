@@ -572,9 +572,12 @@ is drawn into a cached offscreen canvas and redrawn only when state changes; eac
 cache, then highlights, sprites, coins, floating text and the die.
 
 - Shops: district-colored border, filled with the owner's color when owned, house icon, value
-  label (unowned) or a fee pill and a pennant in the owner's color (owned). Closed shops get a dark overlay.
-- Plots: dashed outline and "VACANT" when empty; a vector icon per building plus its fee pill when
+  label (unowned) or the fee as plain dark text and a pennant in the owner's color (owned). Closed
+  shops get a dark overlay.
+- Plots: dashed outline and "VACANT" when empty; a vector icon per building plus its fee when
   built.
+- Hex tiles narrow to a point at the bottom, so their icon and text sit about 10px higher, in the
+  full-width middle of the tile, so nothing is cut off by the edges.
 - Hover (or tap) any square for a tooltip: owner, value, fee, max value, buyout price, group
   ownership, district stock price.
 

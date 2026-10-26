@@ -917,20 +917,6 @@ input[type='range'] {
   background:
     linear-gradient(90deg, color-mix(in srgb, var(--pc) 28%, transparent), transparent 70%), var(--glass);
 }
-.turn-tag {
-  position: absolute;
-  top: -9px;
-  right: 10px;
-  padding: 1px 9px;
-  border-radius: 999px;
-  background: var(--pc);
-  color: #fff;
-  font-family: var(--head);
-  font-size: 12px;
-  letter-spacing: 0.5px;
-  text-transform: uppercase;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
-}
 .pc-side {
   position: relative;
   flex: none;

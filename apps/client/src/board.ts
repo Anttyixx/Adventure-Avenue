@@ -1506,17 +1506,6 @@ export function fillMoney(
   ctx.textAlign = 'center';
 }
 
-function pill(ctx: CanvasRenderingContext2D, x: number, y: number, text: string, bg: string, fg = '#fff') {
-  ctx.font = '17px "Lilita One", sans-serif';
-  const w = Math.max(40, moneyWidth(ctx, text, 17) + 16);
-  ctx.fillStyle = bg;
-  roundRect(ctx, x - w / 2, y - 12, w, 24, 12);
-  ctx.fill();
-  ctx.fillStyle = fg;
-  ctx.textBaseline = 'middle';
-  fillMoney(ctx, text, x, y + 1, 17);
-}
-
 function label(
   ctx: CanvasRenderingContext2D,
   x: number,
@@ -1802,6 +1791,12 @@ function drawSquare(ctx: CanvasRenderingContext2D, G: GameState, sq: Square) {
   const owner = sq.owner >= 0 ? G.players[sq.owner] : null;
   const ownerColor = owner ? PLAYER_COLORS[owner.color] : '';
   const district = sq.d >= 0 ? G.districts[sq.d] : null;
+  // A hex narrows to a point at the bottom, so its icon and text sit higher, in the full-width
+  // middle of the tile (using some of the room under the top point).
+  const iy = c.y + (L === 'hex' ? -10 : 0);
+  const ty = c.y + (L === 'hex' ? -11 : 0);
+  /** The fee (owned) or price as plain text; dark on an owner's color so it stays readable. */
+  const amount = (text: string, y: number) => label(ctx, c.x, y, text, owner ? '#1b2340' : '#26314f', 16);
 
   // Shadow + tile
   ctx.fillStyle = 'rgba(0,0,0,0.18)';
@@ -1816,9 +1811,8 @@ function drawSquare(ctx: CanvasRenderingContext2D, G: GameState, sq: Square) {
     // The design grows with the shop's value; owned shops use the owner's color, unowned ones
     // stay plain grey so they never look like a player's.
     const tier = tierFor(sq.value, SHOP_TIERS);
-    drawShop(ctx, c.x, c.y - 4, tier, owner ? ownerColor : '#8a94a8', owner?.name[0]?.toUpperCase());
-    if (owner) pill(ctx, c.x, c.y + 28, `${squareFee(G, sq)}G`, ownerColor);
-    else label(ctx, c.x, c.y + 28, `${sq.value}G`, '#26314f', 16);
+    drawShop(ctx, c.x, iy - 4, tier, owner ? ownerColor : '#8a94a8', owner?.name[0]?.toUpperCase());
+    amount(owner ? `${squareFee(G, sq)}G` : `${sq.value}G`, ty + 28);
   } else if (sq.t === 'plot') {
     if (!sq.b) {
       ctx.save();
@@ -1828,30 +1822,29 @@ function drawSquare(ctx: CanvasRenderingContext2D, G: GameState, sq: Square) {
       tileShape(ctx, L, c.x, c.y, TILE / 2 - 4, 10);
       ctx.stroke();
       ctx.restore();
-      label(ctx, c.x, c.y + 4, 'VACANT', '#4a5470', 14);
+      label(ctx, c.x, ty + 4 + (L === 'hex' ? 11 : 0), 'VACANT', '#4a5470', 14);
     } else if (sq.b === 'star3') {
       // The 3-Star Shop has its own designs that grow with its value.
       const tier = tierFor(sq.value, STAR3_TIERS);
-      drawStar3(ctx, c.x, c.y - 2, tier, owner ? ownerColor : '#8a94a8', owner?.name[0]?.toUpperCase());
-      const fee = `${squareFee(G, sq)}G`;
-      if (owner) pill(ctx, c.x, c.y + 30, fee, ownerColor);
+      drawStar3(ctx, c.x, iy - 2, tier, owner ? ownerColor : '#8a94a8', owner?.name[0]?.toUpperCase());
+      if (owner) amount(`${squareFee(G, sq)}G`, ty + 30);
     } else {
       buildingIcon(
         ctx,
         sq.b,
         c.x,
-        c.y - 4,
+        iy - 4,
         owner ? ownerColor : '#8a94a8',
         owner?.name[0]?.toUpperCase() ?? '',
       );
-      label(ctx, c.x, c.y + 13, BUILDING_LABEL[sq.b], '#4a5470', 9);
+      label(ctx, c.x, iy + 13, BUILDING_LABEL[sq.b], '#4a5470', 9);
       const fee = sq.b === 'tax' ? '10%' : sq.b === 'agency' ? 'Break' : `${squareFee(G, sq)}G`;
-      if (owner) pill(ctx, c.x, c.y + 30, fee, ownerColor);
+      if (owner) amount(fee, ty + 30);
     }
   } else {
-    specialIcon(ctx, G, sq, c.x, c.y - 6);
+    specialIcon(ctx, G, sq, c.x, iy - 6);
     const t = sq.t === 'broker' && G.rules === 'easy' ? 'VENTURE' : (SPECIAL_LABEL[sq.t] ?? '');
-    label(ctx, c.x, c.y + 30, t, '#4a5470', t.length > 8 ? 9 : 11);
+    label(ctx, c.x, ty + 30, t, '#4a5470', t.length > 8 ? 9 : 11);
   }
 
   // Border: the district's solid color on properties, else the owner's ring or a faint outline.

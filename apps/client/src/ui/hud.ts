@@ -317,9 +317,7 @@ export class Hud {
     const pct = Math.max(0, Math.min(100, (nw / G.target) * 100));
     const extras = tags.map((t) => h('span', { class: 'tag' }, t));
     const rank = this.ranks.get(p.id);
-    const active = p.id === this.activePid && !G.over;
     el.append(
-      active ? h('span', { class: 'turn-tag' }, 'Turn') : '',
       h('div', { class: 'pc-side' }, h('img', { class: 'portrait', src: portraitURL(p.ch), alt: '' })),
       h(
         'div',
