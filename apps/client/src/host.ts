@@ -92,6 +92,7 @@ export class HotSeat implements GameIO {
     this.hud = new Hud(this.root, this.board, {
       onToggleFast: () => this.toggleFast(),
       onQuit: () => this.quit(),
+      quitQuestion: () => this.quitQuestion(),
       onRules: () => rulesModal(this.hud, this.G),
     });
     this.game = new Game(G, this);
@@ -168,13 +169,18 @@ export class HotSeat implements GameIO {
     this.board.speed = this.speed;
   }
 
-  quit() {
-    const question = !this.link
+  /** What the quit dialog asks (null: the game is over, so just leave). */
+  quitQuestion(): string | null {
+    if (this.G.over) return null;
+    return !this.link
       ? 'Quit to the main menu? The game is saved at the start of each turn, so you can continue it later.'
       : this.link.role === 'host'
         ? 'End the online game for everyone? It is saved at the start of each turn, so you can continue it later on this device.'
         : 'Leave the online game? You can rejoin with the same code while the host is still playing.';
-    if (!this.G.over && !window.confirm(question)) return;
+  }
+
+  /** Leave the game (the player already confirmed in the quit dialog). */
+  quit() {
     this.destroy();
     this.onExit();
   }

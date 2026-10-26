@@ -57,6 +57,7 @@ export const CHANGELOG: ChangelogEntry[] = [
       },
     ],
     extras: [
+      'Game menu in the top right: rules, market, sound, full screen and quit (with a confirm)',
       'Zoom out further',
       'Active player always centered',
       'Zoom % chip in the top right (tap to reset): 200% close up to 100% far out, in 5% steps',

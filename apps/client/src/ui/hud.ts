@@ -18,7 +18,7 @@ import {
   type Player,
 } from '@aa/engine';
 import type { BoardView } from '../board';
-import { soundButton } from './soundpanel';
+import { soundControls } from './soundpanel';
 import { squareName } from '../names';
 import { suitIconURL, wildIconURL } from '../icons';
 import { portraitURL } from '../sprites';
@@ -37,8 +37,11 @@ export interface PromptButton<T> {
 
 export interface HudCallbacks {
   onToggleFast(): void;
+  /** Leave the game (already confirmed by the player). */
   onQuit(): void;
   onRules(): void;
+  /** The question to confirm quitting with, or null to quit without asking (game over). */
+  quitQuestion?(): string | null;
 }
 
 export class Hud {
@@ -104,21 +107,13 @@ export class Hud {
     );
     parent.append(this.root);
 
+    this.cb = cb;
     this.fastBtn.onclick = cb.onToggleFast;
-    const fs = h('button', { class: 'btn small', onclick: () => toggleFullscreen() }, 'Full screen');
     this.zoomChip.onclick = () => (board.zoomOut = 0);
     board.onZoom = (pct) => (this.zoomChip.textContent = `${pct}%`);
-    this.toolbar.append(
-      this.zoomChip,
-      this.fastBtn,
-      h('button', { class: 'btn small market-btn', onclick: () => this.toggleDrawer('market') }, 'Market'),
-    );
-    if (document.fullscreenEnabled) this.toolbar.append(fs);
-    this.toolbar.append(
-      soundButton('btn small'),
-      h('button', { class: 'btn small', onclick: cb.onRules }, 'Rules'),
-      h('button', { class: 'btn small danger', onclick: cb.onQuit }, 'Quit'),
-    );
+    this.menuBtn.onclick = () => this.toggleMenu();
+    this.toolbar.append(this.zoomChip, this.menuBtn, this.menu);
+    this.buildMenu();
     this.cardsToggle.onclick = () => {
       this.cardsHidden = !this.cardsHidden;
       this.cardsWrap.classList.toggle('hidden-cards', this.cardsHidden);
@@ -132,11 +127,92 @@ export class Hud {
 
   destroy() {
     window.removeEventListener('keydown', this.onKey);
+    document.removeEventListener('pointerdown', this.menuOutside, true);
     this.root.remove();
+  }
+
+  // ------------------------------------------------------------ game menu
+
+  private cb: HudCallbacks;
+  menuBtn = h(
+    'button',
+    { class: 'btn small menu-toggle', 'aria-haspopup': 'true', 'aria-expanded': 'false' },
+    '☰ Menu',
+  );
+  menu = h('div', { class: 'game-menu glass', role: 'menu', hidden: true });
+
+  /** The menu behind the Menu button: rules, market, settings and quit. */
+  private buildMenu() {
+    const item = (label: string, onclick: () => void, cls = '') =>
+      h('button', { class: `gm-item ${cls}`, role: 'menuitem', onclick }, label);
+    const close = (f: () => void) => () => {
+      this.toggleMenu(false);
+      f();
+    };
+    this.fastBtn.className = 'gm-item gm-toggle';
+    this.menu.append(
+      h('div', { class: 'gm-head' }, 'Menu'),
+      item('Rules', close(this.cb.onRules)),
+      item(
+        'Stock market',
+        close(() => this.toggleDrawer('market')),
+        'market-btn',
+      ),
+      this.fastBtn,
+    );
+    if (document.fullscreenEnabled) this.menu.append(item('Full screen', close(toggleFullscreen)));
+    this.menu.append(
+      h('div', { class: 'gm-sound' }, h('div', { class: 'gm-label' }, 'Sound'), soundControls()),
+      item('Quit game', () => this.confirmQuit(), 'danger'),
+    );
+  }
+
+  toggleMenu(open = this.menu.hidden) {
+    this.menu.hidden = !open;
+    this.menuBtn.setAttribute('aria-expanded', String(open));
+    this.menuBtn.classList.toggle('on', open);
+    if (open) document.addEventListener('pointerdown', this.menuOutside, true);
+    else document.removeEventListener('pointerdown', this.menuOutside, true);
+  }
+
+  private menuOutside = (e: PointerEvent) => {
+    const t = e.target as Node;
+    // Clicks in the menu, on its button or in a dialog opened from it keep it open.
+    if (this.menu.contains(t) || this.menuBtn.contains(t) || this.modalLayer.contains(t)) return;
+    this.toggleMenu(false);
+  };
+
+  /** Ask before quitting, in a dialog over the menu. */
+  confirmQuit() {
+    const question = this.cb.quitQuestion?.() ?? 'Quit to the main menu?';
+    if (question === null) return this.cb.onQuit();
+    const m = this.modal(
+      'Quit game?',
+      h(
+        'div',
+        { class: 'quit-confirm' },
+        h('p', null, question),
+        h(
+          'div',
+          { class: 'btn-row' },
+          h(
+            'button',
+            { class: 'btn danger', onclick: () => (m.close(), this.toggleMenu(false), this.cb.onQuit()) },
+            'Quit',
+          ),
+          h('button', { class: 'btn ghost', onclick: () => m.close() }, 'Keep playing'),
+        ),
+      ),
+    );
+    m.el.classList.add('quit-modal');
   }
 
   private onKey = (e: KeyboardEvent) => {
     const tag = (e.target as HTMLElement)?.tagName;
+    if (e.key === 'Escape' && !this.menu.hidden && !this.modalLayer.querySelector('.quit-modal')) {
+      this.toggleMenu(false);
+      return;
+    }
     if (tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA') return;
     if ((e.key === 'Enter' || e.key === ' ') && !this.modalLayer.childElementCount && this.mainButton) {
       e.preventDefault();

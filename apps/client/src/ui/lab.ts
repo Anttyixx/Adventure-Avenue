@@ -120,6 +120,7 @@ export async function openLab(app: HTMLElement, section?: string) {
       location.reload();
     },
     onRules: () => rulesModal(hud, G),
+    quitQuestion: () => 'Leave the UI Lab and go back to the main menu?',
   });
   board.zoomOut = 1;
   hud.setFastLabel(false);
@@ -956,6 +957,8 @@ export async function openLab(app: HTMLElement, section?: string) {
     row(
       s,
       btn('Game log', () => hud.toggleLog()),
+      btn('Game menu', () => hud.toggleMenu(true)),
+      btn('Quit confirm', () => hud.confirmQuit()),
       btn('Room code button', () => hud.setRoom('KQZD', inviteURL('KQZD'))),
       btn('Live auction', async () => {
         const sq = G.nodes.find((n) => n.t === 'shop')!;

@@ -516,8 +516,10 @@ save). A Board editor link sits below them.
   suggested name), and typed names are remembered for the next game. In the online build, validate
   names on the server; "Shuffle characters" rerolls them.
 
-In-game: a Fast CPU toggle speeds up CPU turns and animations, Rules opens a summary, Quit returns to
-the main menu.
+In-game, the Menu button (top right) opens a menu with Rules (a summary), Stock market, a Fast CPU
+toggle (speeds up CPU turns and animations), Full screen, the Sound sliders and mute, and a red Quit
+game button. Quit asks for confirmation in a dialog over the menu before returning to the main
+menu (no question once the game is over).
 
 ## CPU players
 
@@ -597,7 +599,7 @@ payer to payee; floating text shows money changes.
 
 **Layout.** The board fills the whole game screen edge to edge, and everything else floats over it
 as dark glass overlays. Top left: a title pill with the round, target and rule set. Top right: the
-view toggle, Fast CPU, Market, Log, Full screen, Rules and Quit. Bottom left: the latest-log ticker
+zoom chip and the Menu button. Bottom left: the latest-log ticker
 above the action bar. Bottom right: the player cards stacked vertically (net worth, cash, level,
 suits and progress bar), with a Hide/Show toggle so players can clear the board. The stock market and
 game log live in a slide-out drawer on the right.
@@ -644,7 +646,7 @@ ring/silent switch does not mute the game; the in-game Mute switch still does.
 - **Effects:** button clicks, dice roll, each step, landing, gaining and paying money, buying a
   shop, a shop's value going up, collecting a suit, promotion, venture cards, warps, the start of a
   human player's turn, a new round, bankruptcy and the win fanfare.
-- **Settings:** a speaker button on the main menu, game setup and in-game toolbar opens Music and
+- **Settings:** a speaker button on the main menu and game setup (and the Sound section of the in-game menu) has Music and
   Effects volume sliders and a Mute switch. Settings are saved per device. Audio pauses while the
   tab is hidden.
 
