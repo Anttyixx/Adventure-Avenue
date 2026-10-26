@@ -113,6 +113,9 @@ export class BoardView {
   walkTarget = -1;
   onPick: ((id: number) => void) | null = null;
   onHover: ((id: number | null, cx: number, cy: number) => void) | null = null;
+  /** Called when the shown zoom changes, in percent of the normal (closest) follow zoom. */
+  onZoom: ((pct: number) => void) | null = null;
+  private zoomPct = 0;
 
   die: { value: number; t0: number; rolling: boolean; until: number } | null = null;
   w = 0;
@@ -661,6 +664,11 @@ export class BoardView {
     if (this.host.clientWidth !== Math.round(this.w) || this.host.clientHeight !== Math.round(this.h))
       this.resize();
     this.updateCamera();
+    const pct = Math.round((this.cam.z / this.followZoom()) * 100);
+    if (pct !== this.zoomPct) {
+      this.zoomPct = pct;
+      this.onZoom?.(pct);
+    }
     const ctx = this.ctx;
     const want = Math.min(3, Math.max(1, Math.ceil(this.camTarget.z * this.dpr * 2) / 2));
     if (this.dirty || want !== this.cacheScale) this.renderStatic(want);

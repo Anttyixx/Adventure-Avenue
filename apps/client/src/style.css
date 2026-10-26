@@ -3771,3 +3771,19 @@ input[type='range'] {
   background: linear-gradient(#b36be0, #8a45bf);
   color: #fff;
 }
+.zoom-chip {
+  align-self: center;
+  min-width: 52px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--glass-line);
+  background: var(--glass);
+  backdrop-filter: blur(8px);
+  color: #fff;
+  font: 700 12px var(--body);
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+}
+.zoom-chip:hover {
+  border-color: var(--accent);
+}

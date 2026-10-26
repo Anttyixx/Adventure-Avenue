@@ -45,6 +45,8 @@ export class Hud {
   root: HTMLElement;
   title = h('div', { class: 'title-pill glass' });
   toolbar = h('div', { class: 'toolbar' });
+  /** Current zoom; tapping it zooms back in on the player. */
+  zoomChip = h('button', { class: 'zoom-chip', title: 'Zoom: scroll, pinch or - / +. Tap to reset.' });
   ticker = h('div', { class: 'ticker glass' });
   bar = h('div', { class: 'action-bar glass' });
   /** The current player's options, centered near the bottom of the board. */
@@ -104,7 +106,10 @@ export class Hud {
 
     this.fastBtn.onclick = cb.onToggleFast;
     const fs = h('button', { class: 'btn small', onclick: () => toggleFullscreen() }, 'Full screen');
+    this.zoomChip.onclick = () => (board.zoomOut = 0);
+    board.onZoom = (pct) => (this.zoomChip.textContent = `${pct}%`);
     this.toolbar.append(
+      this.zoomChip,
       this.fastBtn,
       h('button', { class: 'btn small market-btn', onclick: () => this.toggleDrawer('market') }, 'Market'),
     );

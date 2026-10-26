@@ -604,7 +604,9 @@ game log live in a slide-out drawer on the right.
 
 **Camera.** The camera always follows the active player, centered on screen and zoomed in (about
 1.65x the fit-to-screen zoom, more on small screens), eased smoothly as they move; it keeps the
-player in the middle of the screen even at the board edge (grass continues past it). The mouse wheel, a pinch, or the - and + keys zoom out to show more of the map;
+player in the middle of the screen even at the board edge (grass continues past it). The mouse wheel, a pinch, or the - and + keys zoom out to show more of the map (a chip at
+the start of the top-right toolbar shows the zoom, 100% = the normal follow zoom; tapping it zooms
+back in);
 zooming out past about halfway, the camera gradually lets go of the player and drifts to the
 board's center, until at full zoom-out the whole board is centered with room to spare (`ZOOM_OUT_EXTRA`: 25% further out than fitting the screen). While a choice is open the
 camera keeps the player centered and zooms out just enough to frame every glowing square around
