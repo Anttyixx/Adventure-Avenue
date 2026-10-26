@@ -63,7 +63,7 @@ export const CHANGELOG: ChangelogEntry[] = [
       'Grey venture panels until picked',
       'Change-of-suit squares off built-in boards',
       'Tile pop-ups stay on screen',
-      'Easier-to-read What'"'"'s new',
+      "Easier-to-read What's new",
     ],
   },
   {
