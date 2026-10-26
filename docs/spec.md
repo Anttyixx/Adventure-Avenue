@@ -585,7 +585,9 @@ Each has an idle and a walk sheet of 32 x 48 frames, 4 frames per row and one ro
 left, right, up). On the board they play the walk cycle facing the way they move and the idle cycle
 facing the viewer at rest, drawn with smoothing off on a base disc in the player's color, with a
 soft dark shadow in the sprite's own shape all round them to lift them off the tiles. Portraits
-(player cards, log, lobby) are a head-and-shoulders crop of the first idle frame.
+(player cards, log, lobby) are the head and shoulders of the first idle frame with no frame or
+background, the body fading out at the bottom; on player cards the place (1st, 2nd...) sits
+before the name so it never covers the character.
 
 **Motion.** Tokens tween between squares (260 ms, eased, with a hop) and step through walk frames
 every 120 ms (idle frames every 260 ms). The active player has a bobbing pixel arrow and a remaining-steps badge. Pixel coins fly from
@@ -694,9 +696,8 @@ authority. Code: `apps/client/src/net/` (protocol, PeerJS wrapper, host and gues
 without I/L/O) and the host's lobby (game setup in online mode: board carousel, rules, room code
 with a Share/Copy invite link, the seat list). Friends tap Join a game and type the code, or open
 an invite link (`?join=CODE`). Seats fill in order (up to 4 guests); the host can remove a guest.
-Everyone picks a character in the lobby (guests also on the join form); the host keeps them unique,
-giving a joiner whose pick is taken a free one and refusing a change to a taken one, and CPUs get
-characters no player has.
+A joiner gets a random character nobody has; everyone can change theirs in the lobby to one nobody
+has (the host refuses a change to a taken one), and CPUs get characters no player has.
 Empty seats become CPUs on start if "Fill empty seats with CPU" is on; otherwise the game has
 only the people in the room (at least 2).
 

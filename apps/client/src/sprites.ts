@@ -137,7 +137,12 @@ export function facingFor(dx: number, dy: number): Facing {
   return dy < 0 ? Facing.Up : Facing.Down;
 }
 
-/** A head-and-shoulders portrait as a data URL, for player cards and lists. */
+/**
+ * A head-and-shoulders portrait as a data URL, for player cards and lists: the whole head (hats
+ * included) with the body fading out at the bottom, on a transparent background.
+ */
+export const PORTRAIT_W = 32;
+export const PORTRAIT_H = 32;
 const portraits = new Map<string, string>();
 export function portraitURL(ch: unknown, scale = 4): string {
   const def = charDef(ch);
@@ -145,16 +150,21 @@ export function portraitURL(ch: unknown, scale = 4): string {
   const hit = portraits.get(key);
   if (hit) return hit;
   const s = sheets.get(def.id);
-  // 4:3 like the portrait frames in the interface.
-  const W = 28;
-  const H = 21;
   const cv = document.createElement('canvas');
-  cv.width = W * scale;
-  cv.height = H * scale;
+  cv.width = PORTRAIT_W * scale;
+  cv.height = PORTRAIT_H * scale;
   if (!s) return cv.toDataURL();
   const ctx = cv.getContext('2d')!;
   ctx.imageSmoothingEnabled = false;
-  ctx.drawImage(s.idle, (FRAME_W - W) / 2, def.face, W, H, 0, 0, W * scale, H * scale);
+  // From just above the tallest hat down to the chest.
+  const top = def.face - 7;
+  ctx.drawImage(s.idle, 0, top, PORTRAIT_W, PORTRAIT_H, 0, 0, cv.width, cv.height);
+  const fade = ctx.createLinearGradient(0, cv.height * 0.72, 0, cv.height);
+  fade.addColorStop(0, 'rgba(0,0,0,0)');
+  fade.addColorStop(1, 'rgba(0,0,0,1)');
+  ctx.globalCompositeOperation = 'destination-out';
+  ctx.fillStyle = fade;
+  ctx.fillRect(0, 0, cv.width, cv.height);
   const url = cv.toDataURL();
   portraits.set(key, url);
   return url;

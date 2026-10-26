@@ -33,12 +33,12 @@ export const CHANGELOG: ChangelogEntry[] = [
       {
         tag: 'new',
         title: 'Pick your character',
-        text: 'Nine hand-drawn townsfolk with idle and walking animations. Tap your picture in game setup or the online lobby to choose one; no two players can have the same character, and it stays yours for the whole game.',
+        text: 'Nine hand-drawn townsfolk with idle and walking animations. Everyone starts with a random one; tap your picture in game setup or the online lobby to pick another nobody has. It stays yours for the whole game.',
       },
       {
         tag: 'better',
         title: 'Easier to spot on the board',
-        text: 'Characters face the way they walk and have a soft shadow around them, so they stand out from the board.',
+        text: 'Characters face the way they walk and have a soft shadow around them, so they stand out from the board. Player cards show their whole head, with their place next to the name.',
       },
       {
         tag: 'new',

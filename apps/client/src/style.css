@@ -131,22 +131,21 @@ button {
   border-radius: 3px;
   flex: none;
 }
+/* Portraits are a character's head and shoulders (32 x 32 art pixels), fading out at the bottom. */
 .portrait {
   image-rendering: pixelated;
-  width: 48px;
-  height: 36px;
-  border-radius: 8px;
-  background: rgba(255, 255, 255, 0.1);
+  width: 40px;
+  height: 40px;
+  object-fit: contain;
   flex: none;
 }
 .portrait.big {
   width: 96px;
-  height: 72px;
+  height: 96px;
 }
 .portrait.tiny {
-  width: 24px;
-  height: 18px;
-  border-radius: 4px;
+  width: 20px;
+  height: 20px;
   margin-right: 6px;
 }
 input.num,
@@ -937,10 +936,13 @@ input[type='range'] {
   flex: none;
   align-self: center;
 }
+.pcard .portrait {
+  width: 54px;
+  height: 54px;
+  margin: -4px 0;
+}
 .rank {
-  position: absolute;
-  left: -6px;
-  bottom: -8px;
+  flex: none;
   min-width: 26px;
   padding: 1px 4px;
   border-radius: 999px;
@@ -1257,10 +1259,8 @@ input[type='range'] {
 }
 .who img {
   width: 16px;
-  height: 12px;
-  border-radius: 999px;
+  height: 16px;
   image-rendering: pixelated;
-  background: rgba(255, 255, 255, 0.12);
 }
 
 .tooltip {
@@ -1533,7 +1533,7 @@ input[type='range'] {
 .m-ph img {
   display: block;
   margin: 0 auto;
-  width: 34px;
+  width: 26px;
   height: 26px;
   image-rendering: pixelated;
 }
@@ -2101,8 +2101,8 @@ input[type='range'] {
     gap: 5px;
   }
   .pcard .portrait {
-    width: 28px;
-    height: 21px;
+    width: 30px;
+    height: 30px;
   }
   .pc-top .suits {
     margin-left: auto;
@@ -2163,7 +2163,7 @@ input[type='range'] {
     font-size: 12px;
   }
   .m-ph img {
-    width: 26px;
+    width: 20px;
     height: 20px;
   }
   .m-labels,
@@ -2800,8 +2800,8 @@ input[type='range'] {
   border-left-style: dashed;
 }
 .lobby-seat .portrait {
-  width: 44px;
-  height: 33px;
+  width: 40px;
+  height: 40px;
   flex: none;
   image-rendering: pixelated;
 }
@@ -3224,8 +3224,8 @@ input[type='range'] {
 }
 .au-leader img,
 .au-bidder img {
-  width: 30px;
-  height: 23px;
+  width: 28px;
+  height: 28px;
   image-rendering: pixelated;
 }
 .au-bidders {
@@ -3415,8 +3415,8 @@ input[type='range'] {
   color: #fff;
 }
 .tt-owner img {
-  width: 24px;
-  height: 18px;
+  width: 20px;
+  height: 20px;
   image-rendering: pixelated;
 }
 .tt-grid {
@@ -4005,14 +4005,14 @@ button.char-btn:focus-visible .char-btn-tag {
 }
 .char-btn.small {
   width: 44px;
-  height: 33px;
+  height: 44px;
   border-radius: 8px;
+}
+.char-btn.small img {
+  object-fit: contain;
 }
 .char-btn.small .char-btn-tag {
   font-size: 8px;
-}
-.join-char {
-  align-self: center;
 }
 .host-me {
   display: flex;

@@ -8,7 +8,7 @@ import type { GuestEvents, GuestRoom } from '../net/guestroom';
 import type { HostRoom } from '../net/hostroom';
 import { cleanCode, inviteURL, type LobbyInfo, type StartInfo } from '../net/protocol';
 import { saveGuest } from '../save';
-import { freeCharacter, portraitURL } from '../sprites';
+import { portraitURL } from '../sprites';
 import { charButton, pickCharacter } from './charpick';
 import { clear, fmt, h } from './dom';
 import { titleScene } from './menu';
@@ -112,7 +112,6 @@ export interface JoinHandlers {
  * `rejoin` fills in the name too and connects straight away (coming back to a game).
  */
 export function joinScreen(root: HTMLElement, handlers: JoinHandlers, code = '', rejoin?: { name: string }) {
-  let look: CharId = freeCharacter([]);
   let room: GuestRoom | null = null;
   let busy = false;
   let error = '';
@@ -182,7 +181,7 @@ export function joinScreen(root: HTMLElement, handlers: JoinHandlers, code = '',
     draw();
     try {
       const { GuestRoom } = await import('../net/guestroom');
-      room = await GuestRoom.join(c, name, look, events);
+      room = await GuestRoom.join(c, name, events);
       // Remembered so a reload, or the main menu later, can bring this player back in.
       saveGuest(c, name);
       // Rejoining a running game: the host sends the game right after the welcome, which can
@@ -204,20 +203,12 @@ export function joinScreen(root: HTMLElement, handlers: JoinHandlers, code = '',
       card.append(...guestLobby(room, lobby));
       return;
     }
-    const pick = async () => {
-      const id = await pickCharacter({ current: look, taken: new Map(), color: PLAYER_COLORS[1] });
-      if (id) {
-        look = id;
-        draw();
-      }
-    };
     const btn = h(
       'button',
       { class: 'btn main big', disabled: busy, onclick: join },
       busy ? 'Connecting...' : 'Join',
     );
     card.append(
-      charButton(look, 'big join-char', () => void pick()),
       h('label', { class: 'opt' }, h('div', { class: 'opt-label' }, 'Room code'), codeIn),
       h('label', { class: 'opt' }, h('div', { class: 'opt-label' }, 'Your name'), nameIn),
       ...(error ? [h('p', { class: 'join-error' }, error)] : []),

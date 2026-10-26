@@ -50,17 +50,16 @@ export class GuestRoom implements GameLink {
     private peer: Peer,
     private conn: DataConnection,
     private name: string,
-    private look: CharId,
     public on: GuestEvents,
   ) {}
 
   /** Join a room. Resolves once the host has given us a seat. */
-  static async join(code: string, name: string, look: CharId, on: GuestEvents): Promise<GuestRoom> {
+  static async join(code: string, name: string, on: GuestEvents): Promise<GuestRoom> {
     let peer: Peer | null = null;
     try {
       peer = await openPeer();
       const conn = await connectTo(peer, roomPeerId(code));
-      const room = new GuestRoom(code, peer, conn, name, look, on);
+      const room = new GuestRoom(code, peer, conn, name, on);
       await room.greet();
       return room;
     } catch (err) {
@@ -94,13 +93,12 @@ export class GuestRoom implements GameLink {
       });
       conn.on('close', () => this.lost(conn));
       conn.on('error', () => this.lost(conn));
-      this.send({ t: 'hello', v: NET_VERSION, token: this.token, name: this.name, look: this.look });
+      this.send({ t: 'hello', v: NET_VERSION, token: this.token, name: this.name });
     });
   }
 
   /** Ask the host for a different character (lobby only). */
   setLook(look: CharId) {
-    this.look = look;
     this.send({ t: 'look', look });
   }
 

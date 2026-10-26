@@ -11,7 +11,7 @@
 import type { CharId, GameState, RuleSet } from '@aa/engine';
 
 /** Protocol version: a joiner on a different version is turned away. */
-export const NET_VERSION = 4;
+export const NET_VERSION = 5;
 
 export type SeatKind = 'host' | 'local' | 'remote' | 'open' | 'cpu';
 
@@ -50,7 +50,7 @@ export interface StartInfo {
 }
 
 export type ToHost =
-  | { t: 'hello'; v: number; token: string; name: string; look: CharId }
+  | { t: 'hello'; v: number; token: string; name: string }
   /** Pick a different character in the lobby (refused if someone else has it). */
   | { t: 'look'; look: CharId }
   | { t: 'answer'; seq: number; ans: unknown }

@@ -320,20 +320,17 @@ export class Hud {
     const active = p.id === this.activePid && !G.over;
     el.append(
       active ? h('span', { class: 'turn-tag' }, 'Turn') : '',
-      h(
-        'div',
-        { class: 'pc-side' },
-        h('img', { class: 'portrait', src: portraitURL(p.ch), alt: '' }),
-        rank && !p.bankrupt
-          ? h('span', { class: `rank r${rank}`, title: `Rank ${rank}` }, ordinal(rank))
-          : '',
-      ),
+      h('div', { class: 'pc-side' }, h('img', { class: 'portrait', src: portraitURL(p.ch), alt: '' })),
       h(
         'div',
         { class: 'pc-main' },
         h(
           'div',
           { class: 'pc-row pc-top' },
+          // Place, beside the name so it never covers the character.
+          rank && !p.bankrupt
+            ? h('span', { class: `rank r${rank}`, title: `Rank ${rank}` }, ordinal(rank))
+            : null,
           h('span', { class: 'pname' }, p.name),
           p.cpu ? null : h('span', { class: 'seat' }, `P${p.slot + 1}`),
           h('span', { class: 'lvl' }, `Lv ${p.level}`),
