@@ -56,6 +56,8 @@ export interface Insets {
 const ZOOM_BLEND = 0.55;
 /** Fully zoomed out shows this much more than the whole board fitting the screen. */
 const ZOOM_OUT_EXTRA = 1.25;
+/** One wheel notch or key press: 1/10 of the range, shown as 5% on the zoom chip. */
+export const ZOOM_STEP = 0.1;
 
 export class BoardView {
   /** Center of a square on this board. */
@@ -113,7 +115,7 @@ export class BoardView {
   walkTarget = -1;
   onPick: ((id: number) => void) | null = null;
   onHover: ((id: number | null, cx: number, cy: number) => void) | null = null;
-  /** Called when the shown zoom changes, in percent of the normal (closest) follow zoom. */
+  /** Called when the shown zoom changes: 100% fully zoomed in on the player, 50% fully out. */
   onZoom: ((pct: number) => void) | null = null;
   private zoomPct = 0;
 
@@ -529,7 +531,7 @@ export class BoardView {
     e.preventDefault();
     // Trackpads send many small deltas, mouse wheels a few big ones.
     const px = e.deltaMode === 1 ? e.deltaY * 33 : e.deltaY;
-    this.zoomBy(Math.max(-0.2, Math.min(0.2, px / 600)));
+    this.zoomBy(Math.max(-ZOOM_STEP, Math.min(ZOOM_STEP, (px / 100) * ZOOM_STEP)));
   };
 
   private pinchDown = (e: PointerEvent) => {
@@ -664,7 +666,11 @@ export class BoardView {
     if (this.host.clientWidth !== Math.round(this.w) || this.host.clientHeight !== Math.round(this.h))
       this.resize();
     this.updateCamera();
-    const pct = Math.round((this.cam.z / this.followZoom()) * 100);
+    // The chip reads 100% fully zoomed in and 50% fully zoomed out, in even steps.
+    const near = this.followZoom();
+    const far = this.zoomFor(1);
+    const out = far < near ? Math.log(this.cam.z / near) / Math.log(far / near) : 0;
+    const pct = Math.round(100 - 50 * Math.min(1, Math.max(0, out)));
     if (pct !== this.zoomPct) {
       this.zoomPct = pct;
       this.onZoom?.(pct);

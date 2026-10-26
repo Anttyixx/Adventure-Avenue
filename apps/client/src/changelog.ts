@@ -59,7 +59,7 @@ export const CHANGELOG: ChangelogEntry[] = [
     extras: [
       'Zoom out 25% further',
       'Active player always centered',
-      'Zoom % chip in the top right (tap to reset)',
+      'Zoom % chip in the top right (tap to reset), in 5% steps',
       'Brighter district colors',
       'Checkpoint tolls paid while walking past',
       'Sell only the shares you need in debt',

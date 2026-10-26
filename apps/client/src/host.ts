@@ -16,7 +16,7 @@ import {
   type GameIO,
   type GameState,
 } from '@aa/engine';
-import { BoardView } from './board';
+import { BoardView, ZOOM_STEP } from './board';
 import { squareName } from './names';
 import { clearSave, saveGame } from './save';
 import { SUIT_CHARS } from './icons';
@@ -149,8 +149,8 @@ export class HotSeat implements GameIO {
     const tag = (e.target as HTMLElement)?.tagName;
     if (tag === 'INPUT' || tag === 'TEXTAREA') return;
     // Zoom with the keyboard too: - shows more of the board, + goes back in.
-    if (e.key === '-' || e.key === '_') this.board.zoomBy(0.2);
-    if (e.key === '=' || e.key === '+') this.board.zoomBy(-0.2);
+    if (e.key === '-' || e.key === '_') this.board.zoomBy(ZOOM_STEP);
+    if (e.key === '=' || e.key === '+') this.board.zoomBy(-ZOOM_STEP);
   };
 
   toggleFast() {

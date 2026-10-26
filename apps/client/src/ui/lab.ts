@@ -31,7 +31,7 @@ import {
   type TradeOffer,
 } from '@aa/engine';
 import { SHOP_TIERS, SHOP_TIER_NAMES, STAR3_TIERS, STAR3_TIER_NAMES, propertyIconURL } from '../art';
-import { BoardView } from '../board';
+import { BoardView, ZOOM_STEP } from '../board';
 import { randomLook } from '../sprites';
 import { clear, fmt, h } from './dom';
 import { DerbyView, MemoryView, ReelsView, VentureView } from './games';
@@ -501,8 +501,8 @@ export async function openLab(app: HTMLElement, section?: string) {
         cur().onBreak = !cur().onBreak;
         refresh();
       }),
-      btn('Zoom in', () => board.zoomBy(-0.25)),
-      btn('Zoom out', () => board.zoomBy(0.25)),
+      btn('Zoom in', () => board.zoomBy(-ZOOM_STEP)),
+      btn('Zoom out', () => board.zoomBy(ZOOM_STEP)),
     );
   }
 
