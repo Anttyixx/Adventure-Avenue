@@ -69,6 +69,8 @@ export class Hud {
   bannerLayer = h('div', { class: 'banner-layer' });
   G!: GameState;
   activePid = -1;
+  /** This device's player in an online game (their card goes at the bottom), or -1. */
+  myPid = -1;
   drawerMode: 'market' | 'log' | null = null;
   cardsHidden = false;
   /** Extra space covered on the left (e.g. the UI Lab panel). */
@@ -277,7 +279,12 @@ export class Hud {
 
   renderCards() {
     const G = this.G;
-    const order = G.order.map((id) => G.players[id]);
+    // Turn order, top to bottom. Online, the order is turned round so this device's player is
+    // at the bottom, where they can always find their card; turns still go top to bottom.
+    const ids = G.order.slice();
+    const mine = ids.indexOf(this.myPid);
+    if (mine >= 0) ids.push(...ids.splice(0, mine + 1));
+    const order = ids.map((id) => G.players[id]);
     // Ranking by net worth (ties share a place).
     const ranked = ranking(G);
     this.ranks = new Map();

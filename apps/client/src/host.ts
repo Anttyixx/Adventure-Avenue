@@ -95,6 +95,8 @@ export class HotSeat implements GameIO {
       quitQuestion: () => this.quitQuestion(),
       onRules: () => rulesModal(this.hud, this.G),
     });
+    // Online, this device's own player's card sits at the bottom of the stack.
+    if (link) this.hud.myPid = this.G.players.find((p) => this.localHuman(p.id))?.id ?? -1;
     this.game = new Game(G, this);
     if (link) this.hud.setRoom(link.code, inviteURL(link.code));
     // Dev builds expose the running game for automated tests.

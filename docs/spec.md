@@ -629,7 +629,8 @@ and the Menu button (the menu
 also shows the round, target and rule set). Bottom left: a ticker with the last action, above
 the action bar; tapping it opens the game log above it (turn by turn, newest at the bottom,
 scrollable back to the start of the game), and it moves up above the options when they would
-cover it. Bottom right: the player cards stacked vertically (net worth, cash, level,
+cover it. Bottom right: the player cards stacked vertically in turn order (online, each device
+turns the order round so its own player's card is at the bottom; turns still go top to bottom) (net worth, cash, level,
 suits and progress bar), with a Hide/Show toggle so players can clear the board. The stock market lives in a
 slide-out drawer on the right.
 
