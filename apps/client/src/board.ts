@@ -52,14 +52,17 @@ export interface Insets {
   left: number;
 }
 
-/** Zoom-out level (0-1) past which the camera blends from the player to the board's center. */
-const ZOOM_BLEND = 0.55;
 /** Fully zoomed out shows this much more than the whole board fitting the screen. */
 const ZOOM_OUT_EXTRA = 1.25;
 /** Furthest zoom-out: 1.3x as far (in steps) as fitting the whole board. */
 const ZOOM_MAX_OUT = 1.3;
 /** One wheel notch or key press: 1/20 of the range, shown as 5% on the zoom chip. */
 export const ZOOM_STEP = ZOOM_MAX_OUT / 20;
+/**
+ * From 175% on the zoom chip (a quarter of the way out) the camera slowly lets go of the player,
+ * reaching the board's center at the furthest zoom-out.
+ */
+const ZOOM_BLEND = ZOOM_MAX_OUT * 0.25;
 
 export class BoardView {
   /** Center of a square on this board. */
@@ -591,8 +594,10 @@ export class BoardView {
       follow = v;
       fz = Math.min(z, v.z);
     }
-    // Zoomed far out, the camera lets go of the player and eases to the board's center.
-    const t = Math.min(1, Math.max(0, (out - ZOOM_BLEND) / (1 - ZOOM_BLEND)));
+    // Zoomed out, the camera gradually lets go of the player and eases to the board's center
+    // (straight to it for the game-over overview).
+    const overview = this.followPid < 0 || !!this.G?.over;
+    const t = overview ? 1 : Math.min(1, Math.max(0, (out - ZOOM_BLEND) / (ZOOM_MAX_OUT - ZOOM_BLEND)));
     const b = t * t * (3 - 2 * t);
     const c = { x: follow.x + (this.ww / 2 - follow.x) * b, y: follow.y + (this.wh / 2 - follow.y) * b };
     this.camTarget = { x: c.x, y: c.y, z: fz };
