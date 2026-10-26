@@ -37,6 +37,7 @@ import { clear, fmt, h } from './dom';
 import { DerbyView, MemoryView, ReelsView, VentureView } from './games';
 import { Hud } from './hud';
 import { mainMenu } from './menu';
+import { openWhatsNew } from './whatsnew';
 import { joinScreen, lobbySeats, onlineHub } from './online';
 import { soundButton, soundControls } from './soundpanel';
 import { SFX_NAMES, TRACK_NAMES, sound, type Track } from '../audio';
@@ -853,6 +854,7 @@ export async function openLab(app: HTMLElement, section?: string) {
       s,
       btn('Main menu (saved game)', () => menu(true)),
       btn('Main menu (no save)', () => menu(false)),
+      btn("What's new", () => openWhatsNew(document.body)),
       btn('Game setup', () =>
         overlay((holder, done) =>
           setupScreen(holder, {

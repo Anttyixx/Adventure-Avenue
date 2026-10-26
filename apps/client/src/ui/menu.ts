@@ -8,6 +8,8 @@ import { randomLook, SPRITE_H, SPRITE_W, spriteFrames } from '../sprites';
 import { loadSave, type SaveInfo } from '../save';
 import { sound } from '../audio';
 import { h } from './dom';
+import { hasUnseenUpdate } from '../changelog';
+import { openWhatsNew } from './whatsnew';
 import { closeSoundPopover, soundButton } from './soundpanel';
 
 const TOWN_COLORS = ['#f2a7a0', '#9fd3f0', '#a8e0a0', '#f5d77a', '#cdb4f0', '#f7bfdc', '#8fe3d6'];
@@ -106,6 +108,14 @@ export function mainMenu(root: HTMLElement, handlers: MenuHandlers, save: SaveIn
         )
       : null,
   );
+  // Release notes, with a "New" badge until the latest update has been read on this device.
+  const whatsNew = h('button', { class: 'btn ghost menu-editor whats-new-btn' }, "What's new");
+  const badge = () => {
+    whatsNew.querySelector('.new-dot')?.remove();
+    if (hasUnseenUpdate()) whatsNew.append(h('span', { class: 'new-dot' }, 'New'));
+  };
+  badge();
+  whatsNew.onclick = () => openWhatsNew(root, badge);
   const el = h(
     'div',
     { class: 'menu' },
@@ -137,7 +147,12 @@ export function mainMenu(root: HTMLElement, handlers: MenuHandlers, save: SaveIn
           h('span', { class: 'menu-btn-title' }, 'Play online'),
           h('span', { class: 'menu-btn-sub' }, 'Host a game or join friends with a room code'),
         ),
-        h('button', { class: 'btn ghost menu-editor', onclick: () => handlers.onEditor() }, 'Board editor'),
+        h(
+          'div',
+          { class: 'menu-small' },
+          whatsNew,
+          h('button', { class: 'btn ghost menu-editor', onclick: () => handlers.onEditor() }, 'Board editor'),
+        ),
       ),
     ),
   );

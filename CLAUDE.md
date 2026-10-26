@@ -9,6 +9,10 @@ A Fortune Street-style board game for the browser. Spec: `docs/spec.md`.
 - After every change, end the reply with the playable link for the branch that was updated:
   - `dev`: https://anttyixx.github.io/Adventure-Avenue/dev/
   - `main`: https://anttyixx.github.io/Adventure-Avenue/
+- With the link, say which build it is: the short commit hash shown in the build badge (e.g.
+  "dev build `bbca06e`").
+- For updates players will notice, add an entry at the top of `apps/client/src/changelog.ts`
+  (shown in "What's new" on the main menu).
 
 ## Layout
 
