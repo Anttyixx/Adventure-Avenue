@@ -609,8 +609,8 @@ game log live in a slide-out drawer on the right.
 player in the middle of the screen even at the board edge (grass continues past it). The mouse wheel, a pinch, or the - and + keys zoom out to show more of the map (a chip at
 the start of the top-right toolbar shows the zoom: 200% fully in on the player, about 123% for the whole board, 100%
 fully out (`ZOOM_MAX_OUT`), in 5% steps per wheel notch or key press (`ZOOM_STEP`); tapping it zooms back in);
-from 175% down, the camera slowly lets go of the player and drifts to the board's center
-(`ZOOM_BLEND`), until at full zoom-out (100%) the whole board is centered with room to spare (`ZOOM_OUT_EXTRA`: 25% further out than fitting the screen). While a choice is open the
+between 175% and 150% the camera moves from the player to the board's center (`ZOOM_BLEND`),
+and from 150% down to 100% the board stays centered with room to spare (`ZOOM_OUT_EXTRA`: 25% further out than fitting the screen). While a choice is open the
 camera keeps the player centered and zooms out just enough to frame every glowing square around
 them (if they are too spread out for that, it frames them all instead; never closer than the
 player's own zoom). The game-over view shows the whole board. The die and on-board pop-ups are

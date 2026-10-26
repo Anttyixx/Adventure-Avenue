@@ -59,10 +59,11 @@ const ZOOM_MAX_OUT = 1.3;
 /** One wheel notch or key press: 1/20 of the range, shown as 5% on the zoom chip. */
 export const ZOOM_STEP = ZOOM_MAX_OUT / 20;
 /**
- * From 175% on the zoom chip (a quarter of the way out) the camera slowly lets go of the player,
- * reaching the board's center at the furthest zoom-out.
+ * Between 175% and 150% on the zoom chip (a quarter and half of the way out) the camera moves
+ * from the player to the board's center; from 150% out it stays on the board's center.
  */
 const ZOOM_BLEND = ZOOM_MAX_OUT * 0.25;
+const ZOOM_BLEND_END = ZOOM_MAX_OUT * 0.5;
 
 export class BoardView {
   /** Center of a square on this board. */
@@ -597,7 +598,7 @@ export class BoardView {
     // Zoomed out, the camera gradually lets go of the player and eases to the board's center
     // (straight to it for the game-over overview).
     const overview = this.followPid < 0 || !!this.G?.over;
-    const t = overview ? 1 : Math.min(1, Math.max(0, (out - ZOOM_BLEND) / (ZOOM_MAX_OUT - ZOOM_BLEND)));
+    const t = overview ? 1 : Math.min(1, Math.max(0, (out - ZOOM_BLEND) / (ZOOM_BLEND_END - ZOOM_BLEND)));
     const b = t * t * (3 - 2 * t);
     const c = { x: follow.x + (this.ww / 2 - follow.x) * b, y: follow.y + (this.wh / 2 - follow.y) * b };
     this.camTarget = { x: c.x, y: c.y, z: fz };
