@@ -549,7 +549,7 @@ renovating, stock dumps against a leader. These are good targets for a "hard" CP
 **Board and HUD (Oct 2026).** The board is centered on the whole screen; the toolbar, player cards
 and options panel float over it. Grass continues seamlessly past the board edge. Every property
 tile has a solid border in its district's color; an owned tile is filled with its owner's color
-(unowned tiles stay white). Tokens stand on a base in the player's color with their name above; the active
+(unowned tiles stay white, with plain grey buildings so they never look like a player's). Tokens stand on a base in the player's color with their name above; the active
 player is drawn larger. Money everywhere ends in a small gold coin instead of "G". A shop whose
 value changes swells with a green "+" or red "-" label. Property choices (investing, trades,
 auctions, renovations, debt sales, buyout and agency cards, the cannon) are made by tapping the

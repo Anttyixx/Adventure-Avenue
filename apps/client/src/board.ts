@@ -1730,16 +1730,10 @@ function drawSquare(ctx: CanvasRenderingContext2D, G: GameState, sq: Square) {
   ctx.fill();
 
   if (sq.t === 'shop') {
-    // The design grows with the shop's value; owned shops use the owner's color.
+    // The design grows with the shop's value; owned shops use the owner's color, unowned ones
+    // stay plain grey so they never look like a player's.
     const tier = tierFor(sq.value, SHOP_TIERS);
-    drawShop(
-      ctx,
-      c.x,
-      c.y - 4,
-      tier,
-      owner ? ownerColor : (district?.color ?? '#8a94a8'),
-      owner?.name[0]?.toUpperCase(),
-    );
+    drawShop(ctx, c.x, c.y - 4, tier, owner ? ownerColor : '#8a94a8', owner?.name[0]?.toUpperCase());
     if (owner) pill(ctx, c.x, c.y + 28, `${squareFee(G, sq)}G`, ownerColor);
     else label(ctx, c.x, c.y + 28, `${sq.value}G`, '#26314f', 16);
   } else if (sq.t === 'plot') {
