@@ -87,6 +87,7 @@ export const CHANGELOG: ChangelogEntry[] = [
       'Game menu in the top right: rules, sound, full screen and quit (with a confirm); Stock market button beside it',
       'Cleaner panels without scrollbars',
       'Game log moved to the bottom left: tap the last action to open it',
+      'Squares you can pick pulse with a white outline and spreading rings',
       'Hex tiles: prices and fees no longer cut off by the edges',
       'Fees on owned tiles shown as plain numbers; no Turn tag on player cards',
       'Round and target moved into the game menu',

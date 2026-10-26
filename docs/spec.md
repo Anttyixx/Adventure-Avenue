@@ -596,6 +596,10 @@ before the name so it never covers the character.
 every 120 ms (idle frames every 260 ms). The active player has a bobbing pixel arrow and a remaining-steps badge. Pixel coins fly from
 payer to payee; floating text shows money changes.
 
+**Highlighted squares.** Squares a player can pick (or that a choice would affect) get a tint in the
+player's color, a white outline that pulses with a glow in that color, and white rings that keep
+spreading out from them and fading, so the eye goes straight to them; everything else dims.
+
 **Shops closing.** When a player's shops close (break square, Estate Agency, the Holiday and Odd or
 even venture cards; the engine emits `closed`), the camera pulls back to the whole board, each of
 their shops' shutters rolls down in turn with a "CLOSED" stamp, then the camera returns to the

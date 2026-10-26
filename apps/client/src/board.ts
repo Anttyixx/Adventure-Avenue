@@ -29,6 +29,9 @@ const TILE = 86;
 
 const reducedMotion = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
+/** How long one ring takes to spread out from a highlighted square. */
+const RING_MS = 1400;
+
 const ease = (t: number) => (t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2);
 
 interface Token {
@@ -924,13 +927,25 @@ export class BoardView {
       ctx.fillStyle = this.glowColor;
       tileShape(ctx, G.layout, c.x, c.y, TILE / 2, 14);
       ctx.fill();
-      ctx.globalAlpha = strong ? 0.7 + 0.3 * pulse : 0.45;
+      // A white outline that pulses, glowing in the player's color.
+      ctx.globalAlpha = strong ? 0.75 + 0.25 * pulse : 0.5;
       ctx.shadowColor = this.glowColor;
-      ctx.shadowBlur = 26 * pulse;
-      ctx.strokeStyle = this.glowColor;
-      ctx.lineWidth = strong ? 7 : 4;
+      ctx.shadowBlur = 10 + 20 * pulse;
+      ctx.strokeStyle = '#fff';
+      ctx.lineWidth = strong ? 6 + 2 * pulse : 4;
       tileShape(ctx, G.layout, c.x, c.y, TILE / 2 + 4, 14);
       ctx.stroke();
+      // White rings that keep spreading out from the choices and fading, to catch the eye.
+      if (strong && !reducedMotion()) {
+        ctx.shadowBlur = 0;
+        for (let i = 0; i < 2; i++) {
+          const k = (now / RING_MS + i / 2 + id * 0.07) % 1;
+          ctx.globalAlpha = 0.95 * (1 - k) * (1 - k);
+          ctx.lineWidth = 5 * (1 - k) + 1.5;
+          tileShape(ctx, G.layout, c.x, c.y, TILE / 2 + 6 + k * 26, 14 + k * 8);
+          ctx.stroke();
+        }
+      }
       ctx.restore();
     }
   }
