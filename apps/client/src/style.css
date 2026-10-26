@@ -131,7 +131,7 @@ button {
   border-radius: 3px;
   flex: none;
 }
-/* Portraits are a character's head and shoulders (32 x 32 art pixels), fading out at the bottom. */
+/* Portraits show a character down to about the waist (40 x 40 art pixels), fading out at the bottom. */
 .portrait {
   image-rendering: pixelated;
   width: 40px;
@@ -937,9 +937,9 @@ input[type='range'] {
   align-self: center;
 }
 .pcard .portrait {
-  width: 54px;
-  height: 54px;
-  margin: -4px 0;
+  width: 62px;
+  height: 62px;
+  margin: -8px -2px;
 }
 .rank {
   flex: none;
@@ -2101,8 +2101,9 @@ input[type='range'] {
     gap: 5px;
   }
   .pcard .portrait {
-    width: 30px;
-    height: 30px;
+    width: 38px;
+    height: 38px;
+    margin: -5px -2px;
   }
   .pc-top .suits {
     margin-left: auto;
