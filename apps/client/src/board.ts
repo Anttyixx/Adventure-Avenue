@@ -1724,15 +1724,8 @@ function drawSquare(ctx: CanvasRenderingContext2D, G: GameState, sq: Square) {
   ctx.fillStyle = 'rgba(0,0,0,0.18)';
   tileShape(ctx, L, c.x + 2, c.y + 5, TILE / 2, 12);
   ctx.fill();
-  const vacant = sq.t === 'plot' && !sq.b;
   // An owned tile is filled with its owner's color, so who owns what reads at a glance.
-  ctx.fillStyle = owner
-    ? tint(ownerColor, district ? 0.62 : 0.22)
-    : vacant
-      ? 'rgba(255,255,255,0.55)'
-      : sq.t === 'bank'
-        ? '#fff6d6'
-        : '#fdfbf5';
+  ctx.fillStyle = owner ? tint(ownerColor, district ? 0.62 : 0.22) : sq.t === 'bank' ? '#fff6d6' : '#fdfbf5';
   tileShape(ctx, L, c.x, c.y, TILE / 2, 12);
   ctx.fill();
 

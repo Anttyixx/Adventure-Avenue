@@ -61,7 +61,7 @@ export const CHANGELOG: ChangelogEntry[] = [
       'Zoom out further',
       'Active player always centered',
       'Zoom % chip in the top right (tap to reset): 250% close up to 100% far out, in 5% steps',
-      "Property tiles: district-colored border, filled with the owner's color",
+      "Property tiles: district-colored border, filled with the owner's color (vacant plots solid too)",
       'Checkpoint tolls paid while walking past',
       'Sell only the shares you need in debt',
       'Grey venture panels until picked',
