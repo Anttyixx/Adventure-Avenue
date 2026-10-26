@@ -131,6 +131,90 @@ export function drawCharacter(
   return true;
 }
 
+/** Art pixels of soft outline around a character, and the resolution it is built at. */
+const GLOW_PAD = 4;
+const GLOW_RES = 2;
+const glows = new Map<string, HTMLCanvasElement>();
+
+/** A soft dark outline in the shape of one frame (built once per frame, then cached). */
+function glowFrame(img: HTMLImageElement, key: string, facing: Facing, f: number): HTMLCanvasElement {
+  const hit = glows.get(key);
+  if (hit) return hit;
+  const W = (FRAME_W + GLOW_PAD * 2) * GLOW_RES;
+  const H = (FRAME_H + GLOW_PAD * 2) * GLOW_RES;
+  const sil = document.createElement('canvas');
+  sil.width = W;
+  sil.height = H;
+  const sctx = sil.getContext('2d', { willReadFrequently: true })!;
+  sctx.imageSmoothingEnabled = false;
+  sctx.drawImage(
+    img,
+    f * FRAME_W,
+    facing * FRAME_H,
+    FRAME_W,
+    FRAME_H,
+    GLOW_PAD * GLOW_RES,
+    GLOW_PAD * GLOW_RES,
+    FRAME_W * GLOW_RES,
+    FRAME_H * GLOW_RES,
+  );
+  // A solid black silhouette, leaving out the faint ground shadow drawn into the art.
+  const data = sctx.getImageData(0, 0, W, H);
+  const px = data.data;
+  for (let i = 0; i < px.length; i += 4) {
+    px[i] = px[i + 1] = px[i + 2] = 0;
+    px[i + 3] = px[i + 3] > 160 ? 255 : 0;
+  }
+  sctx.putImageData(data, 0, 0);
+  // Stamp it around a disc, fainter further out, for an outline that fades away.
+  const out = document.createElement('canvas');
+  out.width = W;
+  out.height = H;
+  const octx = out.getContext('2d')!;
+  const R = (GLOW_PAD - 1) * GLOW_RES;
+  for (let dy = -R; dy <= R; dy++)
+    for (let dx = -R; dx <= R; dx++) {
+      const d = Math.hypot(dx, dy);
+      if (d > R) continue;
+      octx.globalAlpha = 0.09 * (1 - d / (R + 1));
+      octx.drawImage(sil, dx, dy);
+    }
+  glows.set(key, out);
+  return out;
+}
+
+/**
+ * Draw the soft dark outline for the frame `drawCharacter` would draw with the same arguments;
+ * draw it first, so the character sits on top.
+ */
+export function drawCharacterGlow(
+  ctx: CanvasRenderingContext2D,
+  ch: unknown,
+  walking: boolean,
+  facing: Facing,
+  frame: number,
+  x: number,
+  y: number,
+  scale: number,
+) {
+  const def = charDef(ch);
+  const s = sheets.get(def.id);
+  if (!s) return;
+  const f = ((frame % FRAMES) + FRAMES) % FRAMES;
+  const glow = glowFrame(walking ? s.walk : s.idle, `${def.id}|${walking}|${facing}|${f}`, facing, f);
+  ctx.save();
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = 'high';
+  ctx.drawImage(
+    glow,
+    x - (FRAME_W / 2 + GLOW_PAD) * scale,
+    y - (FRAME_H + GLOW_PAD) * scale,
+    (FRAME_W + GLOW_PAD * 2) * scale,
+    (FRAME_H + GLOW_PAD * 2) * scale,
+  );
+  ctx.restore();
+}
+
 /** Facing for a move by (dx, dy) on screen. */
 export function facingFor(dx: number, dy: number): Facing {
   if (Math.abs(dx) > Math.abs(dy)) return dx < 0 ? Facing.Left : Facing.Right;
@@ -141,7 +225,7 @@ export function facingFor(dx: number, dy: number): Facing {
  * A portrait as a data URL, for player cards and lists: the whole head (hats included) near the
  * middle and the body fading out at the bottom, on a transparent background.
  */
-export const PORTRAIT_SIZE = 40;
+export const PORTRAIT_SIZE = 44;
 const portraits = new Map<string, string>();
 export function portraitURL(ch: unknown, scale = 4): string {
   const def = charDef(ch);
@@ -155,12 +239,13 @@ export function portraitURL(ch: unknown, scale = 4): string {
   const ctx = cv.getContext('2d')!;
   ctx.imageSmoothingEnabled = false;
   // A square a little wider than the frame, with the head near the middle and the body down to
-  // about the waist (clipped to the frame, so short characters just end sooner).
-  const top = def.face - 11;
+  // the hips (clipped to the frame, so short characters just end sooner). The fade only covers
+  // the bottom fifth, well below every head.
+  const top = def.face - 12;
   const left = (PORTRAIT_SIZE - FRAME_W) / 2;
   const rows = Math.min(PORTRAIT_SIZE, FRAME_H - top);
   ctx.drawImage(s.idle, 0, top, FRAME_W, rows, left * scale, 0, FRAME_W * scale, rows * scale);
-  const fade = ctx.createLinearGradient(0, cv.height * 0.7, 0, cv.height);
+  const fade = ctx.createLinearGradient(0, cv.height * 0.8, 0, cv.height);
   fade.addColorStop(0, 'rgba(0,0,0,0)');
   fade.addColorStop(1, 'rgba(0,0,0,1)');
   ctx.globalCompositeOperation = 'destination-out';

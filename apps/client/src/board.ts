@@ -15,7 +15,7 @@ import {
 import { cellCenter, tileShape, tileTop, worldSize } from './geometry';
 import { SHOP_TIERS, STAR3_TIERS, darken, drawShop, drawStar3, tierFor, tint } from './art';
 import { drawCoin, drawSparkle, SUIT_CHARS } from './icons';
-import { Facing, FRAME_H, FRAME_W, drawCharacter, facingFor } from './sprites';
+import { Facing, FRAME_H, FRAME_W, drawCharacter, drawCharacterGlow, facingFor } from './sprites';
 import { TIMING as T } from './timing';
 
 export { worldSize };
@@ -1010,12 +1010,9 @@ export class BoardView {
         ctx.globalAlpha = 1;
       }
       ctx.restore();
-      // A soft shadow in the sprite's own shape, all round it, to lift it off the board.
-      ctx.save();
-      ctx.shadowColor = 'rgba(10, 16, 30, 0.75)';
-      ctx.shadowBlur = Math.max(4, px * 4);
+      // A soft dark outline in the sprite's own shape, all round it, to lift it off the board.
+      drawCharacterGlow(ctx, p.ch, t.walking, t.facing, frame, sx, sy + px * 3, px);
       drawCharacter(ctx, p.ch, t.walking, t.facing, frame, sx, sy + px * 3, px);
-      ctx.restore();
       // Name tag above the character.
       {
         const fs = (active ? 14 : 11) * this.dpr;

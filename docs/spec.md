@@ -585,8 +585,8 @@ Each has an idle and a walk sheet of 32 x 48 frames, 4 frames per row and one ro
 left, right, up). On the board they play the walk cycle facing the way they move and the idle cycle
 facing the viewer at rest, drawn with smoothing off on a base disc in the player's color, with a
 soft dark shadow in the sprite's own shape all round them to lift them off the tiles. Portraits
-(player cards, log, lobby) show the first idle frame down to about the waist, head near the middle,
-with no frame or background and the body fading out at the bottom; on player cards the place (1st, 2nd...) sits
+(player cards, log, lobby) show the first idle frame down to the hips, head near the middle,
+with no frame or background and only the bottom fifth fading out (never over a head); on player cards the place (1st, 2nd...) sits
 before the name so it never covers the character.
 
 **Motion.** Tokens tween between squares (260 ms, eased, with a hop) and step through walk frames
