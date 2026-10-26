@@ -545,9 +545,9 @@ renovating, stock dumps against a leader. These are good targets for a "hard" CP
 ## Interface and art
 
 **Board and HUD (Oct 2026).** The board is centered on the whole screen; the toolbar, player cards
-and options panel float over it. Grass continues seamlessly past the board edge. Each district
-reads as one area: a halo in the district color sits behind its squares and along the road
-between them. Tokens stand on a base in the player's color with their name above; the active
+and options panel float over it. Grass continues seamlessly past the board edge. Every property
+tile has a solid border in its district's color and a soft glow spreading in from that border:
+grey when unowned, the owner's color when owned. Tokens stand on a base in the player's color with their name above; the active
 player is drawn larger. Money everywhere ends in a small gold coin instead of "G". A shop whose
 value changes swells with a green "+" or red "-" label. Property choices (investing, trades,
 auctions, renovations, debt sales, buyout and agency cards, the cannon) are made by tapping the
@@ -565,8 +565,8 @@ devicePixelRatio. The static board (grass, roads, pond, fountain, flower beds, t
 is drawn into a cached offscreen canvas and redrawn only when state changes; each frame draws that
 cache, then highlights, sprites, coins, floating text and the die.
 
-- Shops: district color strip, house icon, value label (unowned) or a fee pill, colored ring and
-  pennant in the owner's color (owned). Closed shops get a dark overlay.
+- Shops: district-colored border with an inner glow (grey, or the owner's color), house icon, value
+  label (unowned) or a fee pill and a pennant in the owner's color (owned). Closed shops get a dark overlay.
 - Plots: dashed outline and "VACANT" when empty; a vector icon per building plus its fee pill when
   built.
 - Hover (or tap) any square for a tooltip: owner, value, fee, max value, buyout price, group
@@ -628,7 +628,7 @@ API where available.
 
 **Type and color.** Lilita One for headings and numbers, Atkinson Hyperlegible for body text,
 Pixelify Sans only for pixel-themed labels. A dark navy UI shell around a bright daytime board.
-Player colors: red, blue, green, gold; district colors are pastels so they don't clash with owners.
+Player colors: red, blue, green, gold; district colors are vivid and easy to tell apart.
 
 ## Sound and music
 

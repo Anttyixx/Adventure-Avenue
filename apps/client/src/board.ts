@@ -1721,7 +1721,7 @@ function drawSquare(ctx: CanvasRenderingContext2D, G: GameState, sq: Square) {
   const vacant = sq.t === 'plot' && !sq.b;
   ctx.fillStyle = vacant
     ? 'rgba(255,255,255,0.55)'
-    : owner
+    : owner && !district
       ? tint(ownerColor, 0.22)
       : sq.t === 'bank'
         ? '#fff6d6'
@@ -1733,14 +1733,15 @@ function drawSquare(ctx: CanvasRenderingContext2D, G: GameState, sq: Square) {
     ctx.save();
     tileShape(ctx, L, c.x, c.y, TILE / 2, 12);
     ctx.clip();
-    // District marker: a soft glow of the district color just inside the tile's border.
-    ctx.shadowColor = district.color;
-    ctx.shadowBlur = 16;
-    ctx.strokeStyle = district.color;
-    ctx.lineWidth = 9;
-    tileShape(ctx, L, c.x, c.y, TILE / 2, 12);
-    ctx.stroke();
-    ctx.stroke();
+    // Ownership glow spreading in from the edge: the owner's color, or grey when unowned. It is
+    // the shadow of a thick band drawn just outside the tile (and clipped away), so only the
+    // glow lands inside.
+    ctx.shadowColor = owner ? ownerColor : '#8b93a7';
+    ctx.shadowBlur = 30;
+    ctx.strokeStyle = '#000';
+    ctx.lineWidth = 40;
+    tileShape(ctx, L, c.x, c.y, TILE / 2 + 20, 30);
+    for (let i = 0; i < (owner ? 3 : 2); i++) ctx.stroke();
     ctx.restore();
   }
 
@@ -1792,12 +1793,20 @@ function drawSquare(ctx: CanvasRenderingContext2D, G: GameState, sq: Square) {
     label(ctx, c.x, c.y + 30, t, '#4a5470', t.length > 8 ? 9 : 11);
   }
 
-  // Owner ring and pennant
-  if (owner) {
-    ctx.strokeStyle = ownerColor;
-    ctx.lineWidth = 5;
-    tileShape(ctx, L, c.x, c.y, TILE / 2 - 1.5, 11);
+  // Border: the district's solid color on properties, else the owner's ring or a faint outline.
+  if (district) {
+    ctx.strokeStyle = district.color;
+    ctx.lineWidth = 6;
+    tileShape(ctx, L, c.x, c.y, TILE / 2 - 3, 10);
     ctx.stroke();
+  }
+  if (owner) {
+    if (!district) {
+      ctx.strokeStyle = ownerColor;
+      ctx.lineWidth = 5;
+      tileShape(ctx, L, c.x, c.y, TILE / 2 - 1.5, 11);
+      ctx.stroke();
+    }
     ctx.fillStyle = '#5b6478';
     const py = L === 'hex' ? top + 12 : y;
     ctx.fillRect(x + TILE - 12, py - 14, 3, 24);
@@ -1807,7 +1816,7 @@ function drawSquare(ctx: CanvasRenderingContext2D, G: GameState, sq: Square) {
     ctx.lineTo(x + TILE + 8, py - 8);
     ctx.lineTo(x + TILE - 9, py - 2);
     ctx.fill();
-  } else {
+  } else if (!district) {
     ctx.strokeStyle = 'rgba(38,49,79,0.18)';
     ctx.lineWidth = 2;
     tileShape(ctx, L, c.x, c.y, TILE / 2 - 1, 11);
