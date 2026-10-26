@@ -4,6 +4,8 @@
  */
 import {
   Game,
+  netWorth,
+  K,
   PLAYER_COLORS,
   cpuDecide,
   stockPrice,
@@ -27,13 +29,13 @@ import {
   auctionPickModal,
   buildModal,
   debtModal,
-  investModal,
   renovateModal,
   rulesModal,
   stockModal,
   tradeModal,
 } from './ui/modals';
 import { showResults } from './ui/results';
+import { investOnBoard } from './ui/invest';
 import { sound } from './audio';
 import { closeSoundPopover } from './ui/soundpanel';
 import type { GameLink } from './net/link';
@@ -104,8 +106,11 @@ export class HotSeat implements GameIO {
     return !this.G.players[pid].cpu && (!this.link || this.link.who(pid) === 'local');
   }
 
+  /** Players who have reached the target (they win by getting back to the bank). */
+  private winReady = new Set<number>();
+
   async start() {
-    sound.music('game');
+    this.checkWinReady(true);
     try {
       await this.game.run();
     } catch (err) {
@@ -213,6 +218,31 @@ export class HotSeat implements GameIO {
 
   // ------------------------------------------------------------ helpers
 
+  /** Announce players who reach the target net worth, and switch to the urgent music. */
+  checkWinReady(quiet = false) {
+    const G = this.G;
+    if (G.over) return;
+    for (const p of G.players) {
+      const ready = !p.bankrupt && netWorth(G, p) >= G.target;
+      if (ready && !this.winReady.has(p.id)) {
+        this.winReady.add(p.id);
+        if (!quiet) {
+          sound.play('promote');
+          this.hud.banner(
+            `${p.name} has ${fmt(G.target)}! Back to the bank to win!`,
+            PLAYER_COLORS[p.color],
+            T.promoteBanner + 600,
+          );
+          this.hud.tick(
+            `${p.name} can win: they reached the target net worth. Next stop, the bank!`,
+            p.color,
+          );
+        }
+      } else if (!ready) this.winReady.delete(p.id);
+    }
+    sound.music(this.winReady.size ? 'urgent' : 'game');
+  }
+
   wait(ms: number) {
     return new Promise<void>((r) => setTimeout(r, ms * this.speed));
   }
@@ -221,6 +251,7 @@ export class HotSeat implements GameIO {
     this.board.dirty = true;
     this.board.snapTokens();
     this.hud.render(this.G);
+    if (!this.dead) this.checkWinReady();
   }
 
   playerPos(pid: number) {
@@ -380,7 +411,7 @@ export class HotSeat implements GameIO {
 
       case 'buyShop':
         return hud.prompt(
-          `Buy this ${squareName(G, G.nodes[req.sq])} for ${fmt(req.price)}? (You have ${fmt(p.cash)})`,
+          `Buy this ${squareName(G, G.nodes[req.sq])} for ${fmt(req.price)}? (You have ${fmt(p.cash)})${debtNote(p.cash, req.price)}`,
           [
             { label: 'Buy', value: true, main: true },
             { label: 'Pass', value: false, secondary: true },
@@ -389,14 +420,22 @@ export class HotSeat implements GameIO {
         );
 
       case 'build':
-        return buildModal(hud, req.options, `Build on the vacant plot (you have ${fmt(p.cash)})`);
+        return buildModal(
+          hud,
+          req.options,
+          `Build on the vacant plot (you have ${fmt(p.cash)})`,
+          0,
+          req.options.some((o) => o.cost > p.cash)
+            ? 'Buildings you cannot pay for in cash put you below 0G: sell stock or property at the end of your turn to cover it.'
+            : '',
+        );
 
       case 'invest':
-        return investModal(hud, G, req.shops, req.max);
+        return investOnBoard(hud, this.board, G, p, req.shops, req.max);
 
       case 'buyout':
         return hud.prompt(
-          `Buy out ${G.players[G.nodes[req.sq].owner].name}'s shop for ${fmt(req.price)}?`,
+          `Buy out ${G.players[G.nodes[req.sq].owner].name}'s ${squareName(G, G.nodes[req.sq])} for ${fmt(req.price)}? (You have ${fmt(p.cash)})${debtNote(p.cash, req.price)}`,
           [
             { label: 'Buy out', value: true },
             { label: 'No thanks', value: false, main: true },
@@ -443,7 +482,15 @@ export class HotSeat implements GameIO {
           agency: 'Pick an unowned shop to buy at its value.',
           forcedBuyout: "Pick a rival's shop to buy for 5x its value.",
         }[req.purpose];
-        this.board.setChoices(req.options, PLAYER_COLORS[color], (id) => hud.resolvePrompt(id));
+        const price = (id: number) =>
+          req.purpose === 'forcedBuyout' ? G.nodes[id].value * K.buyoutX : G.nodes[id].value;
+        const labels =
+          req.purpose === 'forcedBuyout' || req.purpose === 'agency'
+            ? new Map(req.options.map((id) => [id, fmt(price(id))]))
+            : undefined;
+        this.board.setChoices(req.options, PLAYER_COLORS[color], (id) => hud.resolvePrompt(id), undefined, {
+          labels,
+        });
         const buttons: PromptButton<number | null>[] =
           req.options.length <= 6
             ? req.options.map((id) => ({ label: squareName(G, G.nodes[id]), value: id }))
@@ -467,11 +514,33 @@ export class HotSeat implements GameIO {
           up20: 'Pick a district whose stock rises 20%.',
           down20: 'Pick a district whose stock falls 20%.',
         }[req.purpose];
-        return hud.prompt(
-          text,
-          req.options.map((d) => ({ label: `${G.districts[d].name} ${fmt(stockPrice(G, d))}`, value: d })),
+        // Light up the districts on the board: tap one, or use the buttons (hovering a button
+        // highlights its district).
+        const tiles = (d: number) =>
+          G.nodes.filter((q) => q.d === d && (q.t === 'shop' || q.t === 'plot')).map((q) => q.id);
+        const labels = new Map<number, string>();
+        for (const d of req.options) {
+          const first = tiles(d)[0];
+          if (first != null) labels.set(first, G.districts[d].name);
+        }
+        this.board.setChoices(
+          req.options.flatMap(tiles),
+          PLAYER_COLORS[color],
+          (id) => hud.resolvePrompt(G.nodes[id].d),
+          undefined,
+          { labels, pins: false },
+        );
+        const d = await hud.prompt(
+          `${text} Tap a district on the board or pick one below.`,
+          req.options.map((d) => ({
+            label: `${G.districts[d].name} ${fmt(stockPrice(G, d))}`,
+            value: d,
+            hover: (on: boolean) => (this.board.highlight = on ? tiles(d) : []),
+          })),
           color,
         );
+        this.board.clearChoices();
+        return d;
       }
 
       case 'answerTrade':
@@ -547,6 +616,9 @@ export class HotSeat implements GameIO {
         await this.wait(T.land);
         break;
       case 'money': {
+        // Buying something: a beat after the choice before the coins go to the bank.
+        if (['Purchase', 'Construction', 'Buyout', 'Renovation'].includes(e.reason))
+          await this.wait(T.beforePay);
         const from = this.playerPos(e.from);
         const to = this.playerPos(e.to);
         sound.play(e.to >= 0 && (e.from < 0 || !G.players[e.to].cpu) ? 'coin' : 'pay');
@@ -573,14 +645,16 @@ export class HotSeat implements GameIO {
         break;
       case 'suit': {
         sound.play('suit');
-        const pos = board.tokenPos(e.pid);
-        board.floatText(
-          pos.x,
-          pos.y,
-          e.suit >= 0 ? SUIT_CHARS[e.suit] : 'Wild card!',
-          e.suit === 1 || e.suit === 2 ? '#ff6b6b' : '#ffffff',
-        );
+        const text = e.suit >= 0 ? SUIT_CHARS[e.suit] : 'Wild card!';
+        const color = e.suit === 1 || e.suit === 2 ? '#ff6b6b' : '#ffffff';
         this.refresh();
+        if (e.passing) {
+          // Collected on the way past: the token keeps walking.
+          board.collectFx(e.pid, text, color);
+          break;
+        }
+        const pos = board.tokenPos(e.pid);
+        board.floatText(pos.x, pos.y, text, color);
         await this.wait(T.suit);
         break;
       }
@@ -602,7 +676,7 @@ export class HotSeat implements GameIO {
         sound.play('venture');
         const view = this.venture ?? new VentureView(hud, G, e.pid);
         this.venture = null;
-        await view.reveal(e.panel, e.title, e.text, e.line, this.localHuman(p.id), this.speed);
+        await view.reveal(e.panel, e.title, e.text, e.lines, e.bonus, this.localHuman(p.id), this.speed);
         this.refresh();
         break;
       }
@@ -627,7 +701,7 @@ export class HotSeat implements GameIO {
         const lander = G.players[this.game.current.id];
         const view = this.derby ?? new DerbyView(hud, G, lander.name);
         this.derby = null;
-        await view.race(e.backers, e.frames, e.coins, e.winner, this.humans > 0, this.speed);
+        await view.race(e.backers, e.frames, e.coins, e.winner, this.localHuman(lander.id), this.speed);
         this.refresh();
         break;
       }
@@ -663,6 +737,13 @@ export class HotSeat implements GameIO {
         break;
     }
   }
+}
+
+/** Warning for a purchase that would take cash below zero. */
+function debtNote(cash: number, price: number) {
+  return price > cash
+    ? ` You would be ${fmt(price - cash)} short: sell stock or property at the end of your turn to cover it.`
+    : '';
 }
 
 function readPref(key: string): string | null {

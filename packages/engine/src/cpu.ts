@@ -123,7 +123,8 @@ function decide(G: GameState, req: DecisionRequest): unknown {
 
     case 'buyShop': {
       const sq = G.nodes[req.sq];
-      return p.cash - req.price >= C.buyKeep || ownedCount(G, p.id, sq.g) > 0;
+      // CPUs only buy with cash on hand (humans may go into debt and sell at the end of the turn).
+      return p.cash - req.price >= C.buyKeep || (ownedCount(G, p.id, sq.g) > 0 && p.cash >= req.price);
     }
 
     case 'build': {

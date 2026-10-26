@@ -93,11 +93,21 @@ export class VentureView {
     return new Promise((r) => (this.resolvePick = r));
   }
 
-  async reveal(panel: number, title: string, text: string, line: number, human: boolean, speed: number) {
+  /** Flip the panel, light up any bonus lines through it and show the card. */
+  async reveal(
+    panel: number,
+    title: string,
+    text: string,
+    lines: number[][],
+    bonus: number,
+    human: boolean,
+    speed: number,
+  ) {
     this.paint(this.G.vg.owner);
     const b = this.panels[panel];
     b.classList.add('flip');
     await wait(T.ventureFlip * speed);
+    for (const l of lines) for (const i of l) this.panels[i].classList.add('in-line');
     clear(this.info);
     this.info.append(
       h(
@@ -105,7 +115,13 @@ export class VentureView {
         { class: 'vcard pop' },
         h('div', { class: 'vc-title' }, title),
         h('div', { class: 'vc-text' }, text),
-        line >= 4 ? h('div', { class: 'vc-line' }, `Line of ${line}!`) : null,
+        bonus
+          ? h(
+              'div',
+              { class: 'vc-line' },
+              `${lines.length > 1 ? `${lines.length} lines` : `Line of ${lines[0].length}`}! +${bonus}G`,
+            )
+          : null,
       ),
     );
     await confirm(this.row, human, speed);
@@ -147,7 +163,7 @@ export class ReelsView {
       `Lucky Reels · ${name}`,
       h(
         'div',
-        { class: 'game' },
+        { class: 'minigame' },
         h(
           'p',
           { class: 'hint' },
@@ -229,7 +245,7 @@ export class MemoryView {
       `Memory Blocks · ${name}`,
       h(
         'div',
-        { class: 'game' },
+        { class: 'minigame' },
         h('p', { class: 'hint' }, 'Remember where the prizes are, then pick one.'),
         this.grid,
         this.result,
@@ -291,7 +307,7 @@ export class DerbyView {
       `Coin Derby · ${name}`,
       h(
         'div',
-        { class: 'game' },
+        { class: 'minigame' },
         h('p', { class: 'hint' }, 'Each coin pays its backer 10G; the winner pays 100G x level.'),
         this.track,
         this.result,

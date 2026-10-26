@@ -29,13 +29,18 @@ describe('movement', () => {
   });
 
   it('collects a suit when passing and promotes on passing the bank', async () => {
-    const { G, game, events } = makeGame();
+    // At the fork, take the main road through the bank.
+    const { G, game, events } = makeGame('standard', (req) =>
+      req.kind === 'path'
+        ? req.dests.find((d) => d.path.some((id) => G.nodes[id].t === 'bank'))?.node
+        : undefined,
+    );
     const p = G.players[0];
-    p.suits = [true, true, false, true];
-    p.node = at(G, 11, 5).id;
-    p.prev = at(G, 11, 4).id;
-    // diamond (11,6) -> ... -> bank (6,6) is 6 steps; walk 7 to pass it.
-    await game.move(p, 7);
+    p.suits = [true, false, true, true];
+    p.node = at(G, 9, 0).id;
+    p.prev = at(G, 8, 0).id;
+    // heart (11,0) is 2 steps; the bank (6,3) is 10 steps (via the fork at (11,3)); walk 11 to pass it.
+    await game.move(p, 11);
     expect(events.some((e) => e.type === 'promote')).toBe(true);
     expect(p.level).toBe(2);
     expect(p.suits).toEqual([false, false, false, false]);
@@ -134,6 +139,45 @@ describe('debt and bankruptcy', () => {
     expect(p.bankrupt).toBe(true);
     expect(G.over).toBe(true);
     expect(G.winner).toBe(2);
+  });
+});
+
+describe('buying into debt and buyouts', () => {
+  it('buys a shop without the cash when assets cover it, then sells at the end of the turn', async () => {
+    const { G, game } = makeGame('standard', (req) => (req.kind === 'buyShop' ? true : undefined));
+    const p = G.players[0];
+    const mine = at(G, 6, 0);
+    mine.owner = p.id;
+    mine.value = 800;
+    const target = at(G, 7, 3); // Plaza 360
+    p.cash = 100;
+    await game.landShop(p, target);
+    expect(target.owner).toBe(p.id);
+    expect(p.cash).toBe(100 - target.value);
+    await game.settleDebt(p);
+    expect(p.cash).toBeGreaterThanOrEqual(0);
+    expect(p.bankrupt).toBe(false);
+  });
+
+  it('does not offer a shop the player could not cover even by selling everything', async () => {
+    const { G, game, asked } = makeGame();
+    const p = G.players[0];
+    p.cash = 50;
+    await game.landShop(p, at(G, 7, 3));
+    expect(asked.some((r) => r.kind === 'buyShop')).toBe(false);
+  });
+
+  it("offers a 5x buyout of a rival's vacant-plot building", async () => {
+    const { G, game } = makeGame('standard', (req) => (req.kind === 'buyout' ? true : undefined));
+    const p = G.players[0];
+    const plot = at(G, 2, 0);
+    plot.owner = 1;
+    plot.b = 'checkpoint';
+    plot.value = 200;
+    p.cash = 5000;
+    await game.landPlot(p, plot);
+    expect(plot.owner).toBe(p.id);
+    expect(p.cash).toBeLessThanOrEqual(5000 - 20 - 1000);
   });
 });
 

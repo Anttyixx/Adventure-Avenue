@@ -15,6 +15,8 @@ export const BOARD_LIMITS = {
   maxSquares: 320,
   minProperties: 4,
   maxDistricts: 8,
+  /** Shops and plots per district (built-in boards use exactly this many). */
+  districtSize: 4,
   minBase: 50,
   maxBase: 2000,
   nameLength: 32,
@@ -170,6 +172,11 @@ export function validateBoard(def: BoardDef): BoardCheck {
     else if (props.filter((s) => s.d === i).every((s) => s.plot))
       warnings.push(
         `District "${d.name}" only has vacant plots, so it has no stock price until one is built.`,
+      );
+    const n = props.filter((s) => s.d === i).length;
+    if (n && n !== L.districtSize)
+      warnings.push(
+        `District "${d.name}" has ${n} shops and plots; districts work best with exactly ${L.districtSize}.`,
       );
   });
 

@@ -10,6 +10,7 @@ import {
   isClosed,
   maxValue,
   netWorth,
+  ranking,
   ownedCount,
   squareFee,
   stockPrice,
@@ -47,6 +48,8 @@ export class Hud {
   toolbar = h('div', { class: 'toolbar' });
   ticker = h('div', { class: 'ticker glass' });
   bar = h('div', { class: 'action-bar glass' });
+  /** The current player's options, centered near the bottom of the board. */
+  ask = h('div', { class: 'prompt-center glass' });
   cardsWrap = h('div', { class: 'cards-wrap' });
   cards = h('div', { class: 'cards' });
   cardsToggle = h('button', { class: 'btn small ghost cards-toggle' }, 'Hide');
@@ -61,6 +64,9 @@ export class Hud {
   /** Extra space covered on the left (e.g. the UI Lab panel). */
   leftInset = 0;
   private shown = new Map<number, { nw: number; cash: number }>();
+  private ranks = new Map<number, number>();
+  /** Money popups currently floating beside each card (to stack them). */
+  private pops = new Map<number, number>();
   private cardEls = new Map<number, HTMLElement>();
   private promptResolve: ((v: any) => void) | null = null;
   private mainButton: HTMLButtonElement | null = null;
@@ -79,6 +85,7 @@ export class Hud {
       this.title,
       this.toolbar,
       bottomLeft,
+      this.ask,
       this.cardsWrap,
       this.drawer,
       this.tooltip,
@@ -141,13 +148,18 @@ export class Hud {
     const W = window.innerWidth;
     const portraitStack = this.root.classList.contains('upright');
     const bar = this.bar.parentElement!.getBoundingClientRect();
+    const ask = this.ask.getBoundingClientRect();
     const cards = this.cardsWrap.getBoundingClientRect();
     const title = this.title.getBoundingClientRect();
     if (portraitStack) this.root.style.setProperty('--cards-h', `${this.cardsWrap.offsetHeight + 6}px`);
     let right = 0;
     if (!this.cardsHidden && !portraitStack && cards.width) right = Math.min(W * 0.4, W - cards.left + 8);
-    const bottom = window.innerHeight - Math.min(bar.top, portraitStack ? cards.top : bar.top) + 4;
+    const top = Math.min(bar.top, ask.height ? ask.top : Infinity, portraitStack ? cards.top : Infinity);
+    const bottom = window.innerHeight - top + 4;
     this.board.insets = { top: title.bottom + 6, right, bottom: Math.max(0, bottom), left: this.leftInset };
+    // Center the options between the left edge (or lab panel) and the player cards.
+    this.root.style.setProperty('--free-left', `${this.leftInset}px`);
+    this.root.style.setProperty('--free-right', `${right}px`);
   }
 
   // ------------------------------------------------------------ state rendering
@@ -164,6 +176,17 @@ export class Hud {
       h('span', { class: 'sep' }, `Target ${fmt(G.target)}`),
       h('span', { class: 'sep' }, G.rules === 'standard' ? 'Standard' : 'Easy'),
     );
+    // Whose turn it is, always visible at the top.
+    const cur = this.activePid >= 0 && !G.over ? G.players[this.activePid] : null;
+    if (cur)
+      this.title.append(
+        h(
+          'span',
+          { class: 'turn-chip', style: `--pc:${PLAYER_COLORS[cur.color]}` },
+          h('img', { src: portraitURL(cur.ch, PLAYER_COLORS[cur.color]), alt: '' }),
+          `${cur.name}'s turn`,
+        ),
+      );
     this.toolbar.querySelector('.market-btn')?.toggleAttribute('hidden', G.rules !== 'standard');
     this.renderCards();
     if (this.drawerMode) this.renderDrawer();
@@ -172,6 +195,14 @@ export class Hud {
   renderCards() {
     const G = this.G;
     const order = G.order.map((id) => G.players[id]);
+    // Ranking by net worth (ties share a place).
+    const ranked = ranking(G);
+    this.ranks = new Map();
+    ranked.forEach((p, i) => {
+      const prev = ranked[i - 1];
+      const same = prev && netWorth(G, prev) === netWorth(G, p);
+      this.ranks.set(p.id, same ? this.ranks.get(prev.id)! : i + 1);
+    });
     for (const p of order) {
       let el = this.cardEls.get(p.id);
       if (!el) {
@@ -197,12 +228,23 @@ export class Hud {
     if (p.boon > 0) tags.push(`${p.boon === K.boom ? 'Boom' : 'Boon'} ${Math.round(p.boon * 100)}%`);
     if (p.boost > 1) tags.push('Fees +30%');
     if (p.bankrupt) tags.push('Bankrupt');
+    else if (nw >= G.target && !G.over) tags.unshift('Can win! Get to the bank');
     const nwEl = h('span', { class: 'nw' }, fmt(prev.nw));
     const cashEl = h('span', { class: 'cash' }, fmt(prev.cash));
     const pct = Math.max(0, Math.min(100, (nw / G.target) * 100));
     const extras = tags.map((t) => h('span', { class: 'tag' }, t));
+    const rank = this.ranks.get(p.id);
+    const active = p.id === this.activePid && !G.over;
     el.append(
-      h('img', { class: 'portrait', src: portraitURL(p.ch, color), alt: '' }),
+      active ? h('span', { class: 'turn-tag' }, 'Turn') : '',
+      h(
+        'div',
+        { class: 'pc-side' },
+        h('img', { class: 'portrait', src: portraitURL(p.ch, color), alt: '' }),
+        rank && !p.bankrupt
+          ? h('span', { class: `rank r${rank}`, title: `Rank ${rank}` }, ordinal(rank))
+          : '',
+      ),
       h(
         'div',
         { class: 'pc-main' },
@@ -231,16 +273,38 @@ export class Hud {
         h(
           'div',
           { class: 'pc-row money' },
-          h('span', { class: 'lbl' }, 'Net'),
-          nwEl,
-          h('span', { class: 'lbl' }, 'Cash'),
-          cashEl,
+          h('span', { class: 'm-cash' }, h('span', { class: 'lbl' }, 'Cash'), cashEl),
+          h('span', { class: 'm-nw' }, h('span', { class: 'lbl' }, 'Net'), nwEl),
         ),
       ),
     );
+    const delta = p.cash - prev.cash;
+    if (delta && this.shown.has(p.id)) this.moneyPop(el, p.id, delta);
     countUp(nwEl, prev.nw, nw);
     countUp(cashEl, prev.cash, p.cash);
     this.shown.set(p.id, { nw, cash: p.cash });
+  }
+
+  /** "+120G" / "-50G" floating out beside a player's card. */
+  private moneyPop(card: HTMLElement, pid: number, delta: number) {
+    const r = card.getBoundingClientRect();
+    if (!r.width) return;
+    const host = this.root.getBoundingClientRect();
+    const n = this.pops.get(pid) ?? 0;
+    this.pops.set(pid, n + 1);
+    const pop = h(
+      'div',
+      {
+        class: `money-pop ${delta > 0 ? 'up' : 'down'}`,
+        style: `right:${host.right - r.left + 8}px;top:${r.top - host.top + r.height / 2 - 14 + (n % 3) * 18}px`,
+      },
+      `${delta > 0 ? '+' : '-'}${fmt(Math.abs(delta))}`,
+    );
+    this.root.append(pop);
+    setTimeout(() => {
+      pop.remove();
+      this.pops.set(pid, Math.max(0, (this.pops.get(pid) ?? 1) - 1));
+    }, 2200);
   }
 
   // ------------------------------------------------------------ ticker, log, drawer
@@ -341,11 +405,15 @@ export class Hud {
   prompt<T>(text: string, buttons: PromptButton<T>[], color?: number): Promise<T> {
     this.cancelPrompt();
     clear(this.bar);
+    clear(this.ask);
     const head = h('div', { class: 'prompt-text rise' });
-    if (color != null) head.append(h('span', { class: 'dot', style: `background:${PLAYER_COLORS[color]}` }));
+    if (color != null) {
+      head.append(h('span', { class: 'dot', style: `background:${PLAYER_COLORS[color]}` }));
+      this.ask.style.setProperty('--pc', PLAYER_COLORS[color]);
+    }
     head.append(text);
     const row = h('div', { class: 'btn-row' });
-    this.bar.append(head, row);
+    this.ask.append(head, row);
     this.mainButton = null;
     return new Promise<T>((resolve) => {
       this.promptResolve = resolve;
@@ -386,6 +454,7 @@ export class Hud {
     this.promptResolve = null;
     this.mainButton = null;
     clear(this.bar);
+    clear(this.ask);
     this.updateInsets();
   }
 
@@ -476,4 +545,12 @@ function countUp(el: HTMLElement, from: number, to: number) {
 function toggleFullscreen() {
   if (document.fullscreenElement) document.exitFullscreen?.();
   else document.documentElement.requestFullscreen?.().catch(() => {});
+}
+
+function ordinal(n: number) {
+  const s =
+    n % 100 >= 11 && n % 100 <= 13
+      ? 'th'
+      : (({ 1: 'st', 2: 'nd', 3: 'rd' } as Record<number, string>)[n % 10] ?? 'th');
+  return `${n}${s}`;
 }

@@ -177,6 +177,12 @@ export function joinScreen(root: HTMLElement, handlers: JoinHandlers, code = '')
     try {
       const { GuestRoom } = await import('../net/guestroom');
       room = await GuestRoom.join(c, name, look, events);
+      // Rejoining a running game: the host sends the game right after the welcome, which can
+      // arrive before this screen knows the room.
+      if (room.started) {
+        handlers.onStart(room, room.started);
+        return;
+      }
     } catch (err) {
       error = (err as Error).message;
     }

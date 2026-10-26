@@ -45,10 +45,11 @@ export const SFX_NAMES: Sfx[] = [
   'deny',
 ];
 
-export type Track = 'menu' | 'game';
+export type Track = 'menu' | 'game' | 'urgent';
 export const TRACK_NAMES: Record<Track, string> = {
   menu: 'Main Street (menu)',
   game: 'Avenue Stroll (game)',
+  urgent: 'Final Stretch (someone can win)',
 };
 
 interface AudioPrefs {
@@ -185,6 +186,41 @@ const SONGS: Record<Track, Song> = {
       'C3 . G2 . C3 . . .',
     ],
     drums: ['k . h k s . h h', 'k . h . s . h s'],
+  },
+  // Faster, minor-key theme once someone has enough net worth to win.
+  urgent: {
+    bpm: 148,
+    chords: [
+      ['A3', 'C4', 'E4'],
+      ['A3', 'C4', 'E4'],
+      ['F3', 'A3', 'C4'],
+      ['G3', 'B3', 'D4'],
+      ['A3', 'C4', 'E4'],
+      ['A3', 'C4', 'E4'],
+      ['D4', 'F4', 'A4'],
+      ['E3', 'G#3', 'B3'],
+    ],
+    lead: [
+      'A5 . E5 . A5 . C6 B5',
+      'A5 . E5 . C5 . E5 .',
+      'F5 . A5 . C6 . A5 .',
+      'G5 . B5 . D6 - B5 .',
+      'A5 . E5 . A5 . C6 B5',
+      'A5 . C6 . E6 . C6 .',
+      'D6 . C6 . A5 . F5 .',
+      'E5 - G#5 - B5 - E6 -',
+    ],
+    bass: [
+      'A2 A2 . A2 E2 . A2 .',
+      'A2 A2 . A2 G2 . E2 .',
+      'F2 F2 . F2 C3 . F2 .',
+      'G2 G2 . G2 D3 . B2 .',
+      'A2 A2 . A2 E2 . A2 .',
+      'A2 A2 . A2 G2 . E2 .',
+      'D2 D2 . D2 A2 . F2 .',
+      'E2 E2 . E2 B2 . G#2 .',
+    ],
+    drums: ['k h s h k k s h', 'k h s h k s s s'],
   },
 };
 
@@ -569,7 +605,7 @@ class AudioEngine {
       if (bass[s] && bass[s] !== '.' && bass[s] !== '-')
         this.voice('bass', bass[s], at, hold(bass, s) * stepDur);
       if (s === 0) for (const n of song.chords[bar]) this.voice('pad', n, at, stepDur * 8);
-      if (s === 4 && this.track === 'game')
+      if (s === 4 && this.track !== 'menu')
         for (const n of song.chords[bar]) this.voice('pad', n, at, stepDur * 3);
       const d = drums[s];
       if (d === 'k') this.tone(this.musicBus, 'sine', 150, at, 0.16, 0.5, { to: 45 });

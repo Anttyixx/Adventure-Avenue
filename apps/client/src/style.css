@@ -896,8 +896,120 @@ input[type='range'] {
   backdrop-filter: blur(8px);
   transition: box-shadow 0.3s;
 }
+.pcard {
+  position: relative;
+  transition:
+    transform 0.25s,
+    box-shadow 0.3s;
+}
 .pcard.active {
   animation: breathe 2.2s ease-in-out infinite;
+  transform: translateX(-12px) scale(1.04);
+  border-color: var(--pc);
+  background:
+    linear-gradient(90deg, color-mix(in srgb, var(--pc) 28%, transparent), transparent 70%), var(--glass);
+}
+.turn-tag {
+  position: absolute;
+  top: -9px;
+  right: 10px;
+  padding: 1px 9px;
+  border-radius: 999px;
+  background: var(--pc);
+  color: #fff;
+  font-family: var(--head);
+  font-size: 12px;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+}
+.pc-side {
+  position: relative;
+  flex: none;
+  align-self: center;
+}
+.rank {
+  position: absolute;
+  left: -6px;
+  bottom: -8px;
+  min-width: 26px;
+  padding: 1px 4px;
+  border-radius: 999px;
+  background: #3a4566;
+  color: #fff;
+  font-family: var(--head);
+  font-size: 11px;
+  text-align: center;
+  border: 2px solid rgba(255, 255, 255, 0.85);
+}
+.rank.r1 {
+  background: linear-gradient(#ffe08f, #e0a800);
+  color: #3b2a00;
+}
+.rank.r2 {
+  background: linear-gradient(#f1f4fa, #aab3c5);
+  color: #26314f;
+}
+.rank.r3 {
+  background: linear-gradient(#f2c29b, #b5713d);
+  color: #2f1a08;
+}
+.turn-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  align-self: center;
+  padding: 2px 10px 2px 4px;
+  border-radius: 999px;
+  background: var(--pc);
+  color: #fff;
+  font-family: var(--head);
+  font-size: 15px;
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.6);
+}
+.turn-chip img {
+  width: 26px;
+  height: 20px;
+  border-radius: 999px;
+  image-rendering: pixelated;
+}
+.money-pop {
+  position: absolute;
+  z-index: 5;
+  pointer-events: none;
+  padding: 2px 10px;
+  border-radius: 999px;
+  font-family: var(--head);
+  font-size: 18px;
+  white-space: nowrap;
+  background: rgba(16, 26, 51, 0.85);
+  animation: money-pop 2.2s ease-out forwards;
+}
+.money-pop.up {
+  color: var(--good);
+}
+.money-pop.down {
+  color: var(--bad);
+}
+@keyframes money-pop {
+  0% {
+    opacity: 0;
+    transform: translateX(20px) scale(0.8);
+  }
+  12% {
+    opacity: 1;
+    transform: translateX(0) scale(1.08);
+  }
+  20% {
+    transform: scale(1);
+  }
+  75% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translateX(-24px);
+  }
 }
 .pcard.bankrupt {
   opacity: 0.45;
@@ -992,6 +1104,10 @@ input[type='range'] {
 }
 .money {
   font-size: 12px;
+  justify-content: space-between;
+}
+.money .m-nw {
+  text-align: right;
 }
 .money .lbl {
   color: var(--muted);
@@ -1668,7 +1784,7 @@ input[type='range'] {
     transform: scale(1.06);
   }
 }
-.game .hint {
+.minigame .hint {
   text-align: center;
 }
 .g-result {
@@ -2731,4 +2847,156 @@ input[type='range'] {
   background: rgba(16, 26, 51, 0.85);
   font-family: var(--head);
   font-size: 22px;
+}
+
+/* Venture grid: panels in a bonus line */
+.vgrid .panel.in-line {
+  box-shadow:
+    0 0 0 3px #ffd166,
+    0 0 14px #ffd166;
+  animation: line-glow 0.9s ease-in-out infinite alternate;
+}
+@keyframes line-glow {
+  to {
+    box-shadow:
+      0 0 0 3px #fff3c4,
+      0 0 22px #ffd166;
+  }
+}
+.debt-note {
+  color: var(--accent);
+  margin: 0 0 8px;
+}
+
+/* Digit picker (stock and investment amounts) */
+.digits {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin: 8px 0;
+}
+.dg-row {
+  display: inline-flex;
+  gap: 4px;
+}
+.dg-col {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+.dg-face {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 52px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--glass-line);
+  font-family: var(--head);
+  font-size: 30px;
+  font-variant-numeric: tabular-nums;
+}
+.dg-col.fixed .dg-face {
+  opacity: 0.6;
+  margin: 26px 0;
+}
+.dg-arrow {
+  width: 44px;
+  height: 26px;
+  border: 0;
+  border-radius: 8px;
+  background: var(--accent);
+  color: #3b2a00;
+  font-size: 13px;
+  cursor: pointer;
+}
+.dg-arrow:active {
+  transform: scale(0.94);
+}
+.dg-suffix {
+  color: var(--muted);
+}
+
+/* Invest amount */
+.inv-table {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 6px 0;
+}
+.inv-row {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  gap: 10px;
+  padding: 6px 10px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.05);
+}
+.inv-row b {
+  color: var(--good);
+}
+
+/* The current player's options: centered over the board, above the bottom edge */
+.prompt-center {
+  position: absolute;
+  bottom: calc(16px + var(--badge-h, 0px));
+  left: calc(var(--free-left, 0px) + (100% - var(--free-left, 0px) - var(--free-right, 0px)) / 2);
+  transform: translateX(-50%);
+  width: max-content;
+  max-width: min(640px, calc(100% - var(--free-left, 0px) - var(--free-right, 0px) - 20px));
+  padding: 14px 18px;
+  text-align: center;
+  border: 2px solid var(--pc, var(--glass-line));
+  box-shadow:
+    0 0 0 4px rgba(0, 0, 0, 0.12),
+    0 12px 30px rgba(0, 0, 0, 0.35);
+}
+.prompt-center:empty {
+  display: none;
+}
+.prompt-center .prompt-text {
+  justify-content: center;
+  font-size: 17px;
+  line-height: 1.35;
+}
+.prompt-center .btn-row {
+  justify-content: center;
+  margin-top: 10px;
+}
+.prompt-center .btn-row:empty {
+  display: none;
+}
+.prompt-center .btn {
+  font-size: 18px;
+  padding: 10px 22px;
+}
+.hud.upright .prompt-center {
+  bottom: var(--cards-h, 6px);
+  left: 50%;
+  max-width: calc(100vw - 12px);
+}
+@media (max-height: 500px), (max-width: 760px) {
+  .prompt-center {
+    padding: 8px 10px;
+    bottom: 8px;
+  }
+  .prompt-center .prompt-text {
+    font-size: 14px;
+  }
+  .prompt-center .btn {
+    font-size: 15px;
+    padding: 7px 14px;
+  }
+}
+.money .m-cash,
+.money .m-nw {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 4px;
+}
+.money .m-cash .cash,
+.money .m-nw .nw {
+  margin-right: 0;
 }

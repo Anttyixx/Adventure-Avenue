@@ -15,9 +15,21 @@ export type GameEvent =
   | { type: 'money'; from: number; to: number; amount: number; reason: string }
   | { type: 'owner'; sq: number; owner: number }
   | { type: 'value'; sqs: number[] }
-  | { type: 'suit'; pid: number; suit: number }
+  | { type: 'suit'; pid: number; suit: number; passing?: boolean }
   | { type: 'promote'; pid: number; level: number; salary: number }
-  | { type: 'venture'; pid: number; panel: number; card: string; title: string; text: string; line: number }
+  | {
+      type: 'venture';
+      pid: number;
+      panel: number;
+      card: string;
+      title: string;
+      text: string;
+      /** Longest line through the panel. */
+      line: number;
+      /** Bonus lines (4+ panels) through the panel, as panel indexes. */
+      lines: number[][];
+      bonus: number;
+    }
   | { type: 'reels'; pid: number; result: ReelSymbol[]; prize: string }
   | { type: 'memory'; pid: number; prizes: MemoryPrize[]; picked: number; prize: string }
   | {

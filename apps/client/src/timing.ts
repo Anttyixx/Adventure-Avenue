@@ -4,7 +4,7 @@
  */
 export const TIMING = {
   /** Walking one square. */
-  step: 380,
+  step: 420,
   /** Pause after a destination is chosen, before the token starts walking. */
   afterChoice: 250,
   /** Flying to a square (warps, cannon, balloon, backstreet). */
@@ -13,19 +13,21 @@ export const TIMING = {
   dieRoll: 900,
   dieHold: 650,
   /** Pause after landing so players see where the token stopped. */
-  land: 350,
+  land: 550,
 
   /** Start of a turn: banner time, and the pause before CPU / human turns continue. */
   turnBanner: 1300,
-  turnStartCpu: 1000,
-  turnStartHuman: 500,
+  turnStartCpu: 1200,
+  turnStartHuman: 700,
   roundBanner: 1400,
 
+  /** A beat after deciding to buy, before the coins fly to the bank. */
+  beforePay: 1000,
   /** Money moving, a square changing owner or value, a suit picked up. */
-  money: 450,
-  owner: 550,
-  value: 450,
-  suit: 500,
+  money: 650,
+  owner: 750,
+  value: 650,
+  suit: 650,
   promote: 1400,
   promoteBanner: 2200,
   bankrupt: 1200,
@@ -34,8 +36,8 @@ export const TIMING = {
 
   /** CPU "thinking" beats: showing the route it picked, before rolling, before other choices. */
   cpuPath: 1100,
-  cpuPreRoll: 600,
-  cpuDecision: 700,
+  cpuPreRoll: 800,
+  cpuDecision: 950,
 
   /** Venture card flip, and how long CPU results stay on screen before closing. */
   ventureFlip: 450,

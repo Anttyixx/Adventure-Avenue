@@ -149,10 +149,13 @@ squares). Each board uses a square grid (4 neighbors per cell) or a hex grid (po
 hexagons, odd rows shifted half a cell right, 6 neighbors per cell); the file stores it as
 `layout`, and files without one are square.
 
-**Built-in boards.** Town (square, 12 x 7), Harbor (square, 14 x 9: a ring and a market loop
-joined by two roads), Crossroads City (square, 16 x 11: a ring cut into quarters by two
-avenues), Twin Lakes (hex: two lakes with Main Street between them) and Coral Isle (hex: an
-island coast with two roads inland). Each can be copied into the editor to remix.
+**Built-in boards.** Every built-in board has the bank in the middle and exactly 4 shops or plots
+in each district (the editor warns about districts of any other size). Town (square, 12 x 7: a
+ring with the bank on the middle road), Harbor (square, 12 x 9: a ring and a market loop around
+the bank, joined by two roads), Crossroads City (square, 11 x 9: a ring cut into quarters by two
+avenues that cross at the bank), Twin Lakes (hex: two lakes with Main Street and the bank between
+them) and Coral Isle (hex: an island coast with two roads inland, the bank on one of them). Each
+can be copied into the editor to remix.
 
 **Movement rules:**
 
@@ -225,8 +228,8 @@ as squares in their district, so domination requires building on the plot.
 Investing raises value one-for-one, which raises the fee, the salary bonus and the district stock
 price. Cap: max value = base x (1 + k), x 1.5 if dominated.
 
-**Buyouts.** After paying a fee at a rival's shop (or 3-Star Shop), the visitor may buy it for 5x
-value. The owner receives 3x value; the bank keeps 2x. Ownership transfers and expansion runs for
+**Buyouts.** After paying a fee at a rival's shop, 3-Star Shop or other vacant-plot building (or
+visiting it, for an Estate Agency), the visitor may buy it for 5x value. The owner receives 3x value; the bank keeps 2x. Ownership transfers and expansion runs for
 the buyer.
 
 **Closed shops.** If the owner is on a break (Take-a-break, Estate Agency or a venture card), their
@@ -306,6 +309,7 @@ Collecting all four suits and then reaching the bank is the game's lap counter a
 paycheck.
 
 - **Collecting:** entering a suit square (passing or landing) gives that suit if you don't have it.
+  When passing, the token does not stop: the suit pops up above it as it walks on.
   The change-of-suit square gives its current suit and then rotates spade -> heart -> diamond ->
   club. Cannon, balloon and zoom warps also collect the suit at the destination.
 - **Suit Yourself cards:** a wild card for any one missing suit. Gained from venture cards, Lucky
@@ -334,8 +338,9 @@ player flips one face-down panel and resolves its card.
 
 - **Grid:** 64 panels, each pre-assigned a random card from the deck for the current rule set. A
   flipped panel takes the player's color. When every panel is flipped, the grid resets.
-- **Line bonus:** after flipping, count the longest straight line (row, column or diagonal) of the
-  player's color through that panel. 4 to 7 in a line pays 10G x length; 8 pays 200G.
+- **Line bonus:** after flipping, count each straight line (row, column and both diagonals) of the
+  player's color through that panel. Every line of 4 to 7 pays 10G per panel; a full line of 8
+  pays 200G. The lines light up on the grid.
 - **Hidden information:** in the online build the server must hold the card assignments and reveal
   only the flipped one.
 - **Deck:** 30 cards; 7 marked Standard-only (stock cards) are excluded in Easy rules. Cards are data
@@ -433,7 +438,14 @@ it gives + 20G and it can afford its cash side. CPUs never propose trades in the
 ## Debt, bankruptcy and ending the game
 
 Cash may go negative during a turn; it is only settled at the end of the active player's own turn,
-and a match ends on the first win, bankruptcy or round limit.
+and a match ends on the first win, bankruptcy or round limit. Players may buy a shop, build on a
+plot or buy out a rival even without the cash on hand, as long as their cash plus what their
+stock and property would raise in a debt sale covers the price; the prompt warns how short they
+are, and they sell at the end of the turn. (CPUs only buy with cash on hand.)
+
+**Ready to win.** When a player's net worth reaches the target, everyone gets a banner ("back to
+the bank to win"), their card shows "Can win!", and the music switches to a faster, more urgent
+track until no one is above the target.
 
 **Debt settlement** (end of the active player's turn, while cash < 0):
 

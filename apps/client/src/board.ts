@@ -91,6 +91,12 @@ export class BoardView {
   // Highlights for choices
   glow: number[] = [];
   glowColor = '#fff';
+  /** Text shown in a pill over choice squares (e.g. "Invest up to 250G"). */
+  choiceLabels = new Map<number, string>();
+  /** Draw a bouncing pin over each choice square. */
+  choicePins = true;
+  /** Squares lit up without being choices (e.g. the district a button would pick). */
+  highlight: number[] = [];
   routes = new Map<number, number[]>();
   hoverRoute: number[] | null = null;
   walkTarget = -1;
@@ -275,6 +281,39 @@ export class BoardView {
     });
   }
 
+  /** A suit picked up in passing: sparkles swirl round the walking token and the suit pops up. */
+  collectFx(pid: number, text: string, color: string) {
+    this.fx.push({
+      t0: performance.now(),
+      dur: 900,
+      draw: (ctx, k) => {
+        const t = this.tokenPos(pid);
+        ctx.save();
+        ctx.globalAlpha = 1 - k * k;
+        for (let i = 0; i < 6; i++) {
+          const a = (i / 6) * Math.PI * 2 + k * 5;
+          const r = 22 + k * 30;
+          drawSparkle(
+            ctx,
+            t.x + Math.cos(a) * r,
+            t.y - 30 + Math.sin(a) * r * 0.6,
+            7 * (1 - k * 0.6),
+            '#ffe066',
+          );
+        }
+        ctx.font = '34px "Lilita One", sans-serif';
+        ctx.textAlign = 'center';
+        ctx.lineWidth = 6;
+        ctx.strokeStyle = 'rgba(16,26,51,0.85)';
+        const y = t.y - 70 - ease(k) * 40;
+        ctx.strokeText(text, t.x, y);
+        ctx.fillStyle = color;
+        ctx.fillText(text, t.x, y);
+        ctx.restore();
+      },
+    });
+  }
+
   floatText(x: number, y: number, text: string, color: string) {
     this.fx.push({
       t0: performance.now(),
@@ -360,13 +399,21 @@ export class BoardView {
 
   // ------------------------------------------------------------ choices
 
-  setChoices(ids: number[], color: string, onPick: (id: number) => void, routes?: Map<number, number[]>) {
+  setChoices(
+    ids: number[],
+    color: string,
+    onPick: (id: number) => void,
+    routes?: Map<number, number[]>,
+    opts: { labels?: Map<number, string>; pins?: boolean } = {},
+  ) {
     this.glow = ids;
     this.glowColor = color;
     this.onPick = onPick;
     this.routes = routes ?? new Map();
     this.hoverRoute = null;
     this.fitIds = ids;
+    this.choiceLabels = opts.labels ?? new Map();
+    this.choicePins = opts.pins ?? true;
   }
 
   clearChoices() {
@@ -375,6 +422,8 @@ export class BoardView {
     this.routes = new Map();
     this.hoverRoute = null;
     this.fitIds = [];
+    this.choiceLabels = new Map();
+    this.highlight = [];
   }
 
   previewRoute(id: number | null) {
@@ -392,7 +441,8 @@ export class BoardView {
     const pad = 70;
     const x0 = Math.min(...pts.map((p) => p.x)) - pad;
     const x1 = Math.max(...pts.map((p) => p.x)) + pad;
-    const y0 = Math.min(...pts.map((p) => p.y)) - pad;
+    // Extra room above for the pins and labels over the choices.
+    const y0 = Math.min(...pts.map((p) => p.y)) - pad - (this.glow.length ? 90 : 0);
     const y1 = Math.max(...pts.map((p) => p.y)) + pad;
     const { aw, ah } = this.focusArea();
     const z = Math.max(this.fitZoom(), Math.min(this.followZoom(), aw / (x1 - x0), ah / (y1 - y0)));
@@ -422,7 +472,7 @@ export class BoardView {
 
   followZoom() {
     const small = Math.min(this.w, this.h) < 520;
-    return Math.min(this.w / this.ww, this.h / this.wh) * (small ? 1.9 : 1.4);
+    return Math.min(this.w / this.ww, this.h / this.wh) * (small ? 2.2 : 1.65);
   }
 
   clampCenter(x: number, y: number, z: number) {
@@ -551,6 +601,7 @@ export class BoardView {
     this.drawGlow(ctx, now);
     this.drawRoute(ctx);
     this.drawTokens(ctx, now, motion);
+    this.drawPins(ctx, now, motion);
 
     this.fx = this.fx.filter((f) => {
       const k = (now - f.t0) / f.dur;
@@ -663,18 +714,90 @@ export class BoardView {
   }
 
   private drawGlow(ctx: CanvasRenderingContext2D, now: number) {
-    if (!this.glow.length) return;
+    if (!this.glow.length && !this.highlight.length) return;
+    const G = this.G!;
     const pulse = 0.55 + 0.45 * Math.sin(now / 220);
-    for (const id of this.glow) {
-      const c = this.center(this.G!.nodes[id]);
+    // Dim everything that is not a choice so the choices stand out.
+    const lit = new Set([...this.glow, ...this.highlight]);
+    ctx.save();
+    ctx.fillStyle = 'rgba(12, 18, 36, 0.45)';
+    for (const sq of G.nodes) {
+      if (lit.has(sq.id)) continue;
+      const c = this.center(sq);
+      tileShape(ctx, G.layout, c.x, c.y, TILE / 2 + 1, 14);
+      ctx.fill();
+    }
+    ctx.restore();
+    for (const id of lit) {
+      const c = this.center(G.nodes[id]);
+      const strong = this.glow.includes(id) && (!this.highlight.length || this.highlight.includes(id));
       ctx.save();
+      // A tint over the tile, then a pulsing outline.
+      ctx.globalAlpha = 0.18 + 0.12 * pulse;
+      ctx.fillStyle = this.glowColor;
+      tileShape(ctx, G.layout, c.x, c.y, TILE / 2, 14);
+      ctx.fill();
+      ctx.globalAlpha = strong ? 0.7 + 0.3 * pulse : 0.45;
       ctx.shadowColor = this.glowColor;
-      ctx.shadowBlur = 24 * pulse;
+      ctx.shadowBlur = 26 * pulse;
       ctx.strokeStyle = this.glowColor;
-      ctx.lineWidth = 6;
-      ctx.globalAlpha = 0.6 + 0.4 * pulse;
-      tileShape(ctx, this.G!.layout, c.x, c.y, TILE / 2 + 3, 14);
+      ctx.lineWidth = strong ? 7 : 4;
+      tileShape(ctx, G.layout, c.x, c.y, TILE / 2 + 4, 14);
       ctx.stroke();
+      ctx.restore();
+    }
+  }
+
+  /** Bouncing pins and labels over choice squares, drawn above the tokens. */
+  private drawPins(ctx: CanvasRenderingContext2D, now: number, motion: boolean) {
+    if (!this.glow.length) return;
+    const G = this.G!;
+    for (const id of this.glow) {
+      const c = this.center(G.nodes[id]);
+      const bob = motion ? Math.abs(Math.sin(now / 260 + id)) * 10 : 4;
+      const label = this.choiceLabels.get(id);
+      let top = c.y - TILE / 2 - 8 - bob;
+      ctx.save();
+      if (this.choicePins) {
+        // Pin: a round head with a point down onto the square.
+        const r = 15;
+        const hy = top - r - 6;
+        ctx.beginPath();
+        ctx.moveTo(c.x - 9, hy + 9);
+        ctx.lineTo(c.x, top + 4);
+        ctx.lineTo(c.x + 9, hy + 9);
+        ctx.arc(c.x, hy, r, 0.2 * Math.PI, 0.8 * Math.PI, true);
+        ctx.closePath();
+        ctx.fillStyle = this.glowColor;
+        ctx.strokeStyle = '#fff';
+        ctx.lineWidth = 4;
+        ctx.shadowColor = 'rgba(0,0,0,0.35)';
+        ctx.shadowBlur = 6;
+        ctx.stroke();
+        ctx.fill();
+        ctx.shadowBlur = 0;
+        ctx.fillStyle = '#fff';
+        ctx.beginPath();
+        ctx.arc(c.x, hy, 6, 0, Math.PI * 2);
+        ctx.fill();
+        top = hy - r - 6;
+      }
+      if (label) {
+        ctx.font = '18px "Lilita One", sans-serif';
+        const w = ctx.measureText(label).width + 20;
+        const y = top - 14;
+        ctx.fillStyle = 'rgba(16, 26, 51, 0.92)';
+        ctx.strokeStyle = this.glowColor;
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.roundRect(c.x - w / 2, y - 14, w, 28, 14);
+        ctx.fill();
+        ctx.stroke();
+        ctx.fillStyle = '#fff';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(label, c.x, y + 1);
+      }
       ctx.restore();
     }
   }

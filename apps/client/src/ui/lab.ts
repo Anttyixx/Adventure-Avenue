@@ -5,6 +5,7 @@
  * effects, dialogs, the venture grid, arcade minigames, the log, the market and the results.
  */
 import {
+  netWorth,
   BUILDINGS,
   CARD_LIST,
   DERBY_LENGTH,
@@ -16,7 +17,8 @@ import {
   cloneState,
   cpuIO,
   isShopLike,
-  lineThrough,
+  lineBonus,
+  linesThrough,
   newGame,
   ownedShops,
   ranking,
@@ -44,13 +46,13 @@ import {
   auctionPickModal,
   buildModal,
   debtModal,
-  investModal,
   renovateModal,
   rulesModal,
   stockModal,
   tradeModal,
 } from './modals';
 import { showResults } from './results';
+import { investOnBoard } from './invest';
 
 export const LAB_SECTIONS = [
   { id: 'cards', title: 'Player cards' },
@@ -89,6 +91,12 @@ async function playSample(G: GameState, turns: number) {
   // Show the first two seats as humans so the P1/P2 tags appear.
   G.players[0].cpu = false;
   G.players[1].cpu = false;
+}
+
+/** Bonus lines and payout for a venture panel, as the engine would compute them. */
+function labLines(owner: number[], panel: number, pid: number): [number[][], number] {
+  const lines = linesThrough(owner, panel, pid);
+  return [lines, lines.reduce((s, l) => s + lineBonus(l.length), 0)];
 }
 
 export async function openLab(app: HTMLElement, section?: string) {
@@ -245,6 +253,10 @@ export async function openLab(app: HTMLElement, section?: string) {
     );
     row(
       s,
+      btn('Reach the target (can win)', () => {
+        cur().cash += Math.max(0, G.target - netWorth(G, cur()));
+        refresh();
+      }),
       btn('+500G cash', () => {
         cur().cash += 500;
         refresh();
@@ -370,6 +382,31 @@ export async function openLab(app: HTMLElement, section?: string) {
         board.clearChoices();
         result('Pick square', id);
       }),
+      btn('Pick a district (venture card)', async () => {
+        const p = cur();
+        const tiles = (d: number) => G.nodes.filter((q) => q.d === d).map((q) => q.id);
+        const labels = new Map(
+          G.districts.map((dd, d) => [tiles(d)[0], dd.name] as [number, string]).filter(([id]) => id != null),
+        );
+        board.setChoices(
+          G.districts.flatMap((_, d) => tiles(d)),
+          PLAYER_COLORS[p.color],
+          (id) => hud.resolvePrompt(G.nodes[id].d),
+          undefined,
+          { labels, pins: false },
+        );
+        const d = await hud.prompt<number>(
+          'Pick a district whose stock rises 20%. Tap a district on the board or pick one below.',
+          G.districts.map((dd, i) => ({
+            label: dd.name,
+            value: i,
+            hover: (on: boolean) => (board.highlight = on ? tiles(i) : []),
+          })),
+          p.color,
+        );
+        board.clearChoices();
+        result('Pick district', d);
+      }),
     );
     row(
       s,
@@ -450,6 +487,7 @@ export async function openLab(app: HTMLElement, section?: string) {
       btn('White ring', () => board.ring(cur().node, '#ffffff')),
       btn('Confetti', () => board.confetti(cur().id)),
       btn('Suit pickup text', () => board.floatText(pos().x, pos().y, '♥', '#ff6b6b')),
+      btn('Suit collected in passing', () => board.collectFx(cur().id, '♠', '#ffffff')),
     );
     row(
       s,
@@ -490,7 +528,10 @@ export async function openLab(app: HTMLElement, section?: string) {
           refresh();
         }
         const opts = shops.map((sq) => ({ sq: sq.id, room: Math.max(1, investRoom(G, sq)) }));
-        result('Invest', await investModal(hud, G, opts, Math.min(K.investCap, Math.max(1, cur().cash))));
+        result(
+          'Invest',
+          await investOnBoard(hud, board, G, cur(), opts, Math.min(K.investCap, Math.max(1, cur().cash))),
+        );
       }),
       btn('Build', async () =>
         result(
@@ -563,7 +604,7 @@ export async function openLab(app: HTMLElement, section?: string) {
         const panel = await view.pick();
         G.vg.owner[panel] = p.id;
         const card = CARD_LIST[rnd(CARD_LIST.length)];
-        await view.reveal(panel, card.title, card.text, lineThrough(G.vg.owner, panel, p.id), true, 1);
+        await view.reveal(panel, card.title, card.text, ...labLines(G.vg.owner, panel, p.id), true, 1);
         result('Venture panel', panel);
       }),
       btn('Venture (CPU view)', async () => {
@@ -573,7 +614,7 @@ export async function openLab(app: HTMLElement, section?: string) {
         const panel = free[rnd(free.length)];
         G.vg.owner[panel] = p.id;
         const card = CARD_LIST[rnd(CARD_LIST.length)];
-        await view.reveal(panel, card.title, card.text, lineThrough(G.vg.owner, panel, p.id), false, 1);
+        await view.reveal(panel, card.title, card.text, ...labLines(G.vg.owner, panel, p.id), false, 1);
       }),
       btn('Line of 5 bonus', async () => {
         const p = cur();
@@ -587,7 +628,7 @@ export async function openLab(app: HTMLElement, section?: string) {
           panel,
           'Bank bonus',
           'Roll the die: the bank pays you 50G times the roll.',
-          5,
+          ...labLines(G.vg.owner, panel, p.id),
           true,
           1,
         );

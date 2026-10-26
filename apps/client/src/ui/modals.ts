@@ -9,6 +9,8 @@ import {
   isProperty,
   maxValue,
   ownedSquares,
+  salary,
+  shopFee,
   stockPrice,
   type BuildingKey,
   type DebtAsset,
@@ -18,6 +20,7 @@ import {
 } from '@aa/engine';
 import { BUILDING_INFO, squareName } from '../names';
 import { clear, fmt, h } from './dom';
+import { digitPicker } from './digits';
 import type { Hud } from './hud';
 import { marketView } from './market';
 
@@ -62,38 +65,16 @@ export function stockModal(
       clear(action);
       const max = Math.max(0, maxN());
       n = Math.min(n || Math.min(10, max), max);
-      const total = mode === 'buy' ? Math.ceil(n * unit()) : Math.floor(n * unit());
-      const input = h('input', {
-        type: 'range',
-        min: '0',
-        max: String(max),
-        value: String(n),
-        step: '1',
-      }) as HTMLInputElement;
-      const num = h('input', {
-        type: 'number',
-        min: '0',
-        max: String(max),
-        value: String(n),
-        class: 'num',
-      }) as HTMLInputElement;
-      const sync = (v: number) => {
-        n = Math.max(0, Math.min(max, Math.floor(v) || 0));
-        drawAction();
-      };
-      input.oninput = () => sync(Number(input.value));
-      num.onchange = () => sync(Number(num.value));
-      action.append(
-        h(
-          'div',
-          { class: 'm-sel' },
-          h('b', null, G.districts[d].name),
-          ` · ${fmt(unit())} per share · you hold ${p.shares[d]}`,
-        ),
-        h('div', { class: 'amount' }, input, num),
-        h(
-          'div',
-          { class: 'm-sum' },
+      const sum = h('div', { class: 'm-sum' });
+      const go = h(
+        'button',
+        { class: 'btn main', onclick: () => n > 0 && done({ d, n }) },
+        mode === 'buy' ? 'Buy' : 'Sell',
+      ) as HTMLButtonElement;
+      const update = () => {
+        const total = mode === 'buy' ? Math.ceil(n * unit()) : Math.floor(n * unit());
+        clear(sum);
+        sum.append(
           `${n} shares = ${fmt(total)}`,
           n >= K.bigTrade
             ? h(
@@ -101,16 +82,35 @@ export function stockModal(
                 { class: 'hint' },
                 mode === 'buy' ? ' · price will rise 10%' : ' · price will drop 10%',
               )
-            : null,
+            : '',
+        );
+        go.disabled = n <= 0;
+      };
+      // Arrows above and below each digit set the number of shares (no slider: easier on phones).
+      const picker = digitPicker({
+        max,
+        value: n,
+        suffix: 'shares',
+        onChange: (v) => {
+          n = v;
+          update();
+        },
+      });
+      update();
+      action.append(
+        h(
+          'div',
+          { class: 'm-sel' },
+          h('b', null, G.districts[d].name),
+          ` · ${fmt(unit())} per share · you hold ${p.shares[d]}`,
+          mode === 'buy' ? ` · you can buy up to ${max}` : '',
         ),
+        picker.el,
+        sum,
         h(
           'div',
           { class: 'btn-row' },
-          h(
-            'button',
-            { class: 'btn main', disabled: n <= 0, onclick: () => done({ d, n }) },
-            mode === 'buy' ? 'Buy' : 'Sell',
-          ),
+          go,
           h('button', { class: 'btn ghost', onclick: () => done(null) }, mode === 'buy' ? 'Skip' : 'Cancel'),
         ),
       );
@@ -129,89 +129,83 @@ export function stockModal(
 
 // ------------------------------------------------------------------ invest
 
-export function investModal(
-  hud: Hud,
-  G: GameState,
-  shops: { sq: number; room: number }[],
-  max: number,
-): Promise<{ sq: number; amount: number } | null> {
+/**
+ * How much to invest in one shop, with what it will do: the new value, the fee rivals will
+ * pay, the district's stock price and the player's salary.
+ */
+export function investAmountModal(hud: Hud, G: GameState, sqId: number, lim: number): Promise<number | null> {
   return new Promise((resolve) => {
-    let sel = shops[0].sq;
-    let amount = 0;
+    const sq = G.nodes[sqId];
+    const owner = G.players[sq.owner];
+    let amount = lim;
     const body = h('div', { class: 'invest' });
-    const m = hud.modal('Invest', body);
-    const done = (v: { sq: number; amount: number } | null) => {
+    const m = hud.modal(`Invest in your ${squareName(G, sq)}`, body);
+    const done = (v: number | null) => {
       m.close();
       resolve(v);
     };
-    const draw = () => {
-      clear(body);
-      const opt = shops.find((s) => s.sq === sel)!;
-      const lim = Math.min(opt.room, max);
-      amount = Math.min(amount || lim, lim);
-      const list = h(
-        'div',
-        { class: 'pick-list' },
-        ...shops.map((s) => {
-          const sq = G.nodes[s.sq];
-          return h(
-            'button',
-            {
-              class: `pick ${s.sq === sel ? 'sel' : ''}`,
-              onclick: () => ((sel = s.sq), (amount = 0), draw()),
-            },
-            h('span', { class: 'swatch', style: `background:${G.districts[sq.d]?.color ?? '#ccc'}` }),
-            h('span', null, squareName(G, sq)),
-            h('small', null, `${fmt(sq.value)} / max ${fmt(maxValue(G, sq))}`),
-          );
-        }),
-      );
-      const range = h('input', {
-        type: 'range',
-        min: '0',
-        max: String(lim),
-        value: String(amount),
-        step: '1',
-      }) as HTMLInputElement;
-      const num = h('input', {
-        type: 'number',
-        min: '0',
-        max: String(lim),
-        value: String(amount),
-        class: 'num',
-      }) as HTMLInputElement;
-      range.oninput = () => {
-        amount = Number(range.value);
-        num.value = range.value;
-        sum.textContent = `Invest ${fmt(amount)}`;
+    /** Values with `extra` added to this shop (computed on the real state, then put back). */
+    const preview = (extra: number) => {
+      const before = sq.value;
+      sq.value = before + extra;
+      const out = {
+        value: sq.value,
+        fee: shopFee(G, sq),
+        price: sq.d >= 0 ? stockPrice(G, sq.d) : 0,
+        salary: salary(G, owner),
       };
-      num.onchange = () => {
-        amount = Math.max(0, Math.min(lim, Math.floor(Number(num.value)) || 0));
-        draw();
-      };
-      const sum = h('div', { class: 'm-sum' }, `Invest ${fmt(amount)}`);
-      body.append(
-        h(
-          'p',
-          { class: 'hint' },
-          `Up to ${fmt(K.investCap)} per visit. Investing raises the value, the fee, your salary and the stock price.`,
-        ),
-        list,
-        h('div', { class: 'amount' }, range, num),
-        sum,
-        h(
-          'div',
-          { class: 'btn-row' },
-          h(
-            'button',
-            { class: 'btn main', onclick: () => done(amount > 0 ? { sq: sel, amount } : null) },
-            'Invest',
-          ),
-          h('button', { class: 'btn ghost', onclick: () => done(null) }, 'Skip'),
-        ),
-      );
+      sq.value = before;
+      return out;
     };
-    draw();
+    const now = preview(0);
+    const table = h('div', { class: 'inv-table' });
+    const go = h(
+      'button',
+      { class: 'btn main', onclick: () => amount > 0 && done(amount) },
+      'Invest',
+    ) as HTMLButtonElement;
+    const row = (label: string, a: string, b: string) =>
+      h('div', { class: 'inv-row' }, h('span', null, label), h('span', null, a), h('b', null, `→ ${b}`));
+    const update = () => {
+      const after = preview(amount);
+      clear(table);
+      table.append(
+        row('Shop value', fmt(now.value), fmt(after.value)),
+        row('Fee a rival pays here', fmt(now.fee), fmt(after.fee)),
+        G.rules === 'standard' && sq.d >= 0
+          ? row(`${G.districts[sq.d].name} stock`, fmt(now.price), fmt(after.price))
+          : '',
+        row('Your salary at the bank', fmt(now.salary), fmt(after.salary)),
+      );
+      go.disabled = amount <= 0;
+      go.textContent = amount > 0 ? `Invest ${fmt(amount)}` : 'Invest';
+    };
+    const picker = digitPicker({
+      max: lim,
+      value: amount,
+      suffix: 'G',
+      onChange: (v) => {
+        amount = v;
+        update();
+      },
+    });
+    update();
+    body.append(
+      h(
+        'p',
+        { class: 'hint' },
+        `Investing moves your cash into this shop (up to ${fmt(lim)} here; the shop can grow to ${fmt(maxValue(G, sq))}). `,
+        'Its value goes up, so rivals who land here pay more. Your net worth stays the same: the cash becomes shop value.',
+      ),
+      picker.el,
+      table,
+      h(
+        'div',
+        { class: 'btn-row' },
+        go,
+        h('button', { class: 'btn ghost', onclick: () => done(null) }, 'Pick another shop'),
+      ),
+    );
   });
 }
 
@@ -222,6 +216,7 @@ export function buildModal(
   options: { b: BuildingKey; cost: number }[],
   title: string,
   extra = 0,
+  note = '',
 ): Promise<BuildingKey | null> {
   return new Promise((resolve) => {
     const body = h('div', { class: 'build-grid' });
@@ -230,6 +225,7 @@ export function buildModal(
       h(
         'div',
         null,
+        note ? h('p', { class: 'hint debt-note' }, note) : null,
         body,
         h(
           'div',

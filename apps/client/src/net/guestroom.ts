@@ -34,6 +34,8 @@ export class GuestRoom implements GameLink {
   lobby: LobbyInfo | null = null;
   seat = -1;
   you: number[] = [];
+  /** The latest game start from the host (kept so a screen that attaches late still sees it). */
+  started: StartInfo | null = null;
   private token = deviceToken();
   private answers = new Map<number, Answer>();
   private waiters = new Map<number, (a: Answer) => void>();
@@ -113,6 +115,7 @@ export class GuestRoom implements GameLink {
         this.you = msg.start.you;
         this.hostHashes.clear();
         this.myHashes.clear();
+        this.started = msg.start;
         this.on.start(msg.start);
         break;
       case 'ans':

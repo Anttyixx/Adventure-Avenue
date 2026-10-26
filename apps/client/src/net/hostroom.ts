@@ -161,11 +161,23 @@ export class HostRoom implements GameLink {
       return;
     }
     // A player coming back to their seat.
-    const back = this.seats.find((s) => s.kind === 'remote' && s.token === msg.token);
+    // Same device (token), or once the game is running, a disconnected seat with the same name
+    // (for someone who comes back on another browser or device).
+    const sameName = (s: Seat) =>
+      this.started &&
+      !s.online &&
+      s.name.toLowerCase() ===
+        String(msg.name ?? '')
+          .trim()
+          .toLowerCase();
+    const back =
+      this.seats.find((s) => s.kind === 'remote' && s.token === msg.token) ??
+      this.seats.find((s) => s.kind === 'remote' && sameName(s));
     if (back) {
       if (back.conn && back.conn !== conn) back.conn.close();
       back.conn = conn;
       back.online = true;
+      back.token = msg.token;
       reply({ t: 'welcome', seat: this.seats.indexOf(back) });
       if (this.started) {
         reply({ t: 'start', start: this.startFor(back) });
@@ -176,7 +188,11 @@ export class HostRoom implements GameLink {
       return;
     }
     if (this.started) {
-      reply({ t: 'reject', reason: 'This game has already started.' });
+      reply({
+        t: 'reject',
+        reason:
+          'This game has already started. To take your seat back, join with the same name you used before.',
+      });
       return;
     }
     const i = this.seats.findIndex((s) => s.kind === 'open');

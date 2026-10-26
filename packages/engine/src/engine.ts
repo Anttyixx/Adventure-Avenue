@@ -19,6 +19,7 @@ import type { GameEvent } from './events';
 import { randInt, rollDie } from './rng';
 import {
   bumpFactor,
+  canAfford,
   canPromote,
   expand,
   isClosed,
@@ -26,7 +27,7 @@ import {
   isShopLike,
   investRoom,
   lineBonus,
-  lineThrough,
+  linesThrough,
   netWorth,
   ownedShops,
   ownedSquares,
@@ -300,7 +301,7 @@ export class Game {
   }
 
   async passSquare(p: Player, sq: Square) {
-    if (SUIT_TYPES.includes(sq.t) || sq.t === 'change') await this.collectSuit(p, sq);
+    if (SUIT_TYPES.includes(sq.t) || sq.t === 'change') await this.collectSuit(p, sq, true);
     else if (sq.t === 'bank') await this.bankVisit(p, false);
     else if (sq.t === 'plot' && sq.b === 'checkpoint' && sq.owner >= 0 && sq.owner !== p.id) {
       await this.payToll(p, sq);
@@ -315,7 +316,8 @@ export class Game {
 
   // ---------------------------------------------------------------- suits, bank, promotion
 
-  async collectSuit(p: Player, sq: Square) {
+  /** Pick up a suit (`passing` = collected on the way past, without stopping). */
+  async collectSuit(p: Player, sq: Square, passing = false) {
     let si = SUIT_TYPES.indexOf(sq.t);
     if (sq.t === 'change') {
       si = this.G.changeSuit;
@@ -323,7 +325,7 @@ export class Game {
     }
     if (si < 0 || p.suits[si]) return;
     p.suits[si] = true;
-    await this.emit({ type: 'suit', pid: p.id, suit: si });
+    await this.emit({ type: 'suit', pid: p.id, suit: si, passing });
     await this.log(`${p.name} collected the ${SUITS[si]}.`, p.id, 'suit');
   }
 
@@ -433,9 +435,9 @@ export class Game {
   async landShop(p: Player, sq: Square) {
     const G = this.G;
     if (sq.owner < 0) {
-      if (p.cash < sq.value) return;
+      if (!canAfford(G, p, sq.value)) return;
       const yes = await this.ask({ kind: 'buyShop', pid: p.id, sq: sq.id, price: sq.value });
-      if (yes && p.cash >= sq.value) await this.buySquare(p, sq, sq.value, null, 'bought');
+      if (yes && canAfford(G, p, sq.value)) await this.buySquare(p, sq, sq.value, null, 'bought');
       return;
     }
     if (sq.owner === p.id) {
@@ -454,11 +456,17 @@ export class Game {
     }
     await this.chargeFee(p, sq, shopFee(G, sq));
     if (G.over) return;
+    await this.offerBuyout(p, sq);
+  }
+
+  /** After paying a rival's property, offer to buy it out for 5x its value. */
+  async offerBuyout(p: Player, sq: Square) {
+    const G = this.G;
+    if (G.over || sq.owner < 0 || sq.owner === p.id || p.bankrupt) return;
     const price = sq.value * K.buyoutX;
-    if (p.cash >= price) {
-      const yes = await this.ask({ kind: 'buyout', pid: p.id, sq: sq.id, price });
-      if (yes && p.cash >= price) await this.buyout(p, sq);
-    }
+    if (price <= 0 || !canAfford(G, p, price)) return;
+    const yes = await this.ask({ kind: 'buyout', pid: p.id, sq: sq.id, price });
+    if (yes && canAfford(G, p, price)) await this.buyout(p, sq);
   }
 
   async buyout(p: Player, sq: Square) {
@@ -466,7 +474,10 @@ export class Game {
     const price = sq.value * K.buyoutX;
     await this.pay(p, owner, sq.value * K.buyoutOwnerX, 'Buyout');
     await this.pay(p, null, price - sq.value * K.buyoutOwnerX, 'Buyout');
-    await this.log(`${p.name} bought out ${owner.name}'s shop for ${price}G.`, p.id, 'property', [owner.id]);
+    const what = sq.t === 'plot' && sq.b && sq.b !== 'star3' ? buildingName(sq.b) : 'shop';
+    await this.log(`${p.name} bought out ${owner.name}'s ${what} for ${price}G.`, p.id, 'property', [
+      owner.id,
+    ]);
     await this.transfer(sq, p.id);
   }
 
@@ -550,11 +561,11 @@ export class Game {
   async landPlot(p: Player, sq: Square) {
     const G = this.G;
     if (sq.owner < 0) {
-      const options = BUILDINGS.filter((b) => b.cost <= p.cash).map(({ b, cost }) => ({ b, cost }));
+      const options = BUILDINGS.filter((b) => canAfford(G, p, b.cost)).map(({ b, cost }) => ({ b, cost }));
       if (!options.length) return;
       const b = await this.ask({ kind: 'build', pid: p.id, sq: sq.id, options });
       const cost = b ? buildingCost(b) : 0;
-      if (!b || p.cash < cost) return;
+      if (!b || !canAfford(G, p, cost)) return;
       await this.pay(p, null, cost, 'Construction');
       sq.b = b;
       sq.value = cost;
@@ -572,7 +583,8 @@ export class Game {
     }
     switch (sq.b) {
       case 'checkpoint':
-        return this.payToll(p, sq);
+        await this.payToll(p, sq);
+        break;
       case 'agency':
         p.onBreak = true;
         await this.log(
@@ -581,12 +593,13 @@ export class Game {
           'effect',
           [owner.id],
         );
-        return;
+        break;
       case 'star3':
         return this.rivalShop(p, sq);
       default:
-        return this.chargeFee(p, sq, squareFee(G, sq, p));
+        await this.chargeFee(p, sq, squareFee(G, sq, p));
     }
+    await this.offerBuyout(p, sq);
   }
 
   async ownPlot(p: Player, sq: Square) {
@@ -646,7 +659,7 @@ export class Game {
       }
       case 'agency': {
         const options = G.nodes
-          .filter((s) => s.t === 'shop' && s.owner < 0 && s.value <= p.cash)
+          .filter((s) => s.t === 'shop' && s.owner < 0 && canAfford(G, p, s.value))
           .map((s) => s.id);
         if (!options.length) return;
         const id = await this.ask({
@@ -658,7 +671,7 @@ export class Game {
         });
         if (id == null || !options.includes(id)) return;
         const target = G.nodes[id];
-        if (p.cash >= target.value) await this.buySquare(p, target, target.value, null, 'bought');
+        if (canAfford(G, p, target.value)) await this.buySquare(p, target, target.value, null, 'bought');
         return;
       }
     }
@@ -679,7 +692,9 @@ export class Game {
     if (!(panel >= 0 && panel < 64) || G.vg.owner[panel] >= 0) panel = G.vg.owner.findIndex((o) => o < 0);
     G.vg.owner[panel] = p.id;
     const card = CARDS[G.vg.cards[panel]];
-    const line = lineThrough(G.vg.owner, panel, p.id);
+    // Every line of 4+ panels through the new one pays 10G per panel (a full line of 8 pays 200G).
+    const lines = linesThrough(G.vg.owner, panel, p.id);
+    const bonus = lines.reduce((s, l) => s + lineBonus(l.length), 0);
     await this.emit({
       type: 'venture',
       pid: p.id,
@@ -687,12 +702,18 @@ export class Game {
       card: card.id,
       title: card.title,
       text: card.text,
-      line,
+      line: Math.max(1, ...lines.map((l) => l.length)),
+      lines,
+      bonus,
     });
     await this.log(`Venture card: ${card.title}. ${card.text}`, p.id, 'card');
-    const bonus = lineBonus(line);
     if (bonus) {
-      await this.log(`${p.name} made a line of ${line} and earned ${bonus}G.`, p.id, 'card');
+      const desc = lines.map((l) => l.length).join(' and ');
+      await this.log(
+        `${p.name} made ${lines.length > 1 ? 'lines' : 'a line'} of ${desc} panels and earned ${bonus}G.`,
+        p.id,
+        'card',
+      );
       await this.pay(null, p, bonus, 'Line bonus');
     }
     await card.run(this, p);

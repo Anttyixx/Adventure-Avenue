@@ -73,7 +73,32 @@ export function fromMap({ id, name, layout, districts, map }: MapBoard): BoardDe
   };
 }
 
-/** A harbor ring with a market loop in the middle, joined by two roads. */
+/** The original board: a ring of shops with the bank on the main road through the middle. */
+export const TOWN = fromMap({
+  id: 'town',
+  name: 'Town',
+  layout: 'square',
+  districts: [
+    { name: 'Brick Row', color: '#f2a7a0', base: 160 },
+    { name: 'Bay Market', color: '#9fd3f0', base: 200 },
+    { name: 'Greenway', color: '#a8e0a0', base: 240 },
+    { name: 'Gold Street', color: '#f5d77a', base: 280 },
+    { name: 'Lilac Lane', color: '#cdb4f0', base: 180 },
+    { name: 'Tide Walk', color: '#8fe3d6', base: 220 },
+    { name: 'Plaza', color: '#f7bfdc', base: 320 },
+  ],
+  map: [
+    'S0a0VX1b11QH',
+    '0..........2',
+    'R..........2',
+    'V55A66B66ONT',
+    'f..........2',
+    '5..........2',
+    'CQ44e4K3d33D',
+  ],
+});
+
+/** A harbor ring with the bank and a market loop in the middle, joined by two roads. */
 export const HARBOR = fromMap({
   id: 'harbor',
   name: 'Harbor',
@@ -82,24 +107,26 @@ export const HARBOR = fromMap({
     { name: 'Lighthouse', color: '#f2a7a0', base: 160 },
     { name: 'Fish Market', color: '#9fd3f0', base: 200 },
     { name: 'Boardwalk', color: '#a8e0a0', base: 240 },
-    { name: 'Old Docks', color: '#cdb4f0', base: 180 },
-    { name: 'Shipyard', color: '#f5d77a', base: 220 },
+    { name: 'Old Docks', color: '#f5d77a', base: 260 },
+    { name: 'Shipyard', color: '#cdb4f0', base: 180 },
+    { name: 'Cliff Path', color: '#8fe3d6', base: 170 },
     { name: 'Market Square', color: '#f7bfdc', base: 300 },
+    { name: 'Harbor Row', color: '#ffc49b', base: 320 },
   ],
   map: [
-    'S00V0a0X11V1..',
-    '0.....R....1H2',
-    '3.....5......2',
-    'Q...555O55...T',
-    '3...A....5...2',
-    '3...5f5M55...K',
-    'R......V.....2',
-    '3......4.....2',
-    'C44N4B44D4eQ44',
+    'S0a00V11b1QH',
+    '5....O.....2',
+    'f....V.....2',
+    'R...6g66...T',
+    '5...B..A...2',
+    '5...77h7...2',
+    'V.....M....V',
+    'N.....V....K',
+    'CQ44e4X3d33D',
   ],
 });
 
-/** A big city block cut into four quarters by two avenues. */
+/** A city block cut into four quarters by two avenues, with the bank where they cross. */
 export const CROSSROADS = fromMap({
   id: 'crossroads',
   name: 'Crossroads City',
@@ -107,28 +134,27 @@ export const CROSSROADS = fromMap({
   districts: [
     { name: 'Uptown', color: '#f2a7a0', base: 180 },
     { name: 'Gallery Row', color: '#9fd3f0', base: 220 },
-    { name: 'West Avenue', color: '#a8e0a0', base: 260 },
-    { name: 'Riverside', color: '#cdb4f0', base: 160 },
-    { name: 'Station Street', color: '#f5d77a', base: 240 },
-    { name: 'Eastgate', color: '#8fe3d6', base: 200 },
-    { name: 'East Avenue', color: '#f7bfdc', base: 300 },
+    { name: 'Eastgate', color: '#a8e0a0', base: 240 },
+    { name: 'Riverside', color: '#f5d77a', base: 260 },
+    { name: 'Station Street', color: '#cdb4f0', base: 200 },
+    { name: 'Westside', color: '#8fe3d6', base: 170 },
+    { name: 'West Avenue', color: '#f7bfdc', base: 300 },
+    { name: 'East Avenue', color: '#ffc49b', base: 320 },
   ],
   map: [
-    'S000V0a0R1111V1H',
-    '0......1.......1',
-    '0......1.......1',
-    '0......1.......T',
-    'K......1.......1',
-    'Q22222O2M666666X',
-    '3......4.......5',
-    '3......4.......5',
-    'N......4.......Q',
-    '3......4.......5',
-    'C33V3d3B4444e5D5',
+    'S0a00V11b1H',
+    '5....O....2',
+    'f....A....2',
+    'Q....V....K',
+    'R66g6B77h7T',
+    'V....M....Q',
+    '5....N....2',
+    '5....V....2',
+    'C44e4X3d33D',
   ],
 });
 
-/** Two lakes side by side, with the main street running between them. */
+/** Two lakes side by side, with the bank on Main Street between them. */
 export const TWIN_LAKES = fromMap({
   id: 'twin-lakes',
   name: 'Twin Lakes',
@@ -136,46 +162,49 @@ export const TWIN_LAKES = fromMap({
   districts: [
     { name: 'Pine Shore', color: '#a8e0a0', base: 160 },
     { name: 'Cabin Row', color: '#f2a7a0', base: 200 },
-    { name: 'Marina', color: '#9fd3f0', base: 220 },
+    { name: 'Lookout', color: '#f5d77a', base: 240 },
+    { name: 'Main Street', color: '#f7bfdc', base: 320 },
     { name: 'Reed Bank', color: '#cdb4f0', base: 180 },
-    { name: 'Main Street', color: '#f5d77a', base: 300 },
+    { name: 'Marina', color: '#9fd3f0', base: 220 },
+    { name: 'Dockside', color: '#8fe3d6', base: 260 },
   ],
   map: [
-    '..S0a0VR11H.',
-    '.0........1.',
-    '.0.........Q',
-    'K..........T',
-    '.0.........1',
-    '.A44OB4M44N.',
-    '.3.........R',
-    '3..........2',
-    '.Q.........2',
-    '.3........2.',
-    '..C3d3V2c2D.',
+    '..S01bV112H.',
+    '.0........c.',
+    '.a.........Q',
+    'K..........2',
+    '.0.........2',
+    '.A33OBTM33N.',
+    '.4.........R',
+    'e..........6',
+    '.Q.........g',
+    '.4........6.',
+    '..C45fV556D.',
   ],
 });
 
-/** An island coast with two roads crossing the hills inland. */
+/** An island coast with two roads crossing the hills, and the bank inland. */
 export const CORAL_ISLE = fromMap({
   id: 'coral-isle',
   name: 'Coral Isle',
   layout: 'hex',
   districts: [
-    { name: 'West Beach', color: '#f2a7a0', base: 160 },
     { name: 'Coral Point', color: '#9fd3f0', base: 220 },
-    { name: 'Palm Cove', color: '#a8e0a0', base: 200 },
-    { name: 'Harbor Town', color: '#f5d77a', base: 180 },
+    { name: 'West Beach', color: '#f2a7a0', base: 160 },
+    { name: 'Palm Cove', color: '#a8e0a0', base: 180 },
+    { name: 'Sunset Bay', color: '#ffc49b', base: 240 },
+    { name: 'Harbor Town', color: '#f5d77a', base: 200 },
     { name: 'Hill Pass', color: '#cdb4f0', base: 280 },
     { name: 'Volcano Road', color: '#f7bfdc', base: 320 },
   ],
   map: [
-    '....1bH11....',
-    'S000....O22T.',
-    '0...4...5...2',
-    'V..4...M...D.',
-    '0..e...5....2',
-    'Q.4....5...V.',
-    '0..A3d3N....2',
-    'C0K....X3B3Q.',
+    '....0aH00....',
+    'S11V....O3dT.',
+    '1...5...M...3',
+    'b..5...B...D.',
+    '2..f...6....3',
+    '2.Q....6...V.',
+    'c..A56gN....4',
+    'C2K....X4e4Q.',
   ],
 });

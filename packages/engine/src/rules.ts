@@ -173,6 +173,36 @@ export function vacate(sq: Square) {
 }
 
 /** Longest straight line of `pid` through panel i of the 8x8 venture grid. */
+/**
+ * Lines of `pid`'s panels through panel `i` on the 8x8 venture grid, one per direction
+ * (horizontal, vertical, both diagonals), as lists of panel indexes. Only lines of at least
+ * `min` panels are returned.
+ */
+export function linesThrough(owner: number[], i: number, pid: number, min = K.lineBonusMin): number[][] {
+  const x0 = i % 8;
+  const y0 = Math.floor(i / 8);
+  const out: number[][] = [];
+  for (const [dx, dy] of [
+    [1, 0],
+    [0, 1],
+    [1, 1],
+    [1, -1],
+  ]) {
+    const cells = [i];
+    for (const s of [1, -1]) {
+      let x = x0 + dx * s;
+      let y = y0 + dy * s;
+      while (x >= 0 && x < 8 && y >= 0 && y < 8 && owner[y * 8 + x] === pid) {
+        cells.push(y * 8 + x);
+        x += dx * s;
+        y += dy * s;
+      }
+    }
+    if (cells.length >= min) out.push(cells.sort((a, b) => a - b));
+  }
+  return out;
+}
+
 export function lineThrough(owner: number[], i: number, pid: number): number {
   const x0 = i % 8;
   const y0 = Math.floor(i / 8);
@@ -202,6 +232,20 @@ export function lineBonus(len: number): number {
   if (len >= 8) return K.lineBonusFull;
   if (len >= K.lineBonusMin) return K.lineBonusPer * len;
   return 0;
+}
+
+/** Cash plus what the player's stock and property would raise if sold to cover a debt. */
+export function spendable(G: GameState, p: Player): number {
+  const props = G.nodes.reduce((s, q) => s + (q.owner === p.id ? Math.floor(q.value * K.debtSale) : 0), 0);
+  return p.cash + stockValue(G, p) + props;
+}
+
+/**
+ * Purchases may take cash below zero when the player could sell stock or property to cover it;
+ * they must sell at the end of the turn (see settleDebt).
+ */
+export function canAfford(G: GameState, p: Player, price: number): boolean {
+  return spendable(G, p) >= price;
 }
 
 /** Row groups for Easy rules: connected runs of property squares. */

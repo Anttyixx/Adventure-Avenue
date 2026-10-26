@@ -4,7 +4,17 @@
  */
 import type { Game } from './engine';
 import { randInt, rollDie } from './rng';
-import { clampFactor, isShopLike, ownedShops, ownedSquares, salary, stockPrice } from './rules';
+import { K } from './constants';
+import {
+  canAfford,
+  clampFactor,
+  isProperty,
+  isShopLike,
+  ownedShops,
+  ownedSquares,
+  salary,
+  stockPrice,
+} from './rules';
 import type { Player, RuleSet } from './types';
 
 export interface Card {
@@ -239,12 +249,17 @@ const list: Card[] = [
   {
     id: 'forcedBuyout',
     title: 'Hostile takeover',
-    text: "You may buy any rival's shop for 5 times its value.",
+    text: "You may buy any rival's property for 5 times its value.",
     run: async (g, p) => {
       const options = g.G.nodes
-        .filter((s) => isShopLike(s) && s.owner >= 0 && s.owner !== p.id && s.value * 5 <= p.cash)
+        .filter(
+          (s) => isProperty(s) && s.owner >= 0 && s.owner !== p.id && canAfford(g.G, p, s.value * K.buyoutX),
+        )
         .map((s) => s.id);
-      if (!options.length) return;
+      if (!options.length) {
+        await g.log(`${p.name} cannot afford any rival property right now.`, p.id, 'card');
+        return;
+      }
       const id = await g.ask({
         kind: 'pickSquare',
         pid: p.id,
