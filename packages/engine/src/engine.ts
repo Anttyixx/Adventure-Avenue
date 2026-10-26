@@ -24,7 +24,6 @@ import {
   expand,
   isClosed,
   isProperty,
-  isShopLike,
   investRoom,
   lineBonus,
   linesThrough,
@@ -440,10 +439,8 @@ export class Game {
       if (yes && canAfford(G, p, sq.value)) await this.buySquare(p, sq, sq.value, null, 'bought');
       return;
     }
-    if (sq.owner === p.id) {
-      const shops = G.groups[sq.g].map((id) => G.nodes[id]).filter((s) => s.owner === p.id && isShopLike(s));
-      return this.investFlow(p, shops);
-    }
+    // Landing on your own shop lets you invest in any of your shops.
+    if (sq.owner === p.id) return this.investFlow(p, ownedShops(G, p.id));
     return this.rivalShop(p, sq);
   }
 
@@ -780,10 +777,42 @@ export class Game {
       cashGet: Math.floor(offer.cashGet || 0),
     };
     if (!this.validTrade(offer)) return;
+    // The other side may accept, decline, or send back different terms; up to K.tradeCounters
+    // counter-offers go back and forth.
+    let accepted = false;
+    for (let round = 0; ; round++) {
+      const ans = await this.ask({
+        kind: 'answerTrade',
+        pid: offer.to,
+        offer,
+        canCounter: round < K.tradeCounters,
+      });
+      if (ans === true) {
+        accepted = this.validTrade(offer);
+        break;
+      }
+      const counter = ans && typeof ans === 'object' ? ans.counter : null;
+      if (!counter || round >= K.tradeCounters) break;
+      const next: TradeOffer = {
+        from: offer.to,
+        to: offer.from,
+        give: (counter.give ?? []).slice(),
+        get: (counter.get ?? []).slice(),
+        cashGive: Math.floor(counter.cashGive || 0),
+        cashGet: Math.floor(counter.cashGet || 0),
+      };
+      if (!this.validTrade(next)) break;
+      await this.log(
+        `${G.players[next.from].name} sent back different terms to ${G.players[next.to].name}.`,
+        next.from,
+        'property',
+        [next.to],
+      );
+      offer = next;
+    }
     const a = G.players[offer.from];
     const b = G.players[offer.to];
-    const accepted = await this.ask({ kind: 'answerTrade', pid: b.id, offer });
-    if (accepted && this.validTrade(offer)) {
+    if (accepted) {
       const groups = new Set<number>();
       for (const id of offer.give) {
         G.nodes[id].owner = b.id;
@@ -833,6 +862,14 @@ export class Game {
     const inRace = new Set(bidders);
     let high = 0;
     let highBidder = -1;
+    await this.emit({
+      type: 'auctionStart',
+      sq: sq.id,
+      seller: seller ? seller.id : -1,
+      opening,
+      step,
+      bidders,
+    });
     while (inRace.size > 0) {
       if (highBidder >= 0 && inRace.size === 1) break;
       for (const pid of bidders) {
@@ -842,6 +879,7 @@ export class Game {
         const q = G.players[pid];
         if (q.cash < next) {
           inRace.delete(pid);
+          await this.emit({ type: 'auctionBid', sq: sq.id, pid, bid: next, raised: false });
           continue;
         }
         const yes = await this.ask({
@@ -857,6 +895,13 @@ export class Game {
           high = next;
           highBidder = pid;
         } else inRace.delete(pid);
+        await this.emit({
+          type: 'auctionBid',
+          sq: sq.id,
+          pid,
+          bid: next,
+          raised: highBidder === pid && high === next,
+        });
       }
     }
     if (highBidder < 0) {

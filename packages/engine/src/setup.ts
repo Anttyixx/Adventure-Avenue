@@ -5,7 +5,10 @@ import { shuffle } from './rng';
 import { computeRows, netWorth } from './rules';
 import type { GameState, MatchOptions, Player, Square } from './types';
 
-export const PLAYER_COLORS = ['#e5484d', '#3e7bfa', '#30a46c', '#f0b429'];
+export const PLAYER_COLORS = ['#e5484d', '#3e7bfa', '#30a46c', '#f0b429', '#a855f7'];
+
+/** Players per match (humans and CPUs). */
+export const MAX_PLAYERS = PLAYER_COLORS.length;
 export const PLAYER_COLOR_NAMES = ['red', 'blue', 'green', 'gold'];
 
 export function newGame(opts: MatchOptions): GameState {

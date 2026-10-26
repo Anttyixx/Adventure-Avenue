@@ -41,18 +41,20 @@ import { joinScreen, lobbySeats, onlineHub } from './online';
 import { soundButton, soundControls } from './soundpanel';
 import { SFX_NAMES, TRACK_NAMES, sound, type Track } from '../audio';
 import { setupScreen } from './start';
-import {
-  answerTradeModal,
-  auctionPickModal,
-  buildModal,
-  debtModal,
-  renovateModal,
-  rulesModal,
-  stockModal,
-  tradeModal,
-} from './modals';
+import { buildModal, rulesModal, stockModal } from './modals';
 import { showResults } from './results';
 import { investOnBoard } from './invest';
+import { AuctionView } from './auction';
+import { inviteURL } from '../net/protocol';
+import {
+  answerTradeOnBoard,
+  auctionOnBoard,
+  buyoutPrompt,
+  cannonOnBoard,
+  debtOnBoard,
+  renovateOnBoard,
+  tradeOnBoard,
+} from './pick';
 
 export const LAB_SECTIONS = [
   { id: 'cards', title: 'Player cards' },
@@ -144,6 +146,7 @@ export async function openLab(app: HTMLElement, section?: string) {
   setActive(G.order[G.turn]);
   hud.tick('UI Lab: pick a control on the left to try an element.');
 
+  const pick = { hud, board, G };
   const result = (label: string, v: unknown) => {
     const text = v === undefined ? 'closed' : JSON.stringify(v);
     hud.tick(`${label} returned: ${text.length > 120 ? text.slice(0, 117) + '...' : text}`);
@@ -488,6 +491,14 @@ export async function openLab(app: HTMLElement, section?: string) {
       btn('Confetti', () => board.confetti(cur().id)),
       btn('Suit pickup text', () => board.floatText(pos().x, pos().y, '♥', '#ff6b6b')),
       btn('Suit collected in passing', () => board.collectFx(cur().id, '♠', '#ffffff')),
+      btn('Shop value rises', () => {
+        const sq = ownedShops(G, cur().id)[0] ?? G.nodes.find((n) => n.t === 'shop')!;
+        board.valueFx(sq.id, 40);
+      }),
+      btn('Shop value falls', () => {
+        const sq = ownedShops(G, cur().id)[0] ?? G.nodes.find((n) => n.t === 'shop')!;
+        board.valueFx(sq.id, -25);
+      }),
     );
     row(
       s,
@@ -551,12 +562,12 @@ export async function openLab(app: HTMLElement, section?: string) {
           plot.value = K.plotCost;
           refresh();
         }
-        result('Renovate', await renovateModal(hud, G, cur()));
+        result('Renovate', await renovateOnBoard(pick, cur()));
       }),
     );
     row(
       s,
-      btn('Propose trade', async () => result('Trade', await tradeModal(hud, G, cur()))),
+      btn('Propose trade', async () => result('Trade', await tradeOnBoard(pick, cur()))),
       btn('Trade offer received', async () => {
         const q = G.players[(target + 1) % G.players.length];
         const give = ownedShops(G, q.id)
@@ -566,7 +577,7 @@ export async function openLab(app: HTMLElement, section?: string) {
           .slice(0, 1)
           .map((sq) => sq.id);
         const offer: TradeOffer = { from: q.id, to: cur().id, give, get, cashGive: 150, cashGet: 0 };
-        result('Answer trade', await answerTradeModal(hud, G, offer));
+        result('Answer trade', await answerTradeOnBoard(pick, offer, true));
       }),
     );
     row(
@@ -577,7 +588,7 @@ export async function openLab(app: HTMLElement, section?: string) {
           if (free) free.owner = cur().id;
           refresh();
         }
-        result('Auction', await auctionPickModal(hud, G, cur()));
+        result('Auction', await auctionOnBoard(pick, cur()));
       }),
       btn('Debt', async () => {
         const p = cur();
@@ -585,10 +596,27 @@ export async function openLab(app: HTMLElement, section?: string) {
         p.cash = -350;
         if (!p.shares.some((n) => n > 0)) p.shares[rnd(G.districts.length)] += 20;
         const assets = game.debtAssets(p);
-        const i = await debtModal(hud, G, p, assets);
+        const i = await debtOnBoard(pick, p, assets);
         p.cash = cash;
         result('Debt', assets[i]);
       }),
+      btn('Buyout (5x)', async () => {
+        const q = G.players[(target + 1) % G.players.length];
+        const sq = ownedShops(G, q.id)[0] ?? G.nodes.find((n) => n.t === 'shop')!;
+        if (sq.owner < 0) sq.owner = q.id;
+        refresh();
+        result('Buyout', await buyoutPrompt(pick, cur(), sq.id, sq.value * K.buyoutX));
+      }),
+      btn('Cannon target', async () =>
+        result(
+          'Cannon',
+          await cannonOnBoard(
+            pick,
+            cur(),
+            G.players.filter((q) => q.id !== cur().id).map((q) => q.id),
+          ),
+        ),
+      ),
       btn('Rules', () => rulesModal(hud, G)),
     );
   }
@@ -903,7 +931,33 @@ export async function openLab(app: HTMLElement, section?: string) {
     const s = addSection('panels', 'Log, market & results');
     row(
       s,
-      btn('Game log', () => hud.toggleDrawer('log')),
+      btn('Game log', () => hud.toggleLog()),
+      btn('Room code button', () => hud.setRoom('KQZD', inviteURL('KQZD'))),
+      btn('Live auction', async () => {
+        const sq = G.nodes.find((n) => n.t === 'shop')!;
+        const bidders = G.players.map((q) => q.id);
+        const view = new AuctionView(hud, G, sq.id, -1, sq.value, bidders);
+        const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
+        let high = sq.value;
+        await wait(700);
+        for (const pid of bidders.slice(1)) {
+          view.waiting(pid);
+          await wait(700);
+          view.bid(pid, high, true);
+          high += 20;
+        }
+        const yes = await view.ask({
+          kind: 'bid',
+          pid: bidders[0],
+          sq: sq.id,
+          bid: high,
+          high: high - 20,
+          highBidder: bidders.at(-1)!,
+          seller: -1,
+        });
+        view.bid(bidders[0], high, yes);
+        await view.end(yes ? bidders[0] : bidders.at(-1)!, yes ? high : high - 20, 3000);
+      }),
       btn('Stock market', () => hud.toggleDrawer('market')),
       btn('Results screen', () => {
         const R = cloneState(G);

@@ -39,6 +39,16 @@ export type GameEvent =
       coins: number[];
       winner: number;
     }
+  | {
+      type: 'auctionStart';
+      sq: number;
+      /** -1 = the bank (debt sale). */
+      seller: number;
+      opening: number;
+      step: number;
+      bidders: number[];
+    }
+  | { type: 'auctionBid'; sq: number; pid: number; bid: number; raised: boolean }
   | { type: 'auctionEnd'; sq: number; winner: number; price: number }
   | { type: 'trade'; offer: TradeOffer; accepted: boolean }
   | { type: 'bankrupt'; pid: number }

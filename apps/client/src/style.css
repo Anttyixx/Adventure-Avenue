@@ -1275,9 +1275,10 @@ input[type='range'] {
 
 .tooltip {
   position: fixed;
-  padding: 8px 12px;
-  min-width: 190px;
-  max-width: 260px;
+  padding: 10px 12px;
+  min-width: 220px;
+  max-width: 280px;
+  border-top: 5px solid var(--dc, var(--glass-line));
   font-size: 13px;
   pointer-events: none !important;
   opacity: 0;
@@ -2999,4 +3000,362 @@ input[type='range'] {
 .money .m-cash .cash,
 .money .m-nw .nw {
   margin-right: 0;
+}
+
+/* Rich content in the options panel (price tables, trade dock) */
+.prompt-text.rich {
+  display: block;
+  text-align: left;
+}
+.prompt-text.rich > .dot {
+  display: none;
+}
+.rich-body {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: min(420px, 80vw);
+}
+.rich-title {
+  font-family: var(--head);
+  font-size: 20px;
+  text-align: center;
+}
+.facts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 6px;
+}
+.fact {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 7px 10px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.07);
+}
+.fact span {
+  font-size: 12px;
+  color: var(--muted);
+}
+.fact b {
+  font-family: var(--head);
+  font-weight: 400;
+  font-size: 20px;
+}
+.fact.big {
+  background: rgba(255, 209, 102, 0.16);
+  box-shadow: inset 0 0 0 2px rgba(255, 209, 102, 0.5);
+}
+.fact.big b {
+  color: var(--accent);
+  font-size: 24px;
+}
+.fact.good b {
+  color: var(--good);
+}
+.fact.bad b {
+  color: var(--bad);
+}
+.trade-dock .trade-cols {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+.trade-dock h4 {
+  margin: 0 0 6px;
+  font-size: 13px;
+  color: var(--muted);
+}
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+.chip {
+  font-size: 12px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  border-left: 4px solid var(--dc, var(--accent));
+}
+.chip.cash {
+  border-left-color: var(--accent);
+}
+.cash-pick {
+  margin-top: 6px;
+  font-size: 12px;
+  color: var(--muted);
+}
+.cash-pick .digits {
+  justify-content: flex-start;
+  gap: 6px;
+  margin: 4px 0 0;
+}
+.cash-pick .dg-face {
+  width: 32px;
+  height: 38px;
+  font-size: 22px;
+}
+.cash-pick .dg-arrow {
+  width: 32px;
+  height: 20px;
+  font-size: 10px;
+}
+.cash-pick .dg-col.fixed .dg-face {
+  margin: 22px 0;
+}
+@media (max-width: 760px) {
+  .trade-dock .trade-cols {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Live auction */
+.auction {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: min(440px, 84vw);
+}
+.au-prop {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.06);
+  border-left: 6px solid var(--dc);
+}
+.au-prop b {
+  font-family: var(--head);
+  font-weight: 400;
+  font-size: 22px;
+}
+.au-prop span {
+  font-size: 13px;
+  color: var(--muted);
+}
+.au-high {
+  text-align: center;
+  font-size: 18px;
+  padding: 8px;
+  border-radius: 12px;
+  background: rgba(255, 209, 102, 0.12);
+}
+.au-high b {
+  font-family: var(--head);
+  font-weight: 400;
+  font-size: 26px;
+  color: var(--accent);
+}
+.au-high.won {
+  background: rgba(124, 242, 154, 0.15);
+}
+.au-bidders {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 6px;
+}
+.au-bidder {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.05);
+  border-left: 4px solid var(--pc);
+}
+.au-bidder img {
+  width: 30px;
+  height: 23px;
+  image-rendering: pixelated;
+}
+.au-name {
+  font-weight: 700;
+  flex: 1;
+}
+.au-st {
+  font-size: 12px;
+  color: var(--muted);
+}
+.au-bidder.out {
+  opacity: 0.45;
+}
+.au-bidder.lead {
+  background: rgba(255, 209, 102, 0.15);
+}
+.au-bidder.lead .au-st {
+  color: var(--accent);
+}
+.au-bidder.deciding {
+  box-shadow: 0 0 0 2px var(--pc);
+}
+.au-row {
+  justify-content: center;
+  align-items: center;
+}
+.au-you {
+  font-weight: 700;
+}
+
+/* Log and room buttons above the player cards; the log opens above them */
+.cards-head {
+  display: flex;
+  justify-content: flex-end;
+  gap: 6px;
+}
+.cards-head .btn.on {
+  background: var(--accent);
+  color: #3b2a00;
+}
+.log-panel {
+  display: none;
+  align-self: flex-end;
+  width: min(400px, calc(100vw - 20px));
+  padding: 10px;
+  flex-direction: column;
+  gap: 6px;
+}
+.cards-wrap.log-open .log-panel {
+  display: flex;
+}
+.log-panel .log-list {
+  max-height: min(46vh, 420px);
+  overflow-y: auto;
+}
+.log-panel .drawer-head h3 {
+  margin: 0;
+}
+
+/* All four suits: they glow until the player levels up at the bank */
+.suits.ready {
+  padding: 1px 4px;
+  border-radius: 999px;
+  background: rgba(255, 209, 102, 0.22);
+  animation: suits-ready 1.2s ease-in-out infinite;
+}
+.suits.ready img {
+  animation: suit-hop 1.2s ease-in-out infinite;
+}
+.suits.ready img:nth-child(2) {
+  animation-delay: 0.1s;
+}
+.suits.ready img:nth-child(3) {
+  animation-delay: 0.2s;
+}
+.suits.ready img:nth-child(4) {
+  animation-delay: 0.3s;
+}
+.suits.ready img:nth-child(5) {
+  animation-delay: 0.4s;
+}
+@keyframes suits-ready {
+  50% {
+    box-shadow: 0 0 12px 2px rgba(255, 209, 102, 0.85);
+  }
+}
+@keyframes suit-hop {
+  0%,
+  60%,
+  100% {
+    transform: none;
+    filter: none;
+  }
+  30% {
+    transform: translateY(-2px) scale(1.15);
+    filter: drop-shadow(0 0 3px #ffd166);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .suits.ready,
+  .suits.ready img {
+    animation: none;
+  }
+}
+
+/* Tooltip: stat boxes */
+.tt-owner {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 8px;
+  padding: 3px 8px 3px 4px;
+  border-radius: 999px;
+  width: fit-content;
+  font-weight: 700;
+  background: var(--pc, rgba(255, 255, 255, 0.12));
+  color: #fff;
+}
+.tt-owner img {
+  width: 24px;
+  height: 18px;
+  image-rendering: pixelated;
+}
+.tt-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 5px;
+}
+.tt-box {
+  display: flex;
+  flex-direction: column;
+  padding: 5px 8px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.07);
+}
+.tt-box span {
+  font-size: 11px;
+  color: var(--muted);
+}
+.tt-box b {
+  font-family: var(--head);
+  font-weight: 400;
+  font-size: 17px;
+}
+.tt-box.fee b {
+  color: var(--accent);
+}
+.tt-district {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 6px;
+  padding: 5px 8px;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--dc) 25%, transparent);
+  font-size: 12px;
+  font-weight: 700;
+}
+.tt-dots {
+  display: flex;
+  gap: 4px;
+  margin-left: auto;
+}
+.tt-dots i {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.25);
+  border: 2px solid rgba(255, 255, 255, 0.7);
+}
+.tt-district em {
+  font-style: normal;
+  color: var(--accent);
+}
+
+/* Gold coin in place of "G" after amounts */
+.gc {
+  display: inline-block;
+  width: 0.85em;
+  height: 0.85em;
+  margin-left: 0.12em;
+  vertical-align: -0.08em;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 50% 50%, transparent 0 46%, rgba(154, 106, 10, 0.55) 47% 55%, transparent 56%),
+    radial-gradient(circle at 35% 30%, #fff2a8 0, #ffd23f 50%, #d99a0b 100%);
+  box-shadow:
+    inset 0 0 0 0.07em #b07a06,
+    0 0.04em 0 rgba(0, 0, 0, 0.25);
 }

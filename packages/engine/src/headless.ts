@@ -33,8 +33,9 @@ export async function simulate(
   target = 5000,
   roundCap = 0,
   board?: BoardDef,
+  players = 4,
 ): Promise<SimResult> {
-  const G = newGame({ rules, target, roundCap, seats: cpuSeats(4), seed, board });
+  const G = newGame({ rules, target, roundCap, seats: cpuSeats(players), seed, board });
   const game = new Game(
     G,
     cpuIO(() => G),

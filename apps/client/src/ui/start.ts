@@ -4,6 +4,7 @@
  */
 import {
   K,
+  MAX_PLAYERS,
   PLAYER_COLORS,
   validateBoard,
   type BoardDef,
@@ -17,6 +18,7 @@ import { portraitURL, randomLook } from '../sprites';
 import { loadSave } from '../save';
 import { titleScene } from './menu';
 import type { HostRoom } from '../net/hostroom';
+import { inviteURL } from '../net/protocol';
 import { lobbySeats } from './online';
 import { closeSoundPopover, soundButton } from './soundpanel';
 import { sound } from '../audio';
@@ -82,6 +84,7 @@ export function setupScreen(root: HTMLElement, handlers: SetupHandlers, room: Ho
   const saved = readJSON(OPTS_KEY, {
     humans: 1,
     fill: true,
+    total: 4,
     target: K.defaultTarget as number,
     roundCap: 0,
     rules: 'standard' as RuleSet,
@@ -89,6 +92,9 @@ export function setupScreen(root: HTMLElement, handlers: SetupHandlers, room: Ho
   });
   let humans = saved.humans;
   let fill = saved.fill;
+  /** Hot-seat: players in the match; seats after the humans are CPUs. */
+  let total = Math.max(2, Math.min(MAX_PLAYERS, saved.total ?? 4));
+  humans = Math.min(humans, total);
   let target = saved.target;
   let roundCap = saved.roundCap;
   let rules: RuleSet = saved.rules;
@@ -96,13 +102,13 @@ export function setupScreen(root: HTMLElement, handlers: SetupHandlers, room: Ho
   let notice = '';
   /** Direction of the last carousel move, so only that redraw animates the slide. */
   let slide: 'next' | 'prev' | '' = '';
-  const typed: string[] = readJSON(NAMES_KEY, ['', '', '', '']);
+  const typed: string[] = readJSON(NAMES_KEY, []);
   let looks: CharLook[] = [];
   let suggested: string[] = [];
   const shuffle = () => {
-    looks = [0, 1, 2, 3].map(() => randomLook());
+    looks = PLAYER_COLORS.map(() => randomLook());
     const pool = NAMES.slice();
-    suggested = [0, 1, 2, 3].map(() => pool.splice(Math.floor(Math.random() * pool.length), 1)[0]);
+    suggested = PLAYER_COLORS.map(() => pool.splice(Math.floor(Math.random() * pool.length), 1)[0]);
   };
   shuffle();
 
@@ -275,12 +281,7 @@ export function setupScreen(root: HTMLElement, handlers: SetupHandlers, room: Ho
   };
   let startBtn: HTMLButtonElement | null = null;
   const onlineReady = () => !!room && (fill || room.joined > 0);
-  const inviteLink = () => {
-    const q = new URLSearchParams({ join: room!.code });
-    const peer = new URLSearchParams(location.search).get('peer');
-    if (peer) q.set('peer', peer);
-    return `${location.origin}${location.pathname}?${q}`;
-  };
+  const inviteLink = () => inviteURL(room!.code);
   let copied = false;
   const share = async () => {
     const url = inviteLink();
@@ -347,7 +348,7 @@ export function setupScreen(root: HTMLElement, handlers: SetupHandlers, room: Ho
 
   const draw = () => {
     clear(wrap);
-    const seats = fill ? 4 : humans;
+    const seats = total;
     const board = getBoard(boardId) ?? BUILT_IN[0];
     const start = h('button', { class: 'btn main big', disabled: !playable(board) }, 'Start game');
     startBtn = start;
@@ -358,7 +359,7 @@ export function setupScreen(root: HTMLElement, handlers: SetupHandlers, room: Ho
     start.onclick = () => {
       if (room) {
         writeJSON(NAMES_KEY, typed);
-        writeJSON(OPTS_KEY, { humans, fill, target, roundCap, rules, boardId });
+        writeJSON(OPTS_KEY, { humans, fill, total, target, roundCap, rules, boardId });
         const list = room.seatConfigs(
           (i) => suggested[i],
           (i) => looks[i],
@@ -373,7 +374,7 @@ export function setupScreen(root: HTMLElement, handlers: SetupHandlers, room: Ho
         return { name, cpu: !human, ch: looks[i] };
       });
       writeJSON(NAMES_KEY, typed);
-      writeJSON(OPTS_KEY, { humans, fill, target, roundCap, rules, boardId });
+      writeJSON(OPTS_KEY, { humans, fill, total, target, roundCap, rules, boardId });
       handlers.onStart({ rules, target, roundCap, seats: seatList, board });
     };
     wrap.append(
@@ -449,24 +450,21 @@ export function setupScreen(root: HTMLElement, handlers: SetupHandlers, room: Ho
                 ),
               ),
               seg(
-                'Humans',
-                [1, 2, 3, 4],
+                'Players in the game',
+                Array.from({ length: MAX_PLAYERS - 1 }, (_, i) => i + 2),
+                total,
+                (v) => `${v} players`,
+                (v) => {
+                  total = v;
+                  humans = Math.min(humans, v);
+                },
+              ),
+              seg(
+                'Humans on this device (the rest are CPUs)',
+                Array.from({ length: total }, (_, i) => i + 1),
                 humans,
                 (v) => `${v} human${v > 1 ? 's' : ''}`,
                 (v) => (humans = v),
-              ),
-              h(
-                'label',
-                { class: 'check' },
-                h('input', {
-                  type: 'checkbox',
-                  checked: fill,
-                  onchange: (e: Event) => {
-                    fill = (e.target as HTMLInputElement).checked;
-                    draw();
-                  },
-                }),
-                'Fill empty seats with CPU',
               ),
               h(
                 'div',

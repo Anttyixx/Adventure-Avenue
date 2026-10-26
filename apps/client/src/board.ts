@@ -84,6 +84,7 @@ export class BoardView {
   mode: ViewMode = 'follow';
   fitIds: number[] = [];
   insets: Insets = { top: 0, right: 0, bottom: 0, left: 0 };
+  private grass: CanvasPattern | null = null;
   followPid = -1;
   activePid = -1;
   stepsLeft = 0;
@@ -174,12 +175,13 @@ export class BoardView {
     if (here.length <= 1) return { x: c.x, y: c.y - 12 };
     const i = Math.max(0, here.indexOf(pid));
     const offs = [
-      [-18, -16],
-      [18, -16],
-      [-18, 14],
-      [18, 14],
+      [-20, -16],
+      [20, -16],
+      [-20, 14],
+      [20, 14],
+      [0, -2],
     ];
-    return { x: c.x + offs[i % 4][0], y: c.y + offs[i % 4][1] - 4 };
+    return { x: c.x + offs[i % offs.length][0], y: c.y + offs[i % offs.length][1] - 4 };
   }
 
   tokenPos(pid: number) {
@@ -281,6 +283,45 @@ export class BoardView {
     });
   }
 
+  /** A square's value changed: the tile swells and a +/- label floats up from it. */
+  valueFx(sqId: number, delta: number) {
+    if (!this.G || !delta) return;
+    const c = this.center(this.G.nodes[sqId]);
+    const up = delta > 0;
+    const color = up ? '#3ccf6e' : '#ff6b6b';
+    const text = `${up ? '▲ +' : '▼ -'}${Math.abs(delta).toLocaleString('en-US')}G`;
+    this.fx.push({
+      t0: performance.now(),
+      dur: 1600,
+      draw: (ctx, k) => {
+        ctx.save();
+        // A tile outline that swells and fades.
+        const sw = k < 0.3 ? k / 0.3 : 1;
+        ctx.globalAlpha = Math.max(0, 1 - k * 1.3);
+        ctx.strokeStyle = color;
+        ctx.lineWidth = 8;
+        ctx.shadowColor = color;
+        ctx.shadowBlur = 18;
+        tileShape(ctx, this.G?.layout, c.x, c.y, TILE / 2 + 4 + sw * 16, 16);
+        ctx.stroke();
+        ctx.restore();
+        const s = this.worldToScreen(c.x, c.y - TILE / 2 - 10 - ease(Math.min(1, k * 1.4)) * 40);
+        ctx.save();
+        ctx.setTransform(this.dpr, 0, 0, this.dpr, 0, 0);
+        ctx.globalAlpha = k < 0.8 ? 1 : 1 - (k - 0.8) / 0.2;
+        const scale = k < 0.15 ? 0.6 + (k / 0.15) * 0.5 : k < 0.25 ? 1.1 - ((k - 0.15) / 0.1) * 0.1 : 1;
+        const fs = Math.round(22 * scale);
+        ctx.font = `${fs}px "Lilita One", sans-serif`;
+        ctx.textAlign = 'center';
+        ctx.lineWidth = 5;
+        ctx.strokeStyle = 'rgba(16,26,51,0.85)';
+        ctx.fillStyle = color;
+        fillMoney(ctx, text, s.x, s.y, fs, 'rgba(16,26,51,0.85)');
+        ctx.restore();
+      },
+    });
+  }
+
   /** A suit picked up in passing: sparkles swirl round the walking token and the suit pops up. */
   collectFx(pid: number, text: string, color: string) {
     this.fx.push({
@@ -327,9 +368,8 @@ export class BoardView {
         ctx.textAlign = 'center';
         ctx.lineWidth = 5;
         ctx.strokeStyle = 'rgba(16,26,51,0.85)';
-        ctx.strokeText(text, s.x, s.y);
         ctx.fillStyle = color;
-        ctx.fillText(text, s.x, s.y);
+        fillMoney(ctx, text, s.x, s.y, 22, 'rgba(16,26,51,0.85)');
         ctx.restore();
       },
     });
@@ -456,18 +496,18 @@ export class BoardView {
     this.mode = m;
   }
 
+  /**
+   * The area the camera centers on: the whole screen. The HUD (cards, options, toolbar) floats
+   * over the board instead of pushing it aside, so the board stays centered on the screen.
+   */
   focusArea() {
-    const { top, right, bottom, left } = this.insets;
-    const aw = Math.max(120, this.w - left - right);
-    const ah = Math.max(120, this.h - top - bottom);
-    return { fx: left + aw / 2, fy: top + ah / 2, aw, ah };
+    return { fx: this.w / 2, fy: this.h / 2, aw: this.w, ah: this.h };
   }
 
   fitZoom() {
     const { aw, ah } = this.focusArea();
-    const safe = Math.min(aw / this.ww, ah / this.wh);
-    const whole = Math.min(this.w / this.ww, this.h / this.wh);
-    return Math.max(safe, whole * 0.8);
+    // The whole board, centered on the screen with a little room around it.
+    return Math.min(aw / this.ww, ah / this.wh) * 0.94;
   }
 
   followZoom() {
@@ -579,9 +619,6 @@ export class BoardView {
     const want = Math.min(3, Math.max(1, Math.ceil(this.camTarget.z * this.dpr * 2) / 2));
     if (this.dirty || want !== this.cacheScale) this.renderStatic(want);
 
-    ctx.setTransform(1, 0, 0, 1, 0, 0);
-    ctx.fillStyle = '#5e9e48';
-    ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
     const { fx, fy } = this.focusArea();
     const z = this.cam.z * this.dpr;
     ctx.setTransform(
@@ -593,6 +630,11 @@ export class BoardView {
       (fy - this.cam.y * this.cam.z) * this.dpr,
     );
     ctx.imageSmoothingEnabled = true;
+    // Grass all around the board, in world space so it lines up with the board's own grass.
+    this.grass ??= ctx.createPattern(grassTile(), 'repeat');
+    ctx.fillStyle = this.grass ?? GRASS;
+    const pad = 4000;
+    ctx.fillRect(-pad, -pad, this.ww + pad * 2, this.wh + pad * 2);
     ctx.drawImage(this.cache, 0, 0, this.ww, this.wh);
 
     const motion = !reducedMotion();
@@ -784,7 +826,7 @@ export class BoardView {
       }
       if (label) {
         ctx.font = '18px "Lilita One", sans-serif';
-        const w = ctx.measureText(label).width + 20;
+        const w = moneyWidth(ctx, label, 18) + 20;
         const y = top - 14;
         ctx.fillStyle = 'rgba(16, 26, 51, 0.92)';
         ctx.strokeStyle = this.glowColor;
@@ -796,7 +838,7 @@ export class BoardView {
         ctx.fillStyle = '#fff';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
-        ctx.fillText(label, c.x, y + 1);
+        fillMoney(ctx, label, c.x, y + 1, 18);
       }
       ctx.restore();
     }
@@ -848,30 +890,78 @@ export class BoardView {
   private drawTokens(ctx: CanvasRenderingContext2D, now: number, motion: boolean) {
     const G = this.G!;
     // Pixel sprites are drawn in device space at a whole-number scale with smoothing off.
-    const px = Math.max(1, Math.round(this.cam.z * this.dpr * 3));
-    const order = G.players.slice().sort((a, b) => this.tokens.get(a.id)!.y - this.tokens.get(b.id)!.y);
+    const base = this.cam.z * this.dpr * 3;
+    // The active player is drawn last (on top) and bigger; the others a little smaller.
+    const order = G.players
+      .slice()
+      .sort((a, b) => this.tokens.get(a.id)!.y - this.tokens.get(b.id)!.y)
+      .sort((a, b) => Number(a.id === this.activePid) - Number(b.id === this.activePid));
     ctx.save();
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.imageSmoothingEnabled = false;
     for (const p of order) {
       const t = this.tokens.get(p.id)!;
       if (!t.visible) continue;
+      const active = p.id === this.activePid && !G.over;
+      const px = Math.max(1, Math.round(base * (active ? 1.3 : this.activePid >= 0 ? 0.85 : 1)));
       const s = this.worldToScreen(t.x, t.y - t.hop);
       const sx = Math.round(s.x * this.dpr);
       const sy = Math.round(s.y * this.dpr);
-      const frames = spriteFrames(p.ch, PLAYER_COLORS[p.color]);
+      const color = PLAYER_COLORS[p.color];
+      const frames = spriteFrames(p.ch, color);
       const walkFrame = t.walking ? Math.floor(now / 110) % 2 : 0;
       const bob = !t.walking && motion ? Math.round(Math.sin(now / 400 + p.id * 1.7) * 0.5 + 0.5) : 0;
       const w = SPRITE_W * px;
       const h = SPRITE_H * px;
-      // Soft HD shadow
-      const shadowY = Math.round(this.worldToScreen(t.x, t.y).y * this.dpr) + h / 2;
-      ctx.fillStyle = 'rgba(0,0,0,0.25)';
+      // A base disc in the player's color with a white rim, so tokens stand out on any tile.
+      const footY = Math.round(this.worldToScreen(t.x, t.y).y * this.dpr) + h / 2;
+      ctx.save();
+      ctx.imageSmoothingEnabled = true;
+      ctx.fillStyle = 'rgba(0,0,0,0.28)';
       ctx.beginPath();
-      ctx.ellipse(sx, shadowY, w * 0.42, px * 1.6, 0, 0, Math.PI * 2);
+      ctx.ellipse(sx, footY + px * 0.8, w * 0.52, px * 2.4, 0, 0, Math.PI * 2);
       ctx.fill();
+      ctx.beginPath();
+      ctx.ellipse(sx, footY, w * 0.48, px * 2, 0, 0, Math.PI * 2);
+      ctx.fillStyle = color;
+      ctx.fill();
+      ctx.lineWidth = Math.max(2, px * 0.7);
+      ctx.strokeStyle = '#fff';
+      ctx.stroke();
+      if (active && motion) {
+        const k = (now % 1400) / 1400;
+        ctx.globalAlpha = 1 - k;
+        ctx.beginPath();
+        ctx.ellipse(sx, footY, w * (0.5 + k * 0.5), px * (2 + k * 2), 0, 0, Math.PI * 2);
+        ctx.strokeStyle = color;
+        ctx.lineWidth = 3 * this.dpr;
+        ctx.stroke();
+        ctx.globalAlpha = 1;
+      }
+      ctx.restore();
       ctx.drawImage(frames[walkFrame], sx - w / 2, sy - h / 2 - bob * px, w, h);
-      if (p.id === this.activePid && !G.over) {
+      // Name tag above the character.
+      {
+        const fs = (active ? 14 : 11) * this.dpr;
+        ctx.save();
+        ctx.imageSmoothingEnabled = true;
+        ctx.font = `${fs}px "Lilita One", sans-serif`;
+        const tw = ctx.measureText(p.name).width + fs * 0.9;
+        const ty = sy - h / 2 - bob * px - (active ? 34 : 8) * this.dpr;
+        ctx.fillStyle = color;
+        ctx.strokeStyle = 'rgba(255,255,255,0.9)';
+        ctx.lineWidth = 1.5 * this.dpr;
+        ctx.beginPath();
+        ctx.roundRect(sx - tw / 2, ty - fs * 0.75, tw, fs * 1.4, fs * 0.7);
+        ctx.fill();
+        ctx.stroke();
+        ctx.fillStyle = '#fff';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(p.name, sx, ty);
+        ctx.restore();
+      }
+      if (active) {
         // Smooth marker arrow above the active player.
         const aw = 9 * this.dpr;
         const ay = sy - h / 2 - 20 * this.dpr + (motion ? Math.sin(now / 180) * 3 * this.dpr : 0);
@@ -998,7 +1088,39 @@ export class BoardView {
 /** Draw the static board (scenery, roads and every square) in world units. Used by the editor too. */
 export function paintBoard(ctx: CanvasRenderingContext2D, G: GameState) {
   drawScenery(ctx, G);
+  drawDistricts(ctx, G);
   for (const sq of G.nodes) drawSquare(ctx, G, sq);
+}
+
+/**
+ * District "blocks": a halo in the district color behind every shop and plot, joined along
+ * the road to neighboring squares of the same district, so a district reads as one area.
+ */
+function drawDistricts(ctx: CanvasRenderingContext2D, G: GameState) {
+  const L = G.layout;
+  const isProp = (sq: Square) => (sq.t === 'shop' || sq.t === 'plot') && sq.d >= 0;
+  ctx.save();
+  ctx.lineCap = 'round';
+  for (const sq of G.nodes) {
+    if (!isProp(sq)) continue;
+    const color = G.districts[sq.d]?.color ?? '#ccc';
+    const a = squareCenter(sq, L);
+    ctx.strokeStyle = darken(color, 0.9);
+    ctx.lineWidth = 34;
+    for (const n of sq.nb) {
+      const other = G.nodes[n];
+      if (n < sq.id || !isProp(other) || other.d !== sq.d) continue;
+      const b = squareCenter(other, L);
+      ctx.beginPath();
+      ctx.moveTo(a.x, a.y);
+      ctx.lineTo(b.x, b.y);
+      ctx.stroke();
+    }
+    ctx.fillStyle = darken(color, 0.9);
+    tileShape(ctx, L, a.x, a.y, TILE / 2 + 9, 18);
+    ctx.fill();
+  }
+  ctx.restore();
 }
 
 // ------------------------------------------------------------------ drawing helpers
@@ -1080,22 +1202,34 @@ function drawCustomDecor(ctx: CanvasRenderingContext2D, G: GameState) {
   }
 }
 
-function drawScenery(ctx: CanvasRenderingContext2D, G: GameState) {
-  const { w: WORLD_W, h: WORLD_H } = worldSize(G);
-  // Grass with tufts
-  const grd = ctx.createLinearGradient(0, 0, 0, WORLD_H);
-  grd.addColorStop(0, '#9edb73');
-  grd.addColorStop(1, '#86c95f');
-  ctx.fillStyle = grd;
-  ctx.fillRect(0, 0, WORLD_W, WORLD_H);
+export const GRASS = '#92d268';
+let grassCanvas: HTMLCanvasElement | null = null;
+
+/** A 200 x 200 grass tile with tufts, repeated over the board and beyond it. */
+export function grassTile(): HTMLCanvasElement {
+  if (grassCanvas) return grassCanvas;
+  const cv = document.createElement('canvas');
+  cv.width = cv.height = 200;
+  const ctx = cv.getContext('2d')!;
+  ctx.fillStyle = GRASS;
+  ctx.fillRect(0, 0, 200, 200);
   const r = seeded(42);
   ctx.fillStyle = 'rgba(60,120,40,0.18)';
-  for (let i = 0; i < 260; i++) {
-    const x = r() * WORLD_W;
-    const y = r() * WORLD_H;
+  for (let i = 0; i < 14; i++) {
+    const x = r() * 190;
+    const y = r() * 190;
     ctx.fillRect(x, y, 3, 7);
     ctx.fillRect(x + 4, y + 2, 3, 5);
   }
+  grassCanvas = cv;
+  return cv;
+}
+
+function drawScenery(ctx: CanvasRenderingContext2D, G: GameState) {
+  const { w: WORLD_W, h: WORLD_H } = worldSize(G);
+  // Grass: the same tiling texture as around the board, so there is no edge.
+  ctx.fillStyle = ctx.createPattern(grassTile(), 'repeat')!;
+  ctx.fillRect(0, 0, WORLD_W, WORLD_H);
 
   // Roads along every edge
   ctx.lineCap = 'round';
@@ -1206,16 +1340,62 @@ const BUILDING_LABEL: Record<string, string> = {
   star3: '3-STAR',
 };
 
+const MONEY = /^(.*\d)G$/;
+
+/** Width of `text` with a trailing "G" drawn as a coin (font must be set). */
+function moneyWidth(ctx: CanvasRenderingContext2D, text: string, size: number) {
+  const m = MONEY.exec(text);
+  return m ? ctx.measureText(m[1]).width + size * 0.95 : ctx.measureText(text).width;
+}
+
+/**
+ * Centered text where an amount like "240G" ends in a gold coin instead of the letter G.
+ * `stroke` draws an outline behind the text first.
+ */
+export function fillMoney(
+  ctx: CanvasRenderingContext2D,
+  text: string,
+  x: number,
+  y: number,
+  size: number,
+  stroke?: string,
+) {
+  const m = MONEY.exec(text);
+  if (!m) {
+    ctx.textAlign = 'center';
+    if (stroke) ctx.strokeText(text, x, y);
+    ctx.fillText(text, x, y);
+    return;
+  }
+  const w = moneyWidth(ctx, text, size);
+  const left = x - w / 2;
+  ctx.textAlign = 'left';
+  if (stroke) ctx.strokeText(m[1], left, y);
+  ctx.fillText(m[1], left, y);
+  const r = size * 0.38;
+  const cx = left + ctx.measureText(m[1]).width + size * 0.1 + r;
+  const cy = ctx.textBaseline === 'middle' ? y : y - size * 0.33;
+  if (stroke) {
+    ctx.save();
+    ctx.fillStyle = stroke;
+    ctx.beginPath();
+    ctx.arc(cx, cy, r + 2.5, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  }
+  drawCoin(ctx, cx, cy, r);
+  ctx.textAlign = 'center';
+}
+
 function pill(ctx: CanvasRenderingContext2D, x: number, y: number, text: string, bg: string, fg = '#fff') {
   ctx.font = '17px "Lilita One", sans-serif';
-  const w = Math.max(40, ctx.measureText(text).width + 16);
+  const w = Math.max(40, moneyWidth(ctx, text, 17) + 16);
   ctx.fillStyle = bg;
   roundRect(ctx, x - w / 2, y - 12, w, 24, 12);
   ctx.fill();
   ctx.fillStyle = fg;
-  ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-  ctx.fillText(text, x, y + 1);
+  fillMoney(ctx, text, x, y + 1, 17);
 }
 
 function label(
@@ -1230,7 +1410,7 @@ function label(
   ctx.fillStyle = color;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-  ctx.fillText(text, x, y);
+  fillMoney(ctx, text, x, y, size);
 }
 
 /** A house icon. Owned houses are drawn in the owner's color, outlined, with their initial. */

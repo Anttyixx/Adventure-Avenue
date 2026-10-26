@@ -210,6 +210,48 @@ describe('auctions and trades', () => {
     expect(seller.cash).toBe(cash + 200);
   });
 
+  it('announces the auction start and every bid', async () => {
+    const { G, game, events } = makeGame('standard', (r) => (r.kind === 'bid' ? r.bid <= 250 : undefined));
+    const seller = G.players[0];
+    const shop = at(G, 6, 0);
+    shop.owner = seller.id;
+    await game.voluntaryAuction(seller, shop.id);
+    const start = events.find((e) => e.type === 'auctionStart');
+    expect(start).toBeTruthy();
+    expect(events.filter((e) => e.type === 'auctionBid').length).toBeGreaterThan(0);
+    expect(events.at(-1)?.type === 'auctionEnd' || events.some((e) => e.type === 'auctionEnd')).toBe(true);
+  });
+
+  it('lets the other side send back different terms, and the proposer accept them', async () => {
+    const { G, game, asked } = makeGame('standard', (r) => {
+      if (r.kind !== 'answerTrade') return undefined;
+      // Player 1 counters once (asks for 100G more); player 0 accepts the counter.
+      if (r.pid === 1)
+        return {
+          counter: {
+            ...r.offer,
+            from: 1,
+            to: 0,
+            give: r.offer.get,
+            get: r.offer.give,
+            cashGive: 0,
+            cashGet: 300,
+          },
+        };
+      return true;
+    });
+    const mine = at(G, 6, 0);
+    const theirs = at(G, 7, 0);
+    mine.owner = 0;
+    theirs.owner = 1;
+    const cash0 = G.players[0].cash;
+    await game.trade({ from: 0, to: 1, give: [mine.id], get: [theirs.id], cashGive: 200, cashGet: 0 });
+    expect(asked.filter((r) => r.kind === 'answerTrade').map((r) => r.pid)).toEqual([1, 0]);
+    expect(mine.owner).toBe(1);
+    expect(theirs.owner).toBe(0);
+    expect(G.players[0].cash).toBe(cash0 - 300);
+  });
+
   it('CPU accepts trades worth 1.15x + 20G to it', () => {
     const { G } = makeGame();
     const shop = at(G, 6, 0);
@@ -224,6 +266,14 @@ describe('auctions and trades', () => {
 });
 
 describe('simulation', () => {
+  it('plays 5-player matches to the end', async () => {
+    for (let i = 0; i < 20; i++) {
+      const r = await simulate(i % 2 ? 'easy' : 'standard', 500 + i, 5000, 0, undefined, 5);
+      expect(r.winner).toBeGreaterThanOrEqual(0);
+      expect(r.winner).toBeLessThan(5);
+    }
+  });
+
   it('finishes 1,000 CPU-only matches without errors', async () => {
     let rounds = 0;
     for (let i = 0; i < 1000; i++) {

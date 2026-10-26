@@ -4,6 +4,7 @@
  * player whose connection drops until they come back.
  */
 import {
+  PLAYER_COLORS,
   cloneState,
   cpuDecide,
   type CharLook,
@@ -63,7 +64,13 @@ export class HostRoom implements GameLink {
   ) {
     this.seats = [
       { kind: 'host', name: hostName, look: hostLook, online: true, pid: -1 },
-      ...[1, 2, 3].map(() => ({ kind: 'open' as const, name: '', look: null, online: false, pid: -1 })),
+      ...PLAYER_COLORS.slice(1).map(() => ({
+        kind: 'open' as const,
+        name: '',
+        look: null,
+        online: false,
+        pid: -1,
+      })),
     ];
     peer.on('connection', (conn) => this.accept(conn));
   }

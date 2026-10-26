@@ -88,13 +88,13 @@ export const TOWN = fromMap({
     { name: 'Plaza', color: '#f7bfdc', base: 320 },
   ],
   map: [
-    'S0a0VX1b11QH',
+    'S0a0VX1b11VH',
     '0..........2',
     'R..........2',
     'V55A66B66ONT',
     'f..........2',
     '5..........2',
-    'CQ44e4K3d33D',
+    'CM44e4K3d33D',
   ],
 });
 
@@ -114,7 +114,7 @@ export const HARBOR = fromMap({
     { name: 'Harbor Row', color: '#ffc49b', base: 320 },
   ],
   map: [
-    'S0a00V11b1QH',
+    'S0a00V11b1RH',
     '5....O.....2',
     'f....V.....2',
     'R...6g66...T',
@@ -122,7 +122,7 @@ export const HARBOR = fromMap({
     '5...77h7...2',
     'V.....M....V',
     'N.....V....K',
-    'CQ44e4X3d33D',
+    'CM44e4X3d33D',
   ],
 });
 
@@ -145,9 +145,9 @@ export const CROSSROADS = fromMap({
     'S0a00V11b1H',
     '5....O....2',
     'f....A....2',
-    'Q....V....K',
+    'M....V....K',
     'R66g6B77h7T',
-    'V....M....Q',
+    'V....M....O',
     '5....N....2',
     '5....V....2',
     'C44e4X3d33D',
@@ -171,13 +171,13 @@ export const TWIN_LAKES = fromMap({
   map: [
     '..S01bV112H.',
     '.0........c.',
-    '.a.........Q',
+    '.a.........V',
     'K..........2',
     '.0.........2',
     '.A33OBTM33N.',
     '.4.........R',
     'e..........6',
-    '.Q.........g',
+    '.X.........g',
     '.4........6.',
     '..C45fV556D.',
   ],
@@ -203,8 +203,8 @@ export const CORAL_ISLE = fromMap({
     '1...5...M...3',
     'b..5...B...D.',
     '2..f...6....3',
-    '2.Q....6...V.',
+    '2.R....6...V.',
     'c..A56gN....4',
-    'C2K....X4e4Q.',
+    'C2K....X4e4V.',
   ],
 });

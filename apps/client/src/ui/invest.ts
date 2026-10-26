@@ -19,18 +19,15 @@ export async function investOnBoard(
   const lim = new Map(shops.map((s) => [s.sq, Math.min(s.room, max)]));
   const color = PLAYER_COLORS[p.color];
   for (;;) {
-    const labels = new Map(shops.map((s) => [s.sq, `+${fmt(lim.get(s.sq)!)}`]));
     board.setChoices(
       shops.map((s) => s.sq),
       color,
       (id) => hud.resolvePrompt(id),
-      undefined,
-      { labels },
     );
     const id = await hud.prompt<number | null>(
       shops.length > 1
-        ? `Invest: tap one of your glowing shops. The number shows how much it can take (you can invest up to ${fmt(max)}).`
-        : `Invest: tap your glowing shop to invest up to ${fmt(lim.get(shops[0].sq)!)}.`,
+        ? `Invest: tap any of your glowing shops (you can invest up to ${fmt(max)}).`
+        : `Invest: tap your glowing shop to invest in it.`,
       [{ label: "Don't invest", value: null, secondary: true }],
       p.color,
     );

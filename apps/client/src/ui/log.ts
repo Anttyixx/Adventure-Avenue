@@ -1,6 +1,6 @@
 /**
- * Game log grouped by turn: one card per turn (newest first) with that turn's actions in the
- * order they happened. Lines that affect other players show those players as chips.
+ * Game log grouped by turn: one card per turn (newest last, like a chat) with that turn's
+ * actions in the order they happened. Lines that affect other players show those players as chips.
  */
 import { PLAYER_COLORS, type GameState, type LogKind, type LogLine } from '@aa/engine';
 import { portraitURL } from '../sprites';
@@ -62,12 +62,14 @@ export function groupLog(G: GameState): TurnGroup[] {
   return groups;
 }
 
+/** The log, oldest turn at the top and the current turn at the bottom. */
 export function logView(G: GameState, currentKey: string): HTMLElement {
   const groups = groupLog(G);
   // The turn in progress always gets a card, even before anything has happened in it.
   if (!G.over && groups[0]?.key !== currentKey) {
     groups.unshift({ key: currentKey, round: G.round, pid: G.order[G.turn], lines: [] });
   }
+  groups.reverse();
   const list = h('div', { class: 'log-list' });
   if (!groups.length) list.append(h('p', { class: 'hint' }, 'Nothing has happened yet.'));
   for (const g of groups) {

@@ -6,12 +6,12 @@ import {
   PLAYER_COLORS,
   K,
   SUITS,
+  canPromote,
   dominated,
   isClosed,
   maxValue,
   netWorth,
   ranking,
-  ownedCount,
   squareFee,
   stockPrice,
   type GameState,
@@ -53,6 +53,11 @@ export class Hud {
   cardsWrap = h('div', { class: 'cards-wrap' });
   cards = h('div', { class: 'cards' });
   cardsToggle = h('button', { class: 'btn small ghost cards-toggle' }, 'Hide');
+  /** The game log, opened from the toggle above the player cards. */
+  logBox = h('div', { class: 'log-panel glass' });
+  logToggle = h('button', { class: 'btn small ghost cards-toggle' }, 'Log');
+  logOpen = false;
+  roomBtn = h('button', { class: 'btn small ghost cards-toggle', hidden: true }, 'Room');
   drawer = h('div', { class: 'drawer glass' });
   tooltip = h('div', { class: 'tooltip glass' });
   modalLayer = h('div', { class: 'modal-layer' });
@@ -80,7 +85,12 @@ export class Hud {
   ) {
     this.root = h('div', { class: 'hud' });
     const bottomLeft = h('div', { class: 'bottom-left' }, this.ticker, this.bar);
-    this.cardsWrap.append(this.cardsToggle, this.cards);
+    this.cardsWrap.append(
+      this.logBox,
+      h('div', { class: 'cards-head' }, this.roomBtn, this.logToggle, this.cardsToggle),
+      this.cards,
+    );
+    this.logToggle.onclick = () => this.toggleLog();
     this.root.append(
       this.title,
       this.toolbar,
@@ -101,7 +111,6 @@ export class Hud {
       this.viewBtn,
       this.fastBtn,
       h('button', { class: 'btn small market-btn', onclick: () => this.toggleDrawer('market') }, 'Market'),
-      h('button', { class: 'btn small', onclick: () => this.toggleDrawer('log') }, 'Log'),
     );
     if (document.fullscreenEnabled) this.toolbar.append(fs);
     this.toolbar.append(
@@ -190,6 +199,7 @@ export class Hud {
     this.toolbar.querySelector('.market-btn')?.toggleAttribute('hidden', G.rules !== 'standard');
     this.renderCards();
     if (this.drawerMode) this.renderDrawer();
+    if (this.logOpen) this.renderLog();
   }
 
   renderCards() {
@@ -256,7 +266,10 @@ export class Hud {
           h('span', { class: 'lvl' }, `Lv ${p.level}`),
           h(
             'span',
-            { class: 'suits' },
+            {
+              class: `suits ${canPromote(p) && !p.bankrupt ? 'ready' : ''}`,
+              title: canPromote(p) ? 'All four suits: back to the bank to level up!' : null,
+            },
             p.wild
               ? h(
                   'span',
@@ -318,9 +331,84 @@ export class Hud {
     const line = h('div', { class: 'tick-line rise' }, dot, text);
     this.ticker.append(line);
     if (this.drawerMode === 'log') this.renderDrawer();
+    if (this.logOpen) this.renderLog();
+  }
+
+  /** Online games: a button showing the room code, for anyone who needs to rejoin. */
+  setRoom(code: string, link: string) {
+    this.roomBtn.hidden = false;
+    this.roomBtn.textContent = `Room ${code}`;
+    this.roomBtn.onclick = () => {
+      let copied = false;
+      const copy = h('button', { class: 'btn' }, 'Copy invite link') as HTMLButtonElement;
+      copy.onclick = async () => {
+        try {
+          if (navigator.share && 'ontouchstart' in window)
+            await navigator.share({ title: 'Adventure Avenue', url: link });
+          else await navigator.clipboard.writeText(link);
+          copied = true;
+          copy.textContent = copied ? 'Copied!' : copy.textContent;
+        } catch {
+          /* cancelled */
+        }
+      };
+      const m = this.modal(
+        'Room code',
+        h(
+          'div',
+          { class: 'room-modal' },
+          h('div', { class: 'room-code' }, h('small', null, 'Room code'), h('b', null, code)),
+          h(
+            'p',
+            { class: 'hint' },
+            'Anyone who drops out can rejoin: open the game, tap Play online, then Join a game and type this code (with the same name).',
+          ),
+          h(
+            'div',
+            { class: 'btn-row' },
+            copy,
+            h('button', { class: 'btn main', onclick: () => m.close() }, 'Close'),
+          ),
+        ),
+      );
+    };
+  }
+
+  /** Open or close the game log above the player cards. */
+  toggleLog(open = !this.logOpen) {
+    this.logOpen = open;
+    this.cardsWrap.classList.toggle('log-open', open);
+    this.logToggle.classList.toggle('on', open);
+    this.renderLog(true);
+    this.updateInsets();
+  }
+
+  private renderLog(toBottom = false) {
+    if (!this.logOpen || !this.G) {
+      clear(this.logBox);
+      return;
+    }
+    const old = this.logBox.querySelector('.log-list');
+    // Stay at the newest entries unless the reader scrolled up.
+    const atBottom = !old || old.scrollHeight - old.scrollTop - old.clientHeight < 40;
+    const keep = old?.scrollTop ?? 0;
+    clear(this.logBox);
+    const G = this.G;
+    const list = logView(G, `${G.round}:${G.turn}`);
+    this.logBox.append(
+      h(
+        'div',
+        { class: 'drawer-head' },
+        h('h3', null, 'Game log'),
+        h('button', { class: 'btn small ghost', onclick: () => this.toggleLog(false) }, 'Close'),
+      ),
+      list,
+    );
+    list.scrollTop = toBottom || atBottom ? list.scrollHeight : keep;
   }
 
   toggleDrawer(mode: 'market' | 'log') {
+    if (mode === 'log') return this.toggleLog();
     this.drawerMode = this.drawerMode === mode ? null : mode;
     this.drawer.classList.toggle('open', !!this.drawerMode);
     this.renderDrawer();
@@ -364,34 +452,65 @@ export class Hud {
     const G = this.G;
     const sq = G.nodes[id];
     clear(this.tooltip);
-    const rows: [string, string][] = [];
     const owner = sq.owner >= 0 ? G.players[sq.owner] : null;
+    const dColor = sq.d >= 0 ? (G.districts[sq.d]?.color ?? '#ccc') : '#8a94a8';
+    const box = (label: string, value: string, cls = '') =>
+      h('div', { class: `tt-box ${cls}` }, h('span', null, label), h('b', null, value));
+    const boxes: HTMLElement[] = [];
+    const extra: HTMLElement[] = [];
     if (sq.t === 'shop' || sq.t === 'plot') {
-      rows.push(['Owner', owner ? owner.name : 'For sale']);
-      if (sq.t === 'shop' || sq.b) rows.push(['Value', fmt(sq.value)]);
+      if (sq.t === 'shop' || sq.b) boxes.push(box('Value', fmt(sq.value)));
       if (owner && sq.b !== 'agency') {
-        const fee = sq.b === 'tax' ? '10% of net worth' : fmt(squareFee(G, sq));
-        rows.push(['Fee', owner && isClosed(owner) ? `${fee} (closed)` : fee]);
+        const fee = sq.b === 'tax' ? '10% NW' : fmt(squareFee(G, sq));
+        boxes.push(box(isClosed(owner) ? 'Fee (closed)' : 'Fee', fee, 'fee'));
       }
       if (sq.t === 'shop' || sq.b === 'star3') {
-        rows.push(['Max value', fmt(maxValue(G, sq))]);
-        if (owner) rows.push(['Buyout', fmt(sq.value * K.buyoutX)]);
+        boxes.push(box('Max value', fmt(maxValue(G, sq))));
+        if (owner) boxes.push(box('Buyout (5x)', fmt(sq.value * K.buyoutX)));
+        else boxes.push(box('Price', fmt(sq.value), 'fee'));
       }
+      if (G.rules === 'standard' && sq.d >= 0) boxes.push(box('Stock', `${fmt(stockPrice(G, sq.d))}/share`));
       if (sq.g >= 0) {
+        // Who owns the rest of the district, as dots in the owners' colors.
         const grp = G.groups[sq.g];
-        const label = G.rules === 'standard' ? 'District' : 'Row';
-        const own = owner
-          ? `${ownedCount(G, owner.id, sq.g)}/${grp.length} owned by ${owner.name}`
-          : `${grp.length} squares`;
-        rows.push([label, own + (owner && dominated(G, owner.id, sq.g) ? ' (dominated)' : '')]);
+        const label = G.rules === 'standard' ? (G.districts[sq.d]?.name ?? 'District') : 'Row';
+        extra.push(
+          h(
+            'div',
+            { class: 'tt-district' },
+            h('span', null, label),
+            h(
+              'span',
+              { class: 'tt-dots' },
+              ...grp.map((gid) => {
+                const o = G.nodes[gid].owner;
+                return h('i', { style: o >= 0 ? `background:${PLAYER_COLORS[G.players[o].color]}` : '' });
+              }),
+            ),
+            owner && dominated(G, owner.id, sq.g) ? h('em', null, 'Dominated') : null,
+          ),
+        );
       }
-      if (G.rules === 'standard' && sq.d >= 0) rows.push(['Stock', `${fmt(stockPrice(G, sq.d))} / share`]);
     } else if (sq.t === 'change') {
-      rows.push(['Offers', SUITS[G.changeSuit]]);
+      boxes.push(box('Offers', SUITS[G.changeSuit]));
     }
+    this.tooltip.style.setProperty('--dc', dColor);
     this.tooltip.append(
       h('div', { class: 'tt-title' }, squareName(G, sq)),
-      ...rows.map(([k, v]) => h('div', { class: 'tt-row' }, h('span', null, k), h('b', null, v))),
+      sq.t === 'shop' || sq.t === 'plot'
+        ? h(
+            'div',
+            { class: 'tt-owner', style: owner ? `--pc:${PLAYER_COLORS[owner.color]}` : '' },
+            owner
+              ? [
+                  h('img', { src: portraitURL(owner.ch, PLAYER_COLORS[owner.color]), alt: '' }),
+                  `Owned by ${owner.name}`,
+                ]
+              : 'For sale',
+          )
+        : '',
+      boxes.length ? h('div', { class: 'tt-grid' }, ...boxes) : '',
+      ...extra,
     );
     const W = window.innerWidth;
     const H = window.innerHeight;
@@ -402,7 +521,8 @@ export class Hud {
 
   // ------------------------------------------------------------ action bar
 
-  prompt<T>(text: string, buttons: PromptButton<T>[], color?: number): Promise<T> {
+  /** Show the current player's options. `text` may be rich content (tables, chips). */
+  prompt<T>(text: string | Node, buttons: PromptButton<T>[], color?: number): Promise<T> {
     this.cancelPrompt();
     clear(this.bar);
     clear(this.ask);
@@ -412,6 +532,7 @@ export class Hud {
       this.ask.style.setProperty('--pc', PLAYER_COLORS[color]);
     }
     head.append(text);
+    if (typeof text !== 'string') head.classList.add('rich');
     const row = h('div', { class: 'btn-row' });
     this.ask.append(head, row);
     this.mainButton = null;

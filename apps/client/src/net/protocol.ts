@@ -11,7 +11,7 @@
 import type { CharLook, GameState, RuleSet } from '@aa/engine';
 
 /** Protocol version: a joiner on a different version is turned away. */
-export const NET_VERSION = 2;
+export const NET_VERSION = 3;
 
 export type SeatKind = 'host' | 'local' | 'remote' | 'open';
 
@@ -110,4 +110,12 @@ export function deviceToken(): string {
   } catch {
     return Math.random().toString(36).slice(2);
   }
+}
+
+/** A link that opens the game with the join form filled in for `code`. */
+export function inviteURL(code: string): string {
+  const q = new URLSearchParams({ join: code });
+  const peer = new URLSearchParams(location.search).get('peer');
+  if (peer) q.set('peer', peer);
+  return `${location.origin}${location.pathname}?${q}`;
 }

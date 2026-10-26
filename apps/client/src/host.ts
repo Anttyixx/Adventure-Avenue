@@ -24,21 +24,24 @@ import { FAST_CPU_SPEED, TIMING as T } from './timing';
 import { fmt, h } from './ui/dom';
 import { DerbyView, MemoryView, ReelsView, VentureView } from './ui/games';
 import { Hud, type PromptButton } from './ui/hud';
-import {
-  answerTradeModal,
-  auctionPickModal,
-  buildModal,
-  debtModal,
-  renovateModal,
-  rulesModal,
-  stockModal,
-  tradeModal,
-} from './ui/modals';
+import { buildModal, rulesModal, stockModal } from './ui/modals';
 import { showResults } from './ui/results';
 import { investOnBoard } from './ui/invest';
+import { AuctionView } from './ui/auction';
+import {
+  answerTradeOnBoard,
+  auctionOnBoard,
+  buyoutPrompt,
+  cannonOnBoard,
+  debtOnBoard,
+  renovateOnBoard,
+  tradeOnBoard,
+  type PickCtx,
+} from './ui/pick';
 import { sound } from './audio';
 import { closeSoundPopover } from './ui/soundpanel';
 import type { GameLink } from './net/link';
+import { inviteURL } from './net/protocol';
 import { IS_DEV_BUILD } from './build';
 
 const FAST_KEY = 'adventure-avenue-fast';
@@ -59,8 +62,16 @@ export class HotSeat implements GameIO {
   reels: ReelsView | null = null;
   memory: MemoryView | null = null;
   derby: DerbyView | null = null;
+  /** Square values as last shown, to animate how much each one changed. */
+  values = new Map<number, number>();
+  /** The live auction window while an auction runs. */
+  auction: AuctionView | null = null;
   /** Number of decisions made so far (online games number them to stay in step). */
   seq = 0;
+
+  get pick(): PickCtx {
+    return { hud: this.hud, board: this.board, G: this.G };
+  }
 
   constructor(
     parent: HTMLElement,
@@ -83,6 +94,7 @@ export class HotSeat implements GameIO {
       onRules: () => rulesModal(this.hud, this.G),
     });
     this.game = new Game(G, this);
+    if (link) this.hud.setRoom(link.code, inviteURL(link.code));
     // Dev builds expose the running game for automated tests.
     if (IS_DEV_BUILD) (window as unknown as { __aaGame?: HotSeat }).__aaGame = this;
     this.board.setState(G);
@@ -248,6 +260,8 @@ export class HotSeat implements GameIO {
   }
 
   refresh() {
+    // Values that changed without a value event (purchases, sales) are not animated.
+    for (const n of this.G.nodes) if (!this.values.has(n.id) || n.owner < 0) this.values.set(n.id, n.value);
     this.board.dirty = true;
     this.board.snapTokens();
     this.hud.render(this.G);
@@ -265,7 +279,9 @@ export class HotSeat implements GameIO {
     const seq = this.seq++;
     if (this.link) return (await this.decideOnline(seq, req as DecisionRequest)) as DecisionAnswer<T>;
     const p = this.G.players[req.pid];
+    if (req.kind === 'bid' && !this.localHuman(p.id)) this.auction?.waiting(p.id);
     if (p.cpu) {
+      this.spectate(req as DecisionRequest);
       const ans = cpuDecide(this.G, req);
       await this.showCpu(req as DecisionRequest, ans);
       if (this.dead) return never();
@@ -293,6 +309,8 @@ export class HotSeat implements GameIO {
     const p = G.players[req.pid];
     const who = link.who(req.pid);
     this.updateSpeed();
+    if (req.kind === 'bid' && who !== 'local') this.auction?.waiting(req.pid);
+    if (who !== 'local') this.spectate(req);
     if (link.role === 'host') {
       let ans: unknown;
       if (who === 'local') {
@@ -326,6 +344,37 @@ export class HotSeat implements GameIO {
     return a.ans;
   }
 
+  /**
+   * Someone else (a CPU or a player on another device) is about to play a venture pick or an
+   * arcade game: open the game so everyone here can watch it being played.
+   */
+  private spectate(req: DecisionRequest) {
+    const G = this.G;
+    const p = G.players[req.pid];
+    switch (req.kind) {
+      case 'venturePanel':
+        this.venture?.m.close();
+        this.venture = new VentureView(this.hud, G, p.id);
+        this.venture.watch(p.name);
+        break;
+      case 'reels':
+        this.reels?.m.close();
+        this.reels = new ReelsView(this.hud, req.strips, p.name);
+        this.reels.watch(p.name);
+        break;
+      case 'memory':
+        this.memory?.m.close();
+        this.memory = new MemoryView(this.hud, req.prizes, p.name);
+        this.memory.watch(p.name);
+        break;
+      case 'pickRacer':
+        this.derby?.m.close();
+        this.derby = new DerbyView(this.hud, G, p.name);
+        this.derby.watch(p.name);
+        break;
+    }
+  }
+
   /** Give CPU choices a beat so players can follow along. */
   private async showCpu(req: DecisionRequest, ans: unknown) {
     const p = this.G.players[req.pid];
@@ -349,9 +398,14 @@ export class HotSeat implements GameIO {
         await this.wait(T.cpuPreRoll);
         break;
       case 'venturePanel':
-      case 'reels':
-      case 'memory':
       case 'pickRacer':
+        await this.wait(T.cpuDecision);
+        break;
+      case 'reels':
+        // Let the reels spin a moment before the result.
+        await this.wait(T.cpuPath);
+        break;
+      case 'memory':
         break;
       default:
         await this.wait(T.cpuDecision);
@@ -377,13 +431,13 @@ export class HotSeat implements GameIO {
             const r = await stockModal(hud, G, p, 'sell');
             if (r) return { act: 'sellStock', ...r };
           } else if (a === 'trade') {
-            const offer = await tradeModal(hud, G, p);
+            const offer = await tradeOnBoard(this.pick, p);
             if (offer) return { act: 'trade', offer };
           } else if (a === 'auction') {
-            const sq = await auctionPickModal(hud, G, p);
+            const sq = await auctionOnBoard(this.pick, p);
             if (sq != null) return { act: 'auction', sq };
           } else if (a === 'renovate') {
-            const r = await renovateModal(hud, G, p);
+            const r = await renovateOnBoard(this.pick, p);
             if (r) return { act: 'renovate', ...r };
           }
         }
@@ -433,15 +487,12 @@ export class HotSeat implements GameIO {
       case 'invest':
         return investOnBoard(hud, this.board, G, p, req.shops, req.max);
 
-      case 'buyout':
-        return hud.prompt(
-          `Buy out ${G.players[G.nodes[req.sq].owner].name}'s ${squareName(G, G.nodes[req.sq])} for ${fmt(req.price)}? (You have ${fmt(p.cash)})${debtNote(p.cash, req.price)}`,
-          [
-            { label: 'Buy out', value: true },
-            { label: 'No thanks', value: false, main: true },
-          ],
-          color,
-        );
+      case 'buyout': {
+        this.board.setChoices([req.sq], PLAYER_COLORS[color], () => {}, undefined, { pins: false });
+        const yes = await buyoutPrompt(this.pick, p, req.sq, req.price);
+        this.board.clearChoices();
+        return yes;
+      }
 
       case 'circusUpgrade':
         return hud.prompt(
@@ -502,11 +553,7 @@ export class HotSeat implements GameIO {
       }
 
       case 'cannonTarget':
-        return hud.prompt(
-          'The cannon! Pick a player to fly to.',
-          req.options.map((id) => ({ label: G.players[id].name, value: id })),
-          color,
-        );
+        return cannonOnBoard(this.pick, p, req.options);
 
       case 'pickDistrict': {
         const text = {
@@ -544,9 +591,11 @@ export class HotSeat implements GameIO {
       }
 
       case 'answerTrade':
-        return answerTradeModal(hud, G, req.offer);
+        return answerTradeOnBoard(this.pick, req.offer, req.canCounter);
 
       case 'bid': {
+        // Bids are made in the live auction window everyone can see.
+        if (this.auction) return this.auction.ask(req);
         const sq = G.nodes[req.sq];
         const high =
           req.highBidder >= 0 ? ` High bid: ${fmt(req.high)} by ${G.players[req.highBidder].name}.` : '';
@@ -561,7 +610,7 @@ export class HotSeat implements GameIO {
       }
 
       case 'debt':
-        return debtModal(hud, G, p, req.assets);
+        return debtOnBoard(this.pick, p, req.assets);
     }
   }
 
@@ -630,6 +679,7 @@ export class HotSeat implements GameIO {
         break;
       }
       case 'owner':
+        this.values.set(e.sq, G.nodes[e.sq].value);
         if (e.owner >= 0) {
           sound.play('buy');
           board.ring(e.sq, '#ffd166', true);
@@ -639,7 +689,11 @@ export class HotSeat implements GameIO {
         break;
       case 'value':
         sound.play('grow');
-        for (const id of e.sqs) board.ring(id, '#ffd166', true);
+        for (const id of e.sqs) {
+          board.ring(id, '#ffd166', true);
+          board.valueFx(id, G.nodes[id].value - (this.values.get(id) ?? G.nodes[id].value));
+          this.values.set(id, G.nodes[id].value);
+        }
         this.refresh();
         await this.wait(T.value);
         break;
@@ -705,7 +759,24 @@ export class HotSeat implements GameIO {
         this.refresh();
         break;
       }
-      case 'auctionEnd':
+      case 'auctionStart':
+        this.auction?.end(-1, 0, 0);
+        this.auction = new AuctionView(hud, G, e.sq, e.seller, e.opening, e.bidders);
+        board.setChoices([e.sq], '#ffd166', () => {}, undefined, { pins: false });
+        await this.wait(T.cpuDecision);
+        break;
+      case 'auctionBid':
+        this.auction?.bid(e.pid, e.bid, e.raised);
+        await this.wait(T.cpuDecision * 0.6);
+        break;
+      case 'auctionEnd': {
+        const view = this.auction;
+        this.auction = null;
+        this.refresh();
+        await view?.end(e.winner, e.price, T.cpuResult * this.speed);
+        board.clearChoices();
+        break;
+      }
       case 'trade':
         this.refresh();
         break;

@@ -8,7 +8,7 @@ _Transcribed from "Fortune Street Remake: Game Spec & Build Hand-off" (Oct 22, 2
 This spec describes every system in the test build, how each one works, and how it interacts with
 the others.
 
-**The game:** 1 to 4 players (empty seats filled by CPU) roll one die, move around a branching town
+**The game:** 2 to 5 players (any seats not taken by humans are CPUs) roll one die, move around a branching town
 board, buy and grow shops, trade district stocks, collect four suits for promotions, and race to
 reach a target net worth and then the bank. It follows the rules of Fortune Street (Wii, 2011) with
 original characters, an HD board and UI, and pixel-art character sprites.
@@ -408,11 +408,12 @@ these are the main tools for completing districts.
 
 ### Trades
 
-1. Proposer picks a partner, then ticks any of their own properties and the partner's properties,
-   plus optional cash from each side.
+1. Proposer picks a partner, then taps properties on the board (their own and the partner's) to
+   add or remove them, plus optional cash from each side (digit arrows).
 2. Validation: at least one item, and neither side offers more cash than they hold.
-3. The partner accepts or declines. Hot-seat shows a "pass the device" prompt; online, the offer
-   goes only to that player with a timeout.
+3. The partner sees the offered squares marked on the board ("You get" / "You give") and accepts,
+   declines, or sends back different terms (a counter-offer edited the same way). Up to 3
+   counter-offers go back and forth; then the last receiver can only accept or decline.
 4. On accept, ownership and cash swap atomically, then expansion runs for both players in every
    group that changed hands.
 
@@ -422,11 +423,13 @@ it gives + 20G and it can afford its cash side. CPUs never propose trades in the
 
 ### Auctions
 
-- **Voluntary:** the owner picks a shop or built plot. Opening bid = its value; the winning bid is
+- **Voluntary:** the owner taps a shop or built plot on the board and confirms. Opening bid = its value; the winning bid is
   paid to the seller.
 - **Debt sale:** when a player sells a shop to the bank in debt, the bank pays them 75% of value,
   then auctions the shop to everyone else. Opening bid = 75% of value; the winning bid goes to the
   bank.
+- **Live window:** an auction opens a window in the middle of every player's screen showing the
+  property, the high bid and each bidder (in, out, deciding); players bid from inside it.
 - **Bidding:** players are asked in turn order. Each either raises (opening bid, then + 10% of value,
   minimum 10G) or passes and drops out. It ends when one bidder holds the high bid and everyone else
   has passed, or when nobody bids (no sale; the property stays with the seller or, for the bank,
@@ -495,8 +498,8 @@ save). A Board editor link sits below them.
 - **Board:** a carousel of the built-in boards followed by the player's saved boards. Arrows,
   swiping, the arrow keys or the dots move through it, and it loops from the last board back to
   the first. Import board file and Board editor sit under it.
-- **Players:** 1 to 4 humans.
-- **Fill empty seats with CPU:** on by default, giving 4 seats total.
+- **Players in the game:** 2 to 5 (default 4).
+- **Humans on this device:** 1 up to the number of players; the remaining seats are CPUs.
 - **Target net worth:** 4,000G (quick), 5,000G (default), 7,000G, 10,000G (long).
 - **Round limit:** none (default), 15, 20 or 30.
 - **Characters:** each seat gets a random character and name. Each human seat has a name box (up to
@@ -531,6 +534,18 @@ challenge strong players.
 renovating, stock dumps against a leader. These are good targets for a "hard" CPU in the rebuild.
 
 ## Interface and art
+
+**Board and HUD (Oct 2026).** The board is centered on the whole screen; the toolbar, player cards
+and options panel float over it. Grass continues seamlessly past the board edge. Each district
+reads as one area: a halo in the district color sits behind its squares and along the road
+between them. Tokens stand on a base in the player's color with their name above; the active
+player is drawn larger. Money everywhere ends in a small gold coin instead of "G". A shop whose
+value changes swells with a green "+" or red "-" label. Property choices (investing, trades,
+auctions, renovations, debt sales, buyout and agency cards, the cannon) are made by tapping the
+board; the rest of the board dims. The log opens above the player cards, newest entries at the
+bottom; online games show a "Room ABCD" button there too. A player holding all four suits has
+glowing suits on their card. Arcade games and venture picks open for everyone, so other players
+watch them being played; their result screen closes by itself or with Close.
 
 One rule decides every asset: only the player character sprites are pixel art. Everything else,
 including the board, the interface, suits, wild cards, coins and effects, is HD (vector). _(Changed

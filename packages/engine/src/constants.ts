@@ -35,6 +35,8 @@ export const K = {
   factorMin: 0.4,
   factorMax: 4,
   maxBuy: 99,
+  /** Counter-offers allowed in one trade (each side may send back different terms). */
+  tradeCounters: 3,
 
   // Debt
   debtSale: 0.75,

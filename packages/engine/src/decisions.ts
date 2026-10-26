@@ -63,7 +63,8 @@ export interface DecisionMap {
   pickSquare: [{ purpose: SquarePurpose; options: number[]; optional: boolean }, number | null];
   cannonTarget: [{ options: number[] }, number];
   pickDistrict: [{ purpose: DistrictPurpose; options: number[] }, number];
-  answerTrade: [{ offer: TradeOffer }, boolean];
+  /** Accept, decline, or send back different terms (a counter-offer from the answering player). */
+  answerTrade: [{ offer: TradeOffer; canCounter: boolean }, boolean | { counter: TradeOffer }];
   bid: [{ sq: number; bid: number; high: number; highBidder: number; seller: number }, boolean];
   debt: [{ assets: DebtAsset[] }, number];
 }

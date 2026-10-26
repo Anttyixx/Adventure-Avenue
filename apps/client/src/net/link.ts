@@ -10,6 +10,8 @@ export type Answerer = 'local' | 'cpu' | 'remote';
 
 export interface GameLink {
   role: 'host' | 'guest';
+  /** The room code, so it can be shown in the game for anyone who needs to rejoin. */
+  code: string;
   who(pid: number): Answerer;
   /** Host: wait for a remote player's answer (a CPU answers if they drop). */
   request(seq: number, req: DecisionRequest): Promise<unknown>;

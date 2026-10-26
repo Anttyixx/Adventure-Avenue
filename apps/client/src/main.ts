@@ -2,6 +2,7 @@ import { K, cloneState, newGame, type BoardDef } from '@aa/engine';
 import { sound } from './audio';
 import { HotSeat } from './host';
 import { checkForUpdate } from './update';
+import { installCoins } from './coins';
 import type { GuestRoom } from './net/guestroom';
 import type { HostRoom } from './net/hostroom';
 import type { StartInfo } from './net/protocol';
@@ -214,6 +215,7 @@ function showEditor(board: BoardDef | null) {
 }
 
 void checkForUpdate();
+installCoins();
 installDevBadge();
 // A soft click for every button press.
 document.addEventListener(

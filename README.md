@@ -2,7 +2,7 @@
 
 A browser board game in the spirit of Fortune Street: roll one die, move around a branching town,
 buy and grow shops, trade district stocks, collect the four suits for promotions, and race to reach
-the target net worth and get back to the bank. 1-4 players on one device (hot-seat) or online with
+the target net worth and get back to the bank. 2-5 players on one device (hot-seat) or online with
 friends, with CPU players filling empty seats.
 
 - **Play the stable build:** https://anttyixx.github.io/Adventure-Avenue/

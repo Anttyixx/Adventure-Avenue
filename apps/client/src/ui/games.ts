@@ -28,9 +28,31 @@ function okButton(label = 'OK'): { el: HTMLButtonElement; done: Promise<void> } 
   return { el, done };
 }
 
-/** Wait for OK from a human, or a short delay for CPU-only results. */
+/**
+ * Wait for OK from the player who played, or for everyone else a short delay, which their
+ * Close button cuts short.
+ */
 async function confirm(row: HTMLElement, human: boolean, speed: number) {
-  if (human) {
+  if (!human) {
+    await new Promise<void>((resolve) => {
+      const t = setTimeout(resolve, T.cpuResult * speed);
+      row.append(
+        h(
+          'button',
+          {
+            class: 'btn',
+            onclick: () => {
+              clearTimeout(t);
+              resolve();
+            },
+          },
+          'Close',
+        ),
+      );
+    });
+    return;
+  }
+  {
     const ok = okButton();
     row.append(ok.el);
     const key = (e: KeyboardEvent) => {
@@ -42,7 +64,7 @@ async function confirm(row: HTMLElement, human: boolean, speed: number) {
     window.addEventListener('keydown', key);
     await ok.done;
     window.removeEventListener('keydown', key);
-  } else await wait(T.cpuResult * speed);
+  }
 }
 
 // ------------------------------------------------------------------ venture grid
@@ -77,6 +99,11 @@ export class VentureView {
     }
     this.paint(G.vg.owner);
     this.info.textContent = 'Flip a panel.';
+  }
+
+  /** Someone else is picking: show the grid with a note. */
+  watch(name: string) {
+    this.info.textContent = `${name} is picking a panel...`;
   }
 
   paint(owner: number[]) {
@@ -185,6 +212,16 @@ export class ReelsView {
     });
   }
 
+  /** Spectators: the reels spin until the result arrives. */
+  watch(name: string) {
+    this.result.textContent = `${name} is playing...`;
+    clearInterval(this.timer);
+    this.timer = window.setInterval(() => {
+      for (let i = 0; i < 3; i++) if (!this.stopped[i]) this.idx[i] = (this.idx[i] + 1) % REEL_LENGTH;
+      this.draw();
+    }, REEL_TICK_MS);
+  }
+
   /** Human play: reels cycle every 120 ms; each press stops the next reel. */
   play(): Promise<number[]> {
     return new Promise((resolve) => {
@@ -259,6 +296,12 @@ export class MemoryView {
     });
   }
 
+  /** Spectators: show the prizes, then hide them, while the player picks. */
+  watch(name: string) {
+    this.result.textContent = `${name} is playing...`;
+    void this.hide(1);
+  }
+
   async hide(speed: number) {
     await wait(MEMORY_SHOW_MS * Math.max(0.6, speed));
     this.blocks.forEach((b) => b.classList.remove('show'));
@@ -322,6 +365,11 @@ export class DerbyView {
       this.lanes.push({ runner, tag, coins });
       this.track.append(h('div', { class: 'lane' }, tag, h('div', { class: 'lane-run' }, runner), coins));
     }
+  }
+
+  /** Spectators: the track, while the player backs a racer. */
+  watch(name: string) {
+    this.result.textContent = `${name} is picking a racer...`;
   }
 
   pick(): Promise<number> {
