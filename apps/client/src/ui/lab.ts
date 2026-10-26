@@ -54,6 +54,8 @@ import {
   answerTradeOnBoard,
   auctionOnBoard,
   buyoutPrompt,
+  costChips,
+  question,
   cannonOnBoard,
   debtOnBoard,
   renovateOnBoard,
@@ -326,7 +328,7 @@ export async function openLab(app: HTMLElement, section?: string) {
         result(
           'Buy prompt',
           await hud.prompt(
-            `Buy this Bay Market shop (220G) for 220G? (You have ${fmt(cur().cash)})`,
+            question('Buy this Bay Market shop?', costChips('Price', 220, cur().cash)),
             [
               { label: 'Buy', value: true, main: true },
               { label: 'Pass', value: false, secondary: true },
@@ -339,7 +341,11 @@ export async function openLab(app: HTMLElement, section?: string) {
         result(
           'Bid prompt',
           await hud.prompt(
-            'Auction: Plaza shop (340G) (value 340G). High bid: 374G by Milo. Bid 408G?',
+            question('Bid on the Plaza shop?', [
+              ['Value', fmt(340)],
+              ['High bid (Milo)', fmt(374)],
+              ['Your bid', fmt(408), 'big'],
+            ]),
             [
               { label: 'Bid 408G', value: true, main: true },
               { label: 'Pass', value: false, secondary: true },

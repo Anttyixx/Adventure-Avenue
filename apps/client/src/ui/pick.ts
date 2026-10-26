@@ -16,7 +16,7 @@ import {
   type TradeOffer,
 } from '@aa/engine';
 import type { BoardView } from '../board';
-import { squareName } from '../names';
+import { shortName, squareName } from '../names';
 import { digitPicker } from './digits';
 import { clear, fmt, h } from './dom';
 import type { Hud, PromptButton } from './hud';
@@ -67,6 +67,26 @@ export function factTable(rows: [string, string | Node, string?][]): HTMLElement
 
 function titled(title: string, ...rest: (Node | string)[]): HTMLElement {
   return h('div', { class: 'rich-body' }, h('div', { class: 'rich-title' }, title), ...rest);
+}
+
+/**
+ * A question for the action bar: just the question, with the numbers that go with it (price,
+ * value, cash...) as chips underneath.
+ */
+export function question(text: string, chips: [string, string | Node, string?][]): HTMLElement {
+  return titled(text, factTable(chips));
+}
+
+/**
+ * Chips for a purchase, most important first (narrow screens show only the first few): the
+ * price, the player's cash after (red below zero) and their cash now.
+ */
+export function costChips(label: string, price: number, cash: number): [string, string, string?][] {
+  return [
+    [label, fmt(price), 'big'],
+    ['Cash after', fmt(cash - price), cash - price < 0 ? 'bad' : ''],
+    ['Your cash', fmt(cash)],
+  ];
 }
 
 // ------------------------------------------------------------ auction, renovate, debt
@@ -168,10 +188,10 @@ export async function debtOnBoard(
       ctx,
       squares.map(({ a }) => a.id),
       p.color,
-      titled(
-        `${p.name} is ${fmt(-p.cash)} in debt`,
-        `${stocks.length ? 'Sell stock, or tap' : 'Tap'} a property to sell it for ${K.debtSale * 100}% of its value.`,
-      ),
+      question(`${stocks.length ? 'Sell stock or tap' : 'Tap'} a property to pay off your debt`, [
+        ['In debt', fmt(-p.cash), 'bad'],
+        ['Properties sell for', `${K.debtSale * 100}% of value`],
+      ]),
       stocks.length ? [{ label: `Sell stock (worth ${fmt(stockValue)})`, value: 'stock', main: true }] : [],
       { labels, cancel: '' },
     );
@@ -185,13 +205,10 @@ export async function debtOnBoard(
     const pick = squares.find(({ a }) => a.id === v)!;
     spotlight(board, pick.a.id, p.color);
     const ok = await hud.prompt(
-      titled(
-        `Sell your ${squareName(G, G.nodes[pick.a.id])}?`,
-        factTable([
-          ['The bank pays', `+${fmt(pick.a.amount)}`, 'good'],
-          ['Cash after', fmt(p.cash + pick.a.amount)],
-        ]),
-      ),
+      question(`Sell your ${shortName(G, G.nodes[pick.a.id])}?`, [
+        ['The bank pays', `+${fmt(pick.a.amount)}`, 'good'],
+        ['Cash after', fmt(p.cash + pick.a.amount), p.cash + pick.a.amount < 0 ? 'bad' : ''],
+      ]),
       [
         { label: 'Sell it', value: true, main: true },
         { label: 'Pick another', value: false },
@@ -209,25 +226,13 @@ export function buyoutPrompt(ctx: PickCtx, p: Player, sqId: number, price: numbe
   const { G, hud } = ctx;
   const sq = G.nodes[sqId];
   const owner = G.players[sq.owner];
-  const after = p.cash - price;
   return hud.prompt(
-    titled(
-      `Buy out ${owner.name}'s ${squareName(G, sq)}?`,
-      factTable([
-        ['Property value', fmt(sq.value)],
-        ['Buyout price (5x)', fmt(price), 'big'],
-        [`${owner.name} receives (3x)`, fmt(sq.value * K.buyoutOwnerX)],
-        ['Your cash now', fmt(p.cash)],
-        ['Your cash after', fmt(after), after < 0 ? 'bad' : ''],
-      ]),
-      after < 0
-        ? h(
-            'p',
-            { class: 'hint debt-note' },
-            'You would need to sell stock or property at the end of your turn.',
-          )
-        : '',
-    ),
+    question(`Buy out ${owner.name}'s ${shortName(G, sq)} at ${K.buyoutX}x?`, [
+      ...costChips(`Price (${K.buyoutX}x)`, price, p.cash).slice(0, 2),
+      ['Value', fmt(sq.value)],
+      [`${owner.name} gets (${K.buyoutOwnerX}x)`, fmt(sq.value * K.buyoutOwnerX)],
+      ['Your cash', fmt(p.cash)],
+    ]),
     [
       { label: 'Buy out', value: true },
       { label: 'No thanks', value: false, main: true },

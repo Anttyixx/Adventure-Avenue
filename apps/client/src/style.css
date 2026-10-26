@@ -3043,10 +3043,6 @@ input[type='range'] {
 .prompt-center .fact.big b {
   font-size: 15px;
 }
-/* The red "cash after" fact already says it; the note would not fit. */
-.prompt-center .debt-note {
-  display: none;
-}
 .hud.upright .prompt-center {
   bottom: var(--cards-h, 6px);
   max-width: calc(100vw - 12px);

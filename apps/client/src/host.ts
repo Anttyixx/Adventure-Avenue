@@ -17,7 +17,7 @@ import {
   type GameState,
 } from '@aa/engine';
 import { BoardView, ZOOM_STEP } from './board';
-import { squareName } from './names';
+import { shortName, squareName } from './names';
 import { clearSave, saveGame } from './save';
 import { SUIT_CHARS } from './icons';
 import { FAST_CPU_SPEED, TIMING as T } from './timing';
@@ -33,7 +33,9 @@ import {
   auctionOnBoard,
   buyoutPrompt,
   cannonOnBoard,
+  costChips,
   debtOnBoard,
+  question,
   renovateOnBoard,
   tradeOnBoard,
   type PickCtx,
@@ -468,7 +470,7 @@ export class HotSeat implements GameIO {
 
       case 'buyShop':
         return hud.prompt(
-          `Buy this ${squareName(G, G.nodes[req.sq])} for ${fmt(req.price)}? (You have ${fmt(p.cash)})${debtNote(p.cash, req.price)}`,
+          question(`Buy this ${shortName(G, G.nodes[req.sq])}?`, costChips('Price', req.price, p.cash)),
           [
             { label: 'Buy', value: true, main: true },
             { label: 'Pass', value: false, secondary: true },
@@ -499,7 +501,7 @@ export class HotSeat implements GameIO {
 
       case 'circusUpgrade':
         return hud.prompt(
-          `Upgrade your circus for ${fmt(req.cost)}?`,
+          question('Upgrade your circus?', costChips('Cost', req.cost, p.cash)),
           [
             { label: 'Upgrade', value: true, main: true },
             { label: 'Not now', value: false, secondary: true },
@@ -600,10 +602,14 @@ export class HotSeat implements GameIO {
         // Bids are made in the live auction window everyone can see.
         if (this.auction) return this.auction.ask(req);
         const sq = G.nodes[req.sq];
-        const high =
-          req.highBidder >= 0 ? ` High bid: ${fmt(req.high)} by ${G.players[req.highBidder].name}.` : '';
         return hud.prompt(
-          `Auction: ${squareName(G, sq)} (value ${fmt(sq.value)}).${high} Bid ${fmt(req.bid)}?`,
+          question(`Bid on the ${shortName(G, sq)}?`, [
+            ['Value', fmt(sq.value)],
+            ...(req.highBidder >= 0
+              ? [[`High bid (${G.players[req.highBidder].name})`, fmt(req.high)] as [string, string]]
+              : []),
+            ['Your bid', fmt(req.bid), 'big'],
+          ]),
           [
             { label: `Bid ${fmt(req.bid)}`, value: true, main: true },
             { label: 'Pass', value: false, secondary: true },
@@ -821,13 +827,6 @@ export class HotSeat implements GameIO {
         break;
     }
   }
-}
-
-/** Warning for a purchase that would take cash below zero. */
-function debtNote(cash: number, price: number) {
-  return price > cash
-    ? ` You would be ${fmt(price - cash)} short: sell stock or property at the end of your turn to cover it.`
-    : '';
 }
 
 function readPref(key: string): string | null {

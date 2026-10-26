@@ -602,8 +602,9 @@ fixed height (92px; 64px on small screens) centered at the bottom of the screen 
 wide as its content up to a maximum that leaves a gap to the player cards on either side.
 On small screens that room is narrow, so the question sits above the buttons (which scroll
 sideways when there are many).
-The question sits on the left, the buttons on the right; rich questions show a title and their
-numbers as a compact strip of facts. It slides up when a question is asked and back down once it
+The question sits on the left, the buttons on the right. Questions stay short ("Buy this Bay
+Market shop?", "Buy out Milo's Bay Market shop at 5x?") and the numbers that go with them (price,
+cash after, your cash, value, high bid...) show as chips under the question, most important first. It slides up when a question is asked and back down once it
 is answered, and is hidden otherwise. Choices with more to them (stock amounts, investing,
 building, trades, auctions, arcade games) open their own windows.
 

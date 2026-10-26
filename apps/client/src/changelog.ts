@@ -89,7 +89,7 @@ export const CHANGELOG: ChangelogEntry[] = [
       'Game log moved to the bottom left: tap the last action to open it',
       'Squares you can pick pulse with a white outline and spreading rings',
       'Online: your own player card is always at the bottom of the stack',
-      'Action bar: questions slide up in one tidy bar at the bottom of the screen',
+      'Action bar: short questions slide up at the bottom of the screen, with prices and cash as chips',
       'Hex tiles: prices and fees no longer cut off by the edges',
       'Fees on owned tiles shown as plain numbers; no Turn tag on player cards',
       'Round and target moved into the game menu',

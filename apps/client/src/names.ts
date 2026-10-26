@@ -28,6 +28,11 @@ export function squareName(G: GameState, sq: Square): string {
   return SPECIAL[sq.t] ?? sq.t;
 }
 
+/** The name without a shop's price, for questions whose chips already show it. */
+export function shortName(G: GameState, sq: Square): string {
+  return sq.t === 'shop' ? `${G.districts[sq.d]?.name ?? 'Row'} shop` : squareName(G, sq);
+}
+
 export const BUILDING_INFO: Record<string, { rival: string; owner: string }> = {
   checkpoint: {
     rival: 'Pays the toll (also when passing). Starts at 20G, +10G each time.',
