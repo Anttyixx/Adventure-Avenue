@@ -77,14 +77,14 @@ const PALETTE: { group: string; items: { tool: Tool; label: string; hint: string
 ];
 
 const DISTRICT_COLORS = [
-  '#f2a7a0',
-  '#9fd3f0',
-  '#a8e0a0',
-  '#f5d77a',
-  '#cdb4f0',
-  '#8fe3d6',
-  '#f7bfdc',
-  '#ffc59e',
+  '#ff4d4d',
+  '#2f9bff',
+  '#2ecc71',
+  '#ffc21a',
+  '#9b5cff',
+  '#13c4b4',
+  '#ff4fa8',
+  '#ff8a1f',
 ];
 const DISTRICT_NAMES = [
   'Brick Row',

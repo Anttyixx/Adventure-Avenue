@@ -66,7 +66,8 @@ export interface DecisionMap {
   /** Accept, decline, or send back different terms (a counter-offer from the answering player). */
   answerTrade: [{ offer: TradeOffer; canCounter: boolean }, boolean | { counter: TradeOffer }];
   bid: [{ sq: number; bid: number; high: number; highBidder: number; seller: number }, boolean];
-  debt: [{ assets: DebtAsset[] }, number];
+  /** Sell one asset (index into `assets`), or some shares of one district. */
+  debt: [{ assets: DebtAsset[] }, number | { d: number; n: number }];
 }
 
 export type DecisionKind = keyof DecisionMap;

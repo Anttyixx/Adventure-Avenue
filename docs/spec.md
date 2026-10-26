@@ -113,7 +113,8 @@ Every turn runs the same loop: act, roll, move, land, settle, hand over.
 7. **End checks:** bankruptcy or round limit ends the match.
 8. **Next player:** skip bankrupt; new round after the last seat.
 
-Passing the bank can promote the player and, if they are at the target, end the game immediately.
+Passing the bank only matters when the player can level up (promotion, then a stock purchase), or
+when they arrive already at the target, which ends the game immediately.
 Landing effects can start a new roll (roll-on, some venture cards), which re-enters the loop at
 "Roll the die" with a chain depth limit of 3. Debt is checked only after all landing effects finish.
 
@@ -277,11 +278,11 @@ price_d = max(1, round(average shop value_d x 0.04 x factor_d))
 The average covers shops and 3-Star Shops in the district (not other buildings). `factor` starts at
 1.0 per district.
 
-| Action   | Where / when                                                                    | Effect                                                                         |
-| -------- | ------------------------------------------------------------------------------- | ------------------------------------------------------------------------------ |
-| Buy      | Passing or stopping at the bank; landing on the Stockbroker; some venture cards | Up to 99 shares in one district per purchase. 10+ shares: factor x 1.1 (max 4) |
-| Sell     | Before rolling; when in debt (all shares of one district); stock venture card   | 10+ shares: factor x 0.9 (min 0.4)                                             |
-| Dividend | Whenever anyone pays a fee or toll in district d                                | Every other shareholder receives floor(fee x shares / 250) from the bank       |
+| Action   | Where / when                                                                               | Effect                                                                         |
+| -------- | ------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------ |
+| Buy      | Landing on the bank, or passing it with a promotion; Stockbroker; some venture cards       | Up to 99 shares in one district per purchase. 10+ shares: factor x 1.1 (max 4) |
+| Sell     | Before rolling; when in debt (any number of shares from any districts); stock venture card | 10+ shares: factor x 0.9 (min 0.4)                                             |
+| Dividend | Whenever anyone pays a fee or toll in district d                                           | Every other shareholder receives floor(fee x shares / 250) from the bank       |
 
 **What moves prices:** investing, expansion, domination, venture cards that grow or shrink shops,
 Memory Blocks prizes, building a 3-Star Shop, and big trades (the factor). Shares count toward net
@@ -314,8 +315,10 @@ paycheck.
   club. Cannon, balloon and zoom warps also collect the suit at the destination.
 - **Suit Yourself cards:** a wild card for any one missing suit. Gained from venture cards, Lucky
   Reels and Memory Blocks. Promotion consumes one wild per missing suit.
-- **Bank visit** (pass or land), in this order: promotion if 4 suits (counting wilds) -> win check
-  -> stock purchase (Standard) -> free direction next turn if landed.
+- **Bank visit** (pass or land), in this order: win check (net worth already at the target when
+  arriving; a promotion on this visit can't win it, the player must come back) -> promotion if 4
+  suits (counting wilds) -> stock purchase (Standard; only when landing or after a promotion) ->
+  free direction next turn if landed.
 
 **Promotion** clears all suits, adds 1 level and pays:
 
@@ -408,10 +411,12 @@ these are the main tools for completing districts.
 
 ### Trades
 
-1. Proposer picks a partner, then taps properties on the board (their own and the partner's) to
-   add or remove them, plus optional cash from each side (digit arrows).
+1. Proposer picks a partner first. A pop-up then shows the whole board on the left (the rest of
+   the board dimmed, their own and the partner's properties lit) and the deal on the right; tapping
+   a property adds or removes it, plus optional cash from each side (digit arrows). No tile is ever
+   hidden behind the interface.
 2. Validation: at least one item, and neither side offers more cash than they hold.
-3. The partner sees the offered squares marked on the board ("You get" / "You give") and accepts,
+3. The partner sees the same pop-up with the offered squares marked ("You get" / "You give") and accepts,
    declines, or sends back different terms (a counter-offer edited the same way). Up to 3
    counter-offers go back and forth; then the last receiver can only accept or decline.
 4. On accept, ownership and cash swap atomically, then expansion runs for both players in every
@@ -423,13 +428,16 @@ it gives + 20G and it can afford its cash side. CPUs never propose trades in the
 
 ### Auctions
 
-- **Voluntary:** the owner taps a shop or built plot on the board and confirms. Opening bid = its value; the winning bid is
+- **Voluntary:** the owner taps a shop or built plot in the whole-board pop-up and confirms. Opening bid = its value; the winning bid is
   paid to the seller.
 - **Debt sale:** when a player sells a shop to the bank in debt, the bank pays them 75% of value,
   then auctions the shop to everyone else. Opening bid = 75% of value; the winning bid goes to the
   bank.
 - **Live window:** an auction opens a window in the middle of every player's screen showing the
-  property, the high bid and each bidder (in, out, deciding); players bid from inside it.
+  lot (art, name, value), the high bid and leader, and each bidder (in, passed, leading,
+  deciding); players bid from inside it. A human has 12 seconds (`TIMING.auctionBid`) to raise,
+  with a countdown bar everyone sees; running out of time counts as a pass, so the high bidder wins
+  once everyone else has passed or timed out.
 - **Bidding:** players are asked in turn order. Each either raises (opening bid, then + 10% of value,
   minimum 10G) or passes and drops out. It ends when one bidder holds the high bid and everyone else
   has passed, or when nobody bids (no sale; the property stays with the seller or, for the bank,
@@ -452,9 +460,10 @@ track until no one is above the target.
 
 **Debt settlement** (end of the active player's turn, while cash < 0):
 
-1. List sellable assets: each district's shares (sold all at once at market price) and each shop or
-   built plot (bank pays 75% of value).
-2. Human picks one at a time; the CPU sells stock first, then the cheapest property.
+1. List sellable assets: shares (any number from any districts, at market price, through the
+   stock screen) and each shop or built plot (bank pays 75% of value).
+2. Human picks one sale at a time; the CPU sells stock first (a whole district at a time), then the
+   cheapest property.
 3. Sold shops go to a debt auction (winning bid to the bank). Sold plots become vacant again.
 4. Repeat until cash >= 0. With nothing left to sell, the player goes bankrupt.
 
@@ -468,7 +477,7 @@ their shares vanish. The game ends immediately and the richest remaining player 
 
 | Condition      | Check point                                                 | Winner                             |
 | -------------- | ----------------------------------------------------------- | ---------------------------------- |
-| Target reached | On any bank visit (passing or landing), after the promotion | That player                        |
+| Target reached | Arriving at the bank (passing or landing), before promotion | That player                        |
 | Bankruptcy     | When a player can't cover debt                              | Highest net worth among the others |
 | Round limit    | When the round counter passes the limit                     | Highest net worth                  |
 
@@ -593,14 +602,15 @@ above the action bar. Bottom right: the player cards stacked vertically (net wor
 suits and progress bar), with a Hide/Show toggle so players can clear the board. The stock market and
 game log live in a slide-out drawer on the right.
 
-**Camera.** By default the camera follows the active player, zoomed in (about 1.4x the fit-to-screen
-zoom, more on small screens) and eased smoothly as they move. It frames the player in the part of the
-screen not covered by overlays, so tokens never sit under the cards or action bar, and it stops
-panning at the board edge. The camera switches to the full board automatically when a choice needs
-it (more than 4 glowing squares, or a glowing square outside the follow view), and always when the
-game ends. The "Full board" / "Follow player" button (or the V key) toggles the view for the current
-game; every game (new or continued) starts in Follow player. The die and on-board pop-ups are drawn at screen size so they stay readable at
-any zoom. Taps on the board are converted through the camera so square picking works in both views.
+**Camera.** The camera always follows the active player, centered on screen and zoomed in (about
+1.65x the fit-to-screen zoom, more on small screens), eased smoothly as they move, and stops panning
+at the board edge. The mouse wheel, a pinch, or the - and + keys zoom out to show more of the map;
+zooming out past about halfway, the camera gradually lets go of the player and drifts to the
+board's center, until at full zoom-out the whole board is centered. While a choice is open the
+camera zooms out just enough to frame the player and every glowing square (never closer than the
+player's own zoom). The game-over view shows the whole board. The die and on-board pop-ups are
+drawn at screen size so they stay readable at any zoom. Taps on the board are converted through the
+camera so square picking works at any zoom.
 
 Phone held sideways: the same overlays in compact form. Phone held upright: a "turn your phone
 sideways" screen with a "Play upright anyway" option, which moves the cards into a 2-column block
@@ -691,9 +701,15 @@ if it was taken) and shows who is back; friends rejoin with the code and the sam
 the same device), and the host resumes. Anyone not back yet is played by a CPU until they join. A game that was only ever played on
 one device can go online the same way: Continue always reopens a room, every human seat starts on
 the host's device, and a friend who joins (before the host resumes) with that player's exact name
-takes the seat over. Without a connection, such a game simply continues on the device.
+takes the seat over, before or after the host resumes. Without a connection, such a game simply
+continues on the device.
 
-**Not done yet:** turn timer, chat/emotes, a relay (TURN) server for networks that block direct
+**Coming back as a guest:** each device remembers the room and name it last joined (for 3 days,
+cleared when that game ends). Reloading the page during a game rejoins straight away; on a later
+visit the main menu shows "Rejoin online game". A guest who rejoins mid-turn replays the turn
+without being asked again for decisions they already made.
+
+**Not done yet:** turn timer (auctions have a bid timer), chat/emotes, a relay (TURN) server for networks that block direct
 connections, and letting guests answer trades and auction bids while it is not their turn without
 waiting for their copy to catch up.
 

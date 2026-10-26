@@ -5,10 +5,10 @@ import { checkForUpdate } from './update';
 import { installCoins } from './coins';
 import type { GuestRoom } from './net/guestroom';
 import type { HostRoom } from './net/hostroom';
-import type { StartInfo } from './net/protocol';
+import { cleanCode, type StartInfo } from './net/protocol';
 import { h } from './ui/dom';
 import { joinScreen, onlineHub, resumeLobby } from './ui/online';
-import type { SaveInfo } from './save';
+import { clearGuest, guestInGame, loadGuest, setGuestInGame, type SaveInfo } from './save';
 import { randomLook } from './sprites';
 import { installDevBadge } from './ui/devmenu';
 import { openEditor } from './ui/editor';
@@ -33,6 +33,10 @@ function showStart() {
     onOnline() {
       close();
       showOnline();
+    },
+    onRejoin(g) {
+      close();
+      showJoin(g.code, { name: g.name });
     },
     onEditor() {
       close();
@@ -132,7 +136,6 @@ async function resumeOnline(save: SaveInfo) {
   const close = resumeLobby(app, room, save.online?.code ?? '', {
     onResume() {
       close();
-      room.markRunning();
       const game = new HotSeat(
         app,
         room.game!,
@@ -154,7 +157,7 @@ async function resumeOnline(save: SaveInfo) {
   });
 }
 
-function showJoin(code = '') {
+function showJoin(code = '', rejoin?: { name: string }) {
   const close = joinScreen(
     app,
     {
@@ -168,6 +171,7 @@ function showJoin(code = '') {
       },
     },
     code,
+    rejoin,
   );
 }
 
@@ -175,9 +179,13 @@ function showJoin(code = '') {
 function playGuest(room: GuestRoom, first: StartInfo) {
   let game: HotSeat | null = null;
   let ended = false;
+  setGuestInGame(true);
   const finish = () => {
     if (ended) return;
     ended = true;
+    setGuestInGame(false);
+    // A finished game can't be rejoined; one the host only paused (quit to save) can.
+    if (game?.G.over) clearGuest();
     room.leave();
     game?.destroy();
     game = null;
@@ -277,7 +285,11 @@ const lab = location.hash.match(/^#ui-lab(?:\/(\w+))?/);
 const joinCode = new URLSearchParams(location.search).get('join');
 if (lab) void openLab(app, lab[1]);
 else if (location.hash.startsWith('#editor')) showEditor(null);
-else if (joinCode) {
+else if (guestInGame() && loadGuest() && (!joinCode || cleanCode(joinCode) === loadGuest()!.code)) {
+  // This tab was in an online game as a guest: reloading goes straight back in.
+  const g = loadGuest()!;
+  showJoin(g.code, { name: g.name });
+} else if (joinCode) {
   // An invite link: open the join form with the code filled in, then tidy the address bar.
   const q = new URLSearchParams(location.search);
   q.delete('join');

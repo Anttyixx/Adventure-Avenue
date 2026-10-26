@@ -200,6 +200,10 @@ export class GuestRoom implements GameLink {
     );
   }
 
+  known(seq: number) {
+    return this.answers.has(seq);
+  }
+
   behind(seq: number) {
     return this.latest - seq > 2;
   }

@@ -36,6 +36,7 @@ import { randomLook } from '../sprites';
 import { clear, fmt, h } from './dom';
 import { DerbyView, MemoryView, ReelsView, VentureView } from './games';
 import { Hud } from './hud';
+import { clearGuest, loadGuest, saveGuest } from '../save';
 import { mainMenu } from './menu';
 import { openWhatsNew } from './whatsnew';
 import { joinScreen, lobbySeats, onlineHub, resumeLobby } from './online';
@@ -112,13 +113,7 @@ export async function openLab(app: HTMLElement, section?: string) {
   const boardHost = h('div', { class: 'board-host' });
   root.append(boardHost);
   const board = new BoardView(boardHost);
-  let mode: 'follow' | 'full' = 'full';
   const hud = new Hud(root, board, {
-    onToggleView: () => {
-      mode = mode === 'full' ? 'follow' : 'full';
-      board.setMode(mode);
-      hud.setViewLabel(mode);
-    },
     onToggleFast: () => hud.tick('Fast CPU only affects real games.'),
     onQuit: () => {
       location.hash = '';
@@ -126,8 +121,7 @@ export async function openLab(app: HTMLElement, section?: string) {
     },
     onRules: () => rulesModal(hud, G),
   });
-  board.setMode(mode);
-  hud.setViewLabel(mode);
+  board.zoomOut = 1;
   hud.setFastLabel(false);
 
   let target = 0;
@@ -507,11 +501,8 @@ export async function openLab(app: HTMLElement, section?: string) {
         cur().onBreak = !cur().onBreak;
         refresh();
       }),
-      btn('Follow / full board', () => {
-        mode = mode === 'full' ? 'follow' : 'full';
-        board.setMode(mode);
-        hud.setViewLabel(mode);
-      }),
+      btn('Zoom in', () => board.zoomBy(-0.25)),
+      btn('Zoom out', () => board.zoomBy(0.25)),
     );
   }
 
@@ -599,7 +590,7 @@ export async function openLab(app: HTMLElement, section?: string) {
         const assets = game.debtAssets(p);
         const i = await debtOnBoard(pick, p, assets);
         p.cash = cash;
-        result('Debt', assets[i]);
+        result('Debt', typeof i === 'number' ? assets[i] : i);
       }),
       btn('Buyout (5x)', async () => {
         const q = G.players[(target + 1) % G.players.length];
@@ -837,23 +828,33 @@ export async function openLab(app: HTMLElement, section?: string) {
         ),
       );
     };
-    const menu = (withSave: boolean) =>
-      overlay((holder, done) =>
-        mainMenu(
+    const menu = (withSave: boolean, guest = false) =>
+      overlay((holder, done) => {
+        // The rejoin button reads this device's last guest game; a sample one is shown here.
+        const had = loadGuest();
+        if (guest) saveGuest('KQZD', G.players[1].name);
+        const close = mainMenu(
           holder,
           {
             onStart: () => done('Main menu: Start pressed.'),
             onContinue: () => done('Main menu: Continue pressed.'),
             onOnline: () => done('Main menu: Play online pressed.'),
+            onRejoin: (g) => done(`Main menu: Rejoin room ${g.code} as ${g.name} pressed.`),
             onEditor: () => done('Main menu: Board editor pressed.'),
           },
           withSave ? { state: cloneState(G), savedAt: Date.now() - 12 * 60000 } : null,
-        ),
-      );
+        );
+        if (guest) {
+          if (had) saveGuest(had.code, had.name);
+          else clearGuest();
+        }
+        return close;
+      });
     row(
       s,
       btn('Main menu (saved game)', () => menu(true)),
       btn('Main menu (no save)', () => menu(false)),
+      btn('Main menu (rejoin offer)', () => menu(false, true)),
       btn("What's new", () => openWhatsNew(document.body)),
       btn('Game setup', () =>
         overlay((holder, done) =>

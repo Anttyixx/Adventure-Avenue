@@ -49,3 +49,59 @@ export function clearSave() {
     /* ignore */
   }
 }
+
+/** The online game this device last joined as a guest, so a reload or a later visit can rejoin it. */
+export interface GuestSave {
+  code: string;
+  name: string;
+  at: number;
+}
+
+const GUEST_KEY = 'adventure-avenue-guest';
+/** Set (per tab) while a guest is in a game, so reloading the page goes straight back in. */
+const IN_GAME_KEY = 'adventure-avenue-guest-in-game';
+/** How long the main menu offers to rejoin. */
+const GUEST_DAYS = 3;
+
+export function saveGuest(code: string, name: string) {
+  try {
+    localStorage.setItem(GUEST_KEY, JSON.stringify({ code, name, at: Date.now() } satisfies GuestSave));
+  } catch {
+    /* storage unavailable */
+  }
+}
+
+export function loadGuest(): GuestSave | null {
+  try {
+    const g = JSON.parse(localStorage.getItem(GUEST_KEY) ?? 'null') as GuestSave | null;
+    if (!g?.code || !g.name || Date.now() - g.at > GUEST_DAYS * 864e5) return null;
+    return g;
+  } catch {
+    return null;
+  }
+}
+
+export function clearGuest() {
+  try {
+    localStorage.removeItem(GUEST_KEY);
+  } catch {
+    /* ignore */
+  }
+}
+
+export function setGuestInGame(on: boolean) {
+  try {
+    if (on) sessionStorage.setItem(IN_GAME_KEY, '1');
+    else sessionStorage.removeItem(IN_GAME_KEY);
+  } catch {
+    /* ignore */
+  }
+}
+
+export function guestInGame(): boolean {
+  try {
+    return sessionStorage.getItem(IN_GAME_KEY) === '1';
+  } catch {
+    return false;
+  }
+}

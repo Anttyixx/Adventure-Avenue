@@ -131,13 +131,6 @@ export class HostRoom implements GameLink {
     return room;
   }
 
-  /** Set once the reopened game is running: from then on only remote seats can be rejoined. */
-  private running = false;
-
-  markRunning() {
-    this.running = true;
-  }
-
   /** The game a reopened room continues. */
   get game(): GameState | null {
     return this.G;
@@ -249,10 +242,9 @@ export class HostRoom implements GameLink {
       String(msg.name ?? '')
         .trim()
         .toLowerCase();
-    // Before a reopened game resumes, a friend can take over a seat played on the host's
-    // device by joining with that player's name (this is how a local game goes online).
-    const claim =
-      !this.running && this.G ? this.seats.find((s) => s.kind === 'local' && nameOf(s)) : undefined;
+    // In a reopened game, a friend can take over a seat played on the host's device by joining
+    // with that player's name (this is how a local game goes online), before or after it resumes.
+    const claim = this.G ? this.seats.find((s) => s.kind === 'local' && nameOf(s)) : undefined;
     if (claim) claim.kind = 'remote';
     const back =
       claim ??

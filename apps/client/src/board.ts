@@ -52,7 +52,8 @@ export interface Insets {
   left: number;
 }
 
-export type ViewMode = 'follow' | 'full';
+/** Zoom-out level (0-1) past which the camera blends from the player to the board's center. */
+const ZOOM_BLEND = 0.55;
 
 export class BoardView {
   /** Center of a square on this board. */
@@ -81,7 +82,14 @@ export class BoardView {
   // Camera: world point at the focus, and zoom in CSS px per world unit.
   cam = { x: 650, y: 400, z: 1 };
   camTarget = { x: 650, y: 400, z: 1 };
-  mode: ViewMode = 'follow';
+  /**
+   * How far the player has zoomed out with the wheel or a pinch: 0 = close on the active
+   * player, 1 = the whole board. Past ZOOM_BLEND the camera stops following and drifts to the
+   * board's center.
+   */
+  zoomOut = 0;
+  private pinch = new Map<number, { x: number; y: number }>();
+  private pinchDist = 0;
   fitIds: number[] = [];
   insets: Insets = { top: 0, right: 0, bottom: 0, left: 0 };
   private grass: CanvasPattern | null = null;
@@ -121,6 +129,10 @@ export class BoardView {
     this.canvas.addEventListener('pointermove', this.pointerMove);
     this.canvas.addEventListener('pointerleave', () => this.onHover?.(null, 0, 0));
     this.canvas.addEventListener('click', this.click);
+    this.canvas.addEventListener('wheel', this.wheel, { passive: false });
+    this.canvas.addEventListener('pointerdown', this.pinchDown);
+    this.canvas.addEventListener('pointerup', this.pinchUp);
+    this.canvas.addEventListener('pointercancel', this.pinchUp);
     this.raf = requestAnimationFrame(this.frame);
     // The static board is cached; redraw it once the web fonts arrive so labels use them.
     document.fonts?.ready.then(() => (this.dirty = true));
@@ -492,8 +504,40 @@ export class BoardView {
 
   // ------------------------------------------------------------ camera
 
-  setMode(m: ViewMode) {
-    this.mode = m;
+  /** Zoom out (positive) or in (negative) by `d`, where 1 is the whole range. */
+  zoomBy(d: number) {
+    this.zoomOut = Math.min(1, Math.max(0, this.zoomOut + d));
+  }
+
+  private wheel = (e: WheelEvent) => {
+    e.preventDefault();
+    // Trackpads send many small deltas, mouse wheels a few big ones.
+    const px = e.deltaMode === 1 ? e.deltaY * 33 : e.deltaY;
+    this.zoomBy(Math.max(-0.2, Math.min(0.2, px / 600)));
+  };
+
+  private pinchDown = (e: PointerEvent) => {
+    if (e.pointerType !== 'touch') return;
+    this.pinch.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    this.pinchDist = this.pinchSpan();
+  };
+
+  private pinchUp = (e: PointerEvent) => {
+    this.pinch.delete(e.pointerId);
+    this.pinchDist = this.pinchSpan();
+  };
+
+  private pinchSpan() {
+    if (this.pinch.size < 2) return 0;
+    const [a, b] = [...this.pinch.values()];
+    return Math.hypot(a.x - b.x, a.y - b.y);
+  }
+
+  /** Zoom level for a zoomOut value: eased from the follow zoom to the whole board. */
+  zoomFor(out: number) {
+    const near = this.followZoom();
+    const far = Math.min(near, this.fitZoom());
+    return near * Math.pow(far / near, out);
   }
 
   /**
@@ -536,19 +580,25 @@ export class BoardView {
   }
 
   updateCamera() {
-    const full = this.mode === 'full' || this.followPid < 0 || this.G?.over;
-    if (!full && this.fitIds.length) {
-      this.camTarget = this.choiceView();
-    } else if (full) {
-      const z = this.fitZoom();
-      const c = this.clampCenter(this.ww / 2, this.wh / 2, z);
-      this.camTarget = { x: c.x, y: c.y, z };
-    } else {
-      const z = this.followZoom();
-      const t = this.tokenPos(this.followPid);
-      const c = this.clampCenter(t.x, t.y, z);
-      this.camTarget = { x: c.x, y: c.y, z };
+    const out = this.followPid < 0 || this.G?.over ? 1 : this.zoomOut;
+    const z = this.zoomFor(out);
+    let follow = this.followPid >= 0 ? this.tokenPos(this.followPid) : { x: this.ww / 2, y: this.wh / 2 };
+    let fz = z;
+    if (this.fitIds.length && out < 1) {
+      // A choice is open: zoom out just enough to frame it (never closer than the player chose).
+      const v = this.choiceView();
+      follow = v;
+      fz = Math.min(z, v.z);
     }
+    // Zoomed far out, the camera lets go of the player and eases to the board's center.
+    const t = Math.min(1, Math.max(0, (out - ZOOM_BLEND) / (1 - ZOOM_BLEND)));
+    const b = t * t * (3 - 2 * t);
+    const c = this.clampCenter(
+      follow.x + (this.ww / 2 - follow.x) * b,
+      follow.y + (this.wh / 2 - follow.y) * b,
+      fz,
+    );
+    this.camTarget = { x: c.x, y: c.y, z: fz };
     const k = reducedMotion() ? 1 : 0.12;
     this.cam.x += (this.camTarget.x - this.cam.x) * k;
     this.cam.y += (this.camTarget.y - this.cam.y) * k;
@@ -579,6 +629,12 @@ export class BoardView {
   }
 
   private pointerMove = (e: PointerEvent) => {
+    if (this.pinch.has(e.pointerId)) {
+      this.pinch.set(e.pointerId, { x: e.clientX, y: e.clientY });
+      const d = this.pinchSpan();
+      if (d && this.pinchDist) this.zoomBy(Math.log(this.pinchDist / d) * 0.8);
+      this.pinchDist = d;
+    }
     const id = this.squareAt(e.clientX, e.clientY);
     this.canvas.style.cursor = id != null && this.glow.includes(id) ? 'pointer' : 'default';
     if (this.routes.size) this.previewRoute(id != null && this.glow.includes(id) ? id : null);
@@ -1088,39 +1144,7 @@ export class BoardView {
 /** Draw the static board (scenery, roads and every square) in world units. Used by the editor too. */
 export function paintBoard(ctx: CanvasRenderingContext2D, G: GameState) {
   drawScenery(ctx, G);
-  drawDistricts(ctx, G);
   for (const sq of G.nodes) drawSquare(ctx, G, sq);
-}
-
-/**
- * District "blocks": a halo in the district color behind every shop and plot, joined along
- * the road to neighboring squares of the same district, so a district reads as one area.
- */
-function drawDistricts(ctx: CanvasRenderingContext2D, G: GameState) {
-  const L = G.layout;
-  const isProp = (sq: Square) => (sq.t === 'shop' || sq.t === 'plot') && sq.d >= 0;
-  ctx.save();
-  ctx.lineCap = 'round';
-  for (const sq of G.nodes) {
-    if (!isProp(sq)) continue;
-    const color = G.districts[sq.d]?.color ?? '#ccc';
-    const a = squareCenter(sq, L);
-    ctx.strokeStyle = darken(color, 0.9);
-    ctx.lineWidth = 34;
-    for (const n of sq.nb) {
-      const other = G.nodes[n];
-      if (n < sq.id || !isProp(other) || other.d !== sq.d) continue;
-      const b = squareCenter(other, L);
-      ctx.beginPath();
-      ctx.moveTo(a.x, a.y);
-      ctx.lineTo(b.x, b.y);
-      ctx.stroke();
-    }
-    ctx.fillStyle = darken(color, 0.9);
-    tileShape(ctx, L, a.x, a.y, TILE / 2 + 9, 18);
-    ctx.fill();
-  }
-  ctx.restore();
 }
 
 // ------------------------------------------------------------------ drawing helpers
@@ -1703,8 +1727,14 @@ function drawSquare(ctx: CanvasRenderingContext2D, G: GameState, sq: Square) {
     ctx.save();
     tileShape(ctx, L, c.x, c.y, TILE / 2, 12);
     ctx.clip();
-    ctx.fillStyle = district.color;
-    ctx.fillRect(x - 10, top, TILE + 20, c.y - 27 - top);
+    // District marker: a soft glow of the district color just inside the tile's border.
+    ctx.shadowColor = district.color;
+    ctx.shadowBlur = 16;
+    ctx.strokeStyle = district.color;
+    ctx.lineWidth = 9;
+    tileShape(ctx, L, c.x, c.y, TILE / 2, 12);
+    ctx.stroke();
+    ctx.stroke();
     ctx.restore();
   }
 

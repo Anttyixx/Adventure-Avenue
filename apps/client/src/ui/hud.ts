@@ -36,7 +36,6 @@ export interface PromptButton<T> {
 }
 
 export interface HudCallbacks {
-  onToggleView(): void;
   onToggleFast(): void;
   onQuit(): void;
   onRules(): void;
@@ -75,7 +74,6 @@ export class Hud {
   private cardEls = new Map<number, HTMLElement>();
   private promptResolve: ((v: any) => void) | null = null;
   private mainButton: HTMLButtonElement | null = null;
-  viewBtn = h('button', { class: 'btn small' });
   fastBtn = h('button', { class: 'btn small' });
 
   constructor(
@@ -104,11 +102,9 @@ export class Hud {
     );
     parent.append(this.root);
 
-    this.viewBtn.onclick = cb.onToggleView;
     this.fastBtn.onclick = cb.onToggleFast;
     const fs = h('button', { class: 'btn small', onclick: () => toggleFullscreen() }, 'Full screen');
     this.toolbar.append(
-      this.viewBtn,
       this.fastBtn,
       h('button', { class: 'btn small market-btn', onclick: () => this.toggleDrawer('market') }, 'Market'),
     );
@@ -142,10 +138,6 @@ export class Hud {
       this.mainButton.click();
     }
   };
-
-  setViewLabel(mode: 'follow' | 'full') {
-    this.viewBtn.textContent = mode === 'follow' ? 'Full board' : 'Follow player';
-  }
 
   setFastLabel(fast: boolean) {
     this.fastBtn.textContent = fast ? 'Fast CPU: on' : 'Fast CPU: off';
@@ -514,9 +506,14 @@ export class Hud {
     );
     const W = window.innerWidth;
     const H = window.innerHeight;
-    this.tooltip.style.left = `${Math.min(W - 250, x + 14)}px`;
-    this.tooltip.style.top = `${Math.min(H - 200, y + 14)}px`;
     this.tooltip.classList.add('show');
+    // Below and right of the pointer; flip above or left when it would run off the screen.
+    const tw = this.tooltip.offsetWidth;
+    const th = this.tooltip.offsetHeight;
+    const left = x + 14 + tw > W - 8 ? x - 14 - tw : x + 14;
+    const top = y + 14 + th > H - 8 ? y - 14 - th : y + 14;
+    this.tooltip.style.left = `${Math.max(8, Math.min(W - 8 - tw, left))}px`;
+    this.tooltip.style.top = `${Math.max(8, Math.min(H - 8 - th, top))}px`;
   }
 
   // ------------------------------------------------------------ action bar

@@ -7,6 +7,7 @@ import { sound } from '../audio';
 import type { GuestEvents, GuestRoom } from '../net/guestroom';
 import type { HostRoom } from '../net/hostroom';
 import { cleanCode, inviteURL, type LobbyInfo, type StartInfo } from '../net/protocol';
+import { saveGuest } from '../save';
 import { portraitURL, randomLook } from '../sprites';
 import { clear, fmt, h } from './dom';
 import { titleScene } from './menu';
@@ -105,8 +106,11 @@ export interface JoinHandlers {
   onBack(): void;
 }
 
-/** Join form, then the waiting lobby. `code` pre-fills the room code (from a shared link). */
-export function joinScreen(root: HTMLElement, handlers: JoinHandlers, code = '') {
+/**
+ * Join form, then the waiting lobby. `code` pre-fills the room code (from a shared link);
+ * `rejoin` fills in the name too and connects straight away (coming back to a game).
+ */
+export function joinScreen(root: HTMLElement, handlers: JoinHandlers, code = '', rejoin?: { name: string }) {
   const look: CharLook = randomLook();
   let room: GuestRoom | null = null;
   let busy = false;
@@ -138,7 +142,7 @@ export function joinScreen(root: HTMLElement, handlers: JoinHandlers, code = '')
     class: 'name',
     maxlength: '12',
     placeholder: 'Your name',
-    value: savedName(),
+    value: rejoin?.name ?? savedName(),
     'aria-label': 'Your name',
   }) as HTMLInputElement;
 
@@ -178,6 +182,8 @@ export function joinScreen(root: HTMLElement, handlers: JoinHandlers, code = '')
     try {
       const { GuestRoom } = await import('../net/guestroom');
       room = await GuestRoom.join(c, name, look, events);
+      // Remembered so a reload, or the main menu later, can bring this player back in.
+      saveGuest(c, name);
       // Rejoining a running game: the host sends the game right after the welcome, which can
       // arrive before this screen knows the room.
       if (room.started) {
@@ -215,6 +221,7 @@ export function joinScreen(root: HTMLElement, handlers: JoinHandlers, code = '')
   codeIn.addEventListener('keydown', onEnter);
   nameIn.addEventListener('keydown', onEnter);
   draw();
+  if (rejoin) void join();
   return () => f.close();
 }
 

@@ -22,6 +22,8 @@ export interface GameLink {
   submit(seq: number, ans: unknown): void;
   /** Guest: wait for the host's answer to decision `seq`. */
   answer(seq: number): Promise<Answer>;
+  /** Guest: true when the host's answer to `seq` has already arrived (replaying after a rejoin). */
+  known?(seq: number): boolean;
   /** True when the host is well ahead, so animations should hurry to catch up. */
   behind(seq: number): boolean;
   /** Called at every turn start (host: snapshot + hash; guest: hash check). */

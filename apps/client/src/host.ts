@@ -66,6 +66,8 @@ export class HotSeat implements GameIO {
   values = new Map<number, number>();
   /** The live auction window while an auction runs. */
   auction: AuctionView | null = null;
+  /** True while a token is between squares of a walk (passing, not landing). */
+  private passing = false;
   /** Number of decisions made so far (online games number them to stay in step). */
   seq = 0;
 
@@ -88,7 +90,6 @@ export class HotSeat implements GameIO {
     this.root.append(boardHost);
     this.board = new BoardView(boardHost);
     this.hud = new Hud(this.root, this.board, {
-      onToggleView: () => this.toggleView(),
       onToggleFast: () => this.toggleFast(),
       onQuit: () => this.quit(),
       onRules: () => rulesModal(this.hud, this.G),
@@ -99,9 +100,6 @@ export class HotSeat implements GameIO {
     if (IS_DEV_BUILD) (window as unknown as { __aaGame?: HotSeat }).__aaGame = this;
     this.board.setState(G);
     this.hud.render(G);
-    // Every game starts following the player; Full board only lasts for the current game.
-    this.board.setMode('follow');
-    this.hud.setViewLabel('follow');
     this.fast = readPref(FAST_KEY) === '1';
     this.hud.setFastLabel(this.fast);
     window.addEventListener('keydown', this.onKey);
@@ -150,14 +148,10 @@ export class HotSeat implements GameIO {
   private onKey = (e: KeyboardEvent) => {
     const tag = (e.target as HTMLElement)?.tagName;
     if (tag === 'INPUT' || tag === 'TEXTAREA') return;
-    if (e.key === 'v' || e.key === 'V') this.toggleView();
+    // Zoom with the keyboard too: - shows more of the board, + goes back in.
+    if (e.key === '-' || e.key === '_') this.board.zoomBy(0.2);
+    if (e.key === '=' || e.key === '+') this.board.zoomBy(-0.2);
   };
-
-  toggleView() {
-    const m = this.board.mode === 'follow' ? 'full' : 'follow';
-    this.board.setMode(m);
-    this.hud.setViewLabel(m);
-  }
 
   toggleFast() {
     this.fast = !this.fast;
@@ -329,7 +323,8 @@ export class HotSeat implements GameIO {
       link.publish({ seq, ans, rng: G.rng });
       return ans;
     }
-    if (who === 'local') {
+    // Replaying a turn after rejoining: decisions already made aren't asked again.
+    if (who === 'local' && !link.known?.(seq)) {
       const mine = await this.human(req);
       if (this.dead) return never();
       link.submit(seq, mine);
@@ -651,6 +646,8 @@ export class HotSeat implements GameIO {
       case 'step':
         sound.play('step');
         await board.step(e.pid, e.to, e.left);
+        // Mid-walk, tolls and value bumps play as the token passes without stopping it.
+        this.passing = e.left > 0;
         if (e.left === 0) board.walkTarget = -1;
         break;
       case 'warp':
@@ -675,7 +672,7 @@ export class HotSeat implements GameIO {
         if (e.to >= 0) board.floatText(to.x, to.y, `+${fmt(e.amount)}`, '#7cf29a');
         if (e.from >= 0) board.floatText(from.x, from.y + 22, `-${fmt(e.amount)}`, '#ff8a8a');
         this.refresh();
-        await this.wait(T.money);
+        if (!this.passing) await this.wait(T.money);
         break;
       }
       case 'owner':
@@ -695,7 +692,7 @@ export class HotSeat implements GameIO {
           this.values.set(id, G.nodes[id].value);
         }
         this.refresh();
-        await this.wait(T.value);
+        if (!this.passing) await this.wait(T.value);
         break;
       case 'suit': {
         sound.play('suit');

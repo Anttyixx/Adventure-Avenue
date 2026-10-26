@@ -5,7 +5,7 @@
 import { PLAYER_COLORS } from '@aa/engine';
 import { propertyIconURL, SHOP_TIERS } from '../art';
 import { randomLook, SPRITE_H, SPRITE_W, spriteFrames } from '../sprites';
-import { loadSave, type SaveInfo } from '../save';
+import { loadGuest, loadSave, type GuestSave, type SaveInfo } from '../save';
 import { sound } from '../audio';
 import { h } from './dom';
 import { hasUnseenUpdate } from '../changelog';
@@ -65,6 +65,8 @@ export interface MenuHandlers {
   onStart(): void;
   onContinue(save: SaveInfo): void;
   onOnline(): void;
+  /** Go back into the online game this device last joined as a guest. */
+  onRejoin(g: GuestSave): void;
   onEditor(): void;
 }
 
@@ -108,6 +110,16 @@ export function mainMenu(root: HTMLElement, handlers: MenuHandlers, save: SaveIn
         )
       : null,
   );
+  // A guest's last online game, until it ends (the host may have paused it to continue later).
+  const guest = loadGuest();
+  const rejoin = guest
+    ? h(
+        'button',
+        { class: 'menu-btn rejoin', onclick: () => handlers.onRejoin(guest) },
+        h('span', { class: 'menu-btn-title' }, 'Rejoin online game'),
+        h('span', { class: 'menu-btn-sub' }, `Room ${guest.code} as ${guest.name} · joined ${ago(guest.at)}`),
+      )
+    : null;
   // Release notes, with a "New" badge until the latest update has been read on this device.
   const whatsNew = h('button', { class: 'btn ghost menu-editor whats-new-btn' }, "What's new");
   const badge = () => {
@@ -141,6 +153,7 @@ export function mainMenu(root: HTMLElement, handlers: MenuHandlers, save: SaveIn
           h('span', { class: 'menu-btn-sub' }, 'Pick players, a board and the rules'),
         ),
         cont,
+        rejoin,
         h(
           'button',
           { class: 'menu-btn online', onclick: () => handlers.onOnline() },

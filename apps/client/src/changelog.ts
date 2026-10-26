@@ -12,6 +12,24 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: '2026-10-26-camera-trades',
+    date: 'Oct 26, 2026',
+    title: 'Zoom, trade screen and auction timer',
+    items: [
+      'The camera always follows the player. Scroll, pinch or press - and + to see more of the map; zoomed far out, the whole board centers.',
+      'Trades and auctions open a screen with the whole board on the left: pick your partner first, then tap properties.',
+      'A new auction window with a 12-second bid timer; when time runs out it counts as a pass.',
+      'Stronger district colors, shown as a glow inside each tile.',
+      'Checkpoint tolls are paid as you walk past, without stopping.',
+      'Passing the bank only matters when you level up (then you can buy stock). Landing on it always lets you buy stock.',
+      'To win, come back to the bank with the target net worth: leveling up past it on this visit is not enough.',
+      'In debt, sell just the shares you need from any districts.',
+      'Venture panels nobody picked are grey; change-of-suit squares are off the built-in boards for now.',
+      'Online: reloading the page puts you straight back in the game, the menu offers Rejoin, and friends can take their seat in a continued game even after it resumes.',
+      'Tile info pop-ups stay on screen.',
+    ],
+  },
+  {
     id: '2026-10-26-continue-online',
     date: 'Oct 26, 2026',
     title: 'Continue any game online',

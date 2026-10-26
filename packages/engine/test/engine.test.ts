@@ -130,6 +130,16 @@ describe('debt and bankruptcy', () => {
     expect(G.over).toBe(false);
   });
 
+  it('can sell just some shares to cover a debt', async () => {
+    const { G, game } = makeGame('standard', (r) => (r.kind === 'debt' ? { d: 6, n: 5 } : undefined));
+    const p = G.players[0];
+    p.shares[6] = 40;
+    p.cash = -20;
+    await game.settleDebt(p);
+    expect(p.shares[6]).toBe(35);
+    expect(p.cash).toBeGreaterThanOrEqual(0);
+  });
+
   it('goes bankrupt with nothing left to sell and the richest other player wins', async () => {
     const { G, game } = makeGame();
     const p = G.players[0];
@@ -182,15 +192,31 @@ describe('buying into debt and buyouts', () => {
 });
 
 describe('win check', () => {
-  it('ends the match on a bank visit at the target, after promotion', async () => {
+  it("does not count a win reached only through this visit's promotion", async () => {
     const { G, game } = makeGame('standard', (r) => (r.kind === 'buyStock' ? null : undefined));
     const p = G.players[0];
-    p.cash = 4200; // + 850 salary crosses 5000
+    p.cash = 4200; // + 850 salary crosses 5000, but only after arriving
     p.suits = [true, true, true, true];
     await game.bankVisit(p, true);
+    expect(p.level).toBe(2);
+    expect(G.over).toBe(false);
+    expect(netWorth(G, p)).toBeGreaterThanOrEqual(5000);
+    // Coming back to the bank with the target net worth wins.
+    await game.bankVisit(p, false);
     expect(G.over).toBe(true);
     expect(G.winner).toBe(p.id);
-    expect(netWorth(G, p)).toBeGreaterThanOrEqual(5000);
+  });
+
+  it('only offers stock when landing on the bank or leveling up while passing', async () => {
+    const { G, game, asked } = makeGame('standard', (r) => (r.kind === 'buyStock' ? null : undefined));
+    const p = G.players[0];
+    await game.bankVisit(p, false);
+    expect(asked.some((r) => r.kind === 'buyStock')).toBe(false);
+    await game.bankVisit(p, true);
+    expect(asked.filter((r) => r.kind === 'buyStock')).toHaveLength(1);
+    p.suits = [true, true, true, true];
+    await game.bankVisit(p, false);
+    expect(asked.filter((r) => r.kind === 'buyStock')).toHaveLength(2);
   });
 });
 

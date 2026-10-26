@@ -328,14 +328,24 @@ export class Game {
     await this.log(`${p.name} collected the ${SUITS[si]}.`, p.id, 'suit');
   }
 
+  /**
+   * Reaching the bank (passing or landing). The win is checked first: a player who arrives with
+   * the target net worth wins, but one who only reaches it through this visit's promotion has to
+   * come back. Then the promotion. Stock can be bought when landing here, or when passing and
+   * leveling up; otherwise passing does nothing.
+   */
   async bankVisit(p: Player, landed: boolean) {
     const G = this.G;
-    if (canPromote(p)) await this.promote(p, true);
     if (netWorth(G, p) >= G.target) {
       await this.endGame(p, `Reached the ${G.target}G target`);
       return;
     }
-    if (G.rules === 'standard') await this.buyStockFlow(p, 0);
+    let promoted = false;
+    if (canPromote(p)) {
+      await this.promote(p, true);
+      promoted = true;
+    }
+    if (G.rules === 'standard' && (landed || promoted)) await this.buyStockFlow(p, 0);
     if (landed) p.prev = -1;
   }
 
@@ -940,7 +950,17 @@ export class Game {
         await this.bankrupt(p);
         return;
       }
-      let i = await this.ask({ kind: 'debt', pid: p.id, assets });
+      const ans = await this.ask({ kind: 'debt', pid: p.id, assets });
+      // Selling some shares of one district (as many as the player likes).
+      if (ans && typeof ans === 'object') {
+        const d = Math.floor(ans.d);
+        const n = Math.min(p.shares[d] ?? 0, Math.max(1, Math.floor(ans.n)));
+        if (G.rules === 'standard' && n > 0) {
+          await this.sellStock(p, d, n, 0);
+          continue;
+        }
+      }
+      let i = typeof ans === 'number' ? ans : 0;
       if (!(i >= 0 && i < assets.length)) i = 0;
       const a = assets[i];
       if (a.kind === 'stock') {
