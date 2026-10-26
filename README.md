@@ -2,8 +2,8 @@
 
 A browser board game in the spirit of Fortune Street: roll one die, move around a branching town,
 buy and grow shops, trade district stocks, collect the four suits for promotions, and race to reach
-the target net worth and get back to the bank. 1-4 players, hot-seat, with CPU players filling
-empty seats.
+the target net worth and get back to the bank. 1-4 players on one device (hot-seat) or online with
+friends, with CPU players filling empty seats.
 
 - **Play the stable build:** https://anttyixx.github.io/Adventure-Avenue/
 - **Play the dev build:** https://anttyixx.github.io/Adventure-Avenue/dev/
@@ -14,6 +14,13 @@ empty seats.
 | ------ | ----------------------------------------------- | ----------- |
 | `dev`  | Work in progress; every change lands here first | `/dev/`     |
 | `main` | Stable builds, promoted from `dev`              | site root   |
+
+## Playing online
+
+Main menu → **Play online**. One player taps **Host a game** and shares the 4-letter room code
+(or the invite link); friends tap **Join a game** and type it. The host's browser runs the game
+and friends connect straight to it, so there is no server to pay for. The host needs to keep the
+game open until it ends. Details: "Online multiplayer" in `docs/spec.md`.
 
 ## Custom boards
 

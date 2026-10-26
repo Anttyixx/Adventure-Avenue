@@ -9,6 +9,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@aa/engine": "*"
+    "@aa/engine": "*",
+    "peerjs": "^1.5.4"
   }
 }

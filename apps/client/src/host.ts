@@ -36,6 +36,8 @@ import {
 import { showResults } from './ui/results';
 import { sound } from './audio';
 import { closeSoundPopover } from './ui/soundpanel';
+import type { GameLink } from './net/link';
+import { IS_DEV_BUILD } from './build';
 
 const FAST_KEY = 'adventure-avenue-fast';
 
@@ -55,6 +57,8 @@ export class HotSeat implements GameIO {
   reels: ReelsView | null = null;
   memory: MemoryView | null = null;
   derby: DerbyView | null = null;
+  /** Number of decisions made so far (online games number them to stay in step). */
+  seq = 0;
 
   constructor(
     parent: HTMLElement,
@@ -62,6 +66,8 @@ export class HotSeat implements GameIO {
     private onExit: () => void,
     /** Test plays from the board editor do not touch the saved game. */
     private saving = true,
+    /** Online games: who answers each decision and how answers travel. */
+    public link: GameLink | null = null,
   ) {
     this.root = h('div', { class: 'game' });
     parent.append(this.root);
@@ -75,6 +81,8 @@ export class HotSeat implements GameIO {
       onRules: () => rulesModal(this.hud, this.G),
     });
     this.game = new Game(G, this);
+    // Dev builds expose the running game for automated tests.
+    if (IS_DEV_BUILD) (window as unknown as { __aaGame?: HotSeat }).__aaGame = this;
     this.board.setState(G);
     this.hud.render(G);
     // Every game starts following the player; Full board only lasts for the current game.
@@ -86,8 +94,14 @@ export class HotSeat implements GameIO {
     this.setupOrientation();
   }
 
+  /** Humans playing on this device. */
   get humans() {
-    return this.G.players.filter((p) => !p.cpu && !p.bankrupt).length;
+    return this.G.players.filter((p) => !p.bankrupt && this.localHuman(p.id)).length;
+  }
+
+  /** True for a human who plays on this device (not a CPU, not someone online). */
+  localHuman(pid: number) {
+    return !this.G.players[pid].cpu && (!this.link || this.link.who(pid) === 'local');
   }
 
   async start() {
@@ -138,17 +152,18 @@ export class HotSeat implements GameIO {
   updateSpeed() {
     const p = this.game.current;
     this.speed = this.fast && p?.cpu ? FAST_CPU_SPEED : 1;
+    // An online copy that fell behind the host hurries its animations to catch up.
+    if (this.link?.behind(this.seq)) this.speed = Math.min(this.speed, 0.12);
     this.board.speed = this.speed;
   }
 
   quit() {
-    if (
-      !this.G.over &&
-      !window.confirm(
-        'Quit to the main menu? The game is saved at the start of each turn, so you can continue it later.',
-      )
-    )
-      return;
+    const question = !this.link
+      ? 'Quit to the main menu? The game is saved at the start of each turn, so you can continue it later.'
+      : this.link.role === 'host'
+        ? 'End the online game for everyone? It is saved at the start of each turn, so you can continue it later on this device.'
+        : 'Leave the online game? You can rejoin with the same code while the host is still playing.';
+    if (!this.G.over && !window.confirm(question)) return;
     this.destroy();
     this.onExit();
   }
@@ -216,6 +231,8 @@ export class HotSeat implements GameIO {
 
   async decide<T extends DecisionKind>(req: DecisionRequest<T>): Promise<DecisionAnswer<T>> {
     if (this.dead) return never();
+    const seq = this.seq++;
+    if (this.link) return (await this.decideOnline(seq, req as DecisionRequest)) as DecisionAnswer<T>;
     const p = this.G.players[req.pid];
     if (p.cpu) {
       const ans = cpuDecide(this.G, req);
@@ -232,6 +249,50 @@ export class HotSeat implements GameIO {
     const ans = await this.human(req as DecisionRequest);
     if (this.dead) return never();
     return ans as DecisionAnswer<T>;
+  }
+
+  /**
+   * Online decisions. The host answers CPU and local seats itself and waits for remote players,
+   * then shares every answer (with the RNG state) so all copies of the game stay in step.
+   * Guests answer their own seat, send it to the host and use the host's broadcast answer.
+   */
+  private async decideOnline(seq: number, req: DecisionRequest): Promise<unknown> {
+    const link = this.link!;
+    const G = this.G;
+    const p = G.players[req.pid];
+    const who = link.who(req.pid);
+    this.updateSpeed();
+    if (link.role === 'host') {
+      let ans: unknown;
+      if (who === 'local') {
+        ans = await this.human(req);
+      } else if (who === 'cpu') {
+        ans = cpuDecide(G, req);
+        await this.showCpu(req, ans);
+      } else {
+        if (req.kind === 'preRoll' || req.kind === 'path')
+          this.hud.status(`Waiting for ${p.name}...`, p.color);
+        ans = await link.request(seq, req);
+        if (this.dead) return never();
+        if (req.kind !== 'preRoll') await this.showCpu(req, ans);
+      }
+      if (this.dead) return never();
+      link.publish({ seq, ans, rng: G.rng });
+      return ans;
+    }
+    if (who === 'local') {
+      const mine = await this.human(req);
+      if (this.dead) return never();
+      link.submit(seq, mine);
+    } else if (!p.cpu && (req.kind === 'preRoll' || req.kind === 'path')) {
+      this.hud.status(`Waiting for ${p.name}...`, p.color);
+    }
+    const a = await link.answer(seq);
+    if (this.dead) return never();
+    G.rng = a.rng;
+    if (who !== 'local' && (p.cpu || req.kind !== 'preRoll')) await this.showCpu(req, a.ans);
+    if (this.dead) return never();
+    return a.ans;
   }
 
   /** Give CPU choices a beat so players can follow along. */
@@ -439,11 +500,13 @@ export class HotSeat implements GameIO {
 
   async emit(e: GameEvent): Promise<void> {
     if (this.dead) return never();
+    if (this.link) this.updateSpeed();
     const G = this.G;
     const board = this.board;
     const hud = this.hud;
     switch (e.type) {
       case 'turnStart': {
+        this.link?.turnStart(this.seq, G);
         if (this.saving) saveGame(G);
         const p = G.players[e.pid];
         board.activePid = e.pid;
@@ -452,7 +515,7 @@ export class HotSeat implements GameIO {
         hud.activePid = e.pid;
         this.updateSpeed();
         this.refresh();
-        if (!p.cpu) sound.play('turn');
+        if (this.localHuman(p.id)) sound.play('turn');
         hud.banner(`${p.name}'s turn`, PLAYER_COLORS[p.color], T.turnBanner);
         hud.status(`${p.name}'s turn`, p.color);
         await this.wait(p.cpu ? T.turnStartCpu : T.turnStartHuman);
@@ -539,7 +602,7 @@ export class HotSeat implements GameIO {
         sound.play('venture');
         const view = this.venture ?? new VentureView(hud, G, e.pid);
         this.venture = null;
-        await view.reveal(e.panel, e.title, e.text, e.line, !p.cpu, this.speed);
+        await view.reveal(e.panel, e.title, e.text, e.line, this.localHuman(p.id), this.speed);
         this.refresh();
         break;
       }
@@ -547,7 +610,7 @@ export class HotSeat implements GameIO {
         const p = G.players[e.pid];
         const view = this.reels ?? new ReelsView(hud, [e.result, e.result, e.result], p.name);
         this.reels = null;
-        await view.show(e.result, e.prize, !p.cpu, this.speed);
+        await view.show(e.result, e.prize, this.localHuman(p.id), this.speed);
         this.refresh();
         break;
       }
@@ -555,8 +618,8 @@ export class HotSeat implements GameIO {
         const p = G.players[e.pid];
         const view = this.memory ?? new MemoryView(hud, e.prizes, p.name);
         this.memory = null;
-        if (p.cpu) await view.hide(this.speed);
-        await view.show(e.picked, e.prize, !p.cpu, this.speed);
+        if (!this.localHuman(p.id)) await view.hide(this.speed);
+        await view.show(e.picked, e.prize, this.localHuman(p.id), this.speed);
         this.refresh();
         break;
       }

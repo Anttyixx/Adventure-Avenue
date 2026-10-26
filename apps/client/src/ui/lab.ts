@@ -35,6 +35,7 @@ import { clear, fmt, h } from './dom';
 import { DerbyView, MemoryView, ReelsView, VentureView } from './games';
 import { Hud } from './hud';
 import { mainMenu } from './menu';
+import { joinScreen, lobbySeats, onlineHub } from './online';
 import { soundButton, soundControls } from './soundpanel';
 import { SFX_NAMES, TRACK_NAMES, sound, type Track } from '../audio';
 import { setupScreen } from './start';
@@ -743,7 +744,11 @@ export async function openLab(app: HTMLElement, section?: string) {
 
   // Full screens: the main menu and game setup open over the lab with a way back.
   {
-    const s = addSection('screens', 'Menus', 'Opens over the lab. Buttons on the screen report here.');
+    const s = addSection(
+      'screens',
+      'Menus & online',
+      'Opens over the lab. Buttons on the screen report here.',
+    );
     const overlay = (open: (holder: HTMLElement, done: (msg: string) => void) => () => void) => {
       const holder = h('div', { class: 'lab-screen' });
       root.append(holder);
@@ -769,6 +774,7 @@ export async function openLab(app: HTMLElement, section?: string) {
           {
             onStart: () => done('Main menu: Start pressed.'),
             onContinue: () => done('Main menu: Continue pressed.'),
+            onOnline: () => done('Main menu: Play online pressed.'),
             onEditor: () => done('Main menu: Board editor pressed.'),
           },
           withSave ? { state: cloneState(G), savedAt: Date.now() - 12 * 60000 } : null,
@@ -786,6 +792,67 @@ export async function openLab(app: HTMLElement, section?: string) {
             onEditor: () => done('Setup: board editor pressed.'),
           }),
         ),
+      ),
+    );
+    row(
+      s,
+      btn('Online: host or join', () =>
+        overlay((holder, done) =>
+          onlineHub(holder, {
+            onHost: () => done('Online hub: Host pressed.'),
+            onJoin: () => done('Online hub: Join pressed.'),
+            onBack: () => done('Online hub: Back pressed.'),
+          }),
+        ),
+      ),
+      btn('Online: join form', () =>
+        overlay((holder, done) =>
+          joinScreen(
+            holder,
+            {
+              onStart: () => done('Join: game started.'),
+              onBack: () => done('Join: Back pressed.'),
+            },
+            'ABCD',
+          ),
+        ),
+      ),
+      btn('Online: lobby seats', () =>
+        overlay((holder) => {
+          const looks = G.players.map((p) => p.ch);
+          const el = h(
+            'div',
+            { class: 'setup' },
+            h(
+              'div',
+              { class: 'setup-wrap narrow' },
+              h(
+                'section',
+                { class: 'setup-panel glass' },
+                h('div', { class: 'room-code' }, h('small', null, 'Room code'), h('b', null, 'KQZD')),
+                lobbySeats(
+                  {
+                    boardName: G.boardName ?? 'Town',
+                    rules: 'standard',
+                    target: 5000,
+                    roundCap: 0,
+                    fill: true,
+                    seats: [
+                      { kind: 'host', name: 'Rosa', look: looks[0], online: true },
+                      { kind: 'remote', name: 'Milo', look: looks[1], online: true },
+                      { kind: 'remote', name: 'Juno', look: looks[2], online: false },
+                      { kind: 'open', name: '', look: null, online: false },
+                    ],
+                  },
+                  0,
+                  (i) => hud.tick(`Remove seat ${i + 1} pressed.`),
+                ),
+              ),
+            ),
+          );
+          holder.append(el);
+          return () => el.remove();
+        }),
       ),
     );
   }

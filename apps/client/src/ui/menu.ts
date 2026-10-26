@@ -62,6 +62,7 @@ export function titleScene(walkers = true): { el: HTMLElement; stop: () => void 
 export interface MenuHandlers {
   onStart(): void;
   onContinue(save: SaveInfo): void;
+  onOnline(): void;
   onEditor(): void;
 }
 
@@ -130,6 +131,12 @@ export function mainMenu(root: HTMLElement, handlers: MenuHandlers, save: SaveIn
           h('span', { class: 'menu-btn-sub' }, 'Pick players, a board and the rules'),
         ),
         cont,
+        h(
+          'button',
+          { class: 'menu-btn online', onclick: () => handlers.onOnline() },
+          h('span', { class: 'menu-btn-title' }, 'Play online'),
+          h('span', { class: 'menu-btn-sub' }, 'Host a game or join friends with a room code'),
+        ),
         h('button', { class: 'btn ghost menu-editor', onclick: () => handlers.onEditor() }, 'Board editor'),
       ),
     ),

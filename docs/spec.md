@@ -628,37 +628,42 @@ last turn boundary.
 (database or Redis). It doubles as the reconnect mechanism and as a replay/debug log if every action
 is also recorded.
 
-## Online multiplayer plan
+## Online multiplayer
 
-The prototype is local hot-seat only; the GitHub build should make the server the single owner of
-game state, with browsers sending intents and drawing events.
+**Approach (built, Oct 2026): one player hosts in their browser.** No game server and no running
+costs: the site stays on GitHub Pages, browsers connect directly to each other with WebRTC through
+PeerJS (its free public server only introduces the browsers), and the host's browser is the
+authority. Code: `apps/client/src/net/` (protocol, PeerJS wrapper, host and guest rooms) and
+`apps/client/src/ui/online.ts` (screens).
 
-**Stack:** Node + Socket.IO server on Fly.io, static client on GitHub Pages. TypeScript everywhere,
-with the rules engine as a shared package.
+**Rooms:** Main menu → Play online → Host a game opens a room with a 4-letter code (letters
+without I/L/O) and the host's lobby (game setup in online mode: board carousel, rules, room code
+with a Share/Copy invite link, the seat list). Friends tap Join a game and type the code, or open
+an invite link (`?join=CODE`). Seats fill in order (up to 3 guests); the host can remove a guest.
+Empty seats become CPUs on start if "Fill empty seats with CPU" is on; otherwise the game has
+only the people in the room (at least 2).
 
-**Rooms:** create a room and get a 4-letter code; others join with the code; seats 1-4 with character
-pick; host sets rules, target and round limit; empty seats become CPUs on start.
+**Lockstep play:** every device runs its own copy of the rules engine from the same starting
+state. The engine only waits on decisions, so the host numbers each decision in order and
+broadcasts every answer together with the RNG state after it; each copy then plays out the same
+game and animates it locally (no state is streamed). The host answers CPU and its own seats,
+waits for a guest's answer to that guest's decisions (and ignores answers from the wrong seat),
+then broadcasts it. Guests answer their own seat and use the host's broadcast answer. A guest
+copy that falls behind speeds up its animations to catch up.
 
-**Turn protocol:**
+**Staying in step:** at every turn start the host sends a hash of its state; a guest whose copy
+differs asks to resync, and the host sends the state at the start of the current turn plus the
+answers since, which the guest replays.
 
-- The server runs the same async turn loop as the prototype, but every `ask(...)` becomes a message
-  to one player's socket, and the reply is validated before it is applied.
-- Intents (client to server): `roll`, `choosePath`, `buyShop`, `build`, `invest`, `buyout`,
-  `buyStock`, `sellStock`, `pickVenturePanel`, `stopReel`, `pickBlock`, `pickRacer`, `proposeTrade`,
-  `answerTrade`, `bid`, `pass`, `renovate`, `sellAsset`, `pickSquare`, `pickCannonTarget`, `endTurn`.
-- Events (server to all clients): `diceRolled`, `stepped`, `paid`, `ownerChanged`, `valueChanged`,
-  `priceChanged`, `cardRevealed`, `promoted`, `effectStarted`, `auctionUpdate`, `tradeResult`,
-  `bankrupt`, `gameOver`, plus a full `state` snapshot on join or reconnect.
-- Off-turn players: can open tooltips and the market, chat and emote, and answer trades and auction
-  bids addressed to them. Selling stock stays a pre-roll action of the active player, matching the
-  original.
+**Disconnects:** a guest who drops is played by a CPU until they come back; rejoining with the
+same code on the same device (a per-device token) gives them their seat back and replays the
+current turn. Guests retry the connection for about two minutes. If the host leaves, the game
+ends for everyone; the host's device keeps the save (continuing it later plays it as a hot-seat
+game on that device).
 
-**Fairness and timing:** the server rolls every die and owns all randomness (venture grid,
-minigames). Turn timer 30-45 s with safe defaults on timeout (decline purchases, take the first path,
-pass in auctions, end turn). Bids and trade answers time out to "pass" or "decline".
-
-**Reconnect:** each seat gets a session token in localStorage; rejoining with the room code restores
-the seat from the latest snapshot. A CPU plays the seat while it is empty.
+**Not done yet:** turn timer, chat/emotes, a relay (TURN) server for networks that block direct
+connections, letting guests answer trades and auction bids while it is not their turn without
+waiting for their copy to catch up, and resuming a saved game online.
 
 ## Feature interactions
 

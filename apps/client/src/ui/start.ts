@@ -16,6 +16,8 @@ import { BUILT_IN, getBoard, listBoards, pickBoardFile, readBoardFile, saveBoard
 import { portraitURL, randomLook } from '../sprites';
 import { loadSave } from '../save';
 import { titleScene } from './menu';
+import type { HostRoom } from '../net/hostroom';
+import { lobbySeats } from './online';
 import { closeSoundPopover, soundButton } from './soundpanel';
 import { sound } from '../audio';
 import { clear, fmt, h } from './dom';
@@ -72,7 +74,11 @@ export interface SetupHandlers {
   onEditor(board: BoardDef | null): void;
 }
 
-export function setupScreen(root: HTMLElement, handlers: SetupHandlers) {
+/**
+ * Game setup. With a `room` it is the online host's lobby: the Players panel shows the room
+ * code and who has joined instead of the hot-seat options.
+ */
+export function setupScreen(root: HTMLElement, handlers: SetupHandlers, room: HostRoom | null = null) {
   const saved = readJSON(OPTS_KEY, {
     humans: 1,
     fill: true,
@@ -253,12 +259,114 @@ export function setupScreen(root: HTMLElement, handlers: SetupHandlers) {
     );
   };
 
+  // ------------------------------------------------------------ online lobby (host)
+
+  const lobbyBox = h('section', { class: 'setup-panel glass players-panel lobby-panel' });
+  const hostName = h('input', {
+    class: 'name',
+    maxlength: '12',
+    placeholder: suggested[0],
+    value: typed[0] ?? '',
+    'aria-label': 'Your name',
+  }) as HTMLInputElement;
+  hostName.oninput = () => {
+    typed[0] = cleanName(hostName.value);
+    room?.setHost(typed[0] || suggested[0], looks[0]);
+  };
+  let startBtn: HTMLButtonElement | null = null;
+  const onlineReady = () => !!room && (fill || room.joined > 0);
+  const inviteLink = () => {
+    const q = new URLSearchParams({ join: room!.code });
+    const peer = new URLSearchParams(location.search).get('peer');
+    if (peer) q.set('peer', peer);
+    return `${location.origin}${location.pathname}?${q}`;
+  };
+  let copied = false;
+  const share = async () => {
+    const url = inviteLink();
+    const text = `Join my Adventure Avenue game! Room code: ${room!.code}`;
+    try {
+      if (navigator.share) await navigator.share({ title: 'Adventure Avenue', text, url });
+      else {
+        await navigator.clipboard.writeText(`${text}\n${url}`);
+        copied = true;
+        drawLobby();
+      }
+    } catch {
+      /* cancelled */
+    }
+  };
+  const drawLobby = () => {
+    if (!room) return;
+    clear(lobbyBox);
+    lobbyBox.append(
+      h(
+        'div',
+        { class: 'panel-head' },
+        h('h3', null, 'Players'),
+        h('button', { class: 'btn ghost small', onclick: () => (shuffle(), draw()) }, 'Shuffle characters'),
+      ),
+      h(
+        'div',
+        { class: 'room-code' },
+        h('small', null, 'Room code'),
+        h('b', null, room.code),
+        h(
+          'button',
+          { class: 'btn small', onclick: share },
+          copied ? 'Copied!' : 'ontouchstart' in window ? 'Share invite' : 'Copy invite link',
+        ),
+      ),
+      h(
+        'p',
+        { class: 'hint' },
+        'Friends open the game, tap Play online, then Join a game and type this code.',
+      ),
+      h('label', { class: 'opt' }, h('div', { class: 'opt-label' }, 'Your name'), hostName),
+      lobbySeats(room.lobby(), 0, (i) => room.kick(i)),
+      h(
+        'label',
+        { class: 'check' },
+        h('input', {
+          type: 'checkbox',
+          checked: fill,
+          onchange: (e: Event) => {
+            fill = (e.target as HTMLInputElement).checked;
+            draw();
+          },
+        }),
+        'Fill empty seats with CPU',
+      ),
+    );
+    if (startBtn) startBtn.disabled = !onlineReady() || !playable(getBoard(boardId) ?? BUILT_IN[0]);
+  };
+  if (room) {
+    room.setHost(typed[0] || suggested[0], looks[0]);
+    room.onChange(drawLobby);
+  }
+
   const draw = () => {
     clear(wrap);
     const seats = fill ? 4 : humans;
     const board = getBoard(boardId) ?? BUILT_IN[0];
     const start = h('button', { class: 'btn main big', disabled: !playable(board) }, 'Start game');
+    startBtn = start;
+    if (room) {
+      room.setHost(typed[0] || suggested[0], looks[0]);
+      room.setSettings({ boardName: board.name, rules, target, roundCap, fill });
+    }
     start.onclick = () => {
+      if (room) {
+        writeJSON(NAMES_KEY, typed);
+        writeJSON(OPTS_KEY, { humans, fill, target, roundCap, rules, boardId });
+        const list = room.seatConfigs(
+          (i) => suggested[i],
+          (i) => looks[i],
+          fill,
+        );
+        handlers.onStart({ rules, target, roundCap, seats: list, board });
+        return;
+      }
       const seatList = Array.from({ length: seats }, (_, i) => {
         const human = i < humans;
         const name = human ? cleanName(typed[i] || '') || suggested[i] : suggested[i];
@@ -272,8 +380,20 @@ export function setupScreen(root: HTMLElement, handlers: SetupHandlers) {
       h(
         'header',
         { class: 'setup-head' },
-        h('button', { class: 'btn ghost small back', onclick: () => handlers.onBack() }, '‹ Menu'),
-        h('h2', null, 'New game'),
+        h(
+          'button',
+          {
+            class: 'btn ghost small back',
+            onclick: () => {
+              if (room?.joined && !window.confirm('Close the room? Players who joined will be sent back.'))
+                return;
+              room?.leave();
+              handlers.onBack();
+            },
+          },
+          room ? '‹ Back' : '‹ Menu',
+        ),
+        h('h2', null, room ? 'Host online game' : 'New game'),
         soundButton('btn small ghost setup-sound'),
       ),
       h(
@@ -313,72 +433,76 @@ export function setupScreen(root: HTMLElement, handlers: SetupHandlers) {
               : 'Easy: rows of connected shops, no plots and no stock market.',
           ),
         ),
-        h(
-          'section',
-          { class: 'setup-panel glass players-panel' },
-          h(
-            'div',
-            { class: 'panel-head' },
-            h('h3', null, 'Players'),
-            h(
-              'button',
-              { class: 'btn ghost small', onclick: () => (shuffle(), draw()) },
-              'Shuffle characters',
-            ),
-          ),
-          seg(
-            'Humans',
-            [1, 2, 3, 4],
-            humans,
-            (v) => `${v} human${v > 1 ? 's' : ''}`,
-            (v) => (humans = v),
-          ),
-          h(
-            'label',
-            { class: 'check' },
-            h('input', {
-              type: 'checkbox',
-              checked: fill,
-              onchange: (e: Event) => {
-                fill = (e.target as HTMLInputElement).checked;
-                draw();
-              },
-            }),
-            'Fill empty seats with CPU',
-          ),
-          h(
-            'div',
-            { class: 'seats' },
-            ...Array.from({ length: seats }, (_, i) => {
-              const human = i < humans;
-              const input = human
-                ? (h('input', {
-                    class: 'name',
-                    maxlength: '12',
-                    placeholder: suggested[i],
-                    value: typed[i] ?? '',
-                    oninput: (e: Event) => (typed[i] = cleanName((e.target as HTMLInputElement).value)),
-                  }) as HTMLInputElement)
-                : h('span', { class: 'name cpu' }, suggested[i]);
-              return h(
+        room
+          ? lobbyBox
+          : h(
+              'section',
+              { class: 'setup-panel glass players-panel' },
+              h(
                 'div',
-                { class: 'seat-card', style: `--pc:${PLAYER_COLORS[i]}` },
-                h('img', { class: 'portrait', src: portraitURL(looks[i], PLAYER_COLORS[i], 5), alt: '' }),
-                input,
-                h('span', { class: 'seat-tag' }, human ? `P${i + 1}` : 'CPU'),
-              );
-            }),
-          ),
-        ),
+                { class: 'panel-head' },
+                h('h3', null, 'Players'),
+                h(
+                  'button',
+                  { class: 'btn ghost small', onclick: () => (shuffle(), draw()) },
+                  'Shuffle characters',
+                ),
+              ),
+              seg(
+                'Humans',
+                [1, 2, 3, 4],
+                humans,
+                (v) => `${v} human${v > 1 ? 's' : ''}`,
+                (v) => (humans = v),
+              ),
+              h(
+                'label',
+                { class: 'check' },
+                h('input', {
+                  type: 'checkbox',
+                  checked: fill,
+                  onchange: (e: Event) => {
+                    fill = (e.target as HTMLInputElement).checked;
+                    draw();
+                  },
+                }),
+                'Fill empty seats with CPU',
+              ),
+              h(
+                'div',
+                { class: 'seats' },
+                ...Array.from({ length: seats }, (_, i) => {
+                  const human = i < humans;
+                  const input = human
+                    ? (h('input', {
+                        class: 'name',
+                        maxlength: '12',
+                        placeholder: suggested[i],
+                        value: typed[i] ?? '',
+                        oninput: (e: Event) => (typed[i] = cleanName((e.target as HTMLInputElement).value)),
+                      }) as HTMLInputElement)
+                    : h('span', { class: 'name cpu' }, suggested[i]);
+                  return h(
+                    'div',
+                    { class: 'seat-card', style: `--pc:${PLAYER_COLORS[i]}` },
+                    h('img', { class: 'portrait', src: portraitURL(looks[i], PLAYER_COLORS[i], 5), alt: '' }),
+                    input,
+                    h('span', { class: 'seat-tag' }, human ? `P${i + 1}` : 'CPU'),
+                  );
+                }),
+              ),
+            ),
       ),
       h(
         'footer',
         { class: 'setup-foot' },
         loadSave() ? h('small', { class: 'hint' }, 'Starting replaces the game in progress.') : null,
+        room && !onlineReady() ? h('small', { class: 'hint' }, 'Waiting for a friend to join.') : null,
         start,
       ),
     );
     slide = '';
+    drawLobby();
   };
   draw();
   return () => {
