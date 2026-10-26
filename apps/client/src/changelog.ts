@@ -57,7 +57,8 @@ export const CHANGELOG: ChangelogEntry[] = [
       },
     ],
     extras: [
-      'Game menu in the top right: rules, market, sound, full screen and quit (with a confirm)',
+      'Game menu in the top right: rules, sound, full screen and quit (with a confirm); Stock market button beside it',
+      'Cleaner panels without scrollbars',
       'Game log moved to the bottom left: tap the last action to open it',
       'Round and target moved into the game menu',
       'Zoom out further',

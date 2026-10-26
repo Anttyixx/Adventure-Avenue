@@ -2184,6 +2184,16 @@ input[type='range'] {
   }
 }
 
+/* ------------------------------------------------------------ scrollbars */
+
+/* Scrolling panels stay scrollable (wheel, touch, keys) but hide their bars for a cleaner look. */
+* {
+  scrollbar-width: none;
+}
+*::-webkit-scrollbar {
+  display: none;
+}
+
 /* ------------------------------------------------------------ build badge and dev menu */
 
 .has-badge {

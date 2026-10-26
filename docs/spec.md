@@ -516,7 +516,7 @@ save). A Board editor link sits below them.
   suggested name), and typed names are remembered for the next game. In the online build, validate
   names on the server; "Shuffle characters" rerolls them.
 
-In-game, the Menu button (top right) opens a menu with Rules (a summary), Stock market, a Fast CPU
+In-game, the Menu button (top right) opens a menu with Rules (a summary), a Fast CPU
 toggle (speeds up CPU turns and animations), Full screen, the Sound sliders and mute, and a red Quit
 game button. Quit asks for confirmation in a dialog over the menu before returning to the main
 menu (no question once the game is over).
@@ -596,8 +596,9 @@ payer to payee; floating text shows money changes.
 | Player cards    | Net worth and cash count up or down to the new value, tinted green or red while changing; the active card's glow breathes                   | Any money change                                          |
 | Interface       | Prompts and the ticker rise in, dialogs ease in, venture and Memory Blocks panels flip, revealed cards pop, main buttons give a small nudge | New prompt, dialog or reveal                              |
 
-**Layout.** The board fills the whole game screen edge to edge, and everything else floats over it
-as dark glass overlays. Top right: the zoom chip and the Menu button (the menu
+**Layout.** Scrolling panels hide their scrollbars (they still scroll). The board fills the whole game screen edge to edge, and everything else floats over it
+as dark glass overlays. Top right: the zoom chip, a Stock market button (Standard rules)
+and the Menu button (the menu
 also shows the round, target and rule set). Bottom left: a ticker with the last action, above
 the action bar; tapping it opens the game log above it (turn by turn, newest at the bottom,
 scrollable back to the start of the game), and it moves up above the options when they would

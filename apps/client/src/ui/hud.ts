@@ -114,7 +114,8 @@ export class Hud {
     this.zoomChip.onclick = () => (board.zoomOut = 0);
     board.onZoom = (pct) => (this.zoomChip.textContent = `${pct}%`);
     this.menuBtn.onclick = () => this.toggleMenu();
-    this.toolbar.append(this.zoomChip, this.menuBtn, this.menu);
+    this.marketBtn.onclick = () => this.toggleDrawer('market');
+    this.toolbar.append(this.zoomChip, this.marketBtn, this.menuBtn, this.menu);
     this.buildMenu();
     this.cardsToggle.onclick = () => {
       this.cardsHidden = !this.cardsHidden;
@@ -142,8 +143,10 @@ export class Hud {
     '☰ Menu',
   );
   menu = h('div', { class: 'game-menu glass', role: 'menu', hidden: true });
+  /** Opens the stock market drawer (Standard rules only); sits beside the Menu button. */
+  marketBtn = h('button', { class: 'btn small market-btn' }, 'Stock market');
 
-  /** The menu behind the Menu button: rules, market, settings and quit. */
+  /** The menu behind the Menu button: rules, settings and quit. */
   private buildMenu() {
     const item = (label: string, onclick: () => void, cls = '') =>
       h('button', { class: `gm-item ${cls}`, role: 'menuitem', onclick }, label);
@@ -156,11 +159,6 @@ export class Hud {
       h('div', { class: 'gm-head' }, 'Menu'),
       this.gameInfo,
       item('Rules', close(this.cb.onRules)),
-      item(
-        'Stock market',
-        close(() => this.toggleDrawer('market')),
-        'market-btn',
-      ),
       this.fastBtn,
     );
     if (document.fullscreenEnabled) this.menu.append(item('Full screen', close(toggleFullscreen)));
@@ -271,7 +269,7 @@ export class Hud {
       h('span', null, `Target ${fmt(G.target)}`),
       h('span', null, G.rules === 'standard' ? 'Standard' : 'Easy'),
     );
-    this.toolbar.querySelector('.market-btn')?.toggleAttribute('hidden', G.rules !== 'standard');
+    this.marketBtn.hidden = G.rules !== 'standard';
     this.renderCards();
     if (this.drawerMode) this.renderDrawer();
     if (this.logOpen) this.renderLog();
@@ -487,6 +485,7 @@ export class Hud {
     if (mode === 'log') return this.toggleLog();
     this.drawerMode = this.drawerMode === mode ? null : mode;
     this.drawer.classList.toggle('open', !!this.drawerMode);
+    this.marketBtn.classList.toggle('on', this.drawerMode === 'market');
     this.renderDrawer();
   }
 
