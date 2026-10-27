@@ -672,7 +672,8 @@ API where available.
   icons at its top right (they drop below a very long name; collected suits in their own color:
   spades blue, hearts pink, diamonds yellow, clubs green; missing ones faint grey; a full set hops
   until the player levels up); an active Boon or Boom shows as its symbol after the name (the
-  tooltip gives the commission); status tags (Closed, Fees +30%); along the bottom, cash (with a
+  tooltip gives the commission); status tags (Closed, Fees +30%); a progress bar toward the target
+  net worth in the player's color; along the bottom, cash (with a
   coin) on the left and net worth on the right with the player's place (1st, 2nd...) where the
   coin would be; no "Cash"/"Net" labels.
   Cards are 10% larger on computer screens.

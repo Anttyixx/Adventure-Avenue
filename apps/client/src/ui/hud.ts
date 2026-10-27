@@ -346,6 +346,7 @@ export class Hud {
     const nwEl = h('span', { class: 'nw' }, plain(prev.nw));
     const cashEl = h('span', { class: 'cash' }, fmt(prev.cash));
     const extras = tags.map((t) => h('span', { class: 'tag' }, t));
+    const pct = Math.max(0, Math.min(100, (nw / G.target) * 100));
     el.append(
       h('div', { class: 'pc-side' }, h('img', { class: 'portrait', src: portraitURL(p.ch), alt: '' })),
       h(
@@ -384,6 +385,12 @@ export class Hud {
           ),
         ),
         extras.length ? h('div', { class: 'pc-row' }, ...extras) : null,
+        // Progress toward the target net worth.
+        h(
+          'div',
+          { class: 'bar-track', title: `${Math.round(pct)}% of the ${fmt(G.target)} target` },
+          h('div', { class: 'bar-fill', style: `width:${pct}%` }),
+        ),
         h(
           'div',
           { class: 'pc-row money' },

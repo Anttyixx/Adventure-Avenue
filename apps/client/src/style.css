@@ -1021,9 +1021,20 @@ input[type='range'] {
   flex-direction: column;
   gap: 3px;
 }
-/* Cash and net worth always sit along the bottom of the card. */
-.pc-main .money {
+.bar-track {
+  height: 5px;
   margin-top: auto;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.12);
+  overflow: hidden;
+}
+.bar-fill {
+  height: 100%;
+  background: var(--pc);
+}
+/* The progress bar, then cash and net worth, always sit along the bottom of the card. */
+.pc-main .money {
+  margin-top: 0;
 }
 .pc-row {
   display: flex;
