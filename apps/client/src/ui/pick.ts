@@ -341,7 +341,8 @@ function cashStepper(value: number, max: number, onChange: (v: number) => void):
 /**
  * Build a trade in the action bar: pick the partner, then the board pulls back to show every
  * square, with everything but the two players' properties dimmed. Tapping a property adds it
- * (or takes it out); the bar lists what each side gives, with cash for each. `fixed` locks the
+ * (or takes it out); the bar shows what each side gives side by side (you on the left), with
+ * cash for each. `fixed` locks the
  * partner (counter-offers, prefilled with `start`).
  */
 export async function tradeOnBoard(
@@ -392,7 +393,15 @@ export async function tradeOnBoard(
     h(
       'div',
       { class: 'tb-row', style: `--pc:${PLAYER_COLORS[who.color]}` },
-      h('span', { class: 'tb-who' }, label),
+      h(
+        'div',
+        { class: 'tb-head' },
+        h('span', { class: 'tb-who' }, label),
+        cashStepper(cash, who.cash, (v) => {
+          setCash(v);
+          send.disabled = !valid();
+        }),
+      ),
       h(
         'div',
         { class: 'tb-chips' },
@@ -400,10 +409,6 @@ export async function tradeOnBoard(
           ? [...set].map((id) => tradeChip(G, id, () => toggle(id)))
           : [h('span', { class: 'tb-hint' }, `Tap ${who === p ? 'your' : `${who.name}'s`} properties`)]),
       ),
-      cashStepper(cash, who.cash, (v) => {
-        setCash(v);
-        send.disabled = !valid();
-      }),
     );
   const draw = () => {
     clear(body);
@@ -425,12 +430,12 @@ export async function tradeOnBoard(
   };
   send.onclick = () =>
     valid() && hud.resolvePrompt({ from: p.id, to: q.id, give: [...give], get: [...get], cashGive, cashGet });
-  board.overviewHold = board.overviewFree = true;
+  board.overviewHold = true;
   lightBoard();
   draw();
   const offer = await hud.prompt<TradeOffer | null>(body, [], p.color);
   board.clearChoices();
-  board.overviewHold = board.overviewFree = false;
+  board.overviewHold = false;
   return offer;
 }
 
@@ -450,7 +455,7 @@ export async function answerTradeOnBoard(
     h(
       'div',
       { class: 'tb-row', style: `--pc:${PLAYER_COLORS[who.color]}` },
-      h('span', { class: 'tb-who' }, label),
+      h('div', { class: 'tb-head' }, h('span', { class: 'tb-who' }, label)),
       h(
         'div',
         { class: 'tb-chips' },
@@ -481,14 +486,14 @@ export async function answerTradeOnBoard(
   const labels = new Map<number, string>();
   for (const id of o.give) labels.set(id, 'You get');
   for (const id of o.get) labels.set(id, 'You give');
-  board.overviewHold = board.overviewFree = true;
+  board.overviewHold = true;
   board.setChoices([...o.give, ...o.get], PLAYER_COLORS[a.color], () => {}, undefined, {
     labels,
     pins: false,
   });
   const v = await hud.prompt<'yes' | 'no' | 'counter'>(body, [], b.color);
   board.clearChoices();
-  board.overviewHold = board.overviewFree = false;
+  board.overviewHold = false;
   if (v === 'yes') return true;
   if (v === 'no') return false;
   // Counter-offer: start from the same deal seen from this side, then edit it.

@@ -61,9 +61,7 @@ export interface Insets {
   left: number;
 }
 
-/** Fully zoomed out shows this much more than the whole board fitting the screen. */
-const ZOOM_OUT_EXTRA = 1.25;
-/** Furthest zoom-out: 1.3x as far (in steps) as fitting the whole board. */
+/** Furthest zoom-out, in steps: the whole board fitted into the area the HUD leaves free. */
 const ZOOM_MAX_OUT = 1.3;
 /** One wheel notch or key press: 1/30 of the range, shown as 5% on the zoom chip. */
 export const ZOOM_STEP = ZOOM_MAX_OUT / 30;
@@ -103,7 +101,7 @@ export class BoardView {
   camTarget = { x: 650, y: 400, z: 1 };
   /**
    * How far the player has zoomed out with the wheel or a pinch: 0 = close on the active
-   * player, 1 = the whole board with room around it, up to ZOOM_MAX_OUT for further still. Past
+   * player, up to ZOOM_MAX_OUT = the whole board clear of the HUD. Past
    * ZOOM_BLEND the camera stops following and drifts to the board's center.
    */
   zoomOut = 0;
@@ -117,11 +115,6 @@ export class BoardView {
   stepsLeft = 0;
   /** While set, the camera shows the whole board (e.g. to watch shops close), whatever the zoom. */
   overviewHold = false;
-  /**
-   * With overviewHold: fit the whole board into the screen area the HUD leaves free (between the
-   * player cards and the action bar), so no square is hidden under them (trades).
-   */
-  overviewFree = false;
   /** Squares whose gates are moving: when each starts, and whether it is opening. */
   private gates = new Map<number, { start: number; opening: boolean }>();
   private lastFrame = 0;
@@ -627,8 +620,19 @@ export class BoardView {
   /** Zoom level for a zoomOut value: eased from the follow zoom to the whole board. */
   zoomFor(out: number) {
     const near = this.followZoom();
-    const far = Math.min(near, this.fitZoom() / ZOOM_OUT_EXTRA);
-    return near * Math.pow(far / near, out);
+    const far = Math.min(near, this.freeFit().z);
+    return near * Math.pow(far / near, out / ZOOM_MAX_OUT);
+  }
+
+  /**
+   * The whole board fitted into the screen area the HUD leaves free (between the toolbar, the
+   * player cards, the ticker and the action bar), so no square hides under them.
+   */
+  freeFit() {
+    const { top, right, bottom, left } = this.insets;
+    const fw = Math.max(100, this.w - left - right);
+    const fh = Math.max(100, this.h - top - bottom);
+    return { z: Math.min(fw / this.ww, fh / this.wh) * 0.97 };
   }
 
   /**
@@ -639,48 +643,32 @@ export class BoardView {
     return { fx: this.w / 2, fy: this.h / 2, aw: this.w, ah: this.h };
   }
 
-  fitZoom() {
-    const { aw, ah } = this.focusArea();
-    // The whole board, centered on the screen with a little room around it.
-    return Math.min(aw / this.ww, ah / this.wh) * 0.94;
-  }
-
   followZoom() {
     const small = Math.min(this.w, this.h) < 520;
     return Math.min(this.w / this.ww, this.h / this.wh) * (small ? 2.2 : 1.65);
   }
 
   updateCamera() {
-    const out = this.followPid < 0 || this.G?.over || this.overviewHold ? 1 : this.zoomOut;
+    const out = this.followPid < 0 || this.G?.over || this.overviewHold ? ZOOM_MAX_OUT : this.zoomOut;
     const z = this.zoomFor(out);
     // The active player sits in the middle of the screen (the grass carries on past the board).
     let follow = this.followPid >= 0 ? this.tokenPos(this.followPid) : { x: this.ww / 2, y: this.wh / 2 };
     let fz = z;
-    if (this.fitIds.length && out < 1) {
+    if (this.fitIds.length && out < ZOOM_MAX_OUT) {
       // A choice is open: zoom out just enough to frame it (never closer than the player chose).
       const v = this.choiceView(follow);
       follow = v;
       fz = Math.min(z, v.z);
     }
-    // Zoomed out, the camera gradually lets go of the player and eases to the board's center
-    // (straight to it for the game-over overview).
+    // Zoomed out, the camera gradually lets go of the player and eases to the board's center,
+    // shifted so the board sits in the middle of the free area (straight there for overviews).
     const overview = this.followPid < 0 || !!this.G?.over || this.overviewHold;
     const t = overview ? 1 : Math.min(1, Math.max(0, (out - ZOOM_BLEND) / (ZOOM_BLEND_END - ZOOM_BLEND)));
     const b = t * t * (3 - 2 * t);
-    const c = { x: follow.x + (this.ww / 2 - follow.x) * b, y: follow.y + (this.wh / 2 - follow.y) * b };
+    const { top, right, bottom, left } = this.insets;
+    const mid = { x: this.ww / 2 - (left - right) / 2 / fz, y: this.wh / 2 - (top - bottom) / 2 / fz };
+    const c = { x: follow.x + (mid.x - follow.x) * b, y: follow.y + (mid.y - follow.y) * b };
     this.camTarget = { x: c.x, y: c.y, z: fz };
-    if (this.overviewHold && this.overviewFree) {
-      // Fit the board into the free area, centered in it.
-      const { top, right, bottom, left } = this.insets;
-      const fw = Math.max(100, this.w - left - right);
-      const fh = Math.max(100, this.h - top - bottom);
-      const z2 = Math.min(fw / this.ww, fh / this.wh) * 0.97;
-      this.camTarget = {
-        x: this.ww / 2 - (left - right) / 2 / z2,
-        y: this.wh / 2 - (top - bottom) / 2 / z2,
-        z: z2,
-      };
-    }
     const k = reducedMotion() ? 1 : 0.12;
     this.cam.x += (this.camTarget.x - this.cam.x) * k;
     this.cam.y += (this.camTarget.y - this.cam.y) * k;
@@ -753,11 +741,11 @@ export class BoardView {
     if (this.host.clientWidth !== Math.round(this.w) || this.host.clientHeight !== Math.round(this.h))
       this.resize();
     this.updateCamera();
-    // The chip reads 250% fully zoomed in and 100% fully zoomed out (the whole board is ~135%).
+    // The chip reads 250% fully zoomed in and 100% fully zoomed out (the whole board, clear of the HUD).
     const near = this.followZoom();
-    const far = this.zoomFor(1);
+    const far = this.zoomFor(ZOOM_MAX_OUT);
     const out = far < near ? Math.log(this.cam.z / near) / Math.log(far / near) : 0;
-    const pct = Math.round(250 - (150 * Math.min(ZOOM_MAX_OUT, Math.max(0, out))) / ZOOM_MAX_OUT);
+    const pct = Math.round(250 - 150 * Math.min(1, Math.max(0, out)));
     if (pct !== this.zoomPct) {
       this.zoomPct = pct;
       this.onZoom?.(pct);

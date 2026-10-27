@@ -84,13 +84,16 @@ const rnd = (n: number) => Math.floor(Math.random() * n);
  * are easy to find. Update this list with each change.
  */
 const RECENT = new Set([
-  'Game setup',
   'Stock market',
   'Buy stock',
-  'Buy stock (10% off)',
   'Sell stock',
   'Build',
   'Renovate',
+  'Propose trade',
+  'Trade offer received',
+  'Buyout (5x)',
+  'Buy prompt',
+  'Zoom out',
 ]);
 
 /** A sample match; `playSample` then plays a few rounds so cards, the board and the log have content. */

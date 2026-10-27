@@ -26,6 +26,33 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: '2026-10-27-actionbar',
+    date: 'Oct 27, 2026',
+    title: 'Roomier action bar',
+    features: [
+      {
+        tag: 'better',
+        title: 'Trades side by side',
+        text: 'Proposing or answering a trade shows each player’s side in its own column, left and right.',
+      },
+      {
+        tag: 'better',
+        title: 'Prices on buildings',
+        text: 'Building or renovating shows each building’s price right under its picture.',
+      },
+      {
+        tag: 'better',
+        title: 'Full zoom-out fits the board',
+        text: 'Zooming all the way out now shows the whole board in the space between the menus, cards and action bar.',
+      },
+    ],
+    extras: [
+      'Action bar grows a little when a question has more to show',
+      'Stock screen: summary on the left, shares on the right',
+      'Stock market panel no longer has empty space at the bottom',
+    ],
+  },
+  {
     id: '2026-10-27-boards',
     date: 'Oct 27, 2026',
     title: 'Bigger boards and islands',

@@ -127,15 +127,15 @@ export function stockModal(
           ` · ${fmt(unit())} per share · you hold ${p.shares[d]}`,
           mode === 'buy' ? ` · you can buy up to ${max}` : '',
         ),
-        // The amount on the left, the summary and buttons beside it.
+        // The summary on the left; the number of shares and the buttons on the right.
         h(
           'div',
           { class: 'm-deal' },
-          picker.el,
+          sum,
           h(
             'div',
             { class: 'm-deal-side' },
-            sum,
+            picker.el,
             h(
               'div',
               { class: 'btn-row' },
@@ -262,9 +262,9 @@ export function investAmountModal(hud: Hud, G: GameState, sqId: number, lim: num
 // ------------------------------------------------------------------ build / renovate
 
 /**
- * Pick a building, in the action bar: a picture button per building (its cost under it, what it
- * does on hover). Buildings the player cannot choose are greyed out. `extra` is added to every
- * cost (renovating).
+ * Pick a building, in the action bar: a picture button per building with its name and price
+ * under it (what it does on hover). Buildings the player cannot choose are greyed out. `extra`
+ * is added to every cost (renovating). Cash is on the player's card, so it is not repeated here.
  */
 export function buildPrompt(
   hud: Hud,
@@ -275,15 +275,8 @@ export function buildPrompt(
 ): Promise<BuildingKey | null> {
   const color = PLAYER_COLORS[p.color];
   const cost = (b: BuildingKey) => BUILDINGS.find((x) => x.b === b)!.cost + extra;
-  const cheapest = Math.min(...options.map((o) => o.cost + extra));
-  // Every building but the 3-Star Shop costs the same: one chip for those, one for the 3-Star.
-  const plain = BUILDINGS.filter((b) => b.b !== 'star3');
   return hud.prompt<BuildingKey | null>(
-    question(text, [
-      ['Your cash', fmt(p.cash), p.cash < cheapest ? 'bad' : ''],
-      ['Buildings', fmt(cost(plain[0].b))],
-      ['3-Star Shop', fmt(cost('star3'))],
-    ]),
+    question(text, []),
     [
       ...BUILDINGS.map((b) => {
         const opt = options.find((o) => o.b === b.b);
@@ -293,6 +286,7 @@ export function buildPrompt(
           value: b.b as BuildingKey | null,
           icon: propIconURL(key, color),
           disabled: !opt,
+          note: fmt(cost(b.b)),
           title: `${b.name} (${fmt(cost(b.b))})${
             !buildingAvailable(hud.G, b.b)
               ? ` - all ${K.buildingLimit} are already built`
@@ -352,13 +346,13 @@ export function rulesModal(hud: Hud, G: GameState | null) {
       : h(
           'p',
           null,
-          'Five plots start empty. The first player to stop on one may build: Checkpoint, Circus, Balloonport, Tax Office, Home, Estate Agency or a 3-Star Shop.',
+          'Some properties start as empty plots (set in game setup). The first player to stop on one may build: Checkpoint, Circus, Balloonport, Tax Office, Home, Estate Agency or a 3-Star Shop. Each can be built at most 3 times unless every property is a plot.',
         ),
     h('h4', null, 'Special squares'),
     h(
       'p',
       null,
-      'Venture squares (and stopping on a suit square) flip a venture card. Roll-on rolls again. Take-a-break closes your shops. Boon/Boom pay you 20%/50% of fees others pay. Backstreets warp across town. The cannon fires you to another player. The arcade plays a minigame.',
+      'Venture squares (and stopping on a suit square) flip a venture card. Roll-on rolls again. Take-a-break closes your shops. Boon/Boom pay you 20%/50% of fees others pay. Warp squares send you to another part of the board. The cannon fires you to another player. The arcade plays a minigame.',
     ),
     h('h4', null, 'Before rolling'),
     h('p', null, 'You can sell stock, propose a trade, auction a property or renovate a building.'),

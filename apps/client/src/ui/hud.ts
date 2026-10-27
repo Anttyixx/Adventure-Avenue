@@ -39,6 +39,8 @@ export interface PromptButton<T> {
   title?: string;
   /** A red button (saying no to something costly). */
   danger?: boolean;
+  /** A small line under a picture button's label (e.g. its price). */
+  note?: string;
 }
 
 export interface HudCallbacks {
@@ -657,9 +659,9 @@ export class Hud {
   // ------------------------------------------------------------ action bar
 
   /**
-   * Show the current player's options in the action bar: one fixed-height row centered at the
-   * bottom of the screen, as wide as its content, sliding in and out. `text` may be rich content
-   * (a title and a strip of facts).
+   * Show the current player's options in the action bar: a row centered at the bottom of the
+   * screen, as wide as its content, sliding in and out. It keeps one height, growing up to 75%
+   * taller when the content needs it. `text` may be rich content (a title and a strip of facts).
    */
   prompt<T>(text: string | Node, buttons: PromptButton<T>[], color?: number): Promise<T> {
     this.cancelPrompt();
@@ -694,6 +696,7 @@ export class Hud {
           },
           b.icon ? h('img', { src: b.icon, alt: '' }) : null,
           b.icon ? h('span', null, b.label) : b.label,
+          b.icon && b.note ? h('small', { class: 'pic-note' }, b.note) : null,
         );
         el.onclick = () => {
           this.finishPrompt();
