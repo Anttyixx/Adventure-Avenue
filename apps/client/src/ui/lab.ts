@@ -31,6 +31,10 @@ import {
   type TradeOffer,
 } from '@aa/engine';
 import { SHOP_TIERS, SHOP_TIER_NAMES, STAR3_TIERS, STAR3_TIER_NAMES, propertyIconURL } from '../art';
+import { propIconURL, type PropKey } from '../props';
+
+/** The grey unowned property art is drawn in (as on the board). */
+const UNOWNED_ART = '#8a94a8';
 import { BoardView, ZOOM_STEP } from '../board';
 import { CHARACTERS, shuffledCharacters } from '../sprites';
 import { clear, fmt, h } from './dom';
@@ -826,44 +830,78 @@ export async function openLab(app: HTMLElement, section?: string) {
     const s = addSection(
       'art',
       'Property designs',
-      'Shops change design as their value grows; so does the 3-Star Shop.',
+      'Every property design: shops and the 3-Star Shop change as their value grows; then the buildings and the bank.',
     );
     row(
       s,
       btn('Design gallery', () => {
+        // Every player color (not just this game's players), with the owner's initial where a
+        // player has that color.
+        const colors = PLAYER_COLORS.map((c, i) => ({
+          c,
+          initial: G.players.find((p) => p.color === i)?.name[0]?.toUpperCase(),
+        }));
+        const art = (src: string, title = '') => h('img', { src, alt: title, title });
+        const artRow = (name: string, note: string, imgs: HTMLElement[]) =>
+          h(
+            'div',
+            { class: 'art-row' },
+            h('div', { class: 'art-name' }, h('b', null, name), note ? h('small', null, note) : null),
+            ...imgs,
+          );
         const grid = (kind: 'shop' | 'star3', tiers: number[], names: string[]) =>
           h(
             'div',
             { class: 'art-grid' },
             ...tiers.map((min, t) =>
-              h(
-                'div',
-                { class: 'art-row' },
-                h('div', { class: 'art-name' }, h('b', null, names[t]), h('small', null, `from ${fmt(min)}`)),
-                h('img', {
-                  src: propertyIconURL(kind, t, kind === 'shop' ? G.districts[t % 7].color : '#9aa3b8'),
-                  alt: '',
-                }),
-                ...G.players.map((p) =>
-                  h('img', {
-                    src: propertyIconURL(kind, t, PLAYER_COLORS[p.color], p.name[0]?.toUpperCase()),
-                    alt: p.name,
-                    title: p.name,
-                  }),
-                ),
-              ),
+              artRow(`${names[t]}`, `from ${fmt(min)}`, [
+                art(propertyIconURL(kind, t, UNOWNED_ART), 'Unowned'),
+                ...colors.map(({ c, initial }) => art(propertyIconURL(kind, t, c, initial))),
+              ]),
             ),
           );
+        const CIRCUS_NAMES = ['Circus', 'Circus (level 1)', 'Circus (level 2)', 'Circus (level 3)'];
+        const buildings: [PropKey, string, string][] = [
+          ['checkpoint', 'Checkpoint', 'tint layer'],
+          ...[0, 1, 2, 3].map((l): [PropKey, string, string] => [
+            `circus${l as 0 | 1 | 2 | 3}`,
+            CIRCUS_NAMES[l],
+            '',
+          ]),
+          ['balloon', 'Balloonport', ''],
+          ['tax', 'Tax Office', ''],
+          ['home', 'Home', ''],
+          ['agency', 'Estate Agency', ''],
+        ];
+        const buildingGrid = h(
+          'div',
+          { class: 'art-grid' },
+          ...buildings.map(([key, name, note]) =>
+            artRow(name, note, [
+              art(propIconURL(key, UNOWNED_ART), 'Unowned'),
+              ...colors.map(({ c }) => art(propIconURL(key, c))),
+            ]),
+          ),
+        );
+        const special = h(
+          'div',
+          { class: 'art-grid' },
+          artRow('Bank', 'no owner', [art(propIconURL('bank', UNOWNED_ART), 'Bank')]),
+        );
         const m = hud.modal(
           'Property designs',
           h(
             'div',
             null,
-            h('p', { class: 'hint' }, 'Unowned first, then each player color.'),
+            h('p', { class: 'hint' }, 'Unowned (grey) first, then every player color.'),
             h('h4', null, 'Shops'),
             grid('shop', SHOP_TIERS, SHOP_TIER_NAMES),
             h('h4', null, '3-Star Shop'),
             grid('star3', STAR3_TIERS, STAR3_TIER_NAMES),
+            h('h4', null, 'Buildings'),
+            buildingGrid,
+            h('h4', null, 'Special squares'),
+            special,
           ),
           { wide: true, onClose: () => m.close() },
         );
