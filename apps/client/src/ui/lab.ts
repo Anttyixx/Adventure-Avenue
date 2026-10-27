@@ -95,7 +95,19 @@ const RECENT = new Set([
   'Buy prompt',
   'Zoom out',
   'Design gallery',
+  'Square / hex board',
+  'New sample game',
 ]);
+
+/** Which board the lab plays on: Town (square) or Twin Lakes (hex), remembered per browser. */
+const LAB_BOARD_KEY = 'aa-lab-board';
+function labBoard(): 'town' | 'twin-lakes' {
+  try {
+    return localStorage.getItem(LAB_BOARD_KEY) === 'hex' ? 'twin-lakes' : 'town';
+  } catch {
+    return 'town';
+  }
+}
 
 /** A sample match; `playSample` then plays a few rounds so cards, the board and the log have content. */
 function sampleState(): GameState {
@@ -105,7 +117,28 @@ function sampleState(): GameState {
     rules: 'standard',
     target: 5000,
     roundCap: 0,
+    boardId: labBoard(),
     seats: names.map((name, i) => ({ name, cpu: true, ch: chars[i] })),
+  });
+}
+
+/**
+ * Put one of every building on the board (spread out, owners taking turns) so their art can be
+ * seen in place. Uses shops nobody owns where it can.
+ */
+function showcaseBuildings(G: GameState) {
+  const missing = BUILDINGS.filter((b) => !G.nodes.some((s) => s.b === b.b));
+  const shops = G.nodes.filter((s) => s.t === 'shop');
+  const free = shops.filter((s) => s.owner < 0);
+  const pool = free.length >= missing.length ? free : shops;
+  missing.forEach((b, i) => {
+    const sq = pool[Math.floor(((i + 0.5) * pool.length) / missing.length)];
+    sq.t = 'plot';
+    sq.b = b.b;
+    sq.value = b.cost;
+    sq.lv = b.b === 'circus' ? 1 : 0;
+    sq.toll = K.toll0;
+    sq.owner = G.players[i % G.players.length].id;
   });
 }
 
@@ -129,6 +162,7 @@ function labLines(owner: number[], panel: number, pid: number): [number[][], num
 export async function openLab(app: HTMLElement, section?: string) {
   const G = sampleState();
   await playSample(G, 24);
+  showcaseBuildings(G);
   const game = new Game(G, { decide: () => new Promise(() => {}), emit: () => {} });
 
   const root = h('div', { class: 'game lab' });
@@ -1096,6 +1130,14 @@ export async function openLab(app: HTMLElement, section?: string) {
         hud.tick(`Now round ${G.round}.`);
       }),
       btn('New sample game', () => location.reload()),
+      btn('Square / hex board', () => {
+        try {
+          localStorage.setItem(LAB_BOARD_KEY, labBoard() === 'town' ? 'hex' : 'square');
+        } catch {
+          // Storage blocked: stay on this board.
+        }
+        location.reload();
+      }),
       btn('Open board editor', () => {
         location.hash = '#editor';
         location.reload();
