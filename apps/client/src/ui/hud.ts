@@ -323,7 +323,7 @@ export class Hud {
     if (p.boost > 1) tags.push('Fees +30%');
     if (p.bankrupt) tags.push('Bankrupt');
     else if (nw >= G.target && !G.over) tags.unshift('Can win! Get to the bank');
-    const nwEl = h('span', { class: 'nw' }, fmt(prev.nw));
+    const nwEl = h('span', { class: 'nw' }, plain(prev.nw));
     const cashEl = h('span', { class: 'cash' }, fmt(prev.cash));
     const extras = tags.map((t) => h('span', { class: 'tag' }, t));
     const rank = this.ranks.get(p.id);
@@ -335,10 +335,7 @@ export class Hud {
         h(
           'div',
           { class: 'pc-row pc-top' },
-          // Place, beside the name so it never covers the character.
-          rank && !p.bankrupt
-            ? h('span', { class: `rank r${rank}`, title: `Rank ${rank}` }, ordinal(rank))
-            : null,
+          h('span', { class: 'lvl', title: `Level ${p.level}` }, `Lv ${p.level}`),
           h('span', { class: 'pname' }, p.name),
           // An active Boon or Boom shows as its symbol, like on the board.
           p.boon > 0
@@ -371,14 +368,22 @@ export class Hud {
         h(
           'div',
           { class: 'pc-row money' },
-          h('span', { class: 'm-cash' }, h('span', { class: 'lbl' }, 'Cash'), cashEl),
-          h('span', { class: 'm-nw' }, h('span', { class: 'lbl' }, 'Net'), nwEl),
+          h('span', { class: 'm-cash', title: 'Cash' }, cashEl),
+          // Net worth, with the player's place where a coin would be.
+          h(
+            'span',
+            { class: 'm-nw', title: 'Net worth' },
+            nwEl,
+            rank && !p.bankrupt
+              ? h('span', { class: `rank r${rank}`, title: `Rank ${rank}` }, ordinal(rank))
+              : null,
+          ),
         ),
       ),
     );
     const delta = p.cash - prev.cash;
     if (delta && this.shown.has(p.id)) this.moneyPop(el, p.id, delta);
-    countUp(nwEl, prev.nw, nw);
+    countUp(nwEl, prev.nw, nw, plain);
     countUp(cashEl, prev.cash, p.cash);
     this.shown.set(p.id, { nw, cash: p.cash });
   }
@@ -744,9 +749,12 @@ export class Hud {
   }
 }
 
-function countUp(el: HTMLElement, from: number, to: number) {
+/** A number with thousands separators and no coin (net worth shows the rank beside it instead). */
+const plain = (n: number) => Math.round(n).toLocaleString('en-US');
+
+function countUp(el: HTMLElement, from: number, to: number, f = fmt) {
   if (from === to) {
-    el.textContent = fmt(to);
+    el.textContent = f(to);
     return;
   }
   el.classList.add(to > from ? 'up' : 'down');
@@ -754,7 +762,7 @@ function countUp(el: HTMLElement, from: number, to: number) {
   const dur = 600;
   const tick = () => {
     const k = Math.min(1, (performance.now() - t0) / dur);
-    el.textContent = fmt(from + (to - from) * k);
+    el.textContent = f(from + (to - from) * k);
     if (k < 1) requestAnimationFrame(tick);
     else el.classList.remove('up', 'down');
   };

@@ -668,11 +668,13 @@ sideways" screen with a "Play upright anyway" option, which moves the cards into
 under the action bar and frames the board in the gap above. Full screen uses the browser Fullscreen
 API where available.
 
-- **Scoreboard:** portrait; place and full name on the top row, with the wild count and four suit
+- **Scoreboard:** portrait; level chip and full name on the top row, with the wild count and four suit
   icons at its top right (they drop below a very long name; collected suits in their own color:
   spades blue, hearts pink, diamonds yellow, clubs green; missing ones faint grey; a full set hops
   until the player levels up); an active Boon or Boom shows as its symbol after the name (the
-  tooltip gives the commission); status tags (Closed, Fees +30%); cash and net worth.
+  tooltip gives the commission); status tags (Closed, Fees +30%); along the bottom, cash (with a
+  coin) on the left and net worth on the right with the player's place (1st, 2nd...) where the
+  coin would be; no "Cash"/"Net" labels.
   Cards are 10% larger on computer screens.
 - **Action bar:** the current prompt and its buttons. Enter or Space presses the main button.
 - **Modals:** buy stock, sell stock, invest, build/renovate, venture grid, minigames, trade, auction,

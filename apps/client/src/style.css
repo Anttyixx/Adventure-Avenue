@@ -1010,6 +1010,10 @@ input[type='range'] {
   flex-direction: column;
   gap: 3px;
 }
+/* Cash and net worth always sit along the bottom of the card. */
+.pc-main .money {
+  margin-top: auto;
+}
 .pc-row {
   display: flex;
   align-items: center;
@@ -1031,6 +1035,16 @@ input[type='range'] {
   font-family: var(--head);
   font-size: 16px;
   white-space: nowrap;
+}
+.lvl {
+  flex: none;
+  font-family: var(--head);
+  font-size: 12px;
+  letter-spacing: 0.3px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: var(--pc);
+  color: #fff;
 }
 .boon-ico {
   flex: none;
@@ -1072,9 +1086,6 @@ input[type='range'] {
 }
 .money .m-nw {
   text-align: right;
-}
-.money .lbl {
-  color: var(--muted);
 }
 .money .nw,
 .money .cash {
@@ -2089,6 +2100,10 @@ input[type='range'] {
   .pname {
     font-size: 12px;
   }
+  .lvl {
+    font-size: 10px;
+    padding: 0 4px;
+  }
   .pc-top {
     gap: 4px;
   }
@@ -2097,9 +2112,6 @@ input[type='range'] {
   }
   .money {
     gap: 4px;
-  }
-  .money .lbl {
-    font-size: 10px;
   }
   .money .nw,
   .money .cash {
@@ -3098,6 +3110,13 @@ input[type='range'] {
 .money .m-cash .cash,
 .money .m-nw .nw {
   margin-right: 0;
+}
+.money .m-nw {
+  align-items: center;
+}
+.money .rank {
+  font-size: 10px;
+  min-width: 24px;
 }
 
 /* Rich content in the options panel (price tables, trade dock) */
