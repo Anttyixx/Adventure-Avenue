@@ -1,6 +1,9 @@
 /**
- * Game setup (opened from Start on the main menu): a looping carousel of boards, the rules,
- * player count, CPU fill, characters (each player picks a different one) and names.
+ * Game setup (opened from Play on the main menu): a looping carousel of boards, the rules,
+ * player count, characters (each player picks a different one) and names. It also opens a
+ * room with a join code: friends who join take CPU seats and the game is played online; if
+ * nobody joins it is a game on this device. Players who join see the same screen with every
+ * setting shown but locked (`guestSetup`).
  */
 import {
   K,
@@ -19,12 +22,14 @@ import { freeCharacter, shuffledCharacters } from '../sprites';
 import { charButton, pickCharacter } from './charpick';
 import { loadSave } from '../save';
 import { titleScene } from './menu';
-import type { HostRoom } from '../net/hostroom';
-import { inviteURL } from '../net/protocol';
+import type { GuestRoom } from '../net/guestroom';
+import type { HostRoom, LocalSeat } from '../net/hostroom';
+import { inviteURL, type LobbyInfo } from '../net/protocol';
 import { lobbySeats } from './online';
+import { digitPicker } from './digits';
 import { closeSoundPopover, soundButton } from './soundpanel';
 import { sound } from '../audio';
-import { clear, fmt, h } from './dom';
+import { clear, h } from './dom';
 
 const NAMES = [
   'Rosa',
@@ -44,6 +49,11 @@ const NAMES = [
   'Finn',
   'Suki',
 ];
+/** A friendly random name (for joining before a name has been typed). */
+export function randomName(): string {
+  return NAMES[Math.floor(Math.random() * NAMES.length)];
+}
+
 const PLOT_LABEL: Record<PlotSetting, string> = {
   none: 'None',
   few: 'A few',
@@ -80,20 +90,196 @@ function writeJSON(key: string, v: unknown) {
 }
 
 export interface SetupHandlers {
-  onStart(opts: MatchOptions): void;
+  /** `online`: friends joined, so the room stays open and the game is played online. */
+  onStart(opts: MatchOptions, online: boolean): void;
   onBack(): void;
   /** Open the board editor, optionally on an existing board. */
   onEditor(board: BoardDef | null): void;
 }
 
+/** What game setup uses of the host's room (a HostRoom; the UI Lab passes a stand-in). */
+export type SetupRoom = Pick<
+  HostRoom,
+  'code' | 'joined' | 'lobby' | 'configure' | 'setSettings' | 'kick' | 'onChange' | 'seatConfigs' | 'leave'
+>;
+
+/** What the locked setup a joined player sees uses of their room. */
+export type GuestSetupRoom = Pick<GuestRoom, 'code' | 'seat' | 'lobby' | 'setLook' | 'setName' | 'leave'>;
+
+/** The rules part of the settings. */
+interface RuleSettings {
+  rules: RuleSet;
+  target: number;
+  roundCap: number;
+  plots: PlotSetting;
+}
+
+/** A target in 1,000G steps from 1,000G to 90,000G. */
+const cleanTarget = (v: number) =>
+  Math.min(K.targetMax, Math.max(K.targetStep, Math.round(v / K.targetStep) * K.targetStep)) ||
+  K.defaultTarget;
+
 /**
- * Game setup. With a `room` it is the online host's lobby: the Players panel shows the room
- * code and who has joined instead of the hot-seat options.
+ * A row of choices. Without `set` it only shows the current one (a joined player's view).
+ * `off` greys out choices that can't be picked right now.
  */
-export function setupScreen(root: HTMLElement, handlers: SetupHandlers, room: HostRoom | null = null) {
+function seg<T>(
+  label: string,
+  values: T[],
+  cur: T,
+  text: (v: T) => string,
+  set?: (v: T) => void,
+  off?: (v: T) => boolean,
+) {
+  return h(
+    'div',
+    { class: 'opt' },
+    h('div', { class: 'opt-label' }, label),
+    h(
+      'div',
+      { class: `seg ${set ? '' : 'ro'}` },
+      ...values.map((v) =>
+        h(
+          'button',
+          {
+            class: `seg-btn ${v === cur ? 'on' : ''}`,
+            disabled: !set || !!off?.(v),
+            onclick: () => set?.(v),
+          },
+          text(v),
+        ),
+      ),
+    ),
+  );
+}
+
+/**
+ * The rules panel: target net worth (arrows on each digit, in 1,000G steps), round limit, rule
+ * set and vacant plots. Without `edit` everything is shown but locked.
+ */
+function rulesPanel(st: RuleSettings, edit?: (patch: Partial<RuleSettings>) => void): HTMLElement {
+  const target = digitPicker({
+    max: K.targetMax,
+    min: K.targetStep,
+    unit: K.targetStep,
+    value: st.target,
+    suffix: 'G',
+    readOnly: !edit,
+    onChange: (v) => edit?.({ target: cleanTarget(v) }),
+  });
+  return h(
+    'section',
+    { class: 'setup-panel glass rules-panel' },
+    h('h3', null, 'Rules'),
+    h('div', { class: 'opt target-opt' }, h('div', { class: 'opt-label' }, 'Target net worth'), target.el),
+    seg(
+      'Round limit',
+      K.roundCapOptions as unknown as number[],
+      st.roundCap,
+      (v) => (v ? String(v) : 'None'),
+      edit && ((v) => edit({ roundCap: v })),
+    ),
+    seg(
+      'Rule set',
+      ['standard', 'easy'] as RuleSet[],
+      st.rules,
+      (v) => (v === 'standard' ? 'Standard' : 'Easy'),
+      edit && ((v) => edit({ rules: v })),
+    ),
+    h(
+      'p',
+      { class: 'hint' },
+      st.rules === 'standard'
+        ? 'Standard: districts, vacant plots and the stock market.'
+        : 'Easy: rows of connected shops, no plots and no stock market.',
+    ),
+    st.rules === 'standard'
+      ? seg(
+          'Vacant plots',
+          ['none', 'few', 'some', 'lot', 'all'] as PlotSetting[],
+          st.plots,
+          (v) => PLOT_LABEL[v],
+          edit && ((v) => edit({ plots: v })),
+        )
+      : null,
+    st.rules === 'standard'
+      ? h(
+          'p',
+          { class: 'hint' },
+          st.plots === 'all'
+            ? 'Every property starts as a vacant plot, and any building can be built any number of times.'
+            : `Some properties start as vacant plots (up to ${K.plotMax}). Each building can be built at most ${K.buildingLimit} times.`,
+        )
+      : null,
+  );
+}
+
+/** The chosen board: its picture, name and size. */
+function boardStage(board: BoardDef, mine: boolean, slide = ''): HTMLElement {
+  return h(
+    'div',
+    { class: `car-slide ${slide}` },
+    h('div', { class: 'car-thumb' }, boardThumb(board, 440, 230)),
+    h(
+      'div',
+      { class: 'car-info' },
+      h(
+        'div',
+        { class: 'car-title' },
+        h('b', null, board.name),
+        h('span', { class: 'car-tag' }, board.layout === 'hex' ? 'Hex' : 'Square'),
+        mine ? h('span', { class: 'car-tag mine' }, 'My board') : null,
+      ),
+      h(
+        'small',
+        { class: 'hint' },
+        `${board.squares.length} squares · ${board.districts.length} districts${board.author ? ` · by ${board.author}` : ''}`,
+      ),
+      validateBoard(board).errors.length
+        ? h('small', { class: 'car-bad' }, 'Has problems: fix it in the board editor to play.')
+        : null,
+    ),
+  );
+}
+
+/** The screen around the panels: the title scene, a header with Back, and the panels. */
+function setupFrame() {
+  sound.music('menu');
+  const scene = titleScene(false);
+  const wrap = h('div', { class: 'setup-wrap' });
+  const el = h('div', { class: 'setup' }, scene.el, wrap);
+  return {
+    el,
+    wrap,
+    close: () => {
+      closeSoundPopover();
+      scene.stop();
+      el.remove();
+    },
+  };
+}
+
+function setupHead(back: string, onBack: () => void, title: string) {
+  return h(
+    'header',
+    { class: 'setup-head' },
+    h('button', { class: 'btn ghost small back', onclick: onBack }, back),
+    h('h2', null, title),
+    soundButton('btn small ghost setup-sound'),
+  );
+}
+
+/**
+ * Game setup. `openRoom` gets a room with a join code (null when there is no connection, which
+ * still allows a game on this device); without it there is no join code at all.
+ */
+export function setupScreen(
+  root: HTMLElement,
+  handlers: SetupHandlers,
+  openRoom?: () => Promise<SetupRoom | null>,
+) {
   const saved = readJSON(OPTS_KEY, {
     humans: 1,
-    fill: true,
     total: 4,
     target: K.defaultTarget as number,
     roundCap: 0,
@@ -102,20 +288,15 @@ export function setupScreen(root: HTMLElement, handlers: SetupHandlers, room: Ho
     boardId: 'town',
   });
   let humans = saved.humans;
-  let fill = saved.fill;
-  /** Hot-seat: players in the match; seats after the humans are CPUs. */
+  /** Players in the match: the humans on this device, then friends who joined, then CPUs. */
   let total = Math.max(2, Math.min(MAX_PLAYERS, saved.total ?? 4));
-  humans = Math.min(humans, total);
-  /** A target in 1,000G steps from 1,000G to 90,000G. */
-  const cleanTarget = (v: number) =>
-    Math.min(K.targetMax, Math.max(K.targetStep, Math.round(v / K.targetStep) * K.targetStep)) ||
-    K.defaultTarget;
-  let target = cleanTarget(saved.target);
-  /** Custom target picked (stays on even when the amount matches a preset). */
-  let customTarget = !(K.targetOptions as unknown as number[]).includes(target);
-  let roundCap = saved.roundCap;
-  let plots: PlotSetting = saved.plots ?? 'few';
-  let rules: RuleSet = saved.rules;
+  humans = Math.max(1, Math.min(humans, total));
+  const st: RuleSettings = {
+    target: cleanTarget(saved.target),
+    roundCap: saved.roundCap,
+    plots: saved.plots ?? 'few',
+    rules: saved.rules,
+  };
   let boardId: string = getBoard(saved.boardId) ? saved.boardId : 'town';
   let notice = '';
   /** Direction of the last carousel move, so only that redraw animates the slide. */
@@ -129,9 +310,39 @@ export function setupScreen(root: HTMLElement, handlers: SetupHandlers, room: Ho
     suggested = PLAYER_COLORS.map(() => pool.splice(Math.floor(Math.random() * pool.length), 1)[0]);
   };
   shuffle();
+
+  // The room for the join code: opening, open, or unavailable.
+  let room: SetupRoom | null = null;
+  let roomState: 'none' | 'opening' | 'open' | 'failed' = openRoom ? 'opening' : 'none';
+  let closed = false;
+  /** Set while this screen updates the room, so the room's change event doesn't redraw it. */
+  let syncing = false;
+  let sentSeats = '';
+  let sentSettings = '';
+  let offRoom: (() => void) | null = null;
+  let copied = false;
+
+  const joined = () => room?.joined ?? 0;
+  const nameOf = (i: number) => cleanName(typed[i] || '') || suggested[i];
+  /** Seats of joined players, in seat order (they come right after the humans on this device). */
+  const lobbySeatsNow = () => room?.lobby().seats ?? [];
+  /** Characters held by people (this device's humans and joined friends), except seat `but`. */
+  const peopleLooks = (but: number) => {
+    const out = new Map<CharId, string>();
+    for (let j = 0; j < humans; j++) if (j !== but) out.set(looks[j], nameOf(j));
+    lobbySeatsNow().forEach((s, j) => {
+      if (j !== but && s.kind === 'remote' && s.look) out.set(s.look, s.name);
+    });
+    return out;
+  };
+  /** A CPU seat's character: its own unless a person has it. */
+  const cpuLook = (i: number) => {
+    const taken = peopleLooks(i);
+    return taken.has(looks[i]) ? freeCharacter([...taken.keys()]) : looks[i];
+  };
   /**
    * Give seat `i` a character. A CPU seat that had it switches to a free one; human seats never
-   * share, because the picker greys out what other humans have.
+   * share, because the picker greys out what other people have.
    */
   const setLook = (i: number, id: CharId) => {
     looks[i] = id;
@@ -139,119 +350,55 @@ export function setupScreen(root: HTMLElement, handlers: SetupHandlers, room: Ho
       if (j !== i && l === id) looks[j] = freeCharacter(looks.filter((_, k) => k !== j));
     });
   };
-  /** Open the picker for seat `i`; `humanNames` maps the other human seats to their names. */
-  const choose = async (i: number, others: Map<CharId, string>, after: () => void) => {
-    const id = await pickCharacter({ current: looks[i], taken: others, color: PLAYER_COLORS[i] });
+  const choose = async (i: number) => {
+    const id = await pickCharacter({ current: looks[i], taken: peopleLooks(i), color: PLAYER_COLORS[i] });
     if (id) {
       setLook(i, id);
-      after();
+      draw();
     }
   };
 
-  sound.music('menu');
-  const scene = titleScene(false);
-  const wrap = h('div', { class: 'setup-wrap' });
-  const el = h('div', { class: 'setup' }, scene.el, wrap);
-  root.append(el);
-
-  const seg = <T>(label: string, values: T[], cur: T, text: (v: T) => string, set: (v: T) => void) =>
-    h(
-      'div',
-      { class: 'opt' },
-      h('div', { class: 'opt-label' }, label),
-      h(
-        'div',
-        { class: 'seg' },
-        ...values.map((v) =>
-          h(
-            'button',
-            {
-              class: `seg-btn ${v === cur ? 'on' : ''}`,
-              onclick: () => {
-                set(v);
-                draw();
-              },
-            },
-            text(v),
-          ),
-        ),
-      ),
-    );
-
-  /**
-   * Target net worth: the preset amounts, plus Custom with minus/plus buttons and a box to type
-   * any amount in 1,000G steps up to 90,000G.
-   */
-  const targetPicker = () => {
-    const presets = K.targetOptions as unknown as number[];
-    const custom = customTarget;
-    const input = h('input', {
-      class: 'num target-in',
-      type: 'number',
-      min: String(K.targetStep),
-      max: String(K.targetMax),
-      step: String(K.targetStep),
-      value: String(target),
-      'aria-label': 'Custom target net worth',
-    }) as HTMLInputElement;
-    const set = (v: number) => {
-      target = cleanTarget(v);
-      draw();
-    };
-    input.onchange = () => set(Number(input.value));
-    return h(
-      'div',
-      { class: 'opt' },
-      h('div', { class: 'opt-label' }, 'Target net worth'),
-      h(
-        'div',
-        { class: 'seg' },
-        ...presets.map((v) =>
-          h(
-            'button',
-            {
-              class: `seg-btn ${!custom && v === target ? 'on' : ''}`,
-              onclick: () => {
-                customTarget = false;
-                set(v);
-              },
-            },
-            fmt(v),
-          ),
-        ),
-        h(
-          'button',
-          {
-            class: `seg-btn ${custom ? 'on' : ''}`,
-            onclick: () => {
-              customTarget = true;
-              draw();
-            },
-          },
-          'Custom',
-        ),
-      ),
-      custom
-        ? h(
-            'div',
-            { class: 'target-custom' },
-            h(
-              'button',
-              { class: 'btn small', onclick: () => set(target - K.targetStep), 'aria-label': 'Lower' },
-              '−',
-            ),
-            input,
-            h('span', { class: 'tb-g' }, 'G'),
-            h(
-              'button',
-              { class: 'btn small', onclick: () => set(target + K.targetStep), 'aria-label': 'Higher' },
-              '+',
-            ),
-            h('small', { class: 'hint' }, `Steps of ${fmt(K.targetStep)}, up to ${fmt(K.targetMax)}`),
-          )
-        : null,
-    );
+  /** Tell the room about the seats and settings (only what changed). */
+  const sync = () => {
+    if (!room) return;
+    syncing = true;
+    const locals: LocalSeat[] = Array.from({ length: humans }, (_, i) => ({
+      name: nameOf(i),
+      look: looks[i],
+    }));
+    const seatKey = JSON.stringify([total, locals]);
+    if (seatKey !== sentSeats) {
+      sentSeats = seatKey;
+      room.configure(total, locals);
+    }
+    const board = getBoard(boardId) ?? BUILT_IN[0];
+    const settingsKey = JSON.stringify([board.id, st]);
+    if (settingsKey !== sentSettings) {
+      sentSettings = settingsKey;
+      room.setSettings({ boardName: board.name, board, ...st });
+    }
+    syncing = false;
   };
+
+  const connect = () => {
+    if (!openRoom) return;
+    roomState = 'opening';
+    void openRoom().then((r) => {
+      if (closed) {
+        r?.leave();
+        return;
+      }
+      room = r;
+      roomState = r ? 'open' : 'failed';
+      sentSeats = sentSettings = '';
+      offRoom = r?.onChange(() => !syncing && draw()) ?? null;
+      draw();
+    });
+  };
+
+  const frame = setupFrame();
+  const { wrap } = frame;
+  root.append(frame.el);
 
   const playable = (b: BoardDef) => validateBoard(b).errors.length === 0;
   /** Every board in carousel order: built-in first, then the player's saved boards. */
@@ -285,7 +432,6 @@ export function setupScreen(root: HTMLElement, handlers: SetupHandlers, room: Ho
       list.findIndex((b) => b.board.id === boardId),
     );
     const { board, mine } = list[index];
-    const ok = playable(board);
     const importBtn = h('button', { class: 'btn small ghost' }, 'Import board file');
     importBtn.onclick = async () => {
       const file = await pickBoardFile();
@@ -304,28 +450,7 @@ export function setupScreen(root: HTMLElement, handlers: SetupHandlers, room: Ho
       }
       draw();
     };
-    const stage = h(
-      'div',
-      { class: `car-slide ${slide}` },
-      h('div', { class: 'car-thumb' }, boardThumb(board, 440, 230)),
-      h(
-        'div',
-        { class: 'car-info' },
-        h(
-          'div',
-          { class: 'car-title' },
-          h('b', null, board.name),
-          h('span', { class: 'car-tag' }, board.layout === 'hex' ? 'Hex' : 'Square'),
-          mine ? h('span', { class: 'car-tag mine' }, 'My board') : null,
-        ),
-        h(
-          'small',
-          { class: 'hint' },
-          `${board.squares.length} squares · ${board.districts.length} districts${board.author ? ` · by ${board.author}` : ''}`,
-        ),
-        ok ? null : h('small', { class: 'car-bad' }, 'Has problems: fix it in the board editor to play.'),
-      ),
-    );
+    const stage = boardStage(board, mine, slide);
     // Swipe on touch screens.
     let downX: number | null = null;
     stage.addEventListener('pointerdown', (e) => (downX = e.clientX));
@@ -368,7 +493,13 @@ export function setupScreen(root: HTMLElement, handlers: SetupHandlers, room: Ho
         importBtn,
         h(
           'button',
-          { class: 'btn small ghost', onclick: () => handlers.onEditor(mine ? board : null) },
+          {
+            class: 'btn small ghost',
+            onclick: () => {
+              leaveRoom();
+              handlers.onEditor(mine ? board : null);
+            },
+          },
           mine ? 'Edit this board' : 'Board editor',
         ),
       ),
@@ -376,265 +507,326 @@ export function setupScreen(root: HTMLElement, handlers: SetupHandlers, room: Ho
     );
   };
 
-  // ------------------------------------------------------------ online lobby (host)
-
-  const lobbyBox = h('section', { class: 'setup-panel glass players-panel lobby-panel' });
-  const hostName = h('input', {
-    class: 'name',
-    maxlength: '12',
-    placeholder: suggested[0],
-    value: typed[0] ?? '',
-    'aria-label': 'Your name',
-  }) as HTMLInputElement;
-  hostName.oninput = () => {
-    typed[0] = cleanName(hostName.value);
-    room?.setHost(typed[0] || suggested[0], looks[0]);
-  };
-  let startBtn: HTMLButtonElement | null = null;
-  const onlineReady = () => !!room && (fill || room.joined > 0);
-  const inviteLink = () => inviteURL(room!.code);
-  let copied = false;
   const share = async () => {
-    const url = inviteLink();
-    const text = `Join my Adventure Avenue game! Room code: ${room!.code}`;
+    if (!room) return;
+    const url = inviteURL(room.code);
+    const text = `Join my Adventure Avenue game! Code: ${room.code}`;
     try {
-      if (navigator.share) await navigator.share({ title: 'Adventure Avenue', text, url });
+      if (navigator.share && 'ontouchstart' in window)
+        await navigator.share({ title: 'Adventure Avenue', text, url });
       else {
         await navigator.clipboard.writeText(`${text}\n${url}`);
         copied = true;
-        drawLobby();
+        draw();
       }
     } catch {
       /* cancelled */
     }
   };
-  const drawLobby = () => {
-    if (!room) return;
-    clear(lobbyBox);
-    lobbyBox.append(
-      h('div', { class: 'panel-head' }, h('h3', null, 'Players')),
-      h(
+
+  /** The join code box at the top of the Players panel. */
+  const joinBox = () => {
+    if (roomState === 'none') return null;
+    if (roomState === 'opening')
+      return h(
         'div',
-        { class: 'room-code' },
-        h('small', null, 'Room code'),
-        h('b', null, room.code),
-        h(
-          'button',
-          { class: 'btn small', onclick: share },
-          copied ? 'Copied!' : 'ontouchstart' in window ? 'Share invite' : 'Copy invite link',
-        ),
-      ),
-      h(
-        'p',
-        { class: 'hint' },
-        'Friends open the game, tap Play online, then Join a game and type this code.',
-      ),
-      h(
+        { class: 'room-code pending' },
+        h('small', null, 'Join code'),
+        h('span', { class: 'spinner' }),
+        h('small', null, 'Getting a code...'),
+      );
+    if (roomState === 'failed' || !room)
+      return h(
         'div',
-        { class: 'host-me' },
-        charButton(looks[0], 'big', () => {
-          const taken = new Map<CharId, string>();
-          room.lobby().seats.forEach((st, j) => {
-            if (j > 0 && st.look && st.kind !== 'open') taken.set(st.look, st.name);
-          });
-          void choose(0, taken, draw);
-        }),
-        h('label', { class: 'opt' }, h('div', { class: 'opt-label' }, 'Your name'), hostName),
-      ),
-      lobbySeats(room.lobby(), 0, (i) => room.kick(i)),
+        { class: 'room-code failed' },
+        h('small', null, 'No join code (no connection?). You can still play on this device.'),
+        h('button', { class: 'btn small', onclick: () => (connect(), draw()) }, 'Try again'),
+      );
+    return h(
+      'div',
+      { class: 'room-code' },
+      h('small', null, 'Join code'),
+      h('b', null, room.code),
       h(
-        'label',
-        { class: 'check' },
-        h('input', {
-          type: 'checkbox',
-          checked: fill,
-          onchange: (e: Event) => {
-            fill = (e.target as HTMLInputElement).checked;
-            draw();
-          },
-        }),
-        'Fill empty seats with CPU',
+        'button',
+        { class: 'btn small', onclick: share },
+        copied ? 'Copied!' : 'ontouchstart' in window ? 'Share invite' : 'Copy invite link',
       ),
     );
-    if (startBtn) startBtn.disabled = !onlineReady() || !playable(getBoard(boardId) ?? BUILT_IN[0]);
   };
-  if (room) {
-    room.setHost(typed[0] || suggested[0], looks[0]);
-    room.onChange(drawLobby);
-  }
 
-  const draw = () => {
-    clear(wrap);
-    const seats = total;
-    const board = getBoard(boardId) ?? BUILT_IN[0];
-    const start = h('button', { class: 'btn main big', disabled: !playable(board) }, 'Start game');
-    startBtn = start;
-    if (room) {
-      room.setHost(typed[0] || suggested[0], looks[0]);
-      room.setSettings({ boardName: board.name, rules, target, roundCap, fill });
+  /** One seat: this device's humans have a name box and a character button. */
+  const seatCard = (i: number) => {
+    const color = PLAYER_COLORS[i];
+    if (i < humans) {
+      const input = h('input', {
+        class: 'name',
+        maxlength: '12',
+        placeholder: suggested[i],
+        value: typed[i] ?? '',
+        'aria-label': `Player ${i + 1} name`,
+        oninput: (e: Event) => {
+          typed[i] = cleanName((e.target as HTMLInputElement).value);
+          sync();
+        },
+      }) as HTMLInputElement;
+      return h(
+        'div',
+        { class: 'seat-card', style: `--pc:${color}` },
+        charButton(looks[i], '', () => void choose(i)),
+        input,
+        h('span', { class: 'seat-tag' }, i === 0 ? 'You' : `P${i + 1}`),
+      );
     }
-    start.onclick = () => {
-      if (room) {
-        writeJSON(NAMES_KEY, typed);
-        writeJSON(OPTS_KEY, { humans, fill, total, target, roundCap, rules, boardId, plots });
-        const list = room.seatConfigs((i) => suggested[i], fill);
-        handlers.onStart({ rules, target, roundCap, seats: list, board, plots });
-        return;
-      }
-      const seatList = Array.from({ length: seats }, (_, i) => {
-        const human = i < humans;
-        const name = human ? cleanName(typed[i] || '') || suggested[i] : suggested[i];
-        return { name, cpu: !human, ch: looks[i] };
-      });
-      writeJSON(NAMES_KEY, typed);
-      writeJSON(OPTS_KEY, { humans, fill, total, target, roundCap, rules, boardId, plots });
-      handlers.onStart({ rules, target, roundCap, seats: seatList, board, plots });
-    };
-    wrap.append(
-      h(
-        'header',
-        { class: 'setup-head' },
+    const seat = lobbySeatsNow()[i];
+    if (seat?.kind === 'remote') {
+      return h(
+        'div',
+        { class: 'seat-card joined', style: `--pc:${color}` },
+        charButton(seat.look ?? looks[i], '', null),
+        h('span', { class: 'name' }, seat.name),
+        h('span', { class: 'seat-tag' }, seat.online ? 'Joined' : 'Away'),
         h(
           'button',
           {
-            class: 'btn ghost small back',
-            onclick: () => {
-              if (room?.joined && !window.confirm('Close the room? Players who joined will be sent back.'))
-                return;
-              room?.leave();
-              handlers.onBack();
-            },
+            class: 'seat-kick',
+            title: `Remove ${seat.name}`,
+            'aria-label': `Remove ${seat.name}`,
+            onclick: () => room?.kick(i),
           },
-          room ? '‹ Back' : '‹ Menu',
+          '×',
         ),
-        h('h2', null, room ? 'Host online game' : 'New game'),
-        soundButton('btn small ghost setup-sound'),
+      );
+    }
+    return h(
+      'div',
+      { class: 'seat-card', style: `--pc:${color}` },
+      charButton(cpuLook(i), '', null),
+      h('span', { class: 'name cpu' }, suggested[i]),
+      h('span', { class: 'seat-tag', title: room ? 'A friend who joins takes this seat' : '' }, 'CPU'),
+    );
+  };
+
+  const playersPanel = () => {
+    const j = joined();
+    return h(
+      'section',
+      { class: 'setup-panel glass players-panel' },
+      h(
+        'div',
+        { class: 'panel-head' },
+        h('h3', null, 'Players'),
+        h('button', { class: 'btn ghost small', onclick: () => (shuffle(), draw()) }, 'Shuffle characters'),
+      ),
+      joinBox(),
+      room
+        ? h(
+            'p',
+            { class: 'hint' },
+            j
+              ? `${j} friend${j > 1 ? 's' : ''} joined: this will be an online game.`
+              : 'Friends tap Join on the main menu and type this code; they take a CPU seat. If nobody joins, you play on this device.',
+          )
+        : null,
+      seg(
+        'Players in the game',
+        Array.from({ length: MAX_PLAYERS - 1 }, (_, i) => i + 2),
+        total,
+        (v) => `${v} players`,
+        (v) => {
+          total = v;
+          humans = Math.min(humans, v - joined());
+          draw();
+        },
+        // Never fewer seats than the people already in them.
+        (v) => v < humans + j,
+      ),
+      seg(
+        'Humans on this device (the rest are friends or CPUs)',
+        Array.from({ length: total }, (_, i) => i + 1),
+        humans,
+        (v) => `${v} human${v > 1 ? 's' : ''}`,
+        (v) => {
+          humans = v;
+          draw();
+        },
+        (v) => v > total - j,
+      ),
+      h('div', { class: 'seats' }, ...Array.from({ length: total }, (_, i) => seatCard(i))),
+    );
+  };
+
+  const leaveRoom = () => {
+    closed = true;
+    offRoom?.();
+    room?.leave();
+    room = null;
+  };
+
+  const draw = () => {
+    clear(wrap);
+    // Joining fills seats: make room for everyone already here.
+    total = Math.max(total, humans + joined());
+    sync();
+    const board = getBoard(boardId) ?? BUILT_IN[0];
+    const online = joined() > 0;
+    const start = h(
+      'button',
+      { class: 'btn main big', disabled: !playable(board) },
+      online ? 'Start online game' : 'Start game',
+    );
+    start.onclick = () => {
+      writeJSON(NAMES_KEY, typed);
+      writeJSON(OPTS_KEY, { humans, total, boardId, ...st });
+      const base = { ...st, board };
+      if (room && online) {
+        const seats = room.seatConfigs((i) => ({ name: suggested[i], ch: cpuLook(i) }));
+        offRoom?.();
+        closed = true;
+        handlers.onStart({ ...base, seats }, true);
+        return;
+      }
+      const seats = Array.from({ length: total }, (_, i) => ({
+        name: i < humans ? nameOf(i) : suggested[i],
+        cpu: i >= humans,
+        ch: i < humans ? looks[i] : cpuLook(i),
+      }));
+      leaveRoom();
+      handlers.onStart({ ...base, seats }, false);
+    };
+    wrap.append(
+      setupHead(
+        '‹ Menu',
+        () => {
+          if (online && !window.confirm('Close the game? Friends who joined will be sent back.')) return;
+          leaveRoom();
+          handlers.onBack();
+        },
+        'New game',
       ),
       h(
         'div',
         { class: 'setup-grid' },
         boardPanel(),
-        h(
-          'section',
-          { class: 'setup-panel glass rules-panel' },
-          h('h3', null, 'Rules'),
-          targetPicker(),
-          seg(
-            'Round limit',
-            K.roundCapOptions as unknown as number[],
-            roundCap,
-            (v) => (v ? String(v) : 'None'),
-            (v) => (roundCap = v),
-          ),
-          seg(
-            'Rule set',
-            ['standard', 'easy'] as RuleSet[],
-            rules,
-            (v) => (v === 'standard' ? 'Standard' : 'Easy'),
-            (v) => (rules = v),
-          ),
-          h(
-            'p',
-            { class: 'hint' },
-            rules === 'standard'
-              ? 'Standard: districts, vacant plots and the stock market.'
-              : 'Easy: rows of connected shops, no plots and no stock market.',
-          ),
-          rules === 'standard'
-            ? seg(
-                'Vacant plots',
-                ['none', 'few', 'some', 'lot', 'all'] as PlotSetting[],
-                plots,
-                (v) => PLOT_LABEL[v],
-                (v) => (plots = v),
-              )
-            : null,
-          rules === 'standard'
-            ? h(
-                'p',
-                { class: 'hint' },
-                plots === 'all'
-                  ? 'Every property starts as a vacant plot, and any building can be built any number of times.'
-                  : `Some properties start as vacant plots (up to ${K.plotMax}). Each building can be built at most ${K.buildingLimit} times.`,
-              )
-            : null,
-        ),
-        room
-          ? lobbyBox
-          : h(
-              'section',
-              { class: 'setup-panel glass players-panel' },
-              h(
-                'div',
-                { class: 'panel-head' },
-                h('h3', null, 'Players'),
-                h(
-                  'button',
-                  { class: 'btn ghost small', onclick: () => (shuffle(), draw()) },
-                  'Shuffle characters',
-                ),
-              ),
-              seg(
-                'Players in the game',
-                Array.from({ length: MAX_PLAYERS - 1 }, (_, i) => i + 2),
-                total,
-                (v) => `${v} players`,
-                (v) => {
-                  total = v;
-                  humans = Math.min(humans, v);
-                },
-              ),
-              seg(
-                'Humans on this device (the rest are CPUs)',
-                Array.from({ length: total }, (_, i) => i + 1),
-                humans,
-                (v) => `${v} human${v > 1 ? 's' : ''}`,
-                (v) => (humans = v),
-              ),
-              h(
-                'div',
-                { class: 'seats' },
-                ...Array.from({ length: seats }, (_, i) => {
-                  const human = i < humans;
-                  const input = human
-                    ? (h('input', {
-                        class: 'name',
-                        maxlength: '12',
-                        placeholder: suggested[i],
-                        value: typed[i] ?? '',
-                        oninput: (e: Event) => (typed[i] = cleanName((e.target as HTMLInputElement).value)),
-                      }) as HTMLInputElement)
-                    : h('span', { class: 'name cpu' }, suggested[i]);
-                  const others = new Map<CharId, string>();
-                  for (let j = 0; j < humans; j++)
-                    if (j !== i) others.set(looks[j], cleanName(typed[j] || '') || suggested[j]);
-                  return h(
-                    'div',
-                    { class: 'seat-card', style: `--pc:${PLAYER_COLORS[i]}` },
-                    charButton(looks[i], '', human ? () => void choose(i, others, draw) : null),
-                    input,
-                    h('span', { class: 'seat-tag' }, human ? `P${i + 1}` : 'CPU'),
-                  );
-                }),
-              ),
-            ),
+        rulesPanel(st, (patch) => {
+          Object.assign(st, patch);
+          draw();
+        }),
+        playersPanel(),
       ),
       h(
         'footer',
         { class: 'setup-foot' },
         loadSave() ? h('small', { class: 'hint' }, 'Starting replaces the game in progress.') : null,
-        room && !onlineReady() ? h('small', { class: 'hint' }, 'Waiting for a friend to join.') : null,
         start,
       ),
     );
     slide = '';
-    drawLobby();
   };
+  connect();
   draw();
   return () => {
+    if (!closed) leaveRoom();
     document.removeEventListener('keydown', onKey);
-    closeSoundPopover();
-    scene.stop();
-    el.remove();
+    frame.close();
   };
+}
+
+export interface GuestSetupHandlers {
+  onBack(): void;
+}
+
+/**
+ * What a player who joined sees until the host starts: the host's setup with every setting
+ * shown but locked. They can change only their own name and character. Call `update` when the
+ * lobby changes.
+ */
+export function guestSetup(root: HTMLElement, room: GuestSetupRoom, handlers: GuestSetupHandlers) {
+  const frame = setupFrame();
+  root.append(frame.el);
+  // Kept across redraws so typing isn't interrupted when the lobby changes.
+  const nameIn = h('input', {
+    class: 'name',
+    maxlength: '12',
+    'aria-label': 'Your name',
+  }) as HTMLInputElement;
+  const rename = () => {
+    const n = cleanName(nameIn.value);
+    if (n) room.setName(n);
+  };
+  nameIn.onchange = rename;
+  nameIn.onkeydown = (e) => e.key === 'Enter' && nameIn.blur();
+
+  const pick = (lobby: LobbyInfo, i: number) => {
+    // Characters other people have can't be picked; CPUs take whatever is left.
+    const taken = new Map<CharId, string>();
+    lobby.seats.forEach((s, j) => {
+      if (j !== i && s.look && s.kind !== 'open' && s.kind !== 'cpu') taken.set(s.look, s.name);
+    });
+    void pickCharacter({ current: lobby.seats[i].look ?? '', taken, color: PLAYER_COLORS[i] }).then(
+      (id) => id && room.setLook(id),
+    );
+  };
+
+  const draw = () => {
+    const lobby = room.lobby;
+    clear(frame.wrap);
+    const board = lobby ? (lobby.board ?? BUILT_IN.find((b) => b.name === lobby.boardName)) : undefined;
+    const me = lobby?.seats[room.seat];
+    if (me && document.activeElement !== nameIn) nameIn.value = me.name;
+    frame.wrap.append(
+      setupHead(
+        '‹ Leave',
+        () => {
+          room.leave();
+          handlers.onBack();
+        },
+        'Joined game',
+      ),
+      h(
+        'div',
+        { class: 'setup-grid' },
+        h(
+          'section',
+          { class: 'setup-panel glass board-panel' },
+          h('h3', null, 'Board'),
+          board
+            ? h('div', { class: 'carousel locked' }, boardStage(board, false))
+            : h('p', { class: 'hint' }, lobby ? lobby.boardName : 'Loading...'),
+          h('p', { class: 'hint center' }, 'The host picks the board and the rules.'),
+        ),
+        lobby
+          ? rulesPanel({
+              rules: lobby.rules,
+              target: lobby.target,
+              roundCap: lobby.roundCap,
+              plots: lobby.plots ?? 'few',
+            })
+          : h('section', { class: 'setup-panel glass rules-panel' }, h('h3', null, 'Rules')),
+        h(
+          'section',
+          { class: 'setup-panel glass players-panel' },
+          h('div', { class: 'panel-head' }, h('h3', null, 'Players')),
+          h('div', { class: 'room-code small' }, h('small', null, 'Join code'), h('b', null, room.code)),
+          me ? h('label', { class: 'opt' }, h('div', { class: 'opt-label' }, 'Your name'), nameIn) : null,
+          lobby
+            ? lobbySeats(lobby, room.seat, undefined, (i) => pick(lobby, i))
+            : h('p', { class: 'hint' }, 'Connected. Waiting for the lobby...'),
+          h('p', { class: 'hint' }, 'Tap your picture to pick a different character.'),
+        ),
+      ),
+      h(
+        'footer',
+        { class: 'setup-foot' },
+        h(
+          'p',
+          { class: 'waiting' },
+          h('span', { class: 'spinner' }),
+          'Waiting for the host to start the game...',
+        ),
+      ),
+    );
+  };
+  draw();
+  return { update: draw, close: () => frame.close() };
 }

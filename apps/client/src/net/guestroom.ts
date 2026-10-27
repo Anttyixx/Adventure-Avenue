@@ -102,12 +102,22 @@ export class GuestRoom implements GameLink {
     this.send({ t: 'look', look });
   }
 
+  /** Change this player's name (lobby only). */
+  setName(name: string) {
+    this.name = name;
+    this.send({ t: 'name', name });
+  }
+
   private send(msg: ToHost) {
     if (this.conn.open) this.conn.send(msg);
   }
 
   private receive(msg: ToGuest) {
     switch (msg.t) {
+      case 'welcome':
+        // Seats move when the host changes the player count or local players.
+        this.seat = msg.seat;
+        break;
       case 'lobby':
         this.lobby = msg.lobby;
         this.on.lobby(msg.lobby);

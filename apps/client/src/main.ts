@@ -3,115 +3,107 @@ import { sound } from './audio';
 import { HotSeat } from './host';
 import { checkForUpdate } from './update';
 import { installCoins } from './coins';
-import type { GuestRoom } from './net/guestroom';
+import type { GuestEvents, GuestRoom } from './net/guestroom';
 import type { HostRoom } from './net/hostroom';
 import { cleanCode, type StartInfo } from './net/protocol';
 import { h } from './ui/dom';
-import { joinScreen, onlineHub, resumeLobby } from './ui/online';
-import { clearGuest, guestInGame, loadGuest, setGuestInGame, type SaveInfo } from './save';
+import { keepName, resumeLobby, savedName } from './ui/online';
+import { clearGuest, guestInGame, loadGuest, saveGuest, setGuestInGame, type SaveInfo } from './save';
 import { freeCharacter, loadCharacters, shuffledCharacters } from './sprites';
 import { loadProps } from './props';
 import { installDevBadge } from './ui/devmenu';
 import { openEditor } from './ui/editor';
 import { openLab } from './ui/lab';
-import { mainMenu } from './ui/menu';
-import { setupScreen } from './ui/start';
+import { mainMenu, type MenuOptions } from './ui/menu';
+import { guestSetup, randomName, setupScreen } from './ui/start';
 import './style.css';
 
 const app = document.getElementById('app')!;
 
-function showStart() {
-  const close = mainMenu(app, {
-    onStart() {
-      close();
-      showSetup();
+function showStart(opts: MenuOptions = {}) {
+  const close = mainMenu(
+    app,
+    {
+      onPlay() {
+        close();
+        showSetup();
+      },
+      onJoin(code, name) {
+        close();
+        void joinGame(code, name || savedName() || randomName());
+      },
+      onContinue(save) {
+        close();
+        // Every saved game reopens as a room, so friends can join (or rejoin) before it resumes.
+        void resumeOnline(save);
+      },
+      onRejoin(g) {
+        close();
+        void joinGame(g.code, g.name);
+      },
+      onEditor() {
+        close();
+        showEditor(null);
+      },
     },
-    onContinue(save) {
-      close();
-      // Every saved game reopens as a room, so friends can join (or rejoin) before it resumes.
-      void resumeOnline(save);
-    },
-    onOnline() {
-      close();
-      showOnline();
-    },
-    onRejoin(g) {
-      close();
-      showJoin(g.code, { name: g.name });
-    },
-    onEditor() {
-      close();
-      showEditor(null);
-    },
-  });
+    undefined,
+    opts,
+  );
 }
 
-// ------------------------------------------------------------ online play
-
-function showOnline(error = '') {
-  const close = onlineHub(app, {
-    onHost() {
-      close();
-      void hostOnline();
-    },
-    onJoin() {
-      close();
-      showJoin();
-    },
-    onBack() {
-      close();
-      showStart();
-    },
-  });
-  if (error) window.alert(error);
-}
-
-async function hostOnline() {
-  const wait = h('div', { class: 'net-wait' }, h('span', { class: 'spinner' }), 'Opening a room...');
-  app.append(wait);
-  let room: HostRoom;
-  try {
-    // The networking code loads only when someone plays online.
-    const { HostRoom } = await import('./net/hostroom');
-    room = await HostRoom.open('Host', freeCharacter([]));
-  } catch (err) {
-    wait.remove();
-    showOnline((err as Error).message);
-    return;
-  }
-  wait.remove();
+/**
+ * Game setup. It opens a room with a join code straight away: if friends join, starting plays
+ * online with them; if not, it is a game on this device and the room closes.
+ */
+function showSetup() {
+  let room: HostRoom | null = null;
   const close = setupScreen(
     app,
     {
-      onStart(opts) {
+      onStart(opts, online) {
         close();
         const G = newGame(opts);
-        room.begin(G);
-        const game = new HotSeat(
-          app,
-          G,
-          () => {
-            room.leave();
-            showStart();
-          },
-          true,
-          room,
-        );
-        room.onNotice = (text) => game.hud.banner(text, '#ffd166', 3500);
-        void game.start();
+        if (online && room) startHosted(room, G);
+        else play(G);
       },
       onBack() {
         close();
-        showOnline();
+        showStart();
       },
       onEditor(board) {
-        room.leave();
         close();
         showEditor(board);
       },
     },
+    async () => {
+      try {
+        // The networking code loads when the setup screen opens, after the menu has shown.
+        const { HostRoom } = await import('./net/hostroom');
+        room = await HostRoom.open('Host', freeCharacter([]));
+        return room;
+      } catch {
+        room = null;
+        return null;
+      }
+    },
+  );
+}
+
+/** Run a hosted online game on this device. */
+function startHosted(room: HostRoom, G: ReturnType<typeof newGame>) {
+  room.begin(G);
+  const game = new HotSeat(
+    app,
+    G,
+    () => {
+      room.leave();
+      showStart();
+    },
+    true,
     room,
   );
+  room.onNotice = (text) => game.hud.banner(text, '#ffd166', 3500);
+  void game.start();
 }
 
 /** Reopen a saved online game: the same room code, and friends rejoin before the host resumes. */
@@ -158,22 +150,61 @@ async function resumeOnline(save: SaveInfo) {
   });
 }
 
-function showJoin(code = '', rejoin?: { name: string }) {
-  const close = joinScreen(
-    app,
-    {
-      onStart(room, start) {
-        close();
-        playGuest(room, start);
-      },
-      onBack() {
-        close();
-        showOnline();
-      },
+/**
+ * Join the game hosted under `code`. Until the host starts, the player sees the host's setup
+ * (locked) and can change only their name and character.
+ */
+async function joinGame(code: string, name: string) {
+  const wait = h('div', { class: 'net-wait' }, h('span', { class: 'spinner' }), `Joining ${code}...`);
+  app.append(wait);
+  let room: GuestRoom | null = null;
+  let view: ReturnType<typeof guestSetup> | null = null;
+  const closeView = () => {
+    view?.close();
+    view = null;
+  };
+  const events: GuestEvents = {
+    lobby: () => view?.update(),
+    start: (s) => {
+      if (!room) return;
+      closeView();
+      playGuest(room, s);
     },
-    code,
-    rejoin,
-  );
+    closed: (reason) => {
+      closeView();
+      clearGuest();
+      showStart({ code, error: reason });
+    },
+    status: () => {},
+    seat: () => {},
+  };
+  try {
+    // The networking code loads only when someone plays online.
+    const { GuestRoom } = await import('./net/guestroom');
+    room = await GuestRoom.join(code, name, events);
+  } catch (err) {
+    wait.remove();
+    const error = (err as Error).message;
+    // A running game takes players back only under their player's name: ask for it.
+    showStart({ code, error, askName: /name/i.test(error) ? name : undefined });
+    return;
+  }
+  wait.remove();
+  keepName(name);
+  // Remembered so a reload, or the main menu later, can bring this player back in.
+  saveGuest(code, name);
+  // Rejoining a running game: the host sends the game right after the welcome.
+  if (room.started) {
+    playGuest(room, room.started);
+    return;
+  }
+  view = guestSetup(app, room, {
+    onBack() {
+      closeView();
+      clearGuest();
+      showStart();
+    },
+  });
 }
 
 /** A guest's copy of the game; rebuilt from the host's turn snapshot on rejoin or resync. */
@@ -222,23 +253,6 @@ function playGuest(room: GuestRoom, first: StartInfo) {
     game?.hud.tick(online ? `${name} reconnected.` : `${name} disconnected. A CPU plays for them for now.`);
   };
   run(first);
-}
-
-function showSetup() {
-  const close = setupScreen(app, {
-    onStart(opts) {
-      close();
-      play(newGame(opts));
-    },
-    onBack() {
-      close();
-      showStart();
-    },
-    onEditor(board) {
-      close();
-      showEditor(board);
-    },
-  });
 }
 
 function play(G: ReturnType<typeof newGame>, onExit = showStart, saving = true) {
@@ -291,13 +305,13 @@ function route() {
   else if (guestInGame() && loadGuest() && (!joinCode || cleanCode(joinCode) === loadGuest()!.code)) {
     // This tab was in an online game as a guest: reloading goes straight back in.
     const g = loadGuest()!;
-    showJoin(g.code, { name: g.name });
+    void joinGame(g.code, g.name);
   } else if (joinCode) {
-    // An invite link: open the join form with the code filled in, then tidy the address bar.
+    // An invite link: the menu with the code in the Join box, then tidy the address bar.
     const q = new URLSearchParams(location.search);
     q.delete('join');
     history.replaceState(null, '', location.pathname + (q.size ? `?${q}` : '') + location.hash);
-    showJoin(joinCode);
+    showStart({ code: joinCode });
   } else showStart();
 }
 

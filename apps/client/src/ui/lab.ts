@@ -7,6 +7,7 @@
 import {
   netWorth,
   BUILDINGS,
+  BUILT_IN_BOARDS,
   CARD_LIST,
   DERBY_LENGTH,
   DERBY_RACERS,
@@ -45,10 +46,12 @@ import { mainMenu } from './menu';
 import { openWhatsNew } from './whatsnew';
 import { openCredits } from './credits';
 import { pickCharacter } from './charpick';
-import { joinScreen, lobbySeats, onlineHub, resumeLobby } from './online';
+import { lobbySeats, resumeLobby } from './online';
 import { soundButton, soundControls } from './soundpanel';
 import { SFX_NAMES, TRACK_NAMES, sound, type Track } from '../audio';
-import { setupScreen } from './start';
+import { guestSetup, setupScreen, type SetupRoom } from './start';
+import type { LobbyInfo, LobbySeat } from '../net/protocol';
+import type { LocalSeat } from '../net/hostroom';
 import { buildPrompt, rulesModal, stockModal } from './modals';
 import { showResults } from './results';
 import { investOnBoard } from './invest';
@@ -88,19 +91,13 @@ const rnd = (n: number) => Math.floor(Math.random() * n);
  * are easy to find. Update this list with each change.
  */
 const RECENT = new Set([
-  'Stock market',
-  'Buy stock',
-  'Sell stock',
-  'Build',
-  'Renovate',
-  'Propose trade',
-  'Trade offer received',
-  'Buyout (5x)',
-  'Buy prompt',
-  'Zoom out',
-  'Design gallery',
-  'Square / hex board',
-  'New sample game',
+  'Main menu (saved game)',
+  'Main menu (no save)',
+  'Main menu (rejoin offer)',
+  'Game setup',
+  'Game setup (friend joined)',
+  'Game setup (offline)',
+  'Joined game (locked setup)',
 ]);
 
 /** Which board the lab plays on: Town (square) or Twin Lakes (hex), remembered per browser. */
@@ -978,6 +975,68 @@ export async function openLab(app: HTMLElement, section?: string) {
         ),
       );
     };
+    /**
+     * Game setup with a stand-in room: `friends` joined players arrive after a moment (-1: no
+     * connection, so no join code).
+     */
+    const setup = (friends: number) =>
+      overlay((holder, done) => {
+        const listeners = new Set<() => void>();
+        let seats: LobbySeat[] = [];
+        const remotes: LobbySeat[] = [];
+        const room: SetupRoom = {
+          code: 'KQZD',
+          get joined() {
+            return seats.filter((x) => x.kind === 'remote').length;
+          },
+          lobby: () => ({ boardName: '', rules: 'standard', target: 0, roundCap: 0, seats }),
+          configure(total: number, locals: LocalSeat[]) {
+            seats = [
+              ...locals.map((l, i) => ({
+                kind: i ? ('local' as const) : ('host' as const),
+                ...l,
+                online: true,
+              })),
+              ...remotes,
+            ];
+            while (seats.length < total) seats.push({ kind: 'open', name: '', look: null, online: false });
+            listeners.forEach((f) => f());
+          },
+          setSettings: () => {},
+          kick(i: number) {
+            remotes.splice(remotes.indexOf(seats[i]), 1);
+            seats[i] = { kind: 'open', name: '', look: null, online: false };
+            listeners.forEach((f) => f());
+          },
+          onChange(f: () => void) {
+            listeners.add(f);
+            return () => listeners.delete(f);
+          },
+          seatConfigs: () => [],
+          leave: () => {},
+        };
+        const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
+        return setupScreen(
+          holder,
+          {
+            onStart: (o, online) =>
+              done(
+                `Setup: start ${online ? 'online' : 'on this device'} on ${o.board?.name} with ${o.seats.length || seats.length} players.`,
+              ),
+            onBack: () => done('Setup: back to menu.'),
+            onEditor: () => done('Setup: board editor pressed.'),
+          },
+          async () => {
+            await wait(700);
+            if (friends < 0) return null;
+            for (let k = 0; k < friends; k++) {
+              const p = G.players[k + 1];
+              remotes.push({ kind: 'remote', name: p.name, look: p.ch, online: true });
+            }
+            return room;
+          },
+        );
+      });
     const menu = (withSave: boolean, guest = false) =>
       overlay((holder, done) => {
         // The rejoin button reads this device's last guest game; a sample one is shown here.
@@ -986,9 +1045,9 @@ export async function openLab(app: HTMLElement, section?: string) {
         const close = mainMenu(
           holder,
           {
-            onStart: () => done('Main menu: Start pressed.'),
+            onPlay: () => done('Main menu: Play pressed.'),
+            onJoin: (code) => done(`Main menu: Join ${code} pressed.`),
             onContinue: () => done('Main menu: Continue pressed.'),
-            onOnline: () => done('Main menu: Play online pressed.'),
             onRejoin: (g) => done(`Main menu: Rejoin room ${g.code} as ${g.name} pressed.`),
             onEditor: () => done('Main menu: Board editor pressed.'),
           },
@@ -1019,39 +1078,50 @@ export async function openLab(app: HTMLElement, section?: string) {
         });
         result('Character picker', id ?? undefined);
       }),
-      btn('Game setup', () =>
-        overlay((holder, done) =>
-          setupScreen(holder, {
-            onStart: (o) => done(`Setup: start on ${o.board?.name} with ${o.seats.length} players.`),
-            onBack: () => done('Setup: back to menu.'),
-            onEditor: () => done('Setup: board editor pressed.'),
-          }),
-        ),
+      btn('Game setup', () => setup(0)),
+      btn('Game setup (friend joined)', () => setup(1)),
+      btn('Game setup (offline)', () => setup(-1)),
+      btn('Joined game (locked setup)', () =>
+        overlay((holder, done) => {
+          const looks = G.players.map((p) => p.ch);
+          const lobby: LobbyInfo = {
+            boardName: 'Town',
+            board: BUILT_IN_BOARDS[0],
+            rules: 'standard',
+            target: 7000,
+            roundCap: 30,
+            plots: 'some',
+            seats: [
+              { kind: 'host', name: 'Rosa', look: looks[0], online: true },
+              { kind: 'remote', name: 'Milo', look: looks[1], online: true },
+              { kind: 'open', name: '', look: null, online: false },
+              { kind: 'open', name: '', look: null, online: false },
+            ],
+          };
+          const view = guestSetup(
+            holder,
+            {
+              code: 'KQZD',
+              seat: 1,
+              lobby,
+              setLook: (id) => {
+                lobby.seats[1].look = id;
+                view.update();
+              },
+              setName: (n) => {
+                lobby.seats[1].name = n;
+                view.update();
+              },
+              leave: () => {},
+            },
+            { onBack: () => done('Joined game: Leave pressed.') },
+          );
+          return view.close;
+        }),
       ),
     );
     row(
       s,
-      btn('Online: host or join', () =>
-        overlay((holder, done) =>
-          onlineHub(holder, {
-            onHost: () => done('Online hub: Host pressed.'),
-            onJoin: () => done('Online hub: Join pressed.'),
-            onBack: () => done('Online hub: Back pressed.'),
-          }),
-        ),
-      ),
-      btn('Online: join form', () =>
-        overlay((holder, done) =>
-          joinScreen(
-            holder,
-            {
-              onStart: () => done('Join: game started.'),
-              onBack: () => done('Join: Back pressed.'),
-            },
-            'ABCD',
-          ),
-        ),
-      ),
       btn('Online: continue saved game', () =>
         overlay((holder, done) => {
           const lobby = () => ({
@@ -1059,7 +1129,6 @@ export async function openLab(app: HTMLElement, section?: string) {
             rules: G.rules,
             target: G.target,
             roundCap: G.roundCap,
-            fill: true,
             seats: G.players.map((p, i) => ({
               kind: i === 0 ? ('host' as const) : p.cpu ? ('cpu' as const) : ('remote' as const),
               name: p.name,
@@ -1092,7 +1161,6 @@ export async function openLab(app: HTMLElement, section?: string) {
                     rules: 'standard',
                     target: 5000,
                     roundCap: 0,
-                    fill: true,
                     seats: [
                       { kind: 'host', name: 'Rosa', look: looks[0], online: true },
                       { kind: 'remote', name: 'Milo', look: looks[1], online: true },

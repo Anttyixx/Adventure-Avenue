@@ -26,6 +26,28 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: '2026-10-27-play-join',
+    date: 'Oct 27, 2026',
+    title: 'Play and Join',
+    features: [
+      {
+        tag: 'online',
+        title: 'One Play button',
+        text: 'Play opens game setup with a join code. If friends join, it’s an online game; if not, you play on this device.',
+      },
+      {
+        tag: 'online',
+        title: 'Join from the main menu',
+        text: 'Type a friend’s code in the Join box and tap Join. You’ll see their game settings while you wait, and can pick your name and character.',
+      },
+      {
+        tag: 'better',
+        title: 'Any target you like',
+        text: 'Set the target net worth with arrows on each digit, from 1,000G to 90,000G.',
+      },
+    ],
+  },
+  {
     id: '2026-10-27-actionbar',
     date: 'Oct 27, 2026',
     title: 'Roomier action bar',

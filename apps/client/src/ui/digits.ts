@@ -1,7 +1,7 @@
 /**
- * Number picker with an up and a down arrow on each digit (used for share counts and
- * investment amounts). Each arrow turns its digit 0-9 and wraps; the result is kept between
- * 0 and `max`. Quick buttons set 0 or the maximum.
+ * Number picker with an up and a down arrow on each digit (used for share counts, investment
+ * amounts and the target net worth). Each arrow turns its digit 0-9 and wraps; the result is
+ * kept between `min` (default 0) and `max`. Quick buttons set the minimum or the maximum.
  */
 import { h } from './dom';
 
@@ -13,22 +13,27 @@ export interface DigitPicker {
 
 export function digitPicker(opts: {
   max: number;
+  /** Lowest value (default 0). */
+  min?: number;
   value: number;
   /** Step of the last digit (e.g. 10 to pick amounts in tens). */
   unit?: number;
   /** Text after the number, e.g. "shares". */
   suffix?: string;
+  /** Show the value only (every button disabled). */
+  readOnly?: boolean;
   onChange(v: number): void;
 }): DigitPicker {
   const unit = opts.unit ?? 1;
   const maxSteps = Math.max(0, Math.floor(opts.max / unit));
+  const minSteps = Math.min(maxSteps, Math.max(0, Math.ceil((opts.min ?? 0) / unit)));
   const digits = Math.max(1, String(maxSteps).length);
   let steps = clamp(Math.round(opts.value / unit));
   const faces: HTMLElement[] = [];
   const cols: HTMLElement[] = [];
 
   function clamp(n: number) {
-    return Math.max(0, Math.min(maxSteps, n));
+    return Math.max(minSteps, Math.min(maxSteps, n));
   }
 
   const draw = () => {
@@ -74,11 +79,15 @@ export function digitPicker(opts: {
   const el = h(
     'div',
     { class: 'digits' },
-    h('button', { class: 'btn small ghost', onclick: () => set(0) }, '0'),
+    h('button', { class: 'btn small ghost', onclick: () => set(minSteps) }, minSteps ? 'Min' : '0'),
     h('span', { class: 'dg-row' }, ...cols),
     opts.suffix ? h('span', { class: 'dg-suffix' }, opts.suffix) : null,
     h('button', { class: 'btn small ghost', onclick: () => set(maxSteps) }, 'Max'),
   );
+  if (opts.readOnly) {
+    el.classList.add('read-only');
+    el.querySelectorAll('button').forEach((b) => (b.disabled = true));
+  }
   draw();
   return { el, value: () => steps * unit, set: (v) => set(Math.round(v / unit), false) };
 }

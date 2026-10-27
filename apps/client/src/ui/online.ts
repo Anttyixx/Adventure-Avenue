@@ -1,23 +1,22 @@
 /**
- * Online play screens: the hub (host or join), the join form, and the lobby a guest waits in
- * until the host starts. The host's lobby lives in game setup (start.ts, online mode).
+ * Online play helpers: the name a player joins with, the seat list shared by the setup screens,
+ * and the screen for reopening a saved game so friends can rejoin. Hosting and joining happen
+ * in game setup (start.ts): Play opens a room, and players who join see the host's setup.
  */
-import { PLAYER_COLORS, type CharId } from '@aa/engine';
+import { PLAYER_COLORS } from '@aa/engine';
 import { sound } from '../audio';
-import type { GuestEvents, GuestRoom } from '../net/guestroom';
 import type { HostRoom } from '../net/hostroom';
-import { cleanCode, inviteURL, type LobbyInfo, type StartInfo } from '../net/protocol';
-import { saveGuest } from '../save';
+import { inviteURL, type LobbyInfo } from '../net/protocol';
 import { portraitURL } from '../sprites';
-import { charButton, pickCharacter } from './charpick';
-import { clear, fmt, h } from './dom';
+import { charButton } from './charpick';
+import { clear, h } from './dom';
 import { titleScene } from './menu';
 import { closeSoundPopover, soundButton } from './soundpanel';
-import { cleanName } from './start';
 
 const NAME_KEY = 'adventure-avenue-online-name';
 
-function savedName(): string {
+/** The name this device last joined a game with. */
+export function savedName(): string {
   try {
     return localStorage.getItem(NAME_KEY) ?? '';
   } catch {
@@ -25,7 +24,7 @@ function savedName(): string {
   }
 }
 
-function keepName(n: string) {
+export function keepName(n: string) {
   try {
     localStorage.setItem(NAME_KEY, n);
   } catch {
@@ -64,198 +63,6 @@ function frame(title: string, onBack: () => void, ...body: HTMLElement[]) {
   };
 }
 
-export interface OnlineHubHandlers {
-  onHost(): void;
-  onJoin(): void;
-  onBack(): void;
-}
-
-/** Host or join. */
-export function onlineHub(root: HTMLElement, handlers: OnlineHubHandlers) {
-  const f = frame(
-    'Play online',
-    () => handlers.onBack(),
-    h(
-      'div',
-      { class: 'menu-buttons online-hub' },
-      h(
-        'button',
-        { class: 'menu-btn start', onclick: () => handlers.onHost() },
-        h('span', { class: 'menu-btn-title' }, 'Host a game'),
-        h('span', { class: 'menu-btn-sub' }, 'Get a room code to share. The game runs on this device.'),
-      ),
-      h(
-        'button',
-        { class: 'menu-btn online', onclick: () => handlers.onJoin() },
-        h('span', { class: 'menu-btn-title' }, 'Join a game'),
-        h('span', { class: 'menu-btn-sub' }, "Type the 4-letter code from the host's screen"),
-      ),
-    ),
-    h(
-      'p',
-      { class: 'online-note glass' },
-      'Players connect straight to the host. The host needs to keep the game open until it ends; if they leave, everyone stops. Free, no accounts needed.',
-    ),
-  );
-  root.append(f.el);
-  return f.close;
-}
-
-export interface JoinHandlers {
-  /** The host started (or we rejoined a running game). */
-  onStart(room: GuestRoom, start: StartInfo): void;
-  onBack(): void;
-}
-
-/**
- * Join form, then the waiting lobby. `code` pre-fills the room code (from a shared link);
- * `rejoin` fills in the name too and connects straight away (coming back to a game).
- */
-export function joinScreen(root: HTMLElement, handlers: JoinHandlers, code = '', rejoin?: { name: string }) {
-  let room: GuestRoom | null = null;
-  let busy = false;
-  let error = '';
-  let lobby: LobbyInfo | null = null;
-  const card = h('section', { class: 'setup-panel glass join-card' });
-  const f = frame(
-    'Join a game',
-    () => {
-      room?.leave();
-      handlers.onBack();
-    },
-    card,
-  );
-  root.append(f.el);
-
-  const codeIn = h('input', {
-    class: 'name code-input',
-    maxlength: '4',
-    placeholder: 'ABCD',
-    autocomplete: 'off',
-    autocapitalize: 'characters',
-    spellcheck: 'false',
-    value: cleanCode(code),
-    'aria-label': 'Room code',
-  }) as HTMLInputElement;
-  codeIn.oninput = () => (codeIn.value = cleanCode(codeIn.value));
-  const nameIn = h('input', {
-    class: 'name',
-    maxlength: '12',
-    placeholder: 'Your name',
-    value: rejoin?.name ?? savedName(),
-    'aria-label': 'Your name',
-  }) as HTMLInputElement;
-
-  const events: GuestEvents = {
-    lobby: (l) => {
-      lobby = l;
-      draw();
-    },
-    start: (s) => {
-      if (room) handlers.onStart(room, s);
-    },
-    closed: (reason) => {
-      room = null;
-      lobby = null;
-      error = reason;
-      draw();
-    },
-    status: () => {},
-    seat: () => {},
-  };
-
-  const join = async () => {
-    const c = cleanCode(codeIn.value);
-    const name = cleanName(nameIn.value);
-    if (c.length !== 4) {
-      error = 'Room codes have 4 letters.';
-      return draw();
-    }
-    if (!name) {
-      error = 'Type your name first.';
-      return draw();
-    }
-    keepName(name);
-    busy = true;
-    error = '';
-    draw();
-    try {
-      const { GuestRoom } = await import('../net/guestroom');
-      room = await GuestRoom.join(c, name, events);
-      // Remembered so a reload, or the main menu later, can bring this player back in.
-      saveGuest(c, name);
-      // Rejoining a running game: the host sends the game right after the welcome, which can
-      // arrive before this screen knows the room.
-      if (room.started) {
-        handlers.onStart(room, room.started);
-        return;
-      }
-    } catch (err) {
-      error = (err as Error).message;
-    }
-    busy = false;
-    draw();
-  };
-
-  const draw = () => {
-    clear(card);
-    if (room) {
-      card.append(...guestLobby(room, lobby));
-      return;
-    }
-    const btn = h(
-      'button',
-      { class: 'btn main big', disabled: busy, onclick: join },
-      busy ? 'Connecting...' : 'Join',
-    );
-    card.append(
-      h('label', { class: 'opt' }, h('div', { class: 'opt-label' }, 'Room code'), codeIn),
-      h('label', { class: 'opt' }, h('div', { class: 'opt-label' }, 'Your name'), nameIn),
-      ...(error ? [h('p', { class: 'join-error' }, error)] : []),
-      btn,
-    );
-    (cleanCode(codeIn.value).length === 4 ? nameIn : codeIn).focus();
-  };
-  const onEnter = (e: KeyboardEvent) => e.key === 'Enter' && !room && !busy && void join();
-  codeIn.addEventListener('keydown', onEnter);
-  nameIn.addEventListener('keydown', onEnter);
-  draw();
-  if (rejoin) void join();
-  return () => f.close();
-}
-
-/** What a guest sees while waiting for the host to start. */
-function guestLobby(room: GuestRoom, lobby: LobbyInfo | null): HTMLElement[] {
-  if (!lobby) return [h('p', { class: 'hint' }, 'Connected. Waiting for the lobby...')];
-  const rules = lobby.rules === 'standard' ? 'Standard rules' : 'Easy rules';
-  return [
-    h('div', { class: 'room-code small' }, h('small', null, 'Room'), h('b', null, room.code)),
-    h(
-      'p',
-      { class: 'lobby-settings' },
-      h('b', null, lobby.boardName),
-      ` · ${rules} · Target ${fmt(lobby.target)}${lobby.roundCap ? ` · ${lobby.roundCap} rounds` : ''}`,
-    ),
-    lobbySeats(lobby, room.seat, undefined, (i) => {
-      // Characters other players have can't be picked; CPUs fill in with whatever is left.
-      const taken = new Map<CharId, string>();
-      lobby.seats.forEach((st, j) => {
-        if (j !== i && st.look && st.kind !== 'open' && st.kind !== 'cpu') taken.set(st.look, st.name);
-      });
-      void pickCharacter({ current: lobby.seats[i].look ?? '', taken, color: PLAYER_COLORS[i] }).then(
-        (id) => id && room.setLook(id),
-      );
-    }),
-    h('p', { class: 'hint' }, 'Tap your picture to pick a different character before the game starts.'),
-    h(
-      'p',
-      { class: 'waiting' },
-      h('span', { class: 'spinner' }),
-      'Waiting for the host to start the game...',
-    ),
-  ];
-}
-
 /**
  * The seat list, shared by the host's and the guests' lobbies. With `pick`, the player's own
  * seat (`mine`) has a button to change character.
@@ -272,9 +79,7 @@ export function lobbySeats(
     ...lobby.seats.map((s, i) => {
       const open = s.kind === 'open';
       const label = open
-        ? lobby.fill
-          ? 'Open · a CPU plays if no one joins'
-          : 'Open · waiting for a friend'
+        ? 'CPU · a friend who joins takes this seat'
         : s.kind === 'host'
           ? 'Host'
           : s.kind === 'cpu'
@@ -355,9 +160,9 @@ export function resumeLobby(
         'p',
         { class: 'hint' },
         !oldCode
-          ? 'Friends can join this game: Play online, Join a game, this code, and the name of their player in the game. Seats nobody takes stay on this device.'
+          ? 'Friends can join this game: Join on the main menu, this code, and the name of their player in the game. Seats nobody takes stay on this device.'
           : room.code === oldCode
-            ? 'Your friends rejoin the same way as before: Play online, Join a game, this code and the same name (or their old invite link).'
+            ? 'Your friends rejoin the same way as before: Join on the main menu, this code and the same name (or their old invite link).'
             : `The old code ${oldCode} was taken, so this game has a new one. Friends join with it and the same name as before.`,
       ),
       lobbySeats(lobby, -1),

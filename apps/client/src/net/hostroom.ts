@@ -37,20 +37,28 @@ interface Seat extends LobbySeat {
   pid: number;
 }
 
-export interface LobbySettings {
-  boardName: string;
-  rules: LobbyInfo['rules'];
-  target: number;
-  roundCap: number;
-  fill: boolean;
+export type LobbySettings = Omit<LobbyInfo, 'seats'>;
+
+/** A player on the host's device, for `configure`. */
+export interface LocalSeat {
+  name: string;
+  look: CharId;
 }
+
+const openSeat = (): Seat => ({ kind: 'open', name: '', look: null, online: false, pid: -1 });
+
+const cleanSeatName = (s: unknown) =>
+  String(s ?? '')
+    .replace(/[<>&"'`\\]/g, '')
+    .trim()
+    .slice(0, 12);
 
 export class HostRoom implements GameLink {
   role = 'host' as const;
   seats: Seat[];
   started = false;
   private G: GameState | null = null;
-  private settings: LobbySettings = { boardName: '', rules: 'standard', target: 0, roundCap: 0, fill: true };
+  private settings: LobbySettings = { boardName: '', rules: 'standard', target: 0, roundCap: 0 };
   private snap: StartInfo | null = null;
   private pending = new Map<number, { pid: number; req: DecisionRequest; resolve: (a: unknown) => void }>();
   private early = new Map<number, { pid: number; ans: unknown }>();
@@ -124,7 +132,6 @@ export class HostRoom implements GameLink {
       rules: G.rules,
       target: G.target,
       roundCap: G.roundCap,
-      fill: true,
     };
     room.started = true;
     room.G = G;
@@ -174,8 +181,27 @@ export class HostRoom implements GameLink {
     this.changed();
   }
 
-  setHost(name: string, look: CharId) {
-    Object.assign(this.seats[0], { name, look });
+  /**
+   * Lay out the seats before the game starts: the host and the other players on this device
+   * (`locals`, host first), then everyone who joined, then open seats up to `total` players.
+   * Joined players whose seat moved are told their new one.
+   */
+  configure(total: number, locals: LocalSeat[]) {
+    if (this.started) return;
+    const remotes = this.seats.filter((s) => s.kind === 'remote');
+    const host = Object.assign(this.seats[0], locals[0]);
+    const seats: Seat[] = [
+      host,
+      ...locals.slice(1).map((l) => ({ kind: 'local' as const, ...l, online: true, pid: -1 })),
+      ...remotes,
+    ];
+    while (seats.length < total) seats.push(openSeat());
+    const before = remotes.map((s) => this.seats.indexOf(s));
+    this.seats = seats;
+    remotes.forEach((s, k) => {
+      const i = this.seats.indexOf(s);
+      if (i !== before[k]) this.send(s, { t: 'welcome', seat: i });
+    });
     this.changed();
   }
 
@@ -197,13 +223,20 @@ export class HostRoom implements GameLink {
     this.changed();
   }
 
+  /** A joined player renames themselves in the lobby. */
+  private rename(seat: Seat, name: unknown) {
+    if (this.started) return;
+    seat.name = cleanSeatName(name) || seat.name;
+    this.changed();
+  }
+
   /** Remove a joined player from the lobby. */
   kick(i: number) {
     const s = this.seats[i];
     if (s.kind !== 'remote' || this.started) return;
-    this.send(s, { t: 'reject', reason: 'The host removed you from the lobby.' });
+    this.send(s, { t: 'reject', reason: 'The host removed you from the game.' });
     setTimeout(() => s.conn?.close(), 300);
-    this.seats[i] = { kind: 'open', name: '', look: null, online: false, pid: -1 };
+    this.seats[i] = openSeat();
     this.changed();
   }
 
@@ -233,6 +266,7 @@ export class HostRoom implements GameLink {
     const seat = this.seats.find((s) => s.conn === conn);
     if (!seat) return;
     if (msg.t === 'look') this.relook(seat, msg.look);
+    else if (msg.t === 'name') this.rename(seat, msg.name);
     else if (msg.t === 'answer' && typeof msg.seq === 'number') this.answered(seat, msg.seq, msg.ans);
     else if (msg.t === 'resync' && this.snap) this.send(seat, { t: 'start', start: this.startFor(seat) });
     else if (msg.t === 'bye') this.dropped(conn);
@@ -296,10 +330,7 @@ export class HostRoom implements GameLink {
       reply({ t: 'reject', reason: 'This game is full.' });
       return;
     }
-    const name = String(msg.name || 'Player')
-      .replace(/[<>&"'`\\]/g, '')
-      .trim()
-      .slice(0, 12);
+    const name = cleanSeatName(msg.name);
     this.seats[i] = {
       kind: 'remote',
       name: name || 'Player',
@@ -321,7 +352,7 @@ export class HostRoom implements GameLink {
     seat.conn = undefined;
     if (!this.started) {
       // Leaving the lobby frees the seat.
-      this.seats[this.seats.indexOf(seat)] = { kind: 'open', name: '', look: null, online: false, pid: -1 };
+      this.seats[this.seats.indexOf(seat)] = openSeat();
     } else {
       this.onNotice(`${seat.name} disconnected. A CPU plays for them until they come back.`);
       this.broadcast({ t: 'seat', pid: seat.pid, online: false });
@@ -338,19 +369,19 @@ export class HostRoom implements GameLink {
   // ------------------------------------------------------------ starting
 
   /**
-   * The seats to start the game with (open seats become CPUs, or are dropped). CPUs get
-   * characters no player has.
+   * The seats to start the game with: open seats become CPUs (`cpu` suggests a name and
+   * character; a character a player has is swapped for a free one).
    */
-  seatConfigs(cpuName: (i: number) => string, fill: boolean): SeatConfig[] {
+  seatConfigs(cpu: (i: number) => { name: string; ch: CharId }): SeatConfig[] {
     const out: SeatConfig[] = [];
     const used = this.takenLooks(-1);
     this.seats.forEach((s, i) => {
       if (s.kind === 'open') {
-        if (!fill) return;
         s.pid = out.length;
-        const ch = freeCharacter(used);
+        const want = cpu(i);
+        const ch = used.includes(want.ch) ? freeCharacter(used) : want.ch;
         used.push(ch);
-        out.push({ name: cpuName(i), cpu: true, ch });
+        out.push({ name: want.name, cpu: true, ch });
         return;
       }
       s.pid = out.length;

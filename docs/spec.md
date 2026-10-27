@@ -60,7 +60,7 @@ depends on rendering.
 | Field                    | Type                                           | Meaning                                                                |
 | ------------------------ | ---------------------------------------------- | ---------------------------------------------------------------------- |
 | `rules`                  | `"standard" \| "easy"`                         | Rule set                                                               |
-| `target`                 | number                                         | Net worth needed to win (4,000 to 10,000G)                             |
+| `target`                 | number                                         | Net worth needed to win (1,000 to 90,000G, in 1,000G steps)            |
 | `roundCap`               | number                                         | 0 = no limit, else 15 / 20 / 30                                        |
 | `round`, `turn`, `order` | number, number, playerId[]                     | Round counter, index into `order`, random turn order                   |
 | `nodes`                  | Square[]                                       | The board graph                                                        |
@@ -516,9 +516,10 @@ start, so every other system checks one flag (`rules`).
 | Venture deck                          | All 30 cards                                 | 23 cards (no stock cards) |
 | Lucky Reels "three stocks"            | 10 shares                                    | 150G                      |
 
-**Main menu:** the title screen has **Start**, which opens game setup, and **Continue**, which
-resumes the saved game (it shows the round, board and players, and is greyed out when there is no
-save). What's new, Board editor and Credits links sit below them. **Credits** lists everyone whose
+**Main menu:** the title screen has **Play**, which opens game setup (with a join code for
+friends), and **Join**: a box with a code field whose Join button lights up once all four letters
+are in. **Continue** (resume the saved game; it shows the round, board and players) and **Rejoin
+online game** appear only when there is something to go back to. What's new, Board editor and Credits links sit below them. **Credits** lists everyone whose
 work the game uses (art, fonts, libraries; data in `apps/client/src/credits.ts`), one card each with
 what was used, the license and links to their pages.
 
@@ -527,10 +528,15 @@ what was used, the license and links to their pages.
 - **Board:** a carousel of the built-in boards followed by the player's saved boards. Arrows,
   swiping, the arrow keys or the dots move through it, and it loops from the last board back to
   the first. Import board file and Board editor sit under it.
-- **Players in the game:** 2 to 5 (default 4).
-- **Humans on this device:** 1 up to the number of players; the remaining seats are CPUs.
-- **Target net worth:** 4,000G (quick), 5,000G (default), 7,000G, 10,000G (long), or Custom: any
-  amount in 1,000G steps up to 90,000G (minus/plus buttons, or typed and rounded).
+- **Players in the game:** 2 to 5 (default 4); never fewer than the people already seated.
+- **Humans on this device:** 1 up to the number of players; then friends who joined, and the
+  remaining seats are CPUs.
+- **Join code:** setup opens a room straight away and shows its code (with Copy/Share invite).
+  Friends who join take CPU seats. Starting with nobody joined plays on this device (the room
+  closes); with friends joined it is an online game. Without a connection there is no code and
+  the game is played on this device.
+- **Target net worth:** 5,000G by default; arrows on each digit set any amount in 1,000G steps from
+  1,000G to 90,000G (like the share picker), with Min and Max buttons.
 - **Round limit:** none (default), 15, 20 or 30.
 - **Characters:** each seat starts with a different random character and a name. Tapping a human
   seat's character opens the character picker (all nine characters; ones other humans have are
@@ -753,7 +759,7 @@ last turn boundary.
   before characters were picked get a different townsfolk character per player on load.
 - **Not saved:** temporary effects (break, closed, boon, boost) because they reset at the start of
   the saved turn anyway; sprites and portraits, which are drawn from the character id.
-- **Where:** browser localStorage. The main menu's Continue button resumes it (and is greyed out
+- **Where:** browser localStorage. The main menu's Continue button resumes it (and is hidden
   when there is none). The save is deleted when a match ends.
 - **Resume:** rebuild the board for the saved rule set, apply the square and player data, then start
   the main loop at the saved turn.
@@ -770,14 +776,15 @@ PeerJS (its free public server only introduces the browsers), and the host's bro
 authority. Code: `apps/client/src/net/` (protocol, PeerJS wrapper, host and guest rooms) and
 `apps/client/src/ui/online.ts` (screens).
 
-**Rooms:** Main menu → Play online → Host a game opens a room with a 4-letter code (letters
-without I/L/O) and the host's lobby (game setup in online mode: board carousel, rules, room code
-with a Share/Copy invite link, the seat list). Friends tap Join a game and type the code, or open
-an invite link (`?join=CODE`). Seats fill in order (up to 4 guests); the host can remove a guest.
-A joiner gets a random character nobody has; everyone can change theirs in the lobby to one nobody
-has (the host refuses a change to a taken one), and CPUs get characters no player has.
-Empty seats become CPUs on start if "Fill empty seats with CPU" is on; otherwise the game has
-only the people in the room (at least 2).
+**Rooms:** Play on the main menu opens game setup and a room with a 4-letter join code (letters
+without I/L/O). Friends type the code in Join on the main menu, or open an invite link
+(`?join=CODE`, which fills in the code). A joiner takes the first CPU seat (after the host's own
+players), with their last name on this device (or a random one) and a random character nobody
+has; the host can remove them. Joined players see the host's setup with every setting shown but
+locked, and can change only their own name and character (the host refuses a character someone
+has). Seats left open become CPUs on start, with characters no player has. A running game takes a
+player back only under their player's name: a device that isn't recognised is asked for it in
+the Join box.
 
 **Lockstep play:** every device runs its own copy of the rules engine from the same starting
 state. The engine only waits on decisions, so the host numbers each decision in order and
@@ -850,7 +857,7 @@ tune it without touching rules code.
 | Key                                       | Value                                                   | Used by                                      |
 | ----------------------------------------- | ------------------------------------------------------- | -------------------------------------------- |
 | `startCash`                               | 2,000G                                                  | New players                                  |
-| Target options                            | 4,000 / 5,000 (default) / 7,000 / 10,000G               | Win condition                                |
+| Target net worth                          | 5,000G default; 1,000-90,000G in 1,000G steps           | Win condition                                |
 | `feeRate`                                 | 0.2                                                     | Shop fee                                     |
 | `mult`                                    | [0, 1, 1.3, 1.6, 2.0] by squares owned in group         | Shop fee                                     |
 | `domFee`, `domMax`                        | 1.4, 1.5                                                | Fee and max value when dominating            |

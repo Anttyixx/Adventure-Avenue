@@ -8,10 +8,10 @@
  * the right seat and broadcasts it. Once per turn the host sends a hash of its state so a copy
  * that drifted can ask for the turn's starting state and replay from there.
  */
-import type { CharId, GameState, RuleSet } from '@aa/engine';
+import type { BoardDef, CharId, GameState, PlotSetting, RuleSet } from '@aa/engine';
 
 /** Protocol version: a joiner on a different version is turned away. */
-export const NET_VERSION = 6;
+export const NET_VERSION = 7;
 
 export type SeatKind = 'host' | 'local' | 'remote' | 'open' | 'cpu';
 
@@ -23,12 +23,16 @@ export interface LobbySeat {
   online: boolean;
 }
 
+/** The game's settings as the host has them, shown (read-only) to players who join. */
 export interface LobbyInfo {
   boardName: string;
+  /** The board itself, so joined players see it (missing when a saved game is reopened). */
+  board?: BoardDef;
   rules: RuleSet;
   target: number;
   roundCap: number;
-  fill: boolean;
+  plots?: PlotSetting;
+  /** One per player in the game; open seats are played by a CPU unless a friend joins. */
   seats: LobbySeat[];
 }
 
@@ -53,6 +57,8 @@ export type ToHost =
   | { t: 'hello'; v: number; token: string; name: string }
   /** Pick a different character in the lobby (refused if someone else has it). */
   | { t: 'look'; look: CharId }
+  /** Change name in the lobby. */
+  | { t: 'name'; name: string }
   | { t: 'answer'; seq: number; ans: unknown }
   | { t: 'resync' }
   | { t: 'bye' };

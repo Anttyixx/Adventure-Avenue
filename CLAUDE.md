@@ -20,8 +20,9 @@ A Fortune Street-style board game for the browser. Spec: `docs/spec.md`.
   The engine raises decision requests through `GameIO.decide` and announces changes through
   `GameIO.emit`; it never touches the DOM.
 - `apps/client` - Vite + TypeScript hot-seat client (canvas board, HTML/CSS overlays).
-- Online play (`apps/client/src/net/`, screens in `ui/online.ts`): one player hosts in their
-  browser; friends join with a 4-letter room code over WebRTC (PeerJS). Every device runs the
+- Online play (`apps/client/src/net/`): Play on the main menu opens game setup (`ui/start.ts`)
+  with a 4-letter join code; friends type it in Join on the main menu and see the host's setup
+  locked (`guestSetup`). Nobody joined = a game on this device. Connections use WebRTC (PeerJS). Every device runs the
   engine in lockstep: the host numbers and broadcasts each decision answer plus the RNG state, and
   checks a state hash every turn. Keep the engine deterministic (all randomness through `G.rng`).
   Dev builds accept `?peer=host:port` to use a local PeerJS server for testing.
