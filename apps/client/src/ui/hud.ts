@@ -15,7 +15,6 @@ import {
   squareFee,
   stockPrice,
   type GameState,
-  type LogKind,
   type Player,
 } from '@aa/engine';
 import type { BoardView } from '../board';
@@ -24,7 +23,7 @@ import { squareInfo, squareName } from '../names';
 import { boonIconURL, suitIconURL, wildIconURL } from '../icons';
 import { portraitURL } from '../sprites';
 import { clear, fmt, h } from './dom';
-import { kindIcon, logView, namesInColor } from './log';
+import { kindIcon, logView, namesInColor, type IconKind } from './log';
 import { marketView } from './market';
 
 export interface PromptButton<T> {
@@ -71,12 +70,14 @@ export class Hud {
   /** Holds the status box and its hover glow. */
   statusWrap = h('div', { class: 'sb-wrap empty' }, this.statusBox);
   private statusLine = h('div', { class: 'sb-line' });
-  private lastAction: { text: string; kind?: LogKind } | null = null;
-  private waiting: { text: string; kind?: LogKind } | null = null;
+  private lastAction: { text: string; kind?: IconKind } | null = null;
+  private waiting: { text: string; kind?: IconKind } | null = null;
   /** The status line's place while folded (it is hidden while the log is open). */
   private lineRect = { top: 0, left: 0, right: 0, width: 0, height: 0 };
   /** How many log lines the open log last showed, so new ones can fade in. */
   private logSeen = -1;
+  /** The status box easing to the width of new text. */
+  private widthAnim: Animation | null = null;
   /** Round, target and rules, shown at the top of the game menu. */
   gameInfo = h('div', { class: 'gm-info' });
   /** The current player's options, centered near the bottom of the board. */
@@ -480,7 +481,7 @@ export class Hud {
   // ------------------------------------------------------------ status line, log, drawer
 
   /** Show the last thing that happened on the status line (it ends any wait). */
-  tick(text: string, kind?: LogKind) {
+  tick(text: string, kind?: IconKind) {
     this.lastAction = { text, kind };
     this.waiting = null;
     this.showStatus();
@@ -531,6 +532,11 @@ export class Hud {
   /** Show what is going on now: the wait if the game is waiting, else the last action. */
   private showStatus() {
     const cur = this.waiting ?? this.lastAction;
+    const box = this.statusBox;
+    // Width before the change (mid-animation if one is running), so the box can ease to the new
+    // text's width instead of jumping.
+    const from = this.logOpen ? 0 : box.offsetWidth;
+    this.widthAnim?.cancel();
     clear(this.statusLine);
     if (cur) {
       this.statusLine.append(
@@ -543,6 +549,13 @@ export class Hud {
       );
     }
     this.statusWrap.classList.toggle('empty', !cur && !this.logOpen);
+    const to = this.logOpen ? 0 : box.offsetWidth;
+    if (from && to && Math.abs(to - from) > 1 && !matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      this.widthAnim = box.animate([{ width: `${from}px` }, { width: `${to}px` }], {
+        duration: 300,
+        easing: 'cubic-bezier(0.2, 0.8, 0.2, 1)',
+      });
+    }
     this.updateInsets();
   }
 
@@ -804,14 +817,14 @@ export class Hud {
   }
 
   /**
-   * Show what the game is waiting on, e.g. "Rosa is buying stocks..." (empty text clears it,
-   * showing the last action again). `wait: false` is news rather than a wait (e.g. "Rosa's
-   * turn"): it stays until the next action and is left out of the log, whose card already says it.
+   * Show what the game is waiting on, e.g. "Rosa is buying stocks...". It stays until the next
+   * action or wait replaces it, so the line never drops back to an older action in between.
    */
-  status(text: string, kind?: LogKind, wait = true) {
-    if (this.promptResolve && text) return;
-    if (!wait) this.lastAction = { text, kind };
-    this.waiting = text && wait ? { text, kind } : null;
+  status(text: string, kind?: IconKind) {
+    if (this.promptResolve) return;
+    // Repeats (e.g. one per step of a walk) leave the line as it is.
+    if (this.waiting?.text === text && this.waiting.kind === kind) return;
+    this.waiting = { text, kind };
     this.showStatus();
     if (this.logOpen) this.renderLog();
   }

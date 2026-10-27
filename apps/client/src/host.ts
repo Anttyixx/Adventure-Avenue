@@ -287,11 +287,9 @@ export class HotSeat implements GameIO {
       this.waitOn(req as DecisionRequest);
       await this.showCpu(req as DecisionRequest, ans);
       if (this.dead) return never();
-      this.hud.status('');
       return ans;
     }
     if (this.humans > 1 && this.holder !== p.id) {
-      this.hud.status('');
       await this.hud.passDevice(p);
       this.holder = p.id;
     }
@@ -329,7 +327,6 @@ export class HotSeat implements GameIO {
         if (req.kind !== 'preRoll') await this.showCpu(req, ans);
       }
       if (this.dead) return never();
-      this.hud.status('');
       link.publish({ seq, ans, rng: G.rng });
       return ans;
     }
@@ -346,7 +343,6 @@ export class HotSeat implements GameIO {
     G.rng = a.rng;
     if (who !== 'local' && (p.cpu || req.kind !== 'preRoll')) await this.showCpu(req, a.ans);
     if (this.dead) return never();
-    this.hud.status('');
     return a.ans;
   }
 
@@ -359,9 +355,7 @@ export class HotSeat implements GameIO {
   /** A choice for a player on this device. */
   private async askHuman(req: DecisionRequest) {
     this.waitOn(req);
-    const ans = await this.human(req);
-    this.hud.status('');
-    return ans;
+    return this.human(req);
   }
 
   /**
@@ -624,7 +618,7 @@ export class HotSeat implements GameIO {
         this.refresh();
         if (this.localHuman(p.id)) sound.play('turn');
         hud.banner(`${p.name}'s turn`, PLAYER_COLORS[p.color], T.turnBanner);
-        hud.status(`${p.name}'s turn`, 'move', false);
+        hud.status(`${p.name} is deciding what to do...`, 'wait');
         await this.wait(p.cpu ? T.turnStartCpu : T.turnStartHuman);
         break;
       }
@@ -634,11 +628,13 @@ export class HotSeat implements GameIO {
         this.refresh();
         break;
       case 'roll':
+        hud.status(`${G.players[e.pid].name} is rolling...`, 'move');
         sound.play('roll');
         await board.rollDie(e.value);
         break;
       case 'step':
         // A small sound as the hop starts; the step sounds as the token lands on the square.
+        hud.status(`${G.players[e.pid].name} is moving...`, 'move');
         sound.play('hop');
         await board.step(e.pid, e.to, e.left);
         sound.play('step');

@@ -6,7 +6,11 @@ import { PLAYER_COLORS, type GameState, type LogKind, type LogLine } from '@aa/e
 import { portraitURL } from '../sprites';
 import { h } from './dom';
 
-const ICON_PATHS: Record<LogKind, string> = {
+/** Log kinds plus `wait`: three dots for a player making up their mind. */
+export type IconKind = LogKind | 'wait';
+
+const ICON_PATHS: Record<IconKind, string> = {
+  wait: '<circle cx="6.5" cy="12" r="1.9" fill="#fff" stroke="none"/><circle cx="12" cy="12" r="1.9" fill="#fff" stroke="none"/><circle cx="17.5" cy="12" r="1.9" fill="#fff" stroke="none"/>',
   move: '<rect x="4" y="4" width="16" height="16" rx="3.5"/><circle cx="9" cy="9" r="1.4" fill="#fff"/><circle cx="15" cy="15" r="1.4" fill="#fff"/><circle cx="12" cy="12" r="1.4" fill="#fff"/>',
   money: '<circle cx="12" cy="12" r="8"/><path d="M14.5 9.2a3.2 3.2 0 1 0 0 5.6V12h-2.2"/>',
   property: '<path d="M4 11.5 12 4.5l8 7"/><path d="M6.5 10v9.5h11V10"/><path d="M10.5 19.5v-5h3v5"/>',
@@ -19,7 +23,8 @@ const ICON_PATHS: Record<LogKind, string> = {
   alert: '<path d="M12 4 21 19.5H3z"/><path d="M12 10v4.5"/><circle cx="12" cy="17" r=".6" fill="#fff"/>',
 };
 
-const ICON_BG: Record<LogKind, string> = {
+const ICON_BG: Record<IconKind, string> = {
+  wait: '#6b7590',
   move: '#4c6ef5',
   money: '#e0a100',
   property: '#2f9e44',
@@ -31,10 +36,10 @@ const ICON_BG: Record<LogKind, string> = {
   alert: '#e8590c',
 };
 
-export function kindIcon(kind: LogKind | undefined) {
+export function kindIcon(kind: IconKind | undefined) {
   const k = kind ?? 'effect';
   const svg = `<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${ICON_PATHS[k]}</svg>`;
-  const el = h('span', { class: 'log-icon', style: `background:${ICON_BG[k]}`, title: k });
+  const el = h('span', { class: `log-icon k-${k}`, style: `background:${ICON_BG[k]}`, title: k });
   el.innerHTML = svg;
   return el;
 }
@@ -87,7 +92,7 @@ export function groupLog(G: GameState): TurnGroup[] {
 export function logView(
   G: GameState,
   currentKey: string,
-  opts: { waiting?: { text: string; kind?: LogKind }; fresh?: number } = {},
+  opts: { waiting?: { text: string; kind?: IconKind }; fresh?: number } = {},
 ): HTMLElement {
   const groups = groupLog(G);
   // The turn in progress always gets a card, even before anything has happened in it.

@@ -2,20 +2,21 @@
  * What a player is doing while the game waits on their choice, for the status line and the
  * waiting line in the game log ("Rosa is buying stocks...").
  */
-import type { DecisionRequest, GameState, LogKind } from '@aa/engine';
+import type { DecisionRequest, GameState } from '@aa/engine';
+import type { IconKind } from './log';
 
 export interface Activity {
   text: string;
   /** Log icon shown beside it. */
-  kind: LogKind;
+  kind: IconKind;
 }
 
 export function activity(G: GameState, req: DecisionRequest): Activity {
   const name = G.players[req.pid].name;
-  const is = (what: string, kind: LogKind): Activity => ({ text: `${name} is ${what}...`, kind });
+  const is = (what: string, kind: IconKind): Activity => ({ text: `${name} is ${what}...`, kind });
   switch (req.kind) {
     case 'preRoll':
-      return is('deciding what to do', 'move');
+      return is('deciding what to do', 'wait');
     case 'path':
       return is('deciding which space to go to', 'move');
     case 'buyShop':
@@ -74,4 +75,4 @@ export const PRE_ROLL_STEPS = {
   trade: { what: 'setting up a trade', kind: 'property' },
   auction: { what: 'choosing a shop to auction', kind: 'property' },
   renovate: { what: 'choosing a shop to renovate', kind: 'property' },
-} as const satisfies Record<string, { what: string; kind: LogKind }>;
+} as const satisfies Record<string, { what: string; kind: IconKind }>;

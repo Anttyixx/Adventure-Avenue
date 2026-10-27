@@ -90,7 +90,7 @@ const rnd = (n: number) => Math.floor(Math.random() * n);
  * Controls for UI elements that were just added or changed: they shake once and glow so they
  * are easy to find. Update this list with each change.
  */
-const RECENT = new Set(['Status: last action', 'Status: waiting on', 'Status: clear waiting', 'Game log']);
+const RECENT = new Set(['Status: last action', 'Status: waiting on', 'Game log']);
 
 /** Which board the lab plays on: Town (square) or Twin Lakes (hex), remembered per browser. */
 const LAB_BOARD_KEY = 'aa-lab-board';
@@ -472,7 +472,6 @@ export async function openLab(app: HTMLElement, section?: string) {
       s,
       btn('Status: last action', () => hud.tick(`${cur().name} bought a shop for 240G.`, 'property')),
       btn('Status: waiting on', () => hud.status(`${cur().name} is buying stocks...`, 'stock')),
-      btn('Status: clear waiting', () => hud.status('')),
       btn('Pass the device', async () => {
         await hud.passDevice(cur());
         result('Pass the device', 'ok');

@@ -686,7 +686,10 @@ as dark glass overlays. Top right: the zoom chip, a Stock market button (Standar
 and the Menu button (the menu
 also shows the round, target and rule set). Bottom left: the status line, one line saying what is going
 on now: what the game is waiting on a player to do ("Blue is buying stocks...", "Blue is deciding
-which space to go to...", see `ui/activity.ts`) or else the last thing that happened. It shows the
+which space to go to...", see `ui/activity.ts`; the turn starts with "Blue is deciding what to
+do..." and a three-dot icon, and rolling and walking are waits too) or else the last thing that
+happened. A wait stays until the next action or wait replaces it. The box eases to the width of
+each new line as the text rises in. It shows the
 log icon for that kind of action, and player names in their colors. On hover it grows 3% and
 glows with a gradient; tapping it morphs it into the game log (turn by turn, newest at the bottom,
 scrollable back to the start of the game), which replaces the line while open. The current turn's
