@@ -495,14 +495,21 @@ export async function openLab(app: HTMLElement, section?: string) {
       btn('White ring', () => board.ring(cur().node, '#ffffff')),
       btn('Confetti', () => board.confetti(cur().id)),
       btn('Shops closing', async () => {
-        // Close the target player's shops for the animation, then open them again.
+        // Close the target player's shops (gates come down and stay down).
         const p = cur();
-        const was = p.closed;
         p.closed = true;
-        board.setState(G);
+        refresh();
         await board.closeShops(G.nodes.filter((n) => n.owner === p.id).map((n) => n.id));
-        p.closed = was;
-        board.setState(G);
+      }),
+      btn('Shops reopening', async () => {
+        // The gates roll back up, then the shops are open again.
+        const p = cur();
+        p.closed = true;
+        refresh();
+        await board.openShops(G.nodes.filter((n) => n.owner === p.id).map((n) => n.id));
+        p.closed = false;
+        p.onBreak = false;
+        refresh();
       }),
       btn('Suit pickup text', () => board.floatText(pos().x, pos().y, '♥', '#ff6b6b')),
       btn('Suit collected in passing', () => board.collectFx(cur().id, '♠', '#ffffff')),
@@ -517,7 +524,7 @@ export async function openLab(app: HTMLElement, section?: string) {
     );
     row(
       s,
-      btn('Toggle shops closed (z z)', () => {
+      btn('Toggle shops closed (gates)', () => {
         cur().onBreak = !cur().onBreak;
         refresh();
       }),

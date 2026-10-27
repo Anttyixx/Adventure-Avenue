@@ -799,6 +799,12 @@ export class HotSeat implements GameIO {
         await board.closeShops(shut);
         break;
       }
+      case 'opened': {
+        const open = G.nodes.filter((sq) => e.pids.includes(sq.owner)).map((sq) => sq.id);
+        await board.openShops(open);
+        this.refresh();
+        break;
+      }
       case 'bankrupt': {
         const p = G.players[e.pid];
         sound.play('bankrupt');

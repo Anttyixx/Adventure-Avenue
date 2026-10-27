@@ -125,12 +125,16 @@ export class Game {
       await this.advance();
       return;
     }
-    // Turn-start reset: "until your next turn" effects expire.
-    p.onBreak = false;
-    p.closed = false;
+    // Turn-start reset: "until your next turn" effects expire. Closed shops reopen just after
+    // the turn starts, so it can be shown.
     p.boon = 0;
     p.boost = 1;
     await this.emit({ type: 'turnStart', pid: p.id, round: G.round });
+    if (p.onBreak || p.closed) {
+      await this.emit({ type: 'opened', pids: [p.id] });
+      p.onBreak = false;
+      p.closed = false;
+    }
 
     if (!p.cpu) await this.preRoll(p);
     if (G.over) return;

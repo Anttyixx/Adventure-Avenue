@@ -116,8 +116,8 @@ export class BoardView {
   stepsLeft = 0;
   /** While set, the camera shows the whole board (e.g. to watch shops close), whatever the zoom. */
   overviewHold = false;
-  /** Squares whose shutters are coming down: when each starts closing. */
-  private closing = new Map<number, number>();
+  /** Squares whose gates are moving: when each starts, and whether it is opening. */
+  private gates = new Map<number, { start: number; opening: boolean }>();
   private lastFrame = 0;
 
   // Highlights for choices
@@ -309,13 +309,27 @@ export class BoardView {
    * back to the player's zoom.
    */
   async closeShops(sqs: number[]) {
+    await this.moveGates(sqs, false);
+  }
+
+  /**
+   * Shops reopening at the start of their owner's turn: the same as closing, with the gates
+   * rolling back up.
+   */
+  async openShops(sqs: number[]) {
+    await this.moveGates(sqs, true);
+  }
+
+  private async moveGates(sqs: number[], opening: boolean) {
     if (!sqs.length) return;
     this.overviewHold = true;
-    await this.wait(T.closeZoom);
-    const t0 = performance.now();
-    sqs.forEach((id, i) => this.closing.set(id, t0 + i * T.closeStagger * this.speed));
-    await this.wait(T.closeStagger * (sqs.length - 1) + T.closeShutter + T.closeHold);
-    for (const id of sqs) this.closing.delete(id);
+    // Gates start moving once the camera has pulled back, one after another; until then they
+    // stay as they were (up for closing, down for opening).
+    const t0 = performance.now() + T.closeZoom * this.speed;
+    sqs.forEach((id, i) => this.gates.set(id, { start: t0 + i * T.closeStagger * this.speed, opening }));
+    await this.wait(T.closeZoom + T.closeStagger * (sqs.length - 1) + T.closeShutter + T.closeHold);
+    // Closed gates stay drawn from the state; opened ones stay up until the state says open.
+    if (!opening) for (const id of sqs) this.gates.delete(id);
     this.overviewHold = false;
     await this.wait(T.closeZoom);
   }
@@ -846,61 +860,64 @@ export class BoardView {
   private drawClosed(ctx: CanvasRenderingContext2D, now: number, motion: boolean) {
     const G = this.G!;
     for (const sq of G.nodes) {
-      if (sq.owner < 0 || !isClosed(G.players[sq.owner])) continue;
-      const c = this.center(sq);
-      const start = this.closing.get(sq.id);
-      if (start != null) {
-        // The shutter rolls down from the top of the tile, slats and all, then thumps shut.
-        const k = motion ? Math.min(1, Math.max(0, (now - start) / (T.closeShutter * this.speed))) : 1;
-        if (k <= 0) continue;
-        const e = 1 - Math.pow(1 - k, 3);
-        const top = c.y - TILE / 2;
-        const hgt = TILE * e;
-        ctx.save();
-        tileShape(ctx, G.layout, c.x, c.y, TILE / 2, 12);
-        ctx.clip();
-        ctx.fillStyle = 'rgba(10,15,40,0.62)';
-        ctx.fillRect(c.x - TILE / 2, top, TILE, hgt);
-        ctx.strokeStyle = 'rgba(230,236,255,0.35)';
-        ctx.lineWidth = 2;
-        for (let y = top + 9; y < top + hgt - 2; y += 9) {
-          ctx.beginPath();
-          ctx.moveTo(c.x - TILE / 2 + 6, y);
-          ctx.lineTo(c.x + TILE / 2 - 6, y);
-          ctx.stroke();
-        }
-        ctx.fillStyle = '#e6ecff';
-        ctx.fillRect(c.x - TILE / 2, top + hgt - 4, TILE, 4);
-        ctx.restore();
-        if (k >= 1) {
-          const pop = Math.min(1, (now - start - T.closeShutter * this.speed) / 220);
-          ctx.save();
-          ctx.globalAlpha = pop;
-          ctx.translate(c.x, c.y);
-          ctx.scale(0.7 + 0.3 * pop, 0.7 + 0.3 * pop);
-          ctx.font = '19px "Lilita One", sans-serif';
-          ctx.textAlign = 'center';
-          ctx.textBaseline = 'middle';
-          ctx.lineWidth = 4;
-          ctx.strokeStyle = '#101a33';
-          ctx.strokeText('CLOSED', 0, 0);
-          ctx.fillStyle = '#ff8a8a';
-          ctx.fillText('CLOSED', 0, 0);
-          ctx.restore();
-        }
-        continue;
+      const closed = sq.owner >= 0 && isClosed(G.players[sq.owner]);
+      const g = this.gates.get(sq.id);
+      if (g?.opening && !closed) this.gates.delete(sq.id);
+      if (!closed) continue;
+      // How far down the gate is: moving while animated, otherwise all the way down.
+      let down = 1;
+      if (g) {
+        const k = motion ? Math.min(1, Math.max(0, (now - g.start) / (T.closeShutter * this.speed))) : 1;
+        down = g.opening ? 1 - k : k;
       }
-      ctx.fillStyle = 'rgba(10,15,40,0.45)';
-      tileShape(ctx, G.layout, c.x, c.y, TILE / 2, 12);
+      if (down > 0) this.drawGate(ctx, sq, down);
+    }
+  }
+
+  /**
+   * A rolling gate over a closed property, `down` from 0 (up) to 1 (shut). It stays inside the
+   * tile's border so the border still shows on top, and carries a small CLOSED sign once shut.
+   */
+  private drawGate(ctx: CanvasRenderingContext2D, sq: Square, down: number) {
+    const G = this.G!;
+    const c = this.center(sq);
+    const inner = TILE / 2 - 6;
+    const top = c.y - tileTop(G.layout, inner);
+    const full = 2 * tileTop(G.layout, inner);
+    const e = 1 - Math.pow(1 - down, 3);
+    const hgt = full * e;
+    ctx.save();
+    tileShape(ctx, G.layout, c.x, c.y, inner, 8);
+    ctx.clip();
+    ctx.fillStyle = 'rgba(28, 34, 56, 0.72)';
+    ctx.fillRect(c.x - TILE / 2, top, TILE, hgt);
+    ctx.strokeStyle = 'rgba(230, 236, 255, 0.3)';
+    ctx.lineWidth = 2;
+    for (let y = top + 8; y < top + hgt - 3; y += 8) {
+      ctx.beginPath();
+      ctx.moveTo(c.x - TILE / 2, y);
+      ctx.lineTo(c.x + TILE / 2, y);
+      ctx.stroke();
+    }
+    // The gate's bottom bar.
+    ctx.fillStyle = '#c9d2ea';
+    ctx.fillRect(c.x - TILE / 2, top + hgt - 4, TILE, 4);
+    ctx.restore();
+    if (down >= 1) {
+      ctx.save();
+      ctx.font = '13px "Lilita One", sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      const w = ctx.measureText('CLOSED').width + 12;
+      ctx.fillStyle = '#e5484d';
+      roundRect(ctx, c.x - w / 2, c.y - 10, w, 20, 5);
       ctx.fill();
-      ctx.font = '20px "Lilita One", sans-serif';
-      ctx.fillStyle = '#e6ecff';
-      for (let i = 0; i < 2; i++) {
-        const ph = motion ? (now / 1600 + i * 0.5 + sq.id * 0.13) % 1 : 0.3 + i * 0.3;
-        ctx.globalAlpha = Math.sin(ph * Math.PI);
-        ctx.fillText('z', c.x + 8 + i * 10 + ph * 6, c.y - 6 - ph * 26);
-      }
-      ctx.globalAlpha = 1;
+      ctx.lineWidth = 2;
+      ctx.strokeStyle = '#fff';
+      ctx.stroke();
+      ctx.fillStyle = '#fff';
+      ctx.fillText('CLOSED', c.x, c.y + 1);
+      ctx.restore();
     }
   }
 

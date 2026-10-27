@@ -1416,10 +1416,53 @@ input[type='range'] {
   align-items: center;
   margin-top: 8px;
 }
-.m-sum {
+/* Stock summary card: the cost, then price per share, cash and shares now -> after. */
+.m-card {
+  display: grid;
+  gap: 4px;
+  margin-top: 8px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--glass-line);
+}
+.m-total {
   font-family: var(--head);
   font-size: 18px;
-  margin-top: 6px;
+  margin-bottom: 2px;
+}
+.m-total b {
+  font-weight: 400;
+  color: var(--accent);
+}
+.m-line {
+  display: grid;
+  grid-template-columns: 1fr auto auto auto;
+  align-items: baseline;
+  gap: 8px;
+  font-size: 14px;
+}
+.m-line > span:first-child {
+  color: var(--muted);
+}
+.m-now {
+  font-variant-numeric: tabular-nums;
+}
+.m-arrow {
+  color: var(--muted);
+}
+.m-line b {
+  font-family: var(--head);
+  font-weight: 400;
+  font-size: 16px;
+  min-width: 70px;
+  text-align: right;
+}
+.m-line.up b {
+  color: var(--good);
+}
+.m-line.down b {
+  color: var(--bad);
 }
 .build-grid {
   display: grid;

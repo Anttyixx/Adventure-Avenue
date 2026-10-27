@@ -53,6 +53,8 @@ export type GameEvent =
   | { type: 'trade'; offer: TradeOffer; accepted: boolean }
   /** These players' shops just closed until their next turn. */
   | { type: 'closed'; pids: number[] }
+  /** These players' shops reopen (at the start of their turn). */
+  | { type: 'opened'; pids: number[] }
   | { type: 'bankrupt'; pid: number }
   | { type: 'gameOver'; winner: number; reason: string }
   | ({ type: 'log' } & LogLine)

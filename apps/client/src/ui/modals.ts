@@ -4,6 +4,7 @@
  */
 import {
   BUILDINGS,
+  bumpFactor,
   K,
   maxValue,
   salary,
@@ -60,24 +61,46 @@ export function stockModal(
       clear(action);
       const max = Math.max(0, maxN());
       n = Math.min(n || Math.min(10, max), max);
-      const sum = h('div', { class: 'm-sum' });
+      // Summary card: the cost, and the share price, cash and shares now and after.
+      const sum = h('div', { class: 'm-sum m-card' });
       const go = h(
         'button',
         { class: 'btn main', onclick: () => n > 0 && done({ d, n }) },
         mode === 'buy' ? 'Buy' : 'Sell',
       ) as HTMLButtonElement;
+      /** The share price once this trade is done (big trades move it), worked out and put back. */
+      const priceAfter = () => {
+        const f = G.factor[d];
+        bumpFactor(G, d, mode === 'buy', n);
+        const after = stockPrice(G, d);
+        G.factor[d] = f;
+        return after;
+      };
       const update = () => {
         const total = mode === 'buy' ? Math.ceil(n * unit()) : Math.floor(n * unit());
+        const cashAfter = p.cash + (mode === 'buy' ? -total : total);
+        const now = stockPrice(G, d);
+        const after = priceAfter();
+        const line = (label: string, a: string, b: string, cls = '') =>
+          h(
+            'div',
+            { class: `m-line ${cls}` },
+            h('span', null, label),
+            h('span', { class: 'm-now' }, a),
+            h('span', { class: 'm-arrow' }, '→'),
+            h('b', null, b),
+          );
         clear(sum);
         sum.append(
-          `${n} shares = ${fmt(total)}`,
-          n >= K.bigTrade
-            ? h(
-                'span',
-                { class: 'hint' },
-                mode === 'buy' ? ' · price will rise 10%' : ' · price will drop 10%',
-              )
-            : '',
+          h(
+            'div',
+            { class: 'm-total' },
+            `${mode === 'buy' ? 'Buy' : 'Sell'} ${n} share${n === 1 ? '' : 's'} for `,
+            h('b', null, fmt(total)),
+          ),
+          line('Price per share', fmt(now), fmt(after), after > now ? 'up' : after < now ? 'down' : ''),
+          line('Your cash', fmt(p.cash), fmt(cashAfter), cashAfter < 0 ? 'down' : ''),
+          line('Shares you hold', String(p.shares[d]), String(p.shares[d] + (mode === 'buy' ? n : -n))),
         );
         go.disabled = n <= 0;
       };
