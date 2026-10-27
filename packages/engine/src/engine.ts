@@ -509,13 +509,16 @@ export class Game {
 
   async investFlow(p: Player, shops: Square[]) {
     const options = shops.map((s) => ({ sq: s.id, room: investRoom(this.G, s) })).filter((o) => o.room > 0);
-    const max = Math.min(K.investCap, p.cash);
+    // Players may invest more than their cash when stock or property could cover it: they sell
+    // to pay back the bank at the end of the turn, like any other debt.
+    const sellable = this.debtAssets(p).reduce((sum, a) => sum + a.amount, 0);
+    const max = Math.floor(Math.min(K.investCap, p.cash + sellable));
     if (!options.length || max <= 0) return;
     const ans = await this.ask({ kind: 'invest', pid: p.id, shops: options, max });
     if (!ans) return;
     const opt = options.find((o) => o.sq === ans.sq);
     if (!opt) return;
-    const amount = Math.floor(Math.min(ans.amount, opt.room, K.investCap, p.cash));
+    const amount = Math.floor(Math.min(ans.amount, opt.room, max));
     if (amount <= 0) return;
     const sq = this.G.nodes[opt.sq];
     await this.pay(p, null, amount, 'Investment');

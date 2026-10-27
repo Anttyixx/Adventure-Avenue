@@ -919,6 +919,45 @@ input[type='range'] {
   background:
     linear-gradient(90deg, color-mix(in srgb, var(--pc) 28%, transparent), transparent 70%), var(--glass);
 }
+/* Reached the target: net worth and portrait pulse with a golden glow. */
+.pcard.can-win .m-nw .nw {
+  display: inline-block;
+  color: #ffd166;
+  animation: win-pulse 1.1s ease-in-out infinite;
+}
+.pcard.can-win .portrait {
+  animation: win-glow 1.1s ease-in-out infinite;
+}
+@keyframes win-pulse {
+  0%,
+  100% {
+    transform: scale(1);
+    text-shadow: 0 0 2px rgba(255, 209, 102, 0.4);
+  }
+  50% {
+    transform: scale(1.12);
+    text-shadow:
+      0 0 8px #ffd166,
+      0 0 16px rgba(255, 209, 102, 0.7);
+  }
+}
+@keyframes win-glow {
+  0%,
+  100% {
+    transform: scale(1);
+    filter: drop-shadow(0 0 2px rgba(255, 209, 102, 0.5));
+  }
+  50% {
+    transform: scale(1.1);
+    filter: drop-shadow(0 0 6px #ffd166) drop-shadow(0 0 10px rgba(255, 209, 102, 0.8));
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .pcard.can-win .m-nw .nw,
+  .pcard.can-win .portrait {
+    animation: none;
+  }
+}
 .pc-side {
   position: relative;
   flex: none;
@@ -2942,6 +2981,9 @@ input[type='range'] {
 .inv-row b {
   color: var(--good);
 }
+.inv-row.bad b {
+  color: var(--bad);
+}
 
 /*
  * The action bar: the current player's options in one fixed-height row centered at the bottom of
@@ -3134,8 +3176,14 @@ input[type='range'] {
 .money .m-nw .nw {
   margin-right: 0;
 }
-.money .m-nw {
+.money .m-nw,
+.money .m-cash {
   align-items: center;
+}
+.money .m-cash .gc {
+  margin-left: 0;
+  width: 15px;
+  height: 15px;
 }
 .money .rank {
   font-size: 10px;

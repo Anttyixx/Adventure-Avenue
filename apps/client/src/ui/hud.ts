@@ -323,7 +323,10 @@ export class Hud {
     if (isClosed(p)) tags.push('Closed');
     if (p.boost > 1) tags.push('Fees +30%');
     if (p.bankrupt) tags.push('Bankrupt');
-    else if (nw >= G.target && !G.over) tags.unshift('Can win! Get to the bank');
+    // Reached the target: net worth and portrait pulse and glow (they win at the bank).
+    const canWin = !p.bankrupt && nw >= G.target && !G.over;
+    el.classList.toggle('can-win', canWin);
+    el.title = canWin ? `${p.name} can win! Get to the bank.` : '';
     const rank = this.ranks.get(p.id);
     // Only rebuild the card when something on it changed: rebuilding restarts its animations
     // (the hopping suits) and reloads its images, which makes the card twitch.
@@ -344,7 +347,7 @@ export class Hud {
     this.cardSigs.set(p.id, sig);
     clear(el);
     const nwEl = h('span', { class: 'nw' }, plain(prev.nw));
-    const cashEl = h('span', { class: 'cash' }, fmt(prev.cash));
+    const cashEl = h('span', { class: 'cash' }, plain(prev.cash));
     const extras = tags.map((t) => h('span', { class: 'tag' }, t));
     const pct = Math.max(0, Math.min(100, (nw / G.target) * 100));
     el.append(
@@ -394,15 +397,20 @@ export class Hud {
         h(
           'div',
           { class: 'pc-row money' },
-          h('span', { class: 'm-cash', title: 'Cash' }, cashEl),
-          // Net worth, with the player's place where a coin would be.
+          // A coin in front of the cash, the player's place in front of their net worth.
+          h(
+            'span',
+            { class: 'm-cash', title: 'Cash' },
+            h('span', { class: 'gc', 'aria-hidden': 'true' }),
+            cashEl,
+          ),
           h(
             'span',
             { class: 'm-nw', title: 'Net worth' },
-            nwEl,
             rank && !p.bankrupt
               ? h('span', { class: `rank r${rank}`, title: `Rank ${rank}` }, ordinal(rank))
               : null,
+            nwEl,
           ),
         ),
       ),
@@ -410,7 +418,7 @@ export class Hud {
     const delta = p.cash - prev.cash;
     if (delta && this.shown.has(p.id)) this.moneyPop(el, p.id, delta);
     countUp(nwEl, prev.nw, nw, plain);
-    countUp(cashEl, prev.cash, p.cash);
+    countUp(cashEl, prev.cash, p.cash, plain);
     this.shown.set(p.id, { nw, cash: p.cash });
   }
 
@@ -775,7 +783,7 @@ export class Hud {
   }
 }
 
-/** A number with thousands separators and no coin (net worth shows the rank beside it instead). */
+/** A number with thousands separators and no coin (the cards put the coin or rank in front). */
 const plain = (n: number) => Math.round(n).toLocaleString('en-US');
 
 function countUp(el: HTMLElement, from: number, to: number, f = fmt) {

@@ -132,7 +132,8 @@ export function investAmountModal(hud: Hud, G: GameState, sqId: number, lim: num
   return new Promise((resolve) => {
     const sq = G.nodes[sqId];
     const owner = G.players[sq.owner];
-    let amount = lim;
+    // Start at what cash covers; more is allowed when stock or property could pay it back.
+    let amount = owner.cash > 0 ? Math.min(lim, owner.cash) : lim;
     const body = h('div', { class: 'invest' });
     const m = hud.modal(`Invest in your ${squareName(G, sq)}`, body);
     const done = (v: number | null) => {
@@ -171,7 +172,15 @@ export function investAmountModal(hud: Hud, G: GameState, sqId: number, lim: num
           ? row(`${G.districts[sq.d].name} stock`, fmt(now.price), fmt(after.price))
           : '',
         row('Your salary at the bank', fmt(now.salary), fmt(after.salary)),
+        h(
+          'div',
+          { class: `inv-row ${owner.cash - amount < 0 ? 'bad' : ''}` },
+          h('span', null, 'Your cash'),
+          h('span', null, fmt(owner.cash)),
+          h('b', null, `→ ${fmt(owner.cash - amount)}`),
+        ),
       );
+      short.hidden = owner.cash - amount >= 0;
       go.disabled = amount <= 0;
       go.textContent = amount > 0 ? `Invest ${fmt(amount)}` : 'Invest';
     };
@@ -184,6 +193,11 @@ export function investAmountModal(hud: Hud, G: GameState, sqId: number, lim: num
         update();
       },
     });
+    const short = h(
+      'p',
+      { class: 'hint debt-note' },
+      'That is more than your cash: sell stock or property at the end of your turn to cover it.',
+    );
     update();
     body.append(
       h(
@@ -194,6 +208,7 @@ export function investAmountModal(hud: Hud, G: GameState, sqId: number, lim: num
       ),
       picker.el,
       table,
+      short,
       h(
         'div',
         { class: 'btn-row' },
