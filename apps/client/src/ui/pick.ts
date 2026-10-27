@@ -21,7 +21,7 @@ import { digitPicker } from './digits';
 import { clear, fmt, h } from './dom';
 import type { Hud, PromptButton } from './hud';
 import { boardPopup } from './minimap';
-import { buildModal, stockModal } from './modals';
+import { buildPrompt, stockModal } from './modals';
 
 export interface PickCtx {
   hud: Hud;
@@ -166,7 +166,7 @@ export async function renovateOnBoard(
         cost,
       }),
     );
-    const b = await buildModal(hud, options, `Renovate ${squareName(G, sq)}`, K.renovate);
+    const b = await buildPrompt(hud, p, options, `Renovate your ${shortName(G, sq)} into what?`, K.renovate);
     ctx.board.clearChoices();
     if (b) return { sq: sq.id, b };
   }

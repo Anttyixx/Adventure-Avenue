@@ -24,7 +24,7 @@ import { FAST_CPU_SPEED, TIMING as T } from './timing';
 import { fmt, h } from './ui/dom';
 import { DerbyView, MemoryView, ReelsView, VentureView } from './ui/games';
 import { Hud, type PromptButton } from './ui/hud';
-import { buildModal, rulesModal, stockModal } from './ui/modals';
+import { buildPrompt, rulesModal, stockModal } from './ui/modals';
 import { showResults } from './ui/results';
 import { investOnBoard } from './ui/invest';
 import { AuctionView } from './ui/auction';
@@ -479,15 +479,7 @@ export class HotSeat implements GameIO {
         );
 
       case 'build':
-        return buildModal(
-          hud,
-          req.options,
-          `Build on the vacant plot (you have ${fmt(p.cash)})`,
-          0,
-          req.options.some((o) => o.cost > p.cash)
-            ? 'Buildings you cannot pay for in cash put you below 0G: sell stock or property at the end of your turn to cover it.'
-            : '',
-        );
+        return buildPrompt(hud, p, req.options, 'What will you build on this plot?');
 
       case 'invest':
         return investOnBoard(hud, this.board, G, p, req.shops, req.max);

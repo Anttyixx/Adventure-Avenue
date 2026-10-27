@@ -113,6 +113,19 @@ export function propCanvas(key: PropKey, color: string): HTMLCanvasElement | nul
   return cv;
 }
 
+const iconURLs = new Map<string, string>();
+
+/** A property image as a data URL for buttons (recolored like on the board). */
+export function propIconURL(key: PropKey, color: string): string {
+  const ck = `${key}|${color}`;
+  let url = iconURLs.get(ck);
+  if (!url) {
+    url = propCanvas(key, color)?.toDataURL() ?? '';
+    if (url) iconURLs.set(ck, url);
+  }
+  return url;
+}
+
 /** Property images fill this much of their box (bottom-aligned), leaving a little room. */
 const PROP_SCALE = 0.9;
 

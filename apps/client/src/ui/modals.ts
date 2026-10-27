@@ -6,6 +6,7 @@ import {
   BUILDINGS,
   bumpFactor,
   K,
+  PLAYER_COLORS,
   maxValue,
   salary,
   shopFee,
@@ -19,6 +20,8 @@ import { clear, fmt, h } from './dom';
 import { digitPicker } from './digits';
 import type { Hud } from './hud';
 import { marketView } from './market';
+import { question } from './pick';
+import { propIconURL, type PropKey } from '../props';
 
 // ------------------------------------------------------------------ stocks
 
@@ -244,54 +247,45 @@ export function investAmountModal(hud: Hud, G: GameState, sqId: number, lim: num
 
 // ------------------------------------------------------------------ build / renovate
 
-export function buildModal(
+/**
+ * Pick a building, in the action bar: a picture button per building (its cost under it, what it
+ * does on hover). Buildings the player cannot choose are greyed out. `extra` is added to every
+ * cost (renovating).
+ */
+export function buildPrompt(
   hud: Hud,
+  p: Player,
   options: { b: BuildingKey; cost: number }[],
-  title: string,
+  text: string,
   extra = 0,
-  note = '',
 ): Promise<BuildingKey | null> {
-  return new Promise((resolve) => {
-    const body = h('div', { class: 'build-grid' });
-    const m = hud.modal(
-      title,
-      h(
-        'div',
-        null,
-        note ? h('p', { class: 'hint debt-note' }, note) : null,
-        body,
-        h(
-          'div',
-          { class: 'btn-row' },
-          h('button', { class: 'btn ghost', onclick: () => done(null) }, 'Skip'),
-        ),
-      ),
-      {
-        wide: true,
-      },
-    );
-    const done = (v: BuildingKey | null) => {
-      m.close();
-      resolve(v);
-    };
-    for (const b of BUILDINGS) {
-      const opt = options.find((o) => o.b === b.b);
-      body.append(
-        h(
-          'button',
-          { class: 'build-card', disabled: !opt, onclick: () => done(b.b) },
-          h(
-            'div',
-            { class: 'bc-head' },
-            h('b', null, b.name),
-            h('span', { class: 'cost' }, fmt(b.cost + extra)),
-          ),
-          h('p', null, h('i', null, 'Rival lands: '), BUILDING_INFO[b.b].rival),
-          h('p', null, h('i', null, 'You land: '), BUILDING_INFO[b.b].owner),
-        ),
-      );
-    }
-  });
+  const color = PLAYER_COLORS[p.color];
+  const cost = (b: BuildingKey) => BUILDINGS.find((x) => x.b === b)!.cost + extra;
+  const cheapest = Math.min(...options.map((o) => o.cost + extra));
+  // Every building but the 3-Star Shop costs the same: one chip for those, one for the 3-Star.
+  const plain = BUILDINGS.filter((b) => b.b !== 'star3');
+  return hud.prompt<BuildingKey | null>(
+    question(text, [
+      ['Your cash', fmt(p.cash), p.cash < cheapest ? 'bad' : ''],
+      ['Buildings', fmt(cost(plain[0].b))],
+      ['3-Star Shop', fmt(cost('star3'))],
+    ]),
+    [
+      ...BUILDINGS.map((b) => {
+        const opt = options.find((o) => o.b === b.b);
+        const key = (b.b === 'star3' ? 'star0' : b.b === 'circus' ? 'circus0' : b.b) as PropKey;
+        return {
+          label: b.name,
+          value: b.b as BuildingKey | null,
+          icon: propIconURL(key, color),
+          disabled: !opt,
+          title: `${b.name} (${fmt(cost(b.b))})${cost(b.b) > p.cash ? ' - more than your cash: sell at the end of your turn' : ''}\nRival lands: ${BUILDING_INFO[b.b].rival}\nYou land: ${BUILDING_INFO[b.b].owner}`,
+        };
+      }),
+      { label: 'Skip', value: null, secondary: true },
+    ],
+    p.color,
+  );
 }
 
 // ------------------------------------------------------------------ trades

@@ -33,6 +33,10 @@ export interface PromptButton<T> {
   disabled?: boolean;
   secondary?: boolean;
   hover?: (on: boolean) => void;
+  /** A picture above the label (e.g. a building), making it a picture button. */
+  icon?: string;
+  /** Shown on hover: what the option does. */
+  title?: string;
 }
 
 export interface HudCallbacks {
@@ -660,6 +664,11 @@ export class Hud {
     clear(this.ask);
     clearTimeout(this.askHide);
     this.ask.classList.add('show');
+    // Picture buttons need the width: the question goes on one line above them.
+    this.ask.classList.toggle(
+      'stacked',
+      buttons.some((b) => b.icon),
+    );
     const head = h('div', { class: 'prompt-text rise' });
     if (color != null) {
       head.append(h('span', { class: 'dot', style: `background:${PLAYER_COLORS[color]}` }));
@@ -676,10 +685,12 @@ export class Hud {
         const el = h(
           'button',
           {
-            class: `btn ${b.main ? 'main nudge' : ''} ${b.secondary ? 'ghost' : ''}`,
+            class: `btn ${b.main ? 'main nudge' : ''} ${b.secondary ? 'ghost' : ''} ${b.icon ? 'pic' : ''}`,
             disabled: !!b.disabled,
+            title: b.title ?? null,
           },
-          b.label,
+          b.icon ? h('img', { src: b.icon, alt: '' }) : null,
+          b.icon ? h('span', null, b.label) : b.label,
         );
         el.onclick = () => {
           this.finishPrompt();

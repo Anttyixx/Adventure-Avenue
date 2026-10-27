@@ -45,7 +45,7 @@ import { joinScreen, lobbySeats, onlineHub, resumeLobby } from './online';
 import { soundButton, soundControls } from './soundpanel';
 import { SFX_NAMES, TRACK_NAMES, sound, type Track } from '../audio';
 import { setupScreen } from './start';
-import { buildModal, rulesModal, stockModal } from './modals';
+import { buildPrompt, rulesModal, stockModal } from './modals';
 import { showResults } from './results';
 import { investOnBoard } from './invest';
 import { AuctionView } from './auction';
@@ -566,10 +566,11 @@ export async function openLab(app: HTMLElement, section?: string) {
       btn('Build', async () =>
         result(
           'Build',
-          await buildModal(
+          await buildPrompt(
             hud,
+            cur(),
             BUILDINGS.filter((b) => b.cost <= Math.max(cur().cash, 1000)).map(({ b, cost }) => ({ b, cost })),
-            `Build on the vacant plot (you have ${fmt(cur().cash)})`,
+            'What will you build on this plot?',
           ),
         ),
       ),

@@ -3103,6 +3103,56 @@ input[type='range'] {
   font-size: 17px;
   padding: 10px 20px;
 }
+/* Questions with picture buttons: the question on one line, the pictures in a row below. */
+.prompt-center.stacked {
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: center;
+  gap: 4px;
+  padding: 6px 12px;
+}
+.prompt-center.stacked .prompt-text {
+  flex: none;
+}
+.prompt-center.stacked .rich-body {
+  flex-direction: row;
+  align-items: center;
+  gap: 10px;
+}
+.prompt-center.stacked .rich-title {
+  flex: none;
+}
+.prompt-center.stacked .facts {
+  flex-wrap: nowrap;
+  max-height: none;
+  min-width: 0;
+}
+.prompt-center.stacked .btn-row {
+  max-width: none;
+  justify-content: center;
+  gap: 5px;
+}
+/* Picture buttons (buildings): the picture above a small name. */
+.prompt-center .btn.pic {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+  padding: 3px 8px 4px;
+  font-size: 11px;
+  line-height: 1.1;
+  white-space: nowrap;
+}
+.prompt-center .btn.pic img {
+  height: 38px;
+  width: auto;
+  max-width: 60px;
+  object-fit: contain;
+}
+.prompt-center .btn.pic:disabled img {
+  filter: grayscale(1);
+  opacity: 0.5;
+}
 /* Rich prompts: a title, then the facts in one compact line. */
 .prompt-center .rich-body {
   min-width: 0;
@@ -3175,6 +3225,14 @@ input[type='range'] {
   .prompt-center .btn {
     font-size: 13px;
     padding: 5px 11px;
+  }
+  .prompt-center .btn.pic {
+    padding: 2px 6px;
+    font-size: 9px;
+  }
+  .prompt-center .btn.pic img {
+    height: 26px;
+    max-width: 40px;
   }
   .prompt-center .rich-body {
     gap: 2px;
