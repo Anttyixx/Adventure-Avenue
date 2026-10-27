@@ -679,15 +679,16 @@ active player changes, tokens ease to their new sizes (the active one larger, th
 | Player          | Pixel confetti burst                                                                                                                        | Promotion                                                 |
 | Die             | Squash-and-bounce on the result                                                                                                             | Roll ends                                                 |
 | Player cards    | Net worth and cash count up or down to the new value, tinted green or red while changing; the active card's glow breathes                   | Any money change                                          |
-| Interface       | Prompts and the ticker rise in, dialogs ease in, venture and Memory Blocks panels flip, revealed cards pop, main buttons give a small nudge | New prompt, dialog or reveal                              |
+| Interface       | Prompts and status lines rise in, dialogs ease in, venture and Memory Blocks panels flip, revealed cards pop, main buttons give a small nudge | New prompt, dialog or reveal                              |
 
 **Layout.** Scrolling panels hide their scrollbars (they still scroll). The board fills the whole game screen edge to edge, and everything else floats over it
 as dark glass overlays. Top right: the zoom chip, a Stock market button (Standard rules)
 and the Menu button (the menu
-also shows the round, target and rule set). Bottom left: a ticker with the last action, above
-the action bar; tapping it opens the game log above it (turn by turn, newest at the bottom,
-scrollable back to the start of the game), and it moves up above the options when they would
-cover it. Bottom right: the player cards stacked vertically in turn order (online, each device
+also shows the round, target and rule set). Bottom left: the status line, showing the last action
+and, under it, who the game is waiting on ("Blue is thinking..."). It lights up on hover; tapping
+it morphs it into the game log (turn by turn, newest at the bottom, scrollable back to the start of
+the game), and tapping the status row, Close or Escape folds it back. It moves up above the
+options when they would cover it. Bottom right: the player cards stacked vertically in turn order (online, each device
 turns the order round so its own player's card is at the bottom; turns still go top to bottom) (net worth, cash, level,
 suits and progress bar), with a Hide/Show toggle so players can clear the board. The stock market lives in a
 slide-out drawer on the right.

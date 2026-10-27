@@ -814,70 +814,107 @@ input[type='range'] {
 .bottom-left > * {
   pointer-events: auto;
 }
-.ticker {
+.status-box {
   display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 6px 10px 6px 12px;
-  font-size: 13px;
-  color: var(--muted);
-  min-height: 30px;
+  flex-direction: column;
+  justify-content: flex-end;
   align-self: flex-start;
   max-width: 100%;
+  overflow: hidden;
   cursor: pointer;
   user-select: none;
   -webkit-user-select: none;
+  transition:
+    background 0.15s,
+    border-color 0.15s,
+    box-shadow 0.15s;
 }
-.ticker:hover {
+.status-box.empty {
+  display: none;
+}
+/* Hovering the folded status line lights it up to show it opens the log. */
+.status-box:not(.open):hover,
+.status-box:not(.open):focus-visible {
+  background: rgba(30, 44, 82, 0.92);
+  border-color: rgba(255, 209, 102, 0.55);
+  box-shadow:
+    0 0 0 1px rgba(255, 209, 102, 0.25),
+    0 8px 28px rgba(0, 0, 0, 0.3);
+  outline: none;
+}
+.status-box:not(.open):hover .sb-row {
   color: var(--text);
 }
-.ticker .tick-line {
+.status-box.open {
+  width: min(400px, calc(100vw - 20px));
+  cursor: default;
+}
+.sb-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 10px 7px 12px;
+  font-size: 13px;
+  color: var(--muted);
+  min-height: 30px;
+  min-width: 0;
+}
+.status-box.open .sb-row {
+  cursor: pointer;
+  border-top: 1px solid var(--glass-line);
+}
+.sb-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  flex: 1;
+}
+.sb-last {
+  color: var(--text);
+}
+.sb-last:empty,
+.sb-wait:empty {
+  display: none;
+}
+.sb-row .tick-line {
   display: flex;
   align-items: center;
   min-width: 0;
 }
-.ticker .tick-text {
+.sb-row .tick-text {
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
 }
-/* Arrow showing the ticker opens the log (points down while it is open). */
-.tick-more {
-  flex: none;
-  width: 0;
-  height: 0;
-  border-left: 5px solid transparent;
-  border-right: 5px solid transparent;
-  border-bottom: 6px solid currentColor;
-  transition: transform 0.15s;
-}
-.hud.log-open .tick-more {
-  transform: rotate(180deg);
-}
-.ticker:empty {
+/* The game log, shown above the status row while the box is expanded. */
+.sb-log {
   display: none;
 }
-.action-bar {
-  padding: 10px 12px;
-  max-width: 100%;
+.status-box.open .sb-log {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px 10px 8px;
+  min-height: 0;
+  animation: sb-log-in 0.3s ease-out;
 }
-.action-bar:empty {
-  display: none;
+@keyframes sb-log-in {
+  from {
+    opacity: 0;
+  }
+}
+.sb-log .log-list {
+  max-height: min(46vh, 420px);
+  overflow-y: auto;
+}
+.sb-log .drawer-head h3 {
+  margin: 0;
 }
 .prompt-text {
   font-size: 15px;
   display: flex;
   align-items: center;
-}
-.prompt-text.muted {
-  color: var(--muted);
-}
-.action-bar .btn-row {
-  justify-content: flex-start;
-  margin-top: 8px;
-}
-.action-bar .btn-row:empty {
-  display: none;
 }
 
 .cards-wrap {
@@ -2301,9 +2338,6 @@ input[type='range'] {
   .bottom-left {
     max-width: calc(100vw - 245px);
   }
-  .action-bar {
-    padding: 6px 8px;
-  }
   .prompt-text {
     font-size: 13px;
   }
@@ -3703,26 +3737,6 @@ input[type='range'] {
   background: var(--accent);
   color: #3b2a00;
 }
-/* The game log opens above the ticker in the bottom left */
-.log-panel {
-  display: none;
-  align-self: flex-start;
-  width: min(400px, calc(100vw - 20px));
-  padding: 10px;
-  flex-direction: column;
-  gap: 6px;
-}
-.hud.log-open .log-panel {
-  display: flex;
-}
-.log-panel .log-list {
-  max-height: min(46vh, 420px);
-  overflow-y: auto;
-}
-.log-panel .drawer-head h3 {
-  margin: 0;
-}
-
 /* All four suits: they hop until the player levels up at the bank */
 .suits.ready img {
   animation: suit-hop 1.2s ease-in-out infinite;

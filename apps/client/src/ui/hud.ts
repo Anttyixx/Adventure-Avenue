@@ -1,6 +1,6 @@
 /**
- * Dark-glass overlays floating over the board: top-right toolbar, ticker (opens the log) and
- * action bar, player cards, market/log drawer, tooltip, modals and banners.
+ * Dark-glass overlays floating over the board: top-right toolbar, status line (expands into the
+ * game log), action bar, player cards, market drawer, tooltip, modals and banners.
  */
 import {
   PLAYER_COLORS,
@@ -57,18 +57,32 @@ export class Hud {
   toolbar = h('div', { class: 'toolbar' });
   /** Current zoom; tapping it zooms back in on the player. */
   zoomChip = h('button', { class: 'zoom-chip', title: 'Zoom: scroll, pinch or - / +. Tap to reset.' });
-  /** The last action; tapping it opens the game log above it. */
-  ticker = h('div', { class: 'ticker glass', role: 'button', tabindex: '0', 'aria-expanded': 'false' });
+  /**
+   * The status line in the bottom left: the last thing that happened and who the game is waiting
+   * on. Tapping it expands it into the game log.
+   */
+  statusBox = h('div', {
+    class: 'status-box glass empty',
+    role: 'button',
+    tabindex: '0',
+    'aria-expanded': 'false',
+  });
+  private lastLine = h('div', { class: 'sb-last' });
+  private waitLine = h('div', { class: 'sb-wait' });
+  private statusRow = h(
+    'div',
+    { class: 'sb-row' },
+    h('div', { class: 'sb-text' }, this.lastLine, this.waitLine),
+  );
   /** Round, target and rules, shown at the top of the game menu. */
   gameInfo = h('div', { class: 'gm-info' });
-  bar = h('div', { class: 'action-bar glass' });
   /** The current player's options, centered near the bottom of the board. */
   ask = h('div', { class: 'prompt-center glass' });
   cardsWrap = h('div', { class: 'cards-wrap' });
   cards = h('div', { class: 'cards' });
   cardsToggle = h('button', { class: 'btn small ghost cards-toggle' }, 'Hide');
-  /** The game log, opened from the ticker in the bottom left. */
-  logBox = h('div', { class: 'log-panel glass' });
+  /** The game log inside the status line, shown while it is expanded. */
+  logBox = h('div', { class: 'sb-log' });
   logOpen = false;
   roomBtn = h('button', { class: 'btn small ghost cards-toggle', hidden: true }, 'Room');
   drawer = h('div', { class: 'drawer glass' });
@@ -101,11 +115,16 @@ export class Hud {
     cb: HudCallbacks,
   ) {
     this.root = h('div', { class: 'hud' });
-    const bottomLeft = h('div', { class: 'bottom-left' }, this.logBox, this.ticker, this.bar);
+    this.statusBox.append(this.logBox, this.statusRow);
+    const bottomLeft = h('div', { class: 'bottom-left' }, this.statusBox);
     this.cardsWrap.append(h('div', { class: 'cards-head' }, this.roomBtn, this.cardsToggle), this.cards);
-    this.ticker.onclick = () => this.toggleLog();
-    this.ticker.onkeydown = (e) => {
-      if (e.key === 'Enter' || e.key === ' ') {
+    this.statusBox.onclick = (e) => {
+      // While expanded, only the status row (or Close) folds it back; the log itself scrolls.
+      if (this.logOpen && this.logBox.contains(e.target as Node)) return;
+      this.toggleLog();
+    };
+    this.statusBox.onkeydown = (e) => {
+      if (e.target === this.statusBox && (e.key === 'Enter' || e.key === ' ')) {
         e.preventDefault();
         this.toggleLog();
       }
@@ -227,6 +246,10 @@ export class Hud {
       this.toggleMenu(false);
       return;
     }
+    if (e.key === 'Escape' && this.logOpen && !this.modalLayer.childElementCount) {
+      this.toggleLog(false);
+      return;
+    }
     if (tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA') return;
     if ((e.key === 'Enter' || e.key === ' ') && !this.modalLayer.childElementCount && this.mainButton) {
       e.preventDefault();
@@ -243,24 +266,25 @@ export class Hud {
   updateInsets() {
     const W = window.innerWidth;
     const portraitStack = this.root.classList.contains('upright');
-    const bottomLeft = this.bar.parentElement!;
+    const bottomLeft = this.statusBox.parentElement!;
     // Where the action bar sits once shown (layout box, so the slide animation does not count).
     const a = this.ask;
     const ask = a.classList.contains('show')
       ? { top: a.offsetTop, height: a.offsetHeight, left: a.offsetLeft, right: a.offsetLeft + a.offsetWidth }
       : { top: 0, height: 0, left: 0, right: 0 };
-    // When the options would cover the ticker (narrow screens, long lines), the ticker and log
-    // move up to sit just above them.
-    const tick = this.ticker.getBoundingClientRect();
-    const covered = ask.height > 0 && tick.width > 0 && tick.right > ask.left && tick.left < ask.right;
+    // When the options would cover the status line (narrow screens, long lines), it moves up to
+    // sit just above them.
+    const sb = this.statusRow.getBoundingClientRect();
+    const covered = ask.height > 0 && sb.width > 0 && sb.right > ask.left && sb.left < ask.right;
     bottomLeft.style.bottom = covered ? `${window.innerHeight - ask.top + 6}px` : '';
-    const bar = bottomLeft.getBoundingClientRect();
+    // Only the status row counts, so expanding the log never moves the camera.
+    const bar = sb.height ? sb : { top: window.innerHeight };
     const cards = this.cardsWrap.getBoundingClientRect();
     const tools = this.toolbar.getBoundingClientRect();
     if (portraitStack) this.root.style.setProperty('--cards-h', `${this.cardsWrap.offsetHeight + 6}px`);
     let right = 0;
     if (!this.cardsHidden && !portraitStack && cards.width) right = Math.min(W * 0.4, W - cards.left + 8);
-    // A lifted ticker is left out, so a new ticker line never moves the camera.
+    // A lifted status line is left out, so a new line never moves the camera.
     const top = Math.min(
       covered ? Infinity : bar.top,
       ask.height ? ask.top : Infinity,
@@ -451,17 +475,11 @@ export class Hud {
     }, 2200);
   }
 
-  // ------------------------------------------------------------ ticker, log, drawer
+  // ------------------------------------------------------------ status line, log, drawer
 
+  /** Show the last thing that happened on the status line. */
   tick(text: string, color?: number) {
-    clear(this.ticker);
-    const dot =
-      color != null && color >= 0
-        ? h('span', { class: 'dot', style: `background:${PLAYER_COLORS[color]}` })
-        : null;
-    const line = h('div', { class: 'tick-line rise' }, dot, h('span', { class: 'tick-text' }, text));
-    this.ticker.append(line, h('span', { class: 'tick-more', 'aria-hidden': 'true' }));
-    this.updateInsets();
+    this.setLine(this.lastLine, text, color);
     if (this.drawerMode === 'log') this.renderDrawer();
     if (this.logOpen) this.renderLog();
   }
@@ -506,13 +524,47 @@ export class Hud {
     };
   }
 
-  /** Open or close the game log above the ticker. */
-  toggleLog(open = !this.logOpen) {
-    this.logOpen = open;
-    this.root.classList.toggle('log-open', open);
-    this.ticker.setAttribute('aria-expanded', String(open));
-    this.renderLog(true);
+  /** Fill one line of the status box (empty text clears it). */
+  private setLine(el: HTMLElement, text: string, color?: number) {
+    clear(el);
+    if (text) {
+      const dot =
+        color != null && color >= 0
+          ? h('span', { class: 'dot', style: `background:${PLAYER_COLORS[color]}` })
+          : null;
+      el.append(h('div', { class: 'tick-line rise' }, dot, h('span', { class: 'tick-text' }, text)));
+    }
+    this.syncStatus();
+  }
+
+  /** Hide the status box while it has nothing to show, and tell the board what it covers. */
+  private syncStatus() {
+    this.statusBox.classList.toggle(
+      'empty',
+      !this.logOpen && !this.lastLine.childElementCount && !this.waitLine.childElementCount,
+    );
     this.updateInsets();
+  }
+
+  /** Expand the status line into the game log, or fold it back, morphing between the sizes. */
+  toggleLog(open = !this.logOpen) {
+    const box = this.statusBox;
+    const from = box.getBoundingClientRect();
+    this.logOpen = open;
+    box.classList.toggle('open', open);
+    box.setAttribute('aria-expanded', String(open));
+    this.renderLog(true);
+    this.syncStatus();
+    const to = box.getBoundingClientRect();
+    if (from.width && to.width && !matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      box.animate(
+        [
+          { width: `${from.width}px`, height: `${from.height}px` },
+          { width: `${to.width}px`, height: `${to.height}px` },
+        ],
+        { duration: 260, easing: 'cubic-bezier(0.2, 0.8, 0.2, 1)' },
+      );
+    }
   }
 
   private renderLog(toBottom = false) {
@@ -664,7 +716,7 @@ export class Hud {
    */
   prompt<T>(text: string | Node, buttons: PromptButton<T>[], color?: number): Promise<T> {
     this.cancelPrompt();
-    clear(this.bar);
+    this.setLine(this.waitLine, '');
     clear(this.ask);
     clearTimeout(this.askHide);
     this.ask.classList.add('show');
@@ -724,7 +776,7 @@ export class Hud {
   private finishPrompt() {
     this.promptResolve = null;
     this.mainButton = null;
-    clear(this.bar);
+    this.setLine(this.waitLine, '');
     // Slide out, then empty it (unless a new prompt took its place meanwhile).
     this.ask.classList.remove('show');
     clearTimeout(this.askHide);
@@ -737,13 +789,10 @@ export class Hud {
     this.mainButton = null;
   }
 
+  /** Show who the game is waiting on under the last action (empty text clears it). */
   status(text: string, color?: number) {
     if (this.promptResolve) return;
-    clear(this.bar);
-    const head = h('div', { class: 'prompt-text muted' });
-    if (color != null) head.append(h('span', { class: 'dot', style: `background:${PLAYER_COLORS[color]}` }));
-    head.append(text);
-    this.bar.append(head);
+    this.setLine(this.waitLine, text, color);
   }
 
   // ------------------------------------------------------------ modals and banners

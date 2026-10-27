@@ -26,6 +26,18 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: '2026-10-27-status-line',
+    date: 'Oct 27, 2026',
+    title: 'One status line',
+    features: [
+      {
+        tag: 'better',
+        title: 'Status line',
+        text: 'The bottom left now has a single status line with the last thing that happened and who the game is waiting on. Tap it and it opens into the full game log.',
+      },
+    ],
+  },
+  {
     id: '2026-10-27-stocks-polish',
     date: 'Oct 27, 2026',
     title: 'Clearer stock deals',

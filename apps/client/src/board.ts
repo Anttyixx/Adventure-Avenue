@@ -626,7 +626,7 @@ export class BoardView {
 
   /**
    * The whole board fitted into the screen area the HUD leaves free (between the toolbar, the
-   * player cards, the ticker and the action bar), so no square hides under them.
+   * player cards, the status line and the action bar), so no square hides under them.
    */
   freeFit() {
     const { top, right, bottom, left } = this.insets;
