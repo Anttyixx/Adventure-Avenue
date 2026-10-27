@@ -116,6 +116,11 @@ export class BoardView {
   stepsLeft = 0;
   /** While set, the camera shows the whole board (e.g. to watch shops close), whatever the zoom. */
   overviewHold = false;
+  /**
+   * With overviewHold: fit the whole board into the screen area the HUD leaves free (between the
+   * player cards and the action bar), so no square is hidden under them (trades).
+   */
+  overviewFree = false;
   /** Squares whose gates are moving: when each starts, and whether it is opening. */
   private gates = new Map<number, { start: number; opening: boolean }>();
   private lastFrame = 0;
@@ -655,6 +660,18 @@ export class BoardView {
     const b = t * t * (3 - 2 * t);
     const c = { x: follow.x + (this.ww / 2 - follow.x) * b, y: follow.y + (this.wh / 2 - follow.y) * b };
     this.camTarget = { x: c.x, y: c.y, z: fz };
+    if (this.overviewHold && this.overviewFree) {
+      // Fit the board into the free area, centered in it.
+      const { top, right, bottom, left } = this.insets;
+      const fw = Math.max(100, this.w - left - right);
+      const fh = Math.max(100, this.h - top - bottom);
+      const z2 = Math.min(fw / this.ww, fh / this.wh) * 0.97;
+      this.camTarget = {
+        x: this.ww / 2 - (left - right) / 2 / z2,
+        y: this.wh / 2 - (top - bottom) / 2 / z2,
+        z: z2,
+      };
+    }
     const k = reducedMotion() ? 1 : 0.12;
     this.cam.x += (this.camTarget.x - this.cam.x) * k;
     this.cam.y += (this.camTarget.y - this.cam.y) * k;

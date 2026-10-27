@@ -28,13 +28,34 @@ export const CHANGELOG: ChangelogEntry[] = [
   {
     id: '2026-10-27-property-art',
     date: 'Oct 27, 2026',
-    title: 'New property art',
+    title: 'Trades, building and new property art',
     features: [
+      {
+        tag: 'better',
+        title: 'Trades in the action bar',
+        text: "The board pulls back so every square shows, with everything but the two players' properties dimmed. Tap properties to add them, set cash with + and -, and answer offers the same way.",
+      },
+      {
+        tag: 'better',
+        title: 'Build from pictures',
+        text: "Building and renovating show each building's picture in the action bar. Hover one to see what it does.",
+      },
+      {
+        tag: 'new',
+        title: 'Shops close behind gates',
+        text: "Closed shops keep their gate down until the owner's next turn, then the gates roll back up for everyone to see.",
+      },
       {
         tag: 'new',
         title: 'Painted shops and buildings',
         text: "Every shop design, the 3-Star Shop, each circus level and all the plot buildings have new art. Windows, doors and signs take the owner's color, and stay grey while unowned.",
       },
+    ],
+    extras: [
+      'Invest more than your cash when stock or property can cover it',
+      'Stock screen shows price per share and your cash, now and after',
+      'A player who can win glows on their card',
+      'Coin and place in front of cash and net worth',
     ],
   },
   {

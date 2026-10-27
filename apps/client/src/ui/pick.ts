@@ -17,7 +17,6 @@ import {
 } from '@aa/engine';
 import type { BoardView } from '../board';
 import { shortName, squareName } from '../names';
-import { digitPicker } from './digits';
 import { clear, fmt, h } from './dom';
 import type { Hud, PromptButton } from './hud';
 import { boardPopup } from './minimap';
@@ -287,10 +286,62 @@ export async function cannonOnBoard(ctx: PickCtx, p: Player, options: number[]):
 
 // ------------------------------------------------------------ trades
 
+/** A property in a trade, as a chip with its district color (tapping it can remove it). */
+function tradeChip(G: GameState, id: number, onRemove?: () => void): HTMLElement {
+  const sq = G.nodes[id];
+  return h(
+    onRemove ? 'button' : 'span',
+    {
+      class: 'tb-chip',
+      style: `--dc:${G.districts[sq.d]?.color ?? '#9aa3b8'}`,
+      title: onRemove ? `${squareName(G, sq)}: tap to take it out` : squareName(G, sq),
+      onclick: onRemove ?? null,
+    },
+    `${shortName(G, sq)} ${fmt(sq.value)}`,
+  );
+}
+
+/** Cash in a trade: minus, the amount (can be typed), plus. Steps of 50G, capped at `max`. */
+function cashStepper(value: number, max: number, onChange: (v: number) => void): HTMLElement {
+  const clamp = (v: number) => Math.max(0, Math.min(Math.max(0, max), Math.round(v) || 0));
+  const input = h('input', {
+    class: 'tb-cash-in',
+    type: 'number',
+    min: '0',
+    max: String(Math.max(0, max)),
+    step: '10',
+    value: String(value),
+    'aria-label': 'Cash',
+  }) as HTMLInputElement;
+  const set = (v: number) => {
+    v = clamp(v);
+    input.value = String(v);
+    onChange(v);
+  };
+  input.onchange = () => set(Number(input.value));
+  return h(
+    'span',
+    { class: 'tb-cash', title: `Cash (up to ${fmt(Math.max(0, max))})` },
+    h(
+      'button',
+      { class: 'tb-step', onclick: () => set(Number(input.value) - 50), 'aria-label': 'Less cash' },
+      '−',
+    ),
+    input,
+    h('span', { class: 'tb-g' }, 'G'),
+    h(
+      'button',
+      { class: 'tb-step', onclick: () => set(Number(input.value) + 50), 'aria-label': 'More cash' },
+      '+',
+    ),
+  );
+}
+
 /**
- * Build a trade: pick the partner, then a pop-up shows the whole board on the left (tap your
- * properties and theirs to add or remove them) and the deal on the right. `fixed` locks the
- * partner (used for counter-offers, prefilled with `start`).
+ * Build a trade in the action bar: pick the partner, then the board pulls back to show every
+ * square, with everything but the two players' properties dimmed. Tapping a property adds it
+ * (or takes it out); the bar lists what each side gives, with cash for each. `fixed` locks the
+ * partner (counter-offers, prefilled with `start`).
  */
 export async function tradeOnBoard(
   ctx: PickCtx,
@@ -298,7 +349,7 @@ export async function tradeOnBoard(
   start?: TradeOffer,
   fixed = false,
 ): Promise<TradeOffer | null> {
-  const { G, hud } = ctx;
+  const { G, hud, board } = ctx;
   const rivals = G.players.filter((q) => q.id !== p.id && !q.bankrupt);
   let partner = start ? G.players[start.to] : null;
   if (!partner) {
@@ -318,166 +369,125 @@ export async function tradeOnBoard(
   const get = new Set(start?.get ?? []);
   let cashGive = start?.cashGive ?? 0;
   let cashGet = start?.cashGet ?? 0;
-  const mine = ownedSquares(G, p.id).filter(isProperty);
-  const theirs = ownedSquares(G, q.id).filter(isProperty);
+  const ids = [...ownedSquares(G, p.id), ...ownedSquares(G, q.id)].filter(isProperty).map((s) => s.id);
 
-  const side = h('div', { class: 'rich-body trade-dock' });
-  const chips = (ids: Set<number>, who: string) =>
-    ids.size
-      ? h(
-          'div',
-          { class: 'chips' },
-          ...[...ids].map((id) => {
-            const sq = G.nodes[id];
-            return h(
-              'span',
-              { class: 'chip', style: `--dc:${G.districts[sq.d]?.color ?? '#ccc'}` },
-              `${squareName(G, sq)} · ${fmt(sq.value)}`,
-            );
-          }),
-        )
-      : h('div', { class: 'hint' }, `Tap ${who} properties on the board`);
-  return new Promise((resolve) => {
-    const done = (v: TradeOffer | null) => {
-      pop.close();
-      resolve(v);
-    };
-    const draw = () => {
-      clear(side);
-      const valid = give.size + get.size > 0 || cashGive > 0 || cashGet > 0;
-      const send = h(
-        'button',
-        {
-          class: 'btn main',
-          disabled: !valid,
-          onclick: () => done({ from: p.id, to: q.id, give: [...give], get: [...get], cashGive, cashGet }),
-        },
-        fixed ? 'Send counter-offer' : 'Propose',
-      ) as HTMLButtonElement;
-      const cash = (max: number, value: number, set: (v: number) => void) =>
-        digitPicker({
-          max: Math.max(0, max),
-          value,
-          unit: 10,
-          suffix: 'G',
-          onChange: (v) => {
-            set(v);
-            send.disabled = !(give.size + get.size > 0 || cashGive > 0 || cashGet > 0);
-          },
-        }).el;
-      side.append(
-        h('div', { class: 'rich-title' }, `${fixed ? 'Counter-offer to' : 'Trade with'} ${q.name}`),
-        h(
-          'div',
-          { class: 'trade-cols' },
-          h(
-            'div',
-            { style: `--pc:${PLAYER_COLORS[p.color]}` },
-            h('h4', null, 'You give'),
-            chips(give, 'your'),
-            h(
-              'div',
-              { class: 'cash-pick' },
-              'Plus cash',
-              cash(p.cash, cashGive, (v) => (cashGive = v)),
-            ),
-          ),
-          h(
-            'div',
-            { style: `--pc:${PLAYER_COLORS[q.color]}` },
-            h('h4', null, `${q.name} gives`),
-            chips(get, `${q.name}'s`),
-            h(
-              'div',
-              { class: 'cash-pick' },
-              'Plus cash',
-              cash(q.cash, cashGet, (v) => (cashGet = v)),
-            ),
-          ),
-        ),
-        h(
-          'div',
-          { class: 'btn-row' },
-          send,
-          h('button', { class: 'btn ghost', onclick: () => done(null) }, 'Cancel'),
-        ),
-      );
-      pop.mini.draw();
-    };
-    const pop = boardPopup(hud.modalLayer, G, fixed ? 'Counter-offer' : 'Trade', side, {
-      candidates: [...mine, ...theirs].map((s) => s.id),
-      onPick: (id) => {
-        const set = G.nodes[id].owner === p.id ? give : get;
-        if (set.has(id)) set.delete(id);
-        else set.add(id);
-        draw();
-      },
-      marks: () => {
-        const m = new Map<number, { text: string; color: string }>();
-        for (const id of give) m.set(id, { text: 'Give', color: PLAYER_COLORS[p.color] });
-        for (const id of get) m.set(id, { text: 'Get', color: PLAYER_COLORS[q.color] });
-        return m;
-      },
-    });
+  const body = h('div', { class: 'trade-bar' });
+  const send = h('button', { class: 'btn main' }, fixed ? 'Send' : 'Propose') as HTMLButtonElement;
+  const valid = () => give.size + get.size > 0 || cashGive > 0 || cashGet > 0;
+  const lightBoard = () => {
+    const labels = new Map<number, string>();
+    for (const id of give) labels.set(id, 'Give');
+    for (const id of get) labels.set(id, 'Get');
+    board.setChoices(ids, PLAYER_COLORS[p.color], toggle, undefined, { labels, pins: false });
+  };
+  const toggle = (id: number) => {
+    const set = G.nodes[id].owner === p.id ? give : get;
+    if (set.has(id)) set.delete(id);
+    else set.add(id);
+    lightBoard();
     draw();
-  });
+  };
+  const row = (who: Player, label: string, set: Set<number>, cash: number, setCash: (v: number) => void) =>
+    h(
+      'div',
+      { class: 'tb-row', style: `--pc:${PLAYER_COLORS[who.color]}` },
+      h('span', { class: 'tb-who' }, label),
+      h(
+        'div',
+        { class: 'tb-chips' },
+        ...(set.size
+          ? [...set].map((id) => tradeChip(G, id, () => toggle(id)))
+          : [h('span', { class: 'tb-hint' }, `Tap ${who === p ? 'your' : `${who.name}'s`} properties`)]),
+      ),
+      cashStepper(cash, who.cash, (v) => {
+        setCash(v);
+        send.disabled = !valid();
+      }),
+    );
+  const draw = () => {
+    clear(body);
+    send.disabled = !valid();
+    body.append(
+      h(
+        'div',
+        { class: 'tb-rows' },
+        row(p, 'You give', give, cashGive, (v) => (cashGive = v)),
+        row(q, `${q.name} gives`, get, cashGet, (v) => (cashGet = v)),
+      ),
+      h(
+        'div',
+        { class: 'tb-btns' },
+        send,
+        h('button', { class: 'btn ghost', onclick: () => hud.resolvePrompt(null) }, 'Cancel'),
+      ),
+    );
+  };
+  send.onclick = () =>
+    valid() && hud.resolvePrompt({ from: p.id, to: q.id, give: [...give], get: [...get], cashGive, cashGet });
+  board.overviewHold = board.overviewFree = true;
+  lightBoard();
+  draw();
+  const offer = await hud.prompt<TradeOffer | null>(body, [], p.color);
+  board.clearChoices();
+  board.overviewHold = board.overviewFree = false;
+  return offer;
 }
 
-/** Show an offer next to the whole board and answer it: accept, decline, or send back different terms. */
+/**
+ * Answer an offer in the action bar: what each side gives, with the properties labelled on the
+ * zoomed-out board. Accept, decline, or send back different terms.
+ */
 export async function answerTradeOnBoard(
   ctx: PickCtx,
   o: TradeOffer,
   canCounter: boolean,
 ): Promise<boolean | { counter: TradeOffer }> {
-  const { G, hud } = ctx;
+  const { G, hud, board } = ctx;
   const a = G.players[o.from];
   const b = G.players[o.to];
-  const list = (ids: number[], cash: number) =>
+  const row = (who: Player, label: string, ids: number[], cash: number) =>
     h(
       'div',
-      { class: 'chips' },
-      ...ids.map((id) =>
-        h(
-          'span',
-          { class: 'chip', style: `--dc:${G.districts[G.nodes[id].d]?.color ?? '#ccc'}` },
-          `${squareName(G, G.nodes[id])} · ${fmt(G.nodes[id].value)}`,
-        ),
+      { class: 'tb-row', style: `--pc:${PLAYER_COLORS[who.color]}` },
+      h('span', { class: 'tb-who' }, label),
+      h(
+        'div',
+        { class: 'tb-chips' },
+        ...ids.map((id) => tradeChip(G, id)),
+        cash ? h('span', { class: 'tb-chip cash' }, fmt(cash)) : null,
+        !ids.length && !cash ? h('span', { class: 'tb-hint' }, 'Nothing') : null,
       ),
-      cash ? h('span', { class: 'chip cash' }, fmt(cash)) : '',
-      !ids.length && !cash ? h('span', { class: 'hint' }, 'Nothing') : '',
     );
-  const v = await new Promise<'yes' | 'no' | 'counter'>((resolve) => {
-    const done = (v: 'yes' | 'no' | 'counter') => {
-      pop.close();
-      resolve(v);
-    };
-    const side = h(
+  const body = h(
+    'div',
+    { class: 'trade-bar' },
+    h(
       'div',
-      { class: 'rich-body trade-dock' },
-      h('div', { class: 'rich-title' }, `${a.name} offers ${b.name} a trade`),
-      h(
-        'div',
-        { class: 'trade-cols' },
-        h('div', null, h('h4', null, `${b.name} gets`), list(o.give, o.cashGive)),
-        h('div', null, h('h4', null, `${b.name} gives`), list(o.get, o.cashGet)),
-      ),
-      h('p', { class: 'hint' }, 'The properties are marked on the board.'),
-      h(
-        'div',
-        { class: 'btn-row' },
-        h('button', { class: 'btn main', onclick: () => done('yes') }, 'Accept'),
-        canCounter ? h('button', { class: 'btn', onclick: () => done('counter') }, 'Counter-offer') : '',
-        h('button', { class: 'btn ghost', onclick: () => done('no') }, 'Decline'),
-      ),
-    );
-    const marks = new Map<number, { text: string; color: string }>();
-    for (const id of o.give) marks.set(id, { text: 'You get', color: PLAYER_COLORS[a.color] });
-    for (const id of o.get) marks.set(id, { text: 'You give', color: PLAYER_COLORS[b.color] });
-    const pop = boardPopup(hud.modalLayer, G, 'Trade offer', side, {
-      candidates: [...o.give, ...o.get],
-      marks: () => marks,
-    });
+      { class: 'tb-rows' },
+      row(a, `${a.name} gives`, o.give, o.cashGive),
+      row(b, 'You give', o.get, o.cashGet),
+    ),
+    h(
+      'div',
+      { class: `tb-btns ${canCounter ? 'three' : ''}` },
+      h('button', { class: 'btn main', onclick: () => hud.resolvePrompt('yes') }, 'Accept'),
+      canCounter
+        ? h('button', { class: 'btn', onclick: () => hud.resolvePrompt('counter') }, 'Counter')
+        : null,
+      h('button', { class: 'btn ghost', onclick: () => hud.resolvePrompt('no') }, 'Decline'),
+    ),
+  );
+  const labels = new Map<number, string>();
+  for (const id of o.give) labels.set(id, 'You get');
+  for (const id of o.get) labels.set(id, 'You give');
+  board.overviewHold = board.overviewFree = true;
+  board.setChoices([...o.give, ...o.get], PLAYER_COLORS[a.color], () => {}, undefined, {
+    labels,
+    pins: false,
   });
+  const v = await hud.prompt<'yes' | 'no' | 'counter'>(body, [], b.color);
+  board.clearChoices();
+  board.overviewHold = board.overviewFree = false;
   if (v === 'yes') return true;
   if (v === 'no') return false;
   // Counter-offer: start from the same deal seen from this side, then edit it.

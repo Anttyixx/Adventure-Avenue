@@ -225,7 +225,9 @@ auctions or buyouts), each of their shops in that group gains 10% of its base va
 square in a group (domination, needs 2 or more squares) adds 30% of base instead. Vacant plots count
 as squares in their district, so domination requires building on the plot.
 
-**Investing.** Landing on your own shop lets you invest up to 999G (and no more than your cash).
+**Investing.** Landing on your own shop lets you invest up to 999G, as long as cash plus what the
+player's stock and property would sell for (the debt-sale value) covers it. Going below 0G is
+settled at the end of the turn like any debt; the invest window shows cash after and says so.
 Investing raises value one-for-one, which raises the fee, the salary bonus and the district stock
 price. Cap: max value = base x (1 + k), x 1.5 if dominated.
 
@@ -411,12 +413,14 @@ these are the main tools for completing districts.
 
 ### Trades
 
-1. Proposer picks a partner first. A pop-up then shows the whole board on the left (the rest of
-   the board dimmed, their own and the partner's properties lit) and the deal on the right; tapping
-   a property adds or removes it, plus optional cash from each side (digit arrows). No tile is ever
-   hidden behind the interface.
+1. Proposer picks a partner first. The board then pulls back so every square fits in the space the
+   player cards and action bar leave free; everything but the two players' properties is dimmed.
+   The action bar shows the deal: a row for each side with the chosen properties as chips and a
+   cash amount (minus/plus in 50G steps, or typed). Tapping a property on the board adds or removes
+   it ("Give"/"Get" labels on the board); tapping a chip removes it.
 2. Validation: at least one item, and neither side offers more cash than they hold.
-3. The partner sees the same pop-up with the offered squares marked ("You get" / "You give") and accepts,
+3. The partner sees the same zoomed-out board and an action bar listing both sides, with the offered
+   squares marked ("You get" / "You give"), and accepts,
    declines, or sends back different terms (a counter-offer edited the same way). Up to 3
    counter-offers go back and forth; then the last receiver can only accept or decline.
 4. On accept, ownership and cash swap atomically, then expansion runs for both players in every
@@ -611,8 +615,10 @@ sideways when there are many).
 The question sits on the left, the buttons on the right. Questions stay short ("Buy this Bay
 Market shop?", "Buy out Milo's Bay Market shop at 5x?") and the numbers that go with them (price,
 cash after, your cash, value, high bid...) show as chips under the question, most important first. It slides up when a question is asked and back down once it
-is answered, and is hidden otherwise. Choices with more to them (stock amounts, investing,
-building, trades, auctions, arcade games) open their own windows.
+is answered, and is hidden otherwise. Building and renovating show a picture button per building
+(name below; what it does on hover), with the question and cost chips on one line above. Trades
+use the bar too (see Trades). Choices with more to them (stock amounts, investing, auctions,
+arcade games) open their own windows.
 
 **Square symbols.** Boon and Boom squares show a symbol instead of a name and percent: Boon a
 green disc with an up arrow (20% commission), Boom a pink starburst with a double up arrow (50%).
@@ -624,8 +630,10 @@ spreading out from them and fading, so the eye goes straight to them; everything
 
 **Shops closing.** When a player's shops close (break square, Estate Agency, the Holiday and Odd or
 even venture cards; the engine emits `closed`), the camera pulls back to the whole board, each of
-their shops' shutters rolls down in turn with a "CLOSED" stamp, then the camera returns to the
-player's zoom (timings `close*` in `timing.ts`).
+their shops' gates rolls down in turn, then the camera returns to the player's zoom. The gates stay
+down (inside each tile's border, with a small CLOSED sign) until the owner's next turn starts; the
+engine then emits `opened` and the same overview plays with the gates rolling back up (timings
+`close*` in `timing.ts`).
 
 **Pacing.** Most events get about a second to themselves (landing, money, ownership and value
 changes, suits), and a turn ends with a one-second pause before the next player's turn. When the
@@ -636,7 +644,7 @@ active player changes, tokens ease to their new sizes (the active one larger, th
 | Where           | Animation                                                                                                                                   | Trigger                                                   |
 | --------------- | ------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------- |
 | Board (ambient) | Drifting cloud shadows, pond shimmer, fountain ripples and spray, a glint across the bank coin every few seconds                            | Always                                                    |
-| Closed squares  | Floating "z" letters                                                                                                                        | Owner on a break                                          |
+| Closed squares  | A rolling gate inside the tile border with a CLOSED sign; it rolls down (and back up when the owner's turn starts) with a board overview | Owner on a break                                          |
 | Characters      | Idle animation, offset per player                                                                                                           | Standing still                                            |
 | Square          | Gold ring that grows and fades, plus 8 pixel sparkles                                                                                       | Bought, built, bought out, traded, auctioned, or expanded |
 | Square          | White ring pulse                                                                                                                            | Landing, or arriving by warp                              |
@@ -677,14 +685,16 @@ API where available.
 - **Scoreboard:** portrait; level chip and full name on the top row, with the wild count and four suit
   icons at its top right (they drop below a very long name; collected suits in their own color:
   spades blue, hearts pink, diamonds yellow, clubs green; missing ones faint grey; a full set hops
-  until the player levels up); an active Boon or Boom shows as its symbol after the name (the
+  until the player levels up); a player who has reached the target gets a pulsing golden glow on
+  their net worth and portrait instead of a tag; an active Boon or Boom shows as its symbol after the name (the
   tooltip gives the commission); status tags (Closed, Fees +30%); a progress bar toward the target
-  net worth in the player's color; along the bottom, cash (with a
-  coin) on the left and net worth on the right with the player's place (1st, 2nd...) where the
-  coin would be; no "Cash"/"Net" labels.
+  net worth in the player's color; along the bottom, cash on the left
+  with a coin in front of it and net worth on the right with the player's place (1st, 2nd...) in
+  front of it; no "Cash"/"Net" labels.
   Cards are 10% larger on computer screens.
 - **Action bar:** the current prompt and its buttons. Enter or Space presses the main button.
-- **Modals:** buy stock, sell stock, invest, build/renovate, venture grid, minigames, trade, auction,
+- **Modals:** buy stock and sell stock (with a summary card: the cost, and the share price, the
+  player's cash and their shares now and after), invest, venture grid, minigames, auction,
   debt, results. In hot-seat, prompts meant for another player show "Pass the device to...".
 
 **Type and color.** Lilita One for headings and numbers, Atkinson Hyperlegible for body text,

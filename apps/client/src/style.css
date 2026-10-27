@@ -4385,3 +4385,165 @@ button.char-btn:focus-visible .char-btn-tag {
 .cr-lic-link {
   color: var(--accent);
 }
+
+/* ------------------------------------------------------------ trades in the action bar */
+
+.trade-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: min(620px, 100%);
+}
+.tb-rows {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.tb-row {
+  display: grid;
+  grid-template-columns: 92px 1fr auto;
+  align-items: center;
+  gap: 8px;
+  height: 32px;
+  padding: 0 4px 0 8px;
+  border-radius: 10px;
+  border-left: 4px solid var(--pc);
+  background: rgba(255, 255, 255, 0.05);
+}
+.tb-who {
+  font-family: var(--head);
+  font-size: 14px;
+  color: var(--pc);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.tb-chips {
+  display: flex;
+  gap: 4px;
+  min-width: 0;
+  overflow-x: auto;
+  white-space: nowrap;
+}
+.tb-chip {
+  flex: none;
+  padding: 2px 9px;
+  border: 0;
+  border-left: 4px solid var(--dc, var(--accent));
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.12);
+  color: var(--text);
+  font: 700 12px var(--body);
+}
+button.tb-chip {
+  cursor: pointer;
+}
+button.tb-chip:hover {
+  background: rgba(229, 72, 77, 0.35);
+}
+.tb-chip.cash {
+  border-left-color: #ffd23f;
+}
+.tb-hint {
+  font-size: 12px;
+  color: var(--muted);
+}
+.tb-cash {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+.tb-cash-in {
+  width: 62px;
+  padding: 3px 4px;
+  border: 1px solid var(--glass-line);
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.25);
+  color: var(--text);
+  font: 400 14px var(--head);
+  text-align: right;
+  -moz-appearance: textfield;
+}
+.tb-cash-in::-webkit-inner-spin-button,
+.tb-cash-in::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+.tb-g {
+  font: 400 12px var(--head);
+  color: var(--accent);
+  margin-right: 2px;
+}
+.tb-step {
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: 0;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.12);
+  color: var(--text);
+  font: 400 16px var(--head);
+  cursor: pointer;
+}
+.tb-step:hover {
+  background: rgba(255, 255, 255, 0.22);
+}
+.tb-btns {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.prompt-center .tb-btns .btn {
+  padding: 5px 14px;
+  font-size: 14px;
+}
+/* Accept on top, Counter and Decline side by side below it. */
+.tb-btns.three {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+}
+.tb-btns.three .btn.main {
+  grid-column: 1 / -1;
+}
+@media (max-height: 500px), (max-width: 760px) {
+  .trade-bar {
+    gap: 6px;
+    min-width: 0;
+  }
+  .tb-rows {
+    gap: 3px;
+  }
+  .tb-row {
+    grid-template-columns: 44px 1fr auto;
+    height: 26px;
+    gap: 4px;
+    padding: 0 2px 0 5px;
+  }
+  .tb-who {
+    font-size: 10px;
+  }
+  .tb-hint {
+    display: none;
+  }
+  .tb-chip {
+    font-size: 10px;
+    padding: 1px 6px;
+  }
+  .tb-cash-in {
+    width: 44px;
+    font-size: 11px;
+    padding: 2px;
+  }
+  .tb-step {
+    width: 18px;
+    height: 18px;
+    font-size: 13px;
+  }
+  .prompt-center .tb-btns .btn {
+    padding: 3px 8px;
+    font-size: 11px;
+  }
+}
