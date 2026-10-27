@@ -1469,6 +1469,38 @@ input[type='range'] {
   min-width: 70px;
   text-align: right;
 }
+/* A fixed number of shares (venture cards) */
+.m-fixed {
+  font-size: 16px;
+  color: var(--muted);
+}
+.m-fixed b {
+  font: 400 34px var(--head);
+  color: var(--accent);
+}
+/* Buying at a discount / selling at a premium */
+.m-deal-tag {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 1px 9px;
+  border-radius: 999px;
+  background: var(--good);
+  color: #062b16;
+  font: 400 13px var(--head);
+  vertical-align: 3px;
+}
+.m-was {
+  margin-left: 8px;
+  color: var(--muted);
+  font-size: 14px;
+}
+.m-line.deal b {
+  color: var(--good);
+}
+.m-now.was {
+  text-decoration: line-through;
+  color: var(--muted);
+}
 .m-line.up b {
   color: var(--good);
 }

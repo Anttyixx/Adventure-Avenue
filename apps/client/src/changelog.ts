@@ -26,6 +26,34 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: '2026-10-27-stocks-polish',
+    date: 'Oct 27, 2026',
+    title: 'Clearer stock deals',
+    features: [
+      {
+        tag: 'better',
+        title: 'See your discount',
+        text: 'Buying at 10% off or selling at 20% above shows your price next to the market price, and how much you save or gain.',
+      },
+      {
+        tag: 'better',
+        title: 'Stock cards use the stock screen',
+        text: 'Gift shares, Bull market and Bear market open the stock screen: pick the district on the map or list and see what changes.',
+      },
+      {
+        tag: 'rules',
+        title: 'Your own checkpoint',
+        text: 'Passing your own checkpoint costs nothing but still raises its toll.',
+      },
+    ],
+    extras: [
+      'Stock screen map: hover a district to outline all its properties',
+      'Stock screen map no longer shows player dots',
+      'A soft sound as each hop starts; the step sounds as you land',
+      'No more Closed chip on player cards',
+    ],
+  },
+  {
     id: '2026-10-27-play-join',
     date: 'Oct 27, 2026',
     title: 'Play and Join',

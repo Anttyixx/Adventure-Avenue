@@ -9,6 +9,7 @@
 export type Sfx =
   | 'click'
   | 'roll'
+  | 'hop'
   | 'step'
   | 'land'
   | 'coin'
@@ -28,6 +29,7 @@ export type Sfx =
 export const SFX_NAMES: Sfx[] = [
   'click',
   'roll',
+  'hop',
   'step',
   'land',
   'coin',
@@ -468,6 +470,10 @@ class AudioEngine {
         for (let i = 0; i < 9; i++)
           this.hiss(bus, t + i * 0.055 + Math.random() * 0.02, 0.05, 0.5, 2200 + Math.random() * 1800, 6);
         this.tone(bus, 'triangle', 300, t + 0.55, 0.09, 0.4, { to: 160 });
+        break;
+      case 'hop':
+        // A token leaving its square: a small, quiet lift (the step sounds when it lands).
+        this.tone(bus, 'sine', 520, t, 0.06, 0.07, { to: 760 });
         break;
       case 'step':
         this.tone(bus, 'triangle', 620, t, 0.07, 0.22, { to: 480 });

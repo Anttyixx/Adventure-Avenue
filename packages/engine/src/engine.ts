@@ -308,9 +308,18 @@ export class Game {
   async passSquare(p: Player, sq: Square) {
     if (SUIT_TYPES.includes(sq.t) || sq.t === 'change') await this.collectSuit(p, sq, true);
     else if (sq.t === 'bank') await this.bankVisit(p, false);
-    else if (sq.t === 'plot' && sq.b === 'checkpoint' && sq.owner >= 0 && sq.owner !== p.id) {
-      await this.payToll(p, sq);
+    else if (sq.t === 'plot' && sq.b === 'checkpoint' && sq.owner >= 0) {
+      // A rival pays the toll; the owner pays nothing, but the toll still goes up.
+      if (sq.owner !== p.id) await this.payToll(p, sq);
+      else await this.raiseToll(p, sq);
     }
+  }
+
+  /** The owner passes their own checkpoint: no money changes hands, the toll rises. */
+  async raiseToll(p: Player, sq: Square) {
+    sq.toll += K.tollStep;
+    await this.emit({ type: 'value', sqs: [sq.id] });
+    await this.log(`${p.name} passed their checkpoint. Its toll is now ${sq.toll}G.`, p.id, 'property');
   }
 
   async warp(p: Player, to: number) {

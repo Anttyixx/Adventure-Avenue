@@ -6,6 +6,7 @@ import {
   BUILDINGS,
   buildingAvailable,
   bumpFactor,
+  clampFactor,
   K,
   PLAYER_COLORS,
   maxValue,
@@ -13,6 +14,7 @@ import {
   shopFee,
   stockPrice,
   type BuildingKey,
+  type DistrictPurpose,
   type GameState,
   type Player,
 } from '@aa/engine';
@@ -25,6 +27,9 @@ import { question } from './pick';
 import { propIconURL, type PropKey } from '../props';
 
 // ------------------------------------------------------------------ stocks
+
+/** A share price, with one decimal when a discount or premium makes it fractional. */
+const priceFmt = (v: number) => `${(Math.round(v * 10) / 10).toLocaleString('en-US')}G`;
 
 export function stockModal(
   hud: Hud,
@@ -94,6 +99,32 @@ export function stockModal(
             h('span', { class: 'm-arrow' }, '→'),
             h('b', null, b),
           );
+        // At a discount (buying) or a premium (selling): the market price beside the player's.
+        const normal = mode === 'buy' ? n * now : Math.floor(n * now);
+        const deal = rate
+          ? [
+              h(
+                'div',
+                { class: 'm-line deal' },
+                h('span', null, mode === 'buy' ? 'Your price per share' : 'You get per share'),
+                h('span', { class: 'm-now was' }, fmt(now)),
+                h('span', { class: 'm-arrow' }, '→'),
+                h('b', null, priceFmt(unit())),
+              ),
+              h(
+                'div',
+                { class: 'm-line deal' },
+                h(
+                  'span',
+                  null,
+                  mode === 'buy' ? `You save (${rate * 100}% off)` : `Extra (${rate * 100}% above)`,
+                ),
+                h('span', null),
+                h('span', null),
+                h('b', null, `+${fmt(Math.abs(total - normal))}`),
+              ),
+            ]
+          : [];
         clear(sum);
         sum.append(
           h(
@@ -101,8 +132,17 @@ export function stockModal(
             { class: 'm-total' },
             `${mode === 'buy' ? 'Buy' : 'Sell'} ${n} share${n === 1 ? '' : 's'} for `,
             h('b', null, fmt(total)),
+            rate
+              ? h(
+                  'span',
+                  { class: 'm-deal-tag' },
+                  mode === 'buy' ? `${rate * 100}% off` : `${rate * 100}% above market`,
+                )
+              : null,
+            rate && n > 0 ? h('s', { class: 'm-was' }, fmt(normal)) : null,
           ),
-          line('Price per share', fmt(now), fmt(after), after > now ? 'up' : after < now ? 'down' : ''),
+          ...deal,
+          line('Market price', fmt(now), fmt(after), after > now ? 'up' : after < now ? 'down' : ''),
           line('Your cash', fmt(p.cash), fmt(cashAfter), cashAfter < 0 ? 'down' : ''),
           line('Shares you hold', String(p.shares[d]), String(p.shares[d] + (mode === 'buy' ? n : -n))),
         );
@@ -124,7 +164,9 @@ export function stockModal(
           'div',
           { class: 'm-sel' },
           h('b', null, G.districts[d].name),
-          ` · ${fmt(unit())} per share · you hold ${p.shares[d]}`,
+          rate
+            ? ` · ${priceFmt(unit())} per share (market ${fmt(stockPrice(G, d))}) · you hold ${p.shares[d]}`
+            : ` · ${fmt(unit())} per share · you hold ${p.shares[d]}`,
           mode === 'buy' ? ` · you can buy up to ${max}` : '',
         ),
         // The summary on the left; the number of shares and the buttons on the right.
@@ -154,6 +196,125 @@ export function stockModal(
       marketView(G, d, (i) => {
         d = i;
         n = 0;
+        drawAction();
+      }),
+      action,
+    );
+    drawAction();
+  });
+}
+
+/** How many free shares the Gift shares card gives. */
+const GIFT_SHARES = 20;
+
+/**
+ * Venture cards that pick a district (20 free shares, stock up or down 20%): the stock screen,
+ * with the amount fixed. Pick the district on the map or in the list, then confirm.
+ */
+export function districtStockModal(
+  hud: Hud,
+  G: GameState,
+  p: Player,
+  purpose: DistrictPurpose,
+): Promise<number> {
+  return new Promise((resolve) => {
+    // Start on the district the player holds most of (or the first).
+    let d = Math.max(0, p.shares.indexOf(Math.max(...p.shares)));
+    const action = h('div', { class: 'm-action' });
+    const title = {
+      free20: `Gift shares: ${GIFT_SHARES} free shares`,
+      up20: 'Bull market: raise a stock 20%',
+      down20: 'Bear market: cut a stock 20%',
+    }[purpose];
+    const body = h('div', null);
+    const m = hud.modal(title, body, { wide: true });
+    /** The district's price once the card has moved it (worked out, then put back). */
+    const priceAfter = () => {
+      if (purpose === 'free20') return stockPrice(G, d);
+      const f = G.factor[d];
+      G.factor[d] *= purpose === 'up20' ? 1.2 : 0.8;
+      clampFactor(G, d);
+      const after = stockPrice(G, d);
+      G.factor[d] = f;
+      return after;
+    };
+    const line = (label: string, a: string, b: string, cls = '') =>
+      h(
+        'div',
+        { class: `m-line ${cls}` },
+        h('span', null, label),
+        h('span', { class: 'm-now' }, a),
+        h('span', { class: 'm-arrow' }, '→'),
+        h('b', null, b),
+      );
+    const drawAction = () => {
+      clear(action);
+      const now = stockPrice(G, d);
+      const after = priceAfter();
+      const name = G.districts[d].name;
+      const free = purpose === 'free20';
+      const sum = h(
+        'div',
+        { class: 'm-sum m-card' },
+        h(
+          'div',
+          { class: 'm-total' },
+          free
+            ? `Get ${GIFT_SHARES} ${name} shares for `
+            : `${name} stock ${purpose === 'up20' ? 'rises' : 'falls'} `,
+          h('b', null, free ? 'free' : '20%'),
+          free ? h('span', { class: 'm-deal-tag' }, `worth ${fmt(GIFT_SHARES * now)}`) : null,
+        ),
+        free
+          ? line('Shares you hold', String(p.shares[d]), String(p.shares[d] + GIFT_SHARES), 'up')
+          : line('Price per share', fmt(now), fmt(after), after > now ? 'up' : after < now ? 'down' : ''),
+        free
+          ? line(
+              'Your shares are worth',
+              fmt(p.shares[d] * now),
+              fmt((p.shares[d] + GIFT_SHARES) * now),
+              'up',
+            )
+          : line('Your shares are worth', fmt(p.shares[d] * now), fmt(p.shares[d] * after)),
+      );
+      action.append(
+        h(
+          'div',
+          { class: 'm-sel' },
+          h('b', null, name),
+          ` · ${fmt(now)} per share · you hold ${p.shares[d]}`,
+        ),
+        h(
+          'div',
+          { class: 'm-deal' },
+          sum,
+          h(
+            'div',
+            { class: 'm-deal-side' },
+            free ? h('div', { class: 'm-fixed' }, h('b', null, String(GIFT_SHARES)), ' shares') : null,
+            h(
+              'div',
+              { class: 'btn-row' },
+              h(
+                'button',
+                {
+                  class: 'btn main',
+                  onclick: () => {
+                    m.close();
+                    resolve(d);
+                  },
+                },
+                free ? `Take ${GIFT_SHARES} ${name} shares` : `Pick ${name}`,
+              ),
+            ),
+          ),
+        ),
+        h('p', { class: 'hint' }, 'Pick a district on the map or in the list.'),
+      );
+    };
+    body.append(
+      marketView(G, d, (i) => {
+        d = i;
         drawAction();
       }),
       action,

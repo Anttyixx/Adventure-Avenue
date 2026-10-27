@@ -254,15 +254,15 @@ no limit. Squares a custom board marks as plots are picked first. The first play
 plot may build one of seven buildings, and each building has one effect on rivals and a different
 one for its owner. Built plots show only the building's art on the tile (no name).
 
-| Building      | Cost   | When a rival lands                                                                        | When the owner lands                                                                  | Fee label on board |
-| ------------- | ------ | ----------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------- | ------------------ |
-| Checkpoint    | 200G   | Pays the toll (also when passing). Toll starts at 20G and rises 10G every time it is paid | Invest in any of your shops                                                           | Current toll       |
-| Circus        | 200G   | Pays the show fee: 100G (tier 0)                                                          | Upgrade to 500 / 1,000 / 2,000G for 300 / 600 / 1,200G                                | Show fee           |
-| Balloonport   | 200G   | Pays 150G                                                                                 | Fly to any square; that square's landing effect applies (bank counts as a bank visit) | 150G               |
-| Tax Office    | 200G   | Pays the owner 10% of the rival's own net worth                                           | Bank pays the owner 5% of their net worth                                             | 10%                |
-| Home          | 200G   | Pays 60G x owner's level                                                                  | Every other player is moved to this square (free direction next turn)                 | Fee                |
-| Estate Agency | 200G   | Rival takes a break: their shops close until their next turn                              | Buy any unowned shop at its value                                                     | Break              |
-| 3-Star Shop   | 1,000G | Pays a shop fee on a 1,000G base, with district multipliers; buyouts allowed              | Invest in any of your shops                                                           | Fee                |
+| Building      | Cost   | When a rival lands                                                                                                                         | When the owner lands                                                                  | Fee label on board |
+| ------------- | ------ | ------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------- | ------------------ |
+| Checkpoint    | 200G   | Pays the toll (also when passing). Toll starts at 20G and rises 10G every time it is paid, and when the owner passes it (they pay nothing) | Invest in any of your shops                                                           | Current toll       |
+| Circus        | 200G   | Pays the show fee: 100G (tier 0)                                                                                                           | Upgrade to 500 / 1,000 / 2,000G for 300 / 600 / 1,200G                                | Show fee           |
+| Balloonport   | 200G   | Pays 150G                                                                                                                                  | Fly to any square; that square's landing effect applies (bank counts as a bank visit) | 150G               |
+| Tax Office    | 200G   | Pays the owner 10% of the rival's own net worth                                                                                            | Bank pays the owner 5% of their net worth                                             | 10%                |
+| Home          | 200G   | Pays 60G x owner's level                                                                                                                   | Every other player is moved to this square (free direction next turn)                 | Fee                |
+| Estate Agency | 200G   | Rival takes a break: their shops close until their next turn                                                                               | Buy any unowned shop at its value                                                     | Break              |
+| 3-Star Shop   | 1,000G | Pays a shop fee on a 1,000G base, with district multipliers; buyouts allowed                                                               | Invest in any of your shops                                                           | Fee                |
 
 **Rules shared by all buildings:**
 

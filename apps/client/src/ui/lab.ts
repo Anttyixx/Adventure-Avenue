@@ -52,7 +52,7 @@ import { SFX_NAMES, TRACK_NAMES, sound, type Track } from '../audio';
 import { guestSetup, setupScreen, type SetupRoom } from './start';
 import type { LobbyInfo, LobbySeat } from '../net/protocol';
 import type { LocalSeat } from '../net/hostroom';
-import { buildPrompt, rulesModal, stockModal } from './modals';
+import { buildPrompt, districtStockModal, rulesModal, stockModal } from './modals';
 import { showResults } from './results';
 import { investOnBoard } from './invest';
 import { AuctionView } from './auction';
@@ -91,13 +91,13 @@ const rnd = (n: number) => Math.floor(Math.random() * n);
  * are easy to find. Update this list with each change.
  */
 const RECENT = new Set([
-  'Main menu (saved game)',
-  'Main menu (no save)',
-  'Main menu (rejoin offer)',
-  'Game setup',
-  'Game setup (friend joined)',
-  'Game setup (offline)',
-  'Joined game (locked setup)',
+  'Buy stock (10% off)',
+  'Sell stock (20% above)',
+  'Stock market',
+  'Gift shares (venture card)',
+  'Bull market (venture card)',
+  'Bear market (venture card)',
+  'Walk 3 squares',
 ]);
 
 /** Which board the lab plays on: Town (square) or Twin Lakes (hex), remembered per browser. */
@@ -466,31 +466,15 @@ export async function openLab(app: HTMLElement, section?: string) {
         board.clearChoices();
         result('Pick square', id);
       }),
-      btn('Pick a district (venture card)', async () => {
-        const p = cur();
-        const tiles = (d: number) => G.nodes.filter((q) => q.d === d).map((q) => q.id);
-        const labels = new Map(
-          G.districts.map((dd, d) => [tiles(d)[0], dd.name] as [number, string]).filter(([id]) => id != null),
-        );
-        board.setChoices(
-          G.districts.flatMap((_, d) => tiles(d)),
-          PLAYER_COLORS[p.color],
-          (id) => hud.resolvePrompt(G.nodes[id].d),
-          undefined,
-          { labels, pins: false },
-        );
-        const d = await hud.prompt<number>(
-          'Pick a district whose stock rises 20%. Tap a district on the board or pick one below.',
-          G.districts.map((dd, i) => ({
-            label: dd.name,
-            value: i,
-            hover: (on: boolean) => (board.highlight = on ? tiles(i) : []),
-          })),
-          p.color,
-        );
-        board.clearChoices();
-        result('Pick district', d);
-      }),
+      btn('Gift shares (venture card)', async () =>
+        result('Gift shares', await districtStockModal(hud, G, cur(), 'free20')),
+      ),
+      btn('Bull market (venture card)', async () =>
+        result('Bull market', await districtStockModal(hud, G, cur(), 'up20')),
+      ),
+      btn('Bear market (venture card)', async () =>
+        result('Bear market', await districtStockModal(hud, G, cur(), 'down20')),
+      ),
     );
     row(
       s,
@@ -630,6 +614,10 @@ export async function openLab(app: HTMLElement, section?: string) {
       btn('Sell stock', async () => {
         if (!cur().shares.some((n) => n > 0)) cur().shares[rnd(G.districts.length)] += 30;
         result('Sell stock', await stockModal(hud, G, cur(), 'sell'));
+      }),
+      btn('Sell stock (20% above)', async () => {
+        if (!cur().shares.some((n) => n > 0)) cur().shares[rnd(G.districts.length)] += 30;
+        result('Sell stock', await stockModal(hud, G, cur(), 'sell', 0.2));
       }),
     );
     row(

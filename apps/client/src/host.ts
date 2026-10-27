@@ -8,7 +8,6 @@ import {
   K,
   PLAYER_COLORS,
   cpuDecide,
-  stockPrice,
   type DecisionAnswer,
   type DecisionKind,
   type DecisionRequest,
@@ -24,7 +23,7 @@ import { FAST_CPU_SPEED, TIMING as T } from './timing';
 import { fmt, h } from './ui/dom';
 import { DerbyView, MemoryView, ReelsView, VentureView } from './ui/games';
 import { Hud, type PromptButton } from './ui/hud';
-import { buildPrompt, rulesModal, stockModal } from './ui/modals';
+import { buildPrompt, districtStockModal, rulesModal, stockModal } from './ui/modals';
 import { showResults } from './ui/results';
 import { investOnBoard } from './ui/invest';
 import { AuctionView } from './ui/auction';
@@ -552,40 +551,9 @@ export class HotSeat implements GameIO {
       case 'cannonTarget':
         return cannonOnBoard(this.pick, p, req.options);
 
-      case 'pickDistrict': {
-        const text = {
-          free20: 'Pick a district for 20 free shares.',
-          up20: 'Pick a district whose stock rises 20%.',
-          down20: 'Pick a district whose stock falls 20%.',
-        }[req.purpose];
-        // Light up the districts on the board: tap one, or use the buttons (hovering a button
-        // highlights its district).
-        const tiles = (d: number) =>
-          G.nodes.filter((q) => q.d === d && (q.t === 'shop' || q.t === 'plot')).map((q) => q.id);
-        const labels = new Map<number, string>();
-        for (const d of req.options) {
-          const first = tiles(d)[0];
-          if (first != null) labels.set(first, G.districts[d].name);
-        }
-        this.board.setChoices(
-          req.options.flatMap(tiles),
-          PLAYER_COLORS[color],
-          (id) => hud.resolvePrompt(G.nodes[id].d),
-          undefined,
-          { labels, pins: false },
-        );
-        const d = await hud.prompt(
-          `${text} Tap a district on the board or pick one below.`,
-          req.options.map((d) => ({
-            label: `${G.districts[d].name} ${fmt(stockPrice(G, d))}`,
-            value: d,
-            hover: (on: boolean) => (this.board.highlight = on ? tiles(d) : []),
-          })),
-          color,
-        );
-        this.board.clearChoices();
-        return d;
-      }
+      case 'pickDistrict':
+        // The stock screen with the amount fixed: pick the district on its map or list.
+        return districtStockModal(hud, G, p, req.purpose);
 
       case 'answerTrade':
         return answerTradeOnBoard(this.pick, req.offer, req.canCounter);
@@ -652,8 +620,10 @@ export class HotSeat implements GameIO {
         await board.rollDie(e.value);
         break;
       case 'step':
-        sound.play('step');
+        // A small sound as the hop starts; the step sounds as the token lands on the square.
+        sound.play('hop');
         await board.step(e.pid, e.to, e.left);
+        sound.play('step');
         // Mid-walk, tolls and value bumps play as the token passes without stopping it.
         this.passing = e.left > 0;
         if (e.left === 0) board.walkTarget = -1;

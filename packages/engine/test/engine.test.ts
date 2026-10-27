@@ -60,6 +60,20 @@ describe('movement', () => {
     expect(p.cash).toBeLessThanOrEqual(cash - 20);
     expect(plot.toll).toBe(30);
   });
+
+  it('raises the toll without paying when the owner passes their own checkpoint', async () => {
+    const { G, game } = makeGame();
+    const p = G.players[0];
+    const plot = at(G, 4, 6);
+    plot.owner = p.id;
+    plot.b = 'checkpoint';
+    plot.value = 200;
+    p.node = at(G, 5, 6).id;
+    p.prev = at(G, 6, 6).id;
+    await game.passSquare(p, plot);
+    expect(plot.toll).toBe(30);
+    expect(G.log.some((l) => l.text.includes('passed their checkpoint'))).toBe(true);
+  });
 });
 
 describe('fees, dividends and commission', () => {
@@ -114,6 +128,25 @@ describe('stocks', () => {
     expect(G.factor[6]).toBeCloseTo(1.1);
     await game.sellStock(p, 6, 20, 0);
     expect(G.factor[6]).toBeCloseTo(0.99);
+  });
+
+  it('charges 10% less per share when buying at a discount', async () => {
+    const { G, game } = makeGame('standard', (r) => (r.kind === 'buyStock' ? { d: 6, n: 50 } : undefined));
+    const p = G.players[0];
+    const price = stockPrice(G, 6);
+    await game.buyStockFlow(p, 0.1);
+    expect(p.shares[6]).toBe(50);
+    expect(p.cash).toBe(2000 - Math.ceil(50 * price * 0.9));
+    expect(p.cash).toBeGreaterThan(2000 - 50 * price);
+  });
+
+  it('pays 20% more per share when selling at a premium', async () => {
+    const { G, game } = makeGame();
+    const p = G.players[0];
+    p.shares[6] = 50;
+    const price = stockPrice(G, 6);
+    await game.sellStock(p, 6, 50, 0.2);
+    expect(p.cash).toBe(2000 + Math.floor(50 * price * 1.2));
   });
 });
 

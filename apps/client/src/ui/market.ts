@@ -1,6 +1,7 @@
 /**
  * Stock screen, laid out like the original game's market:
- * - top left: a mini map of the board with the selected district highlighted;
+ * - top left: a mini map of the board with the selected district highlighted (and the district
+ *   under the pointer outlined);
  * - top right: a district x player grid with each district's share price and every
  *   player's holdings (the selected district's row is highlighted);
  * - bottom: one card per square in the selected district with its shop value, the fee a
@@ -106,73 +107,73 @@ function miniMap(G: GameState, d: number, select: (d: number) => void): HTMLElem
     return { x: pad + (c.x - 50) * k, y: pad + (c.y - 50) * k };
   };
 
-  // Roads
-  ctx.strokeStyle = 'rgba(255,255,255,0.18)';
-  ctx.lineWidth = 4;
-  for (const sq of G.nodes) {
-    for (const n of sq.nb) {
-      if (n < sq.id) continue;
-      const a = pos(sq);
-      const b = pos(G.nodes[n]);
-      ctx.beginPath();
-      ctx.moveTo(a.x, a.y);
-      ctx.lineTo(b.x, b.y);
-      ctx.stroke();
+  const drawRoads = () => {
+    ctx.strokeStyle = 'rgba(255,255,255,0.18)';
+    ctx.lineWidth = 4;
+    for (const sq of G.nodes) {
+      for (const n of sq.nb) {
+        if (n < sq.id) continue;
+        const a = pos(sq);
+        const b = pos(G.nodes[n]);
+        ctx.beginPath();
+        ctx.moveTo(a.x, a.y);
+        ctx.lineTo(b.x, b.y);
+        ctx.stroke();
+      }
     }
-  }
+  };
   const s = cell - 5;
-  for (const sq of G.nodes) {
-    const c = pos(sq);
-    const inD = sq.d === d;
-    const isProp = sq.d >= 0;
-    ctx.globalAlpha = isProp && !inD ? 0.45 : 1;
-    // Owned squares take the owner's color; unowned property is a neutral light grey so it is
-    // never mistaken for a player's color.
-    ctx.fillStyle = sq.owner >= 0 ? PLAYER_COLORS[G.players[sq.owner].color] : isProp ? UNOWNED : '#3a4670';
-    tileShape(ctx, G.layout, c.x, c.y, s / 2, 3);
-    ctx.fill();
-    ctx.globalAlpha = 1;
-    if (sq.t === 'plot' && !sq.b) {
-      ctx.setLineDash([3, 2]);
-      ctx.strokeStyle = '#fff';
-      ctx.lineWidth = 1;
-      tileShape(ctx, G.layout, c.x, c.y, s / 2 - 1, 2);
-      ctx.stroke();
-      ctx.setLineDash([]);
+  /** Draw the squares; `hover` is the district under the pointer (its squares are outlined). */
+  const paint = (hover: number) => {
+    ctx.clearRect(0, 0, W, H);
+    drawRoads();
+    for (const sq of G.nodes) {
+      const c = pos(sq);
+      const inD = sq.d === d;
+      const inHover = hover >= 0 && sq.d === hover;
+      const isProp = sq.d >= 0;
+      ctx.globalAlpha = isProp && !inD && !inHover ? 0.45 : 1;
+      // Owned squares take the owner's color; unowned property is a neutral light grey so it is
+      // never mistaken for a player's color.
+      ctx.fillStyle = sq.owner >= 0 ? PLAYER_COLORS[G.players[sq.owner].color] : isProp ? UNOWNED : '#3a4670';
+      tileShape(ctx, G.layout, c.x, c.y, s / 2, 3);
+      ctx.fill();
+      ctx.globalAlpha = 1;
+      if (sq.t === 'plot' && !sq.b) {
+        ctx.setLineDash([3, 2]);
+        ctx.strokeStyle = '#fff';
+        ctx.lineWidth = 1;
+        tileShape(ctx, G.layout, c.x, c.y, s / 2 - 1, 2);
+        ctx.stroke();
+        ctx.setLineDash([]);
+      }
+      if (inD || inHover) {
+        // The selected district is outlined in gold (like its row); the one under the pointer
+        // in white, so all of its properties stand out.
+        ctx.strokeStyle = inD ? '#ffd166' : '#ffffff';
+        ctx.lineWidth = 2;
+        tileShape(ctx, G.layout, c.x, c.y, s / 2 + 2, 5);
+        ctx.stroke();
+      }
+      if (inD) {
+        ctx.fillStyle = sq.owner >= 0 ? '#fff' : '#101a33';
+        ctx.font = '11px "Lilita One", sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        const p = sq.owner >= 0 ? G.players[sq.owner] : null;
+        ctx.fillText(p ? (p.name[0]?.toUpperCase() ?? '') : '', c.x, c.y + 1);
+      }
+      if (sq.t === 'bank') {
+        ctx.fillStyle = '#ffd84a';
+        ctx.font = '12px "Lilita One", sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('G', c.x, c.y + 1);
+      }
     }
-    if (inD) {
-      // Outline the selected district's squares in gold, like the selected row.
-      ctx.strokeStyle = '#ffd166';
-      ctx.lineWidth = 2;
-      tileShape(ctx, G.layout, c.x, c.y, s / 2 + 2, 5);
-      ctx.stroke();
-      ctx.fillStyle = sq.owner >= 0 ? '#fff' : '#101a33';
-      ctx.font = '11px "Lilita One", sans-serif';
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      const p = sq.owner >= 0 ? G.players[sq.owner] : null;
-      ctx.fillText(p ? (p.name[0]?.toUpperCase() ?? '') : '', c.x, c.y + 1);
-    }
-    if (sq.t === 'bank') {
-      ctx.fillStyle = '#ffd84a';
-      ctx.font = '12px "Lilita One", sans-serif';
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillText('G', c.x, c.y + 1);
-    }
-  }
-  // Players
-  G.players.forEach((p, i) => {
-    if (p.bankrupt) return;
-    const c = pos(G.nodes[p.node]);
-    ctx.fillStyle = PLAYER_COLORS[p.color];
-    ctx.strokeStyle = '#fff';
-    ctx.lineWidth = 1.5;
-    ctx.beginPath();
-    ctx.arc(c.x - 6 + (i % 2) * 12, c.y - 6 + Math.floor(i / 2) * 12, 3.6, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.stroke();
-  });
+  };
+  let hovered = -1;
+  paint(-1);
 
   // Hover shows the square; clicking a district square selects that district.
   const hit = (e: MouseEvent) => {
@@ -186,6 +187,11 @@ function miniMap(G: GameState, d: number, select: (d: number) => void): HTMLElem
     );
     return c ? G.nodes.find((q) => q.x === c.x && q.y === c.y) : undefined;
   };
+  const hoverDistrict = (dist: number) => {
+    if (dist === hovered) return;
+    hovered = dist;
+    paint(dist);
+  };
   cv.addEventListener('mousemove', (e) => {
     const sq = hit(e);
     cv.title =
@@ -193,7 +199,9 @@ function miniMap(G: GameState, d: number, select: (d: number) => void): HTMLElem
         ? `${G.districts[sq.d].name}: ${sq.owner >= 0 ? G.players[sq.owner].name : 'for sale'}, ${fmt(sq.value)}`
         : '';
     cv.style.cursor = sq && sq.d >= 0 ? 'pointer' : 'default';
+    hoverDistrict(sq && sq.d >= 0 ? sq.d : -1);
   });
+  cv.addEventListener('mouseleave', () => hoverDistrict(-1));
   cv.addEventListener('click', (e) => {
     const sq = hit(e);
     if (sq && sq.d >= 0) select(sq.d);
