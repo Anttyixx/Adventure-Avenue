@@ -3,7 +3,7 @@ import { BOARDS } from './boards/builtin';
 import { buildDeck } from './cards';
 import { shuffle } from './rng';
 import { computeRows, netWorth } from './rules';
-import type { GameState, MatchOptions, Player, Square } from './types';
+import type { BoardSquareDef, GameState, MatchOptions, Player, Square } from './types';
 
 export const PLAYER_COLORS = ['#e5484d', '#3e7bfa', '#30a46c', '#f0b429', '#a855f7'];
 
@@ -15,7 +15,7 @@ export function newGame(opts: MatchOptions): GameState {
   const board = opts.board ?? BOARDS[opts.boardId ?? 'town'];
   const seed = opts.seed ?? Math.floor(Math.random() * 2 ** 31);
   const nodes: Square[] = board.squares.map((s, id) => {
-    const isPlot = !!s.plot && opts.rules === 'standard';
+    const isPlot = false;
     return {
       id,
       x: s.x,
@@ -30,6 +30,7 @@ export function newGame(opts: MatchOptions): GameState {
       b: null,
       lv: 0,
       toll: K.toll0,
+      link: s.t === 'warp' ? (s.link ?? -1) : -1,
     };
   });
   for (const [a, b] of board.edges) {
@@ -83,7 +84,9 @@ export function newGame(opts: MatchOptions): GameState {
     endReason: '',
     players,
     rng: seed | 0,
+    plots: opts.rules === 'standard' ? (opts.plots ?? 'few') : 'none',
   };
+  if (opts.rules === 'standard') choosePlots(G, board.squares);
   if (opts.rules === 'standard') {
     G.groups = board.districts.map((_, d) => nodes.filter((s) => s.d === d).map((s) => s.id));
   } else {
@@ -97,6 +100,39 @@ export function newGame(opts: MatchOptions): GameState {
   resetVentureGrid(G);
   G.hist.push(players.map((p) => netWorth(G, p)));
   return G;
+}
+
+/**
+ * Turn some properties into vacant plots, as many as the game's plot setting asks for (at most
+ * K.plotMax unless 'all'). Squares the board marks as plots go first; the rest are random,
+ * spread evenly over the districts, and no district is left without a shop unless 'all'.
+ */
+function choosePlots(G: GameState, defs: BoardSquareDef[]) {
+  const setting = G.plots ?? 'few';
+  const props = G.nodes.filter((s) => s.t === 'shop');
+  const want =
+    setting === 'all' ? props.length : Math.min(K.plotMax, Math.round(props.length * K.plotShare[setting]));
+  if (!want) return;
+  const order = shuffle(G, props.slice()).sort(
+    (a, b) => Number(!!defs[b.id].plot) - Number(!!defs[a.id].plot),
+  );
+  const perDistrict = new Map<number, number>();
+  const size = (d: number) => props.filter((s) => s.d === d).length;
+  const chosen: Square[] = [];
+  while (chosen.length < want) {
+    // The district with the fewest plots so far, taking marked and earlier-shuffled squares first.
+    const next = order
+      .filter((s) => !chosen.includes(s))
+      .filter((s) => setting === 'all' || (perDistrict.get(s.d) ?? 0) < size(s.d) - 1)
+      .sort((a, b) => (perDistrict.get(a.d) ?? 0) - (perDistrict.get(b.d) ?? 0))[0];
+    if (!next) break;
+    chosen.push(next);
+    perDistrict.set(next.d, (perDistrict.get(next.d) ?? 0) + 1);
+  }
+  for (const s of chosen) {
+    s.t = 'plot';
+    s.value = 0;
+  }
 }
 
 export function resetVentureGrid(G: GameState) {

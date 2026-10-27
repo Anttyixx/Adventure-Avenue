@@ -16,6 +16,7 @@ const SPECIAL: Record<string, string> = {
   back: 'Backstreet',
   arcade: 'Arcade',
   cannon: 'Cannon',
+  warp: 'Warp',
 };
 
 export function squareName(G: GameState, sq: Square): string {
@@ -74,6 +75,7 @@ export function squareInfo(G: GameState, sq: Square): string {
     back: 'Backstreet: slip through to the other backstreet square.',
     arcade: 'Play an arcade game for prizes: Lucky Reels, Memory Blocks or Coin Derby.',
     cannon: 'Fire yourself to any other player on the board.',
+    warp: 'Land here to warp to the matching warp square (same color), even in another area of the map.',
   };
   return info[sq.t] ?? '';
 }

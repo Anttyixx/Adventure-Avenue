@@ -2,7 +2,7 @@
  * Derived values and pure state helpers. Nothing here asks for a decision or talks to the UI.
  */
 import { K } from './constants';
-import type { GameState, Player, Square } from './types';
+import type { GameState, Player, Square, BuildingKey } from './types';
 
 export const ceil5 = (n: number) => Math.ceil(n / 5) * 5;
 
@@ -153,6 +153,15 @@ export function expand(G: GameState, pid: number, g: number): number[] {
 }
 
 /** Bump a district's stock factor after a trade of 10+ shares. */
+/**
+ * Whether another `b` can be built: at most K.buildingLimit of each building on the board,
+ * unless every property started as a plot. `except` is a square being renovated.
+ */
+export function buildingAvailable(G: GameState, b: BuildingKey, except = -1): boolean {
+  if (G.plots === 'all') return true;
+  return G.nodes.filter((s) => s.b === b && s.id !== except).length < K.buildingLimit;
+}
+
 export function bumpFactor(G: GameState, d: number, up: boolean, n: number) {
   if (n < K.bigTrade) return;
   const f = G.factor[d] * (up ? K.tradeUp : K.tradeDown);

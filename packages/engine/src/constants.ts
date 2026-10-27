@@ -11,6 +11,11 @@ export const K = {
   targetMax: 90000,
   /** The die has faces 1 to dieSides. */
   dieSides: 7,
+  /** Share of properties that start as vacant plots for each plot setting (Standard rules). */
+  plotShare: { none: 0, few: 0.15, some: 0.3, lot: 0.5, all: 1 },
+  /** Most vacant plots on a board, and of each building, unless the setting is 'all'. */
+  plotMax: 21,
+  buildingLimit: 3,
   roundCapOptions: [0, 15, 20, 30],
 
   // Shops

@@ -70,6 +70,11 @@ const PALETTE: { group: string; items: { tool: Tool; label: string; hint: string
       { tool: 'boom', label: 'Boom', hint: '50% commission on fees.' },
       { tool: 'broker', label: 'Stockbroker', hint: 'Buy stock (a venture square in Easy rules).' },
       { tool: 'back', label: 'Backstreet', hint: 'Warps to the other backstreet. Use two.' },
+      {
+        tool: 'warp',
+        label: 'Warp',
+        hint: 'Landing here warps you to its partner (warps pair up in reading order). Use them in pairs to reach a separate area.',
+      },
       { tool: 'arcade', label: 'Arcade', hint: 'Plays a minigame.' },
       { tool: 'cannon', label: 'Cannon', hint: 'Fires you to another player.' },
     ],
@@ -325,6 +330,16 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
   const recompute = () => {
     board.edges = autoEdges(board.squares, cuts, board.layout);
     board.bank = board.squares.findIndex((s) => s.t === 'bank');
+    // Warps pair up in reading order: the 1st with the 2nd, the 3rd with the 4th, and so on.
+    const warps = board.squares
+      .map((s, i) => ({ s, i }))
+      .filter(({ s }) => s.t === 'warp')
+      .sort((a, b) => a.s.y - b.s.y || a.s.x - b.s.x);
+    warps.forEach(({ s }) => delete s.link);
+    for (let k = 0; k + 1 < warps.length; k += 2) {
+      warps[k].s.link = warps[k + 1].i;
+      warps[k + 1].s.link = warps[k].i;
+    }
   };
   const snapshot = () => {
     undo.push(JSON.stringify({ board, cuts: [...cuts] }));

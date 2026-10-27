@@ -4,6 +4,7 @@
  * The candidates light up on the board; tapping one picks it, and a confirm step follows.
  */
 import {
+  buildingAvailable,
   BUILDINGS,
   K,
   PLAYER_COLORS,
@@ -159,12 +160,12 @@ export async function renovateOnBoard(
     if (id == null) return null;
     const sq = G.nodes[id as number];
     spotlight(ctx.board, sq.id, p.color);
-    const options = BUILDINGS.filter((b) => b.b !== sq.b && b.cost + K.renovate <= p.cash).map(
-      ({ b, cost }) => ({
-        b,
-        cost,
-      }),
-    );
+    const options = BUILDINGS.filter(
+      (b) => b.b !== sq.b && b.cost + K.renovate <= p.cash && buildingAvailable(G, b.b, sq.id),
+    ).map(({ b, cost }) => ({
+      b,
+      cost,
+    }));
     const b = await buildPrompt(hud, p, options, `Renovate your ${shortName(G, sq)} into what?`, K.renovate);
     ctx.board.clearChoices();
     if (b) return { sq: sq.id, b };

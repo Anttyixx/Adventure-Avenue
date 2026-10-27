@@ -40,6 +40,7 @@ export const PLACEABLE: SquareType[] = [
   'back',
   'arcade',
   'cannon',
+  'warp',
 ];
 
 /** What players download: the board plus a format tag so imports can be checked. */
@@ -182,6 +183,12 @@ export function validateBoard(def: BoardDef): BoardCheck {
 
   const backs = sq.filter((s) => s.t === 'back').length;
   if (backs !== 0 && backs !== 2) errors.push('Backstreets come in pairs: use exactly two (or none).');
+  sq.forEach((s, i) => {
+    if (s.t !== 'warp') return;
+    const to = s.link;
+    if (to == null || !sq[to] || to === i) errors.push(`Warp ${where(s)} does not lead anywhere.`);
+    else if (sq[to].t !== 'warp') errors.push(`Warp ${where(s)} must lead to another warp square.`);
+  });
 
   // Connections
   const nb: number[][] = sq.map(() => []);
@@ -195,6 +202,11 @@ export function validateBoard(def: BoardDef): BoardCheck {
     nb[a].push(b);
     nb[b].push(a);
   }
+  // Warps reach their destination too (detached areas are only reachable this way).
+  const reach = nb.map((n) => n.slice());
+  sq.forEach((s, i) => {
+    if (s.t === 'warp' && s.link != null && sq[s.link]) reach[i].push(s.link);
+  });
   sq.forEach((s, i) => {
     if (nb[i].length === 0 && sq.length > 1) errors.push(`Square ${where(s)} is not connected to anything.`);
     else if (nb[i].length === 1)
@@ -205,7 +217,7 @@ export function validateBoard(def: BoardDef): BoardCheck {
     const seen = new Set([start]);
     const queue = [start];
     while (queue.length) {
-      for (const n of nb[queue.shift()!]) {
+      for (const n of reach[queue.shift()!]) {
         if (seen.has(n)) continue;
         seen.add(n);
         queue.push(n);
@@ -242,6 +254,7 @@ export function boardToFile(def: BoardDef): BoardFile {
         out.base = s.base;
         if (s.plot) out.plot = true;
       }
+      if (s.t === 'warp' && s.link != null) out.link = s.link;
       return out;
     }),
     edges: def.edges.map(([a, b]) => [a, b]),
@@ -279,6 +292,7 @@ export function boardFromFile(data: unknown, id: string): { board?: BoardDef; er
       out.base = isNum(q.base) ? Math.round(q.base) : 0;
       if (q.plot) out.plot = true;
     }
+    if (q.t === 'warp' && isNum(q.link)) out.link = Math.floor(q.link);
     squares.push(out);
   }
   const edges: [number, number][] = [];

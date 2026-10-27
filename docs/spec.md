@@ -126,16 +126,15 @@ something.
 
 ## Board and movement
 
-The board is a graph of 44 squares: a 34-square outer ring plus a 10-square middle road that joins
-the left and right sides, creating two forks.
+The default board (Town) is a graph of 50 squares: a 38-square outer ring plus a 12-square middle
+road through the bank that joins the left and right sides, creating two forks.
 
-**Layout (12 columns x 7 rows, x,y):**
+**Layout (14 columns x 7 rows, x,y):**
 
-- Corners: spade (0,0), heart (11,0), diamond (11,6), club (0,6). Bank at (6,6), bottom center.
-- Forks: Venture (0,3) on the left and Stockbroker (11,3) on the right each have three neighbors.
-- Other specials: Venture (4,0) and (8,6), Change-of-suit (5,0), Roll-on (0,2), Take-a-break (7,6),
-  Backstreets (10,0) and (1,6), Arcade (3,3), Boon (7,3), Boom (8,3), Cannon (9,3).
-- 26 property squares in 7 districts (see Shops). In Standard rules, 5 of them are vacant plots.
+- Corners: spade (0,0), heart (13,0), club (0,6), diamond (13,6). Bank at (7,3), on the middle road.
+- Stockbroker (7,0), the square farthest from the bank along the roads; Boon (13,2) and Boom (0,5)
+  on opposite sides.
+- 32 properties in 8 districts of 4. Which start as vacant plots depends on the plot setting.
 
 Store boards as data (square list with type, position, district, neighbors) so new boards need no
 code changes.
@@ -146,18 +145,24 @@ in the browser, and export/import them as `.aaboard.json` files (format tag
 connections). Squares in neighboring cells connect automatically; single connections can be
 cut. A board is playable only if it has exactly one bank, every suit (or a change-of-suit
 square), at least 4 shops, every shop in a district with a 50-2,000G value, backstreets in
-pairs, and every square reachable from the bank. Grids range from 4 x 4 to 32 x 20 (up to 320
+pairs, every warp leading to another warp, and every square reachable from the bank (by road or
+warp). Grids range from 4 x 4 to 32 x 20 (up to 320
 squares). Each board uses a square grid (4 neighbors per cell) or a hex grid (pointy-top
 hexagons, odd rows shifted half a cell right, 6 neighbors per cell); the file stores it as
 `layout`, and files without one are square.
 
-**Built-in boards.** Every built-in board has the bank in the middle and exactly 4 shops or plots
-in each district (the editor warns about districts of any other size). Town (square, 12 x 7: a
-ring with the bank on the middle road), Harbor (square, 12 x 9: a ring and a market loop around
-the bank, joined by two roads), Crossroads City (square, 11 x 9: a ring cut into quarters by two
-avenues that cross at the bank), Twin Lakes (hex: two lakes with Main Street and the bank between
-them) and Coral Isle (hex: an island coast with two roads inland, the bank on one of them). Each
-can be copied into the editor to remix.
+**Built-in boards.** Every built-in board has the bank in the middle of the map, exactly 4
+properties in each district (8 districts, 32 properties), its Stockbroker squares as far from the
+bank as the roads allow, and Boon and Boom far apart. Town (square, 14 x 7, 50 squares: a ring with
+the bank on the middle road), Harbor (square, 15 x 9, 61: a ring split by two piers joined by the
+quay with the bank), Crossroads City (square, 13 x 9, 57: a ring cut into quarters by two avenues
+crossing at the bank), Twin Lakes (hex, 14 x 11, 50: two lakes with Main Street and the bank
+between them), Coral Isle (hex, 17 x 8, 52: an island coast with roads over the hills), Sky Islands
+(square, 20 x 11, 66: a town ring with two floating islands) and Lagoon (square, 19 x 11, 63: a
+tall lagoon town with an island on each side). The two island boards have detached areas reached
+only by warp: a warp square on the main board sends you to an island, and every warp square on an
+island sends you back. Each island has all four suits and one or two districts. Each board can be
+copied into the editor to remix.
 
 **Movement rules:**
 
@@ -241,8 +246,13 @@ shops and buildings charge nothing until the owner's next turn starts.
 
 ## Vacant plots (Standard rules)
 
-Five district squares start empty; the first player to stop on one may build one of seven
-buildings, and each building has one effect on rivals and a different one for its owner.
+Some district squares start empty, as set by the **Vacant plots** option when a game starts: None,
+A few (15% of properties), Some (30%), A lot (50%) or All. Except with All there are at most 21 plots
+(spread over the districts, every district keeping at least one shop) and at most 3 of each
+building on the board (7 buildings x 3 = 21); with All every property is a plot and buildings have
+no limit. Squares a custom board marks as plots are picked first. The first player to stop on a
+plot may build one of seven buildings, and each building has one effect on rivals and a different
+one for its owner. Built plots show only the building's art on the tile (no name).
 
 | Building      | Cost   | When a rival lands                                                                        | When the owner lands                                                                  | Fee label on board |
 | ------------- | ------ | ----------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------- | ------------------ |
@@ -296,7 +306,9 @@ thing sold in debt. Buying into a rival's district and then selling 10+ shares a
 target is the signature sabotage move from the original. Easy rules hide the market and remove stock
 venture cards.
 
-**Stock screen (buy and sell):** the district list sits beside a panel for the selected district:
+**Stock screen (buy and sell):** the mini map sits beside the district list (with the district's
+summary under it), the selected district's squares fill a row of cards across the full width, and
+the amount picker sits beside the summary card and buttons. The panels:
 
 - **Mini map** of the whole board. Squares in that district are filled with the district color. An
   owned square gets a ring in the owner's color plus their initial; no ring means it's for sale; a
@@ -379,6 +391,7 @@ player's next turn begins.
 | Boom                   | Same, at 50%                                                                                          | Same as Boon                                                  |
 | Stockbroker            | Buy stock (Standard). Becomes a Venture square in Easy rules                                          | Stock market                                                  |
 | Backstreet (2 squares) | Warp to the other backstreet; the move ends there with no further effect and free direction next turn | Fast route between bottom-left and top-right                  |
+| Warp                   | Landing (not passing) sends you to the warp square it links to; the move ends there                  | Detached areas (islands); linked warps share a color          |
 | Cannon                 | Pick another player and warp to their square. Suits and bank still apply there; nothing else does     | Suits, bank, promotion, win                                   |
 | Arcade                 | Play one random minigame (see Arcade minigames)                                                       | Cash, shop values, wild suit cards, stock                     |
 | Venture                | Venture grid                                                                                          | See Venture cards                                             |
@@ -497,7 +510,7 @@ start, so every other system checks one flag (`rules`).
 |                                       | Standard                      | Easy                      |
 | ------------------------------------- | ----------------------------- | ------------------------- |
 | Groups for expansion                  | 7 color districts             | Rows of connected shops   |
-| Vacant plots                          | 5 plots with 7 building types | Plots are ordinary shops  |
+| Vacant plots                          | Set per game (None to All), 7 building types | Plots are ordinary shops  |
 | Stock market, dividends, market panel | Yes                           | Hidden and off            |
 | Stockbroker square                    | Buy stock                     | Becomes a Venture square  |
 | Venture deck                          | All 30 cards                  | 23 cards (no stock cards) |

@@ -42,8 +42,9 @@ export function marketView(
   const grid = h('div', { class: 'm-grid-wrap' });
   const shops = h('div', { class: 'm-shops' });
   const foot = h('p', { class: 'm-foot' });
-  top.append(mapWrap, grid);
-  root.append(top, shops, foot);
+  // The footer sits under the holdings table, beside the map, instead of on a row of its own.
+  top.append(mapWrap, h('div', { class: 'm-right' }, grid, foot));
+  root.append(top, shops);
 
   const select = (d: number) => {
     sel = (d + G.districts.length) % G.districts.length;

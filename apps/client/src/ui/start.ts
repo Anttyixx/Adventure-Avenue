@@ -10,6 +10,7 @@ import {
   type BoardDef,
   type CharId,
   type MatchOptions,
+  type PlotSetting,
   type RuleSet,
 } from '@aa/engine';
 import { boardThumb } from './thumb';
@@ -43,6 +44,14 @@ const NAMES = [
   'Finn',
   'Suki',
 ];
+const PLOT_LABEL: Record<PlotSetting, string> = {
+  none: 'None',
+  few: 'A few',
+  some: 'Some',
+  lot: 'A lot',
+  all: 'All',
+};
+
 const NAMES_KEY = 'adventure-avenue-names';
 const OPTS_KEY = 'adventure-avenue-options';
 
@@ -88,6 +97,7 @@ export function setupScreen(root: HTMLElement, handlers: SetupHandlers, room: Ho
     total: 4,
     target: K.defaultTarget as number,
     roundCap: 0,
+    plots: 'few' as PlotSetting,
     rules: 'standard' as RuleSet,
     boardId: 'town',
   });
@@ -104,6 +114,7 @@ export function setupScreen(root: HTMLElement, handlers: SetupHandlers, room: Ho
   /** Custom target picked (stays on even when the amount matches a preset). */
   let customTarget = !(K.targetOptions as unknown as number[]).includes(target);
   let roundCap = saved.roundCap;
+  let plots: PlotSetting = saved.plots ?? 'few';
   let rules: RuleSet = saved.rules;
   let boardId: string = getBoard(saved.boardId) ? saved.boardId : 'town';
   let notice = '';
@@ -465,9 +476,9 @@ export function setupScreen(root: HTMLElement, handlers: SetupHandlers, room: Ho
     start.onclick = () => {
       if (room) {
         writeJSON(NAMES_KEY, typed);
-        writeJSON(OPTS_KEY, { humans, fill, total, target, roundCap, rules, boardId });
+        writeJSON(OPTS_KEY, { humans, fill, total, target, roundCap, rules, boardId, plots });
         const list = room.seatConfigs((i) => suggested[i], fill);
-        handlers.onStart({ rules, target, roundCap, seats: list, board });
+        handlers.onStart({ rules, target, roundCap, seats: list, board, plots });
         return;
       }
       const seatList = Array.from({ length: seats }, (_, i) => {
@@ -476,8 +487,8 @@ export function setupScreen(root: HTMLElement, handlers: SetupHandlers, room: Ho
         return { name, cpu: !human, ch: looks[i] };
       });
       writeJSON(NAMES_KEY, typed);
-      writeJSON(OPTS_KEY, { humans, fill, total, target, roundCap, rules, boardId });
-      handlers.onStart({ rules, target, roundCap, seats: seatList, board });
+      writeJSON(OPTS_KEY, { humans, fill, total, target, roundCap, rules, boardId, plots });
+      handlers.onStart({ rules, target, roundCap, seats: seatList, board, plots });
     };
     wrap.append(
       h(
@@ -529,6 +540,24 @@ export function setupScreen(root: HTMLElement, handlers: SetupHandlers, room: Ho
               ? 'Standard: districts, vacant plots and the stock market.'
               : 'Easy: rows of connected shops, no plots and no stock market.',
           ),
+          rules === 'standard'
+            ? seg(
+                'Vacant plots',
+                ['none', 'few', 'some', 'lot', 'all'] as PlotSetting[],
+                plots,
+                (v) => PLOT_LABEL[v],
+                (v) => (plots = v),
+              )
+            : null,
+          rules === 'standard'
+            ? h(
+                'p',
+                { class: 'hint' },
+                plots === 'all'
+                  ? 'Every property starts as a vacant plot, and any building can be built any number of times.'
+                  : `Some properties start as vacant plots (up to ${K.plotMax}). Each building can be built at most ${K.buildingLimit} times.`,
+              )
+            : null,
         ),
         room
           ? lobbyBox

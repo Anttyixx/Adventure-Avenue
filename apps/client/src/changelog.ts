@@ -26,6 +26,29 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: '2026-10-27-boards',
+    date: 'Oct 27, 2026',
+    title: 'Bigger boards and islands',
+    features: [
+      {
+        tag: 'new',
+        title: 'Two island boards',
+        text: 'Sky Islands and Lagoon have islands you reach by landing on a warp square. Each island has all four suits, and every warp there takes you home.',
+      },
+      {
+        tag: 'better',
+        title: 'Every board redesigned',
+        text: 'About 15% more squares, eight districts each, the bank in the middle, stocks squares far from the bank and Boon and Boom far apart.',
+      },
+      {
+        tag: 'rules',
+        title: 'Choose how many vacant plots',
+        text: 'A new game option sets the vacant plots: None, A few, Some, A lot or All. Unless it is All, each building can be built at most 3 times.',
+      },
+    ],
+    extras: ['Roomier stock market screen', 'Building names no longer cover the art on tiles'],
+  },
+  {
     id: '2026-10-27-seven',
     date: 'Oct 27, 2026',
     title: 'Lucky seven',

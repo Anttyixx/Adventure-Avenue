@@ -17,7 +17,12 @@ export type SquareType =
   | 'broker'
   | 'back'
   | 'arcade'
-  | 'cannon';
+  | 'cannon'
+  /** Landing here moves the player to the square in `link` (detached areas). */
+  | 'warp';
+
+/** How many properties start as vacant plots (Standard rules), chosen at game setup. */
+export type PlotSetting = 'none' | 'few' | 'some' | 'lot' | 'all';
 
 export type BuildingKey = 'checkpoint' | 'circus' | 'balloon' | 'tax' | 'home' | 'agency' | 'star3';
 
@@ -40,6 +45,8 @@ export interface Square {
   b: BuildingKey | null;
   lv: number;
   toll: number;
+  /** Warp squares: where landing here takes you (-1 otherwise; missing in older saves). */
+  link?: number;
 }
 
 /** Which character a player plays as: an id from the client's character list (e.g. "farmer"). */
@@ -100,6 +107,8 @@ export interface District {
 export interface GameState {
   version: 1;
   rules: RuleSet;
+  /** The vacant plot setting the game started with (older saves: undefined, treated as 'few'). */
+  plots?: PlotSetting;
   target: number;
   roundCap: number;
   round: number;
@@ -143,6 +152,8 @@ export interface MatchOptions {
   boardId?: string;
   /** A custom board to play on; overrides `boardId`. */
   board?: BoardDef;
+  /** Standard rules: how many properties start as vacant plots (default 'few'). */
+  plots?: PlotSetting;
 }
 
 export interface BoardSquareDef {
@@ -152,8 +163,10 @@ export interface BoardSquareDef {
   /** District index for shops and plots. */
   d?: number;
   base?: number;
-  /** Standard rules: this district square starts as a vacant plot. */
+  /** Preferred as a vacant plot when the game's plot setting picks plots. */
   plot?: boolean;
+  /** Warp squares: the index of the square landing here takes you to. */
+  link?: number;
 }
 
 /**

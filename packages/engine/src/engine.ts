@@ -18,6 +18,7 @@ import type {
 import type { GameEvent } from './events';
 import { randInt, rollDie } from './rng';
 import {
+  buildingAvailable,
   bumpFactor,
   canAfford,
   canPromote,
@@ -200,6 +201,7 @@ export class Game {
   async renovate(p: Player, sqId: number, b: BuildingKey) {
     const sq = this.G.nodes[sqId];
     if (!sq || sq.t !== 'plot' || sq.owner !== p.id || !sq.b || sq.b === b) return;
+    if (!buildingAvailable(this.G, b, sq.id)) return;
     const cost = buildingCost(b) + K.renovate;
     if (p.cash < cost) return;
     await this.pay(p, null, cost, 'Renovation');
@@ -417,6 +419,14 @@ export class Game {
       }
       case 'cannon':
         return this.cannon(p);
+      case 'warp': {
+        const to = sq.link ?? -1;
+        if (to >= 0 && to !== sq.id && G.nodes[to]) {
+          await this.log(`${p.name} warped away.`, p.id, 'move');
+          await this.warp(p, to);
+        }
+        return;
+      }
       case 'arcade':
         return playArcade(this, p);
     }
@@ -576,7 +586,9 @@ export class Game {
   async landPlot(p: Player, sq: Square) {
     const G = this.G;
     if (sq.owner < 0) {
-      const options = BUILDINGS.filter((b) => canAfford(G, p, b.cost)).map(({ b, cost }) => ({ b, cost }));
+      const options = BUILDINGS.filter((b) => canAfford(G, p, b.cost) && buildingAvailable(G, b.b)).map(
+        ({ b, cost }) => ({ b, cost }),
+      );
       if (!options.length) return;
       const b = await this.ask({ kind: 'build', pid: p.id, sq: sq.id, options });
       const cost = b ? buildingCost(b) : 0;

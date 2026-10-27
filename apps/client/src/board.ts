@@ -1529,16 +1529,7 @@ const SPECIAL_LABEL: Record<string, string> = {
   back: 'BACKSTREET',
   arcade: 'ARCADE',
   cannon: 'CANNON',
-};
-
-const BUILDING_LABEL: Record<string, string> = {
-  checkpoint: 'CHECKPOINT',
-  circus: 'CIRCUS',
-  balloon: 'BALLOON',
-  tax: 'TAX OFFICE',
-  home: 'HOME',
-  agency: 'ESTATE',
-  star3: '3-STAR',
+  warp: 'WARP',
 };
 
 const MONEY = /^(.*\d)G$/;
@@ -1864,8 +1855,45 @@ function specialIcon(ctx: CanvasRenderingContext2D, G: GameState, sq: Square, x:
       ctx.arc(x - 6, y + 12, 9, 0, Math.PI * 2);
       ctx.fill();
       break;
+    case 'warp': {
+      // A swirling portal in the color its linked warps share.
+      const col = warpColor(G, sq);
+      const g = ctx.createRadialGradient(x, y, 2, x, y, 24);
+      g.addColorStop(0, '#ffffff');
+      g.addColorStop(0.45, col);
+      g.addColorStop(1, darken(col, 0.55));
+      ctx.fillStyle = g;
+      ctx.beginPath();
+      ctx.ellipse(x, y, 24, 22, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(255,255,255,0.85)';
+      ctx.lineWidth = 2.5;
+      for (let k = 0; k < 3; k++) {
+        ctx.beginPath();
+        ctx.arc(x, y, 7 + k * 5, k * 2.1, k * 2.1 + Math.PI * 1.1);
+        ctx.stroke();
+      }
+      break;
+    }
   }
   ctx.restore();
+}
+
+const WARP_COLORS = ['#8b5cf6', '#06b6d4', '#f97316', '#ec4899', '#22c55e'];
+
+/** Linked warps share a color: the warps reachable from each other through their links. */
+function warpColor(G: GameState, sq: Square): string {
+  const warps = G.nodes.filter((n) => n.t === 'warp');
+  const root = new Map<number, number>();
+  const find = (i: number): number =>
+    root.get(i) === undefined || root.get(i) === i ? i : find(root.get(i)!);
+  for (const w of warps) root.set(w.id, w.id);
+  for (const w of warps) {
+    const to = w.link ?? -1;
+    if (root.has(to)) root.set(find(w.id), find(to));
+  }
+  const roots = [...new Set(warps.map((w) => find(w.id)))].sort((a, b) => a - b);
+  return WARP_COLORS[Math.max(0, roots.indexOf(find(sq.id))) % WARP_COLORS.length];
 }
 
 function drawSquare(ctx: CanvasRenderingContext2D, G: GameState, sq: Square) {
@@ -1925,7 +1953,6 @@ function drawSquare(ctx: CanvasRenderingContext2D, G: GameState, sq: Square) {
         owner?.name[0]?.toUpperCase() ?? '',
         sq.lv,
       );
-      label(ctx, c.x, iy + 19, BUILDING_LABEL[sq.b], '#4a5470', 9);
       const fee = sq.b === 'tax' ? '10%' : sq.b === 'agency' ? 'Break' : `${squareFee(G, sq)}G`;
       if (owner) amount(fee, ty + 32);
     }

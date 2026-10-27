@@ -26,8 +26,9 @@ A Fortune Street-style board game for the browser. Spec: `docs/spec.md`.
   checks a state hash every turn. Keep the engine deterministic (all randomness through `G.rng`).
   Dev builds accept `?peer=host:port` to use a local PeerJS server for testing.
 - `apps/server` - not needed for now (see its README).
-- Boards are data (`BoardDef`). Built-in boards are listed in `boards/builtin.ts`; all but Town are
-  drawn as text maps in `boards/maps.ts`. Custom boards are built in the board editor
+- Boards are data (`BoardDef`). Built-in boards are listed in `boards/builtin.ts` and drawn as text
+  maps in `boards/maps.ts` (warp links listed per map). Which properties start as vacant plots is
+  chosen at game start from the plot setting (`MatchOptions.plots`), not fixed by the map. Custom boards are built in the board editor
   (`apps/client/src/ui/editor.ts`, `#editor`), saved in localStorage (`boardstore.ts`) and
   exported/imported as `.aaboard.json` files. The file format and the playability rules are in
   `packages/engine/src/boards/format.ts`; `newGame({ board })` plays on any valid board.

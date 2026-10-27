@@ -4,6 +4,7 @@
  */
 import {
   BUILDINGS,
+  buildingAvailable,
   bumpFactor,
   K,
   PLAYER_COLORS,
@@ -126,13 +127,26 @@ export function stockModal(
           ` · ${fmt(unit())} per share · you hold ${p.shares[d]}`,
           mode === 'buy' ? ` · you can buy up to ${max}` : '',
         ),
-        picker.el,
-        sum,
+        // The amount on the left, the summary and buttons beside it.
         h(
           'div',
-          { class: 'btn-row' },
-          go,
-          h('button', { class: 'btn ghost', onclick: () => done(null) }, mode === 'buy' ? 'Skip' : 'Cancel'),
+          { class: 'm-deal' },
+          picker.el,
+          h(
+            'div',
+            { class: 'm-deal-side' },
+            sum,
+            h(
+              'div',
+              { class: 'btn-row' },
+              go,
+              h(
+                'button',
+                { class: 'btn ghost', onclick: () => done(null) },
+                mode === 'buy' ? 'Skip' : 'Cancel',
+              ),
+            ),
+          ),
         ),
       );
     };
@@ -279,7 +293,13 @@ export function buildPrompt(
           value: b.b as BuildingKey | null,
           icon: propIconURL(key, color),
           disabled: !opt,
-          title: `${b.name} (${fmt(cost(b.b))})${cost(b.b) > p.cash ? ' - more than your cash: sell at the end of your turn' : ''}\nRival lands: ${BUILDING_INFO[b.b].rival}\nYou land: ${BUILDING_INFO[b.b].owner}`,
+          title: `${b.name} (${fmt(cost(b.b))})${
+            !buildingAvailable(hud.G, b.b)
+              ? ` - all ${K.buildingLimit} are already built`
+              : cost(b.b) > p.cash
+                ? ' - more than your cash: sell at the end of your turn'
+                : ''
+          }\nRival lands: ${BUILDING_INFO[b.b].rival}\nYou land: ${BUILDING_INFO[b.b].owner}`,
         };
       }),
       { label: 'Skip', value: null, secondary: true },
