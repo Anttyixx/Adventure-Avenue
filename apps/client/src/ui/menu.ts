@@ -157,13 +157,19 @@ export function mainMenu(
           'aria-label': 'Your name in that game',
         }) as HTMLInputElement)
       : null;
-  const join = () => ready() && handlers.onJoin(cleanCode(codeIn.value), nameIn?.value.trim() || undefined);
-  if (nameIn) nameIn.onkeydown = (e) => e.key === 'Enter' && join();
+  const join = () => {
+    if (ready()) handlers.onJoin(cleanCode(codeIn.value), nameIn?.value.trim() || undefined);
+  };
+  // Block bodies: an on-handler that returns false cancels the key, so typing would not work.
+  const onEnter = (e: KeyboardEvent) => {
+    if (e.key === 'Enter') join();
+  };
+  if (nameIn) nameIn.onkeydown = onEnter;
   codeIn.oninput = () => {
     codeIn.value = cleanCode(codeIn.value);
     refresh();
   };
-  codeIn.onkeydown = (e) => e.key === 'Enter' && join();
+  codeIn.onkeydown = onEnter;
   joinBtn.onclick = join;
   refresh();
   const joinBox = h(

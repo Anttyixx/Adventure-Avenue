@@ -965,7 +965,9 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
         body,
       ),
     );
-    wrap.onclick = (e) => e.target === wrap && close();
+    wrap.onclick = (e) => {
+      if (e.target === wrap) close();
+    };
     root.append(wrap);
     return close;
   };

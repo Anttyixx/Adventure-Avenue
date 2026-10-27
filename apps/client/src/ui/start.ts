@@ -755,7 +755,10 @@ export function guestSetup(root: HTMLElement, room: GuestSetupRoom, handlers: Gu
     if (n) room.setName(n);
   };
   nameIn.onchange = rename;
-  nameIn.onkeydown = (e) => e.key === 'Enter' && nameIn.blur();
+  // (A handler that returns false would cancel every key, so no expression body here.)
+  nameIn.onkeydown = (e) => {
+    if (e.key === 'Enter') nameIn.blur();
+  };
 
   const pick = (lobby: LobbyInfo, i: number) => {
     // Characters other people have can't be picked; CPUs take whatever is left.

@@ -50,7 +50,12 @@ export function pickCharacter(opts: PickOptions): Promise<CharId | null> {
     );
     const wrap = h(
       'div',
-      { class: 'modal-wrap', onclick: (e: Event) => e.target === wrap && done(null) },
+      {
+        class: 'modal-wrap',
+        onclick: (e: Event) => {
+          if (e.target === wrap) done(null);
+        },
+      },
       h(
         'div',
         {

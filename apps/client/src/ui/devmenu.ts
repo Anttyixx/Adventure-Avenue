@@ -61,7 +61,12 @@ function openDevMenu() {
   const save = loadSave();
   const wrap = h(
     'div',
-    { class: 'dev-wrap', onclick: (e: Event) => e.target === wrap && close() },
+    {
+      class: 'dev-wrap',
+      onclick: (e: Event) => {
+        if (e.target === wrap) close();
+      },
+    },
     h(
       'div',
       { class: 'dev-menu glass' },
