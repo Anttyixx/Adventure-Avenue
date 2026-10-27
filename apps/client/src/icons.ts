@@ -3,7 +3,8 @@
  * cards and coins are drawn smooth so they stay crisp at any size.
  */
 
-export const SUIT_COLORS = ['#2f3554', '#e5484d', '#e5484d', '#2f3554'];
+/** Spades blue, hearts pink, diamonds yellow, clubs green. */
+export const SUIT_COLORS = ['#4c8dff', '#ff5fa2', '#ffc83d', '#35c46a'];
 export const SUIT_CHARS = ['♠', '♥', '♦', '♣'];
 
 // 24 x 24 paths: spade, heart, diamond, club.
@@ -24,12 +25,9 @@ export function suitIconURL(i: number, on: boolean): string {
   const key = `${i}|${on}`;
   let url = suitCache.get(key);
   if (!url) {
+    // Held suits in their own color; missing ones a faint grey.
     const fill = on ? SUIT_COLORS[i] : 'rgba(255,255,255,0.2)';
-    // Held suits sit on a white disc so dark spades and clubs read on the dark card.
-    const disc = on ? '<circle cx="12" cy="12" r="12" fill="#fdfbf5"/>' : '';
-    url = svgURL(
-      `${disc}<g fill="${fill}" transform="${on ? 'translate(3.6 3.6) scale(.7)' : ''}">${SUIT_SHAPES[i]}</g>`,
-    );
+    url = svgURL(`<g fill="${fill}">${SUIT_SHAPES[i]}</g>`);
     suitCache.set(key, url);
   }
   return url;

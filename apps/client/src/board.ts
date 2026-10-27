@@ -1066,7 +1066,7 @@ export class BoardView {
       if (!t.visible) continue;
       const active = p.id === this.activePid && !G.over;
       // Grow into the active size, or shrink out of it, over a fraction of a second.
-      const want = active ? 1.573 : this.activePid >= 0 ? 0.6885 : 1;
+      const want = active ? 1.416 : this.activePid >= 0 ? 0.6885 : 1;
       t.size = motion ? t.size + (want - t.size) * (1 - Math.exp(-dt / 140)) : want;
       const px = base * t.size;
       const ground = this.worldToScreen(t.x, t.y);

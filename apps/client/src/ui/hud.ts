@@ -342,8 +342,14 @@ export class Hud {
             ? h('span', { class: `rank r${rank}`, title: `Rank ${rank}` }, ordinal(rank))
             : null,
           h('span', { class: 'pname' }, p.name),
-          p.cpu ? null : h('span', { class: 'seat' }, `P${p.slot + 1}`),
           h('span', { class: 'lvl' }, `Lv ${p.level}`),
+        ),
+        extras.length ? h('div', { class: 'pc-row' }, ...extras) : null,
+        // Progress toward the target, with the suits at its right end.
+        h(
+          'div',
+          { class: 'pc-row pc-progress' },
+          h('div', { class: 'bar-track' }, h('div', { class: 'bar-fill', style: `width:${pct}%` })),
           h(
             'span',
             {
@@ -361,8 +367,6 @@ export class Hud {
             ...SUITS.map((_, i) => h('img', { src: suitIconURL(i, p.suits[i]), alt: SUITS[i] })),
           ),
         ),
-        extras.length ? h('div', { class: 'pc-row' }, ...extras) : null,
-        h('div', { class: 'bar-track' }, h('div', { class: 'bar-fill', style: `width:${pct}%` })),
         h(
           'div',
           { class: 'pc-row money' },

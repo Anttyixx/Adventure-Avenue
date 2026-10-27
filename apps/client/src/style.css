@@ -876,6 +876,8 @@ input[type='range'] {
   right: 10px;
   bottom: calc(10px + var(--badge-h, 0px));
   width: 300px;
+  /* 10% bigger on computer screens (phones keep the compact size below). */
+  zoom: 1.1;
   display: flex;
   flex-direction: column;
   align-items: flex-end;
@@ -1020,14 +1022,12 @@ input[type='range'] {
   white-space: nowrap;
 }
 .pname {
+  /* Names are short (12 characters at most), so they always show in full. */
+  flex: none;
   font-family: var(--head);
   font-size: 16px;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
   white-space: nowrap;
 }
-.seat,
 .lvl {
   font-family: var(--head);
   font-size: 12px;
@@ -1040,10 +1040,17 @@ input[type='range'] {
   background: var(--pc);
   color: #fff;
 }
-.pc-top .suits {
-  margin-left: auto;
+.pc-progress {
+  flex-wrap: nowrap;
+  gap: 8px;
+}
+.pc-progress .bar-track {
+  flex: 1;
+  min-width: 30px;
+}
+.pc-progress .suits {
   display: flex;
-  gap: 2px;
+  gap: 3px;
   flex: none;
   align-items: center;
 }
@@ -2078,6 +2085,7 @@ input[type='range'] {
   }
   .cards-wrap {
     width: 215px;
+    zoom: 1;
   }
   .cards {
     gap: 4px;
@@ -2091,12 +2099,6 @@ input[type='range'] {
     height: 38px;
     margin: -5px -2px;
   }
-  .pc-top .suits {
-    margin-left: auto;
-    display: flex;
-    gap: 2px;
-    flex: none;
-  }
   .suits img {
     width: 11px;
     height: 11px;
@@ -2108,7 +2110,6 @@ input[type='range'] {
   .pname {
     font-size: 12px;
   }
-  .seat,
   .lvl {
     font-size: 10px;
     padding: 0 3px;
@@ -2116,7 +2117,10 @@ input[type='range'] {
   .pc-top {
     gap: 4px;
   }
-  .pc-top .suits {
+  .pc-progress {
+    gap: 5px;
+  }
+  .pc-progress .suits {
     gap: 1px;
   }
   .money {
@@ -3471,13 +3475,7 @@ input[type='range'] {
   margin: 0;
 }
 
-/* All four suits: they glow until the player levels up at the bank */
-.suits.ready {
-  padding: 1px 4px;
-  border-radius: 999px;
-  background: rgba(255, 209, 102, 0.22);
-  animation: suits-ready 1.2s ease-in-out infinite;
-}
+/* All four suits: they hop until the player levels up at the bank */
 .suits.ready img {
   animation: suit-hop 1.2s ease-in-out infinite;
 }
@@ -3493,11 +3491,6 @@ input[type='range'] {
 .suits.ready img:nth-child(5) {
   animation-delay: 0.4s;
 }
-@keyframes suits-ready {
-  50% {
-    box-shadow: 0 0 12px 2px rgba(255, 209, 102, 0.85);
-  }
-}
 @keyframes suit-hop {
   0%,
   60%,
@@ -3511,7 +3504,6 @@ input[type='range'] {
   }
 }
 @media (prefers-reduced-motion: reduce) {
-  .suits.ready,
   .suits.ready img {
     animation: none;
   }
