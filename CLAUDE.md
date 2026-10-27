@@ -34,6 +34,9 @@ A Fortune Street-style board game for the browser. Spec: `docs/spec.md`.
   `packages/engine/src/boards/format.ts`; `newGame({ board })` plays on any valid board.
   Boards use a `square` or `hex` grid (`BoardDef.layout`; hex = pointy-top, odd rows shifted
   right). Cell positions and tile outlines for both live in `apps/client/src/geometry.ts`.
+- Property art lives in `apps/client/src/assets/props/` (loaded by `props.ts`). An optional
+  `<name>-tint.png` (same size, grey) holds the parts drawn in the owner's color; without one,
+  the image's blue parts are recolored.
 - Dev/test builds show a build badge in the bottom-right corner (on menus and the UI Lab, not during a game); tapping it 5 times opens the dev
   menu. The UI Lab (`#ui-lab`, code in `apps/client/src/ui/lab.ts`) shows every UI element with
   controls to trigger it. When adding a new UI element, add a control for it to the UI Lab.

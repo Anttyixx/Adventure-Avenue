@@ -1,6 +1,9 @@
 /**
- * Property art: shops, 3-Star Shops and plot buildings as images (assets/props). Their blue parts
- * (windows, doors, awnings, signs) are recolored: grey when unowned, the owner's color when owned.
+ * Property art: shops, 3-Star Shops, plot buildings and the bank as images (assets/props). The
+ * parts in the owner's color (grey when unowned) come from one of two places:
+ * - a tint layer, `<name>-tint.png`: the same size as the image, holding only the parts to color,
+ *   painted in grey. Each grey is colorized (its lightness kept) and drawn over the image;
+ * - otherwise the image's own blue parts (windows, doors, awnings, signs) are recolored.
  * Call `loadProps()` once before drawing; until then callers fall back to the vector art.
  */
 
@@ -12,7 +15,8 @@ export type PropKey =
   | 'balloon'
   | 'tax'
   | 'home'
-  | 'agency';
+  | 'agency'
+  | 'bank';
 
 const urls = import.meta.glob<string>('./assets/props/*.png', {
   eager: true,
@@ -26,6 +30,8 @@ interface Source {
   blue: Uint8Array;
 }
 const sources = new Map<string, Source>();
+/** Tint layers by image name (see the top of the file). */
+const tintLayers = new Map<string, ImageData>();
 let loading: Promise<void> | null = null;
 
 /** Load every property image (safe to call more than once). */
@@ -42,6 +48,10 @@ export function loadProps(): Promise<void> {
       const ctx = cv.getContext('2d', { willReadFrequently: true })!;
       ctx.drawImage(img, 0, 0);
       const data = ctx.getImageData(0, 0, cv.width, cv.height);
+      if (key.endsWith('-tint')) {
+        tintLayers.set(key.slice(0, -5), data);
+        return;
+      }
       const px = data.data;
       const blue = new Uint8Array(cv.width * cv.height);
       for (let i = 0; i < blue.length; i++) {
@@ -84,6 +94,8 @@ function hslToRgb(h: number, s: number, l: number): [number, number, number] {
 
 /** The lightness of the art's own blue, so recolored parts keep their shading. */
 const BLUE_L = 0.55;
+/** The middle grey of a tint layer: it becomes exactly the player's color. */
+const TINT_L = 0.5;
 const tinted = new Map<string, HTMLCanvasElement>();
 
 /** A property image with its blue parts in `color` (cached per color). */
@@ -97,13 +109,32 @@ export function propCanvas(key: PropKey, color: string): HTMLCanvasElement | nul
   const [th, ts, tl] = rgbToHsl((n >> 16) & 255, (n >> 8) & 255, n & 255);
   const out = new ImageData(new Uint8ClampedArray(src.data.data), src.data.width, src.data.height);
   const px = out.data;
-  for (let i = 0; i < src.blue.length; i++) {
-    if (!src.blue[i]) continue;
-    const [, , l] = rgbToHsl(px[i * 4], px[i * 4 + 1], px[i * 4 + 2]);
-    const [r, g, b] = hslToRgb(th, ts, Math.max(0, Math.min(1, l - BLUE_L + tl)));
-    px[i * 4] = r;
-    px[i * 4 + 1] = g;
-    px[i * 4 + 2] = b;
+  const layer = tintLayers.get(key);
+  if (layer) {
+    // Colorize the grey layer and draw it over the image.
+    const tp = layer.data;
+    for (let i = 0; i < tp.length; i += 4) {
+      const a = tp[i + 3] / 255;
+      if (!a) continue;
+      const [, , l] = rgbToHsl(tp[i], tp[i + 1], tp[i + 2]);
+      const c = hslToRgb(th, ts, Math.max(0, Math.min(1, l - TINT_L + tl)));
+      // Near-white details (stars, highlights) stay white.
+      const keep = Math.max(0, Math.min(1, (l - 0.8) / 0.15));
+      for (let k = 0; k < 3; k++) c[k] += (tp[i + k] - c[k]) * keep;
+      const under = px[i + 3] / 255;
+      const outA = a + under * (1 - a);
+      for (let k = 0; k < 3; k++) px[i + k] = (c[k] * a + px[i + k] * under * (1 - a)) / outA;
+      px[i + 3] = outA * 255;
+    }
+  } else {
+    for (let i = 0; i < src.blue.length; i++) {
+      if (!src.blue[i]) continue;
+      const [, , l] = rgbToHsl(px[i * 4], px[i * 4 + 1], px[i * 4 + 2]);
+      const [r, g, b] = hslToRgb(th, ts, Math.max(0, Math.min(1, l - BLUE_L + tl)));
+      px[i * 4] = r;
+      px[i * 4 + 1] = g;
+      px[i * 4 + 2] = b;
+    }
   }
   const cv = document.createElement('canvas');
   cv.width = out.width;

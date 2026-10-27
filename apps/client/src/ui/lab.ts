@@ -94,6 +94,7 @@ const RECENT = new Set([
   'Buyout (5x)',
   'Buy prompt',
   'Zoom out',
+  'Design gallery',
 ]);
 
 /** A sample match; `playSample` then plays a few rounds so cards, the board and the log have content. */

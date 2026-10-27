@@ -1701,6 +1701,8 @@ function specialIcon(ctx: CanvasRenderingContext2D, G: GameState, sq: Square, x:
   ctx.textBaseline = 'middle';
   switch (sq.t) {
     case 'bank':
+      // The painted bank (it has no player color); the gold coin until the images load.
+      if (drawProp(ctx, 'bank', '#9aa3b8', x, y - 4, 78, 54)) break;
       ctx.fillStyle = '#c98a12';
       ctx.beginPath();
       ctx.arc(x, y, 26, 0, Math.PI * 2);
