@@ -20,7 +20,7 @@ import {
 import type { BoardView } from '../board';
 import { soundControls } from './soundpanel';
 import { squareName } from '../names';
-import { suitIconURL, wildIconURL } from '../icons';
+import { boonIconURL, suitIconURL, wildIconURL } from '../icons';
 import { portraitURL } from '../sprites';
 import { clear, fmt, h } from './dom';
 import { logView } from './log';
@@ -320,7 +320,6 @@ export class Hud {
     clear(el);
     const tags: string[] = [];
     if (isClosed(p)) tags.push('Closed');
-    if (p.boon > 0) tags.push(`${p.boon === K.boom ? 'Boom' : 'Boon'} ${Math.round(p.boon * 100)}%`);
     if (p.boost > 1) tags.push('Fees +30%');
     if (p.bankrupt) tags.push('Bankrupt');
     else if (nw >= G.target && !G.over) tags.unshift('Can win! Get to the bank');
@@ -341,6 +340,15 @@ export class Hud {
             ? h('span', { class: `rank r${rank}`, title: `Rank ${rank}` }, ordinal(rank))
             : null,
           h('span', { class: 'pname' }, p.name),
+          // An active Boon or Boom shows as its symbol, like on the board.
+          p.boon > 0
+            ? h('img', {
+                class: 'boon-ico',
+                src: boonIconURL(p.boon === K.boom ? 'boom' : 'boon'),
+                alt: p.boon === K.boom ? 'Boom' : 'Boon',
+                title: `${p.boon === K.boom ? 'Boom' : 'Boon'}: ${Math.round(p.boon * 100)}% commission on every fee paid until their next turn`,
+              })
+            : null,
           // Suits (and wild cards) at the top right; they drop below a very long name.
           h(
             'span',

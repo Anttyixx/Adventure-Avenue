@@ -14,7 +14,7 @@ import {
 } from '@aa/engine';
 import { cellCenter, tileShape, tileTop, worldSize } from './geometry';
 import { SHOP_TIERS, STAR3_TIERS, darken, drawShop, drawStar3, tierFor, tint } from './art';
-import { drawCoin, drawSparkle, SUIT_CHARS } from './icons';
+import { drawBoonIcon, drawCoin, drawSparkle, SUIT_CHARS } from './icons';
 import { Facing, FRAME_H, FRAME_W, drawCharacter, drawCharacterGlow, facingFor } from './sprites';
 import { TIMING as T } from './timing';
 
@@ -1456,8 +1456,6 @@ const SPECIAL_LABEL: Record<string, string> = {
   change: 'CHANGE',
   roll: 'ROLL ON',
   break: 'BREAK',
-  boon: 'BOON',
-  boom: 'BOOM',
   broker: 'STOCKS',
   back: 'BACKSTREET',
   arcade: 'ARCADE',
@@ -1746,9 +1744,7 @@ function specialIcon(ctx: CanvasRenderingContext2D, G: GameState, sq: Square, x:
       break;
     case 'boon':
     case 'boom':
-      ctx.fillStyle = sq.t === 'boon' ? '#30a46c' : '#d6409f';
-      ctx.font = '26px "Lilita One", sans-serif';
-      ctx.fillText(sq.t === 'boon' ? '20%' : '50%', x, y + 2);
+      drawBoonIcon(ctx, sq.t, x, y, sq.t === 'boom' ? 56 : 50);
       break;
     case 'back':
       ctx.strokeStyle = '#5b6478';
@@ -1857,9 +1853,10 @@ function drawSquare(ctx: CanvasRenderingContext2D, G: GameState, sq: Square) {
       if (owner) amount(fee, ty + 30);
     }
   } else {
-    specialIcon(ctx, G, sq, c.x, iy - 6);
     const t = sq.t === 'broker' && G.rules === 'easy' ? 'VENTURE' : (SPECIAL_LABEL[sq.t] ?? '');
-    label(ctx, c.x, ty + 30, t, '#4a5470', t.length > 8 ? 9 : 11);
+    // Squares without a label (suits, Boon, Boom) center their symbol on the tile.
+    specialIcon(ctx, G, sq, c.x, t ? iy - 6 : c.y);
+    if (t) label(ctx, c.x, ty + 30, t, '#4a5470', t.length > 8 ? 9 : 11);
   }
 
   // Border: the district's solid color on properties, else the owner's ring or a faint outline.

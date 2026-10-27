@@ -90,6 +90,7 @@ export const CHANGELOG: ChangelogEntry[] = [
       'Squares you can pick pulse with a white outline and spreading rings',
       'Online: your own player card is always at the bottom of the stack',
       'Player cards: full names, colored suits, bigger money, no level, bar or P1/P2 tags',
+      'Boon and Boom squares have their own symbols, shown on player cards while active',
       'Action bar: short questions slide up at the bottom of the screen, with prices and cash as chips',
       'Hex tiles: prices and fees no longer cut off by the edges',
       'Fees on owned tiles shown as plain numbers; no Turn tag on player cards',

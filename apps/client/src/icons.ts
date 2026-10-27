@@ -33,6 +33,68 @@ export function suitIconURL(i: number, on: boolean): string {
   return url;
 }
 
+/** Starburst outline with `n` points around (12, 12), for the Boom symbol. */
+function burst(n: number, outer: number, inner: number): string {
+  const pts = Array.from({ length: n * 2 }, (_, k) => {
+    const r = k % 2 ? inner : outer;
+    const a = (Math.PI * k) / n - Math.PI / 2;
+    return `${(12 + r * Math.cos(a)).toFixed(2)} ${(12 + r * Math.sin(a)).toFixed(2)}`;
+  });
+  return `M${pts.join('L')}Z`;
+}
+
+/**
+ * Boon and Boom symbols (24 x 24): a green disc with an up arrow (20% commission on fees) and a
+ * pink starburst with a double up arrow (50%). Used on the squares and on the player cards.
+ */
+export const BOON_SYMBOLS = {
+  boon: {
+    color: '#30a46c',
+    back: 'M12 1a11 11 0 1 0 0.01 0Z',
+    mark: 'M12 5l6.5 7H14.5v7h-5v-7H5.5Z',
+  },
+  boom: {
+    color: '#d6409f',
+    back: burst(12, 12, 9.2),
+    mark: 'M12 4.5l6 6-2.1 2.1L12 8.7l-3.9 3.9L6 10.5Z M12 10.5l6 6-2.1 2.1-3.9-3.9-3.9 3.9L6 16.5Z',
+  },
+} as const;
+
+export type BoonKind = keyof typeof BOON_SYMBOLS;
+
+const boonCache = new Map<BoonKind, string>();
+
+export function boonIconURL(kind: BoonKind): string {
+  let url = boonCache.get(kind);
+  if (!url) {
+    const s = BOON_SYMBOLS[kind];
+    url = svgURL(
+      `<path d="${s.back}" fill="${s.color}" stroke="#fff" stroke-width="1.2"/><path d="${s.mark}" fill="#fff"/>`,
+    );
+    boonCache.set(kind, url);
+  }
+  return url;
+}
+
+/** Draw a Boon or Boom symbol `size` wide, centered on (x, y). */
+export function drawBoonIcon(
+  ctx: CanvasRenderingContext2D,
+  kind: BoonKind,
+  x: number,
+  y: number,
+  size: number,
+) {
+  const s = BOON_SYMBOLS[kind];
+  ctx.save();
+  ctx.translate(x - size / 2, y - size / 2);
+  ctx.scale(size / 24, size / 24);
+  ctx.fillStyle = s.color;
+  ctx.fill(new Path2D(s.back));
+  ctx.fillStyle = '#fff';
+  ctx.fill(new Path2D(s.mark));
+  ctx.restore();
+}
+
 let wildCache = '';
 
 /** Suit Yourself (wild) card: a purple card with a gold star. */

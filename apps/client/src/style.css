@@ -1032,6 +1032,11 @@ input[type='range'] {
   font-size: 16px;
   white-space: nowrap;
 }
+.boon-ico {
+  flex: none;
+  width: 18px;
+  height: 18px;
+}
 .pc-top .suits {
   margin-left: auto;
   display: flex;

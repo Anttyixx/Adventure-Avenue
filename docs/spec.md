@@ -608,6 +608,10 @@ cash after, your cash, value, high bid...) show as chips under the question, mos
 is answered, and is hidden otherwise. Choices with more to them (stock amounts, investing,
 building, trades, auctions, arcade games) open their own windows.
 
+**Square symbols.** Boon and Boom squares show a symbol instead of a name and percent: Boon a
+green disc with an up arrow (20% commission), Boom a pink starburst with a double up arrow (50%).
+Squares without a label (suits, Boon, Boom) center their symbol on the tile.
+
 **Highlighted squares.** Squares a player can pick (or that a choice would affect) get a tint in the
 player's color, a white outline that pulses with a glow in that color, and white rings that keep
 spreading out from them and fading, so the eye goes straight to them; everything else dims.
@@ -667,7 +671,8 @@ API where available.
 - **Scoreboard:** portrait; place and full name on the top row, with the wild count and four suit
   icons at its top right (they drop below a very long name; collected suits in their own color:
   spades blue, hearts pink, diamonds yellow, clubs green; missing ones faint grey; a full set hops
-  until the player levels up); status tags (Closed, Boon/Boom %, Fees +30%); cash and net worth.
+  until the player levels up); an active Boon or Boom shows as its symbol after the name (the
+  tooltip gives the commission); status tags (Closed, Fees +30%); cash and net worth.
   Cards are 10% larger on computer screens.
 - **Action bar:** the current prompt and its buttons. Enter or Space presses the main button.
 - **Modals:** buy stock, sell stock, invest, build/renovate, venture grid, minigames, trade, auction,
