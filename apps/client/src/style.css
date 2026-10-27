@@ -913,8 +913,8 @@ input[type='range'] {
     box-shadow 0.3s;
 }
 .pcard.active {
-  animation: breathe 2.2s ease-in-out infinite;
-  transform: translateX(-12px) scale(1.04);
+  /* Slides out without scaling, so its text never shifts between pixels. */
+  transform: translateX(-12px);
   border-color: var(--pc);
   background:
     linear-gradient(90deg, color-mix(in srgb, var(--pc) 28%, transparent), transparent 70%), var(--glass);
@@ -994,13 +994,24 @@ input[type='range'] {
 .pcard.bankrupt {
   opacity: 0.45;
 }
+/* The active card's glow breathes on its own layer (only its opacity changes), so the card's
+   content is never repainted by the animation. */
+.pcard.active::after {
+  content: '';
+  position: absolute;
+  inset: -1px -1px -1px -5px;
+  border-radius: 12px;
+  box-shadow: 0 0 16px 3px var(--pc);
+  pointer-events: none;
+  animation: breathe 2.2s ease-in-out infinite;
+}
 @keyframes breathe {
   0%,
   100% {
-    box-shadow: 0 0 6px 0 var(--pc);
+    opacity: 0.35;
   }
   50% {
-    box-shadow: 0 0 18px 3px var(--pc);
+    opacity: 1;
   }
 }
 .pc-main {
@@ -1089,6 +1100,7 @@ input[type='range'] {
 }
 .money .nw,
 .money .cash {
+  font-variant-numeric: tabular-nums;
   font-family: var(--head);
   font-size: 15.75px;
   margin-right: 6px;

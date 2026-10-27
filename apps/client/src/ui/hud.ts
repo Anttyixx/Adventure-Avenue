@@ -80,6 +80,8 @@ export class Hud {
   /** Money popups currently floating beside each card (to stack them). */
   private pops = new Map<number, number>();
   private cardEls = new Map<number, HTMLElement>();
+  /** What each card last showed, to skip rebuilding cards that did not change. */
+  private cardSigs = new Map<number, string>();
   private promptResolve: ((v: any) => void) | null = null;
   private askHide = 0;
   private mainButton: HTMLButtonElement | null = null;
@@ -317,16 +319,33 @@ export class Hud {
     el.style.setProperty('--pc', color);
     el.classList.toggle('active', p.id === this.activePid && !G.over);
     el.classList.toggle('bankrupt', p.bankrupt);
-    clear(el);
     const tags: string[] = [];
     if (isClosed(p)) tags.push('Closed');
     if (p.boost > 1) tags.push('Fees +30%');
     if (p.bankrupt) tags.push('Bankrupt');
     else if (nw >= G.target && !G.over) tags.unshift('Can win! Get to the bank');
+    const rank = this.ranks.get(p.id);
+    // Only rebuild the card when something on it changed: rebuilding restarts its animations
+    // (the hopping suits) and reloads its images, which makes the card twitch.
+    const sig = JSON.stringify([
+      p.name,
+      p.ch,
+      p.level,
+      p.suits,
+      p.wild,
+      p.boon,
+      p.bankrupt,
+      rank,
+      tags,
+      nw,
+      p.cash,
+    ]);
+    if (this.cardSigs.get(p.id) === sig) return;
+    this.cardSigs.set(p.id, sig);
+    clear(el);
     const nwEl = h('span', { class: 'nw' }, plain(prev.nw));
     const cashEl = h('span', { class: 'cash' }, fmt(prev.cash));
     const extras = tags.map((t) => h('span', { class: 'tag' }, t));
-    const rank = this.ranks.get(p.id);
     el.append(
       h('div', { class: 'pc-side' }, h('img', { class: 'portrait', src: portraitURL(p.ch), alt: '' })),
       h(
