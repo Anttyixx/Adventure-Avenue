@@ -33,7 +33,7 @@ export const CHANGELOG: ChangelogEntry[] = [
       {
         tag: 'better',
         title: 'Status line',
-        text: 'The bottom left now has a single status line with the last thing that happened and who the game is waiting on. Tap it and it opens into the full game log.',
+        text: 'The bottom left now has a single status line saying what is going on: who the game is waiting on, or the last thing that happened. Tap it and it turns into the full game log, where the current turn shows who it is waiting on until they act.',
       },
     ],
   },

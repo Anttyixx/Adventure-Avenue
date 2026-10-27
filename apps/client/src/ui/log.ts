@@ -62,8 +62,15 @@ export function groupLog(G: GameState): TurnGroup[] {
   return groups;
 }
 
-/** The log, oldest turn at the top and the current turn at the bottom. */
-export function logView(G: GameState, currentKey: string): HTMLElement {
+/**
+ * The log, oldest turn at the top and the current turn at the bottom. `waiting` adds a line to
+ * the current turn saying who the game is waiting on; the newest `fresh` lines fade in.
+ */
+export function logView(
+  G: GameState,
+  currentKey: string,
+  opts: { waiting?: string; fresh?: number } = {},
+): HTMLElement {
   const groups = groupLog(G);
   // The turn in progress always gets a card, even before anything has happened in it.
   if (!G.over && groups[0]?.key !== currentKey) {
@@ -76,6 +83,8 @@ export function logView(G: GameState, currentKey: string): HTMLElement {
     const p = g.pid >= 0 ? G.players[g.pid] : null;
     const color = p ? PLAYER_COLORS[p.color] : '#8a94a8';
     const live = g.key === currentKey && !G.over;
+    const waiting = live ? opts.waiting : undefined;
+    const fresh = live ? (opts.fresh ?? 0) : 0;
     const head = h(
       'div',
       { class: 'turn-head' },
@@ -87,8 +96,8 @@ export function logView(G: GameState, currentKey: string): HTMLElement {
     const body = h(
       'ul',
       { class: 'turn-lines' },
-      g.lines.length ? null : h('li', { class: 'log-line hint' }, 'Getting ready...'),
-      ...g.lines.map((l) => {
+      g.lines.length || waiting ? null : h('li', { class: 'log-line hint' }, 'Getting ready...'),
+      ...g.lines.map((l, i) => {
         // Other players this line touches: anyone involved, plus the line's own player if it
         // is not the one taking the turn (e.g. a dividend paid to someone else).
         const others = new Set(l.involves ?? []);
@@ -96,7 +105,7 @@ export function logView(G: GameState, currentKey: string): HTMLElement {
         others.delete(g.pid);
         return h(
           'li',
-          { class: 'log-line' },
+          { class: `log-line ${i >= g.lines.length - fresh ? 'log-new' : ''}` },
           kindIcon(l.kind),
           h('span', { class: 'log-text' }, l.text),
           others.size
@@ -117,6 +126,14 @@ export function logView(G: GameState, currentKey: string): HTMLElement {
             : null,
         );
       }),
+      waiting
+        ? h(
+            'li',
+            { class: 'log-line waiting' },
+            h('span', { class: 'log-icon wait-dots' }, h('i'), h('i'), h('i')),
+            h('span', { class: 'log-text' }, waiting),
+          )
+        : null,
     );
     list.append(
       h('section', { class: `turn-card ${live ? 'live' : ''}`, style: `--pc:${color}` }, head, body),

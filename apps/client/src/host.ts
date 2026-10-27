@@ -296,7 +296,7 @@ export class HotSeat implements GameIO {
       this.holder = p.id;
     }
     this.holder = p.id;
-    const ans = await this.human(req as DecisionRequest);
+    const ans = await this.askHuman(req as DecisionRequest);
     if (this.dead) return never();
     return ans as DecisionAnswer<T>;
   }
@@ -317,7 +317,7 @@ export class HotSeat implements GameIO {
     if (link.role === 'host') {
       let ans: unknown;
       if (who === 'local') {
-        ans = await this.human(req);
+        ans = await this.askHuman(req);
       } else if (who === 'cpu') {
         ans = cpuDecide(G, req);
         await this.showCpu(req, ans);
@@ -334,7 +334,7 @@ export class HotSeat implements GameIO {
     }
     // Replaying a turn after rejoining: decisions already made aren't asked again.
     if (who === 'local' && !link.known?.(seq)) {
-      const mine = await this.human(req);
+      const mine = await this.askHuman(req);
       if (this.dead) return never();
       link.submit(seq, mine);
     } else if (!p.cpu && (req.kind === 'preRoll' || req.kind === 'path')) {
@@ -346,6 +346,15 @@ export class HotSeat implements GameIO {
     if (who !== 'local' && (p.cpu || req.kind !== 'preRoll')) await this.showCpu(req, a.ans);
     if (this.dead) return never();
     return a.ans;
+  }
+
+  /** A choice for a player on this device; the status line says the game is waiting on them. */
+  private async askHuman(req: DecisionRequest) {
+    const p = this.G.players[req.pid];
+    this.hud.status(`Waiting for ${p.name}...`, p.color);
+    const ans = await this.human(req);
+    this.hud.status('');
+    return ans;
   }
 
   /**
@@ -606,7 +615,7 @@ export class HotSeat implements GameIO {
         this.refresh();
         if (this.localHuman(p.id)) sound.play('turn');
         hud.banner(`${p.name}'s turn`, PLAYER_COLORS[p.color], T.turnBanner);
-        hud.status(`${p.name}'s turn`, p.color);
+        hud.status(`${p.name}'s turn`, p.color, false);
         await this.wait(p.cpu ? T.turnStartCpu : T.turnStartHuman);
         break;
       }

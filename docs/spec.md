@@ -669,26 +669,28 @@ active player changes, tokens ease to their new sizes (the active one larger, th
 
 **Small animations** (all turned off when the system asks for reduced motion):
 
-| Where           | Animation                                                                                                                                   | Trigger                                                   |
-| --------------- | ------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------- |
-| Board (ambient) | Drifting cloud shadows, pond shimmer, fountain ripples and spray, a glint across the bank coin every few seconds                            | Always                                                    |
-| Closed squares  | A rolling gate inside the tile border with a CLOSED sign; it rolls down (and back up when the owner's turn starts) with a board overview    | Owner on a break                                          |
-| Characters      | Idle animation, offset per player                                                                                                           | Standing still                                            |
-| Square          | Gold ring that grows and fades, plus 8 pixel sparkles                                                                                       | Bought, built, bought out, traded, auctioned, or expanded |
-| Square          | White ring pulse                                                                                                                            | Landing, or arriving by warp                              |
-| Player          | Pixel confetti burst                                                                                                                        | Promotion                                                 |
-| Die             | Squash-and-bounce on the result                                                                                                             | Roll ends                                                 |
-| Player cards    | Net worth and cash count up or down to the new value, tinted green or red while changing; the active card's glow breathes                   | Any money change                                          |
+| Where           | Animation                                                                                                                                     | Trigger                                                   |
+| --------------- | --------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------- |
+| Board (ambient) | Drifting cloud shadows, pond shimmer, fountain ripples and spray, a glint across the bank coin every few seconds                              | Always                                                    |
+| Closed squares  | A rolling gate inside the tile border with a CLOSED sign; it rolls down (and back up when the owner's turn starts) with a board overview      | Owner on a break                                          |
+| Characters      | Idle animation, offset per player                                                                                                             | Standing still                                            |
+| Square          | Gold ring that grows and fades, plus 8 pixel sparkles                                                                                         | Bought, built, bought out, traded, auctioned, or expanded |
+| Square          | White ring pulse                                                                                                                              | Landing, or arriving by warp                              |
+| Player          | Pixel confetti burst                                                                                                                          | Promotion                                                 |
+| Die             | Squash-and-bounce on the result                                                                                                               | Roll ends                                                 |
+| Player cards    | Net worth and cash count up or down to the new value, tinted green or red while changing; the active card's glow breathes                     | Any money change                                          |
 | Interface       | Prompts and status lines rise in, dialogs ease in, venture and Memory Blocks panels flip, revealed cards pop, main buttons give a small nudge | New prompt, dialog or reveal                              |
 
 **Layout.** Scrolling panels hide their scrollbars (they still scroll). The board fills the whole game screen edge to edge, and everything else floats over it
 as dark glass overlays. Top right: the zoom chip, a Stock market button (Standard rules)
 and the Menu button (the menu
-also shows the round, target and rule set). Bottom left: the status line, showing the last action
-and, under it, who the game is waiting on ("Blue is thinking..."). It lights up on hover; tapping
-it morphs it into the game log (turn by turn, newest at the bottom, scrollable back to the start of
-the game), and tapping the status row, Close or Escape folds it back. It moves up above the
-options when they would cover it. Bottom right: the player cards stacked vertically in turn order (online, each device
+also shows the round, target and rule set). Bottom left: the status line, one line saying what is going
+on now: who the game is waiting on ("Waiting for Blue...", "Blue is thinking...") or else the last
+thing that happened. On hover it grows 3% and glows with a gradient; tapping it morphs it into the
+game log (turn by turn, newest at the bottom, scrollable back to the start of the game), which
+replaces the line while open. The current turn's card ends with a waiting line while the game
+waits, and the action that answers it fades in in its place. Close, Escape or a tap on the board
+folds it back. The line moves up above the options when they would cover it. Bottom right: the player cards stacked vertically in turn order (online, each device
 turns the order round so its own player's card is at the bottom; turns still go top to bottom) (net worth, cash, level,
 suits and progress bar), with a Hide/Show toggle so players can clear the board. The stock market lives in a
 slide-out drawer on the right.

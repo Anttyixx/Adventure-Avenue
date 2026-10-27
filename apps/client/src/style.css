@@ -814,84 +814,82 @@ input[type='range'] {
 .bottom-left > * {
   pointer-events: auto;
 }
+.sb-wrap {
+  position: relative;
+  isolation: isolate;
+  align-self: flex-start;
+  max-width: 100%;
+  transform-origin: left bottom;
+  transition: transform 0.18s ease-out;
+}
+.sb-wrap.empty {
+  display: none;
+}
+/* Hovering the folded status line grows it a little and lights a gradient glow around it. */
+.sb-wrap::before {
+  content: '';
+  position: absolute;
+  inset: -3px;
+  z-index: -1;
+  border-radius: calc(var(--radius) + 3px);
+  background: linear-gradient(110deg, #ffd166, #ff7ab6 40%, #7aa2ff 70%, #7cf29a);
+  filter: blur(9px);
+  opacity: 0;
+  transition: opacity 0.18s;
+  pointer-events: none;
+}
+.sb-wrap:not(.open):hover,
+.sb-wrap:not(.open):has(.status-box:focus-visible) {
+  transform: scale(1.03);
+}
+.sb-wrap:not(.open):hover::before,
+.sb-wrap:not(.open):has(.status-box:focus-visible)::before {
+  opacity: 0.8;
+}
 .status-box {
   display: flex;
   flex-direction: column;
   justify-content: flex-end;
-  align-self: flex-start;
   max-width: 100%;
   overflow: hidden;
   cursor: pointer;
   user-select: none;
   -webkit-user-select: none;
-  transition:
-    background 0.15s,
-    border-color 0.15s,
-    box-shadow 0.15s;
-}
-.status-box.empty {
-  display: none;
-}
-/* Hovering the folded status line lights it up to show it opens the log. */
-.status-box:not(.open):hover,
-.status-box:not(.open):focus-visible {
-  background: rgba(30, 44, 82, 0.92);
-  border-color: rgba(255, 209, 102, 0.55);
-  box-shadow:
-    0 0 0 1px rgba(255, 209, 102, 0.25),
-    0 8px 28px rgba(0, 0, 0, 0.3);
   outline: none;
 }
-.status-box:not(.open):hover .sb-row {
-  color: var(--text);
-}
-.status-box.open {
-  width: min(400px, calc(100vw - 20px));
+.sb-wrap.open .status-box {
+  width: min(380px, calc(100vw - 20px));
   cursor: default;
+  user-select: text;
+  -webkit-user-select: text;
 }
-.sb-row {
+.sb-line {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 7px 10px 7px 12px;
+  padding: 7px 12px;
   font-size: 13px;
-  color: var(--muted);
+  color: var(--text);
   min-height: 30px;
   min-width: 0;
 }
-.status-box.open .sb-row {
-  cursor: pointer;
-  border-top: 1px solid var(--glass-line);
-}
-.sb-text {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  min-width: 0;
-  flex: 1;
-}
-.sb-last {
-  color: var(--text);
-}
-.sb-last:empty,
-.sb-wait:empty {
+.sb-wrap.open .sb-line {
   display: none;
 }
-.sb-row .tick-line {
+.sb-line .tick-line {
   display: flex;
   align-items: center;
   min-width: 0;
 }
-.sb-row .tick-text {
+.sb-line .tick-text {
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
 }
-/* The game log, shown above the status row while the box is expanded. */
+/* The game log the status line turns into. */
 .sb-log {
   display: none;
 }
-.status-box.open .sb-log {
+.sb-wrap.open .sb-log {
   display: flex;
   flex-direction: column;
   gap: 6px;
@@ -905,7 +903,7 @@ input[type='range'] {
   }
 }
 .sb-log .log-list {
-  max-height: min(46vh, 420px);
+  max-height: min(40vh, 377px);
   overflow-y: auto;
 }
 .sb-log .drawer-head h3 {
@@ -1311,6 +1309,47 @@ input[type='range'] {
 }
 .log-line + .log-line {
   border-top: 1px solid rgba(255, 255, 255, 0.05);
+}
+/* The line saying who the game is waiting on; the action that answers it fades in in its place. */
+.log-line.waiting {
+  color: var(--muted);
+  font-style: italic;
+}
+.log-icon.wait-dots {
+  gap: 2px;
+  background: rgba(255, 255, 255, 0.1);
+}
+.wait-dots i {
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: var(--muted);
+  animation: wait-dot 1.2s ease-in-out infinite;
+}
+.wait-dots i:nth-child(2) {
+  animation-delay: 0.15s;
+}
+.wait-dots i:nth-child(3) {
+  animation-delay: 0.3s;
+}
+@keyframes wait-dot {
+  0%,
+  60%,
+  100% {
+    opacity: 0.3;
+  }
+  30% {
+    opacity: 1;
+  }
+}
+.log-line.log-new {
+  animation: log-new 0.45s ease-out;
+}
+@keyframes log-new {
+  from {
+    opacity: 0;
+    filter: blur(2px);
+  }
 }
 .log-icon {
   flex: none;

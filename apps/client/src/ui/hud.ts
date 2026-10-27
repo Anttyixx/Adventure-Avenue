@@ -58,22 +58,24 @@ export class Hud {
   /** Current zoom; tapping it zooms back in on the player. */
   zoomChip = h('button', { class: 'zoom-chip', title: 'Zoom: scroll, pinch or - / +. Tap to reset.' });
   /**
-   * The status line in the bottom left: the last thing that happened and who the game is waiting
-   * on. Tapping it expands it into the game log.
+   * The status line in the bottom left: one line with what is going on now, either the last
+   * thing that happened or who the game is waiting on. Tapping it turns it into the game log.
    */
   statusBox = h('div', {
-    class: 'status-box glass empty',
+    class: 'status-box glass',
     role: 'button',
     tabindex: '0',
     'aria-expanded': 'false',
   });
-  private lastLine = h('div', { class: 'sb-last' });
-  private waitLine = h('div', { class: 'sb-wait' });
-  private statusRow = h(
-    'div',
-    { class: 'sb-row' },
-    h('div', { class: 'sb-text' }, this.lastLine, this.waitLine),
-  );
+  /** Holds the status box and its hover glow. */
+  statusWrap = h('div', { class: 'sb-wrap empty' }, this.statusBox);
+  private statusLine = h('div', { class: 'sb-line' });
+  private lastAction: { text: string; color?: number } | null = null;
+  private waiting: { text: string; color?: number } | null = null;
+  /** The status line's place while folded (it is hidden while the log is open). */
+  private lineRect = { top: 0, left: 0, right: 0, width: 0, height: 0 };
+  /** How many log lines the open log last showed, so new ones can fade in. */
+  private logSeen = -1;
   /** Round, target and rules, shown at the top of the game menu. */
   gameInfo = h('div', { class: 'gm-info' });
   /** The current player's options, centered near the bottom of the board. */
@@ -115,13 +117,12 @@ export class Hud {
     cb: HudCallbacks,
   ) {
     this.root = h('div', { class: 'hud' });
-    this.statusBox.append(this.logBox, this.statusRow);
-    const bottomLeft = h('div', { class: 'bottom-left' }, this.statusBox);
+    this.statusBox.append(this.logBox, this.statusLine);
+    const bottomLeft = h('div', { class: 'bottom-left' }, this.statusWrap);
     this.cardsWrap.append(h('div', { class: 'cards-head' }, this.roomBtn, this.cardsToggle), this.cards);
-    this.statusBox.onclick = (e) => {
-      // While expanded, only the status row (or Close) folds it back; the log itself scrolls.
-      if (this.logOpen && this.logBox.contains(e.target as Node)) return;
-      this.toggleLog();
+    // While it is the log, Close, Escape or a tap on the board folds it back.
+    this.statusBox.onclick = () => {
+      if (!this.logOpen) this.toggleLog(true);
     };
     this.statusBox.onkeydown = (e) => {
       if (e.target === this.statusBox && (e.key === 'Enter' || e.key === ' ')) {
@@ -156,6 +157,7 @@ export class Hud {
       this.updateInsets();
     };
     window.addEventListener('keydown', this.onKey);
+    document.addEventListener('pointerdown', this.logOutside, true);
     board.onHover = (id, x, y) => this.showTooltip(id, x, y);
     new ResizeObserver(() => this.updateInsets()).observe(this.root);
   }
@@ -163,6 +165,7 @@ export class Hud {
   destroy() {
     window.removeEventListener('keydown', this.onKey);
     document.removeEventListener('pointerdown', this.menuOutside, true);
+    document.removeEventListener('pointerdown', this.logOutside, true);
     this.root.remove();
   }
 
@@ -266,7 +269,7 @@ export class Hud {
   updateInsets() {
     const W = window.innerWidth;
     const portraitStack = this.root.classList.contains('upright');
-    const bottomLeft = this.statusBox.parentElement!;
+    const bottomLeft = this.statusWrap.parentElement!;
     // Where the action bar sits once shown (layout box, so the slide animation does not count).
     const a = this.ask;
     const ask = a.classList.contains('show')
@@ -274,10 +277,14 @@ export class Hud {
       : { top: 0, height: 0, left: 0, right: 0 };
     // When the options would cover the status line (narrow screens, long lines), it moves up to
     // sit just above them.
-    const sb = this.statusRow.getBoundingClientRect();
+    if (!this.logOpen) {
+      const r = this.statusBox.getBoundingClientRect();
+      this.lineRect = { top: r.top, left: r.left, right: r.right, width: r.width, height: r.height };
+    }
+    const sb = this.lineRect;
     const covered = ask.height > 0 && sb.width > 0 && sb.right > ask.left && sb.left < ask.right;
     bottomLeft.style.bottom = covered ? `${window.innerHeight - ask.top + 6}px` : '';
-    // Only the status row counts, so expanding the log never moves the camera.
+    // Only the folded status line counts, so opening the log never moves the camera.
     const bar = sb.height ? sb : { top: window.innerHeight };
     const cards = this.cardsWrap.getBoundingClientRect();
     const tools = this.toolbar.getBoundingClientRect();
@@ -477,9 +484,11 @@ export class Hud {
 
   // ------------------------------------------------------------ status line, log, drawer
 
-  /** Show the last thing that happened on the status line. */
+  /** Show the last thing that happened on the status line (it ends any wait). */
   tick(text: string, color?: number) {
-    this.setLine(this.lastLine, text, color);
+    this.lastAction = { text, color };
+    this.waiting = null;
+    this.showStatus();
     if (this.drawerMode === 'log') this.renderDrawer();
     if (this.logOpen) this.renderLog();
   }
@@ -524,38 +533,41 @@ export class Hud {
     };
   }
 
-  /** Fill one line of the status box (empty text clears it). */
-  private setLine(el: HTMLElement, text: string, color?: number) {
-    clear(el);
-    if (text) {
+  /** Show what is going on now: the wait if the game is waiting, else the last action. */
+  private showStatus() {
+    const cur = this.waiting ?? this.lastAction;
+    clear(this.statusLine);
+    if (cur) {
       const dot =
-        color != null && color >= 0
-          ? h('span', { class: 'dot', style: `background:${PLAYER_COLORS[color]}` })
+        cur.color != null && cur.color >= 0
+          ? h('span', { class: 'dot', style: `background:${PLAYER_COLORS[cur.color]}` })
           : null;
-      el.append(h('div', { class: 'tick-line rise' }, dot, h('span', { class: 'tick-text' }, text)));
+      this.statusLine.append(
+        h('div', { class: 'tick-line rise' }, dot, h('span', { class: 'tick-text' }, cur.text)),
+      );
     }
-    this.syncStatus();
-  }
-
-  /** Hide the status box while it has nothing to show, and tell the board what it covers. */
-  private syncStatus() {
-    this.statusBox.classList.toggle(
-      'empty',
-      !this.logOpen && !this.lastLine.childElementCount && !this.waitLine.childElementCount,
-    );
+    this.statusWrap.classList.toggle('empty', !cur && !this.logOpen);
     this.updateInsets();
   }
 
+  /** Tapping the board folds the log back (other overlays stay usable while it is open). */
+  private logOutside = (e: PointerEvent) => {
+    if (this.logOpen && e.target === this.board.canvas) this.toggleLog(false);
+  };
+
   /** Expand the status line into the game log, or fold it back, morphing between the sizes. */
   toggleLog(open = !this.logOpen) {
+    if (open === this.logOpen) return;
     const box = this.statusBox;
-    const from = box.getBoundingClientRect();
+    // Layout sizes, so the hover zoom does not count.
+    const from = { width: box.offsetWidth, height: box.offsetHeight };
     this.logOpen = open;
-    box.classList.toggle('open', open);
+    this.statusWrap.classList.toggle('open', open);
     box.setAttribute('aria-expanded', String(open));
+    this.logSeen = -1;
     this.renderLog(true);
-    this.syncStatus();
-    const to = box.getBoundingClientRect();
+    this.showStatus();
+    const to = { width: box.offsetWidth, height: box.offsetHeight };
     if (from.width && to.width && !matchMedia('(prefers-reduced-motion: reduce)').matches) {
       box.animate(
         [
@@ -578,13 +590,26 @@ export class Hud {
     const keep = old?.scrollTop ?? 0;
     clear(this.logBox);
     const G = this.G;
-    const list = logView(G, `${G.round}:${G.turn}`);
+    // Lines added since the last render fade in (in place of the waiting line they answer).
+    const fresh = this.logSeen < 0 ? 0 : Math.max(0, G.log.length - this.logSeen);
+    this.logSeen = G.log.length;
+    const list = logView(G, `${G.round}:${G.turn}`, { waiting: this.waiting?.text, fresh });
     this.logBox.append(
       h(
         'div',
         { class: 'drawer-head' },
         h('h3', null, 'Game log'),
-        h('button', { class: 'btn small ghost', onclick: () => this.toggleLog(false) }, 'Close'),
+        h(
+          'button',
+          {
+            class: 'btn small ghost',
+            onclick: (e: MouseEvent) => {
+              e.stopPropagation();
+              this.toggleLog(false);
+            },
+          },
+          'Close',
+        ),
       ),
       list,
     );
@@ -716,7 +741,6 @@ export class Hud {
    */
   prompt<T>(text: string | Node, buttons: PromptButton<T>[], color?: number): Promise<T> {
     this.cancelPrompt();
-    this.setLine(this.waitLine, '');
     clear(this.ask);
     clearTimeout(this.askHide);
     this.ask.classList.add('show');
@@ -776,7 +800,6 @@ export class Hud {
   private finishPrompt() {
     this.promptResolve = null;
     this.mainButton = null;
-    this.setLine(this.waitLine, '');
     // Slide out, then empty it (unless a new prompt took its place meanwhile).
     this.ask.classList.remove('show');
     clearTimeout(this.askHide);
@@ -789,10 +812,17 @@ export class Hud {
     this.mainButton = null;
   }
 
-  /** Show who the game is waiting on under the last action (empty text clears it). */
-  status(text: string, color?: number) {
-    if (this.promptResolve) return;
-    this.setLine(this.waitLine, text, color);
+  /**
+   * Show who the game is waiting on (empty text clears it, showing the last action again).
+   * `wait: false` is news rather than a wait (e.g. "Rosa's turn"): it stays until the next
+   * action and is left out of the game log, whose turn card already says it.
+   */
+  status(text: string, color?: number, wait = true) {
+    if (this.promptResolve && text) return;
+    if (!wait) this.lastAction = { text, color };
+    this.waiting = text && wait ? { text, color } : null;
+    this.showStatus();
+    if (this.logOpen) this.renderLog();
   }
 
   // ------------------------------------------------------------ modals and banners
