@@ -664,11 +664,11 @@ sideways" screen with a "Play upright anyway" option, which moves the cards into
 under the action bar and frames the board in the gap above. Full screen uses the browser Fullscreen
 API where available.
 
-- **Scoreboard:** portrait; place, full name and level on the top row; status tags (Closed,
-  Boon/Boom %, Fees +30%); the progress bar to the target with the wild count and four suit icons
-  at its right end (collected suits in their own color: spades blue, hearts pink, diamonds yellow,
-  clubs green; missing ones faint grey; a full set hops until the player levels up); cash and net
-  worth. Cards are 10% larger on computer screens.
+- **Scoreboard:** portrait; place and full name on the top row, with the wild count and four suit
+  icons at its top right (they drop below a very long name; collected suits in their own color:
+  spades blue, hearts pink, diamonds yellow, clubs green; missing ones faint grey; a full set hops
+  until the player levels up); status tags (Closed, Boon/Boom %, Fees +30%); cash and net worth.
+  Cards are 10% larger on computer screens.
 - **Action bar:** the current prompt and its buttons. Enter or Space presses the main button.
 - **Modals:** buy stock, sell stock, invest, build/renovate, venture grid, minigames, trade, auction,
   debt, results. In hot-seat, prompts meant for another player show "Pass the device to...".

@@ -1016,7 +1016,11 @@ input[type='range'] {
   gap: 6px;
   flex-wrap: wrap;
 }
-.pc-top,
+.pc-top {
+  /* The suits drop below the name only when a very long name needs the room. */
+  flex-wrap: wrap;
+  row-gap: 2px;
+}
 .money {
   flex-wrap: nowrap;
   white-space: nowrap;
@@ -1028,35 +1032,16 @@ input[type='range'] {
   font-size: 16px;
   white-space: nowrap;
 }
-.lvl {
-  font-family: var(--head);
-  font-size: 12px;
-  letter-spacing: 0.3px;
-  padding: 1px 6px;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.1);
-}
-.lvl {
-  background: var(--pc);
-  color: #fff;
-}
-.pc-progress {
-  flex-wrap: nowrap;
-  gap: 8px;
-}
-.pc-progress .bar-track {
-  flex: 1;
-  min-width: 30px;
-}
-.pc-progress .suits {
+.pc-top .suits {
+  margin-left: auto;
   display: flex;
   gap: 3px;
   flex: none;
   align-items: center;
 }
 .suits img {
-  width: 15px;
-  height: 15px;
+  width: 15.75px;
+  height: 15.75px;
 }
 .wild {
   display: inline-flex;
@@ -1076,19 +1061,8 @@ input[type='range'] {
   background: rgba(255, 209, 102, 0.2);
   color: var(--accent);
 }
-.bar-track {
-  height: 5px;
-  border-radius: 3px;
-  background: rgba(255, 255, 255, 0.12);
-  overflow: hidden;
-}
-.bar-fill {
-  height: 100%;
-  background: var(--pc);
-  transition: width 0.5s;
-}
 .money {
-  font-size: 12px;
+  font-size: 12.6px;
   justify-content: space-between;
 }
 .money .m-nw {
@@ -1100,7 +1074,7 @@ input[type='range'] {
 .money .nw,
 .money .cash {
   font-family: var(--head);
-  font-size: 15px;
+  font-size: 15.75px;
   margin-right: 6px;
 }
 .money .up {
@@ -2100,8 +2074,8 @@ input[type='range'] {
     margin: -5px -2px;
   }
   .suits img {
-    width: 11px;
-    height: 11px;
+    width: 11.55px;
+    height: 11.55px;
   }
   .tag {
     font-size: 9px;
@@ -2110,17 +2084,10 @@ input[type='range'] {
   .pname {
     font-size: 12px;
   }
-  .lvl {
-    font-size: 10px;
-    padding: 0 3px;
-  }
   .pc-top {
     gap: 4px;
   }
-  .pc-progress {
-    gap: 5px;
-  }
-  .pc-progress .suits {
+  .pc-top .suits {
     gap: 1px;
   }
   .money {
@@ -2131,7 +2098,7 @@ input[type='range'] {
   }
   .money .nw,
   .money .cash {
-    font-size: 12px;
+    font-size: 12.6px;
     margin-right: 2px;
   }
   .bottom-left {

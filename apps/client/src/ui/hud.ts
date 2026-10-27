@@ -326,7 +326,6 @@ export class Hud {
     else if (nw >= G.target && !G.over) tags.unshift('Can win! Get to the bank');
     const nwEl = h('span', { class: 'nw' }, fmt(prev.nw));
     const cashEl = h('span', { class: 'cash' }, fmt(prev.cash));
-    const pct = Math.max(0, Math.min(100, (nw / G.target) * 100));
     const extras = tags.map((t) => h('span', { class: 'tag' }, t));
     const rank = this.ranks.get(p.id);
     el.append(
@@ -342,14 +341,7 @@ export class Hud {
             ? h('span', { class: `rank r${rank}`, title: `Rank ${rank}` }, ordinal(rank))
             : null,
           h('span', { class: 'pname' }, p.name),
-          h('span', { class: 'lvl' }, `Lv ${p.level}`),
-        ),
-        extras.length ? h('div', { class: 'pc-row' }, ...extras) : null,
-        // Progress toward the target, with the suits at its right end.
-        h(
-          'div',
-          { class: 'pc-row pc-progress' },
-          h('div', { class: 'bar-track' }, h('div', { class: 'bar-fill', style: `width:${pct}%` })),
+          // Suits (and wild cards) at the top right; they drop below a very long name.
           h(
             'span',
             {
@@ -367,6 +359,7 @@ export class Hud {
             ...SUITS.map((_, i) => h('img', { src: suitIconURL(i, p.suits[i]), alt: SUITS[i] })),
           ),
         ),
+        extras.length ? h('div', { class: 'pc-row' }, ...extras) : null,
         h(
           'div',
           { class: 'pc-row money' },
