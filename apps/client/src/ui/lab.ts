@@ -91,6 +91,7 @@ const rnd = (n: number) => Math.floor(Math.random() * n);
  * are easy to find. Update this list with each change.
  */
 const RECENT = new Set([
+  'Design gallery',
   'Buy stock (10% off)',
   'Sell stock (20% above)',
   'Stock market',

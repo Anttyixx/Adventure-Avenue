@@ -47,6 +47,7 @@ export const CHANGELOG: ChangelogEntry[] = [
       },
     ],
     extras: [
+      'New circus art for all four levels (the flags take the owner’s color)',
       'Stock screen map: hover a district to outline all its properties',
       'Stock screen map no longer shows player dots',
       'A soft sound as each hop starts; the step sounds as you land',
