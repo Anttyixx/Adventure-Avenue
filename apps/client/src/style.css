@@ -903,7 +903,7 @@ input[type='range'] {
   }
 }
 .sb-log .log-list {
-  max-height: min(40vh, 377px);
+  max-height: min(40.6vh, 377px);
   overflow-y: auto;
 }
 .sb-log .drawer-head h3 {
