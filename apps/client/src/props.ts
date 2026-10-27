@@ -113,6 +113,9 @@ export function propCanvas(key: PropKey, color: string): HTMLCanvasElement | nul
   return cv;
 }
 
+/** Property images fill this much of their box (bottom-aligned), leaving a little room. */
+const PROP_SCALE = 0.9;
+
 /**
  * Draw a property image fitted into a `w` x `h` box centered on (x, y), its bottom on the box's
  * bottom edge. Returns false if the images are not loaded yet.
@@ -128,7 +131,7 @@ export function drawProp(
 ): boolean {
   const cv = propCanvas(key, color);
   if (!cv) return false;
-  const k = Math.min(w / cv.width, h / cv.height);
+  const k = Math.min(w / cv.width, h / cv.height) * PROP_SCALE;
   const dw = cv.width * k;
   const dh = cv.height * k;
   ctx.save();
