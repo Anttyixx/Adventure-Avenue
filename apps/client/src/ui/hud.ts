@@ -15,6 +15,7 @@ import {
   squareFee,
   stockPrice,
   type GameState,
+  type LogKind,
   type Player,
 } from '@aa/engine';
 import type { BoardView } from '../board';
@@ -23,7 +24,7 @@ import { squareInfo, squareName } from '../names';
 import { boonIconURL, suitIconURL, wildIconURL } from '../icons';
 import { portraitURL } from '../sprites';
 import { clear, fmt, h } from './dom';
-import { logView } from './log';
+import { kindIcon, logView, namesInColor } from './log';
 import { marketView } from './market';
 
 export interface PromptButton<T> {
@@ -70,8 +71,8 @@ export class Hud {
   /** Holds the status box and its hover glow. */
   statusWrap = h('div', { class: 'sb-wrap empty' }, this.statusBox);
   private statusLine = h('div', { class: 'sb-line' });
-  private lastAction: { text: string; color?: number } | null = null;
-  private waiting: { text: string; color?: number } | null = null;
+  private lastAction: { text: string; kind?: LogKind } | null = null;
+  private waiting: { text: string; kind?: LogKind } | null = null;
   /** The status line's place while folded (it is hidden while the log is open). */
   private lineRect = { top: 0, left: 0, right: 0, width: 0, height: 0 };
   /** How many log lines the open log last showed, so new ones can fade in. */
@@ -120,7 +121,7 @@ export class Hud {
     this.statusBox.append(this.logBox, this.statusLine);
     const bottomLeft = h('div', { class: 'bottom-left' }, this.statusWrap);
     this.cardsWrap.append(h('div', { class: 'cards-head' }, this.roomBtn, this.cardsToggle), this.cards);
-    // While it is the log, Close, Escape or a tap on the board folds it back.
+    // While it is the log, only its Close button folds it back.
     this.statusBox.onclick = () => {
       if (!this.logOpen) this.toggleLog(true);
     };
@@ -157,7 +158,6 @@ export class Hud {
       this.updateInsets();
     };
     window.addEventListener('keydown', this.onKey);
-    document.addEventListener('pointerdown', this.logOutside, true);
     board.onHover = (id, x, y) => this.showTooltip(id, x, y);
     new ResizeObserver(() => this.updateInsets()).observe(this.root);
   }
@@ -165,7 +165,6 @@ export class Hud {
   destroy() {
     window.removeEventListener('keydown', this.onKey);
     document.removeEventListener('pointerdown', this.menuOutside, true);
-    document.removeEventListener('pointerdown', this.logOutside, true);
     this.root.remove();
   }
 
@@ -247,10 +246,6 @@ export class Hud {
     const tag = (e.target as HTMLElement)?.tagName;
     if (e.key === 'Escape' && !this.menu.hidden && !this.modalLayer.querySelector('.quit-modal')) {
       this.toggleMenu(false);
-      return;
-    }
-    if (e.key === 'Escape' && this.logOpen && !this.modalLayer.childElementCount) {
-      this.toggleLog(false);
       return;
     }
     if (tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA') return;
@@ -485,8 +480,8 @@ export class Hud {
   // ------------------------------------------------------------ status line, log, drawer
 
   /** Show the last thing that happened on the status line (it ends any wait). */
-  tick(text: string, color?: number) {
-    this.lastAction = { text, color };
+  tick(text: string, kind?: LogKind) {
+    this.lastAction = { text, kind };
     this.waiting = null;
     this.showStatus();
     if (this.drawerMode === 'log') this.renderDrawer();
@@ -538,22 +533,18 @@ export class Hud {
     const cur = this.waiting ?? this.lastAction;
     clear(this.statusLine);
     if (cur) {
-      const dot =
-        cur.color != null && cur.color >= 0
-          ? h('span', { class: 'dot', style: `background:${PLAYER_COLORS[cur.color]}` })
-          : null;
       this.statusLine.append(
-        h('div', { class: 'tick-line rise' }, dot, h('span', { class: 'tick-text' }, cur.text)),
+        h(
+          'div',
+          { class: 'tick-line rise' },
+          kindIcon(cur.kind),
+          h('span', { class: 'tick-text' }, ...namesInColor(this.G, cur.text)),
+        ),
       );
     }
     this.statusWrap.classList.toggle('empty', !cur && !this.logOpen);
     this.updateInsets();
   }
-
-  /** Tapping the board folds the log back (other overlays stay usable while it is open). */
-  private logOutside = (e: PointerEvent) => {
-    if (this.logOpen && e.target === this.board.canvas) this.toggleLog(false);
-  };
 
   /** Expand the status line into the game log, or fold it back, morphing between the sizes. */
   toggleLog(open = !this.logOpen) {
@@ -593,7 +584,7 @@ export class Hud {
     // Lines added since the last render fade in (in place of the waiting line they answer).
     const fresh = this.logSeen < 0 ? 0 : Math.max(0, G.log.length - this.logSeen);
     this.logSeen = G.log.length;
-    const list = logView(G, `${G.round}:${G.turn}`, { waiting: this.waiting?.text, fresh });
+    const list = logView(G, `${G.round}:${G.turn}`, { waiting: this.waiting ?? undefined, fresh });
     this.logBox.append(
       h(
         'div',
@@ -813,14 +804,14 @@ export class Hud {
   }
 
   /**
-   * Show who the game is waiting on (empty text clears it, showing the last action again).
-   * `wait: false` is news rather than a wait (e.g. "Rosa's turn"): it stays until the next
-   * action and is left out of the game log, whose turn card already says it.
+   * Show what the game is waiting on, e.g. "Rosa is buying stocks..." (empty text clears it,
+   * showing the last action again). `wait: false` is news rather than a wait (e.g. "Rosa's
+   * turn"): it stays until the next action and is left out of the log, whose card already says it.
    */
-  status(text: string, color?: number, wait = true) {
+  status(text: string, kind?: LogKind, wait = true) {
     if (this.promptResolve && text) return;
-    if (!wait) this.lastAction = { text, color };
-    this.waiting = text && wait ? { text, color } : null;
+    if (!wait) this.lastAction = { text, kind };
+    this.waiting = text && wait ? { text, kind } : null;
     this.showStatus();
     if (this.logOpen) this.renderLog();
   }

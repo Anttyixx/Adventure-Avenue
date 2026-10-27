@@ -470,8 +470,8 @@ export async function openLab(app: HTMLElement, section?: string) {
     );
     row(
       s,
-      btn('Status: last action', () => hud.tick(`${cur().name} bought a shop for 240G.`, cur().id)),
-      btn('Status: waiting on', () => hud.status(`${cur().name} is thinking...`, cur().color)),
+      btn('Status: last action', () => hud.tick(`${cur().name} bought a shop for 240G.`, 'property')),
+      btn('Status: waiting on', () => hud.status(`${cur().name} is buying stocks...`, 'stock')),
       btn('Status: clear waiting', () => hud.status('')),
       btn('Pass the device', async () => {
         await hud.passDevice(cur());

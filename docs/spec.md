@@ -685,12 +685,13 @@ active player changes, tokens ease to their new sizes (the active one larger, th
 as dark glass overlays. Top right: the zoom chip, a Stock market button (Standard rules)
 and the Menu button (the menu
 also shows the round, target and rule set). Bottom left: the status line, one line saying what is going
-on now: who the game is waiting on ("Waiting for Blue...", "Blue is thinking...") or else the last
-thing that happened. On hover it grows 3% and glows with a gradient; tapping it morphs it into the
-game log (turn by turn, newest at the bottom, scrollable back to the start of the game), which
-replaces the line while open. The current turn's card ends with a waiting line while the game
-waits, and the action that answers it fades in in its place. Close, Escape or a tap on the board
-folds it back. The line moves up above the options when they would cover it. Bottom right: the player cards stacked vertically in turn order (online, each device
+on now: what the game is waiting on a player to do ("Blue is buying stocks...", "Blue is deciding
+which space to go to...", see `ui/activity.ts`) or else the last thing that happened. It shows the
+log icon for that kind of action, and player names in their colors. On hover it grows 3% and
+glows with a gradient; tapping it morphs it into the game log (turn by turn, newest at the bottom,
+scrollable back to the start of the game), which replaces the line while open. The current turn's
+card ends with a waiting line while the game waits, and the action that answers it fades in in
+its place. Only the log's Close button folds it back. The line moves up above the options when they would cover it. Bottom right: the player cards stacked vertically in turn order (online, each device
 turns the order round so its own player's card is at the bottom; turns still go top to bottom) (net worth, cash, level,
 suits and progress bar), with a Hide/Show toggle so players can clear the board. The stock market lives in a
 slide-out drawer on the right.

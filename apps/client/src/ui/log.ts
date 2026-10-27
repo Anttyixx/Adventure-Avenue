@@ -31,12 +31,30 @@ const ICON_BG: Record<LogKind, string> = {
   alert: '#e8590c',
 };
 
-function kindIcon(kind: LogKind | undefined) {
+export function kindIcon(kind: LogKind | undefined) {
   const k = kind ?? 'effect';
   const svg = `<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${ICON_PATHS[k]}</svg>`;
   const el = h('span', { class: 'log-icon', style: `background:${ICON_BG[k]}`, title: k });
   el.innerHTML = svg;
   return el;
+}
+
+/** Split text so each player's name is drawn in their color. */
+export function namesInColor(G: GameState | undefined, text: string): (string | HTMLElement)[] {
+  const players = (G?.players ?? []).filter((p) => p.name);
+  if (!players.length) return [text];
+  // Longest names first, so a name inside another name never wins.
+  const names = [...players].sort((a, b) => b.name.length - a.name.length);
+  const pattern = new RegExp(
+    `(${names.map((p) => p.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|')})`,
+  );
+  return text
+    .split(pattern)
+    .filter(Boolean)
+    .map((part) => {
+      const p = players.find((q) => q.name === part);
+      return p ? h('b', { class: 'pname', style: `color:${PLAYER_COLORS[p.color]}` }, part) : part;
+    });
 }
 
 interface TurnGroup {
@@ -69,7 +87,7 @@ export function groupLog(G: GameState): TurnGroup[] {
 export function logView(
   G: GameState,
   currentKey: string,
-  opts: { waiting?: string; fresh?: number } = {},
+  opts: { waiting?: { text: string; kind?: LogKind }; fresh?: number } = {},
 ): HTMLElement {
   const groups = groupLog(G);
   // The turn in progress always gets a card, even before anything has happened in it.
@@ -130,8 +148,8 @@ export function logView(
         ? h(
             'li',
             { class: 'log-line waiting' },
-            h('span', { class: 'log-icon wait-dots' }, h('i'), h('i'), h('i')),
-            h('span', { class: 'log-text' }, waiting),
+            kindIcon(waiting.kind),
+            h('span', { class: 'log-text' }, waiting.text),
           )
         : null,
     );

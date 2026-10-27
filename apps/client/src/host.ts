@@ -27,6 +27,7 @@ import { buildPrompt, districtStockModal, rulesModal, stockModal } from './ui/mo
 import { showResults } from './ui/results';
 import { investOnBoard } from './ui/invest';
 import { AuctionView } from './ui/auction';
+import { activity, PRE_ROLL_STEPS } from './ui/activity';
 import {
   answerTradeOnBoard,
   auctionOnBoard,
@@ -248,10 +249,7 @@ export class HotSeat implements GameIO {
             PLAYER_COLORS[p.color],
             T.promoteBanner + 600,
           );
-          this.hud.tick(
-            `${p.name} can win: they reached the target net worth. Next stop, the bank!`,
-            p.color,
-          );
+          this.hud.tick(`${p.name} can win: they reached the target net worth. Next stop, the bank!`, 'suit');
         }
       } else if (!ready) this.winReady.delete(p.id);
     }
@@ -286,8 +284,10 @@ export class HotSeat implements GameIO {
     if (p.cpu) {
       this.spectate(req as DecisionRequest);
       const ans = cpuDecide(this.G, req);
+      this.waitOn(req as DecisionRequest);
       await this.showCpu(req as DecisionRequest, ans);
       if (this.dead) return never();
+      this.hud.status('');
       return ans;
     }
     if (this.humans > 1 && this.holder !== p.id) {
@@ -320,15 +320,16 @@ export class HotSeat implements GameIO {
         ans = await this.askHuman(req);
       } else if (who === 'cpu') {
         ans = cpuDecide(G, req);
+        this.waitOn(req);
         await this.showCpu(req, ans);
       } else {
-        if (req.kind === 'preRoll' || req.kind === 'path')
-          this.hud.status(`Waiting for ${p.name}...`, p.color);
+        this.waitOn(req);
         ans = await link.request(seq, req);
         if (this.dead) return never();
         if (req.kind !== 'preRoll') await this.showCpu(req, ans);
       }
       if (this.dead) return never();
+      this.hud.status('');
       link.publish({ seq, ans, rng: G.rng });
       return ans;
     }
@@ -337,21 +338,27 @@ export class HotSeat implements GameIO {
       const mine = await this.askHuman(req);
       if (this.dead) return never();
       link.submit(seq, mine);
-    } else if (!p.cpu && (req.kind === 'preRoll' || req.kind === 'path')) {
-      this.hud.status(`Waiting for ${p.name}...`, p.color);
+    } else if (who !== 'local') {
+      this.waitOn(req);
     }
     const a = await link.answer(seq);
     if (this.dead) return never();
     G.rng = a.rng;
     if (who !== 'local' && (p.cpu || req.kind !== 'preRoll')) await this.showCpu(req, a.ans);
     if (this.dead) return never();
+    this.hud.status('');
     return a.ans;
   }
 
-  /** A choice for a player on this device; the status line says the game is waiting on them. */
+  /** Say on the status line (and in the log) what the game is waiting on this player to do. */
+  private waitOn(req: DecisionRequest) {
+    const a = activity(this.G, req);
+    this.hud.status(a.text, a.kind);
+  }
+
+  /** A choice for a player on this device. */
   private async askHuman(req: DecisionRequest) {
-    const p = this.G.players[req.pid];
-    this.hud.status(`Waiting for ${p.name}...`, p.color);
+    this.waitOn(req);
     const ans = await this.human(req);
     this.hud.status('');
     return ans;
@@ -407,7 +414,6 @@ export class HotSeat implements GameIO {
         break;
       }
       case 'preRoll':
-        this.hud.status(`${p.name} is thinking...`, p.color);
         await this.wait(T.cpuPreRoll);
         break;
       case 'venturePanel':
@@ -433,6 +439,7 @@ export class HotSeat implements GameIO {
     switch (req.kind) {
       case 'preRoll': {
         while (true) {
+          this.waitOn(req);
           const buttons: PromptButton<string>[] = [{ label: 'Roll', value: 'roll', main: true }];
           if (req.canStock) buttons.push({ label: 'Sell stock', value: 'sell' });
           if (req.canTrade) buttons.push({ label: 'Trade', value: 'trade' });
@@ -440,6 +447,8 @@ export class HotSeat implements GameIO {
           if (req.canRenovate) buttons.push({ label: 'Renovate', value: 'renovate' });
           const a = await hud.prompt(`${p.name}, it's your turn.`, buttons, color);
           if (a === 'roll') return { act: 'roll' };
+          const step = PRE_ROLL_STEPS[a as keyof typeof PRE_ROLL_STEPS];
+          hud.status(`${p.name} is ${step.what}...`, step.kind);
           if (a === 'sell') {
             const r = await stockModal(hud, G, p, 'sell');
             if (r) return { act: 'sellStock', ...r };
@@ -615,7 +624,7 @@ export class HotSeat implements GameIO {
         this.refresh();
         if (this.localHuman(p.id)) sound.play('turn');
         hud.banner(`${p.name}'s turn`, PLAYER_COLORS[p.color], T.turnBanner);
-        hud.status(`${p.name}'s turn`, p.color, false);
+        hud.status(`${p.name}'s turn`, 'move', false);
         await this.wait(p.cpu ? T.turnStartCpu : T.turnStartHuman);
         break;
       }
@@ -798,10 +807,10 @@ export class HotSeat implements GameIO {
         });
         break;
       case 'log':
-        hud.tick(e.text, e.color);
+        hud.tick(e.text, e.kind);
         break;
       case 'notice':
-        hud.tick(e.text, e.pid);
+        hud.tick(e.text, 'alert');
         break;
     }
   }
