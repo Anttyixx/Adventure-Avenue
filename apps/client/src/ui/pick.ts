@@ -234,7 +234,7 @@ export function buyoutPrompt(ctx: PickCtx, p: Player, sqId: number, price: numbe
     ]),
     [
       { label: 'Buy out', value: true },
-      { label: 'No thanks', value: false, main: true },
+      { label: 'No thanks', value: false, main: true, danger: true },
     ],
     p.color,
   );

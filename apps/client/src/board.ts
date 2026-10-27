@@ -4,6 +4,7 @@
  * changes; each frame draws the cache, then highlights, sprites, coins, floating text and the die.
  */
 import {
+  K,
   PLAYER_COLORS,
   SUITS,
   isClosed,
@@ -475,6 +476,14 @@ export class BoardView {
         },
       });
     }
+  }
+
+  /** Players doing a little dance (after a promotion): when it started and how long it lasts. */
+  private dances = new Map<number, { start: number; ms: number }>();
+
+  /** A little dance on the spot: spins through its facings, hopping, for `ms`. */
+  dance(pid: number, ms = 1800) {
+    this.dances.set(pid, { start: performance.now(), ms: ms * this.speed });
   }
 
   confetti(pid: number) {
@@ -1113,7 +1122,22 @@ export class BoardView {
       const h = FRAME_H * px;
       // The base disc sits where the old, smaller tokens stood their feet.
       const footY = Math.round((ground.y + 21 * this.cam.z) * this.dpr);
-      const sy = footY - t.hop * this.cam.z * this.dpr;
+      // Dancing: spin through the four facings with little hops, walking on the spot.
+      let facing = t.facing;
+      let walking = t.walking;
+      let hop = t.hop;
+      const dance = this.dances.get(p.id);
+      if (dance) {
+        const k = (now - dance.start) / dance.ms;
+        if (k >= 1 || !motion) this.dances.delete(p.id);
+        else {
+          const beat = Math.floor((now - dance.start) / 220);
+          facing = [Facing.Down, Facing.Right, Facing.Up, Facing.Left][beat % 4];
+          walking = true;
+          hop = Math.abs(Math.sin(((now - dance.start) / 220) * Math.PI)) * 12;
+        }
+      }
+      const sy = footY - hop * this.cam.z * this.dpr;
       ctx.save();
       ctx.imageSmoothingEnabled = true;
       ctx.fillStyle = 'rgba(0,0,0,0.28)';
@@ -1139,8 +1163,8 @@ export class BoardView {
       }
       ctx.restore();
       // A soft dark outline in the sprite's own shape, all round it, to lift it off the board.
-      drawCharacterGlow(ctx, p.ch, t.walking, t.facing, frame, sx, sy + px * 3, px);
-      drawCharacter(ctx, p.ch, t.walking, t.facing, frame, sx, sy + px * 3, px);
+      drawCharacterGlow(ctx, p.ch, walking, facing, frame, sx, sy + px * 3, px);
+      drawCharacter(ctx, p.ch, walking, facing, frame, sx, sy + px * 3, px);
       // Name tag above the character.
       {
         const fs = (active ? 14 : 11) * this.dpr;
@@ -1205,7 +1229,7 @@ export class BoardView {
     const pos = this.worldToScreen(this.tokenPos(this.activePid).x, this.tokenPos(this.activePid).y);
     const x = Math.min(this.w - 50, Math.max(50, pos.x + 70));
     const y = Math.min(this.h - 50, Math.max(50, pos.y - 70));
-    const face = d.rolling ? 1 + (Math.floor(now / 70) % 6) : d.value;
+    const face = d.rolling ? 1 + (Math.floor(now / 70) % K.dieSides) : d.value;
     let sx = 1;
     let sy = 1;
     let dy = 0;
@@ -1258,6 +1282,16 @@ export class BoardView {
         [-1, -1],
         [1, -1],
         [-1, 0],
+        [1, 0],
+        [-1, 1],
+        [1, 1],
+      ],
+      // Six with an extra pip in the middle.
+      7: [
+        [-1, -1],
+        [1, -1],
+        [-1, 0],
+        [0, 0],
         [1, 0],
         [-1, 1],
         [1, 1],

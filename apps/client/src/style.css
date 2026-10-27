@@ -85,6 +85,15 @@ button {
 .btn.danger {
   background: #6b2a3a;
 }
+/* A bright red "no" button (e.g. turning down a 5x buyout). */
+.btn.no,
+.btn.main.no {
+  background: linear-gradient(#ff6b6b, #e5484d);
+  color: #fff;
+}
+.btn.no:hover:not(:disabled) {
+  background: linear-gradient(#ff8585, #f05a5f);
+}
 .btn.small {
   padding: 6px 10px;
   font-size: 13px;
@@ -4545,5 +4554,75 @@ button.tb-chip:hover {
   .prompt-center .tb-btns .btn {
     padding: 3px 8px;
     font-size: 11px;
+  }
+}
+
+/* Custom target net worth in game setup */
+.target-custom {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 6px;
+  flex-wrap: wrap;
+}
+.target-in {
+  width: 90px;
+  text-align: right;
+  font-family: var(--head);
+  font-size: 16px;
+}
+
+/* What a special square does, in its tooltip */
+.tt-info {
+  max-width: 240px;
+  margin: 4px 0 0;
+  font-size: 13px;
+  line-height: 1.35;
+  color: var(--text);
+}
+
+/* UI Lab: search, and controls for recently changed elements */
+.lab-search {
+  display: block;
+  width: calc(100% - 4px);
+  margin: 0 2px 8px;
+  padding: 7px 10px;
+  border: 1px solid var(--glass-line);
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.25);
+  color: var(--text);
+  font: inherit;
+  font-size: 13px;
+}
+.lab-panel.collapsed .lab-search {
+  display: none;
+}
+.btn.lab-new {
+  box-shadow:
+    0 0 0 2px #ffd166,
+    0 0 10px 1px rgba(255, 209, 102, 0.7);
+  animation: lab-shake 0.6s ease-in-out 0.3s 2;
+}
+@keyframes lab-shake {
+  0%,
+  100% {
+    transform: none;
+  }
+  20% {
+    transform: translateX(-2px) rotate(-2deg);
+  }
+  40% {
+    transform: translateX(2px) rotate(2deg);
+  }
+  60% {
+    transform: translateX(-2px) rotate(-1deg);
+  }
+  80% {
+    transform: translateX(2px) rotate(1deg);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .btn.lab-new {
+    animation: none;
   }
 }

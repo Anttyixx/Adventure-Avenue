@@ -79,6 +79,30 @@ const shuffled = <T>(a: T[]) =>
     .map((x) => x[1]);
 const rnd = (n: number) => Math.floor(Math.random() * n);
 
+/**
+ * Controls for UI elements that were just added or changed: they shake once and glow so they
+ * are easy to find. Update this list with each change.
+ */
+const RECENT = new Set([
+  'Promotion dance',
+  'Roll die',
+  'Buyout (5x)',
+  'Shops closing',
+  'Shops reopening',
+  'Toggle shops closed (gates)',
+  'Build',
+  'Renovate',
+  'Propose trade',
+  'Trade offer received',
+  'Buy stock',
+  'Buy stock (10% off)',
+  'Sell stock',
+  'Invest',
+  'Reach the target (can win)',
+  'Game setup',
+  'Tooltip: special square',
+]);
+
 /** A sample match; `playSample` then plays a few rounds so cards, the board and the log have content. */
 function sampleState(): GameState {
   const names = ['Rosa', 'Milo', 'Juno', 'Kai'];
@@ -168,7 +192,28 @@ export async function openLab(app: HTMLElement, section?: string) {
     toggle.textContent = panel.classList.contains('collapsed') ? 'Show' : 'Hide';
     fitBoard();
   };
-  panel.append(h('div', { class: 'lab-head' }, h('h3', null, 'UI Lab'), toggle), body);
+  // Search: shows only the controls (or sections) whose names match.
+  const search = h('input', {
+    class: 'lab-search',
+    type: 'search',
+    placeholder: 'Search controls...',
+    'aria-label': 'Search controls',
+  }) as HTMLInputElement;
+  search.oninput = () => {
+    const q = search.value.trim().toLowerCase();
+    for (const sec of body.querySelectorAll<HTMLElement>('.lab-sec')) {
+      const title = sec.querySelector('h4')?.textContent?.toLowerCase() ?? '';
+      const whole = !q || title.includes(q);
+      let any = whole;
+      for (const b of sec.querySelectorAll<HTMLElement>('.lab-row:not(.lab-players) > button')) {
+        const hit = whole || (b.textContent ?? '').toLowerCase().includes(q);
+        b.hidden = !hit;
+        any ||= hit;
+      }
+      sec.hidden = !any;
+    }
+  };
+  panel.append(h('div', { class: 'lab-head' }, h('h3', null, 'UI Lab'), toggle), search, body);
   root.append(panel);
   window.addEventListener('resize', fitBoard);
   requestAnimationFrame(fitBoard);
@@ -191,7 +236,9 @@ export async function openLab(app: HTMLElement, section?: string) {
     h(
       'button',
       {
-        class: 'btn small',
+        // Controls for things changed recently shake once and keep a soft glow.
+        class: `btn small ${RECENT.has(label) ? 'lab-new' : ''}`,
+        title: RECENT.has(label) ? 'Recently updated' : null,
         onclick: async () => {
           try {
             await fn();
@@ -449,7 +496,7 @@ export async function openLab(app: HTMLElement, section?: string) {
       s,
       btn('Roll die', async () => {
         setActive(cur().id);
-        await board.rollDie(1 + rnd(6));
+        await board.rollDie(1 + rnd(K.dieSides));
       }),
       btn('Walk 3 squares', async () => {
         const p = cur();
@@ -494,6 +541,15 @@ export async function openLab(app: HTMLElement, section?: string) {
       btn('Gold ring + sparkles', () => board.ring(cur().node, '#ffd166', true)),
       btn('White ring', () => board.ring(cur().node, '#ffffff')),
       btn('Confetti', () => board.confetti(cur().id)),
+      btn('Tooltip: special square', () => {
+        // Hover text for a square that is not a property, in the middle of the screen.
+        const sq = G.nodes.find((n) => n.t === 'cannon' || n.t === 'arcade' || n.t === 'boon') ?? G.nodes[0];
+        hud.showTooltip(sq.id, window.innerWidth / 2, window.innerHeight / 2);
+      }),
+      btn('Promotion dance', () => {
+        board.confetti(cur().id);
+        board.dance(cur().id);
+      }),
       btn('Shops closing', async () => {
         // Close the target player's shops (gates come down and stay down).
         const p = cur();

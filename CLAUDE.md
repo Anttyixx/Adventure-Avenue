@@ -36,6 +36,8 @@ A Fortune Street-style board game for the browser. Spec: `docs/spec.md`.
 - Dev/test builds show a build badge in the bottom-right corner (on menus and the UI Lab, not during a game); tapping it 5 times opens the dev
   menu. The UI Lab (`#ui-lab`, code in `apps/client/src/ui/lab.ts`) shows every UI element with
   controls to trigger it. When adding a new UI element, add a control for it to the UI Lab.
+  The Lab has a search box; controls listed in `RECENT` (top of `lab.ts`) shake and glow so the
+  latest changes are easy to find. Update `RECENT` with the controls for each change.
   The stable `main` build hides the badge and dev menu.
 
 ## Commands

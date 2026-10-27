@@ -51,3 +51,29 @@ export const BUILDING_INFO: Record<string, { rival: string; owner: string }> = {
     owner: 'Invest in any of your shops.',
   },
 };
+
+/** What a non-property square does, for its tooltip. */
+export function squareInfo(G: GameState, sq: Square): string {
+  const suit = 'Collect this suit, then draw a venture card. Get all four, then visit the bank to level up.';
+  const info: Record<string, string> = {
+    bank: 'Your salary when you level up here with all four suits. Landing lets you buy stock. Arrive with the target net worth to win.',
+    venture: 'Draw a venture card: pick a panel on the venture board.',
+    spade: suit,
+    heart: suit,
+    diamond: suit,
+    club: suit,
+    change: 'Collect the suit shown (it changes each time someone passes).',
+    roll: 'Roll again and keep moving.',
+    break: 'Take a break: your shops close until your next turn.',
+    boon: 'Boon: earn 20% commission on every fee other players pay, until your next turn.',
+    boom: 'Boom: earn 50% commission on every fee other players pay, until your next turn.',
+    broker:
+      G.rules === 'easy'
+        ? 'Draw a venture card: pick a panel on the venture board.'
+        : 'Stockbroker: buy shares in any district.',
+    back: 'Backstreet: slip through to the other backstreet square.',
+    arcade: 'Play an arcade game for prizes: Lucky Reels, Memory Blocks or Coin Derby.',
+    cannon: 'Fire yourself to any other player on the board.',
+  };
+  return info[sq.t] ?? '';
+}

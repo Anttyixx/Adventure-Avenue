@@ -96,7 +96,13 @@ export function setupScreen(root: HTMLElement, handlers: SetupHandlers, room: Ho
   /** Hot-seat: players in the match; seats after the humans are CPUs. */
   let total = Math.max(2, Math.min(MAX_PLAYERS, saved.total ?? 4));
   humans = Math.min(humans, total);
-  let target = saved.target;
+  /** A target in 1,000G steps from 1,000G to 90,000G. */
+  const cleanTarget = (v: number) =>
+    Math.min(K.targetMax, Math.max(K.targetStep, Math.round(v / K.targetStep) * K.targetStep)) ||
+    K.defaultTarget;
+  let target = cleanTarget(saved.target);
+  /** Custom target picked (stays on even when the amount matches a preset). */
+  let customTarget = !(K.targetOptions as unknown as number[]).includes(target);
   let roundCap = saved.roundCap;
   let rules: RuleSet = saved.rules;
   let boardId: string = getBoard(saved.boardId) ? saved.boardId : 'town';
@@ -160,6 +166,81 @@ export function setupScreen(root: HTMLElement, handlers: SetupHandlers, room: Ho
         ),
       ),
     );
+
+  /**
+   * Target net worth: the preset amounts, plus Custom with minus/plus buttons and a box to type
+   * any amount in 1,000G steps up to 90,000G.
+   */
+  const targetPicker = () => {
+    const presets = K.targetOptions as unknown as number[];
+    const custom = customTarget;
+    const input = h('input', {
+      class: 'num target-in',
+      type: 'number',
+      min: String(K.targetStep),
+      max: String(K.targetMax),
+      step: String(K.targetStep),
+      value: String(target),
+      'aria-label': 'Custom target net worth',
+    }) as HTMLInputElement;
+    const set = (v: number) => {
+      target = cleanTarget(v);
+      draw();
+    };
+    input.onchange = () => set(Number(input.value));
+    return h(
+      'div',
+      { class: 'opt' },
+      h('div', { class: 'opt-label' }, 'Target net worth'),
+      h(
+        'div',
+        { class: 'seg' },
+        ...presets.map((v) =>
+          h(
+            'button',
+            {
+              class: `seg-btn ${!custom && v === target ? 'on' : ''}`,
+              onclick: () => {
+                customTarget = false;
+                set(v);
+              },
+            },
+            fmt(v),
+          ),
+        ),
+        h(
+          'button',
+          {
+            class: `seg-btn ${custom ? 'on' : ''}`,
+            onclick: () => {
+              customTarget = true;
+              draw();
+            },
+          },
+          'Custom',
+        ),
+      ),
+      custom
+        ? h(
+            'div',
+            { class: 'target-custom' },
+            h(
+              'button',
+              { class: 'btn small', onclick: () => set(target - K.targetStep), 'aria-label': 'Lower' },
+              '−',
+            ),
+            input,
+            h('span', { class: 'tb-g' }, 'G'),
+            h(
+              'button',
+              { class: 'btn small', onclick: () => set(target + K.targetStep), 'aria-label': 'Higher' },
+              '+',
+            ),
+            h('small', { class: 'hint' }, `Steps of ${fmt(K.targetStep)}, up to ${fmt(K.targetMax)}`),
+          )
+        : null,
+    );
+  };
 
   const playable = (b: BoardDef) => validateBoard(b).errors.length === 0;
   /** Every board in carousel order: built-in first, then the player's saved boards. */
@@ -426,13 +507,7 @@ export function setupScreen(root: HTMLElement, handlers: SetupHandlers, room: Ho
           'section',
           { class: 'setup-panel glass rules-panel' },
           h('h3', null, 'Rules'),
-          seg(
-            'Target net worth',
-            K.targetOptions as unknown as number[],
-            target,
-            (v) => fmt(v),
-            (v) => (target = v),
-          ),
+          targetPicker(),
           seg(
             'Round limit',
             K.roundCapOptions as unknown as number[],

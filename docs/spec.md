@@ -105,7 +105,8 @@ Every turn runs the same loop: act, roll, move, land, settle, hand over.
 
 1. **Turn starts:** clear break, boon, boost; save game.
 2. **Before rolling:** sell stock, trade, auction, renovate, then roll.
-3. **Roll the die:** 1 to 6, rolled by the engine.
+3. **Roll the die:** 1 to 7 (`K.dieSides`), rolled by the engine. The 7 face is a six with an extra
+   pip in the middle.
 4. **Step one square:** at a fork pick a path; passing collects suits, visits the bank, pays
    checkpoint tolls. Repeat while steps are left.
 5. **Land on a square:** shop, plot, bank, venture, arcade, special square.
@@ -160,7 +161,7 @@ can be copied into the editor to remix.
 
 **Movement rules:**
 
-1. Roll one die (1-6). The server or rules engine rolls, never the client.
+1. Roll one die (1-7). The server or rules engine rolls, never the client.
 2. After the roll, the engine lists every square the player could stop on: it walks every route of
    exactly that many steps, where each step goes to a neighbor other than `prev` (no turning back;
    a dead end allows any neighbor).
@@ -515,7 +516,8 @@ what was used, the license and links to their pages.
   the first. Import board file and Board editor sit under it.
 - **Players in the game:** 2 to 5 (default 4).
 - **Humans on this device:** 1 up to the number of players; the remaining seats are CPUs.
-- **Target net worth:** 4,000G (quick), 5,000G (default), 7,000G, 10,000G (long).
+- **Target net worth:** 4,000G (quick), 5,000G (default), 7,000G, 10,000G (long), or Custom: any
+  amount in 1,000G steps up to 90,000G (minus/plus buttons, or typed and rounded).
 - **Round limit:** none (default), 15, 20 or 30.
 - **Characters:** each seat starts with a different random character and a name. Tapping a human
   seat's character opens the character picker (all nine characters; ones other humans have are
@@ -623,6 +625,13 @@ arcade games) open their own windows.
 **Square symbols.** Boon and Boom squares show a symbol instead of a name and percent: Boon a
 green disc with an up arrow (20% commission), Boom a pink starburst with a double up arrow (50%).
 Squares without a label (suits, Boon, Boom) center their symbol on the tile.
+
+**Tooltips.** Hovering (or tapping) a square shows a tooltip: properties show their numbers, and
+every other square says in a sentence what it does (bank, venture, suits, roll on, break, Boon,
+Boom, stockbroker, arcade, cannon...; text in `squareInfo`, `apps/client/src/names.ts`).
+
+**Promotion dance.** A player who levels up does a little dance on the spot: they spin through
+their four facings with small hops while the confetti falls.
 
 **Highlighted squares.** Squares a player can pick (or that a choice would affect) get a tint in the
 player's color, a white outline that pulses with a glow in that color, and white rings that keep

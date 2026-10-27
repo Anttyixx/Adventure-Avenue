@@ -26,6 +26,29 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: '2026-10-27-seven',
+    date: 'Oct 27, 2026',
+    title: 'Lucky seven',
+    features: [
+      {
+        tag: 'rules',
+        title: 'The die goes up to 7',
+        text: 'The die now has a 7 face: a six with an extra dot in the middle.',
+      },
+      {
+        tag: 'new',
+        title: 'Set your own goal',
+        text: 'Pick Custom for the target net worth and set any amount in 1,000G steps, up to 90,000G.',
+      },
+      {
+        tag: 'better',
+        title: 'Every square explains itself',
+        text: 'Hover any square on the board to see what it does, not just properties.',
+      },
+    ],
+    extras: ['A little dance when you level up', 'Red No thanks on 5x buyouts'],
+  },
+  {
     id: '2026-10-27-property-art',
     date: 'Oct 27, 2026',
     title: 'Trades, building and new property art',

@@ -6,6 +6,11 @@ export const K = {
   startCash: 2000,
   targetOptions: [4000, 5000, 7000, 10000],
   defaultTarget: 5000,
+  /** A custom target can be set in steps of targetStep, up to targetMax. */
+  targetStep: 1000,
+  targetMax: 90000,
+  /** The die has faces 1 to dieSides. */
+  dieSides: 7,
   roundCapOptions: [0, 15, 20, 30],
 
   // Shops

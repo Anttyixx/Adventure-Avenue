@@ -19,7 +19,7 @@ import {
 } from '@aa/engine';
 import type { BoardView } from '../board';
 import { soundControls } from './soundpanel';
-import { squareName } from '../names';
+import { squareInfo, squareName } from '../names';
 import { boonIconURL, suitIconURL, wildIconURL } from '../icons';
 import { portraitURL } from '../sprites';
 import { clear, fmt, h } from './dom';
@@ -37,6 +37,8 @@ export interface PromptButton<T> {
   icon?: string;
   /** Shown on hover: what the option does. */
   title?: string;
+  /** A red button (saying no to something costly). */
+  danger?: boolean;
 }
 
 export interface HudCallbacks {
@@ -638,6 +640,7 @@ export class Hud {
         : '',
       boxes.length ? h('div', { class: 'tt-grid' }, ...boxes) : '',
       ...extra,
+      sq.t === 'shop' || sq.t === 'plot' ? '' : h('p', { class: 'tt-info' }, squareInfo(G, sq)),
     );
     const W = window.innerWidth;
     const H = window.innerHeight;
@@ -685,7 +688,7 @@ export class Hud {
         const el = h(
           'button',
           {
-            class: `btn ${b.main ? 'main nudge' : ''} ${b.secondary ? 'ghost' : ''} ${b.icon ? 'pic' : ''}`,
+            class: `btn ${b.main ? 'main nudge' : ''} ${b.secondary ? 'ghost' : ''} ${b.icon ? 'pic' : ''} ${b.danger ? 'no' : ''}`,
             disabled: !!b.disabled,
             title: b.title ?? null,
           },

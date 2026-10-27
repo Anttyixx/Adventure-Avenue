@@ -1,3 +1,4 @@
+import { K } from './constants';
 import type { GameState } from './types';
 
 /** mulberry32 step on the state stored in the game, so snapshots replay identically. */
@@ -13,7 +14,7 @@ export function randInt(G: { rng: number }, n: number): number {
 }
 
 export function rollDie(G: GameState): number {
-  return 1 + randInt(G, 6);
+  return 1 + randInt(G, K.dieSides);
 }
 
 export function pick<T>(G: { rng: number }, arr: readonly T[]): T {

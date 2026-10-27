@@ -721,6 +721,7 @@ export class HotSeat implements GameIO {
         const p = G.players[e.pid];
         sound.play('promote');
         board.confetti(e.pid);
+        board.dance(e.pid, T.promote);
         hud.banner(
           `${p.name} reached level ${e.level}! +${fmt(e.salary)}`,
           PLAYER_COLORS[p.color],
