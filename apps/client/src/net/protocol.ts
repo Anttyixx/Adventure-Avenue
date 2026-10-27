@@ -11,7 +11,7 @@
 import type { CharId, GameState, RuleSet } from '@aa/engine';
 
 /** Protocol version: a joiner on a different version is turned away. */
-export const NET_VERSION = 5;
+export const NET_VERSION = 6;
 
 export type SeatKind = 'host' | 'local' | 'remote' | 'open' | 'cpu';
 

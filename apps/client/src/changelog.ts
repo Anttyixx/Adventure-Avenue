@@ -47,6 +47,7 @@ export const CHANGELOG: ChangelogEntry[] = [
       },
     ],
     extras: [
+      'Player colors are now red, blue, green and purple (orange for a fifth player); yellow is gone',
       'Action bar grows a little when a question has more to show',
       'Stock screen: summary on the left, shares on the right',
       'Stock market panel no longer has empty space at the bottom',

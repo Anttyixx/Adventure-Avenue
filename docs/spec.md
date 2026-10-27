@@ -391,7 +391,7 @@ player's next turn begins.
 | Boom                   | Same, at 50%                                                                                          | Same as Boon                                                  |
 | Stockbroker            | Buy stock (Standard). Becomes a Venture square in Easy rules                                          | Stock market                                                  |
 | Backstreet (2 squares) | Warp to the other backstreet; the move ends there with no further effect and free direction next turn | Fast route between bottom-left and top-right                  |
-| Warp                   | Landing (not passing) sends you to the warp square it links to; the move ends there                  | Detached areas (islands); linked warps share a color          |
+| Warp                   | Landing (not passing) sends you to the warp square it links to; the move ends there                   | Detached areas (islands); linked warps share a color          |
 | Cannon                 | Pick another player and warp to their square. Suits and bank still apply there; nothing else does     | Suits, bank, promotion, win                                   |
 | Arcade                 | Play one random minigame (see Arcade minigames)                                                       | Cash, shop values, wild suit cards, stock                     |
 | Venture                | Venture grid                                                                                          | See Venture cards                                             |
@@ -507,14 +507,14 @@ per-player totals for fees earned, fees paid, salary, dividends and commission. 
 All options are chosen on the game setup screen; the rule set only changes how the board is built at game
 start, so every other system checks one flag (`rules`).
 
-|                                       | Standard                      | Easy                      |
-| ------------------------------------- | ----------------------------- | ------------------------- |
-| Groups for expansion                  | 7 color districts             | Rows of connected shops   |
+|                                       | Standard                                     | Easy                      |
+| ------------------------------------- | -------------------------------------------- | ------------------------- |
+| Groups for expansion                  | 7 color districts                            | Rows of connected shops   |
 | Vacant plots                          | Set per game (None to All), 7 building types | Plots are ordinary shops  |
-| Stock market, dividends, market panel | Yes                           | Hidden and off            |
-| Stockbroker square                    | Buy stock                     | Becomes a Venture square  |
-| Venture deck                          | All 30 cards                  | 23 cards (no stock cards) |
-| Lucky Reels "three stocks"            | 10 shares                     | 150G                      |
+| Stock market, dividends, market panel | Yes                                          | Hidden and off            |
+| Stockbroker square                    | Buy stock                                    | Becomes a Venture square  |
+| Venture deck                          | All 30 cards                                 | 23 cards (no stock cards) |
+| Lucky Reels "three stocks"            | 10 shares                                    | 150G                      |
 
 **Main menu:** the title screen has **Start**, which opens game setup, and **Continue**, which
 resumes the saved game (it shows the round, board and players, and is greyed out when there is no
@@ -537,7 +537,7 @@ what was used, the license and links to their pages.
   greyed out with their name, so no two players share one; a CPU holding the picked one switches
   to a free one). "Shuffle characters" rerolls them. Characters cannot change once the game
   starts. Each human seat has a name box (up to 12 characters; the characters `< > & " ' \`` and
-  `\` are removed; leave it blank to keep the suggested name), and typed names are remembered for
+`\` are removed; leave it blank to keep the suggested name), and typed names are remembered for
   the next game. In the online build, validate names on the server.
 
 In-game, the Menu button (top right) opens a menu with Rules (a summary), a Fast CPU
@@ -666,7 +666,7 @@ active player changes, tokens ease to their new sizes (the active one larger, th
 | Where           | Animation                                                                                                                                   | Trigger                                                   |
 | --------------- | ------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------- |
 | Board (ambient) | Drifting cloud shadows, pond shimmer, fountain ripples and spray, a glint across the bank coin every few seconds                            | Always                                                    |
-| Closed squares  | A rolling gate inside the tile border with a CLOSED sign; it rolls down (and back up when the owner's turn starts) with a board overview | Owner on a break                                          |
+| Closed squares  | A rolling gate inside the tile border with a CLOSED sign; it rolls down (and back up when the owner's turn starts) with a board overview    | Owner on a break                                          |
 | Characters      | Idle animation, offset per player                                                                                                           | Standing still                                            |
 | Square          | Gold ring that grows and fades, plus 8 pixel sparkles                                                                                       | Bought, built, bought out, traded, auctioned, or expanded |
 | Square          | White ring pulse                                                                                                                            | Landing, or arriving by warp                              |
@@ -721,7 +721,7 @@ API where available.
 
 **Type and color.** Lilita One for headings and numbers, Atkinson Hyperlegible for body text,
 Pixelify Sans only for pixel-themed labels. A dark navy UI shell around a bright daytime board.
-Player colors: red, blue, green, gold; district colors are vivid and easy to tell apart.
+Player colors: red, blue, green, purple, then orange for a fifth player; district colors are vivid and easy to tell apart.
 
 ## Sound and music
 
