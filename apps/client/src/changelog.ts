@@ -26,6 +26,18 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: '2026-10-27-property-art',
+    date: 'Oct 27, 2026',
+    title: 'New property art',
+    features: [
+      {
+        tag: 'new',
+        title: 'Painted shops and buildings',
+        text: "Every shop design, the 3-Star Shop, each circus level and all the plot buildings have new art. Windows, doors and signs take the owner's color, and stay grey while unowned.",
+      },
+    ],
+  },
+  {
     id: '2026-10-26-townsfolk',
     date: 'Oct 26, 2026',
     title: 'New characters',

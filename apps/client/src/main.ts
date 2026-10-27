@@ -10,6 +10,7 @@ import { h } from './ui/dom';
 import { joinScreen, onlineHub, resumeLobby } from './ui/online';
 import { clearGuest, guestInGame, loadGuest, setGuestInGame, type SaveInfo } from './save';
 import { freeCharacter, loadCharacters, shuffledCharacters } from './sprites';
+import { loadProps } from './props';
 import { installDevBadge } from './ui/devmenu';
 import { openEditor } from './ui/editor';
 import { openLab } from './ui/lab';
@@ -300,7 +301,7 @@ function route() {
   } else showStart();
 }
 
-// Characters are drawn from image sheets, so load them before the first screen.
-loadCharacters()
+// Characters and properties are drawn from images, so load them before the first screen.
+Promise.all([loadCharacters(), loadProps()])
   .catch((err) => console.error(err))
   .finally(route);

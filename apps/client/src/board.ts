@@ -13,7 +13,8 @@ import {
   type Square,
 } from '@aa/engine';
 import { cellCenter, tileShape, tileTop, worldSize } from './geometry';
-import { SHOP_TIERS, STAR3_TIERS, darken, drawShop, drawStar3, tierFor, tint } from './art';
+import { SHOP_TIERS, STAR3_TIERS, badge, darken, drawShop, drawStar3, tierFor, tint } from './art';
+import { drawProp, type PropKey } from './props';
 import { drawBoonIcon, drawCoin, drawSparkle, SUIT_CHARS } from './icons';
 import { Facing, FRAME_H, FRAME_W, drawCharacter, drawCharacterGlow, facingFor } from './sprites';
 import { TIMING as T } from './timing';
@@ -1573,7 +1574,14 @@ function buildingIcon(
   y: number,
   main: string,
   initial: string,
+  level = 0,
 ) {
+  // The painted building images (the circus by its level), once loaded; vector art until then.
+  const key = (b === 'circus' ? `circus${Math.min(3, level)}` : b) as PropKey;
+  if (drawProp(ctx, key, main, x, y - 9, 72, 46)) {
+    if (initial) badge(ctx, x + 26, y + 8, main, initial);
+    return;
+  }
   ctx.save();
   ctx.lineWidth = 3;
   switch (b) {
@@ -1847,10 +1855,11 @@ function drawSquare(ctx: CanvasRenderingContext2D, G: GameState, sq: Square) {
         iy - 4,
         owner ? ownerColor : '#8a94a8',
         owner?.name[0]?.toUpperCase() ?? '',
+        sq.lv,
       );
-      label(ctx, c.x, iy + 13, BUILDING_LABEL[sq.b], '#4a5470', 9);
+      label(ctx, c.x, iy + 19, BUILDING_LABEL[sq.b], '#4a5470', 9);
       const fee = sq.b === 'tax' ? '10%' : sq.b === 'agency' ? 'Break' : `${squareFee(G, sq)}G`;
-      if (owner) amount(fee, ty + 30);
+      if (owner) amount(fee, ty + 32);
     }
   } else {
     const t = sq.t === 'broker' && G.rules === 'easy' ? 'VENTURE' : (SPECIAL_LABEL[sq.t] ?? '');

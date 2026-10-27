@@ -571,7 +571,13 @@ devicePixelRatio. The static board (grass, roads, pond, fountain, flower beds, t
 is drawn into a cached offscreen canvas and redrawn only when state changes; each frame draws that
 cache, then highlights, sprites, coins, floating text and the die.
 
-- Shops: district-colored border, filled with the owner's color when owned, house icon, value
+- Property art is painted images (`apps/client/src/assets/props/`, drawn by `props.ts`): five
+  shop designs by value (cottage, house, storefront, townhouse, tower), three 3-Star Shop designs
+  (boutique, department store, grand mall), the circus at each of its four levels, and the
+  checkpoint, balloonport, tax office, home and estate agency. Their blue parts (windows, doors,
+  awnings, signs) are recolored: grey when unowned, the owner's color when owned, with the
+  owner's initial badge.
+- Shops: district-colored border, filled with the owner's color when owned, shop art, value
   label (unowned) or the fee as plain dark text and a pennant in the owner's color (owned). Closed
   shops get a dark overlay.
 - Plots: dashed outline and "VACANT" when empty; a vector icon per building plus its fee when

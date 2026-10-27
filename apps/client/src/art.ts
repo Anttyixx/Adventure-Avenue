@@ -1,9 +1,11 @@
 /**
  * Property art. Shops change design as their value grows (cottage -> house -> storefront ->
  * townhouse -> tower), and the 3-Star Shop has its own three designs (boutique -> department
- * store -> grand mall). Owned properties use the owner's color with an initial badge; unowned
- * shops use their district color. Shared by the board and the stock screen.
+ * store -> grand mall). They are drawn from the painted images in props.ts (vector art until those
+ * load), with the owner's color and an initial badge when owned and plain grey when unowned.
+ * Shared by the board and the stock screen.
  */
+import { drawProp } from './props';
 
 /** Value at which each shop design starts. */
 export const SHOP_TIERS = [0, 300, 550, 900, 1400];
@@ -88,7 +90,7 @@ function star(ctx: Ctx, x: number, y: number, r: number, c: string) {
 }
 
 /** The owner's initial on a round badge in the bottom-right corner of the art. */
-function badge(ctx: Ctx, x: number, y: number, color: string, initial: string) {
+export function badge(ctx: Ctx, x: number, y: number, color: string, initial: string) {
   ctx.beginPath();
   ctx.arc(x, y, 8, 0, Math.PI * 2);
   ctx.fillStyle = color;
@@ -108,6 +110,11 @@ function badge(ctx: Ctx, x: number, y: number, color: string, initial: string) {
  * (owner color, or the district color for unowned shops).
  */
 export function drawShop(ctx: Ctx, x: number, y: number, tier: number, main: string, initial?: string) {
+  // The painted shop images, once loaded; the vector art below until then.
+  if (drawProp(ctx, `shop${tier as 0 | 1 | 2 | 3 | 4}`, main, x, y - 2, 60, 50)) {
+    if (initial) badge(ctx, x + 22, y + 14, main, initial);
+    return;
+  }
   const line = darken(main.startsWith('#') ? main : '#888888', 0.55);
   ctx.save();
   switch (tier) {
@@ -174,6 +181,10 @@ export function drawShop(ctx: Ctx, x: number, y: number, tier: number, main: str
 
 /** Draw a 3-Star Shop centered on (x, y) in one of its three designs. */
 export function drawStar3(ctx: Ctx, x: number, y: number, tier: number, main: string, initial?: string) {
+  if (drawProp(ctx, `star${tier as 0 | 1 | 2}`, main, x, y - 2, 66, 50)) {
+    if (initial) badge(ctx, x + 26, y + 14, main, initial);
+    return;
+  }
   const line = darken(main.startsWith('#') ? main : '#888888', 0.55);
   ctx.save();
   switch (tier) {
