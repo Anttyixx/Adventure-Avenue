@@ -38,7 +38,7 @@ export const CHANGELOG: ChangelogEntry[] = [
       {
         tag: 'new',
         title: 'Game info chip',
-        text: 'The top left shows the board you are playing and the goal, with a Room button for online games.',
+        text: 'The top left shows the board you are playing, the current round and the goal, with a Room button for online games.',
       },
     ],
     extras: ['Player cards are always shown (no Hide button)'],

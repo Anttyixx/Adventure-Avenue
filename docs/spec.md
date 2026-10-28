@@ -684,8 +684,9 @@ active player changes, tokens ease to their new sizes (the active one larger, th
 **Layout.** Scrolling panels hide their scrollbars (they still scroll). The board fills the whole game screen edge to edge, and everything else floats over it
 as dark glass overlays. Top right: the zoom chip, a Stock market button (Standard rules)
 and the Menu button (the menu
-also shows the round, target and rule set). Top left: a chip with the game's name, the board name,
-the goal (target net worth) and, online, a Room button that shows the room code. Above the player
+also shows the round, target and rule set). Top left: the **info chip**, with the game's name, the board
+name, the current round (out of the round limit, if any), the goal (target net worth) and, online,
+a Room button that shows the room code. Above the player
 cards, right-aligned: the status line, one line saying what is going
 on now: what the game is waiting on a player to do ("Blue is buying stocks...", "Blue is deciding
 which space to go to...", see `ui/activity.ts`; the turn starts with "Blue is deciding what to

@@ -87,10 +87,14 @@ export class Hud {
   /** The game log inside the status line, shown while it is expanded. */
   logBox = h('div', { class: 'sb-log' });
   logOpen = false;
-  /** Top left: the game's name, the board, the goal and (online) the room code button. */
-  gameChip = h('div', { class: 'game-chip glass' });
+  /**
+   * The info chip, top left: the game's name, the board, the round, the goal and (online) the
+   * room code button.
+   */
+  infoChip = h('div', { class: 'info-chip glass' });
   private chipBoard = h('span', { class: 'gc-tag' });
   private chipGoal = h('span', { class: 'gc-tag' });
+  private chipRound = h('span', { class: 'gc-tag' });
   roomBtn = h('button', { class: 'btn small ghost gc-room', hidden: true }, 'Room');
   /** Holds the status line just above the player cards, as wide as them. */
   statusDock = h('div', { class: 'status-dock' });
@@ -126,9 +130,10 @@ export class Hud {
     this.statusBox.append(this.logBox, this.statusLine);
     this.statusDock.append(this.statusWrap);
     this.cardsWrap.append(this.cards);
-    this.gameChip.append(
+    this.infoChip.append(
       h('span', { class: 'gc-title' }, 'Adventure Avenue'),
       this.chipBoard,
+      this.chipRound,
       this.chipGoal,
       this.roomBtn,
     );
@@ -144,7 +149,7 @@ export class Hud {
     };
     this.root.append(
       this.toolbar,
-      this.gameChip,
+      this.infoChip,
       this.ask,
       this.cardsWrap,
       this.statusDock,
@@ -289,7 +294,7 @@ export class Hud {
     // Upright phones: the options sit above the cards and the status line.
     if (portraitStack) this.root.style.setProperty('--cards-h', `${H - lineTop + 6}px`);
     const tools = this.toolbar.getBoundingClientRect();
-    const chip = this.gameChip.getBoundingClientRect();
+    const chip = this.infoChip.getBoundingClientRect();
     this.root.style.setProperty('--top-free', `${tools.bottom + 6}px`);
     let right = 0;
     if (!portraitStack && cards.width) right = Math.min(W * 0.4, W - cards.left + 8);
@@ -321,6 +326,11 @@ export class Hud {
     );
     this.marketBtn.hidden = G.rules !== 'standard';
     this.chipBoard.textContent = G.boardName ?? 'Town';
+    clear(this.chipRound);
+    this.chipRound.append(
+      'Round ',
+      h('b', null, G.roundCap ? `${Math.min(G.round, G.roundCap)} / ${G.roundCap}` : String(G.round)),
+    );
     clear(this.chipGoal);
     this.chipGoal.append('Goal ', h('b', null, fmt(G.target)));
     this.renderCards();

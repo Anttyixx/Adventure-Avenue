@@ -35,6 +35,10 @@ A Fortune Street-style board game for the browser. Spec: `docs/spec.md`.
   `packages/engine/src/boards/format.ts`; `newGame({ board })` plays on any valid board.
   Boards use a `square` or `hex` grid (`BoardDef.layout`; hex = pointy-top, odd rows shifted
   right). Cell positions and tile outlines for both live in `apps/client/src/geometry.ts`.
+- In-game HUD (`apps/client/src/ui/hud.ts`), by name: the **info chip** (top left: game name,
+  board, round, goal, Room button), the **toolbar** (top right: zoom, Stock market, Menu), the
+  **action bar** (`.prompt-center`, the current player's options), the **status line** (above the
+  player cards; expands into the **game log**) and the **player cards** (bottom right).
 - Property art lives in `apps/client/src/assets/props/` (loaded by `props.ts`). An optional
   `<name>-tint.png` (same size, grey) holds the parts drawn in the owner's color; without one,
   the image's blue parts are recolored.

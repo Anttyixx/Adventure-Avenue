@@ -800,8 +800,8 @@ input[type='range'] {
 .toolbar .btn.on {
   background: #2d6a4f;
 }
-/* Top left: the game's name, board and goal, and the room code button online. */
-.game-chip {
+/* The info chip, top left: the game's name, board, round and goal, and the room code button online. */
+.info-chip {
   position: absolute;
   top: 10px;
   left: calc(10px + var(--free-left, 0px));
@@ -830,7 +830,7 @@ input[type='range'] {
 .gc-tag b {
   color: var(--text);
 }
-.game-chip .gc-room {
+.info-chip .gc-room {
   padding: 3px 10px;
   font-size: 12px;
 }
@@ -5009,7 +5009,7 @@ button.tb-chip:hover {
 }
 
 @media (max-height: 500px), (max-width: 760px) {
-  .game-chip {
+  .info-chip {
     top: 6px;
     gap: 4px;
     padding: 3px 4px 3px 8px;
