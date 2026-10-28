@@ -47,7 +47,9 @@ export function stockModal(
           )
         : 0;
     let n = 0;
-    const action = h('div', { class: 'm-action' });
+    // The deal summary goes under the map; the share counter and buttons beside the shop cards.
+    const info = h('div', { class: 'm-info' });
+    const side = h('div', { class: 'm-deal-side' });
     const body = h('div', null);
     const m = hud.modal(
       mode === 'buy'
@@ -58,7 +60,7 @@ export function stockModal(
           ? 'Sell stock at 20% above'
           : 'Sell stock',
       body,
-      { wide: true },
+      { wide: 'xl' },
     );
     const done = (v: { d: number; n: number } | null) => {
       m.close();
@@ -67,7 +69,8 @@ export function stockModal(
     const unit = () => stockPrice(G, d) * (mode === 'buy' ? 1 - rate : 1 + rate);
     const maxN = () => (mode === 'buy' ? Math.min(K.maxBuy, Math.floor(p.cash / unit())) : p.shares[d]);
     const drawAction = () => {
-      clear(action);
+      clear(info);
+      clear(side);
       const max = Math.max(0, maxN());
       n = Math.min(n || Math.min(10, max), max);
       // Summary card: the cost, and the share price, cash and shares now and after.
@@ -159,7 +162,7 @@ export function stockModal(
         },
       });
       update();
-      action.append(
+      info.append(
         h(
           'div',
           { class: 'm-sel' },
@@ -169,36 +172,29 @@ export function stockModal(
             : ` · ${fmt(unit())} per share · you hold ${p.shares[d]}`,
           mode === 'buy' ? ` · you can buy up to ${max}` : '',
         ),
-        // The summary on the left; the number of shares and the buttons on the right.
+        sum,
+      );
+      side.append(
+        picker.el,
         h(
           'div',
-          { class: 'm-deal' },
-          sum,
-          h(
-            'div',
-            { class: 'm-deal-side' },
-            picker.el,
-            h(
-              'div',
-              { class: 'btn-row' },
-              go,
-              h(
-                'button',
-                { class: 'btn ghost', onclick: () => done(null) },
-                mode === 'buy' ? 'Skip' : 'Cancel',
-              ),
-            ),
-          ),
+          { class: 'btn-row' },
+          go,
+          h('button', { class: 'btn ghost', onclick: () => done(null) }, mode === 'buy' ? 'Skip' : 'Cancel'),
         ),
       );
     };
     body.append(
-      marketView(G, d, (i) => {
-        d = i;
-        n = 0;
-        drawAction();
-      }),
-      action,
+      marketView(
+        G,
+        d,
+        (i) => {
+          d = i;
+          n = 0;
+          drawAction();
+        },
+        { underMap: info, besideShops: side },
+      ),
     );
     drawAction();
   });

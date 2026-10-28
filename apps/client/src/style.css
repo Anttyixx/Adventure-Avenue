@@ -1459,6 +1459,9 @@ input[type='range'] {
 .modal.wide {
   width: min(760px, 100%);
 }
+.modal.wide.xl {
+  width: min(980px, 100%);
+}
 @keyframes fadein {
   from {
     opacity: 0;
@@ -1914,7 +1917,51 @@ input[type='range'] {
   padding-top: 8px;
   border-top: 1px solid var(--glass-line);
 }
-/* Buy/sell: the summary card on the left, the number of shares and the buttons on the right. */
+/* Buy/sell: the deal summary under the map, the share counter and buttons beside the shop cards. */
+.m-left {
+  flex: 0 0 300px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.m-left .m-card {
+  margin-top: 0;
+}
+.m-sel {
+  font-size: 13px;
+  color: var(--muted);
+}
+.m-sel b {
+  color: var(--text);
+}
+.m-shops-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.m-shops-row > .m-shops {
+  flex: 1;
+  min-width: 0;
+}
+.m-shops-row > .m-deal-side {
+  margin: 0;
+}
+@media (max-width: 700px) {
+  /* Narrow: holdings, then the deal summary, the shops and the counter, one under another. */
+  .m-top:has(.m-left) {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .m-left {
+    order: 2;
+    flex-basis: auto;
+  }
+  .m-shops-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}
 .m-deal {
   display: flex;
   align-items: center;

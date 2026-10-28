@@ -831,8 +831,10 @@ export class Hud {
 
   // ------------------------------------------------------------ modals and banners
 
-  modal(title: string, body: Node, opts: { wide?: boolean; onClose?: () => void } = {}) {
-    const box = h('div', { class: `modal glass ${opts.wide ? 'wide' : ''}` });
+  modal(title: string, body: Node, opts: { wide?: boolean | 'xl'; onClose?: () => void } = {}) {
+    const box = h('div', {
+      class: `modal glass ${opts.wide ? 'wide' : ''} ${opts.wide === 'xl' ? 'xl' : ''}`,
+    });
     const head = h('div', { class: 'modal-head' }, h('h2', null, title));
     if (opts.onClose)
       head.append(h('button', { class: 'btn small ghost', onclick: () => opts.onClose!() }, 'Close'));

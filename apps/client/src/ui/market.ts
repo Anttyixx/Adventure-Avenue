@@ -35,6 +35,8 @@ export function marketView(
   G: GameState,
   initial: number | null,
   onSelect?: (d: number) => void,
+  /** Extra panels for the buy/sell screen: one under the map, one beside the shop cards. */
+  slots: { underMap?: Node; besideShops?: Node } = {},
 ): HTMLElement {
   let sel = Math.min(initial ?? lastSelected, G.districts.length - 1);
   const root = h('div', { class: 'market' });
@@ -44,8 +46,12 @@ export function marketView(
   const shops = h('div', { class: 'm-shops' });
   const foot = h('p', { class: 'm-foot' });
   // The footer sits under the holdings table, beside the map, instead of on a row of its own.
-  top.append(mapWrap, h('div', { class: 'm-right' }, grid, foot));
-  root.append(top, shops);
+  top.append(
+    slots.underMap ? h('div', { class: 'm-left' }, mapWrap, slots.underMap) : mapWrap,
+    h('div', { class: 'm-right' }, grid, foot),
+  );
+  root.append(slots.besideShops ? h('div', { class: 'm-shops-row' }, shops, slots.besideShops) : shops);
+  root.prepend(top);
 
   const select = (d: number) => {
     sel = (d + G.districts.length) % G.districts.length;

@@ -36,7 +36,10 @@ export const CHANGELOG: ChangelogEntry[] = [
         text: 'The bottom left now has a single status line saying what is going on, like "Rosa is buying stocks..." or the last thing that happened, with its icon and names in player colors. Tap it and it turns into the full game log, where the current turn shows what it is waiting on until the player acts.',
       },
     ],
-    extras: ['Buy, buyout and circus prompts show the fee rivals will pay instead of your cash'],
+    extras: [
+      'Buy, buyout and circus prompts show the fee rivals will pay instead of your cash',
+      'Stock screen: the deal summary sits under the map and the share counter beside the shops',
+    ],
   },
   {
     id: '2026-10-27-stocks-polish',
