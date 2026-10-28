@@ -32,8 +32,13 @@ export const CHANGELOG: ChangelogEntry[] = [
     features: [
       {
         tag: 'better',
-        title: 'Status line on the player cards',
-        text: 'The status line and game log moved above the player cards, lined up with them. The log opens to the same width as the cards.',
+        title: 'One bar for status and choices',
+        text: 'The bar at the bottom says what is going on, and morphs into your options when it is your move, then back again.',
+      },
+      {
+        tag: 'better',
+        title: 'Game log button',
+        text: 'A Game log button sits above the player cards and opens into the log, as wide as the cards.',
       },
       {
         tag: 'new',

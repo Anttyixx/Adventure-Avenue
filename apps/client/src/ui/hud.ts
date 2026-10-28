@@ -1,6 +1,7 @@
 /**
- * Dark-glass overlays floating over the board: top-right toolbar, status line (expands into the
- * game log), action bar, player cards, market drawer, tooltip, modals and banners.
+ * Dark-glass overlays floating over the board: info chip, toolbar, action bar (the status line
+ * when no options are up), Game log button (expands into the log), player cards, market drawer,
+ * tooltip, modals and banners.
  */
 import {
   PLAYER_COLORS,
@@ -57,27 +58,23 @@ export class Hud {
   toolbar = h('div', { class: 'toolbar' });
   /** Current zoom; tapping it zooms back in on the player. */
   zoomChip = h('button', { class: 'zoom-chip', title: 'Zoom: scroll, pinch or - / +. Tap to reset.' });
-  /**
-   * The status line in the bottom left: one line with what is going on now, either the last
-   * thing that happened or who the game is waiting on. Tapping it turns it into the game log.
-   */
-  statusBox = h('div', {
-    class: 'status-box glass',
+  /** The Game log button above the player cards; tapping it morphs it into the game log. */
+  logButton = h('div', {
+    class: 'log-btn glass',
     role: 'button',
     tabindex: '0',
     'aria-expanded': 'false',
   });
-  /** Holds the status box and its hover glow. */
-  statusWrap = h('div', { class: 'sb-wrap empty' }, this.statusBox);
-  private statusLine = h('div', { class: 'sb-line' });
+  logWrap = h('div', { class: 'lb-wrap' }, this.logButton);
+  private logLabel = h('div', { class: 'lb-label' }, 'Game log');
   private lastAction: { text: string; kind?: IconKind } | null = null;
   private waiting: { text: string; kind?: IconKind } | null = null;
-  /** The status line's place while folded (it is hidden while the log is open). */
+  /** The Game log button's place while folded (it is hidden while the log is open). */
   private lineRect = { top: 0, left: 0, right: 0, width: 0, height: 0 };
   /** How many log lines the open log last showed, so new ones can fade in. */
   private logSeen = -1;
-  /** The status box easing to the width of new text. */
-  private widthAnim: Animation | null = null;
+  /** The action bar morphing between sizes (status line, options). */
+  private askAnim: Animation | null = null;
   /** Round, target and rules, shown at the top of the game menu. */
   gameInfo = h('div', { class: 'gm-info' });
   /** The current player's options, centered near the bottom of the board. */
@@ -97,7 +94,7 @@ export class Hud {
   private chipRound = h('span', { class: 'gc-tag' });
   roomBtn = h('button', { class: 'btn small ghost gc-room', hidden: true }, 'Room');
   /** Holds the status line just above the player cards, as wide as them. */
-  statusDock = h('div', { class: 'status-dock' });
+  logDock = h('div', { class: 'log-dock' });
   drawer = h('div', { class: 'drawer glass' });
   tooltip = h('div', { class: 'tooltip glass' });
   modalLayer = h('div', { class: 'modal-layer' });
@@ -117,7 +114,6 @@ export class Hud {
   /** What each card last showed, to skip rebuilding cards that did not change. */
   private cardSigs = new Map<number, string>();
   private promptResolve: ((v: any) => void) | null = null;
-  private askHide = 0;
   private mainButton: HTMLButtonElement | null = null;
   fastBtn = h('button', { class: 'btn small' });
 
@@ -127,8 +123,8 @@ export class Hud {
     cb: HudCallbacks,
   ) {
     this.root = h('div', { class: 'hud' });
-    this.statusBox.append(this.logBox, this.statusLine);
-    this.statusDock.append(this.statusWrap);
+    this.logButton.append(this.logBox, this.logLabel);
+    this.logDock.append(this.logWrap);
     this.cardsWrap.append(this.cards);
     this.infoChip.append(
       h('span', { class: 'gc-title' }, 'Adventure Avenue'),
@@ -138,11 +134,11 @@ export class Hud {
       this.roomBtn,
     );
     // While it is the log, only its Close button folds it back.
-    this.statusBox.onclick = () => {
+    this.logButton.onclick = () => {
       if (!this.logOpen) this.toggleLog(true);
     };
-    this.statusBox.onkeydown = (e) => {
-      if (e.target === this.statusBox && (e.key === 'Enter' || e.key === ' ')) {
+    this.logButton.onkeydown = (e) => {
+      if (e.target === this.logButton && (e.key === 'Enter' || e.key === ' ')) {
         e.preventDefault();
         this.toggleLog();
       }
@@ -152,7 +148,7 @@ export class Hud {
       this.infoChip,
       this.ask,
       this.cardsWrap,
-      this.statusDock,
+      this.logDock,
       this.drawer,
       this.tooltip,
       this.modalLayer,
@@ -287,7 +283,7 @@ export class Hud {
     this.root.style.setProperty('--dock-b', `${H - cards.top + 6}px`);
     // Only the folded status line counts, so opening the log never moves anything.
     if (!this.logOpen) {
-      const r = this.statusBox.getBoundingClientRect();
+      const r = this.logButton.getBoundingClientRect();
       this.lineRect = { top: r.top, left: r.left, right: r.right, width: r.width, height: r.height };
     }
     const lineTop = this.lineRect.height ? this.lineRect.top : cards.top;
@@ -549,47 +545,84 @@ export class Hud {
   }
 
   /** Show what is going on now: the wait if the game is waiting, else the last action. */
+  /**
+   * When no options are up, the action bar is the status line: what is going on now (the wait
+   * if the game is waiting, else the last action), easing to the new size.
+   */
   private showStatus() {
+    if (this.promptResolve) return;
+    const from = this.askSize();
+    this.fillStatus();
+    this.morphAsk(from);
+  }
+
+  private fillStatus() {
+    const a = this.ask;
     const cur = this.waiting ?? this.lastAction;
-    const box = this.statusBox;
-    // Width before the change (mid-animation if one is running), so the box can ease to the new
-    // text's width instead of jumping.
-    const from = this.logOpen ? 0 : box.offsetWidth;
-    this.widthAnim?.cancel();
-    clear(this.statusLine);
+    clear(a);
+    a.classList.remove('stacked');
+    a.classList.add('status');
+    a.style.removeProperty('--pc');
+    a.classList.toggle('show', !!cur);
     if (cur) {
-      this.statusLine.append(
+      a.append(
         h(
           'div',
-          { class: 'tick-line rise' },
+          { class: 'prompt-text ask-status rise' },
           kindIcon(cur.kind),
           h('span', { class: 'tick-text' }, ...namesInColor(this.G, cur.text)),
         ),
       );
     }
-    this.statusWrap.classList.toggle('empty', !cur && !this.logOpen);
-    const to = this.logOpen ? 0 : box.offsetWidth;
-    if (from && to && Math.abs(to - from) > 1 && !matchMedia('(prefers-reduced-motion: reduce)').matches) {
-      this.widthAnim = box.animate([{ width: `${from}px` }, { width: `${to}px` }], {
-        duration: 300,
-        easing: 'cubic-bezier(0.2, 0.8, 0.2, 1)',
-      });
-    }
-    this.updateInsets();
   }
 
-  /** Expand the status line into the game log, or fold it back, morphing between the sizes. */
+  /** The action bar's size now (mid-morph if one is running), or null while it is hidden. */
+  private askSize() {
+    const a = this.ask;
+    const size = a.classList.contains('show') ? { w: a.offsetWidth, h: a.offsetHeight } : null;
+    this.askAnim?.cancel();
+    return size;
+  }
+
+  /** Ease the action bar from its old size to the size of its new content. */
+  private morphAsk(from: { w: number; h: number } | null) {
+    const a = this.ask;
+    this.updateInsets();
+    if (!from || !a.classList.contains('show') || matchMedia('(prefers-reduced-motion: reduce)').matches)
+      return;
+    const to = { w: a.offsetWidth, h: a.offsetHeight };
+    if (Math.abs(to.w - from.w) < 2 && Math.abs(to.h - from.h) < 2) return;
+    a.classList.add('morphing');
+    const anim = a.animate(
+      [
+        { width: `${from.w}px`, height: `${from.h}px`, minHeight: '0px' },
+        { width: `${to.w}px`, height: `${to.h}px`, minHeight: '0px' },
+      ],
+      { duration: 280, easing: 'cubic-bezier(0.2, 0.8, 0.2, 1)' },
+    );
+    this.askAnim = anim;
+    const end = () => {
+      if (this.askAnim !== anim) return;
+      this.askAnim = null;
+      a.classList.remove('morphing');
+      this.updateInsets();
+    };
+    anim.onfinish = end;
+    anim.oncancel = end;
+  }
+
+  /** Expand the Game log button into the game log, or fold it back, morphing between the sizes. */
   toggleLog(open = !this.logOpen) {
     if (open === this.logOpen) return;
-    const box = this.statusBox;
+    const box = this.logButton;
     // Layout sizes, so the hover zoom does not count.
     const from = { width: box.offsetWidth, height: box.offsetHeight };
     this.logOpen = open;
-    this.statusWrap.classList.toggle('open', open);
+    this.logWrap.classList.toggle('open', open);
     box.setAttribute('aria-expanded', String(open));
     this.logSeen = -1;
     this.renderLog(true);
-    this.showStatus();
+    this.updateInsets();
     const to = { width: box.offsetWidth, height: box.offsetHeight };
     if (from.width && to.width && !matchMedia('(prefers-reduced-motion: reduce)').matches) {
       box.animate(
@@ -764,8 +797,10 @@ export class Hud {
    */
   prompt<T>(text: string | Node, buttons: PromptButton<T>[], color?: number): Promise<T> {
     this.cancelPrompt();
+    // The bar morphs from whatever it showed (the status line or other options) to these.
+    const from = this.askSize();
     clear(this.ask);
-    clearTimeout(this.askHide);
+    this.ask.classList.remove('status');
     this.ask.classList.add('show');
     // Picture buttons need the width: the question goes on one line above them.
     this.ask.classList.toggle(
@@ -809,7 +844,7 @@ export class Hud {
         if (b.main) this.mainButton = el;
         row.append(el);
       }
-      this.updateInsets();
+      this.morphAsk(from);
     });
   }
 
@@ -823,11 +858,8 @@ export class Hud {
   private finishPrompt() {
     this.promptResolve = null;
     this.mainButton = null;
-    // Slide out, then empty it (unless a new prompt took its place meanwhile).
-    this.ask.classList.remove('show');
-    clearTimeout(this.askHide);
-    this.askHide = window.setTimeout(() => clear(this.ask), 260);
-    this.updateInsets();
+    // Back to the status line.
+    this.showStatus();
   }
 
   cancelPrompt() {
@@ -840,7 +872,6 @@ export class Hud {
    * action or wait replaces it, so the line never drops back to an older action in between.
    */
   status(text: string, kind?: IconKind) {
-    if (this.promptResolve) return;
     // Repeats (e.g. one per step of a walk) leave the line as it is.
     if (this.waiting?.text === text && this.waiting.kind === kind) return;
     this.waiting = { text, kind };

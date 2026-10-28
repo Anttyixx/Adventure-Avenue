@@ -686,19 +686,19 @@ as dark glass overlays. Top right: the zoom chip, a Stock market button (Standar
 and the Menu button (the menu
 also shows the round, target and rule set). Top left: the **info chip**, with the game's name, the board
 name, the current round (out of the round limit, if any), the goal (target net worth) and, online,
-a Room button that shows the room code. Above the player
-cards, right-aligned: the status line, one line saying what is going
-on now: what the game is waiting on a player to do ("Blue is buying stocks...", "Blue is deciding
-which space to go to...", see `ui/activity.ts`; the turn starts with "Blue is deciding what to
-do..." and a three-dot icon, and rolling and walking are waits too) or else the last thing that
-happened. A wait stays until the next action or wait replaces it. The box eases to the width of
-each new line as the text rises in. It shows the
-log icon for that kind of action, and player names in their colors. On hover it grows 3% and
-glows with a gradient; tapping it morphs it into the game log (turn by turn, newest at the bottom,
-scrollable back to the start of the game), which replaces the line while open. The current turn's
-card ends with a waiting line while the game waits, and the action that answers it fades in in
-its place. Only the log's Close button folds it back. The line is at most as wide as the player cards and
-the log exactly as wide, fitting between the toolbar and the cards. Bottom right: the player cards stacked vertically in turn order (online, each device
+a Room button that shows the room code. Bottom center: the **action bar**. While the game waits on
+nobody here, it is the status line: one line saying what is going on now: what the game is waiting
+on a player to do ("Blue is buying stocks...", "Blue is deciding which space to go to...", see
+`ui/activity.ts`; the turn starts with "Blue is deciding what to do..." and a three-dot icon, and
+rolling and walking are waits too) or else the last thing that happened, with the log icon for
+that kind of action and player names in their colors. A wait stays until the next action or wait
+replaces it. When a player on this device has a choice to make, the bar morphs (eases its width and
+height) into their options, and morphs back to the status line once they answer. Above the player
+cards, right-aligned: the **Game log button**; tapping it morphs it into the game log (turn by
+turn, newest at the bottom, scrollable back to the start of the game), exactly as wide as the
+cards and fitting between the toolbar and the cards. The current turn's card ends with a waiting
+line while the game waits, and the action that answers it fades in in its place. Only the log's
+Close button folds it back. Bottom right: the player cards stacked vertically in turn order (online, each device
 turns the order round so its own player's card is at the bottom; turns still go top to bottom) (net worth, cash, level,
 suits and progress bar); they are always shown. The stock market lives in a
 slide-out drawer on the right.

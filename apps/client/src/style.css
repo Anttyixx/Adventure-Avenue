@@ -836,7 +836,7 @@ input[type='range'] {
 }
 /* The status line sits on the player cards, right-aligned and at most as wide as them; the log
    it opens into is exactly as wide. */
-.status-dock {
+.log-dock {
   position: absolute;
   right: 10px;
   bottom: var(--dock-b, 200px);
@@ -848,45 +848,17 @@ input[type='range'] {
   align-items: flex-end;
   pointer-events: none;
 }
-.status-dock > * {
+.log-dock > * {
   pointer-events: auto;
 }
-.hud.upright .status-dock {
+.hud.upright .log-dock {
   right: 6px;
 }
-.sb-wrap {
-  position: relative;
-  isolation: isolate;
+.lb-wrap {
   align-self: flex-end;
   max-width: 100%;
-  transform-origin: right bottom;
-  transition: transform 0.18s ease-out;
 }
-.sb-wrap.empty {
-  display: none;
-}
-/* Hovering the folded status line grows it a little and lights a gradient glow around it. */
-.sb-wrap::before {
-  content: '';
-  position: absolute;
-  inset: -3px;
-  z-index: -1;
-  border-radius: calc(var(--radius) + 3px);
-  background: linear-gradient(110deg, #ffd166, #ff7ab6 40%, #7aa2ff 70%, #7cf29a);
-  filter: blur(9px);
-  opacity: 0;
-  transition: opacity 0.18s;
-  pointer-events: none;
-}
-.sb-wrap:not(.open):hover,
-.sb-wrap:not(.open):has(.status-box:focus-visible) {
-  transform: scale(1.03);
-}
-.sb-wrap:not(.open):hover::before,
-.sb-wrap:not(.open):has(.status-box:focus-visible)::before {
-  opacity: 0.8;
-}
-.status-box {
+.log-btn {
   display: flex;
   flex-direction: column;
   justify-content: flex-end;
@@ -895,52 +867,46 @@ input[type='range'] {
   cursor: pointer;
   user-select: none;
   -webkit-user-select: none;
-  outline: none;
+  transition: background 0.15s;
 }
-.sb-wrap.open {
+.lb-wrap:not(.open) .log-btn:hover {
+  background: rgba(30, 44, 82, 0.92);
+}
+.log-btn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+.lb-wrap.open {
   align-self: stretch;
   min-height: 0;
   display: flex;
   flex-direction: column;
 }
-.sb-wrap.open .status-box {
+.lb-wrap.open .log-btn {
   width: 100%;
   min-height: 0;
   cursor: default;
   user-select: text;
   -webkit-user-select: text;
 }
-.sb-line {
-  display: flex;
-  align-items: center;
-  padding: 7px 12px;
+.lb-label {
+  padding: 6px 14px;
   font-size: 13px;
+  font-weight: 700;
   color: var(--text);
-  min-height: 30px;
-  min-width: 0;
+  white-space: nowrap;
 }
-.sb-wrap.open .sb-line {
+.lb-wrap.open .lb-label {
   display: none;
-}
-.sb-line .tick-line {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  min-width: 0;
 }
 .pname {
   font-weight: 700;
 }
-.sb-line .tick-text {
-  overflow: hidden;
-  white-space: nowrap;
-  text-overflow: ellipsis;
-}
-/* The game log the status line turns into. */
+/* The game log the Game log button turns into. */
 .sb-log {
   display: none;
 }
-.sb-wrap.open .sb-log {
+.lb-wrap.open .sb-log {
   flex: 1 1 auto;
   display: flex;
   flex-direction: column;
@@ -3313,6 +3279,28 @@ input[type='range'] {
     transform 0.24s cubic-bezier(0.3, 0.8, 0.4, 1.15),
     opacity 0.2s,
     visibility 0s 0.24s;
+}
+/* With no options up, the action bar is the status line: one line on what is going on now. */
+.prompt-center.status {
+  min-height: 0;
+  padding: 9px 18px 9px 12px;
+  border-color: var(--glass-line);
+}
+.prompt-center.status .prompt-text.ask-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 15px;
+  color: var(--text);
+}
+.ask-status .tick-text {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+/* Clips the content while the bar eases between sizes. */
+.prompt-center.morphing {
+  overflow: hidden;
 }
 .prompt-center.show {
   opacity: 1;
