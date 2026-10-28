@@ -10,6 +10,7 @@ import {
   PLAYER_COLORS,
   isProperty,
   ownedSquares,
+  squareFee,
   type BuildingKey,
   type DebtAsset,
   type GameState,
@@ -78,15 +79,17 @@ export function question(text: string, chips: [string, string | Node, string?][]
 }
 
 /**
- * Chips for a purchase, most important first (narrow screens show only the first few): the
- * price, the player's cash after (red below zero) and their cash now.
+ * The fee rivals would pay on a square if `pid` owned it (and, for a circus, at level `lv`):
+ * the square is changed for the sum and put back straight after.
  */
-export function costChips(label: string, price: number, cash: number): [string, string, string?][] {
-  return [
-    [label, fmt(price), 'big'],
-    ['Cash after', fmt(cash - price), cash - price < 0 ? 'bad' : ''],
-    ['Your cash', fmt(cash)],
-  ];
+export function feeIfOwned(G: GameState, sqId: number, pid: number, lv?: number): number {
+  const sq = G.nodes[sqId];
+  const keep = { owner: sq.owner, lv: sq.lv };
+  sq.owner = pid;
+  if (lv != null) sq.lv = lv;
+  const fee = squareFee(G, sq);
+  Object.assign(sq, keep);
+  return fee;
 }
 
 // ------------------------------------------------------------ auction, renovate, debt
@@ -207,7 +210,9 @@ export async function debtOnBoard(
     const ok = await hud.prompt(
       question(`Sell your ${shortName(G, G.nodes[pick.a.id])}?`, [
         ['The bank pays', `+${fmt(pick.a.amount)}`, 'good'],
-        ['Cash after', fmt(p.cash + pick.a.amount), p.cash + pick.a.amount < 0 ? 'bad' : ''],
+        p.cash + pick.a.amount < 0
+          ? ['Debt left', fmt(-(p.cash + pick.a.amount)), 'bad']
+          : ['Debt', 'Paid off', 'good'],
       ]),
       [
         { label: 'Sell it', value: true, main: true },
@@ -228,10 +233,10 @@ export function buyoutPrompt(ctx: PickCtx, p: Player, sqId: number, price: numbe
   const owner = G.players[sq.owner];
   return hud.prompt(
     question(`Buy out ${owner.name}'s ${shortName(G, sq)} at ${K.buyoutX}x?`, [
-      ...costChips(`Price (${K.buyoutX}x)`, price, p.cash).slice(0, 2),
+      [`Price (${K.buyoutX}x)`, fmt(price), 'big'],
+      ['Fee when rivals land here', fmt(feeIfOwned(G, sqId, p.id))],
       ['Value', fmt(sq.value)],
       [`${owner.name} gets (${K.buyoutOwnerX}x)`, fmt(sq.value * K.buyoutOwnerX)],
-      ['Your cash', fmt(p.cash)],
     ]),
     [
       { label: 'Buy out', value: true },

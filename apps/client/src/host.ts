@@ -33,8 +33,8 @@ import {
   auctionOnBoard,
   buyoutPrompt,
   cannonOnBoard,
-  costChips,
   debtOnBoard,
+  feeIfOwned,
   question,
   renovateOnBoard,
   tradeOnBoard,
@@ -481,7 +481,10 @@ export class HotSeat implements GameIO {
 
       case 'buyShop':
         return hud.prompt(
-          question(`Buy this ${shortName(G, G.nodes[req.sq])}?`, costChips('Price', req.price, p.cash)),
+          question(`Buy this ${shortName(G, G.nodes[req.sq])}?`, [
+            ['Price', fmt(req.price), 'big'],
+            ['Fee when rivals land here', fmt(feeIfOwned(G, req.sq, p.id))],
+          ]),
           [
             { label: 'Buy', value: true, main: true },
             { label: 'Pass', value: false, secondary: true },
@@ -504,7 +507,13 @@ export class HotSeat implements GameIO {
 
       case 'circusUpgrade':
         return hud.prompt(
-          question('Upgrade your circus?', costChips('Cost', req.cost, p.cash)),
+          question('Upgrade your circus?', [
+            ['Cost', fmt(req.cost), 'big'],
+            [
+              'Fee when rivals land here',
+              `${fmt(feeIfOwned(G, req.sq, p.id))} → ${fmt(feeIfOwned(G, req.sq, p.id, req.tier))}`,
+            ],
+          ]),
           [
             { label: 'Upgrade', value: true, main: true },
             { label: 'Not now', value: false, secondary: true },

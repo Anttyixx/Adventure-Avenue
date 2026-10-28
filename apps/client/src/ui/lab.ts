@@ -39,6 +39,7 @@ const UNOWNED_ART = '#8a94a8';
 import { BoardView, ZOOM_STEP } from '../board';
 import { CHARACTERS, shuffledCharacters } from '../sprites';
 import { clear, fmt, h } from './dom';
+import { shortName } from '../names';
 import { DerbyView, MemoryView, ReelsView, VentureView } from './games';
 import { Hud } from './hud';
 import { clearGuest, loadGuest, saveGuest } from '../save';
@@ -61,7 +62,7 @@ import {
   answerTradeOnBoard,
   auctionOnBoard,
   buyoutPrompt,
-  costChips,
+  feeIfOwned,
   question,
   cannonOnBoard,
   debtOnBoard,
@@ -90,7 +91,7 @@ const rnd = (n: number) => Math.floor(Math.random() * n);
  * Controls for UI elements that were just added or changed: they shake once and glow so they
  * are easy to find. Update this list with each change.
  */
-const RECENT = new Set(['Status: last action', 'Status: waiting on', 'Game log']);
+const RECENT = new Set(['Buy prompt', 'Circus upgrade', 'Buyout (5x)', 'Debt']);
 
 /** Which board the lab plays on: Town (square) or Twin Lakes (hex), remembered per browser. */
 const LAB_BOARD_KEY = 'aa-lab-board';
@@ -392,19 +393,45 @@ export async function openLab(app: HTMLElement, section?: string) {
           ),
         ),
       ),
-      btn('Buy prompt', async () =>
+      btn('Buy prompt', async () => {
+        const sq = G.nodes.find((s) => s.t === 'shop')!;
         result(
           'Buy prompt',
           await hud.prompt(
-            question('Buy this Bay Market shop?', costChips('Price', 220, cur().cash)),
+            question(`Buy this ${shortName(G, sq)}?`, [
+              ['Price', fmt(sq.value), 'big'],
+              ['Fee when rivals land here', fmt(feeIfOwned(G, sq.id, cur().id))],
+            ]),
             [
               { label: 'Buy', value: true, main: true },
               { label: 'Pass', value: false, secondary: true },
             ],
             cur().color,
           ),
-        ),
-      ),
+        );
+      }),
+      btn('Circus upgrade', async () => {
+        const sq = G.nodes.find((s) => s.t === 'plot' && s.b === 'circus');
+        if (!sq) return hud.tick('This board has no circus.');
+        const tier = Math.min(K.circus.length - 1, sq.lv + 1);
+        result(
+          'Circus upgrade',
+          await hud.prompt(
+            question('Upgrade your circus?', [
+              ['Cost', fmt(500), 'big'],
+              [
+                'Fee when rivals land here',
+                `${fmt(feeIfOwned(G, sq.id, cur().id))} → ${fmt(feeIfOwned(G, sq.id, cur().id, tier))}`,
+              ],
+            ]),
+            [
+              { label: 'Upgrade', value: true, main: true },
+              { label: 'Not now', value: false, secondary: true },
+            ],
+            cur().color,
+          ),
+        );
+      }),
       btn('Bid prompt', async () =>
         result(
           'Bid prompt',
