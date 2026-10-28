@@ -684,7 +684,9 @@ active player changes, tokens ease to their new sizes (the active one larger, th
 **Layout.** Scrolling panels hide their scrollbars (they still scroll). The board fills the whole game screen edge to edge, and everything else floats over it
 as dark glass overlays. Top right: the zoom chip, a Stock market button (Standard rules)
 and the Menu button (the menu
-also shows the round, target and rule set). Bottom left: the status line, one line saying what is going
+also shows the round, target and rule set). Top left: a chip with the game's name, the board name,
+the goal (target net worth) and, online, a Room button that shows the room code. Above the player
+cards, right-aligned: the status line, one line saying what is going
 on now: what the game is waiting on a player to do ("Blue is buying stocks...", "Blue is deciding
 which space to go to...", see `ui/activity.ts`; the turn starts with "Blue is deciding what to
 do..." and a three-dot icon, and rolling and walking are waits too) or else the last thing that
@@ -694,9 +696,10 @@ log icon for that kind of action, and player names in their colors. On hover it 
 glows with a gradient; tapping it morphs it into the game log (turn by turn, newest at the bottom,
 scrollable back to the start of the game), which replaces the line while open. The current turn's
 card ends with a waiting line while the game waits, and the action that answers it fades in in
-its place. Only the log's Close button folds it back. The line moves up above the options when they would cover it. Bottom right: the player cards stacked vertically in turn order (online, each device
+its place. Only the log's Close button folds it back. The line is at most as wide as the player cards and
+the log exactly as wide, fitting between the toolbar and the cards. Bottom right: the player cards stacked vertically in turn order (online, each device
 turns the order round so its own player's card is at the bottom; turns still go top to bottom) (net worth, cash, level,
-suits and progress bar), with a Hide/Show toggle so players can clear the board. The stock market lives in a
+suits and progress bar); they are always shown. The stock market lives in a
 slide-out drawer on the right.
 
 **Camera.** The camera always follows the active player, centered on screen and zoomed in (about

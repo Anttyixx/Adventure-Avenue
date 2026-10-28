@@ -84,11 +84,16 @@ export class Hud {
   ask = h('div', { class: 'prompt-center glass' });
   cardsWrap = h('div', { class: 'cards-wrap' });
   cards = h('div', { class: 'cards' });
-  cardsToggle = h('button', { class: 'btn small ghost cards-toggle' }, 'Hide');
   /** The game log inside the status line, shown while it is expanded. */
   logBox = h('div', { class: 'sb-log' });
   logOpen = false;
-  roomBtn = h('button', { class: 'btn small ghost cards-toggle', hidden: true }, 'Room');
+  /** Top left: the game's name, the board, the goal and (online) the room code button. */
+  gameChip = h('div', { class: 'game-chip glass' });
+  private chipBoard = h('span', { class: 'gc-tag' });
+  private chipGoal = h('span', { class: 'gc-tag' });
+  roomBtn = h('button', { class: 'btn small ghost gc-room', hidden: true }, 'Room');
+  /** Holds the status line just above the player cards, as wide as them. */
+  statusDock = h('div', { class: 'status-dock' });
   drawer = h('div', { class: 'drawer glass' });
   tooltip = h('div', { class: 'tooltip glass' });
   modalLayer = h('div', { class: 'modal-layer' });
@@ -98,7 +103,6 @@ export class Hud {
   /** This device's player in an online game (their card goes at the bottom), or -1. */
   myPid = -1;
   drawerMode: 'market' | 'log' | null = null;
-  cardsHidden = false;
   /** Extra space covered on the left (e.g. the UI Lab panel). */
   leftInset = 0;
   private shown = new Map<number, { nw: number; cash: number }>();
@@ -120,8 +124,14 @@ export class Hud {
   ) {
     this.root = h('div', { class: 'hud' });
     this.statusBox.append(this.logBox, this.statusLine);
-    const bottomLeft = h('div', { class: 'bottom-left' }, this.statusWrap);
-    this.cardsWrap.append(h('div', { class: 'cards-head' }, this.roomBtn, this.cardsToggle), this.cards);
+    this.statusDock.append(this.statusWrap);
+    this.cardsWrap.append(this.cards);
+    this.gameChip.append(
+      h('span', { class: 'gc-title' }, 'Adventure Avenue'),
+      this.chipBoard,
+      this.chipGoal,
+      this.roomBtn,
+    );
     // While it is the log, only its Close button folds it back.
     this.statusBox.onclick = () => {
       if (!this.logOpen) this.toggleLog(true);
@@ -134,9 +144,10 @@ export class Hud {
     };
     this.root.append(
       this.toolbar,
-      bottomLeft,
+      this.gameChip,
       this.ask,
       this.cardsWrap,
+      this.statusDock,
       this.drawer,
       this.tooltip,
       this.modalLayer,
@@ -152,15 +163,11 @@ export class Hud {
     this.marketBtn.onclick = () => this.toggleDrawer('market');
     this.toolbar.append(this.zoomChip, this.marketBtn, this.menuBtn, this.menu);
     this.buildMenu();
-    this.cardsToggle.onclick = () => {
-      this.cardsHidden = !this.cardsHidden;
-      this.cardsWrap.classList.toggle('hidden-cards', this.cardsHidden);
-      this.cardsToggle.textContent = this.cardsHidden ? 'Show' : 'Hide';
-      this.updateInsets();
-    };
     window.addEventListener('keydown', this.onKey);
     board.onHover = (id, x, y) => this.showTooltip(id, x, y);
-    new ResizeObserver(() => this.updateInsets()).observe(this.root);
+    const resize = new ResizeObserver(() => this.updateInsets());
+    resize.observe(this.root);
+    resize.observe(this.cardsWrap);
   }
 
   destroy() {
@@ -264,37 +271,36 @@ export class Hud {
   /** Tell the board which parts of the screen the overlays cover. */
   updateInsets() {
     const W = window.innerWidth;
+    const H = window.innerHeight;
     const portraitStack = this.root.classList.contains('upright');
-    const bottomLeft = this.statusWrap.parentElement!;
     // Where the action bar sits once shown (layout box, so the slide animation does not count).
     const a = this.ask;
-    const ask = a.classList.contains('show')
-      ? { top: a.offsetTop, height: a.offsetHeight, left: a.offsetLeft, right: a.offsetLeft + a.offsetWidth }
-      : { top: 0, height: 0, left: 0, right: 0 };
-    // When the options would cover the status line (narrow screens, long lines), it moves up to
-    // sit just above them.
+    const ask = a.classList.contains('show') ? { top: a.offsetTop, height: a.offsetHeight } : null;
+    // The status line (and the log it opens into) sits on the player cards, as wide as them.
+    const cards = this.cardsWrap.getBoundingClientRect();
+    this.root.style.setProperty('--cards-w', `${cards.width}px`);
+    this.root.style.setProperty('--dock-b', `${H - cards.top + 6}px`);
+    // Only the folded status line counts, so opening the log never moves anything.
     if (!this.logOpen) {
       const r = this.statusBox.getBoundingClientRect();
       this.lineRect = { top: r.top, left: r.left, right: r.right, width: r.width, height: r.height };
     }
-    const sb = this.lineRect;
-    const covered = ask.height > 0 && sb.width > 0 && sb.right > ask.left && sb.left < ask.right;
-    bottomLeft.style.bottom = covered ? `${window.innerHeight - ask.top + 6}px` : '';
-    // Only the folded status line counts, so opening the log never moves the camera.
-    const bar = sb.height ? sb : { top: window.innerHeight };
-    const cards = this.cardsWrap.getBoundingClientRect();
+    const lineTop = this.lineRect.height ? this.lineRect.top : cards.top;
+    // Upright phones: the options sit above the cards and the status line.
+    if (portraitStack) this.root.style.setProperty('--cards-h', `${H - lineTop + 6}px`);
     const tools = this.toolbar.getBoundingClientRect();
-    if (portraitStack) this.root.style.setProperty('--cards-h', `${this.cardsWrap.offsetHeight + 6}px`);
+    const chip = this.gameChip.getBoundingClientRect();
+    this.root.style.setProperty('--top-free', `${tools.bottom + 6}px`);
     let right = 0;
-    if (!this.cardsHidden && !portraitStack && cards.width) right = Math.min(W * 0.4, W - cards.left + 8);
-    // A lifted status line is left out, so a new line never moves the camera.
-    const top = Math.min(
-      covered ? Infinity : bar.top,
-      ask.height ? ask.top : Infinity,
-      portraitStack ? cards.top : Infinity,
-    );
-    const bottom = window.innerHeight - top + 4;
-    this.board.insets = { top: tools.bottom + 6, right, bottom: Math.max(0, bottom), left: this.leftInset };
+    if (!portraitStack && cards.width) right = Math.min(W * 0.4, W - cards.left + 8);
+    const top = Math.min(ask ? ask.top : Infinity, portraitStack ? lineTop : Infinity);
+    const bottom = H - top + 4;
+    this.board.insets = {
+      top: Math.max(tools.bottom, chip.bottom) + 6,
+      right,
+      bottom: Math.max(0, bottom),
+      left: this.leftInset,
+    };
     // Center the options between the left edge (or lab panel) and the player cards.
     this.root.style.setProperty('--free-left', `${this.leftInset}px`);
     this.root.style.setProperty('--free-right', `${right}px`);
@@ -314,6 +320,9 @@ export class Hud {
       h('span', null, G.rules === 'standard' ? 'Standard' : 'Easy'),
     );
     this.marketBtn.hidden = G.rules !== 'standard';
+    this.chipBoard.textContent = G.boardName ?? 'Town';
+    clear(this.chipGoal);
+    this.chipGoal.append('Goal ', h('b', null, fmt(G.target)));
     this.renderCards();
     if (this.drawerMode) this.renderDrawer();
     if (this.logOpen) this.renderLog();
@@ -516,7 +525,7 @@ export class Hud {
           h(
             'p',
             { class: 'hint' },
-            'Anyone who drops out can rejoin: open the game, tap Play online, then Join a game and type this code (with the same name).',
+            'Anyone who drops out can rejoin: open the game, type this code in Join on the main menu and use the same name.',
           ),
           h(
             'div',

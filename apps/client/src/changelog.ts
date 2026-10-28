@@ -26,6 +26,24 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: '2026-10-28-hud-layout',
+    date: 'Oct 28, 2026',
+    title: 'Tidier game screen',
+    features: [
+      {
+        tag: 'better',
+        title: 'Status line on the player cards',
+        text: 'The status line and game log moved above the player cards, lined up with them. The log opens to the same width as the cards.',
+      },
+      {
+        tag: 'new',
+        title: 'Game info chip',
+        text: 'The top left shows the board you are playing and the goal, with a Room button for online games.',
+      },
+    ],
+    extras: ['Player cards are always shown (no Hide button)'],
+  },
+  {
     id: '2026-10-27-status-line',
     date: 'Oct 27, 2026',
     title: 'One status line',
