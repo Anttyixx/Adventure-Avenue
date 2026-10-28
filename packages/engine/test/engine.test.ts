@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { cpuAcceptsTrade } from '../src/cpu';
+import { CARDS } from '../src/cards';
 import { simulate } from '../src/headless';
 import { netWorth, stockPrice } from '../src/rules';
 import { at, makeGame } from './helpers';
@@ -361,5 +362,28 @@ describe('log', () => {
     await game.landShop(a, shop);
     const line = G.log.find((l) => l.text.includes('paid'))!;
     expect(line).toMatchObject({ color: a.id, round: 3, turn: 2, kind: 'money', involves: [b.id] });
+  });
+});
+
+describe('Charity venture card', () => {
+  it('gives 10% of cash to the player in last place', async () => {
+    const { G, game } = makeGame();
+    const [p, q] = G.players;
+    p.cash = 2000;
+    q.cash = 100;
+    const before = q.cash;
+    await CARDS.giveLast.run(game, p);
+    expect(p.cash).toBe(1800);
+    expect(q.cash).toBe(before + 200);
+  });
+
+  it('does nothing when the drawer is already last', async () => {
+    const { G, game } = makeGame();
+    const p = G.players[0];
+    p.cash = 50;
+    const cash = G.players.map((x) => x.cash);
+    await CARDS.giveLast.run(game, p);
+    expect(G.players.map((x) => x.cash)).toEqual(cash);
+    expect(G.log.some((l) => l.text.includes('already in last place'))).toBe(true);
   });
 });

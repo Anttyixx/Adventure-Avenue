@@ -5,6 +5,7 @@
 import {
   Game,
   netWorth,
+  stockPrice,
   K,
   PLAYER_COLORS,
   cpuDecide,
@@ -27,6 +28,7 @@ import { buildPrompt, districtStockModal, rulesModal, stockModal } from './ui/mo
 import { showResults } from './ui/results';
 import { investOnBoard } from './ui/invest';
 import { AuctionView } from './ui/auction';
+import { confettiRain } from './ui/confetti';
 import { activity, PRE_ROLL_STEPS } from './ui/activity';
 import {
   answerTradeOnBoard,
@@ -66,6 +68,8 @@ export class HotSeat implements GameIO {
   derby: DerbyView | null = null;
   /** Square values as last shown, to animate how much each one changed. */
   values = new Map<number, number>();
+  /** Each district's stock price as last shown, to announce rises. */
+  private prices: number[] = [];
   /** The live auction window while an auction runs. */
   auction: AuctionView | null = null;
   /** True while a token is between squares of a walk (passing, not landing). */
@@ -348,6 +352,8 @@ export class HotSeat implements GameIO {
 
   /** Say on the status line (and in the log) what the game is waiting on this player to do. */
   private waitOn(req: DecisionRequest) {
+    // Before the roll, arrows on the board show which ways the player can go.
+    if (req.kind === 'preRoll') this.board.directionsPid = req.pid;
     const a = activity(this.G, req);
     this.hud.status(a.text, a.kind);
   }
@@ -614,6 +620,7 @@ export class HotSeat implements GameIO {
     const hud = this.hud;
     switch (e.type) {
       case 'turnStart': {
+        board.directionsPid = -1;
         // A beat at the end of the previous turn before the next player starts.
         if (board.activePid >= 0 && board.activePid !== e.pid) await this.wait(T.turnEnd);
         this.link?.turnStart(this.seq, G);
@@ -637,6 +644,7 @@ export class HotSeat implements GameIO {
         this.refresh();
         break;
       case 'roll':
+        board.directionsPid = -1;
         hud.status(`${G.players[e.pid].name} is rolling...`, 'move');
         sound.play('roll');
         await board.rollDie(e.value);
@@ -799,24 +807,73 @@ export class HotSeat implements GameIO {
         await this.wait(T.bankrupt);
         break;
       }
-      case 'gameOver':
+      case 'gameOver': {
         if (this.saving) clearSave();
         sound.music(null);
         sound.play('win');
-        board.activePid = -1;
         this.refresh();
+        // Victory: the camera closes in on the winner, who dances under falling confetti,
+        // before the results.
+        const winner = G.players[e.winner];
+        // The celebration plays at full length even if a CPU won in fast mode.
+        this.speed = 1;
+        board.speed = 1;
+        if (winner) {
+          board.activePid = winner.id;
+          board.followPid = winner.id;
+          const at = board.tokenPos(winner.id);
+          board.lookAt = { x: at.x, y: at.y - 20, z: board.followZoom() };
+          await this.wait(T.stockZoom);
+          board.dance(winner.id, T.victory);
+          confettiRain(hud.root, T.victory + 600);
+          hud.banner(`${winner.name} wins!`, PLAYER_COLORS[winner.color], T.victory);
+          await this.wait(T.victory);
+          board.lookAt = null;
+        }
+        board.activePid = -1;
         await this.wait(T.gameOver);
         showResults(hud, G, () => {
           this.destroy();
           this.onExit();
         });
         break;
+      }
       case 'log':
         hud.tick(e.text, e.kind);
         break;
       case 'notice':
         hud.tick(e.text, 'alert');
         break;
+    }
+    // Mid-walk price changes are announced once the token stops.
+    if (!this.passing && e.type !== 'step' && e.type !== 'gameOver') await this.announceStockRises();
+  }
+
+  /**
+   * A district's stock went up: the camera frames its squares, a banner (like the turn banner)
+   * gives the new price and green arrows rise from the squares.
+   */
+  private async announceStockRises() {
+    const G = this.G;
+    if (G.rules !== 'standard' || G.over) return;
+    const now = G.districts.map((_, d) => stockPrice(G, d));
+    const before = this.prices;
+    this.prices = now;
+    if (before.length !== now.length) return;
+    for (let d = 0; d < now.length; d++) {
+      if (now[d] <= before[d]) continue;
+      const ids = G.nodes.filter((s) => s.d === d).map((s) => s.id);
+      if (!ids.length) continue;
+      const dist = G.districts[d];
+      this.board.lookAt = this.board.frameSquares(ids);
+      await this.wait(T.stockZoom);
+      sound.play('grow');
+      this.hud.banner(`${dist.name} stock up! ${fmt(before[d])} → ${fmt(now[d])}`, dist.color, T.stockRise);
+      this.board.stockRiseFx(ids, T.stockRise);
+      await this.wait(T.stockRise);
+      this.board.lookAt = null;
+      await this.wait(T.stockZoom);
+      if (this.dead) return;
     }
   }
 }

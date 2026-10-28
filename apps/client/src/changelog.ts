@@ -26,6 +26,32 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: '2026-10-28-celebrations',
+    date: 'Oct 28, 2026',
+    title: 'Victory dance and stock rallies',
+    features: [
+      {
+        tag: 'new',
+        title: 'Victory celebration',
+        text: 'The winner dances under falling confetti before the results appear.',
+      },
+      {
+        tag: 'new',
+        title: 'Stock rises',
+        text: 'When a district stock goes up, the camera zooms in on the district and a banner shows the new price.',
+      },
+      {
+        tag: 'new',
+        title: 'Which way?',
+        text: 'Before you roll, arrows on the board show the directions you can move.',
+      },
+    ],
+    extras: [
+      'Tokens stop their walk animation while a pop-up pauses them mid-move',
+      'Charity card: nothing happens if you are already in last place',
+    ],
+  },
+  {
     id: '2026-10-28-hud-layout',
     date: 'Oct 28, 2026',
     title: 'Tidier game screen',

@@ -57,6 +57,8 @@ import { buildPrompt, districtStockModal, rulesModal, stockModal } from './modal
 import { showResults } from './results';
 import { investOnBoard } from './invest';
 import { AuctionView } from './auction';
+import { confettiRain } from './confetti';
+import { TIMING as T } from '../timing';
 import { inviteURL } from '../net/protocol';
 import {
   answerTradeOnBoard,
@@ -91,13 +93,7 @@ const rnd = (n: number) => Math.floor(Math.random() * n);
  * Controls for UI elements that were just added or changed: they shake once and glow so they
  * are easy to find. Update this list with each change.
  */
-const RECENT = new Set([
-  'Turn prompt',
-  'Buy prompt',
-  'Status: last action',
-  'Status: waiting on',
-  'Game log',
-]);
+const RECENT = new Set(['Walk with a stop', 'Direction arrows', 'Stock rise', 'Victory']);
 
 /** Which board the lab plays on: Town (square) or Twin Lakes (hex), remembered per browser. */
 const LAB_BOARD_KEY = 'aa-lab-board';
@@ -551,6 +547,24 @@ export async function openLab(app: HTMLElement, section?: string) {
         p.prev = -1;
         refresh();
       }),
+      btn('Walk with a stop', async () => {
+        // A stop on the way (like a pop-up while passing): the walk cycle stops until it carries on.
+        const p = cur();
+        setActive(p.id);
+        const route = game.destinations(p, 3)[0].path;
+        for (let i = 0; i < route.length; i++) {
+          p.prev = p.node;
+          p.node = route[i];
+          await board.step(p.id, route[i], route.length - 1 - i);
+          if (i === 0) await new Promise((r) => setTimeout(r, 1500));
+        }
+        p.prev = -1;
+        refresh();
+      }),
+      btn('Direction arrows', () => {
+        setActive(cur().id);
+        board.directionsPid = board.directionsPid === cur().id ? -1 : cur().id;
+      }),
       btn('Warp', async () => {
         const p = cur();
         const to = rnd(G.nodes.length);
@@ -583,6 +597,30 @@ export async function openLab(app: HTMLElement, section?: string) {
         // Hover text for a square that is not a property, in the middle of the screen.
         const sq = G.nodes.find((n) => n.t === 'cannon' || n.t === 'arcade' || n.t === 'boon') ?? G.nodes[0];
         hud.showTooltip(sq.id, window.innerWidth / 2, window.innerHeight / 2);
+      }),
+      btn('Stock rise', async () => {
+        // The camera frames the district of the target player's square (or the first).
+        const d = Math.max(0, G.nodes[cur().node].d);
+        const ids = G.nodes.filter((n) => n.d === d).map((n) => n.id);
+        const dist = G.districts[d];
+        board.lookAt = board.frameSquares(ids);
+        await new Promise((r) => setTimeout(r, T.stockZoom));
+        hud.banner(`${dist.name} stock up! ${fmt(12)} → ${fmt(14)}`, dist.color, T.stockRise);
+        board.stockRiseFx(ids, T.stockRise);
+        await new Promise((r) => setTimeout(r, T.stockRise));
+        board.lookAt = null;
+      }),
+      btn('Victory', async () => {
+        const p = cur();
+        setActive(p.id);
+        const at = board.tokenPos(p.id);
+        board.lookAt = { x: at.x, y: at.y - 20, z: board.followZoom() };
+        await new Promise((r) => setTimeout(r, T.stockZoom));
+        board.dance(p.id, T.victory);
+        confettiRain(hud.root, T.victory + 600);
+        hud.banner(`${p.name} wins!`, PLAYER_COLORS[p.color], T.victory);
+        await new Promise((r) => setTimeout(r, T.victory));
+        board.lookAt = null;
       }),
       btn('Promotion dance', () => {
         board.confetti(cur().id);

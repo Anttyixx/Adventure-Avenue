@@ -364,15 +364,15 @@ player flips one face-down panel and resolves its card.
 - **Deck:** 30 cards; 7 marked Standard-only (stock cards) are excluded in Easy rules. Cards are data
   (title, text, effect function) so more can be added.
 
-| Family            | Cards in the prototype                                                                                                                                             |
-| ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Movement          | Roll again and move · Move 2 more squares · Zoom to the bank · Zoom to any square (landing effect applies)                                                         |
-| Cash              | 50 x die from the bank · 40 x die from the leader · Lose 10% of cash · Give everyone 30G · Half a salary · Give 10% of cash to last place · 30G per property owned |
-| Shop value        | Your shops +10% · One random shop of yours +40% · A random district's shops +15%                                                                                   |
-| Fees              | Everyone's shops close, then roll again · Odd roll: your shops close / even: everyone else's · Your fees +30% until next turn · 50% commission until next turn     |
-| Suits             | Free heart (100G if held) · Suit Yourself card · Sudden promotion                                                                                                  |
-| Property deals    | Invest in any of your shops now · Forced buyout of any rival shop at 5x                                                                                            |
-| Stocks (Standard) | 20 free shares · District price +20% · District price -20% · 10% dividend · 2G tax per share · Buy at 10% off · Sell at 20% above                                  |
+| Family            | Cards in the prototype                                                                                                                                                                                     |
+| ----------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Movement          | Roll again and move · Move 2 more squares · Zoom to the bank · Zoom to any square (landing effect applies)                                                                                                 |
+| Cash              | 50 x die from the bank · 40 x die from the leader · Lose 10% of cash · Give everyone 30G · Half a salary · Give 10% of cash to last place (nothing if the drawer is already last) · 30G per property owned |
+| Shop value        | Your shops +10% · One random shop of yours +40% · A random district's shops +15%                                                                                                                           |
+| Fees              | Everyone's shops close, then roll again · Odd roll: your shops close / even: everyone else's · Your fees +30% until next turn · 50% commission until next turn                                             |
+| Suits             | Free heart (100G if held) · Suit Yourself card · Sudden promotion                                                                                                                                          |
+| Property deals    | Invest in any of your shops now · Forced buyout of any rival shop at 5x                                                                                                                                    |
+| Stocks (Standard) | 20 free shares · District price +20% · District price -20% · 10% dividend · 2G tax per share · Buy at 10% off · Sell at 20% above                                                                          |
 
 **Interactions:** venture cards touch almost every system: movement can chain into another landing
 (and another venture), value changes move stock prices and salary, closures switch off fees and
@@ -702,6 +702,13 @@ Close button folds it back. Bottom right: the player cards stacked vertically in
 turns the order round so its own player's card is at the bottom; turns still go top to bottom) (net worth, cash, level,
 suits and progress bar); they are always shown. The stock market lives in a
 slide-out drawer on the right.
+
+**Turn moments.** Before the roll, sliding arrows on the board point from the player's square to
+each square their first step can reach. A token that stops part-way through a walk (a pop-up or a
+choice on the way) stands still until it walks on. When a district's stock price goes up, the
+camera frames that district's squares, a banner like the turn banner gives the old and new price,
+and green arrows and sparkles rise from the squares. When the game is won, the camera closes in on
+the winner, who dances under confetti falling across the screen, before the results appear.
 
 **Camera.** The camera always follows the active player, centered on screen and zoomed in (about
 1.65x the fit-to-screen zoom, more on small screens), eased smoothly as they move; it keeps the

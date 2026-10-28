@@ -10,6 +10,7 @@ import {
   clampFactor,
   isProperty,
   isShopLike,
+  netWorth,
   ownedShops,
   ownedSquares,
   salary,
@@ -126,12 +127,15 @@ const list: Card[] = [
     title: 'Charity',
     text: 'Give 10% of your cash to the player in last place.',
     run: async (g, p) => {
-      const q = g.last(p);
-      if (q) {
-        const amt = Math.floor(Math.max(0, p.cash) * 0.1);
-        await g.pay(p, q, amt, 'Venture');
-        await g.log(`${p.name} gave ${amt}G to ${q.name}.`, p.id, 'money', [q.id]);
+      // Last place counts the drawer too: a player already last (or tied for it) keeps the cash.
+      const q = g.last();
+      if (!q || netWorth(g.G, q) >= netWorth(g.G, p)) {
+        await g.log(`${p.name} is already in last place, so nothing happens.`, p.id, 'card');
+        return;
       }
+      const amt = Math.floor(Math.max(0, p.cash) * 0.1);
+      await g.pay(p, q, amt, 'Venture');
+      await g.log(`${p.name} gave ${amt}G to ${q.name}.`, p.id, 'money', [q.id]);
     },
   },
   {

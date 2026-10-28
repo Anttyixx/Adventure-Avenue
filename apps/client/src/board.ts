@@ -46,6 +46,8 @@ interface Token {
   facing: Facing;
   /** Drawn size, easing toward bigger for the active player and smaller for the others. */
   size: number;
+  /** Mid-walk: stops the walk cycle if the next step does not start soon (a stop for a choice). */
+  pause?: number;
 }
 
 interface Fx {
@@ -115,6 +117,8 @@ export class BoardView {
   stepsLeft = 0;
   /** While set, the camera shows the whole board (e.g. to watch shops close), whatever the zoom. */
   overviewHold = false;
+  /** While set, the camera frames this spot instead of following anyone (e.g. a district). */
+  lookAt: { x: number; y: number; z: number } | null = null;
   /** Squares whose gates are moving: when each starts, and whether it is opening. */
   private gates = new Map<number, { start: number; opening: boolean }>();
   private lastFrame = 0;
@@ -131,6 +135,8 @@ export class BoardView {
   routes = new Map<number, number[]>();
   hoverRoute: number[] | null = null;
   walkTarget = -1;
+  /** Before a roll: the player whose possible first steps are shown as sliding arrows, or -1. */
+  directionsPid = -1;
   onPick: ((id: number) => void) | null = null;
   onHover: ((id: number | null, cx: number, cy: number) => void) | null = null;
   /** Called when the shown zoom changes: 250% fully zoomed in on the player, 100% fully out. */
@@ -253,6 +259,7 @@ export class BoardView {
     const dest = this.center(this.G!.nodes[to]);
     dest.y -= 12;
     this.stepsLeft = left;
+    clearTimeout(t.pause);
     t.walking = true;
     t.facing = facingFor(dest.x - from.x, dest.y - from.y);
     const dur = T.step * this.speed;
@@ -270,6 +277,9 @@ export class BoardView {
       tick();
     });
     t.hop = 0;
+    // Steps follow each other at once; if the walk stalls (a pop-up or a choice on the way),
+    // the character stands still until it carries on.
+    if (left > 0) t.pause = window.setTimeout(() => (t.walking = false), 150);
     if (left === 0) {
       t.walking = false;
       t.facing = Facing.Down;
@@ -586,6 +596,84 @@ export class BoardView {
     };
   }
 
+  /**
+   * A camera view framing these squares in the area the HUD leaves free, no closer than the
+   * usual follow zoom.
+   */
+  frameSquares(ids: number[]) {
+    const G = this.G!;
+    const pts = ids.map((id) => this.center(G.nodes[id]));
+    const xs = pts.map((p) => p.x);
+    const ys = pts.map((p) => p.y);
+    const pad = 110;
+    const w = Math.max(...xs) - Math.min(...xs) + pad * 2;
+    const h = Math.max(...ys) - Math.min(...ys) + pad * 2;
+    const { top, right, bottom, left } = this.insets;
+    const fw = Math.max(100, this.w - left - right);
+    const fh = Math.max(100, this.h - top - bottom);
+    const z = Math.min(this.followZoom(), fw / w, fh / h);
+    return {
+      // Centered in the free area, not under the cards or the action bar.
+      x: (Math.min(...xs) + Math.max(...xs)) / 2 - (left - right) / 2 / z,
+      y: (Math.min(...ys) + Math.max(...ys)) / 2 - (top - bottom) / 2 / z,
+      z,
+    };
+  }
+
+  /** A district's stock went up: green arrows and gold sparkles rise from each of its squares. */
+  stockRiseFx(ids: number[], ms: number) {
+    const G = this.G!;
+    const parts = ids.flatMap((id) => {
+      const c = this.center(G.nodes[id]);
+      return Array.from({ length: 9 }, (_, i) => ({
+        x: c.x + (Math.random() - 0.5) * TILE * 0.9,
+        y: c.y + TILE * 0.3 - Math.random() * 20,
+        delay: (i / 9) * 0.55 + Math.random() * 0.1,
+        rise: 70 + Math.random() * 60,
+        arrow: i % 3 === 0,
+      }));
+    });
+    this.fx.push({
+      t0: performance.now(),
+      dur: ms * this.speed,
+      draw: (ctx, k) => {
+        ctx.save();
+        // The district's squares glow while the particles rise.
+        ctx.globalAlpha = Math.sin(Math.min(1, k * 1.4) * Math.PI) * 0.55;
+        ctx.strokeStyle = '#7cf29a';
+        ctx.lineWidth = 7;
+        for (const id of ids) {
+          const c = this.center(G.nodes[id]);
+          tileShape(ctx, G.layout, c.x, c.y, TILE / 2 + 6, 16);
+          ctx.stroke();
+        }
+        for (const q of parts) {
+          const t = (k - q.delay) / 0.45;
+          if (t <= 0 || t >= 1) continue;
+          const y = q.y - q.rise * t;
+          ctx.globalAlpha = Math.sin(t * Math.PI);
+          if (q.arrow) {
+            ctx.fillStyle = '#7cf29a';
+            ctx.strokeStyle = '#1b5e34';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.moveTo(q.x, y - 14);
+            ctx.lineTo(q.x + 11, y);
+            ctx.lineTo(q.x + 4, y);
+            ctx.lineTo(q.x + 4, y + 12);
+            ctx.lineTo(q.x - 4, y + 12);
+            ctx.lineTo(q.x - 4, y);
+            ctx.lineTo(q.x - 11, y);
+            ctx.closePath();
+            ctx.stroke();
+            ctx.fill();
+          } else drawSparkle(ctx, q.x, y, 7 + 3 * Math.sin(t * Math.PI), '#ffe066');
+        }
+        ctx.restore();
+      },
+    });
+  }
+
   // ------------------------------------------------------------ camera
 
   /** Zoom out (positive) or in (negative) by `d`, where 1 is the whole range. */
@@ -669,6 +757,7 @@ export class BoardView {
     const mid = { x: this.ww / 2 - (left - right) / 2 / fz, y: this.wh / 2 - (top - bottom) / 2 / fz };
     const c = { x: follow.x + (mid.x - follow.x) * b, y: follow.y + (mid.y - follow.y) * b };
     this.camTarget = { x: c.x, y: c.y, z: fz };
+    if (this.lookAt) this.camTarget = { ...this.lookAt };
     const k = reducedMotion() ? 1 : 0.12;
     this.cam.x += (this.camTarget.x - this.cam.x) * k;
     this.cam.y += (this.camTarget.y - this.cam.y) * k;
@@ -778,6 +867,7 @@ export class BoardView {
     this.drawGlow(ctx, now);
     this.drawRoute(ctx);
     this.drawTokens(ctx, now, motion);
+    this.drawDirections(ctx, now, motion);
     this.drawPins(ctx, now, motion);
 
     this.fx = this.fx.filter((f) => {
@@ -1077,6 +1167,61 @@ export class BoardView {
       ctx.stroke();
       ctx.restore();
     }
+  }
+
+  /**
+   * Arrows sliding out from the player's square toward each square their first step can reach
+   * (any way but back), so they can see which way the roll will take them.
+   */
+  private drawDirections(ctx: CanvasRenderingContext2D, now: number, motion: boolean) {
+    const G = this.G!;
+    const p = G.players[this.directionsPid];
+    if (!p || p.bankrupt) return;
+    const here = G.nodes[p.node];
+    let next = here.nb.filter((id) => id !== p.prev);
+    if (!next.length) next = here.nb;
+    const c0 = this.center(here);
+    const color = PLAYER_COLORS[p.color];
+    // Each arrow runs from just past the token toward the next square, three chevrons deep.
+    const phase = motion ? (now / 900) % 1 : 0.5;
+    ctx.save();
+    ctx.lineJoin = 'round';
+    ctx.lineCap = 'round';
+    for (const id of next) {
+      const c1 = this.center(G.nodes[id]);
+      const dx = c1.x - c0.x;
+      const dy = c1.y - c0.y;
+      const len = Math.hypot(dx, dy) || 1;
+      const ux = dx / len;
+      const uy = dy / len;
+      for (let i = 0; i < 3; i++) {
+        const k = (i / 3 + phase) % 1;
+        const d = 52 + k * 46;
+        // Fade in near the token and out at the far end.
+        const alpha = Math.sin(k * Math.PI);
+        const x = c0.x + ux * d;
+        const y = c0.y - 6 + uy * d;
+        ctx.save();
+        ctx.translate(x, y);
+        ctx.rotate(Math.atan2(uy, ux));
+        ctx.globalAlpha = alpha;
+        ctx.beginPath();
+        ctx.moveTo(-9, -13);
+        ctx.lineTo(5, 0);
+        ctx.lineTo(-9, 13);
+        ctx.strokeStyle = 'rgba(0,0,0,0.35)';
+        ctx.lineWidth = 13;
+        ctx.stroke();
+        ctx.strokeStyle = '#fff';
+        ctx.lineWidth = 10;
+        ctx.stroke();
+        ctx.strokeStyle = color;
+        ctx.lineWidth = 6;
+        ctx.stroke();
+        ctx.restore();
+      }
+    }
+    ctx.restore();
   }
 
   private drawTokens(ctx: CanvasRenderingContext2D, now: number, motion: boolean) {

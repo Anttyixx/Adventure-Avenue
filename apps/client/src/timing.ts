@@ -32,6 +32,9 @@ export const TIMING = {
   value: 1000,
   suit: 1000,
   promote: 1800,
+  /** A district's stock rising: the zoom to its squares (and back), then the banner and arrows. */
+  stockZoom: 600,
+  stockRise: 1700,
   promoteBanner: 2200,
   bankrupt: 1600,
   bankruptBanner: 2400,
@@ -41,6 +44,8 @@ export const TIMING = {
   closeShutter: 450,
   closeStagger: 160,
   closeHold: 1000,
+  /** The winner dancing under confetti before the results. */
+  victory: 3600,
   gameOver: 900,
 
   /** CPU "thinking" beats: showing the route it picked, before rolling, before other choices. */
