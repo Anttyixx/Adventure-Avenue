@@ -1928,13 +1928,6 @@ input[type='range'] {
 .m-left .m-card {
   margin-top: 0;
 }
-.m-sel {
-  font-size: 13px;
-  color: var(--muted);
-}
-.m-sel b {
-  color: var(--text);
-}
 .m-shops-row {
   display: flex;
   align-items: center;

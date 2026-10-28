@@ -162,18 +162,7 @@ export function stockModal(
         },
       });
       update();
-      info.append(
-        h(
-          'div',
-          { class: 'm-sel' },
-          h('b', null, G.districts[d].name),
-          rate
-            ? ` · ${priceFmt(unit())} per share (market ${fmt(stockPrice(G, d))}) · you hold ${p.shares[d]}`
-            : ` · ${fmt(unit())} per share · you hold ${p.shares[d]}`,
-          mode === 'buy' ? ` · you can buy up to ${max}` : '',
-        ),
-        sum,
-      );
+      info.append(sum);
       side.append(
         picker.el,
         h(
