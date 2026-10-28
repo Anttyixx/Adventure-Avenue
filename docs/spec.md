@@ -546,7 +546,9 @@ what was used, the license and links to their pages.
 `\` are removed; leave it blank to keep the suggested name), and typed names are remembered for
   the next game. In the online build, validate names on the server.
 
-In-game, the Menu button (top right) opens a menu with Rules (a summary), a Fast CPU
+In-game, the Menu button (top right) opens the menu as a pop-up in the middle of the screen, over
+everything; a game on this device pauses while it is open (online games carry on). It has Resume,
+Rules (a summary, opened over the menu), a Fast CPU
 toggle (speeds up CPU turns and animations), Full screen, the Sound sliders and mute, and a red Quit
 game button. Quit asks for confirmation in a dialog over the menu before returning to the main
 menu (no question once the game is over).
@@ -682,11 +684,11 @@ active player changes, tokens ease to their new sizes (the active one larger, th
 | Interface       | Prompts and status lines rise in, dialogs ease in, venture and Memory Blocks panels flip, revealed cards pop, main buttons give a small nudge | New prompt, dialog or reveal                              |
 
 **Layout.** Scrolling panels hide their scrollbars (they still scroll). The board fills the whole game screen edge to edge, and everything else floats over it
-as dark glass overlays. Top right: the zoom chip, a Stock market button (Standard rules)
-and the Menu button (the menu
+as dark glass overlays. Top right: the zoom chip and the Menu button (the menu
 also shows the round, target and rule set). Top left: the **info chip**, with the game's name, the board
 name, the current round (out of the round limit, if any), the goal (target net worth) and, online,
-a Room button that shows the room code. Bottom center: the **action bar**. While the game waits on
+a Room button that shows the room code; to its right, the Stock market button (Standard rules),
+which opens the stock market in a pop-up in the middle of the screen for anyone to look at. Bottom center: the **action bar**. While the game waits on
 nobody here, it is the status line: one line saying what is going on now: what the game is waiting
 on a player to do ("Blue is buying stocks...", "Blue is deciding which space to go to...", see
 `ui/activity.ts`; the turn starts with "Blue is deciding what to do..." and a three-dot icon, and
@@ -700,8 +702,7 @@ cards and fitting between the toolbar and the cards. The current turn's card end
 line while the game waits, and the action that answers it fades in in its place. Only the log's
 Close button folds it back. Bottom right: the player cards stacked vertically in turn order (online, each device
 turns the order round so its own player's card is at the bottom; turns still go top to bottom) (net worth, cash, level,
-suits and progress bar); they are always shown. The stock market lives in a
-slide-out drawer on the right.
+suits and progress bar); they are always shown.
 
 **Turn moments.** Before the roll, sliding arrows on the board point from the player's square to
 each square their first step can reach. A token that stops part-way through a walk (a pop-up or a

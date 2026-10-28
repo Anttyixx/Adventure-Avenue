@@ -801,11 +801,30 @@ input[type='range'] {
   background: #2d6a4f;
 }
 /* The info chip, top left: the game's name, board, round and goal, and the room code button online. */
-.info-chip {
+.top-left {
   position: absolute;
   top: 10px;
   left: calc(10px + var(--free-left, 0px));
-  max-width: calc(52vw - 20px);
+  max-width: calc(58vw - 20px);
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  pointer-events: none;
+}
+.top-left > * {
+  pointer-events: auto;
+}
+.top-left .market-btn {
+  flex: none;
+  background: var(--glass);
+  border: 1px solid var(--glass-line);
+  backdrop-filter: blur(8px);
+}
+.top-left .market-btn.on {
+  background: #2d6a4f;
+}
+.info-chip {
+  min-width: 0;
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -1219,30 +1238,6 @@ input[type='range'] {
   color: var(--bad);
 }
 
-.drawer {
-  position: absolute;
-  top: 56px;
-  right: 10px;
-  /* As tall as its content (no dead space under the market), scrolling past the screen. */
-  max-height: calc(100% - 66px);
-  box-sizing: border-box;
-  width: min(780px, calc(100vw - 20px));
-  padding: 12px;
-  display: none;
-  flex-direction: column;
-  z-index: 5;
-  overflow: auto;
-}
-.drawer.open {
-  display: flex;
-  animation: slidein 0.25s ease-out;
-}
-@keyframes slidein {
-  from {
-    transform: translateX(40px);
-    opacity: 0;
-  }
-}
 .drawer-head,
 .modal-head {
   display: flex;
@@ -4443,29 +4438,38 @@ input[type='range'] {
   background: var(--accent) !important;
   color: #3b2a00;
 }
+/* The menu: a pop-up in the middle of the screen, over everything else. */
+.modal-wrap.menu-wrap {
+  z-index: 20;
+}
+.modal.menu-modal {
+  width: min(320px, 100%);
+}
 .game-menu {
-  position: absolute;
-  top: calc(100% + 8px);
-  right: 0;
-  z-index: 9;
-  width: 280px;
-  max-height: calc(100vh - 70px);
-  overflow-y: auto;
   display: flex;
   flex-direction: column;
   gap: 6px;
-  padding: 12px;
-  border-radius: 16px;
-  animation: easein 0.16s ease-out;
+  margin-top: 10px;
 }
-.game-menu[hidden] {
+.gm-paused {
+  align-self: flex-start;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: rgba(255, 209, 102, 0.16);
+  color: var(--accent);
+  font-size: 12px;
+  font-weight: 700;
+}
+.gm-paused[hidden] {
   display: none;
 }
-.gm-head {
-  font-family: var(--head);
-  font-size: 20px;
-  color: var(--accent);
-  margin-bottom: 2px;
+.gm-item.resume {
+  background: var(--accent);
+  color: #3b2a00;
+  text-align: center;
+}
+.gm-item.resume:hover {
+  background: #ffdc85;
 }
 .gm-info {
   display: flex;
@@ -5010,8 +5014,10 @@ button.tb-chip:hover {
 }
 
 @media (max-height: 500px), (max-width: 760px) {
-  .info-chip {
+  .top-left {
     top: 6px;
+  }
+  .info-chip {
     gap: 4px;
     padding: 3px 4px 3px 8px;
     font-size: 11px;

@@ -26,6 +26,23 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: '2026-10-28-menu-pause',
+    date: 'Oct 28, 2026',
+    title: 'Pause and stock market pop-ups',
+    features: [
+      {
+        tag: 'new',
+        title: 'Pause from the menu',
+        text: 'The menu opens in the middle of the screen, and a game on this device pauses while it is open.',
+      },
+      {
+        tag: 'better',
+        title: 'Stock market pop-up',
+        text: 'The Stock market button sits next to the game info at the top left and opens the market in the middle of the screen.',
+      },
+    ],
+  },
+  {
     id: '2026-10-28-celebrations',
     date: 'Oct 28, 2026',
     title: 'Victory dance and stock rallies',

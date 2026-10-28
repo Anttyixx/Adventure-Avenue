@@ -1,6 +1,7 @@
 /**
  * Dark-glass overlays floating over the board: info chip, toolbar, action bar (the status line
- * when no options are up), Game log button (expands into the log), player cards, market drawer,
+ * when no options are up), Game log button (expands into the log), player cards, stock market and
+ * menu pop-ups,
  * tooltip, modals and banners.
  */
 import {
@@ -49,6 +50,8 @@ export interface HudCallbacks {
   /** Leave the game (already confirmed by the player). */
   onQuit(): void;
   onRules(): void;
+  /** The menu opened (true) or closed: returns whether the game is paused while it is open. */
+  onPause?(open: boolean): boolean;
   /** The question to confirm quitting with, or null to quit without asking (game over). */
   quitQuestion?(): string | null;
 }
@@ -95,7 +98,6 @@ export class Hud {
   roomBtn = h('button', { class: 'btn small ghost gc-room', hidden: true }, 'Room');
   /** Holds the status line just above the player cards, as wide as them. */
   logDock = h('div', { class: 'log-dock' });
-  drawer = h('div', { class: 'drawer glass' });
   tooltip = h('div', { class: 'tooltip glass' });
   modalLayer = h('div', { class: 'modal-layer' });
   bannerLayer = h('div', { class: 'banner-layer' });
@@ -103,7 +105,6 @@ export class Hud {
   activePid = -1;
   /** This device's player in an online game (their card goes at the bottom), or -1. */
   myPid = -1;
-  drawerMode: 'market' | 'log' | null = null;
   /** Extra space covered on the left (e.g. the UI Lab panel). */
   leftInset = 0;
   private shown = new Map<number, { nw: number; cash: number }>();
@@ -145,11 +146,10 @@ export class Hud {
     };
     this.root.append(
       this.toolbar,
-      this.infoChip,
+      h('div', { class: 'top-left' }, this.infoChip, this.marketBtn),
       this.ask,
       this.cardsWrap,
       this.logDock,
-      this.drawer,
       this.tooltip,
       this.modalLayer,
       this.bannerLayer,
@@ -161,8 +161,8 @@ export class Hud {
     this.zoomChip.onclick = () => (board.zoomOut = 0);
     board.onZoom = (pct) => (this.zoomChip.textContent = `${pct}%`);
     this.menuBtn.onclick = () => this.toggleMenu();
-    this.marketBtn.onclick = () => this.toggleDrawer('market');
-    this.toolbar.append(this.zoomChip, this.marketBtn, this.menuBtn, this.menu);
+    this.marketBtn.onclick = () => this.openMarket();
+    this.toolbar.append(this.zoomChip, this.menuBtn);
     this.buildMenu();
     window.addEventListener('keydown', this.onKey);
     board.onHover = (id, x, y) => this.showTooltip(id, x, y);
@@ -173,7 +173,6 @@ export class Hud {
 
   destroy() {
     window.removeEventListener('keydown', this.onKey);
-    document.removeEventListener('pointerdown', this.menuOutside, true);
     this.root.remove();
   }
 
@@ -185,9 +184,14 @@ export class Hud {
     { class: 'btn small menu-toggle', 'aria-haspopup': 'true', 'aria-expanded': 'false' },
     '☰ Menu',
   );
-  menu = h('div', { class: 'game-menu glass', role: 'menu', hidden: true });
-  /** Opens the stock market drawer (Standard rules only); sits beside the Menu button. */
+  /** The menu's contents, shown in a pop-up in the middle of the screen. */
+  menu = h('div', { class: 'game-menu', role: 'menu' });
+  private menuModal: { close(): void } | null = null;
+  /** Shown in the menu while it has paused the game (games on this device). */
+  private pausedNote = h('div', { class: 'gm-paused', hidden: true }, 'Game paused');
+  /** Opens the stock market pop-up (Standard rules only); sits right of the info chip. */
   marketBtn = h('button', { class: 'btn small market-btn' }, 'Stock market');
+  private market: { el: HTMLElement; close(): void } | null = null;
 
   /** The menu behind the Menu button: rules, settings and quit. */
   private buildMenu() {
@@ -199,32 +203,75 @@ export class Hud {
     };
     this.fastBtn.className = 'gm-item gm-toggle';
     this.menu.append(
-      h('div', { class: 'gm-head' }, 'Menu'),
+      this.pausedNote,
       this.gameInfo,
-      item('Rules', close(this.cb.onRules)),
+      item(
+        'Resume',
+        close(() => {}),
+        'resume',
+      ),
+      // Rules open over the menu, so the game stays paused while they are read.
+      item('Rules', this.cb.onRules),
       this.fastBtn,
     );
-    if (document.fullscreenEnabled) this.menu.append(item('Full screen', close(toggleFullscreen)));
+    if (document.fullscreenEnabled) this.menu.append(item('Full screen', toggleFullscreen));
     this.menu.append(
       h('div', { class: 'gm-sound' }, h('div', { class: 'gm-label' }, 'Sound'), soundControls()),
       item('Quit game', () => this.confirmQuit(), 'danger'),
     );
   }
 
-  toggleMenu(open = this.menu.hidden) {
-    this.menu.hidden = !open;
+  /**
+   * Open or close the menu: a pop-up in the middle of the screen, over everything. A game on this
+   * device pauses while it is open.
+   */
+  toggleMenu(open = !this.menuModal) {
+    if (open === !!this.menuModal) return;
     this.menuBtn.setAttribute('aria-expanded', String(open));
     this.menuBtn.classList.toggle('on', open);
-    if (open) document.addEventListener('pointerdown', this.menuOutside, true);
-    else document.removeEventListener('pointerdown', this.menuOutside, true);
+    if (open) {
+      const m = this.modal('Menu', this.menu, { onClose: () => this.toggleMenu(false) });
+      m.el.classList.add('menu-modal');
+      m.el.parentElement!.classList.add('menu-wrap');
+      // Tapping outside the box closes it.
+      m.el.parentElement!.addEventListener('pointerdown', (e) => {
+        if (e.target === m.el.parentElement) this.toggleMenu(false);
+      });
+      this.menuModal = m;
+    } else {
+      this.menuModal?.close();
+      this.menuModal = null;
+    }
+    this.pausedNote.hidden = !(this.cb.onPause?.(open) ?? false) || !open;
   }
 
-  private menuOutside = (e: PointerEvent) => {
-    const t = e.target as Node;
-    // Clicks in the menu, on its button or in a dialog opened from it keep it open.
-    if (this.menu.contains(t) || this.menuBtn.contains(t) || this.modalLayer.contains(t)) return;
-    this.toggleMenu(false);
-  };
+  // ------------------------------------------------------------ stock market
+
+  /** The stock market, for anyone to look at, in a pop-up in the middle of the screen. */
+  openMarket() {
+    if (this.market || !this.G) return;
+    const body = h('div', { class: 'market-pop' }, marketView(this.G, null));
+    const m = this.modal('Stock market', body, {
+      wide: true,
+      onClose: () => {
+        m.close();
+        this.market = null;
+        this.marketBtn.classList.remove('on');
+      },
+    });
+    m.el.parentElement!.addEventListener('pointerdown', (e) => {
+      if (e.target === m.el.parentElement) m.el.querySelector<HTMLButtonElement>('.modal-head .btn')?.click();
+    });
+    this.market = { el: body, close: m.close };
+    this.marketBtn.classList.add('on');
+  }
+
+  /** Keep the open stock market up to date as the game goes on. */
+  private refreshMarket() {
+    if (!this.market) return;
+    clear(this.market.el);
+    this.market.el.append(marketView(this.G, null));
+  }
 
   /** Ask before quitting, in a dialog over the menu. */
   confirmQuit() {
@@ -241,7 +288,14 @@ export class Hud {
           { class: 'btn-row' },
           h(
             'button',
-            { class: 'btn danger', onclick: () => (m.close(), this.toggleMenu(false), this.cb.onQuit()) },
+            {
+              class: 'btn danger',
+              onclick: () => {
+                m.close();
+                this.toggleMenu(false);
+                this.cb.onQuit();
+              },
+            },
             'Quit',
           ),
           h('button', { class: 'btn ghost', onclick: () => m.close() }, 'Keep playing'),
@@ -253,7 +307,7 @@ export class Hud {
 
   private onKey = (e: KeyboardEvent) => {
     const tag = (e.target as HTMLElement)?.tagName;
-    if (e.key === 'Escape' && !this.menu.hidden && !this.modalLayer.querySelector('.quit-modal')) {
+    if (e.key === 'Escape' && this.menuModal && !this.modalLayer.querySelector('.quit-modal')) {
       this.toggleMenu(false);
       return;
     }
@@ -290,7 +344,7 @@ export class Hud {
     // Upright phones: the options sit above the cards and the status line.
     if (portraitStack) this.root.style.setProperty('--cards-h', `${H - lineTop + 6}px`);
     const tools = this.toolbar.getBoundingClientRect();
-    const chip = this.infoChip.getBoundingClientRect();
+    const chip = this.infoChip.parentElement!.getBoundingClientRect();
     this.root.style.setProperty('--top-free', `${tools.bottom + 6}px`);
     let right = 0;
     if (!portraitStack && cards.width) right = Math.min(W * 0.4, W - cards.left + 8);
@@ -330,7 +384,7 @@ export class Hud {
     clear(this.chipGoal);
     this.chipGoal.append('Goal ', h('b', null, fmt(G.target)));
     this.renderCards();
-    if (this.drawerMode) this.renderDrawer();
+    this.refreshMarket();
     if (this.logOpen) this.renderLog();
   }
 
@@ -493,14 +547,13 @@ export class Hud {
     }, 2200);
   }
 
-  // ------------------------------------------------------------ status line, log, drawer
+  // ------------------------------------------------------------ status line and log
 
   /** Show the last thing that happened on the status line (it ends any wait). */
   tick(text: string, kind?: IconKind) {
     this.lastAction = { text, kind };
     this.waiting = null;
     this.showStatus();
-    if (this.drawerMode === 'log') this.renderDrawer();
     if (this.logOpen) this.renderLog();
   }
 
@@ -670,42 +723,6 @@ export class Hud {
       list,
     );
     list.scrollTop = toBottom || atBottom ? list.scrollHeight : keep;
-  }
-
-  toggleDrawer(mode: 'market' | 'log') {
-    if (mode === 'log') return this.toggleLog();
-    this.drawerMode = this.drawerMode === mode ? null : mode;
-    this.drawer.classList.toggle('open', !!this.drawerMode);
-    this.marketBtn.classList.toggle('on', this.drawerMode === 'market');
-    this.renderDrawer();
-  }
-
-  renderDrawer() {
-    // Keep the reader's place when the drawer refreshes during a turn.
-    const keep = this.drawer.querySelector('.log-list')?.scrollTop ?? 0;
-    const keepDrawer = this.drawer.scrollTop;
-    clear(this.drawer);
-    if (!this.drawerMode) return;
-    const close = h(
-      'button',
-      { class: 'btn small ghost', onclick: () => this.toggleDrawer(this.drawerMode!) },
-      'Close',
-    );
-    if (this.drawerMode === 'log') {
-      const G = this.G;
-      this.drawer.append(
-        h('div', { class: 'drawer-head' }, h('h3', null, 'Game log'), close),
-        logView(G, `${G.round}:${G.turn}`),
-      );
-      const list = this.drawer.querySelector('.log-list');
-      if (list) list.scrollTop = keep;
-      this.drawer.scrollTop = keepDrawer;
-    } else {
-      this.drawer.append(
-        h('div', { class: 'drawer-head' }, h('h3', null, 'Stock market'), close),
-        marketView(this.G, null),
-      );
-    }
   }
 
   // ------------------------------------------------------------ tooltip

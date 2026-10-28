@@ -100,6 +100,7 @@ export class HotSeat implements GameIO {
       onQuit: () => this.quit(),
       quitQuestion: () => this.quitQuestion(),
       onRules: () => rulesModal(this.hud, this.G),
+      onPause: (open) => this.setPaused(open),
     });
     // Online, this device's own player's card sits at the bottom of the stack.
     if (link) this.hud.myPid = this.G.players.find((p) => this.localHuman(p.id))?.id ?? -1;
@@ -260,8 +261,31 @@ export class HotSeat implements GameIO {
     sound.music(this.winReady.size ? 'urgent' : 'game');
   }
 
-  wait(ms: number) {
-    return new Promise<void>((r) => setTimeout(r, ms * this.speed));
+  async wait(ms: number) {
+    await new Promise<void>((r) => setTimeout(r, ms * this.speed));
+    await this.pauseGate();
+  }
+
+  /** While set, the game is paused (the menu is open in a game on this device). */
+  private paused: { done: Promise<void>; resume: () => void } | null = null;
+
+  /** Pause or resume a game on this device; online games never pause. Returns whether paused. */
+  private setPaused(on: boolean): boolean {
+    if (this.link) return false;
+    if (on && !this.paused) {
+      let resume = () => {};
+      const done = new Promise<void>((r) => (resume = r));
+      this.paused = { done, resume };
+    } else if (!on && this.paused) {
+      this.paused.resume();
+      this.paused = null;
+    }
+    return on;
+  }
+
+  /** Hold here while the game is paused: the next event, choice or pause waits for the menu. */
+  private async pauseGate() {
+    while (this.paused) await this.paused.done;
   }
 
   refresh() {
@@ -281,6 +305,7 @@ export class HotSeat implements GameIO {
 
   async decide<T extends DecisionKind>(req: DecisionRequest<T>): Promise<DecisionAnswer<T>> {
     if (this.dead) return never();
+    await this.pauseGate();
     const seq = this.seq++;
     if (this.link) return (await this.decideOnline(seq, req as DecisionRequest)) as DecisionAnswer<T>;
     const p = this.G.players[req.pid];
@@ -614,6 +639,7 @@ export class HotSeat implements GameIO {
 
   async emit(e: GameEvent): Promise<void> {
     if (this.dead) return never();
+    await this.pauseGate();
     if (this.link) this.updateSpeed();
     const G = this.G;
     const board = this.board;
