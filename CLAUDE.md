@@ -9,8 +9,11 @@ A Fortune Street-style board game for the browser. Spec: `docs/spec.md`.
 - After every change, end the reply with the playable link for the branch that was updated:
   - `dev`: https://anttyixx.github.io/Adventure-Avenue/dev/
   - `main`: https://anttyixx.github.io/Adventure-Avenue/
-- With the link, say which build it is: the short commit hash shown in the build badge (e.g.
+- With the link, say which build it is: the short commit hash shown in the version chip (e.g.
   "dev build `bbca06e`").
+- Versions: `VERSION` in `apps/client/src/build.ts` is the version released on `main` (now 0.1).
+  `dev` works on the next version (shown as v0.2 plus its build). When the owner says to push to
+  `main`, bump `VERSION` to the version being released.
 - For updates players will notice, add an entry at the top of `apps/client/src/changelog.ts`
   (shown in "What's new" on the main menu).
 
@@ -43,12 +46,13 @@ A Fortune Street-style board game for the browser. Spec: `docs/spec.md`.
 - Property art lives in `apps/client/src/assets/props/` (loaded by `props.ts`). An optional
   `<name>-tint.png` (same size, grey) holds the parts drawn in the owner's color; without one,
   the image's blue parts are recolored.
-- Dev/test builds show a build badge in the bottom-right corner (on menus and the UI Lab, not during a game); tapping it 5 times opens the dev
-  menu. The UI Lab (`#ui-lab`, code in `apps/client/src/ui/lab.ts`) shows every UI element with
+- The version chip sits in the bottom-right corner of the main menu only (`ui/devmenu.ts`): the
+  version, plus the branch and build on test builds. On test builds, holding it for 3 seconds opens
+  the dev menu. The UI Lab (`#ui-lab`, code in `apps/client/src/ui/lab.ts`) shows every UI element with
   controls to trigger it. When adding a new UI element, add a control for it to the UI Lab.
   The Lab has a search box; controls listed in `RECENT` (top of `lab.ts`) shake and glow so the
   latest changes are easy to find. Update `RECENT` with the controls for each change.
-  The stable `main` build hides the badge and dev menu.
+  The stable `main` build shows only the version (no build, no dev menu).
 
 ## Commands
 

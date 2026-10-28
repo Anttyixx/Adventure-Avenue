@@ -11,7 +11,7 @@ import { keepName, resumeLobby, savedName } from './ui/online';
 import { clearGuest, guestInGame, loadGuest, saveGuest, setGuestInGame, type SaveInfo } from './save';
 import { freeCharacter, loadCharacters, shuffledCharacters } from './sprites';
 import { loadProps } from './props';
-import { installDevBadge } from './ui/devmenu';
+import { installVersionChip } from './ui/devmenu';
 import { openEditor } from './ui/editor';
 import { openLab } from './ui/lab';
 import { mainMenu, type MenuOptions } from './ui/menu';
@@ -287,7 +287,7 @@ function showEditor(board: BoardDef | null) {
 
 void checkForUpdate();
 installCoins();
-installDevBadge();
+installVersionChip();
 // A soft click for every button press.
 document.addEventListener(
   'click',

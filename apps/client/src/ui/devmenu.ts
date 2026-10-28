@@ -1,18 +1,15 @@
 /**
- * Build badge (bottom-right corner) and the hidden dev menu: tap the badge 5 times to open it.
- * Only shown on test builds, and not during a game (the UI Lab still shows it); the stable build
- * hides both.
+ * The version chip (bottom-right corner of the main menu) and the hidden dev menu: on test builds,
+ * press and hold the chip for 3 seconds to open it. The stable (main) build shows only the version.
  */
-import { BUILD, IS_DEV_BUILD } from '../build';
+import { BUILD, IS_DEV_BUILD, VERSION_LABEL } from '../build';
 import { clearSave, loadSave } from '../save';
 import { h } from './dom';
 import { LAB_SECTIONS } from './lab';
 
-const TAPS = 5;
-const TAP_WINDOW_MS = 2500;
+const HOLD_MS = 3000;
 
-export function installDevBadge() {
-  if (!IS_DEV_BUILD) return;
+export function installVersionChip() {
   const when = new Date(BUILD.time);
   const stamp = when.toLocaleString(undefined, {
     month: 'short',
@@ -20,33 +17,41 @@ export function installDevBadge() {
     hour: '2-digit',
     minute: '2-digit',
   });
-  const hint = h('span', { class: 'badge-hint' });
-  const badge = h(
+  const chip = h(
     'button',
-    { class: 'build-badge', title: `Build ${BUILD.sha} from ${BUILD.branch}, ${when.toLocaleString()}` },
-    h('b', null, BUILD.branch === 'dev' ? 'DEV' : BUILD.branch.toUpperCase()),
-    ` build ${BUILD.sha} · ${stamp}`,
-    hint,
+    {
+      class: 'version-chip',
+      title: IS_DEV_BUILD
+        ? `Build ${BUILD.sha} from ${BUILD.branch}, ${when.toLocaleString()}. Hold for the dev menu.`
+        : `Adventure Avenue ${VERSION_LABEL}`,
+    },
+    h('b', null, VERSION_LABEL),
+    IS_DEV_BUILD ? ` ${BUILD.branch} build ${BUILD.sha} · ${stamp}` : null,
   );
-  document.body.append(badge);
+  document.body.append(chip);
   document.documentElement.classList.add('has-badge');
+  if (!IS_DEV_BUILD) return;
 
-  let taps: number[] = [];
-  badge.addEventListener('click', () => {
-    const now = Date.now();
-    taps = [...taps.filter((t) => now - t < TAP_WINDOW_MS), now];
-    const left = TAPS - taps.length;
-    if (left <= 0) {
-      taps = [];
-      hint.textContent = '';
+  // Hold for 3 seconds: the chip fills up, then the dev menu opens. Letting go early cancels.
+  let timer = 0;
+  const cancel = () => {
+    clearTimeout(timer);
+    chip.classList.remove('holding');
+  };
+  chip.addEventListener('pointerdown', (e) => {
+    if (e.button !== 0) return;
+    cancel();
+    // Restart the fill animation from empty.
+    void chip.offsetWidth;
+    chip.classList.add('holding');
+    timer = window.setTimeout(() => {
+      cancel();
       openDevMenu();
-    } else if (taps.length >= 2) {
-      hint.textContent = ` · ${left} more`;
-      setTimeout(() => {
-        if (Date.now() - taps[taps.length - 1] >= TAP_WINDOW_MS) hint.textContent = '';
-      }, TAP_WINDOW_MS);
-    }
+    }, HOLD_MS);
   });
+  for (const ev of ['pointerup', 'pointerleave', 'pointercancel'] as const) chip.addEventListener(ev, cancel);
+  // A long press on a phone would otherwise open the browser's menu.
+  chip.addEventListener('contextmenu', (e) => e.preventDefault());
 }
 
 function openDevMenu() {
