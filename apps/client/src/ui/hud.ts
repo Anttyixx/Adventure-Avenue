@@ -146,7 +146,7 @@ export class Hud {
     };
     this.root.append(
       this.toolbar,
-      h('div', { class: 'top-left' }, this.infoChip, this.marketBtn),
+      h('div', { class: 'top-left' }, this.infoChip, this.marketBox),
       this.ask,
       this.cardsWrap,
       this.logDock,
@@ -161,7 +161,14 @@ export class Hud {
     this.zoomChip.onclick = () => (board.zoomOut = 0);
     board.onZoom = (pct) => (this.zoomChip.textContent = `${pct}%`);
     this.menuBtn.onclick = () => this.toggleMenu();
-    this.marketBtn.onclick = () => this.openMarket();
+    this.marketBox.append(this.marketLabel, this.marketBody);
+    this.marketBox.onclick = () => this.toggleMarket(true);
+    this.marketBox.onkeydown = (e) => {
+      if (e.target === this.marketBox && (e.key === 'Enter' || e.key === ' ')) {
+        e.preventDefault();
+        this.toggleMarket(true);
+      }
+    };
     this.toolbar.append(this.zoomChip, this.menuBtn);
     this.buildMenu();
     window.addEventListener('keydown', this.onKey);
@@ -189,9 +196,21 @@ export class Hud {
   private menuModal: { close(): void } | null = null;
   /** Shown in the menu while it has paused the game (games on this device). */
   private pausedNote = h('div', { class: 'gm-paused', hidden: true }, 'Game paused');
-  /** Opens the stock market pop-up (Standard rules only); sits right of the info chip. */
-  marketBtn = h('button', { class: 'btn small market-btn' }, 'Stock market');
-  private market: { el: HTMLElement; close(): void } | null = null;
+  /**
+   * The Stock market button under the info chip (Standard rules only): tapping it morphs it into
+   * the stock market panel in the top-left corner, and Close morphs it back.
+   */
+  marketBox = h('div', {
+    class: 'market-box glass',
+    role: 'button',
+    tabindex: '0',
+    'aria-expanded': 'false',
+  });
+  private marketLabel = h('div', { class: 'mb-label' }, 'Stock market');
+  private marketBody = h('div', { class: 'mb-body' });
+  marketOpen = false;
+  /** The top-left corner's bottom edge with the market folded (opening it never moves the board). */
+  private topLeftBottom = 0;
 
   /** The menu behind the Menu button: rules, settings and quit. */
   private buildMenu() {
@@ -247,30 +266,53 @@ export class Hud {
 
   // ------------------------------------------------------------ stock market
 
-  /** The stock market, for anyone to look at, in a pop-up in the middle of the screen. */
-  openMarket() {
-    if (this.market || !this.G) return;
-    const body = h('div', { class: 'market-pop' }, marketView(this.G, null));
-    const m = this.modal('Stock market', body, {
-      wide: true,
-      onClose: () => {
-        m.close();
-        this.market = null;
-        this.marketBtn.classList.remove('on');
-      },
-    });
-    m.el.parentElement!.addEventListener('pointerdown', (e) => {
-      if (e.target === m.el.parentElement) m.el.querySelector<HTMLButtonElement>('.modal-head .btn')?.click();
-    });
-    this.market = { el: body, close: m.close };
-    this.marketBtn.classList.add('on');
+  /** Morph the Stock market button into the market panel (top left), or back. */
+  toggleMarket(open = !this.marketOpen) {
+    if (open === this.marketOpen || (open && !this.G)) return;
+    const box = this.marketBox;
+    const from = { width: box.offsetWidth, height: box.offsetHeight };
+    this.marketOpen = open;
+    box.classList.toggle('open', open);
+    box.setAttribute('aria-expanded', String(open));
+    this.renderMarket();
+    const to = { width: box.offsetWidth, height: box.offsetHeight };
+    if (from.width && to.width && !matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      box.animate(
+        [
+          { width: `${from.width}px`, height: `${from.height}px` },
+          { width: `${to.width}px`, height: `${to.height}px` },
+        ],
+        { duration: 280, easing: 'cubic-bezier(0.2, 0.8, 0.2, 1)' },
+      );
+    }
   }
 
-  /** Keep the open stock market up to date as the game goes on. */
-  private refreshMarket() {
-    if (!this.market) return;
-    clear(this.market.el);
-    this.market.el.append(marketView(this.G, null));
+  /** Fill the open market panel (kept up to date as the game goes on). */
+  private renderMarket() {
+    const keep = this.marketBody.scrollTop;
+    clear(this.marketBody);
+    if (!this.marketOpen) return;
+    this.marketBody.append(
+      h(
+        'div',
+        { class: 'drawer-head' },
+        h('h3', null, 'Stock market'),
+        h(
+          'button',
+          {
+            class: 'btn small ghost',
+            onclick: (e: MouseEvent) => {
+              // Keep the click from reaching the box, which would open it again.
+              e.stopPropagation();
+              this.toggleMarket(false);
+            },
+          },
+          'Close',
+        ),
+      ),
+      marketView(this.G, null),
+    );
+    this.marketBody.scrollTop = keep;
   }
 
   /** Ask before quitting, in a dialog over the menu. */
@@ -344,14 +386,14 @@ export class Hud {
     // Upright phones: the options sit above the cards and the status line.
     if (portraitStack) this.root.style.setProperty('--cards-h', `${H - lineTop + 6}px`);
     const tools = this.toolbar.getBoundingClientRect();
-    const chip = this.infoChip.parentElement!.getBoundingClientRect();
+    if (!this.marketOpen) this.topLeftBottom = this.infoChip.parentElement!.getBoundingClientRect().bottom;
     this.root.style.setProperty('--top-free', `${tools.bottom + 6}px`);
     let right = 0;
     if (!portraitStack && cards.width) right = Math.min(W * 0.4, W - cards.left + 8);
     const top = Math.min(ask ? ask.top : Infinity, portraitStack ? lineTop : Infinity);
     const bottom = H - top + 4;
     this.board.insets = {
-      top: Math.max(tools.bottom, chip.bottom) + 6,
+      top: Math.max(tools.bottom, this.topLeftBottom) + 6,
       right,
       bottom: Math.max(0, bottom),
       left: this.leftInset,
@@ -374,7 +416,7 @@ export class Hud {
       h('span', null, `Target ${fmt(G.target)}`),
       h('span', null, G.rules === 'standard' ? 'Standard' : 'Easy'),
     );
-    this.marketBtn.hidden = G.rules !== 'standard';
+    this.marketBox.hidden = G.rules !== 'standard';
     this.chipBoard.textContent = G.boardName ?? 'Town';
     clear(this.chipRound);
     this.chipRound.append(
@@ -384,7 +426,7 @@ export class Hud {
     clear(this.chipGoal);
     this.chipGoal.append('Goal ', h('b', null, fmt(G.target)));
     this.renderCards();
-    this.refreshMarket();
+    if (this.marketOpen) this.renderMarket();
     if (this.logOpen) this.renderLog();
   }
 

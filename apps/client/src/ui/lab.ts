@@ -93,7 +93,7 @@ const rnd = (n: number) => Math.floor(Math.random() * n);
  * Controls for UI elements that were just added or changed: they shake once and glow so they
  * are easy to find. Update this list with each change.
  */
-const RECENT = new Set(['Game menu', 'Stock market']);
+const RECENT = new Set(['Stock market']);
 
 /** Which board the lab plays on: Town (square) or Twin Lakes (hex), remembered per browser. */
 const LAB_BOARD_KEY = 'aa-lab-board';
@@ -1266,7 +1266,7 @@ export async function openLab(app: HTMLElement, section?: string) {
         view.bid(bidders[0], high, yes);
         await view.end(yes ? bidders[0] : bidders.at(-1)!, yes ? high : high - 20, 3000);
       }),
-      btn('Stock market', () => hud.openMarket()),
+      btn('Stock market', () => hud.toggleMarket(true)),
       btn('Results screen', () => {
         const R = cloneState(G);
         R.over = true;

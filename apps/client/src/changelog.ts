@@ -37,8 +37,8 @@ export const CHANGELOG: ChangelogEntry[] = [
       },
       {
         tag: 'better',
-        title: 'Stock market pop-up',
-        text: 'The Stock market button sits next to the game info at the top left and opens the market in the middle of the screen.',
+        title: 'Stock market panel',
+        text: 'The Stock market button sits under the game info at the top left and opens into the market right there.',
       },
     ],
   },

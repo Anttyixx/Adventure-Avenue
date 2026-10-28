@@ -687,8 +687,9 @@ active player changes, tokens ease to their new sizes (the active one larger, th
 as dark glass overlays. Top right: the zoom chip and the Menu button (the menu
 also shows the round, target and rule set). Top left: the **info chip**, with the game's name, the board
 name, the current round (out of the round limit, if any), the goal (target net worth) and, online,
-a Room button that shows the room code; to its right, the Stock market button (Standard rules),
-which opens the stock market in a pop-up in the middle of the screen for anyone to look at. Bottom center: the **action bar**. While the game waits on
+a Room button that shows the room code; under it, the Stock market button (Standard rules), which
+morphs into the stock market panel in the top-left corner for anyone to look at (kept up to
+date) and morphs back into the button when closed. Bottom center: the **action bar**. While the game waits on
 nobody here, it is the status line: one line saying what is going on now: what the game is waiting
 on a player to do ("Blue is buying stocks...", "Blue is deciding which space to go to...", see
 `ui/activity.ts`; the turn starts with "Blue is deciding what to do..." and a three-dot icon, and

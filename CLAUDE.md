@@ -39,8 +39,8 @@ A Fortune Street-style board game for the browser. Spec: `docs/spec.md`.
   Boards use a `square` or `hex` grid (`BoardDef.layout`; hex = pointy-top, odd rows shifted
   right). Cell positions and tile outlines for both live in `apps/client/src/geometry.ts`.
 - In-game HUD (`apps/client/src/ui/hud.ts`), by name: the **info chip** (top left: game name,
-  board, round, goal, Room button; the **Stock market button** sits to its right and opens the
-  market pop-up), the **toolbar** (top right: zoom and Menu; the menu is a centered pop-up that
+  board, round, goal, Room button; the **Stock market button** sits under it and morphs into
+  the market panel), the **toolbar** (top right: zoom and Menu; the menu is a centered pop-up that
   pauses games on this device), the
   **action bar** (`.prompt-center`: the current player's options, or the status line when no
   options are up, morphing between the two), the **Game log button** (above the player cards;

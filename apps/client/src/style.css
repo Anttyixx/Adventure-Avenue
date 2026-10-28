@@ -805,8 +805,10 @@ input[type='range'] {
   position: absolute;
   top: 10px;
   left: calc(10px + var(--free-left, 0px));
-  max-width: calc(58vw - 20px);
+  z-index: 6;
+  max-width: calc(100vw - 20px - var(--free-left, 0px));
   display: flex;
+  flex-direction: column;
   align-items: flex-start;
   gap: 6px;
   pointer-events: none;
@@ -814,17 +816,57 @@ input[type='range'] {
 .top-left > * {
   pointer-events: auto;
 }
-.top-left .market-btn {
-  flex: none;
-  background: var(--glass);
-  border: 1px solid var(--glass-line);
-  backdrop-filter: blur(8px);
+/* The Stock market button under the info chip; it morphs into the market panel. */
+.market-box {
+  display: flex;
+  flex-direction: column;
+  max-width: 100%;
+  overflow: hidden;
+  cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
+  transition: background 0.15s;
 }
-.top-left .market-btn.on {
-  background: #2d6a4f;
+.market-box[hidden] {
+  display: none;
+}
+.market-box:not(.open):hover {
+  background: rgba(30, 44, 82, 0.92);
+}
+.market-box:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+.mb-label {
+  padding: 6px 14px;
+  font-size: 13px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.mb-body {
+  display: none;
+}
+.market-box.open {
+  width: min(760px, calc(100vw - 20px - var(--free-left, 0px)));
+  max-height: calc(100vh - 80px);
+  cursor: default;
+  user-select: text;
+  -webkit-user-select: text;
+}
+.market-box.open .mb-label {
+  display: none;
+}
+.market-box.open .mb-body {
+  display: block;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+  padding: 12px;
+  animation: sb-log-in 0.3s ease-out;
 }
 .info-chip {
   min-width: 0;
+  max-width: calc(58vw - 20px);
   display: flex;
   flex-wrap: wrap;
   align-items: center;
