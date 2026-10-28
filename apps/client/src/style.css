@@ -1460,7 +1460,29 @@ input[type='range'] {
   width: min(760px, 100%);
 }
 .modal.wide.xl {
-  width: min(980px, 100%);
+  width: fit-content;
+  max-width: min(980px, 100%);
+}
+/* Buy/sell stock: the table and shop cards take only the room they need, so the screen is
+   no wider than its content. */
+.modal.xl .m-grid {
+  width: auto;
+}
+.modal.xl .m-grid .m-dname {
+  padding-right: 10px;
+}
+.modal.xl .m-shop {
+  flex: none;
+  min-width: 80px;
+  padding: 6px 8px;
+}
+/* The note under the table wraps to the table's width instead of widening the screen. */
+.modal.xl .m-foot {
+  width: 0;
+  min-width: 100%;
+}
+.modal.xl .m-shops-row > .m-shops {
+  flex: 0 1 auto;
 }
 @keyframes fadein {
   from {
