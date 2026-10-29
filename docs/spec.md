@@ -303,16 +303,20 @@ multiplies it by 0.9.
 **Dynamic:**
 
 ```
-price_d = average shop value_d x 0.04 x factor_d x confidence_d x boost_d
-boost_d = 1 + 0.0015 x held_d x vol_d
+price_d = (average base value_d x 0.04 + average growth_d x 0.08) x factor_d x confidence_d x boost_d
+boost_d = 1 + 0.00075 x held_d x vol_d
 ```
 
+- A shop's growth is its value above its base value (investing, ownership bonuses, venture cards
+  and arcade prizes; negative when a shop shrinks). Growth counts double, so a district its owner
+  keeps investing in climbs much faster than one nobody builds up (`districtWorth`). A plot's base
+  is the cost of what was built on it.
 - `held_d` is the total shares everyone holds in the district. The price rises in a straight line:
-  every 100 shares add 15% of the base price at volatility 1 (+1.5 for a 10G stock), with no cap.
-  Trades never touch the factor.
+  every 100 shares add 7.5% at volatility 1 (+0.75 for a 10G stock), with no cap. Trades never
+  touch the factor.
 - `vol_d` is the district's volatility, rolled evenly at game start between 1 and 2, so a district's
-  slope runs from +1.5 to +3 per 100 shares (10G stock). The market panel tags the bottom third of
-  the range Calm, the middle Normal and the top third Wild (`volMood`).
+  slope runs from +0.75 to +1.5 per 100 shares (10G stock). The market panel tags the bottom third
+  of the range Calm, the middle Normal and the top third Wild (`volMood`).
 - A trade pays the average of the price before and after it (sells use the same), so buying 99
   shares at once costs the same as buying them in steps.
 - **Sell-off:** when 50+ shares of a district are sold in one turn (by anyone), its confidence drops
@@ -593,20 +597,27 @@ menu (no question once the game is over).
 CPUs use simple greedy rules with a cash buffer; they are good enough to fill seats, not to
 challenge strong players.
 
-| Decision                                | Rule                                                                                                                                                                                                                  |
-| --------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Direction at forks                      | Breadth-first search from each option (not turning back) to the nearest goal: the bank if it can promote or has reached the target, otherwise the nearest missing suit or change-of-suit square. Ties broken randomly |
-| Buy a shop                              | If cash after buying >= 150G, or it already owns a square in that group                                                                                                                                               |
-| Build on a plot                         | 50% chance of a 3-Star Shop if it keeps 500G after; otherwise a weighted pick (Tax 3, Checkpoint 2, Circus 2, Home 1, Agency 1, Balloonport 1) if it keeps 150G                                                       |
-| Invest                                  | 80% chance when cash > 900G: invest min(room, 60% of cash above 600G)                                                                                                                                                 |
-| Buyout                                  | If it owns a square in that group and keeps 600G after paying 5x                                                                                                                                                      |
-| Buy stock                               | At the bank or stockbroker when cash > 1,100G: the district where it owns the most (domination bonus), 45% of cash above 800G, minimum 10 shares                                                                      |
-| Circus upgrade                          | If it keeps 500G after                                                                                                                                                                                                |
-| Balloonport / zoom                      | Fly to its current movement goal                                                                                                                                                                                      |
-| Estate Agency                           | Buy the unowned shop in the group where it owns most, if it keeps 300G                                                                                                                                                |
-| Venture panel, minigames, cannon target | Random                                                                                                                                                                                                                |
-| Auctions and trades                     | See Trading and auctions                                                                                                                                                                                              |
-| Debt                                    | Sell stock first, then the cheapest property                                                                                                                                                                          |
+| Decision                                | Rule                                                                                                                                                                                                                                                     |
+| --------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Direction at forks                      | Breadth-first search from each option (not turning back) to the nearest goal: the bank if it can promote or has reached the target, otherwise the nearest missing suit or change-of-suit square. Ties broken randomly                                    |
+| Buy a shop                              | If cash after buying >= 150G, or it already owns a square in that group                                                                                                                                                                                  |
+| Build on a plot                         | 50% chance of a 3-Star Shop if it keeps 500G after; otherwise a weighted pick (Tax 3, Checkpoint 2, Circus 2, Home 1, Agency 1, Balloonport 1) if it keeps 150G                                                                                          |
+| Invest                                  | 80% chance when cash > 900G: invest min(room, 60% of cash above 600G)                                                                                                                                                                                    |
+| Buyout                                  | If it owns a square in that group and keeps 600G after paying 5x                                                                                                                                                                                         |
+| Buy stock                               | At the bank or stockbroker when cash > 900G: the district whose stock looks best per coin (room its owners can still invest, its own shops counted fully; dividends from fees; a dent recovering; volatility), 55% of cash above 650G, minimum 10 shares |
+| Circus upgrade                          | If it keeps 500G after                                                                                                                                                                                                                                   |
+| Balloonport / zoom                      | Fly to its current movement goal                                                                                                                                                                                                                         |
+| Estate Agency                           | Buy the unowned shop in the group where it owns most, if it keeps 300G                                                                                                                                                                                   |
+| Venture panel, minigames, cannon target | Random (venture panels: see below)                                                                                                                                                                                                                       |
+| Auctions and trades                     | See Trading and auctions                                                                                                                                                                                                                                 |
+| Debt                                    | Sell stock first, then the cheapest property                                                                                                                                                                                                             |
+
+**Venture panels:** the CPU flips the free panel that completes a line of 4+ if it can, otherwise
+the one that joins the most of its own panels in a row (squared run lengths in each direction, only
+where an unbroken stretch of 4+ is still possible), random among equals.
+
+**Venture card choices:** Gift shares picks the district it would buy stock in; Bear market picks
+the district where rivals hold the most stock value (counting its own holdings against it).
 
 **Not yet implemented for CPUs:** selling stock before rolling, proposing trades, starting auctions,
 renovating, stock dumps against a leader. These are good targets for a "hard" CPU in the rebuild.

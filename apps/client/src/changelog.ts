@@ -33,7 +33,7 @@ export const CHANGELOG: ChangelogEntry[] = [
       {
         tag: 'rules',
         title: 'Dynamic stocks',
-        text: 'Share prices now climb steadily the more shares everyone holds, and you trade at the average of the price before and after. Each district rolls its own mood at the start: Calm districts rise slowest, Wild ones up to twice as fast.',
+        text: 'Investing in a district now moves its stock twice as much as before, so buy where the owners are building. Share prices also climb a little with the shares everyone holds (Calm districts slowest, Wild ones up to twice as fast), and you trade at the average of the price before and after.',
       },
       {
         tag: 'rules',
@@ -48,7 +48,8 @@ export const CHANGELOG: ChangelogEntry[] = [
     ],
     extras: [
       'The default goal is now 10,000G',
-      'CPUs buy stock more eagerly',
+      'CPUs buy stock more eagerly, picking districts where shops will grow',
+      'CPUs line up their venture panels to earn line bonuses',
       "The stock market shows each district's mood and whether it is shaken",
     ],
   },

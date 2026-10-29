@@ -43,11 +43,16 @@ export const K = {
   tradeUp: 1.1,
   tradeDown: 0.9,
   /**
-   * Dynamic stocks. Demand: the price rises in a straight line with the total shares all players
-   * hold in a district: boost = 1 + shareSlope x held x volatility. At volatility 1 (the calmest),
-   * every 100 shares add 15% of the base price (+1.5 for a 10G stock); at 2, +3 per 100. No cap.
+   * Dynamic stocks. Shop growth (value above the shops' base) counts at growthRate instead of
+   * stockRate, so investing in a district moves its stock twice as much as its starting value.
    */
-  shareSlope: 0.0015,
+  growthRate: 0.08,
+  /**
+   * Dynamic stocks' demand: the price rises in a straight line with the total shares all players
+   * hold in a district: boost = 1 + shareSlope x held x volatility. At volatility 1 (the calmest),
+   * every 100 shares add 7.5% of the price (+0.75 for a 10G stock); at 2, +1.5 per 100. No cap.
+   */
+  shareSlope: 0.00075,
   /**
    * Each district's volatility, rolled evenly at game start: how strongly shares move its price.
    * The lowest third of the range shows as Calm, the middle as Normal, the top as Wild.
@@ -126,6 +131,12 @@ export const K = {
     stockFloor: 650,
     stockShare: 0.55,
     stockMin: 10,
+    /** Stock picks: how much of rivals' room to invest a CPU expects them to fill... */
+    stockRivalInvest: 0.6,
+    /** ...fee visits it counts on for dividends, and how much a dent or volatility adds. */
+    stockDividendVisits: 3,
+    stockDentBonus: 0.5,
+    stockVolBonus: 0.05,
     circusKeep: 500,
     agencyKeep: 300,
     tradeGroupBonus: 0.35,

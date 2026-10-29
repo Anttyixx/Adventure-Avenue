@@ -1,9 +1,17 @@
 import { describe, expect, it } from 'vitest';
-import { cpuAcceptsTrade } from '../src/cpu';
+import { cpuAcceptsTrade, cpuDecide } from '../src/cpu';
 import { CARDS } from '../src/cards';
 import { Game } from '../src/engine';
 import { simulate } from '../src/headless';
-import { confidence, market, netWorth, shareTradeValue, stockPrice, stockPriceExact } from '../src/rules';
+import {
+  confidence,
+  isShopLike,
+  market,
+  netWorth,
+  shareTradeValue,
+  stockPrice,
+  stockPriceExact,
+} from '../src/rules';
 import { K } from '../src/constants';
 import { at, makeGame } from './helpers';
 
@@ -494,5 +502,40 @@ describe('investing', () => {
     await game.investFlow(p, [shop]);
     const pay = events.find((e) => e.type === 'money' && e.reason === 'Investment');
     expect(pay).toMatchObject({ sq: shop.id, from: p.id, to: -1 });
+  });
+});
+
+describe('shop growth and stock', () => {
+  it('counts growth above base at the growth rate with dynamic stocks, and at the base rate in classic', () => {
+    const { G } = makeGame();
+    const shops = G.nodes.filter((s) => s.d === 0 && isShopLike(s));
+    const before = stockPriceExact(G, 0);
+    shops[0].value += 100;
+    expect(stockPriceExact(G, 0) - before).toBeCloseTo((100 / shops.length) * K.growthRate);
+    G.stocks = 'classic';
+    shops[0].value -= 100;
+    const classic = stockPriceExact(G, 0);
+    shops[0].value += 100;
+    expect(stockPriceExact(G, 0) - classic).toBeCloseTo((100 / shops.length) * K.stockRate);
+  });
+});
+
+describe('CPU choices', () => {
+  it('flips the venture panel that extends its line', () => {
+    const { G } = makeGame();
+    const owner = new Array(64).fill(-1);
+    owner[0] = owner[1] = owner[2] = 0;
+    owner[9] = 1;
+    expect(cpuDecide(G, { kind: 'venturePanel', pid: 0, owner })).toBe(3);
+  });
+
+  it('buys stock where shops can still grow, starting with its own', () => {
+    const { G } = makeGame();
+    const p = G.players[0];
+    p.cash = 3000;
+    const d = 3;
+    for (const s of G.nodes) if (s.d === d && isShopLike(s)) s.owner = p.id;
+    const ans = cpuDecide(G, { kind: 'buyStock', pid: 0, discount: 0, maxSpend: 3000 });
+    expect(ans?.d).toBe(d);
   });
 });

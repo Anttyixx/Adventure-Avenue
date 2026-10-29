@@ -4,7 +4,20 @@
 import { K } from './constants';
 import type { DecisionAnswer, DecisionKind, DecisionRequest, TradeOffer } from './decisions';
 import { pick, rand, randInt, weighted } from './rng';
-import { canPromote, netWorth, ownedCount, shopFee, squareFee, stockPrice } from './rules';
+import {
+  canPromote,
+  confidence,
+  dynamicStocks,
+  investRoom,
+  isShopLike,
+  linesThrough,
+  market,
+  netWorth,
+  ownedCount,
+  shopFee,
+  squareFee,
+  stockPrice,
+} from './rules';
 import { SUITS, type BuildingKey, type GameState, type Player } from './types';
 
 const C = K.cpu;
@@ -63,6 +76,106 @@ function bestDistrict(G: GameState, p: Player): number {
   const max = Math.max(...counts);
   if (max === 0) return randInt(G, G.districts.length);
   return counts.indexOf(max);
+}
+
+/**
+ * How good a district's stock looks to buy, like a player would judge it: growth the owners there
+ * can still invest (their own shops' room, limited by their spare cash; the CPU's own shops count
+ * fully since it will invest in them), dividends from the fees rivals pay there, a dented price
+ * that should recover, and (dynamic stocks) how strongly shares move it. Per 1G of share price.
+ */
+export function stockAppeal(G: GameState, p: Player, d: number): number {
+  const shops = G.nodes.filter((s) => s.d === d && isShopLike(s));
+  if (!shops.length) return -Infinity;
+  const price = Math.max(1, stockPrice(G, d));
+  const rate = dynamicStocks(G) ? K.growthRate : K.stockRate;
+  let growth = 0;
+  let fees = 0;
+  for (const q of G.players) {
+    if (q.bankrupt) continue;
+    const mine = shops.filter((s) => s.owner === q.id);
+    if (!mine.length) continue;
+    const room = mine.reduce((t, s) => t + investRoom(G, s), 0);
+    const spare = Math.max(0, q.cash - C.investFloor);
+    growth += Math.min(room, spare) * (q.id === p.id ? 1 : C.stockRivalInvest);
+    fees += mine.reduce((t, s) => t + shopFee(G, s), 0);
+  }
+  let appeal =
+    ((growth / shops.length) * rate + (fees / shops.length / K.divDivisor) * C.stockDividendVisits) / price;
+  if (dynamicStocks(G)) {
+    appeal += (1 - confidence(G, d)) * C.stockDentBonus;
+    appeal += (market(G).vol[d] - 1) * C.stockVolBonus;
+  }
+  return appeal;
+}
+
+/** The district a CPU would buy stock in. */
+function stockPick(G: GameState, p: Player): number {
+  let best = -1;
+  let score = -Infinity;
+  G.districts.forEach((_, d) => {
+    const a = stockAppeal(G, p, d);
+    if (a > score) {
+      score = a;
+      best = d;
+    }
+  });
+  return best >= 0 ? best : bestDistrict(G, p);
+}
+
+/**
+ * Where a CPU flips a venture panel: the free panel that best extends its own lines (a line of
+ * 4+ pays now), with room to grow a line through it as a tiebreaker; random among equals.
+ */
+function venturePick(G: GameState, pid: number, owner: number[]): number {
+  const free = owner.map((o, i) => (o < 0 ? i : -1)).filter((i) => i >= 0);
+  const score = (i: number) => {
+    const x0 = i % 8;
+    const y0 = Math.floor(i / 8);
+    let s = 0;
+    for (const [dx, dy] of [
+      [1, 0],
+      [0, 1],
+      [1, 1],
+      [1, -1],
+    ]) {
+      // Own panels joined to this one, and the open stretch (own or free) it sits in.
+      let run = 1;
+      let open = 1;
+      for (const k of [1, -1]) {
+        let joined = true;
+        for (
+          let x = x0 + dx * k, y = y0 + dy * k;
+          x >= 0 && x < 8 && y >= 0 && y < 8;
+          x += dx * k, y += dy * k
+        ) {
+          const o = owner[y * 8 + x];
+          if (o !== pid && o >= 0) break;
+          open++;
+          if (joined && o === pid) run++;
+          else joined = false;
+        }
+      }
+      if (open >= K.lineBonusMin) s += run * run + open / 8;
+    }
+    // A line of 4+ pays right away.
+    const now = linesThrough(
+      owner.map((o, j) => (j === i ? pid : o)),
+      i,
+      pid,
+    );
+    return s + now.length * 100;
+  };
+  let best: number[] = [];
+  let top = -Infinity;
+  for (const i of free) {
+    const v = score(i);
+    if (v > top + 1e-9) {
+      top = v;
+      best = [i];
+    } else if (Math.abs(v - top) <= 1e-9) best.push(i);
+  }
+  return pick(G, best);
 }
 
 function tradeWorth(G: GameState, cpu: Player, ids: number[], giving: boolean): number {
@@ -154,7 +267,7 @@ function decide(G: GameState, req: DecisionRequest): unknown {
 
     case 'buyStock': {
       if (p.cash <= C.stockAbove) return null;
-      const d = bestDistrict(G, p);
+      const d = stockPick(G, p);
       const unit = stockPrice(G, d) * (1 - req.discount);
       const n = Math.min(K.maxBuy, Math.floor((C.stockShare * (p.cash - C.stockFloor)) / unit));
       return n >= C.stockMin ? { d, n } : null;
@@ -173,10 +286,8 @@ function decide(G: GameState, req: DecisionRequest): unknown {
       return best >= 0 ? { d: best, n: p.shares[best] } : null;
     }
 
-    case 'venturePanel': {
-      const free = req.owner.map((o, i) => (o < 0 ? i : -1)).filter((i) => i >= 0);
-      return pick(G, free);
-    }
+    case 'venturePanel':
+      return venturePick(G, p.id, req.owner);
 
     case 'reels':
       return [0, 1, 2].map(() => randInt(G, 8));
@@ -221,9 +332,12 @@ function decide(G: GameState, req: DecisionRequest): unknown {
         return max > 0 ? held.indexOf(max) : bestDistrict(G, p);
       }
       if (req.purpose === 'down20') {
-        const none = req.options.filter((d) => p.shares[d] === 0);
-        return none.length ? pick(G, none) : pick(G, req.options);
+        // Hurt rivals' holdings the most, sparing its own.
+        const hurt = (d: number) =>
+          G.players.reduce((s, q) => s + (q.id === p.id ? -2 : 1) * q.shares[d], 0) * stockPrice(G, d);
+        return req.options.reduce((a, b) => (hurt(b) > hurt(a) ? b : a));
       }
+      if (req.purpose === 'free20') return stockPick(G, p);
       return bestDistrict(G, p);
     }
 

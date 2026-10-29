@@ -108,16 +108,29 @@ export function confidence(G: GameState, d: number): number {
 }
 
 /**
- * The exact share price (before rounding): the shops' average value x K.stockRate, times the
- * multiplier and, with dynamic stocks, confidence and the demand boost from `held` shares held.
+ * What a district's shops are worth per share, before the multiplier. Classic: the shops' average
+ * value x K.stockRate. Dynamic: their average base value x K.stockRate plus their average growth
+ * (value above base) x K.growthRate, so investing moves the stock more.
+ */
+export function districtWorth(G: GameState, d: number): number {
+  const shops = G.nodes.filter((s) => s.d === d && isShopLike(s));
+  if (!shops.length) return 0;
+  const avg = shops.reduce((s, q) => s + q.value, 0) / shops.length;
+  if (!dynamicStocks(G)) return avg * K.stockRate;
+  const base = shops.reduce((s, q) => s + shopBase(q), 0) / shops.length;
+  return base * K.stockRate + (avg - base) * K.growthRate;
+}
+
+/**
+ * The exact share price (before rounding): the district's worth times the multiplier and, with
+ * dynamic stocks, confidence and the demand boost from `held` shares held.
  */
 export function stockPriceExact(G: GameState, d: number, held = sharesHeld(G, d)): number {
-  const shops = G.nodes.filter((s) => s.d === d && isShopLike(s));
-  if (!shops.length) return 1;
-  const avg = shops.reduce((s, q) => s + q.value, 0) / shops.length;
-  if (!dynamicStocks(G)) return Math.max(1, avg * K.stockRate * G.factor[d]);
+  const worth = districtWorth(G, d);
+  if (!worth) return 1;
+  if (!dynamicStocks(G)) return Math.max(1, worth * G.factor[d]);
   const boost = shareBoost(held, market(G).vol[d]);
-  return Math.max(1, avg * K.stockRate * G.factor[d] * confidence(G, d) * boost);
+  return Math.max(1, worth * G.factor[d] * confidence(G, d) * boost);
 }
 
 /** Dynamic stocks' demand boost (1 = none) for `held` shares held at volatility `vol`. */

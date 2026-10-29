@@ -80,10 +80,16 @@ const GROUPS: { title: string; settings: Setting[] }[] = [
     title: 'Dynamic',
     settings: [
       {
+        key: 'growthRate',
+        label: 'Price per shop growth',
+        step: 0.005,
+        hint: 'Shop value above base (investing, ownership, cards) counts at this instead (0.08 = double)',
+      },
+      {
         key: 'shareSlope',
         label: 'Slope per share',
         step: 0.0001,
-        hint: 'Price rise per share held, as a part of the base price (0.0015 = +15% per 100 shares at volatility 1)',
+        hint: 'Price rise per share held, as a part of the price (0.00075 = +7.5% per 100 shares at volatility 1)',
       },
       { key: 'volMin', label: 'Volatility min', step: 0.01, hint: 'Calmest a district can roll' },
       { key: 'volMax', label: 'Volatility max', step: 0.01, hint: 'Wildest a district can roll' },
@@ -130,6 +136,30 @@ const GROUPS: { title: string; settings: Setting[] }[] = [
         step: 0.05,
         hint: 'Part of the cash above that floor spent on stock',
       },
+      {
+        key: 'cpu.stockRivalInvest',
+        label: 'Rival investing counted',
+        step: 0.05,
+        hint: "How much of rivals' room to invest a CPU expects them to fill when picking a district",
+      },
+      {
+        key: 'cpu.stockDividendVisits',
+        label: 'Dividend visits counted',
+        step: 1,
+        hint: 'Fee payments in a district a CPU counts on for dividends when picking',
+      },
+      {
+        key: 'cpu.stockDentBonus',
+        label: 'Dent appeal',
+        step: 0.05,
+        hint: 'How much a dented (cheap, recovering) price draws CPUs in',
+      },
+      {
+        key: 'cpu.stockVolBonus',
+        label: 'Volatility appeal',
+        step: 0.01,
+        hint: 'How much a wild district draws CPUs in',
+      },
     ],
   },
 ];
@@ -171,14 +201,22 @@ export function applyLiveStockSettings() {
   }
 }
 
-/** Price per share for a district whose shops average `avg`, with `held` shares held in total. */
-function curvePrice(avg: number, held: number, vol: number): number {
-  return avg * K.stockRate * shareBoost(held, vol);
+/**
+ * Price per share for a district whose shops' base values average `avg` and have grown by `growth`
+ * on average, with `held` shares held in total (dynamic stocks).
+ */
+function curvePrice(avg: number, growth: number, held: number, vol: number): number {
+  return (avg * K.stockRate + growth * K.growthRate) * shareBoost(held, vol);
+}
+
+/** Classic stocks' price for the same shops: total value x K.stockRate. */
+function classicPrice(avg: number, growth: number): number {
+  return (avg + growth) * K.stockRate;
 }
 
 /** What 100 more shares add to the price (the same anywhere on the line). */
-function per100(avg: number, vol: number): string {
-  return (curvePrice(avg, 100, vol) - curvePrice(avg, 0, vol)).toFixed(2);
+function per100(avg: number, growth: number, vol: number): string {
+  return (curvePrice(avg, growth, 100, vol) - curvePrice(avg, growth, 0, vol)).toFixed(2);
 }
 
 const COLORS = { normal: '#3987e5', wild: '#d95926', calm: '#199e70', classic: '#c98500' };
@@ -189,6 +227,7 @@ export function openStocksLab(root: HTMLElement, onBack: () => void) {
   const page = h('div', { class: 'sl-page' });
   root.append(page);
   let avg = 250;
+  let growth = 0;
 
   const settingsBox = h('div', { class: 'sl-settings' });
   const curveBox = h('div', { class: 'sl-curve' });
@@ -293,15 +332,25 @@ export function openStocksLab(root: HTMLElement, onBack: () => void) {
     const avgInput = h('input', { type: 'number', step: '10', value: String(avg) }) as HTMLInputElement;
     avgInput.onchange = () => {
       avg = Math.max(10, Number(avgInput.value) || 250);
-      drawCurve();
+      // Redraw after the event: rebuilding now removes the focused input mid-change.
+      setTimeout(drawCurve);
+    };
+    const growthInput = h('input', { type: 'number', step: '50', value: String(growth) }) as HTMLInputElement;
+    growthInput.onchange = () => {
+      growth = Number(growthInput.value) || 0;
+      setTimeout(drawCurve);
     };
     const vols = { calm: K.volMin, normal: +((K.volMin + K.volMax) / 2).toFixed(2), wild: K.volMax };
     const maxShares = 1000;
     const series: { id: keyof typeof COLORS; label: string; at: (n: number) => number }[] = [
-      { id: 'normal', label: `Dynamic, normal (${vols.normal})`, at: (n) => curvePrice(avg, n, vols.normal) },
-      { id: 'wild', label: `Dynamic, wild (${vols.wild})`, at: (n) => curvePrice(avg, n, vols.wild) },
-      { id: 'calm', label: `Dynamic, calm (${vols.calm})`, at: (n) => curvePrice(avg, n, vols.calm) },
-      { id: 'classic', label: 'Classic (no share effect)', at: () => avg * K.stockRate },
+      {
+        id: 'normal',
+        label: `Dynamic, normal (${vols.normal})`,
+        at: (n) => curvePrice(avg, growth, n, vols.normal),
+      },
+      { id: 'wild', label: `Dynamic, wild (${vols.wild})`, at: (n) => curvePrice(avg, growth, n, vols.wild) },
+      { id: 'calm', label: `Dynamic, calm (${vols.calm})`, at: (n) => curvePrice(avg, growth, n, vols.calm) },
+      { id: 'classic', label: 'Classic (no share effect)', at: () => classicPrice(avg, growth) },
     ];
     // SVG line chart: price against total shares held.
     const W = 640;
@@ -381,7 +430,7 @@ export function openStocksLab(root: HTMLElement, onBack: () => void) {
           'tr',
           null,
           h('td', null, String(n)),
-          h('td', null, (avg * K.stockRate).toFixed(1)),
+          h('td', null, classicPrice(avg, growth).toFixed(1)),
           h('td', null, series[2].at(n).toFixed(1)),
           h('td', null, h('b', null, series[0].at(n).toFixed(1))),
           h('td', null, series[1].at(n).toFixed(1)),
@@ -393,17 +442,22 @@ export function openStocksLab(root: HTMLElement, onBack: () => void) {
         'div',
         { class: 'sl-head' },
         h('h3', null, 'Price curve'),
-        h('label', { class: 'sl-inline' }, 'Shops average', avgInput, 'G'),
+        h(
+          'div',
+          { class: 'sl-inline' },
+          h('label', null, 'Shops average base', avgInput, 'G'),
+          h('label', null, 'Growth', growthInput, 'G'),
+        ),
       ),
       h(
         'p',
         { class: 'hint' },
-        `Base price ${(avg * K.stockRate).toFixed(1)}G. Multiplier and confidence at 1. Hover the chart for exact prices.`,
+        `Base price ${(avg * K.stockRate).toFixed(1)}G, plus ${(growth * K.growthRate).toFixed(1)}G from growth (value above base, x ${K.growthRate}). Multiplier and confidence at 1. Hover the chart for exact prices.`,
       ),
       h(
         'p',
         { class: 'hint' },
-        `Every 100 shares held add: calm +${per100(avg, vols.calm)}, normal +${per100(avg, vols.normal)}, wild +${per100(avg, vols.wild)}.`,
+        `Every 100 shares held add: calm +${per100(avg, growth, vols.calm)}, normal +${per100(avg, growth, vols.normal)}, wild +${per100(avg, growth, vols.wild)}.`,
       ),
       h(
         'div',

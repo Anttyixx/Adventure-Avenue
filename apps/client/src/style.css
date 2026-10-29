@@ -5231,6 +5231,15 @@ button.tb-chip:hover {
   gap: 6px;
   font-size: 13px;
 }
+div.sl-inline {
+  flex-wrap: wrap;
+  gap: 12px;
+}
+div.sl-inline label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
 .sl-row {
   display: flex;
   align-items: center;
