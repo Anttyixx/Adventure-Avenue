@@ -51,6 +51,8 @@ export const CHANGELOG: ChangelogEntry[] = [
       'The winner no longer shrinks when they win',
       'The zoom-out after a roll waits for the die to land',
       'Investing sends the coins into the shop instead of the bank',
+      'Stock drops are announced too (e.g. Bear market), with red arrows',
+      'Picking properties to sell for a debt keeps them all clear of the action bar',
     ],
   },
   {

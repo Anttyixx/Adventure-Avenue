@@ -600,32 +600,40 @@ export class BoardView {
 
   /**
    * While a choice is open, the zoom that keeps the player centered and still frames every
-   * glowing square around them. When the choices are too spread out for that, the view centers
-   * on all of them instead.
+   * glowing square around them inside the area the HUD leaves free (clear of the action bar,
+   * cards and toolbar). When the choices are too spread out for that, the view frames all of
+   * them in that area instead, zooming out as far as the whole board if it must.
    */
   choiceView(at: { x: number; y: number }) {
     const G = this.G!;
     const pad = 70;
-    let dx = pad;
-    let dy = pad;
+    // Extra room above for the pins and labels over the choices.
+    const up = this.glow.length ? 90 : 0;
+    const { top, right, bottom, left } = this.insets;
+    const cx = this.w / 2;
+    const cy = this.h / 2;
+    let z = Infinity;
     for (const id of this.fitIds) {
       const c = this.center(G.nodes[id]);
-      dx = Math.max(dx, Math.abs(c.x - at.x) + pad);
-      // Extra room above for the pins and labels over the choices.
-      dy = Math.max(dy, Math.abs(c.y - at.y) + pad + (this.glow.length && c.y <= at.y ? 90 : 0));
+      const ox = c.x - at.x;
+      const oy = c.y - at.y;
+      z = Math.min(z, ox >= 0 ? (this.w - right - cx) / (ox + pad) : (cx - left) / (pad - ox));
+      z = Math.min(z, oy >= 0 ? (this.h - bottom - cy) / (oy + pad) : (cy - top) / (pad + up - oy));
     }
-    const { aw, ah } = this.focusArea();
-    const z = Math.min(aw / (2 * dx), ah / (2 * dy));
     if (z >= this.zoomFor(1)) return { ...at, z };
     const pts = [at, ...this.fitIds.map((id) => this.center(G.nodes[id]))];
     const xs = pts.map((p) => p.x);
     const ys = pts.map((p) => p.y);
     const w = Math.max(...xs) - Math.min(...xs) + pad * 2;
-    const h = Math.max(...ys) - Math.min(...ys) + pad * 2 + 90;
+    const h = Math.max(...ys) - Math.min(...ys) + pad * 2 + up;
+    const fw = Math.max(100, this.w - left - right);
+    const fh = Math.max(100, this.h - top - bottom);
+    const fz = Math.max(this.freeFit().z, Math.min(fw / w, fh / h));
     return {
-      x: (Math.min(...xs) + Math.max(...xs)) / 2,
-      y: (Math.min(...ys) + Math.max(...ys)) / 2 - 45,
-      z: Math.max(this.zoomFor(1), Math.min(aw / w, ah / h)),
+      // Centered in the free area, not under the cards or the action bar.
+      x: (Math.min(...xs) + Math.max(...xs)) / 2 - (left - right) / 2 / fz,
+      y: (Math.min(...ys) + Math.max(...ys)) / 2 - up / 2 - (top - bottom) / 2 / fz,
+      z: fz,
     };
   }
 
@@ -653,14 +661,19 @@ export class BoardView {
     };
   }
 
-  /** A district's stock went up: green arrows and gold sparkles rise from each of its squares. */
-  stockRiseFx(ids: number[], ms: number) {
+  /**
+   * A district's stock moved: going up, green arrows and gold sparkles rise from each of its
+   * squares; going down, red arrows and grey sparks sink over them.
+   */
+  stockFx(ids: number[], ms: number, up = true) {
     const G = this.G!;
+    const glow = up ? '#7cf29a' : '#ff6b6b';
+    const dir = up ? 1 : -1;
     const parts = ids.flatMap((id) => {
       const c = this.center(G.nodes[id]);
       return Array.from({ length: 9 }, (_, i) => ({
         x: c.x + (Math.random() - 0.5) * TILE * 0.9,
-        y: c.y + TILE * 0.3 - Math.random() * 20,
+        y: up ? c.y + TILE * 0.3 - Math.random() * 20 : c.y - TILE * 0.45 + Math.random() * 20,
         delay: (i / 9) * 0.55 + Math.random() * 0.1,
         rise: 70 + Math.random() * 60,
         arrow: i % 3 === 0,
@@ -673,7 +686,7 @@ export class BoardView {
         ctx.save();
         // The district's squares glow while the particles rise.
         ctx.globalAlpha = Math.sin(Math.min(1, k * 1.4) * Math.PI) * 0.55;
-        ctx.strokeStyle = '#7cf29a';
+        ctx.strokeStyle = glow;
         ctx.lineWidth = 7;
         for (const id of ids) {
           const c = this.center(G.nodes[id]);
@@ -683,24 +696,29 @@ export class BoardView {
         for (const q of parts) {
           const t = (k - q.delay) / 0.45;
           if (t <= 0 || t >= 1) continue;
-          const y = q.y - q.rise * t;
+          const y = q.y - q.rise * t * dir;
           ctx.globalAlpha = Math.sin(t * Math.PI);
           if (q.arrow) {
-            ctx.fillStyle = '#7cf29a';
-            ctx.strokeStyle = '#1b5e34';
+            // An arrow pointing the way the price went (the shape is flipped for a fall).
+            ctx.save();
+            ctx.translate(q.x, y);
+            ctx.scale(1, dir);
+            ctx.fillStyle = glow;
+            ctx.strokeStyle = up ? '#1b5e34' : '#7a1d1d';
             ctx.lineWidth = 3;
             ctx.beginPath();
-            ctx.moveTo(q.x, y - 14);
-            ctx.lineTo(q.x + 11, y);
-            ctx.lineTo(q.x + 4, y);
-            ctx.lineTo(q.x + 4, y + 12);
-            ctx.lineTo(q.x - 4, y + 12);
-            ctx.lineTo(q.x - 4, y);
-            ctx.lineTo(q.x - 11, y);
+            ctx.moveTo(0, -14);
+            ctx.lineTo(11, 0);
+            ctx.lineTo(4, 0);
+            ctx.lineTo(4, 12);
+            ctx.lineTo(-4, 12);
+            ctx.lineTo(-4, 0);
+            ctx.lineTo(-11, 0);
             ctx.closePath();
             ctx.stroke();
             ctx.fill();
-          } else drawSparkle(ctx, q.x, y, 7 + 3 * Math.sin(t * Math.PI), '#ffe066');
+            ctx.restore();
+          } else drawSparkle(ctx, q.x, y, 7 + 3 * Math.sin(t * Math.PI), up ? '#ffe066' : '#c3c9d6');
         }
         ctx.restore();
       },

@@ -884,14 +884,15 @@ export class HotSeat implements GameIO {
         break;
     }
     // Mid-walk price changes are announced once the token stops.
-    if (!this.passing && e.type !== 'step' && e.type !== 'gameOver') await this.announceStockRises();
+    if (!this.passing && e.type !== 'step' && e.type !== 'gameOver') await this.announceStockMoves();
   }
 
   /**
-   * A district's stock went up: the camera frames its squares, a banner (like the turn banner)
-   * gives the new price and green arrows rise from the squares.
+   * A district's stock price moved (for any reason): the camera frames its squares, a banner
+   * (like the turn banner) gives the old and new price, and arrows rise from the squares (or sink,
+   * for a fall).
    */
-  private async announceStockRises() {
+  private async announceStockMoves() {
     const G = this.G;
     if (G.rules !== 'standard' || G.over) return;
     const now = G.districts.map((_, d) => stockPrice(G, d));
@@ -899,15 +900,20 @@ export class HotSeat implements GameIO {
     this.prices = now;
     if (before.length !== now.length) return;
     for (let d = 0; d < now.length; d++) {
-      if (now[d] <= before[d]) continue;
+      if (now[d] === before[d]) continue;
+      const up = now[d] > before[d];
       const ids = G.nodes.filter((s) => s.d === d).map((s) => s.id);
       if (!ids.length) continue;
       const dist = G.districts[d];
       this.board.lookAt = this.board.frameSquares(ids);
       await this.wait(T.stockZoom);
-      sound.play('grow');
-      this.hud.banner(`${dist.name} stock up! ${fmt(before[d])} → ${fmt(now[d])}`, dist.color, T.stockRise);
-      this.board.stockRiseFx(ids, T.stockRise);
+      sound.play(up ? 'grow' : 'pay');
+      this.hud.banner(
+        `${dist.name} stock ${up ? 'up' : 'down'}! ${fmt(before[d])} → ${fmt(now[d])}`,
+        dist.color,
+        T.stockRise,
+      );
+      this.board.stockFx(ids, T.stockRise, up);
       await this.wait(T.stockRise);
       this.board.lookAt = null;
       await this.wait(T.stockZoom);

@@ -93,7 +93,7 @@ const rnd = (n: number) => Math.floor(Math.random() * n);
  * Controls for UI elements that were just added or changed: they shake once and glow so they
  * are easy to find. Update this list with each change.
  */
-const RECENT = new Set(['Coins: invest in a shop']);
+const RECENT = new Set(['Stock rise', 'Stock fall', 'Debt']);
 
 /** Which board the lab plays on: Town (square) or Twin Lakes (hex), remembered per browser. */
 const LAB_BOARD_KEY = 'aa-lab-board';
@@ -630,18 +630,25 @@ export async function openLab(app: HTMLElement, section?: string) {
         const sq = G.nodes.find((n) => n.t === 'cannon' || n.t === 'arcade' || n.t === 'boon') ?? G.nodes[0];
         hud.showTooltip(sq.id, window.innerWidth / 2, window.innerHeight / 2);
       }),
-      btn('Stock rise', async () => {
-        // The camera frames the district of the target player's square (or the first).
-        const d = Math.max(0, G.nodes[cur().node].d);
-        const ids = G.nodes.filter((n) => n.d === d).map((n) => n.id);
-        const dist = G.districts[d];
-        board.lookAt = board.frameSquares(ids);
-        await new Promise((r) => setTimeout(r, T.stockZoom));
-        hud.banner(`${dist.name} stock up! ${fmt(12)} → ${fmt(14)}`, dist.color, T.stockRise);
-        board.stockRiseFx(ids, T.stockRise);
-        await new Promise((r) => setTimeout(r, T.stockRise));
-        board.lookAt = null;
-      }),
+      ...([true, false] as const).map((up) =>
+        btn(up ? 'Stock rise' : 'Stock fall', async () => {
+          // The camera frames the district of the target player's square (or the first).
+          const d = Math.max(0, G.nodes[cur().node].d);
+          const ids = G.nodes.filter((n) => n.d === d).map((n) => n.id);
+          const dist = G.districts[d];
+          board.lookAt = board.frameSquares(ids);
+          await new Promise((r) => setTimeout(r, T.stockZoom));
+          const [a, b] = up ? [12, 14] : [14, 11];
+          hud.banner(
+            `${dist.name} stock ${up ? 'up' : 'down'}! ${fmt(a)} → ${fmt(b)}`,
+            dist.color,
+            T.stockRise,
+          );
+          board.stockFx(ids, T.stockRise, up);
+          await new Promise((r) => setTimeout(r, T.stockRise));
+          board.lookAt = null;
+        }),
+      ),
       btn('Victory', async () => {
         const p = cur();
         setActive(p.id);

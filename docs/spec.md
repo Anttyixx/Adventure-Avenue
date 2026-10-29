@@ -707,9 +707,11 @@ suits and progress bar); they are always shown.
 
 **Turn moments.** Before the roll, sliding arrows on the board point from the player's square to
 each square their first step can reach; they stay up until the player takes that first step. A token that stops part-way through a walk (a pop-up or a
-choice on the way) stands still until it walks on. When a district's stock price goes up, the
-camera frames that district's squares, a banner like the turn banner gives the old and new price,
-and green arrows and sparkles rise from the squares. When the game is won, the camera closes in on
+choice on the way) stands still until it walks on. Whenever a district's stock price moves, for any reason
+(investments, stock deals, venture cards, value changes), the camera frames that district's
+squares, a banner like the turn banner gives the old and new price, and arrows rise from the
+squares (green, going up) or sink over them (red, going down). Property choices (e.g. selling
+to pay a debt) are framed in the space the HUD leaves free, so none sit under the action bar. When the game is won, the camera closes in on
 the winner, who dances under confetti falling across the screen, before the results appear.
 
 **Camera.** The camera always follows the active player, centered on screen and zoomed in (about
