@@ -4,8 +4,10 @@ import { CARDS } from '../src/cards';
 import { Game } from '../src/engine';
 import { simulate } from '../src/headless';
 import {
+  bankDistance,
   confidence,
   isShopLike,
+  nearBankFactor,
   market,
   netWorth,
   shareTradeValue,
@@ -517,6 +519,19 @@ describe('shop growth and stock', () => {
     const classic = stockPriceExact(G, 0);
     shops[0].value += 100;
     expect(stockPriceExact(G, 0) - classic).toBeCloseTo((100 / shops.length) * K.stockRate);
+  });
+});
+
+describe('distance from the bank', () => {
+  it("cuts the nearest district's base price by K.nearBank and leaves the farthest alone", () => {
+    const { G } = makeGame();
+    const reach = bankDistance(G);
+    const near = reach.indexOf(0);
+    const far = reach.indexOf(1);
+    expect(nearBankFactor(G, near)).toBeCloseTo(1 - K.nearBank);
+    expect(nearBankFactor(G, far)).toBe(1);
+    G.stocks = 'classic';
+    expect(nearBankFactor(G, near)).toBe(1);
   });
 });
 

@@ -101,6 +101,8 @@ describe('fees, expansion and max value', () => {
 describe('stocks and salary', () => {
   it('prices stock from the average shop value', () => {
     const { G } = makeGame();
+    // Classic: no near-bank discount or growth weighting.
+    G.stocks = 'classic';
     // Plaza: 320 / 340 / 360 / 380, average 350, x 0.04 = 14
     expect(stockPrice(G, 6)).toBe(14);
     G.factor[6] = 2;
@@ -109,6 +111,7 @@ describe('stocks and salary', () => {
 
   it('ignores vacant plots and non-shop buildings in the average', () => {
     const { G } = makeGame();
+    G.stocks = 'classic';
     // Brick Row: shops 160, 200, 220 (180 is a vacant plot)
     expect(stockPrice(G, 0)).toBe(Math.round(((160 + 200 + 220) / 3) * 0.04));
   });

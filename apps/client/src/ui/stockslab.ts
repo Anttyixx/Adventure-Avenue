@@ -86,6 +86,12 @@ const GROUPS: { title: string; settings: Setting[] }[] = [
         hint: 'Shop value above base (investing, ownership, cards) counts at this instead (0.08 = double)',
       },
       {
+        key: 'nearBank',
+        label: 'Near-bank discount',
+        step: 0.01,
+        hint: 'Base price cut for the district nearest the bank (0.08 = -8%), scaling to none for the farthest',
+      },
+      {
         key: 'shareSlope',
         label: 'Slope per share',
         step: 0.0001,

@@ -107,10 +107,45 @@ export function confidence(G: GameState, d: number): number {
   return Math.max(K.confMin, 1 - market(G).dents[d] * K.dent);
 }
 
+/** Each district's walk from the bank, scaled 0 (nearest) to 1 (farthest); cached per board. */
+const bankReach = new WeakMap<Square[], number[]>();
+export function bankDistance(G: GameState): number[] {
+  const cached = bankReach.get(G.nodes);
+  if (cached) return cached;
+  const dist = new Array(G.nodes.length).fill(Infinity);
+  const q = G.nodes.filter((s) => s.t === 'bank').map((s) => s.id);
+  for (const id of q) dist[id] = 0;
+  while (q.length) {
+    const n = q.shift()!;
+    const sq = G.nodes[n];
+    for (const m of sq.link != null ? [...sq.nb, sq.link] : sq.nb)
+      if (dist[m] === Infinity) {
+        dist[m] = dist[n] + 1;
+        q.push(m);
+      }
+  }
+  const avg = G.districts.map((_, d) => {
+    const ds = G.nodes.filter((s) => s.d === d && Number.isFinite(dist[s.id])).map((s) => dist[s.id]);
+    return ds.length ? ds.reduce((a, b) => a + b, 0) / ds.length : Infinity;
+  });
+  const finite = avg.filter(Number.isFinite);
+  const lo = Math.min(...finite);
+  const hi = Math.max(...finite);
+  const out = avg.map((a) => (!Number.isFinite(a) || hi <= lo ? 1 : (a - lo) / (hi - lo)));
+  bankReach.set(G.nodes, out);
+  return out;
+}
+
+/** Dynamic stocks: the base-price multiplier from how near the district is to the bank. */
+export function nearBankFactor(G: GameState, d: number): number {
+  if (!dynamicStocks(G)) return 1;
+  return 1 - K.nearBank * (1 - (bankDistance(G)[d] ?? 1));
+}
+
 /**
  * What a district's shops are worth per share, before the multiplier. Classic: the shops' average
- * value x K.stockRate. Dynamic: their average base value x K.stockRate plus their average growth
- * (value above base) x K.growthRate, so investing moves the stock more.
+ * value x K.stockRate. Dynamic: their average base value x K.stockRate (a little less near the
+ * bank) plus their average growth (value above base) x K.growthRate, so investing moves it more.
  */
 export function districtWorth(G: GameState, d: number): number {
   const shops = G.nodes.filter((s) => s.d === d && isShopLike(s));
@@ -118,7 +153,7 @@ export function districtWorth(G: GameState, d: number): number {
   const avg = shops.reduce((s, q) => s + q.value, 0) / shops.length;
   if (!dynamicStocks(G)) return avg * K.stockRate;
   const base = shops.reduce((s, q) => s + shopBase(q), 0) / shops.length;
-  return base * K.stockRate + (avg - base) * K.growthRate;
+  return base * K.stockRate * nearBankFactor(G, d) + (avg - base) * K.growthRate;
 }
 
 /**
