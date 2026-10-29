@@ -5,7 +5,9 @@
 import {
   BUILDINGS,
   buildingAvailable,
-  bumpFactor,
+  shareTradeValue,
+  sharesHeld,
+  stockPriceExact,
   clampFactor,
   K,
   PLAYER_COLORS,
@@ -80,16 +82,15 @@ export function stockModal(
         { class: 'btn main', onclick: () => n > 0 && done({ d, n }) },
         mode === 'buy' ? 'Buy' : 'Sell',
       ) as HTMLButtonElement;
-      /** The share price once this trade is done (big trades move it), worked out and put back. */
+      /** The share price once this trade is done: more shares held raise it, fewer lower it. */
       const priceAfter = () => {
-        const f = G.factor[d];
-        bumpFactor(G, d, mode === 'buy', n);
-        const after = stockPrice(G, d);
-        G.factor[d] = f;
-        return after;
+        const held = sharesHeld(G, d) + (mode === 'buy' ? n : -n);
+        return Math.max(1, Math.round(stockPriceExact(G, d, Math.max(0, held))));
       };
       const update = () => {
-        const total = mode === 'buy' ? Math.ceil(n * unit()) : Math.floor(n * unit());
+        // Trades cost (or fetch) the average of the price before and after, as in the engine.
+        const value = shareTradeValue(G, d, n, mode === 'buy');
+        const total = mode === 'buy' ? Math.ceil(value * (1 - rate)) : Math.floor(value * (1 + rate));
         const cashAfter = p.cash + (mode === 'buy' ? -total : total);
         const now = stockPrice(G, d);
         const after = priceAfter();

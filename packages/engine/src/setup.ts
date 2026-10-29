@@ -1,9 +1,9 @@
 import { K } from './constants';
 import { BOARDS } from './boards/builtin';
 import { buildDeck } from './cards';
-import { shuffle } from './rng';
+import { rand, shuffle } from './rng';
 import { computeRows, netWorth } from './rules';
-import type { BoardSquareDef, GameState, MatchOptions, Player, Square } from './types';
+import type { BoardSquareDef, GameState, Market, MatchOptions, Player, Square } from './types';
 
 export const PLAYER_COLORS = ['#e5484d', '#3e7bfa', '#30a46c', '#a855f7', '#f76b15'];
 
@@ -98,6 +98,7 @@ export function newGame(opts: MatchOptions): GameState {
     players.map((p) => p.id),
   );
   resetVentureGrid(G);
+  G.market = newMarket(G);
   G.hist.push(players.map((p) => netWorth(G, p)));
   return G;
 }
@@ -149,4 +150,16 @@ export function resetVentureGrid(G: GameState) {
 /** Deep copy, used for saves and snapshots. The state is plain JSON. */
 export function cloneState(G: GameState): GameState {
   return JSON.parse(JSON.stringify(G));
+}
+
+/** A fresh stock market: each district's volatility rolled with the game's random numbers. */
+export function newMarket(G: GameState): Market {
+  const n = G.districts.length;
+  return {
+    vol: G.districts.map(() => +(K.volMin + rand(G) * (K.volMax - K.volMin)).toFixed(3)),
+    dents: new Array(n).fill(0),
+    repair: new Array(n).fill(0),
+    sold: new Array(n).fill(0),
+    dented: new Array(n).fill(false),
+  };
 }

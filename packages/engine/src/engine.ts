@@ -19,7 +19,8 @@ import type { GameEvent } from './events';
 import { randInt, rollDie } from './rng';
 import {
   buildingAvailable,
-  bumpFactor,
+  market,
+  shareTradeValue,
   canAfford,
   canPromote,
   expand,
@@ -163,6 +164,10 @@ export class Game {
     // the turn starts, so it can be shown.
     p.boon = 0;
     p.boost = 1;
+    // Sell-offs are counted per turn.
+    const m = market(G);
+    m.sold.fill(0);
+    m.dented.fill(false);
     await this.emit({ type: 'turnStart', pid: p.id, round: G.round });
     if (p.onBreak || p.closed) {
       await this.emit({ type: 'opened', pids: [p.id] });
@@ -585,6 +590,7 @@ export class Game {
     if (amount <= 0) return;
     const sq = this.G.nodes[opt.sq];
     sq.value += amount;
+    this.repairDistrict(sq.d, amount * K.investRepair);
     await this.pay(p, null, amount, 'Investment', sq.id);
     await this.emit({ type: 'value', sqs: [sq.id] });
     await this.log(`${p.name} invested ${amount}G.`, p.id, 'property');
@@ -806,14 +812,32 @@ export class Game {
     if (!ans) return;
     const d = ans.d;
     if (!(d >= 0 && d < G.factor.length)) return;
-    const unit = stockPrice(G, d) * (1 - discount);
-    const n = Math.min(Math.floor(ans.n), K.maxBuy, Math.floor(p.cash / unit));
+    // The price moves as the shares are bought: they cost the average of before and after.
+    const cost = (k: number) => Math.ceil(shareTradeValue(G, d, k, true) * (1 - discount));
+    let n = Math.min(Math.floor(ans.n), K.maxBuy);
+    while (n > 0 && cost(n) > p.cash) n--;
     if (n <= 0) return;
-    const cost = Math.ceil(n * unit);
+    const total = cost(n);
     p.shares[d] += n;
-    bumpFactor(G, d, true, n);
-    await this.pay(p, null, cost, 'Stock');
-    await this.log(`${p.name} bought ${n} ${G.districts[d].name} shares for ${cost}G.`, p.id, 'stock');
+    this.repairDistrict(d, n);
+    await this.pay(p, null, total, 'Stock');
+    await this.log(`${p.name} bought ${n} ${G.districts[d].name} shares for ${total}G.`, p.id, 'stock');
+  }
+
+  /**
+   * Shares' worth put back into a district (bought, or invested as shares' worth) repairs its
+   * sell-off dents: K.dentRepair per dent, carried over between turns. Nothing builds up while
+   * the district is not dented.
+   */
+  repairDistrict(d: number, worth: number) {
+    const m = market(this.G);
+    if (!m.dents[d]) return;
+    m.repair[d] += worth;
+    while (m.dents[d] > 0 && m.repair[d] >= K.dentRepair) {
+      m.repair[d] -= K.dentRepair;
+      m.dents[d]--;
+    }
+    if (!m.dents[d]) m.repair[d] = 0;
   }
 
   async sellStock(p: Player, d: number, n: number, premium: number) {
@@ -821,9 +845,15 @@ export class Game {
     if (G.rules !== 'standard' || !(d >= 0 && d < p.shares.length)) return;
     n = Math.min(Math.floor(n), p.shares[d]);
     if (n <= 0) return;
-    const amount = Math.floor(n * stockPrice(G, d) * (1 + premium));
+    const amount = Math.floor(shareTradeValue(G, d, n, false) * (1 + premium));
     p.shares[d] -= n;
-    bumpFactor(G, d, false, n);
+    // A sell-off: K.sellOff+ shares of one district sold in a turn dent its confidence, once.
+    const m = market(G);
+    m.sold[d] += n;
+    if (m.sold[d] >= K.sellOff && !m.dented[d]) {
+      m.dented[d] = true;
+      if (1 - (m.dents[d] + 1) * K.dent >= K.confMin - 1e-9) m.dents[d]++;
+    }
     await this.pay(null, p, amount, 'Stock sale');
     await this.log(`${p.name} sold ${n} ${G.districts[d].name} shares for ${amount}G.`, p.id, 'stock');
   }

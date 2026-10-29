@@ -2,7 +2,7 @@
  * Derived values and pure state helpers. Nothing here asks for a decision or talks to the UI.
  */
 import { K } from './constants';
-import type { GameState, Player, Square, BuildingKey } from './types';
+import type { GameState, Market, Player, Square, BuildingKey } from './types';
 
 export const ceil5 = (n: number) => Math.ceil(n / 5) * 5;
 
@@ -78,11 +78,54 @@ export function squareFee(G: GameState, sq: Square, payer?: Player): number {
   }
 }
 
-export function stockPrice(G: GameState, d: number): number {
+/** The stock market state, filled in with defaults for games saved before it existed. */
+export function market(G: GameState): Market {
+  const n = G.districts.length;
+  G.market ??= {
+    vol: new Array(n).fill(1),
+    dents: new Array(n).fill(0),
+    repair: new Array(n).fill(0),
+    sold: new Array(n).fill(0),
+    dented: new Array(n).fill(false),
+  };
+  return G.market;
+}
+
+/** Total shares of a district held by all players. */
+export function sharesHeld(G: GameState, d: number): number {
+  return G.players.reduce((s, p) => s + (p.shares[d] ?? 0), 0);
+}
+
+/** A district's confidence: 1, less K.dent for each sell-off dent not yet repaired. */
+export function confidence(G: GameState, d: number): number {
+  return Math.max(K.confMin, 1 - market(G).dents[d] * K.dent);
+}
+
+/**
+ * The exact share price (before rounding): the shops' average value x K.stockRate, times the
+ * Bull/Bear multiplier, confidence, and the demand boost from `held` shares held in total.
+ */
+export function stockPriceExact(G: GameState, d: number, held = sharesHeld(G, d)): number {
   const shops = G.nodes.filter((s) => s.d === d && isShopLike(s));
   if (!shops.length) return 1;
   const avg = shops.reduce((s, q) => s + q.value, 0) / shops.length;
-  return Math.max(1, Math.round(avg * K.stockRate * G.factor[d]));
+  const boost = 1 + (Math.pow(Math.max(0, held), K.sharePow) / K.shareScale) * market(G).vol[d];
+  return Math.max(1, avg * K.stockRate * G.factor[d] * confidence(G, d) * boost);
+}
+
+/** The listed share price, in whole coins. */
+export function stockPrice(G: GameState, d: number): number {
+  return Math.max(1, Math.round(stockPriceExact(G, d)));
+}
+
+/**
+ * What `n` shares cost (buying) or fetch (selling): the average of the price before and after
+ * the trade, so no one profits from the price their own trade moves.
+ */
+export function shareTradeValue(G: GameState, d: number, n: number, buying: boolean): number {
+  const held = sharesHeld(G, d);
+  const after = buying ? held + n : Math.max(0, held - n);
+  return (n * (stockPriceExact(G, d, held) + stockPriceExact(G, d, after))) / 2;
 }
 
 export function stockValue(G: GameState, p: Player): number {
@@ -152,7 +195,6 @@ export function expand(G: GameState, pid: number, g: number): number[] {
   return changed;
 }
 
-/** Bump a district's stock factor after a trade of 10+ shares. */
 /**
  * Whether another `b` can be built: at most K.buildingLimit of each building on the board,
  * unless every property started as a plot. `except` is a square being renovated.
@@ -160,12 +202,6 @@ export function expand(G: GameState, pid: number, g: number): number[] {
 export function buildingAvailable(G: GameState, b: BuildingKey, except = -1): boolean {
   if (G.plots === 'all') return true;
   return G.nodes.filter((s) => s.b === b && s.id !== except).length < K.buildingLimit;
-}
-
-export function bumpFactor(G: GameState, d: number, up: boolean, n: number) {
-  if (n < K.bigTrade) return;
-  const f = G.factor[d] * (up ? K.tradeUp : K.tradeDown);
-  G.factor[d] = Math.min(K.factorMax, Math.max(K.factorMin, f));
 }
 
 export function clampFactor(G: GameState, d: number) {

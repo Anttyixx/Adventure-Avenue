@@ -38,9 +38,26 @@ export const K = {
   // Stocks
   stockRate: 0.04,
   divDivisor: 250,
-  bigTrade: 10,
-  tradeUp: 1.1,
-  tradeDown: 0.9,
+  /**
+   * Demand: the price rises with the total shares all players hold in a district,
+   * boost = held^sharePow / shareScale x volatility (99 shares into an empty district: about
+   * +12%; 750 held: about +160%). No cap, and selling lowers it the same way.
+   */
+  sharePow: 1.26,
+  shareScale: 2604,
+  /** Each district's volatility, rolled at game start: how strongly shares move its price. */
+  volMin: 0.85,
+  volMax: 1.15,
+  /** Sell-offs: selling this many shares of a district in one turn dents its confidence... */
+  sellOff: 50,
+  /** ...by this much (once per district per turn), down to confMin at most. */
+  dent: 0.05,
+  confMin: 0.75,
+  /** Each dent is repaired by this many shares bought back (by anyone, over any rounds)... */
+  dentRepair: 50,
+  /** ...and investing in a shop there counts as this many shares per 1G. */
+  investRepair: 0.1,
+  /** The Bull and Bear market cards' multiplier range. */
   factorMin: 0.4,
   factorMax: 4,
   maxBuy: 99,

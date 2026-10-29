@@ -3,7 +3,8 @@ import { cpuAcceptsTrade } from '../src/cpu';
 import { CARDS } from '../src/cards';
 import { Game } from '../src/engine';
 import { simulate } from '../src/headless';
-import { netWorth, stockPrice } from '../src/rules';
+import { confidence, market, netWorth, shareTradeValue, stockPriceExact } from '../src/rules';
+import { K } from '../src/constants';
 import { at, makeGame } from './helpers';
 
 describe('movement', () => {
@@ -120,35 +121,71 @@ describe('fees, dividends and commission', () => {
 });
 
 describe('stocks', () => {
-  it('raises the factor on 10+ share buys and lowers it on 10+ share sales', async () => {
-    const { G, game } = makeGame('standard', (r) => (r.kind === 'buyStock' ? { d: 6, n: 20 } : undefined));
+  it('prices rise with the shares held and fall back when they are sold', async () => {
+    const { G, game } = makeGame('standard', (r) => (r.kind === 'buyStock' ? { d: 6, n: 99 } : undefined));
     const p = G.players[0];
-    const price = stockPrice(G, 6);
+    const before = stockPriceExact(G, 6);
+    const cost = Math.ceil(shareTradeValue(G, 6, 99, true));
     await game.buyStockFlow(p, 0);
-    expect(p.shares[6]).toBe(20);
-    expect(p.cash).toBe(2000 - 20 * price);
-    expect(G.factor[6]).toBeCloseTo(1.1);
-    await game.sellStock(p, 6, 20, 0);
-    expect(G.factor[6]).toBeCloseTo(0.99);
+    expect(p.shares[6]).toBe(99);
+    expect(p.cash).toBe(2000 - cost);
+    // 99 shares into an empty district: about +12% at normal volatility.
+    const up = stockPriceExact(G, 6) / before - 1;
+    expect(up).toBeGreaterThan(0.08);
+    expect(up).toBeLessThan(0.16);
+    await game.sellStock(p, 6, 99, 0);
+    // Back to no shares held, less the 5% sell-off dent (99 shares sold in one turn).
+    expect(stockPriceExact(G, 6)).toBeCloseTo(before * (1 - K.dent));
+    // Bought and sold at the average price: the round trip makes no money.
+    expect(p.cash).toBeLessThanOrEqual(2000);
   });
 
-  it('charges 10% less per share when buying at a discount', async () => {
+  it('charges 10% less when buying at a discount', async () => {
     const { G, game } = makeGame('standard', (r) => (r.kind === 'buyStock' ? { d: 6, n: 50 } : undefined));
     const p = G.players[0];
-    const price = stockPrice(G, 6);
+    const value = shareTradeValue(G, 6, 50, true);
     await game.buyStockFlow(p, 0.1);
     expect(p.shares[6]).toBe(50);
-    expect(p.cash).toBe(2000 - Math.ceil(50 * price * 0.9));
-    expect(p.cash).toBeGreaterThan(2000 - 50 * price);
+    expect(p.cash).toBe(2000 - Math.ceil(value * 0.9));
   });
 
-  it('pays 20% more per share when selling at a premium', async () => {
+  it('pays 20% more when selling at a premium', async () => {
     const { G, game } = makeGame();
     const p = G.players[0];
     p.shares[6] = 50;
-    const price = stockPrice(G, 6);
+    const value = shareTradeValue(G, 6, 50, false);
     await game.sellStock(p, 6, 50, 0.2);
-    expect(p.cash).toBe(2000 + Math.floor(50 * price * 1.2));
+    expect(p.cash).toBe(2000 + Math.floor(value * 1.2));
+  });
+
+  it('dents confidence once per turn on a 50+ share sell-off, repaired by buying or investing', async () => {
+    const { G, game } = makeGame('standard', (r) => (r.kind === 'buyStock' ? { d: 6, n: 30 } : undefined));
+    const p = G.players[0];
+    p.shares[6] = 200;
+    await game.sellStock(p, 6, 30, 0);
+    expect(confidence(G, 6)).toBe(1);
+    await game.sellStock(p, 6, 30, 0);
+    expect(confidence(G, 6)).toBeCloseTo(0.95);
+    // More selling the same turn does not dent it again.
+    await game.sellStock(p, 6, 60, 0);
+    expect(confidence(G, 6)).toBeCloseTo(0.95);
+    // 30 + 30 shares bought back (over two buys) repair the dent.
+    await game.buyStockFlow(p, 0);
+    expect(confidence(G, 6)).toBeCloseTo(0.95);
+    await game.buyStockFlow(p, 0);
+    expect(confidence(G, 6)).toBe(1);
+    // Investing counts too: 500G invested = 50 shares' worth.
+    market(G).dents[6] = 1;
+    game.repairDistrict(6, 500 * K.investRepair);
+    expect(confidence(G, 6)).toBe(1);
+  });
+
+  it('rolls each district a volatility in range', () => {
+    const { G } = makeGame();
+    for (const v of market(G).vol) {
+      expect(v).toBeGreaterThanOrEqual(K.volMin);
+      expect(v).toBeLessThanOrEqual(K.volMax);
+    }
   });
 });
 

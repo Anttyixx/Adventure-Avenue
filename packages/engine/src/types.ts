@@ -99,6 +99,18 @@ export interface LogLine {
   involves?: number[];
 }
 
+export interface Market {
+  /** How strongly shares move each district's price (K.volMin..K.volMax). */
+  vol: number[];
+  /** Sell-off dents per district (confidence = 1 - dents x K.dent). */
+  dents: number[];
+  /** Shares' worth bought back toward repairing the next dent. */
+  repair: number[];
+  /** Shares of each district sold this turn, and whether that has dented it yet. */
+  sold: number[];
+  dented: boolean[];
+}
+
 export interface District {
   name: string;
   color: string;
@@ -124,6 +136,8 @@ export interface GameState {
   groups: number[][];
   districts: District[];
   factor: number[];
+  /** Stock market state per district (older saves predate it: see market() in rules). */
+  market?: Market;
   changeSuit: number;
   vg: { cards: string[]; owner: number[] };
   /** Net worth of every player at the start of each round (and at the end of the match). */
