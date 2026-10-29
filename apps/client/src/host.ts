@@ -68,6 +68,8 @@ export class HotSeat implements GameIO {
   derby: DerbyView | null = null;
   /** Square values as last shown, to animate how much each one changed. */
   values = new Map<number, number>();
+  /** Each square's owner as last shown, so a purchase is claimed on the board as it is paid for. */
+  private owners = new Map<number, number>();
   /** Each district's stock price as last shown, to announce rises. */
   private prices: number[] = [];
   /** The live auction window while an auction runs. */
@@ -291,6 +293,7 @@ export class HotSeat implements GameIO {
   refresh() {
     // Values that changed without a value event (purchases, sales) are not animated.
     for (const n of this.G.nodes) if (!this.values.has(n.id) || n.owner < 0) this.values.set(n.id, n.value);
+    for (const n of this.G.nodes) if (!this.owners.has(n.id)) this.owners.set(n.id, n.owner);
     this.board.dirty = true;
     this.board.snapTokens();
     this.hud.render(this.G);
@@ -714,6 +717,15 @@ export class HotSeat implements GameIO {
         if (['Purchase', 'Construction', 'Buyout', 'Renovation'].includes(e.reason))
           await this.wait(T.beforePay);
         const from = this.playerPos(e.from);
+        // Paying for a property: the buyer claims it as the coins leave, not after.
+        if (['Purchase', 'Construction', 'Buyout', 'Auction'].includes(e.reason) && e.from >= 0)
+          for (const n of G.nodes)
+            if (n.owner === e.from && this.owners.get(n.id) !== e.from) {
+              this.owners.set(n.id, e.from);
+              this.values.set(n.id, n.value);
+              sound.play('buy');
+              board.ring(n.id, '#ffd166', true);
+            }
         // An investment's coins fly into the shop being invested in, not to the bank.
         const to = e.sq != null ? board.center(G.nodes[e.sq]) : this.playerPos(e.to);
         sound.play(e.to >= 0 && (e.from < 0 || !G.players[e.to].cpu) ? 'coin' : 'pay');
@@ -726,6 +738,12 @@ export class HotSeat implements GameIO {
       }
       case 'owner':
         this.values.set(e.sq, G.nodes[e.sq].value);
+        // Already claimed with its payment.
+        if (this.owners.get(e.sq) === e.owner) {
+          this.refresh();
+          break;
+        }
+        this.owners.set(e.sq, e.owner);
         if (e.owner >= 0) {
           sound.play('buy');
           board.ring(e.sq, '#ffd166', true);

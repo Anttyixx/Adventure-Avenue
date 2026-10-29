@@ -27,6 +27,7 @@ import { bodyURL, portraitURL } from '../sprites';
 import { clear, fmt, h } from './dom';
 import { kindIcon, logView, namesInColor, type IconKind } from './log';
 import { marketView } from './market';
+import { playerOverview } from './overview';
 
 export interface PromptButton<T> {
   label: string;
@@ -84,6 +85,15 @@ export class Hud {
   ask = h('div', { class: 'prompt-center glass' });
   cardsWrap = h('div', { class: 'cards-wrap' });
   cards = h('div', { class: 'cards' });
+  /**
+   * The player overview: a player's card expanded over the other cards (click a card to open
+   * it), with everything about that player.
+   */
+  overview = h('div', { class: 'pview glass', role: 'dialog', hidden: true });
+  overviewPid = -1;
+  private overviewAnim: Animation | null = null;
+  /** Board highlight to restore when the overview stops lighting up squares. */
+  private savedHighlight: number[] | null = null;
   /** The game log inside the status line, shown while it is expanded. */
   logBox = h('div', { class: 'sb-log' });
   logOpen = false;
@@ -150,6 +160,7 @@ export class Hud {
       this.ask,
       this.cardsWrap,
       this.logDock,
+      this.overview,
       this.tooltip,
       this.modalLayer,
       this.bannerLayer,
@@ -353,6 +364,10 @@ export class Hud {
       this.toggleMenu(false);
       return;
     }
+    if (e.key === 'Escape' && this.overviewPid >= 0 && !this.modalLayer.childElementCount) {
+      this.closeOverview();
+      return;
+    }
     if (tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA') return;
     if ((e.key === 'Enter' || e.key === ' ') && !this.modalLayer.childElementCount && this.mainButton) {
       e.preventDefault();
@@ -428,6 +443,7 @@ export class Hud {
     this.renderCards();
     if (this.marketOpen) this.renderMarket();
     if (this.logOpen) this.renderLog();
+    if (this.overviewPid >= 0) this.renderOverview();
   }
 
   renderCards() {
@@ -449,7 +465,16 @@ export class Hud {
     for (const p of order) {
       let el = this.cardEls.get(p.id);
       if (!el) {
-        el = h('div', { class: 'pcard' });
+        const pid = p.id;
+        el = h('div', { class: 'pcard', role: 'button', tabindex: '0' });
+        el.onclick = () => this.openOverview(pid);
+        el.onkeydown = (e) => {
+          if (e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) {
+            e.preventDefault();
+            e.stopPropagation();
+            this.openOverview(pid);
+          }
+        };
         this.cardEls.set(p.id, el);
         this.cards.append(el);
       }
@@ -565,6 +590,104 @@ export class Hud {
     countUp(nwEl, prev.nw, nw, plain);
     countUp(cashEl, prev.cash, p.cash, plain);
     this.shown.set(p.id, { nw, cash: p.cash });
+  }
+
+  // ------------------------------------------------------------ player overview
+
+  /** Expand a player's card into their overview (or fold it back if it is already open). */
+  openOverview(pid: number) {
+    if (!this.G) return;
+    if (this.overviewPid === pid) {
+      this.closeOverview();
+      return;
+    }
+    // Opening fresh, or again while it was still folding away: grow out of the card.
+    const grow = this.overviewPid < 0 || this.overview.hidden || !!this.overviewAnim;
+    this.overviewPid = pid;
+    this.overview.hidden = false;
+    this.overview.scrollTop = 0;
+    this.renderOverview();
+    this.cardsWrap.classList.add('covered');
+    if (grow) this.morphOverview(true, pid);
+  }
+
+  closeOverview() {
+    const pid = this.overviewPid;
+    if (pid < 0) return;
+    this.lightUp(null);
+    this.overviewPid = -1;
+    this.morphOverview(false, pid);
+  }
+
+  private renderOverview() {
+    const p = this.G.players[this.overviewPid];
+    if (!p) return;
+    const keep = this.overview.scrollTop;
+    const order = this.G.order;
+    clear(this.overview);
+    this.overview.style.setProperty('--pc', PLAYER_COLORS[p.color]);
+    this.overview.setAttribute('aria-label', `${p.name}: overview`);
+    this.overview.append(
+      playerOverview(this.G, p, {
+        onHover: (ids) => this.lightUp(ids),
+        onSwitch: (step) => {
+          const i = order.indexOf(p.id);
+          this.lightUp(null);
+          this.overviewPid = order[(i + step + order.length) % order.length];
+          this.overview.scrollTop = 0;
+          this.renderOverview();
+        },
+        onClose: () => this.closeOverview(),
+      }),
+    );
+    this.overview.scrollTop = keep;
+  }
+
+  /** Light up squares on the board from the overview, putting back what was lit before. */
+  private lightUp(ids: number[] | null) {
+    if (ids) {
+      this.savedHighlight ??= this.board.highlight;
+      this.board.highlight = ids;
+    } else if (this.savedHighlight) {
+      this.board.highlight = this.savedHighlight;
+      this.savedHighlight = null;
+    }
+  }
+
+  /** The overview grows out of the player's card, and shrinks back into it when closed. */
+  private morphOverview(open: boolean, pid: number) {
+    const box = this.overview;
+    const card = this.cardEls.get(pid);
+    const done = () => {
+      if (open) return;
+      box.hidden = true;
+      this.cardsWrap.classList.remove('covered');
+      clear(box);
+    };
+    this.overviewAnim?.cancel();
+    if (!card || matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      done();
+      return;
+    }
+    const r = box.getBoundingClientRect();
+    const c = card.getBoundingClientRect();
+    const inset = `inset(${Math.max(0, c.top - r.top)}px ${Math.max(0, r.right - c.right)}px ${Math.max(0, r.bottom - c.bottom)}px ${Math.max(0, c.left - r.left)}px round 12px)`;
+    const full = 'inset(0px 0px 0px 0px round 14px)';
+    const anim = box.animate(
+      [
+        { clipPath: open ? inset : full, opacity: open ? 0.6 : 1 },
+        { clipPath: open ? full : inset, opacity: open ? 1 : 0.4 },
+      ],
+      { duration: open ? 300 : 240, easing: 'cubic-bezier(0.2, 0.8, 0.2, 1)' },
+    );
+    this.overviewAnim = anim;
+    anim.onfinish = () => {
+      if (this.overviewAnim === anim) this.overviewAnim = null;
+      done();
+    };
+    anim.oncancel = () => {
+      if (this.overviewAnim === anim) this.overviewAnim = null;
+    };
   }
 
   /** "+120G" / "-50G" floating out beside a player's card. */

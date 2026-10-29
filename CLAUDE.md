@@ -44,7 +44,8 @@ A Fortune Street-style board game for the browser. Spec: `docs/spec.md`.
   pauses games on this device), the
   **action bar** (`.prompt-center`: the current player's options, or the status line when no
   options are up, morphing between the two), the **Game log button** (above the player cards;
-  morphs into the **game log**) and the **player cards** (bottom right).
+  morphs into the **game log**) and the **player cards** (bottom right; clicking one grows it into
+  the **player overview**, `ui/overview.ts`, over all the cards).
 - Stocks: two systems chosen in game setup (`G.stocks`: `dynamic` default, `classic` for old
   saves); see "Stock market" in the spec. The Stocks lab (`#stocks-lab`, `ui/stockslab.ts`, in the
   dev menu) tweaks the stock constants live and compares both systems.

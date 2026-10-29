@@ -26,6 +26,19 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: '2026-10-29-player-overview',
+    date: 'Oct 29, 2026',
+    title: 'Player overview',
+    features: [
+      {
+        tag: 'new',
+        title: 'Click a player card',
+        text: "It opens into that player's overview: their net worth and what it is made of (cash, properties, stock), how it grew each round, every property by district, their stock and their earnings. Hover a property to find it on the board.",
+      },
+    ],
+    extras: ['Buying a property claims it as the coins fly, instead of after'],
+  },
+  {
     id: '2026-10-29-stocks',
     date: 'Oct 29, 2026',
     title: 'A new stock market',
