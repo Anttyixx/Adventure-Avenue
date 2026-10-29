@@ -9,7 +9,6 @@ import {
   PLAYER_COLORS,
   SUITS,
   canPromote,
-  dominated,
   isClosed,
   isShopLike,
   maxValue,
@@ -42,6 +41,8 @@ export interface OverviewHooks {
   /** Show the previous (-1) or next (+1) player. */
   onSwitch(step: number): void;
   onClose(): void;
+  /** Find a property on the board (it was clicked). */
+  onFind(id: number): void;
 }
 
 export function playerOverview(G: GameState, p: Player, hooks: OverviewHooks): HTMLElement {
@@ -251,7 +252,7 @@ export function playerOverview(G: GameState, p: Player, hooks: OverviewHooks): H
   // ---------------------------------------------------------------- net worth over the game
   const hist = G.hist.map((row) => row[p.id] ?? 0);
   if (!G.over) hist.push(nw);
-  if (hist.length >= 2) colB.append(section('Net worth over the game', null, trend(hist, G.target, color)));
+  if (hist.length >= 2) colA.append(section('Net worth over the game', null, trend(hist, G.target, color)));
 
   // ---------------------------------------------------------------- properties
   const byDistrict = new Map<number, Square[]>();
@@ -263,16 +264,12 @@ export function playerOverview(G: GameState, p: Player, hooks: OverviewHooks): H
   const groups = [...byDistrict.entries()].sort((a, b) => a[0] - b[0]);
   const propBox = h('div', { class: 'pv-props' });
   for (const [key, squares] of groups) {
-    const g = squares[0].g;
-    const size = g >= 0 ? G.groups[g].length : squares.length;
     const dist = standard ? G.districts[key] : null;
     const head = h(
       'div',
       { class: 'pv-group' },
       h('i', { class: 'pv-dot' }),
       h('span', null, dist?.name ?? 'Row'),
-      h('em', null, `${squares.length} of ${size}`),
-      g >= 0 && dominated(G, p.id, g) ? h('span', { class: 'pv-dom' }, 'All owned') : null,
     );
     hover(
       head,
@@ -399,7 +396,8 @@ function propertyCard(G: GameState, s: Square, color: string, hooks: OverviewHoo
     {
       class: `pv-card ${closed ? 'closed' : ''}`,
       tabindex: '0',
-      title: `${name}: ${kind}. Rent ${rent}${closed ? ' (closed now)' : ''}, value ${fmt(s.value)}${capped ? `, up to ${fmt(capped)}` : ''}.`,
+      role: 'button',
+      title: `${name}: ${kind}. Rent ${rent}${closed ? ' (closed now)' : ''}, value ${fmt(s.value)}${capped ? `, up to ${fmt(capped)}` : ''}. Click to find it on the board.`,
     },
     src ? h('img', { src, alt: '' }) : h('span', { class: 'pv-card-none' }, '·'),
     h('span', { class: 'pv-card-rent' }, rent),
@@ -408,6 +406,14 @@ function propertyCard(G: GameState, s: Square, color: string, hooks: OverviewHoo
   hover(card, [s.id], hooks);
   card.onfocus = () => hooks.onHover([s.id]);
   card.onblur = () => hooks.onHover(null);
+  card.onclick = () => hooks.onFind(s.id);
+  card.onkeydown = (e) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      e.stopPropagation();
+      hooks.onFind(s.id);
+    }
+  };
   return card;
 }
 

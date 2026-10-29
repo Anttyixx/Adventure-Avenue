@@ -120,6 +120,8 @@ export class BoardView {
   overviewHold = false;
   /** The player overview is open: every property not owned by `focusOwner` is greyed out. */
   focusOwner = -1;
+  /** While set, the camera shows the whole board (finding a property from the player overview). */
+  peekWhole = false;
   /**
    * While set, the camera frames these squares in the space the HUD leaves free (e.g. after a
    * roll: the player and everywhere they could land), refitting as the HUD changes.
@@ -790,7 +792,7 @@ export class BoardView {
   }
 
   updateCamera() {
-    const whole = this.followPid < 0 || this.G?.over || this.overviewHold;
+    const whole = this.followPid < 0 || this.G?.over || this.overviewHold || this.peekWhole;
     const out = whole ? ZOOM_MAX_OUT : this.zoomOut;
     const z = this.zoomFor(out);
     // The active player sits in the middle of the screen (the grass carries on past the board).
@@ -804,7 +806,7 @@ export class BoardView {
     }
     // Zoomed out, the camera gradually lets go of the player and eases to the board's center,
     // shifted so the board sits in the middle of the free area (straight there for overviews).
-    const overview = this.followPid < 0 || !!this.G?.over || this.overviewHold;
+    const overview = this.followPid < 0 || !!this.G?.over || this.overviewHold || this.peekWhole;
     const t = overview ? 1 : Math.min(1, Math.max(0, (out - ZOOM_BLEND) / (ZOOM_BLEND_END - ZOOM_BLEND)));
     const b = t * t * (3 - 2 * t);
     const { top, right, bottom, left } = this.insets;

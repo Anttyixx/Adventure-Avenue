@@ -94,6 +94,8 @@ export class Hud {
   overviewLayer = h('div', { class: 'pv-layer', hidden: true });
   overviewPid = -1;
   private overviewAnim: Animation | null = null;
+  /** A property from the overview is being shown on the board. */
+  private finding = false;
   /** Board highlight to restore when the overview stops lighting up squares. */
   private savedHighlight: number[] | null = null;
   /** The game log inside the status line, shown while it is expanded. */
@@ -645,9 +647,35 @@ export class Hud {
           this.renderOverview();
         },
         onClose: () => this.closeOverview(),
+        onFind: (id) => void this.findOnBoard(id),
       }),
     );
     this.overview.scrollTop = keep;
+  }
+
+  /**
+   * A property clicked in the overview: the pop-up steps aside, the board zooms out with that
+   * property glowing, and after a few seconds the board zooms back and the pop-up returns.
+   */
+  private async findOnBoard(id: number) {
+    if (this.finding || this.overviewPid < 0) return;
+    this.finding = true;
+    const pid = this.overviewPid;
+    this.lightUp(null);
+    this.popOverview(false);
+    const before = this.board.highlight;
+    this.board.highlight = [id];
+    this.board.peekWhole = true;
+    await new Promise((r) => setTimeout(r, FIND_MS));
+    this.board.peekWhole = false;
+    this.board.highlight = before;
+    this.finding = false;
+    // Back to the overview unless it was closed meanwhile.
+    if (this.overviewPid === pid) {
+      this.overviewLayer.hidden = false;
+      this.renderOverview();
+      this.popOverview(true);
+    }
   }
 
   /** Light up squares on the board from the overview, putting back what was lit before. */
@@ -1120,6 +1148,8 @@ export class Hud {
 }
 
 /** A number with thousands separators and no coin (the cards put the coin or rank in front). */
+/** How long a property found from the player overview is shown on the board. */
+const FIND_MS = 3000;
 const plain = (n: number) => Math.round(n).toLocaleString('en-US');
 
 function countUp(el: HTMLElement, from: number, to: number, f = fmt) {

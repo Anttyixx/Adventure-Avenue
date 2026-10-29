@@ -5713,6 +5713,7 @@ div.sl-inline label {
 }
 /* A little card per property: its picture, the rent a rival pays, and its value. */
 .pv-card {
+  cursor: pointer;
   width: 64px;
   display: flex;
   flex-direction: column;
@@ -5724,7 +5725,6 @@ div.sl-inline label {
   border-top: 4px solid var(--dc);
   background: rgba(255, 255, 255, 0.07);
   outline: none;
-  cursor: default;
   transition:
     background 0.15s,
     transform 0.15s;
