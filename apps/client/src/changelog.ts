@@ -33,7 +33,7 @@ export const CHANGELOG: ChangelogEntry[] = [
       {
         tag: 'rules',
         title: 'Dynamic stocks',
-        text: 'Share prices now climb the more shares everyone holds, and you trade at the average of the price before and after. Each district rolls its own mood (Calm, Normal or Wild) at the start.',
+        text: 'Share prices now climb the more shares everyone holds: slowly at first, fastest in the middle, then easing off so piling into one district pays less and less. You trade at the average of the price before and after. Each district rolls its own mood (Calm, Normal or Wild) at the start.',
       },
       {
         tag: 'rules',

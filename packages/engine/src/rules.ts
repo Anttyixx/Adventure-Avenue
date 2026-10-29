@@ -116,8 +116,16 @@ export function stockPriceExact(G: GameState, d: number, held = sharesHeld(G, d)
   if (!shops.length) return 1;
   const avg = shops.reduce((s, q) => s + q.value, 0) / shops.length;
   if (!dynamicStocks(G)) return Math.max(1, avg * K.stockRate * G.factor[d]);
-  const boost = 1 + (Math.pow(Math.max(0, held), K.sharePow) / K.shareScale) * market(G).vol[d];
+  const boost = shareBoost(held, market(G).vol[d]);
   return Math.max(1, avg * K.stockRate * G.factor[d] * confidence(G, d) * boost);
+}
+
+/** Dynamic stocks' demand boost (1 = none) for `held` shares held at volatility `vol`. */
+export function shareBoost(held: number, vol: number): number {
+  const h = Math.max(0, held);
+  const hn = Math.pow(h, K.shareSteep);
+  const s = hn / (hn + Math.pow(K.shareMid, K.shareSteep));
+  return 1 + (K.shareMax * s + K.shareTail * h) * vol;
 }
 
 /** The listed share price, in whole coins. */

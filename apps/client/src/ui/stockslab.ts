@@ -16,6 +16,7 @@ import {
   market,
   netWorth,
   newGame,
+  shareBoost,
   shareTradeValue,
   sharesHeld,
   stockPrice,
@@ -30,7 +31,7 @@ const SAVE_KEY = 'adventure-avenue-stocks-lab';
 const LIVE_KEY = 'adventure-avenue-stocks-lab-live';
 
 interface Setting {
-  /** Path in K, e.g. 'shareScale' or 'cpu.stockAbove'. */
+  /** Path in K, e.g. 'shareMid' or 'cpu.stockAbove'. */
   key: string;
   label: string;
   step: number;
@@ -79,12 +80,29 @@ const GROUPS: { title: string; settings: Setting[] }[] = [
     title: 'Dynamic',
     settings: [
       {
-        key: 'sharePow',
-        label: 'Curve power',
-        step: 0.01,
-        hint: '1 = straight line, above 1 = starts slow and speeds up',
+        key: 'shareMax',
+        label: 'Curve height',
+        step: 0.1,
+        hint: 'How far the S-curve lifts the price (3 = up to 4x, plus the tail)',
       },
-      { key: 'shareScale', label: 'Curve scale', step: 50, hint: 'Lower = shares push the price harder' },
+      {
+        key: 'shareMid',
+        label: 'Curve middle (shares)',
+        step: 25,
+        hint: 'Shares held where the S-curve is halfway up',
+      },
+      {
+        key: 'shareSteep',
+        label: 'Curve steepness',
+        step: 0.1,
+        hint: 'Higher = flatter start and end, sharper middle',
+      },
+      {
+        key: 'shareTail',
+        label: 'Tail per share',
+        step: 0.0001,
+        hint: 'Small rise per share that keeps going past the top (no cap)',
+      },
       { key: 'volMin', label: 'Volatility min', step: 0.01, hint: 'Calmest a district can roll' },
       { key: 'volMax', label: 'Volatility max', step: 0.01, hint: 'Wildest a district can roll' },
       {
@@ -173,7 +191,7 @@ export function applyLiveStockSettings() {
 
 /** Price per share for a district whose shops average `avg`, with `held` shares held in total. */
 function curvePrice(avg: number, held: number, vol: number): number {
-  return avg * K.stockRate * (1 + (Math.pow(held, K.sharePow) / K.shareScale) * vol);
+  return avg * K.stockRate * shareBoost(held, vol);
 }
 
 const COLORS = { normal: '#3987e5', wild: '#d95926', calm: '#199e70', classic: '#c98500' };
