@@ -225,11 +225,6 @@ export function playerOverview(G: GameState, p: Player, hooks: OverviewHooks): H
     ),
   );
 
-  // ---------------------------------------------------------------- net worth over the game
-  const hist = G.hist.map((row) => row[p.id] ?? 0);
-  if (!G.over) hist.push(nw);
-  if (hist.length >= 2) colA.append(section('Net worth over the game', null, trend(hist, G.target, color)));
-
   // ---------------------------------------------------------------- properties
   const byDistrict = new Map<number, Square[]>();
   for (const s of owned) {
@@ -342,11 +337,11 @@ export function playerOverview(G: GameState, p: Player, hooks: OverviewHooks): H
   const facts: [string, number, string?][] = [
     ['Fees earned', st.feesEarned],
     ['Fees paid', st.feesPaid ? -st.feesPaid : 0],
-    ['Salary collected', st.salary],
+    ['Salary', st.salary],
   ];
   if (standard) facts.push(['Dividends', st.dividends]);
   facts.push(['Commission', st.commission]);
-  colB.append(
+  colA.append(
     section(
       'Earnings',
       null,
@@ -371,6 +366,11 @@ export function playerOverview(G: GameState, p: Player, hooks: OverviewHooks): H
     ),
   );
   root.append(colA, colC, colB);
+  // Net worth over the game: only once the game is over.
+  const hist = G.hist.map((row) => row[p.id] ?? 0);
+  if (G.over && hist.length >= 2)
+    colA.append(section('Net worth over the game', null, trend(hist, G.target, color)));
+
   // The close button stays in the top right corner while the columns scroll.
   return h(
     'div',

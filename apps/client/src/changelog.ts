@@ -33,7 +33,7 @@ export const CHANGELOG: ChangelogEntry[] = [
       {
         tag: 'new',
         title: 'Click a player card',
-        text: "It pops up that player's overview, with everyone else's properties greyed out on the board. See their net worth and a ring showing what it is made of, their properties as little cards with their rent, how they grew each round, their shares in each district and their earnings. Click a property to see it on the board.",
+        text: "It pops up that player's overview, with everyone else's properties greyed out on the board. See their net worth and a ring showing what it is made of, their properties as little cards with their rent, their shares in each district and their earnings (and, at the end of the game, how they grew each round). Click a property to see it on the board.",
       },
     ],
     extras: ['Buying a property claims it as the coins fly, instead of after'],

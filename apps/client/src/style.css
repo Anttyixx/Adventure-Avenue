@@ -5846,7 +5846,7 @@ div.sl-inline label {
 }
 .pv-facts {
   display: grid;
-  grid-template-columns: 1fr;
+  grid-template-columns: 1fr 1fr;
   gap: 4px;
 }
 .pv-fact {
@@ -5857,6 +5857,9 @@ div.sl-inline label {
   border-radius: 8px;
   background: rgba(255, 255, 255, 0.05);
   font-size: 12px;
+}
+.pv-fact b {
+  white-space: nowrap;
 }
 .pv-fact span {
   color: var(--muted);
