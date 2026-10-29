@@ -626,7 +626,7 @@ with no frame or background and only the bottom fifth fading out (never over a h
 before the name so it never covers the character.
 
 **Motion.** Tokens tween between squares (260 ms, eased, with a hop) and step through walk frames
-every 120 ms (idle frames every 260 ms). The active player has a bobbing pixel arrow and a remaining-steps badge. Pixel coins fly from
+every 120 ms (idle frames every 260 ms). The active player has a bobbing pixel arrow; after a roll the die shrinks to sit beside them and flips to the new number of steps left on each step, popping away when they arrive. Pixel coins fly from
 payer to payee; floating text shows money changes.
 
 **Action bar.** The current player's options (and most yes/no questions: buying a shop, a buyout,
@@ -706,7 +706,7 @@ turns the order round so its own player's card is at the bottom; turns still go 
 suits and progress bar); they are always shown.
 
 **Turn moments.** Before the roll, sliding arrows on the board point from the player's square to
-each square their first step can reach. A token that stops part-way through a walk (a pop-up or a
+each square their first step can reach; they stay up until the player takes that first step. A token that stops part-way through a walk (a pop-up or a
 choice on the way) stands still until it walks on. When a district's stock price goes up, the
 camera frames that district's squares, a banner like the turn banner gives the old and new price,
 and green arrows and sparkles rise from the squares. When the game is won, the camera closes in on

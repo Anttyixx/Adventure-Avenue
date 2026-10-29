@@ -41,6 +41,10 @@ export const CHANGELOG: ChangelogEntry[] = [
         text: 'The Stock market button sits under the game info at the top left and opens into the market right there.',
       },
     ],
+    extras: [
+      'The die shrinks beside the player and counts down the steps left',
+      'Direction arrows stay up until the player moves',
+    ],
   },
   {
     id: '2026-10-28-celebrations',

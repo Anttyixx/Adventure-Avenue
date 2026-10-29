@@ -114,7 +114,6 @@ export class BoardView {
   private grass: CanvasPattern | null = null;
   followPid = -1;
   activePid = -1;
-  stepsLeft = 0;
   /** While set, the camera shows the whole board (e.g. to watch shops close), whatever the zoom. */
   overviewHold = false;
   /** While set, the camera frames this spot instead of following anyone (e.g. a district). */
@@ -143,7 +142,19 @@ export class BoardView {
   onZoom: ((pct: number) => void) | null = null;
   private zoomPct = 0;
 
-  die: { value: number; t0: number; rolling: boolean; until: number } | null = null;
+  /**
+   * The die: tumbling, then showing the roll, then shrunk next to the walking player as a
+   * steps-left counter that flips to the new number on each step.
+   */
+  die: {
+    value: number;
+    t0: number;
+    phase: 'rolling' | 'shown' | 'small';
+    /** Steps left (small phase), the number before the last step, and when it changed. */
+    count: number;
+    prev: number;
+    changed: number;
+  } | null = null;
   w = 0;
   h = 0;
   dpr = 1;
@@ -258,7 +269,12 @@ export class BoardView {
     const from = { x: t.x, y: t.y };
     const dest = this.center(this.G!.nodes[to]);
     dest.y -= 12;
-    this.stepsLeft = left;
+    // The die beside the player counts down as the step starts.
+    if (this.die?.phase === 'small' && pid === this.activePid && this.die.count !== left) {
+      this.die.prev = this.die.count;
+      this.die.count = left;
+      this.die.changed = performance.now();
+    }
     clearTimeout(t.pause);
     t.walking = true;
     t.facing = facingFor(dest.x - from.x, dest.y - from.y);
@@ -283,7 +299,6 @@ export class BoardView {
     if (left === 0) {
       t.walking = false;
       t.facing = Facing.Down;
-      this.stepsLeft = 0;
       this.snapTokens();
     }
   }
@@ -521,15 +536,20 @@ export class BoardView {
 
   async rollDie(value: number) {
     const roll = reducedMotion() ? 250 : T.dieRoll;
-    this.die = { value, t0: performance.now(), rolling: true, until: performance.now() + roll * this.speed };
-    await this.wait(roll);
-    this.die = {
+    const die = {
       value,
       t0: performance.now(),
-      rolling: false,
-      until: performance.now() + (T.dieHold + 700) * this.speed,
+      phase: 'rolling' as const,
+      count: value,
+      prev: value,
+      changed: 0,
     };
+    this.die = die;
+    await this.wait(roll);
+    this.die = { ...die, phase: 'shown', t0: performance.now() };
     await this.wait(T.dieHold);
+    // Then it shrinks to sit beside the player and counts the steps down.
+    if (this.die?.value === value) this.die = { ...this.die, phase: 'small', t0: performance.now() };
   }
 
   // ------------------------------------------------------------ choices
@@ -1337,54 +1357,78 @@ export class BoardView {
         ctx.fillStyle = PLAYER_COLORS[p.color];
         ctx.fill();
         ctx.restore();
-        if (this.stepsLeft > 0) {
-          const bx = sx + w * 0.42;
-          const by = sy - h * 0.75;
-          const rad = 11 * this.dpr;
-          ctx.fillStyle = '#101a33';
-          ctx.beginPath();
-          ctx.arc(bx, by, rad, 0, Math.PI * 2);
-          ctx.fill();
-          ctx.fillStyle = '#fff';
-          ctx.font = `${14 * this.dpr}px "Lilita One", sans-serif`;
-          ctx.textAlign = 'center';
-          ctx.textBaseline = 'middle';
-          ctx.fillText(String(this.stepsLeft), bx, by + this.dpr);
-        }
       }
     }
     ctx.restore();
   }
 
   private drawDie(ctx: CanvasRenderingContext2D, now: number) {
-    if (!this.die || now > this.die.until) return;
     const d = this.die;
-    const pos = this.worldToScreen(this.tokenPos(this.activePid).x, this.tokenPos(this.activePid).y);
-    const x = Math.min(this.w - 50, Math.max(50, pos.x + 70));
-    const y = Math.min(this.h - 50, Math.max(50, pos.y - 70));
-    const face = d.rolling ? 1 + (Math.floor(now / 70) % K.dieSides) : d.value;
-    let sx = 1;
-    let sy = 1;
-    let dy = 0;
-    if (d.rolling) dy = -Math.abs(Math.sin(now / 90)) * 16;
-    else {
-      const k = Math.min(1, (now - d.t0) / 350);
-      sx = 1 + Math.sin(k * Math.PI) * 0.25;
-      sy = 1 - Math.sin(k * Math.PI) * 0.2;
+    if (!d || this.activePid < 0) return;
+    const at = this.tokenPos(this.activePid);
+    const pos = this.worldToScreen(at.x, at.y);
+    const big = {
+      x: Math.min(this.w - 50, Math.max(50, pos.x + 70)),
+      y: Math.min(this.h - 50, Math.max(50, pos.y - 70)),
+    };
+    if (d.phase !== 'small') {
+      const face = d.phase === 'rolling' ? 1 + (Math.floor(now / 70) % K.dieSides) : d.value;
+      let sx = 1;
+      let sy = 1;
+      let dy = 0;
+      if (d.phase === 'rolling') dy = -Math.abs(Math.sin(now / 90)) * 16;
+      else {
+        const k = Math.min(1, (now - d.t0) / 350);
+        sx = 1 + Math.sin(k * Math.PI) * 0.25;
+        sy = 1 - Math.sin(k * Math.PI) * 0.2;
+      }
+      ctx.save();
+      ctx.translate(big.x, big.y + dy);
+      ctx.scale(sx, sy);
+      ctx.rotate(d.phase === 'rolling' ? Math.sin(now / 60) * 0.3 : 0);
+      this.paintDie(ctx, face, 52);
+      ctx.restore();
+      return;
     }
-    const s = 52;
+    // Small: beside the player's head, easing in from where the roll was shown.
+    const near = this.worldToScreen(at.x + 34, at.y - 78);
+    const kIn = ease(Math.min(1, (now - d.t0) / 380));
+    let size = 52 + (28 - 52) * kIn;
+    const x = big.x + (near.x - big.x) * kIn;
+    let y = big.y + (near.y - big.y) * kIn;
+    // Each step flips the die over to the new number, with a little pop.
+    const kc = d.changed ? Math.min(1, (now - d.changed) / 280) : 1;
+    const face = kc < 0.5 ? d.prev : d.count;
+    const flip = Math.abs(Math.cos(kc * Math.PI));
+    size *= 1 + Math.sin(kc * Math.PI) * 0.25;
+    // At 0 steps left the die pops away.
+    if (d.count === 0 && kc >= 1) {
+      this.die = null;
+      return;
+    }
+    if (d.count === 0) {
+      size *= 1 - kc;
+      y -= kc * 14;
+    }
     ctx.save();
-    ctx.translate(x, y + dy);
-    ctx.scale(sx, sy);
-    ctx.rotate(d.rolling ? Math.sin(now / 60) * 0.3 : 0);
+    ctx.translate(x, y);
+    ctx.scale(kc < 1 ? flip : 1, 1);
+    this.paintDie(ctx, face, size);
+    ctx.restore();
+  }
+
+  /** A die face of `size` CSS pixels centered on the origin (numbers past 7 are written out). */
+  private paintDie(ctx: CanvasRenderingContext2D, face: number, size: number) {
+    const s = size;
+    const u = s / 52;
     ctx.fillStyle = 'rgba(0,0,0,0.25)';
-    roundRect(ctx, -s / 2 + 3, -s / 2 + 5, s, s, 10);
+    roundRect(ctx, -s / 2 + 3 * u, -s / 2 + 5 * u, s, s, 10 * u);
     ctx.fill();
     ctx.fillStyle = '#fff';
-    roundRect(ctx, -s / 2, -s / 2, s, s, 10);
+    roundRect(ctx, -s / 2, -s / 2, s, s, 10 * u);
     ctx.fill();
     ctx.strokeStyle = '#101a33';
-    ctx.lineWidth = 3;
+    ctx.lineWidth = Math.max(1.5, 3 * u);
     ctx.stroke();
     ctx.fillStyle = face === 1 ? '#e5484d' : '#101a33';
     const pips: Record<number, number[][]> = {
@@ -1430,12 +1474,18 @@ export class BoardView {
         [1, 1],
       ],
     };
+    if (!pips[face]) {
+      ctx.font = `${Math.round(26 * u)}px "Lilita One", sans-serif`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(String(face), 0, 1.5 * u);
+      return;
+    }
     for (const [px, py] of pips[face]) {
       ctx.beginPath();
-      ctx.arc(px * 13, py * 13, face === 1 ? 8 : 5.5, 0, Math.PI * 2);
+      ctx.arc(px * 13 * u, py * 13 * u, (face === 1 ? 8 : 5.5) * u, 0, Math.PI * 2);
       ctx.fill();
     }
-    ctx.restore();
   }
 
   // ------------------------------------------------------------ static board

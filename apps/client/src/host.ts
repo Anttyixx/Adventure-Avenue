@@ -647,6 +647,7 @@ export class HotSeat implements GameIO {
     switch (e.type) {
       case 'turnStart': {
         board.directionsPid = -1;
+        board.die = null;
         // A beat at the end of the previous turn before the next player starts.
         if (board.activePid >= 0 && board.activePid !== e.pid) await this.wait(T.turnEnd);
         this.link?.turnStart(this.seq, G);
@@ -670,12 +671,13 @@ export class HotSeat implements GameIO {
         this.refresh();
         break;
       case 'roll':
-        board.directionsPid = -1;
         hud.status(`${G.players[e.pid].name} is rolling...`, 'move');
         sound.play('roll');
         await board.rollDie(e.value);
         break;
       case 'step':
+        // The direction arrows stay up until the player actually moves.
+        board.directionsPid = -1;
         // A small sound as the hop starts; the step sounds as the token lands on the square.
         hud.status(`${G.players[e.pid].name} is moving...`, 'move');
         sound.play('hop');
@@ -686,6 +688,7 @@ export class HotSeat implements GameIO {
         if (e.left === 0) board.walkTarget = -1;
         break;
       case 'warp':
+        board.directionsPid = -1;
         sound.play('warp');
         await board.warp(e.pid, e.to);
         this.refresh();
