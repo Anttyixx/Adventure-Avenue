@@ -12,8 +12,10 @@ import { clearGuest, guestInGame, loadGuest, saveGuest, setGuestInGame, type Sav
 import { freeCharacter, loadCharacters, shuffledCharacters } from './sprites';
 import { loadProps } from './props';
 import { installVersionChip } from './ui/devmenu';
+import { IS_DEV_BUILD } from './build';
 import { openEditor } from './ui/editor';
 import { openLab } from './ui/lab';
+import { applyLiveStockSettings, openStocksLab } from './ui/stockslab';
 import { mainMenu, type MenuOptions } from './ui/menu';
 import { guestSetup, randomName, setupScreen } from './ui/start';
 import './style.css';
@@ -288,6 +290,8 @@ function showEditor(board: BoardDef | null) {
 void checkForUpdate();
 installCoins();
 installVersionChip();
+// Dev builds can play with the Stocks lab's settings (see the lab).
+if (IS_DEV_BUILD) applyLiveStockSettings();
 // A soft click for every button press.
 document.addEventListener(
   'click',
@@ -301,6 +305,11 @@ function route() {
   const lab = location.hash.match(/^#ui-lab(?:\/(\w+))?/);
   const joinCode = new URLSearchParams(location.search).get('join');
   if (lab) void openLab(app, lab[1]);
+  else if (location.hash.startsWith('#stocks-lab'))
+    openStocksLab(app, () => {
+      location.hash = '';
+      location.reload();
+    });
   else if (location.hash.startsWith('#editor')) showEditor(null);
   else if (guestInGame() && loadGuest() && (!joinCode || cleanCode(joinCode) === loadGuest()!.code)) {
     // This tab was in an online game as a guest: reloading goes straight back in.

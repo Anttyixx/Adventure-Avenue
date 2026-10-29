@@ -132,6 +132,8 @@ export class HostRoom implements GameLink {
       rules: G.rules,
       target: G.target,
       roundCap: G.roundCap,
+      plots: G.plots,
+      stocks: G.stocks ?? 'classic',
     };
     room.started = true;
     room.G = G;

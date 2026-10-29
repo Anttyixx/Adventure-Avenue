@@ -23,6 +23,11 @@ export type SquareType =
 
 /** How many properties start as vacant plots (Standard rules), chosen at game setup. */
 export type PlotSetting = 'none' | 'few' | 'some' | 'lot' | 'all';
+/**
+ * How share prices work: 'classic' (every trade of 10+ shares moves the price 10%) or
+ * 'dynamic' (prices follow total shares held, with volatility and sell-off confidence).
+ */
+export type StockSystem = 'classic' | 'dynamic';
 
 export type BuildingKey = 'checkpoint' | 'circus' | 'balloon' | 'tax' | 'home' | 'agency' | 'star3';
 
@@ -136,7 +141,9 @@ export interface GameState {
   groups: number[][];
   districts: District[];
   factor: number[];
-  /** Stock market state per district (older saves predate it: see market() in rules). */
+  /** Which stock rules this game uses (older saves predate the choice: classic). */
+  stocks?: StockSystem;
+  /** Dynamic stocks' state per district (see market() in rules). */
   market?: Market;
   changeSuit: number;
   vg: { cards: string[]; owner: number[] };
@@ -168,6 +175,8 @@ export interface MatchOptions {
   board?: BoardDef;
   /** Standard rules: how many properties start as vacant plots (default 'few'). */
   plots?: PlotSetting;
+  /** Standard rules: the stock system (default 'dynamic'). */
+  stocks?: StockSystem;
 }
 
 export interface BoardSquareDef {

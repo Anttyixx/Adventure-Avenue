@@ -12,6 +12,9 @@ import {
   BUILDINGS,
   K,
   PLAYER_COLORS,
+  confidence,
+  dynamicStocks,
+  market,
   investRoom,
   isShopLike,
   squareFee,
@@ -69,9 +72,40 @@ export function marketView(
     shops.append(shopStrip(G, sel));
     const total = G.players.reduce((s, p) => s + p.shares[sel], 0);
     const unowned = G.nodes.filter((s) => s.d === sel && s.owner < 0).length;
-    foot.textContent =
+    clear(foot);
+    foot.append(
       `${G.districts[sel].name}: ${unowned} unowned square${unowned === 1 ? '' : 's'}, ${total} shares held. ` +
-      `Every fee paid here pays each other shareholder fee x shares / ${K.divDivisor}.`;
+        `Every fee paid here pays each other shareholder fee x shares / ${K.divDivisor}.`,
+    );
+    // Dynamic stocks: how much shares move this district, and whether a sell-off shook it.
+    if (dynamicStocks(G)) {
+      const m = market(G);
+      const v = m.vol[sel];
+      const mood = v < 0.95 ? 'calm' : v > 1.05 ? 'wild' : 'normal';
+      foot.append(
+        ' ',
+        h(
+          'span',
+          {
+            class: `m-mood ${mood}`,
+            title: `Volatility ${v.toFixed(2)}: how strongly buying and selling moves the price`,
+          },
+          mood === 'calm' ? 'Calm' : mood === 'wild' ? 'Wild' : 'Normal',
+        ),
+      );
+      if (m.dents[sel] > 0)
+        foot.append(
+          ' ',
+          h(
+            'span',
+            {
+              class: 'm-shaken',
+              title: 'A sell-off cut the price; buying shares or investing here repairs it',
+            },
+            `📉 Shaken -${Math.round((1 - confidence(G, sel)) * 100)}%: ${Math.floor(m.repair[sel])}/${K.dentRepair} to recover`,
+          ),
+        );
+    }
   };
 
   // Up/down arrow keys move between districts while the screen is open.

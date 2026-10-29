@@ -96,19 +96,26 @@ export function sharesHeld(G: GameState, d: number): number {
   return G.players.reduce((s, p) => s + (p.shares[d] ?? 0), 0);
 }
 
+/** True when the game uses dynamic stocks (games saved before the choice are classic). */
+export function dynamicStocks(G: GameState): boolean {
+  return G.stocks === 'dynamic';
+}
+
 /** A district's confidence: 1, less K.dent for each sell-off dent not yet repaired. */
 export function confidence(G: GameState, d: number): number {
+  if (!dynamicStocks(G)) return 1;
   return Math.max(K.confMin, 1 - market(G).dents[d] * K.dent);
 }
 
 /**
  * The exact share price (before rounding): the shops' average value x K.stockRate, times the
- * Bull/Bear multiplier, confidence, and the demand boost from `held` shares held in total.
+ * multiplier and, with dynamic stocks, confidence and the demand boost from `held` shares held.
  */
 export function stockPriceExact(G: GameState, d: number, held = sharesHeld(G, d)): number {
   const shops = G.nodes.filter((s) => s.d === d && isShopLike(s));
   if (!shops.length) return 1;
   const avg = shops.reduce((s, q) => s + q.value, 0) / shops.length;
+  if (!dynamicStocks(G)) return Math.max(1, avg * K.stockRate * G.factor[d]);
   const boost = 1 + (Math.pow(Math.max(0, held), K.sharePow) / K.shareScale) * market(G).vol[d];
   return Math.max(1, avg * K.stockRate * G.factor[d] * confidence(G, d) * boost);
 }
@@ -119,10 +126,11 @@ export function stockPrice(G: GameState, d: number): number {
 }
 
 /**
- * What `n` shares cost (buying) or fetch (selling): the average of the price before and after
- * the trade, so no one profits from the price their own trade moves.
+ * What `n` shares cost (buying) or fetch (selling). Classic: the listed price. Dynamic: the
+ * average of the price before and after the trade, so no one profits from moving it themselves.
  */
 export function shareTradeValue(G: GameState, d: number, n: number, buying: boolean): number {
+  if (!dynamicStocks(G)) return n * stockPrice(G, d);
   const held = sharesHeld(G, d);
   const after = buying ? held + n : Math.max(0, held - n);
   return (n * (stockPriceExact(G, d, held) + stockPriceExact(G, d, after))) / 2;
@@ -202,6 +210,13 @@ export function expand(G: GameState, pid: number, g: number): number[] {
 export function buildingAvailable(G: GameState, b: BuildingKey, except = -1): boolean {
   if (G.plots === 'all') return true;
   return G.nodes.filter((s) => s.b === b && s.id !== except).length < K.buildingLimit;
+}
+
+/** Classic stocks: a trade of K.bigTrade+ shares moves the district's multiplier 10%. */
+export function bumpFactor(G: GameState, d: number, up: boolean, n: number) {
+  if (n < K.bigTrade) return;
+  const f = G.factor[d] * (up ? K.tradeUp : K.tradeDown);
+  G.factor[d] = Math.min(K.factorMax, Math.max(K.factorMin, f));
 }
 
 export function clampFactor(G: GameState, d: number) {

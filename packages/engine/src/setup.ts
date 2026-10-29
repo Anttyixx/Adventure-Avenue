@@ -85,6 +85,7 @@ export function newGame(opts: MatchOptions): GameState {
     players,
     rng: seed | 0,
     plots: opts.rules === 'standard' ? (opts.plots ?? 'few') : 'none',
+    stocks: opts.stocks ?? 'dynamic',
   };
   if (opts.rules === 'standard') choosePlots(G, board.squares);
   if (opts.rules === 'standard') {

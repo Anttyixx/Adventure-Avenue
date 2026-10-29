@@ -282,24 +282,55 @@ one for its owner. Built plots show only the building's art on the tile (no name
 ## Stock market (Standard rules)
 
 Each of the 7 districts has one stock whose price tracks the average value of its shops, so anyone
-can profit from (or sabotage) a district they don't own.
+can profit from (or sabotage) a district they don't own. Game setup picks one of two systems
+(`MatchOptions.stocks`, stored as `G.stocks`): **Dynamic** (the default for new games) or
+**Classic**. Saves from before the option count as Classic. All tunable numbers are in
+`constants.ts`; the formulas are in `rules.ts` (`stockPriceExact`, `shareTradeValue`,
+`confidence`, `market`).
+
+The average covers shops and 3-Star Shops in the district (not other buildings). `factor` starts at
+1.0 per district and stays between 0.4 and 4.
+
+**Classic:**
 
 ```
 price_d = max(1, round(average shop value_d x 0.04 x factor_d))
 ```
 
-The average covers shops and 3-Star Shops in the district (not other buildings). `factor` starts at
-1.0 per district.
+Trades pay the listed price per share. Buying 10+ shares multiplies the factor by 1.1; selling 10+
+multiplies it by 0.9.
 
-| Action   | Where / when                                                                               | Effect                                                                         |
-| -------- | ------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------ |
-| Buy      | Landing on the bank, or passing it with a promotion; Stockbroker; some venture cards       | Up to 99 shares in one district per purchase. 10+ shares: factor x 1.1 (max 4) |
-| Sell     | Before rolling; when in debt (any number of shares from any districts); stock venture card | 10+ shares: factor x 0.9 (min 0.4)                                             |
-| Dividend | Whenever anyone pays a fee or toll in district d                                           | Every other shareholder receives floor(fee x shares / 250) from the bank       |
+**Dynamic:**
+
+```
+price_d = average shop value_d x 0.04 x factor_d x confidence_d x (1 + held_d^1.26 / 2300 x vol_d)
+```
+
+- `held_d` is the total shares everyone holds in the district, so prices climb with demand (about
+  10 -> 20 at 500 shares and 36 at 1,000 for a 250G district). Trades never touch the factor.
+- `vol_d` is the district's mood, rolled at game start between 0.85 (Calm) and 1.15 (Wild).
+- A trade pays the average of the price before and after it (sells use the same), so buying 99
+  shares at once costs the same as buying them in steps.
+- **Sell-off:** when 50+ shares of a district are sold in one turn (by anyone), its confidence drops
+  by 5% (once per district per turn, down to 75%). Each dent is repaired by 50 shares bought there,
+  or 1 share's worth per 10G invested in its shops (`G.market.repair`).
+- The market panel tags each district's mood and shows "Shaken -X%" with repair progress.
+
+| Action   | Where / when                                                                               | Classic                     | Dynamic                        |
+| -------- | ------------------------------------------------------------------------------------------ | --------------------------- | ------------------------------ |
+| Buy      | Landing on the bank, or passing it with a promotion; Stockbroker; some venture cards       | Up to 99 shares; 10+: x 1.1 | Up to 99 shares; repairs dents |
+| Sell     | Before rolling; when in debt (any number of shares from any districts); stock venture card | 10+ shares: x 0.9           | 50+ in a turn: sell-off dent   |
+| Dividend | Whenever anyone pays a fee or toll in district d                                           | floor(fee x shares / 250)   | Same                           |
 
 **What moves prices:** investing, expansion, domination, venture cards that grow or shrink shops,
-Memory Blocks prizes, building a 3-Star Shop, and big trades (the factor). Shares count toward net
-worth at the current price, so a price drop can push a leader below the target.
+Memory Blocks prizes, building a 3-Star Shop, and big trades (Classic factor; Dynamic shares held
+and sell-offs). Shares count toward net worth at the current price, so a price drop can push a
+leader below the target. The default goal is 10,000G.
+
+**Stocks lab** (dev builds, `#stocks-lab`, `ui/stockslab.ts`): edit every stock constant live
+(saved per browser; "Use in games on this device" applies them to games after a reload, and online
+every player needs the same values), a price curve for both systems, a trading sandbox running both
+systems side by side, and a CPU simulation over every built-in board.
 
 **Interactions:** stocks are the only asset that is liquid before rolling, so they are the first
 thing sold in debt. Buying into a rival's district and then selling 10+ shares as they near the

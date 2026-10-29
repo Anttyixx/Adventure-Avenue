@@ -19,6 +19,8 @@ import type { GameEvent } from './events';
 import { randInt, rollDie } from './rng';
 import {
   buildingAvailable,
+  bumpFactor,
+  dynamicStocks,
   market,
   shareTradeValue,
   canAfford,
@@ -812,14 +814,16 @@ export class Game {
     if (!ans) return;
     const d = ans.d;
     if (!(d >= 0 && d < G.factor.length)) return;
-    // The price moves as the shares are bought: they cost the average of before and after.
+    // Dynamic stocks: the price moves as the shares are bought, so they cost the average of
+    // before and after. Classic: the listed price.
     const cost = (k: number) => Math.ceil(shareTradeValue(G, d, k, true) * (1 - discount));
     let n = Math.min(Math.floor(ans.n), K.maxBuy);
     while (n > 0 && cost(n) > p.cash) n--;
     if (n <= 0) return;
     const total = cost(n);
     p.shares[d] += n;
-    this.repairDistrict(d, n);
+    if (dynamicStocks(G)) this.repairDistrict(d, n);
+    else bumpFactor(G, d, true, n);
     await this.pay(p, null, total, 'Stock');
     await this.log(`${p.name} bought ${n} ${G.districts[d].name} shares for ${total}G.`, p.id, 'stock');
   }
@@ -847,13 +851,15 @@ export class Game {
     if (n <= 0) return;
     const amount = Math.floor(shareTradeValue(G, d, n, false) * (1 + premium));
     p.shares[d] -= n;
-    // A sell-off: K.sellOff+ shares of one district sold in a turn dent its confidence, once.
-    const m = market(G);
-    m.sold[d] += n;
-    if (m.sold[d] >= K.sellOff && !m.dented[d]) {
-      m.dented[d] = true;
-      if (1 - (m.dents[d] + 1) * K.dent >= K.confMin - 1e-9) m.dents[d]++;
-    }
+    if (dynamicStocks(G)) {
+      // A sell-off: K.sellOff+ shares of one district sold in a turn dent its confidence, once.
+      const m = market(G);
+      m.sold[d] += n;
+      if (m.sold[d] >= K.sellOff && !m.dented[d]) {
+        m.dented[d] = true;
+        if (1 - (m.dents[d] + 1) * K.dent >= K.confMin - 1e-9) m.dents[d]++;
+      }
+    } else bumpFactor(G, d, false, n);
     await this.pay(null, p, amount, 'Stock sale');
     await this.log(`${p.name} sold ${n} ${G.districts[d].name} shares for ${amount}G.`, p.id, 'stock');
   }

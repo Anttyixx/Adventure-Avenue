@@ -26,6 +26,33 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: '2026-10-29-stocks',
+    date: 'Oct 29, 2026',
+    title: 'A new stock market',
+    features: [
+      {
+        tag: 'rules',
+        title: 'Dynamic stocks',
+        text: 'Share prices now climb the more shares everyone holds, and you trade at the average of the price before and after. Each district rolls its own mood (Calm, Normal or Wild) at the start.',
+      },
+      {
+        tag: 'rules',
+        title: 'Sell-offs shake a district',
+        text: "Selling 50 or more shares in one turn knocks 5% off that district's price. Buying 50 shares there, or investing in its shops, repairs it.",
+      },
+      {
+        tag: 'new',
+        title: 'Pick your stock market',
+        text: 'Game setup has a Stocks option: Dynamic (new) or Classic (the old market, where trades of 10+ shares move the price 10%).',
+      },
+    ],
+    extras: [
+      'The default goal is now 10,000G',
+      'CPUs buy stock more eagerly',
+      "The stock market shows each district's mood and whether it is shaken",
+    ],
+  },
+  {
     id: '2026-10-28-menu-pause',
     date: 'Oct 28, 2026',
     title: 'Pause and stock market pop-ups',

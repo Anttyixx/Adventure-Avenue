@@ -4,7 +4,7 @@
  */
 export const K = {
   startCash: 2000,
-  defaultTarget: 5000,
+  defaultTarget: 10000,
   /** The target net worth is picked in steps of targetStep, up to targetMax. */
   targetStep: 1000,
   targetMax: 90000,
@@ -38,13 +38,17 @@ export const K = {
   // Stocks
   stockRate: 0.04,
   divDivisor: 250,
+  /** Classic stocks: a trade of bigTrade+ shares multiplies the price by tradeUp / tradeDown. */
+  bigTrade: 10,
+  tradeUp: 1.1,
+  tradeDown: 0.9,
   /**
-   * Demand: the price rises with the total shares all players hold in a district,
+   * Dynamic stocks. Demand: the price rises with the total shares all players hold in a district,
    * boost = held^sharePow / shareScale x volatility (99 shares into an empty district: about
-   * +12%; 750 held: about +160%). No cap, and selling lowers it the same way.
+   * +14%; 750 held: about +180%). No cap, and selling lowers it the same way.
    */
   sharePow: 1.26,
-  shareScale: 2604,
+  shareScale: 2300,
   /** Each district's volatility, rolled at game start: how strongly shares move its price. */
   volMin: 0.85,
   volMax: 1.15,
@@ -116,9 +120,9 @@ export const K = {
     investFloor: 600,
     investShare: 0.6,
     buyoutKeep: 600,
-    stockAbove: 1100,
-    stockFloor: 800,
-    stockShare: 0.45,
+    stockAbove: 900,
+    stockFloor: 650,
+    stockShare: 0.55,
     stockMin: 10,
     circusKeep: 500,
     agencyKeep: 300,

@@ -8,10 +8,10 @@
  * the right seat and broadcasts it. Once per turn the host sends a hash of its state so a copy
  * that drifted can ask for the turn's starting state and replay from there.
  */
-import type { BoardDef, CharId, GameState, PlotSetting, RuleSet } from '@aa/engine';
+import type { BoardDef, CharId, GameState, PlotSetting, RuleSet, StockSystem } from '@aa/engine';
 
 /** Protocol version: a joiner on a different version is turned away. */
-export const NET_VERSION = 7;
+export const NET_VERSION = 8;
 
 export type SeatKind = 'host' | 'local' | 'remote' | 'open' | 'cpu';
 
@@ -32,6 +32,7 @@ export interface LobbyInfo {
   target: number;
   roundCap: number;
   plots?: PlotSetting;
+  stocks?: StockSystem;
   /** One per player in the game; open seats are played by a CPU unless a friend joins. */
   seats: LobbySeat[];
 }

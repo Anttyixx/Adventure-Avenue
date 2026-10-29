@@ -14,6 +14,7 @@ import {
   type CharId,
   type MatchOptions,
   type PlotSetting,
+  type StockSystem,
   type RuleSet,
 } from '@aa/engine';
 import { boardThumb } from './thumb';
@@ -112,6 +113,7 @@ interface RuleSettings {
   target: number;
   roundCap: number;
   plots: PlotSetting;
+  stocks: StockSystem;
 }
 
 /** A target in 1,000G steps from 1,000G to 90,000G. */
@@ -211,6 +213,24 @@ function rulesPanel(st: RuleSettings, edit?: (patch: Partial<RuleSettings>) => v
             : `Some properties start as vacant plots (up to ${K.plotMax}). Each building can be built at most ${K.buildingLimit} times.`,
         )
       : null,
+    st.rules === 'standard'
+      ? seg(
+          'Stocks',
+          ['dynamic', 'classic'] as StockSystem[],
+          st.stocks,
+          (v) => (v === 'dynamic' ? 'Dynamic' : 'Classic'),
+          edit && ((v) => edit({ stocks: v })),
+        )
+      : null,
+    st.rules === 'standard'
+      ? h(
+          'p',
+          { class: 'hint' },
+          st.stocks === 'dynamic'
+            ? 'Dynamic: prices rise with the shares everyone holds; selling 50+ in a turn shakes a district until it is bought back.'
+            : 'Classic: buying or selling 10+ shares at once moves the price 10%.',
+        )
+      : null,
   );
 }
 
@@ -284,6 +304,7 @@ export function setupScreen(
     target: K.defaultTarget as number,
     roundCap: 0,
     plots: 'few' as PlotSetting,
+    stocks: 'dynamic' as StockSystem,
     rules: 'standard' as RuleSet,
     boardId: 'town',
   });
@@ -295,6 +316,7 @@ export function setupScreen(
     target: cleanTarget(saved.target),
     roundCap: saved.roundCap,
     plots: saved.plots ?? 'few',
+    stocks: saved.stocks ?? 'dynamic',
     rules: saved.rules,
   };
   let boardId: string = getBoard(saved.boardId) ? saved.boardId : 'town';
@@ -804,6 +826,7 @@ export function guestSetup(root: HTMLElement, room: GuestSetupRoom, handlers: Gu
               target: lobby.target,
               roundCap: lobby.roundCap,
               plots: lobby.plots ?? 'few',
+              stocks: lobby.stocks ?? 'dynamic',
             })
           : h('section', { class: 'setup-panel glass rules-panel' }, h('h3', null, 'Rules')),
         h(

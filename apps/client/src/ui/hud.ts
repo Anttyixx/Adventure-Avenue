@@ -288,7 +288,7 @@ export class Hud {
   }
 
   /** Fill the open market panel (kept up to date as the game goes on). */
-  private renderMarket() {
+  renderMarket() {
     const keep = this.marketBody.scrollTop;
     clear(this.marketBody);
     if (!this.marketOpen) return;

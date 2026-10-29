@@ -3,7 +3,7 @@ import { cpuAcceptsTrade } from '../src/cpu';
 import { CARDS } from '../src/cards';
 import { Game } from '../src/engine';
 import { simulate } from '../src/headless';
-import { confidence, market, netWorth, shareTradeValue, stockPriceExact } from '../src/rules';
+import { confidence, market, netWorth, shareTradeValue, stockPrice, stockPriceExact } from '../src/rules';
 import { K } from '../src/constants';
 import { at, makeGame } from './helpers';
 
@@ -120,7 +120,43 @@ describe('fees, dividends and commission', () => {
   });
 });
 
-describe('stocks', () => {
+describe('classic stocks', () => {
+  it('moves the multiplier 10% on 10+ share buys and sales, at the listed price', async () => {
+    const { G, game } = makeGame('standard', (r) => (r.kind === 'buyStock' ? { d: 6, n: 20 } : undefined));
+    G.stocks = 'classic';
+    const p = G.players[0];
+    const price = stockPrice(G, 6);
+    await game.buyStockFlow(p, 0);
+    expect(p.shares[6]).toBe(20);
+    expect(p.cash).toBe(2000 - 20 * price);
+    expect(G.factor[6]).toBeCloseTo(1.1);
+    await game.sellStock(p, 6, 20, 0);
+    expect(G.factor[6]).toBeCloseTo(0.99);
+  });
+
+  it('charges 10% less at a discount and pays 20% more at a premium', async () => {
+    const { G, game } = makeGame('standard', (r) => (r.kind === 'buyStock' ? { d: 6, n: 50 } : undefined));
+    G.stocks = 'classic';
+    const p = G.players[0];
+    const price = stockPrice(G, 6);
+    await game.buyStockFlow(p, 0.1);
+    expect(p.cash).toBe(2000 - Math.ceil(50 * price * 0.9));
+    const q = G.players[1];
+    q.shares[6] = 50;
+    const now = stockPrice(G, 6);
+    await game.sellStock(q, 6, 50, 0.2);
+    expect(q.cash).toBe(2000 + Math.floor(50 * now * 1.2));
+  });
+
+  it('is what games saved before the choice use', () => {
+    const { G } = makeGame();
+    delete G.stocks;
+    expect(confidence(G, 6)).toBe(1);
+    expect(stockPriceExact(G, 6, 999)).toBeCloseTo(stockPriceExact(G, 6, 0));
+  });
+});
+
+describe('dynamic stocks', () => {
   it('prices rise with the shares held and fall back when they are sold', async () => {
     const { G, game } = makeGame('standard', (r) => (r.kind === 'buyStock' ? { d: 6, n: 99 } : undefined));
     const p = G.players[0];
@@ -129,10 +165,10 @@ describe('stocks', () => {
     await game.buyStockFlow(p, 0);
     expect(p.shares[6]).toBe(99);
     expect(p.cash).toBe(2000 - cost);
-    // 99 shares into an empty district: about +12% at normal volatility.
+    // 99 shares into an empty district: about +14% at normal volatility.
     const up = stockPriceExact(G, 6) / before - 1;
-    expect(up).toBeGreaterThan(0.08);
-    expect(up).toBeLessThan(0.16);
+    expect(up).toBeGreaterThan(0.1);
+    expect(up).toBeLessThan(0.18);
     await game.sellStock(p, 6, 99, 0);
     // Back to no shares held, less the 5% sell-off dent (99 shares sold in one turn).
     expect(stockPriceExact(G, 6)).toBeCloseTo(before * (1 - K.dent));

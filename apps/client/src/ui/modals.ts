@@ -485,7 +485,10 @@ export function rulesModal(hud: Hud, G: GameState | null) {
       : h(
           'p',
           null,
-          "Buy shares at the bank or the stockbroker. Prices follow each district's average shop value. Every fee paid in a district pays dividends to its shareholders. Sell before rolling.",
+          "Buy shares at the bank or the stockbroker. Prices follow each district's average shop value. Every fee paid in a district pays dividends to its shareholders. Sell before rolling. " +
+            (!G || G.stocks === 'dynamic'
+              ? 'Dynamic stocks: prices also rise with the shares everyone holds (more in Wild districts, less in Calm ones), and you trade at the average price across your trade. Selling 50+ shares of a district in one turn shakes it (-5% each time, down to -25%); 50 shares bought back, or investing in its shops, repairs it.'
+              : 'Classic stocks: buying or selling 10+ shares at once moves the price 10%.'),
         ),
     easy ? null : h('h4', null, 'Vacant plots'),
     easy

@@ -24,6 +24,7 @@ import {
   ownedShops,
   ranking,
   investRoom,
+  market,
   type BuildingKey,
   type GameState,
   type MemoryPrize,
@@ -93,7 +94,7 @@ const rnd = (n: number) => Math.floor(Math.random() * n);
  * Controls for UI elements that were just added or changed: they shake once and glow so they
  * are easy to find. Update this list with each change.
  */
-const RECENT = new Set(['Stock rise', 'Stock fall', 'Debt']);
+const RECENT = new Set(['Stocks: classic', 'Stocks: dynamic', 'Shaken district', 'Stocks lab']);
 
 /** Which board the lab plays on: Town (square) or Twin Lakes (hex), remembered per browser. */
 const LAB_BOARD_KEY = 'aa-lab-board';
@@ -1306,6 +1307,28 @@ export async function openLab(app: HTMLElement, section?: string) {
         await view.end(yes ? bidders[0] : bidders.at(-1)!, yes ? high : high - 20, 3000);
       }),
       btn('Stock market', () => hud.toggleMarket(true)),
+      btn('Stocks: classic', () => {
+        G.stocks = 'classic';
+        hud.toggleMarket(true);
+        hud.renderMarket();
+      }),
+      btn('Stocks: dynamic', () => {
+        G.stocks = 'dynamic';
+        hud.toggleMarket(true);
+        hud.renderMarket();
+      }),
+      btn('Shaken district', () => {
+        G.stocks = 'dynamic';
+        const m = market(G);
+        m.dents[0] = Math.min(m.dents[0] + 1, 5);
+        m.repair[0] = 20;
+        hud.toggleMarket(true);
+        hud.renderMarket();
+      }),
+      btn('Stocks lab', () => {
+        location.hash = '#stocks-lab';
+        location.reload();
+      }),
       btn('Results screen', () => {
         const R = cloneState(G);
         R.over = true;

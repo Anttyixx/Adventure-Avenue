@@ -115,6 +115,22 @@ function openDevMenu() {
         h(
           'button',
           {
+            class: 'btn',
+            onclick: () => {
+              if (
+                !inLab &&
+                !confirm('Open the Stocks lab? A game in progress is saved at the start of each turn.')
+              )
+                return;
+              location.hash = '#stocks-lab';
+              location.reload();
+            },
+          },
+          'Stocks lab',
+        ),
+        h(
+          'button',
+          {
             class: 'btn danger',
             disabled: !save,
             onclick: () => {
