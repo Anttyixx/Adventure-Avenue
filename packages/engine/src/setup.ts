@@ -37,6 +37,7 @@ export function newGame(opts: MatchOptions): GameState {
     nodes[a].nb.push(b);
     nodes[b].nb.push(a);
   }
+  discountNearBank(nodes, board.bank, board.districts.length);
   const players: Player[] = opts.seats.map((seat, i) => ({
     id: i,
     slot: i,
@@ -102,6 +103,41 @@ export function newGame(opts: MatchOptions): GameState {
   G.market = newMarket(G);
   G.hist.push(players.map((p) => netWorth(G, p)));
   return G;
+}
+
+/**
+ * Make properties cheaper the nearer their district is to the bank: the nearest district (by the
+ * average walk from the bank to its squares, warps counting as a step) loses K.nearBank of its base
+ * values, the farthest none, the rest in proportion.
+ */
+function discountNearBank(nodes: Square[], bank: number, districts: number) {
+  const dist = new Array(nodes.length).fill(Infinity);
+  dist[bank] = 0;
+  const q = [bank];
+  while (q.length) {
+    const n = q.shift()!;
+    const sq = nodes[n];
+    const link = sq.link ?? -1;
+    for (const m of link >= 0 ? [...sq.nb, link] : sq.nb)
+      if (dist[m] === Infinity) {
+        dist[m] = dist[n] + 1;
+        q.push(m);
+      }
+  }
+  const avg = Array.from({ length: districts }, (_, d) => {
+    const ds = nodes.filter((s) => s.d === d && Number.isFinite(dist[s.id])).map((s) => dist[s.id]);
+    return ds.length ? ds.reduce((a, b) => a + b, 0) / ds.length : NaN;
+  });
+  const known = avg.filter((a) => !Number.isNaN(a));
+  const lo = Math.min(...known);
+  const hi = Math.max(...known);
+  if (!(hi > lo)) return;
+  for (const s of nodes) {
+    if (s.d < 0 || Number.isNaN(avg[s.d]) || !s.base) continue;
+    const cut = K.nearBank * (1 - (avg[s.d] - lo) / (hi - lo));
+    s.base = Math.round((s.base * (1 - cut)) / 5) * 5;
+    s.value = s.base;
+  }
 }
 
 /**

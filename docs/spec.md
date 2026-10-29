@@ -211,6 +211,12 @@ raises both fees and shop values.
 | Tide Walk   | 0,5 · 0,4 · 1,3 · 2,3    | 220 / 240 / 260 / 280 | 0,4                    |
 | Plaza       | 4,3 · 5,3 · 6,3          | 320 / 340 / 360       | none                   |
 
+**Near the bank, cheaper:** at game start every district's base values are cut by up to 10%
+(`K.nearBank`) depending on how near it is to the bank: the district with the shortest average walk
+from the bank to its squares (warps count as a step) gets the full 10%, the farthest keeps its map
+prices, and the rest scale in between. Prices round to 5G. This applies to every board, custom ones
+included, and both rule sets; the tables above list the map's prices before it.
+
 **Rows** (Easy rules): groups are runs of shop squares that are directly connected, broken by any
 non-shop square. They are computed from the graph at game start; a row of 1 can never expand.
 

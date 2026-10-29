@@ -50,6 +50,12 @@ const GROUPS: { title: string; settings: Setting[] }[] = [
       },
       { key: 'factorMin', label: 'Multiplier floor', step: 0.05, hint: 'Lowest the multiplier can go' },
       { key: 'factorMax', label: 'Multiplier ceiling', step: 0.1, hint: 'Highest the multiplier can go' },
+      {
+        key: 'nearBank',
+        label: 'Near-bank shop discount',
+        step: 0.01,
+        hint: 'Shop prices cut for the district nearest the bank (0.1 = -10%), none for the farthest. New games only',
+      },
       { key: 'maxBuy', label: 'Most shares per buy', step: 1, hint: 'Largest single purchase' },
     ],
   },

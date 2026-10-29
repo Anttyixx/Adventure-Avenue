@@ -48,6 +48,11 @@ export function makeGame(rules: RuleSet = 'standard', answer: Answerer = () => u
     board: TEST_TOWN,
     plots: 'none',
   });
+  // The map's own prices, without the near-bank discount, so rule tests use round numbers.
+  TEST_TOWN.squares.forEach((s, i) => {
+    G.nodes[i].base = s.base ?? 0;
+    G.nodes[i].value = s.base ?? 0;
+  });
   // Standard rules: exactly the squares the map marks become vacant plots.
   if (rules === 'standard')
     TEST_TOWN.squares.forEach((s, i) => {

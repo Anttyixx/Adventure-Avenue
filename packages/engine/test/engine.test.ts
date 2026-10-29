@@ -13,6 +13,9 @@ import {
   stockPriceExact,
 } from '../src/rules';
 import { K } from '../src/constants';
+import { BOARDS } from '../src/boards/builtin';
+import { newGame } from '../src/setup';
+import { cpuSeats } from '../src/headless';
 import { at, makeGame } from './helpers';
 
 describe('movement', () => {
@@ -517,6 +520,21 @@ describe('shop growth and stock', () => {
     const classic = stockPriceExact(G, 0);
     shops[0].value += 100;
     expect(stockPriceExact(G, 0) - classic).toBeCloseTo((100 / shops.length) * K.stockRate);
+  });
+});
+
+describe('property prices near the bank', () => {
+  it('cuts the nearest district by K.nearBank and leaves the farthest at full price', () => {
+    const board = BOARDS.town;
+    const G = newGame({ rules: 'easy', target: 5000, roundCap: 0, seats: cpuSeats(2), seed: 1, board });
+    const cut = G.districts.map((_, d) => {
+      const i = G.nodes.findIndex((s) => s.d === d);
+      return 1 - G.nodes[i].base / board.squares[i].base!;
+    });
+    expect(Math.max(...cut)).toBeGreaterThan(K.nearBank - 0.02);
+    expect(Math.max(...cut)).toBeLessThan(K.nearBank + 0.02);
+    expect(Math.min(...cut)).toBeCloseTo(0);
+    expect(G.nodes.every((s) => s.base % 5 === 0)).toBe(true);
   });
 });
 

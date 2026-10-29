@@ -18,6 +18,12 @@ export const K = {
   roundCapOptions: [0, 15, 20, 30],
 
   // Shops
+  /**
+   * Property prices near the bank: the district with the shortest average walk from the bank has
+   * its shops' base values cut by this much at game start; the farthest keeps full price, and the
+   * rest scale in between. Prices round to 5G.
+   */
+  nearBank: 0.1,
   feeRate: 0.2,
   /** Fee multiplier by squares owned in the group (index = count, capped at 4). */
   mult: [0, 1, 1.3, 1.6, 2.0],
