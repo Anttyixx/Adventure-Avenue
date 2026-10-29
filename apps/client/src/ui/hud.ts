@@ -391,6 +391,9 @@ export class Hud {
     // The status line (and the log it opens into) sits on the player cards, as wide as them.
     const cards = this.cardsWrap.getBoundingClientRect();
     this.root.style.setProperty('--cards-w', `${cards.width}px`);
+    // The player overview is as tall as the player cards, its bottom where theirs is.
+    this.root.style.setProperty('--pv-h', `${Math.max(cards.height, 230)}px`);
+    this.root.style.setProperty('--pv-b', `${H - cards.bottom}px`);
     this.root.style.setProperty('--dock-b', `${H - cards.top + 6}px`);
     // Only the folded status line counts, so opening the log never moves anything.
     if (!this.logOpen) {
@@ -405,7 +408,15 @@ export class Hud {
     this.root.style.setProperty('--top-free', `${tools.bottom + 6}px`);
     let right = 0;
     if (!portraitStack && cards.width) right = Math.min(W * 0.4, W - cards.left + 8);
-    const top = Math.min(ask ? ask.top : Infinity, portraitStack ? lineTop : Infinity);
+    // With the overview open it covers the bottom of the screen, cards and all.
+    const pv = this.overviewPid >= 0 ? this.overview.getBoundingClientRect() : null;
+    if (pv && !portraitStack) right = 0;
+    const top = Math.min(
+      ask ? ask.top : Infinity,
+      portraitStack ? lineTop : Infinity,
+      pv ? pv.top : Infinity,
+      pv ? this.logButton.getBoundingClientRect().top : Infinity,
+    );
     const bottom = H - top + 4;
     this.board.insets = {
       top: Math.max(tools.bottom, this.topLeftBottom) + 6,
@@ -608,6 +619,11 @@ export class Hud {
     this.overview.scrollTop = 0;
     this.renderOverview();
     this.cardsWrap.classList.add('covered');
+    // The action bar moves to the bottom-left corner, the board zooms out to the whole map and
+    // greys out everyone else's properties.
+    this.root.classList.add('pv-open');
+    this.board.focusOwner = pid;
+    this.updateInsets();
     if (grow) this.morphOverview(true, pid);
   }
 
@@ -616,6 +632,7 @@ export class Hud {
     if (pid < 0) return;
     this.lightUp(null);
     this.overviewPid = -1;
+    this.board.focusOwner = -1;
     this.morphOverview(false, pid);
   }
 
@@ -634,6 +651,7 @@ export class Hud {
           const i = order.indexOf(p.id);
           this.lightUp(null);
           this.overviewPid = order[(i + step + order.length) % order.length];
+          this.board.focusOwner = this.overviewPid;
           this.overview.scrollTop = 0;
           this.renderOverview();
         },
@@ -662,7 +680,9 @@ export class Hud {
       if (open) return;
       box.hidden = true;
       this.cardsWrap.classList.remove('covered');
+      this.root.classList.remove('pv-open');
       clear(box);
+      this.updateInsets();
     };
     this.overviewAnim?.cancel();
     if (!card || matchMedia('(prefers-reduced-motion: reduce)').matches) {

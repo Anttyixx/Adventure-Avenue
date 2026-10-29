@@ -119,6 +119,11 @@ export class BoardView {
   /** While set, the camera shows the whole board (e.g. to watch shops close), whatever the zoom. */
   overviewHold = false;
   /**
+   * The player overview is open: the camera shows the whole board and every property not owned
+   * by `focusOwner` is greyed out.
+   */
+  focusOwner = -1;
+  /**
    * While set, the camera frames these squares in the space the HUD leaves free (e.g. after a
    * roll: the player and everywhere they could land), refitting as the HUD changes.
    */
@@ -788,7 +793,8 @@ export class BoardView {
   }
 
   updateCamera() {
-    const out = this.followPid < 0 || this.G?.over || this.overviewHold ? ZOOM_MAX_OUT : this.zoomOut;
+    const whole = this.followPid < 0 || this.G?.over || this.overviewHold || this.focusOwner >= 0;
+    const out = whole ? ZOOM_MAX_OUT : this.zoomOut;
     const z = this.zoomFor(out);
     // The active player sits in the middle of the screen (the grass carries on past the board).
     let follow = this.followPid >= 0 ? this.tokenPos(this.followPid) : { x: this.ww / 2, y: this.wh / 2 };
@@ -801,7 +807,7 @@ export class BoardView {
     }
     // Zoomed out, the camera gradually lets go of the player and eases to the board's center,
     // shifted so the board sits in the middle of the free area (straight there for overviews).
-    const overview = this.followPid < 0 || !!this.G?.over || this.overviewHold;
+    const overview = this.followPid < 0 || !!this.G?.over || this.overviewHold || this.focusOwner >= 0;
     const t = overview ? 1 : Math.min(1, Math.max(0, (out - ZOOM_BLEND) / (ZOOM_BLEND_END - ZOOM_BLEND)));
     const b = t * t * (3 - 2 * t);
     const { top, right, bottom, left } = this.insets;
@@ -916,6 +922,7 @@ export class BoardView {
     const motion = !reducedMotion();
     if (motion) this.drawAmbient(ctx, now);
     this.drawClosed(ctx, now, motion);
+    this.drawGreyed(ctx);
     this.drawGlow(ctx, now);
     this.drawRoute(ctx);
     this.drawTokens(ctx, now, motion);
@@ -1075,6 +1082,20 @@ export class BoardView {
       ctx.fillText('CLOSED', c.x, c.y + 1);
       ctx.restore();
     }
+  }
+
+  /** Player overview: grey out every property the shown player does not own. */
+  private drawGreyed(ctx: CanvasRenderingContext2D) {
+    if (this.focusOwner < 0 || !this.G) return;
+    ctx.save();
+    ctx.fillStyle = 'rgba(70, 74, 84, 0.72)';
+    for (const sq of this.G.nodes) {
+      if ((sq.t !== 'shop' && sq.t !== 'plot') || sq.owner === this.focusOwner) continue;
+      const c = this.center(sq);
+      tileShape(ctx, this.G.layout, c.x, c.y, TILE / 2 + 1, 14);
+      ctx.fill();
+    }
+    ctx.restore();
   }
 
   private drawGlow(ctx: CanvasRenderingContext2D, now: number) {

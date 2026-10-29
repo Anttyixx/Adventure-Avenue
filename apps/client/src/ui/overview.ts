@@ -56,7 +56,12 @@ export function playerOverview(G: GameState, p: Player, hooks: OverviewHooks): H
   const rank = ranked.findIndex((q) => q.id === p.id) + 1;
   const standard = G.rules === 'standard';
 
+  // Columns side by side, each scrolling on its own: who they are and what they are worth; their
+  // properties; how their net worth grew, their stock and what they earned.
   const root = h('div', { class: 'pv-body', style: `--pc:${color}` });
+  const colA = h('div', { class: 'pv-col pv-col-a' });
+  const colB = h('div', { class: 'pv-col pv-col-b' });
+  const colC = h('div', { class: 'pv-col pv-col-c' });
 
   // ---------------------------------------------------------------- head
   const tags: HTMLElement[] = [];
@@ -74,7 +79,7 @@ export function playerOverview(G: GameState, p: Player, hooks: OverviewHooks): H
       ),
     );
   }
-  root.append(
+  colA.append(
     h(
       'div',
       { class: 'pv-head' },
@@ -121,7 +126,11 @@ export function playerOverview(G: GameState, p: Player, hooks: OverviewHooks): H
               '›',
             )
           : null,
-        h('button', { class: 'btn small ghost', onclick: () => hooks.onClose() }, 'Close'),
+        h(
+          'button',
+          { class: 'btn small ghost', title: 'Close', 'aria-label': 'Close', onclick: () => hooks.onClose() },
+          '✕',
+        ),
       ),
     ),
   );
@@ -129,7 +138,7 @@ export function playerOverview(G: GameState, p: Player, hooks: OverviewHooks): H
   // ---------------------------------------------------------------- net worth and goal
   const pct = Math.max(0, Math.min(100, (nw / G.target) * 100));
   const need = G.target - nw;
-  root.append(
+  colA.append(
     h(
       'div',
       { class: 'pv-nw' },
@@ -166,7 +175,7 @@ export function playerOverview(G: GameState, p: Player, hooks: OverviewHooks): H
       }),
     );
   }
-  root.append(
+  colA.append(
     section(
       'Net worth breakdown',
       null,
@@ -192,7 +201,7 @@ export function playerOverview(G: GameState, p: Player, hooks: OverviewHooks): H
   // ---------------------------------------------------------------- net worth over the game
   const hist = G.hist.map((row) => row[p.id] ?? 0);
   if (!G.over) hist.push(nw);
-  if (hist.length >= 2) root.append(section('Net worth over the game', null, trend(hist, G.target, color)));
+  if (hist.length >= 2) colB.append(section('Net worth over the game', null, trend(hist, G.target, color)));
 
   // ---------------------------------------------------------------- properties
   const byDistrict = new Map<number, Square[]>();
@@ -209,7 +218,7 @@ export function playerOverview(G: GameState, p: Player, hooks: OverviewHooks): H
     const dist = standard ? G.districts[key] : null;
     const head = h(
       'div',
-      { class: 'pv-group', style: `--dc:${dist?.color ?? '#8a94a8'}` },
+      { class: 'pv-group' },
       h('i', { class: 'pv-dot' }),
       h('span', null, dist?.name ?? 'Row'),
       h('em', null, `${squares.length} of ${size}`),
@@ -220,10 +229,16 @@ export function playerOverview(G: GameState, p: Player, hooks: OverviewHooks): H
       squares.map((s) => s.id),
       hooks,
     );
-    propBox.append(head);
-    for (const s of squares) propBox.append(propertyRow(G, s, color, hooks));
+    propBox.append(
+      h(
+        'div',
+        { class: 'pv-pgroup', style: `--dc:${dist?.color ?? '#8a94a8'}` },
+        head,
+        h('div', { class: 'pv-cards' }, ...squares.map((s) => propertyCard(G, s, color, hooks))),
+      ),
+    );
   }
-  root.append(
+  colC.append(
     section(
       'Properties',
       owned.length ? `${owned.length} · ${fmt(props)}` : null,
@@ -269,7 +284,7 @@ export function playerOverview(G: GameState, p: Player, hooks: OverviewHooks): H
         return tr;
       }),
     );
-    root.append(
+    colB.append(
       section(
         'Stock',
         rows.length ? fmt(stock) : null,
@@ -282,12 +297,12 @@ export function playerOverview(G: GameState, p: Player, hooks: OverviewHooks): H
   const st = p.stats;
   const facts: [string, number, string?][] = [
     ['Fees earned', st.feesEarned],
-    ['Fees paid', -st.feesPaid],
+    ['Fees paid', st.feesPaid ? -st.feesPaid : 0],
     ['Salary collected', st.salary],
   ];
   if (standard) facts.push(['Dividends', st.dividends]);
   facts.push(['Commission', st.commission]);
-  root.append(
+  colB.append(
     section(
       'Earnings',
       null,
@@ -311,6 +326,7 @@ export function playerOverview(G: GameState, p: Player, hooks: OverviewHooks): H
       ),
     ),
   );
+  root.append(colA, colC, colB);
   return root;
 }
 
@@ -329,46 +345,40 @@ function hover(el: HTMLElement, ids: number[], hooks: OverviewHooks) {
   el.onmouseleave = () => hooks.onHover(null);
 }
 
-function propertyRow(G: GameState, s: Square, color: string, hooks: OverviewHooks): HTMLElement {
-  const icon = h('span', { class: 'pv-ico' });
+/** A little card for one property: its picture, its rent (the fee a rival pays) and its value. */
+function propertyCard(G: GameState, s: Square, color: string, hooks: OverviewHooks): HTMLElement {
   const building = s.b ? BUILDINGS.find((b) => b.b === s.b) : null;
+  let src = '';
+  let kind = building?.name ?? 'Vacant plot';
   if (s.t === 'shop' || s.b === 'star3') {
     const star3 = s.b === 'star3';
     const tier = tierFor(s.value, star3 ? STAR3_TIERS : SHOP_TIERS);
-    icon.title = star3 ? STAR3_TIER_NAMES[tier] : SHOP_TIER_NAMES[tier];
-    icon.append(h('img', { src: propertyIconURL(star3 ? 'star3' : 'shop', tier, color), alt: '' }));
+    kind = star3 ? STAR3_TIER_NAMES[tier] : SHOP_TIER_NAMES[tier];
+    src = propertyIconURL(star3 ? 'star3' : 'shop', tier, color);
   } else if (s.b) {
     // Other buildings: the same art as the build choice (a circus by its tier).
-    const key = (s.b === 'circus' ? `circus${Math.min(3, s.lv)}` : s.b) as PropKey;
-    icon.title = building?.name ?? '';
-    icon.append(h('img', { src: propIconURL(key, color), alt: '' }));
-  } else {
-    icon.classList.add('plain');
-    icon.textContent = '·';
+    src = propIconURL((s.b === 'circus' ? `circus${Math.min(3, s.lv)}` : s.b) as PropKey, color);
   }
   const owner = G.players[s.owner];
-  const fee = s.b === 'tax' ? '10% NW' : s.b === 'agency' ? '-' : fmt(squareFee(G, s));
+  const closed = isClosed(owner);
+  const rent = s.b === 'tax' ? '10%' : s.b === 'agency' ? '-' : fmt(squareFee(G, s));
   const capped = isShopLike(s) ? maxValue(G, s) : 0;
-  const row = h(
+  const name = s.t === 'shop' ? `${shortName(G, s)} (${s.base}G)` : shortName(G, s);
+  const card = h(
     'div',
-    { class: 'pv-prop', tabindex: '0' },
-    icon,
-    h(
-      'span',
-      { class: 'pv-pname' },
-      s.t === 'shop' ? `Shop (${s.base}G)` : (building?.name ?? shortName(G, s)),
-    ),
-    h(
-      'span',
-      { class: 'pv-pnum', title: capped ? `Value (can be invested up to ${fmt(capped)})` : 'Value' },
-      fmt(s.value),
-    ),
-    h('span', { class: 'pv-pnum fee', title: isClosed(owner) ? 'Fee (closed now)' : 'Fee' }, fee),
+    {
+      class: `pv-card ${closed ? 'closed' : ''}`,
+      tabindex: '0',
+      title: `${name}: ${kind}. Rent ${rent}${closed ? ' (closed now)' : ''}, value ${fmt(s.value)}${capped ? `, up to ${fmt(capped)}` : ''}.`,
+    },
+    src ? h('img', { src, alt: '' }) : h('span', { class: 'pv-card-none' }, '·'),
+    h('span', { class: 'pv-card-rent' }, rent),
+    h('span', { class: 'pv-card-val' }, fmt(s.value)),
   );
-  hover(row, [s.id], hooks);
-  row.onfocus = () => hooks.onHover([s.id]);
-  row.onblur = () => hooks.onHover(null);
-  return row;
+  hover(card, [s.id], hooks);
+  card.onfocus = () => hooks.onHover([s.id]);
+  card.onblur = () => hooks.onHover(null);
+  return card;
 }
 
 /** Net worth after each round as a line, with the goal dashed; hover for the exact value. */

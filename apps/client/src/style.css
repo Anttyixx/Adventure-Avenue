@@ -5395,16 +5395,22 @@ div.sl-inline label {
 
 /* ------------------------------------------------------------ player overview */
 
-/* A player's card expanded over the other cards: everything about that player. */
+/* A player's card expanded over the other cards: everything about that player. It is as tall as
+   the player cards, its bottom right corner where theirs is, and reaches left to leave the
+   bottom-left corner to the action bar (which moves there while it is open). */
+.hud {
+  --ab-slot: clamp(300px, 34vw, 460px);
+}
 .pview {
   position: absolute;
   right: 10px;
-  bottom: calc(10px + var(--badge-h, 0px));
-  width: max(var(--cards-w, 330px), 340px);
-  max-width: calc(100vw - 20px);
-  max-height: calc(100vh - var(--top-free, 50px) - 16px - var(--badge-h, 0px));
+  bottom: var(--pv-b, 10px);
+  left: calc(var(--free-left, 0px) + 10px + var(--ab-slot) + 12px);
+  height: var(--pv-h, 260px);
+  max-height: calc(100vh - var(--top-free, 50px) - var(--pv-b, 10px) - 8px);
   box-sizing: border-box;
-  overflow-y: auto;
+  overflow-x: auto;
+  overflow-y: hidden;
   overscroll-behavior: contain;
   background: rgba(16, 26, 51, 0.96);
   border: 1px solid var(--glass-line);
@@ -5417,23 +5423,70 @@ div.sl-inline label {
 .hud.upright .pview {
   left: 6px;
   right: 6px;
-  bottom: calc(6px + var(--badge-h, 0px));
-  width: auto;
+}
+.hud.pv-open:not(.upright) .prompt-center {
+  left: calc(var(--free-left, 0px) + 10px);
+  right: auto;
+  margin: 0;
+  max-width: var(--ab-slot);
+}
+/* In that narrower corner the question sits above the options, which wrap. */
+.hud.pv-open:not(.upright) .prompt-center:not(.status) {
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 12px;
+}
+.hud.pv-open:not(.upright) .prompt-center:not(.status) .prompt-text {
+  flex: none;
+}
+.hud.pv-open:not(.upright) .prompt-center .btn-row {
+  flex-wrap: wrap;
+  justify-content: flex-start;
+  max-width: none;
+  overflow: visible;
+  gap: 6px;
 }
 .cards-wrap.covered {
   pointer-events: none;
 }
 .pv-body {
   display: flex;
-  flex-direction: column;
-  gap: 10px;
-  padding: 12px 12px 14px;
+  gap: 14px;
+  height: 100%;
+  box-sizing: border-box;
+  padding: 10px 12px;
   animation: pv-in 0.3s ease-out;
 }
 @keyframes pv-in {
   from {
     opacity: 0;
   }
+}
+/* Columns side by side, each scrolling on its own. */
+.pv-col {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-height: 0;
+  overflow-y: auto;
+  padding-right: 4px;
+  scrollbar-width: thin;
+}
+.pv-col-a {
+  flex: 0 0 280px;
+}
+.pv-col-b {
+  flex: 0 0 250px;
+}
+.pv-col-c {
+  flex: 1 1 300px;
+  min-width: 230px;
+}
+.pv-col + .pv-col {
+  padding-left: 14px;
+  border-left: 1px solid var(--glass-line);
 }
 .pv-head {
   display: flex;
@@ -5444,7 +5497,7 @@ div.sl-inline label {
 }
 .pv-sprite {
   image-rendering: pixelated;
-  height: 72px;
+  height: 56px;
   width: auto;
   flex: none;
 }
@@ -5457,7 +5510,7 @@ div.sl-inline label {
 }
 .pv-name {
   font-family: var(--head);
-  font-size: 22px;
+  font-size: 20px;
   line-height: 1.1;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -5508,11 +5561,16 @@ div.sl-inline label {
 }
 .pv-nav {
   align-self: flex-start;
+  flex: none;
   display: flex;
-  gap: 4px;
+  gap: 3px;
 }
 .pv-nav .btn {
-  padding: 3px 9px;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  display: grid;
+  place-items: center;
 }
 .pv-nw-row {
   display: flex;
@@ -5633,14 +5691,73 @@ div.sl-inline label {
 /* Properties, grouped by district. */
 .pv-props {
   display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 8px 14px;
+}
+.pv-pgroup {
+  display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 4px;
+}
+.pv-cards {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+/* A little card per property: its picture, the rent a rival pays, and its value. */
+.pv-card {
+  width: 64px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+  padding: 4px 2px 5px;
+  box-sizing: border-box;
+  border-radius: 8px;
+  border-top: 4px solid var(--dc);
+  background: rgba(255, 255, 255, 0.07);
+  outline: none;
+  cursor: default;
+  transition:
+    background 0.15s,
+    transform 0.15s;
+}
+.pv-card:hover,
+.pv-card:focus-visible {
+  background: rgba(255, 255, 255, 0.14);
+  transform: translateY(-2px);
+}
+.pv-card img {
+  width: 36px;
+  height: 36px;
+  object-fit: contain;
+  image-rendering: pixelated;
+}
+.pv-card-none {
+  height: 36px;
+  line-height: 36px;
+  color: var(--muted);
+}
+.pv-card-rent {
+  font-family: var(--head);
+  font-size: 14px;
+  line-height: 1.1;
+  color: #ffd98a;
+}
+.pv-card.closed .pv-card-rent {
+  color: var(--muted);
+  text-decoration: line-through;
+}
+.pv-card-val {
+  font-size: 10px;
+  color: var(--muted);
 }
 .pv-group {
   display: flex;
   align-items: center;
   gap: 6px;
-  margin-top: 4px;
+  white-space: nowrap;
   font-size: 13px;
   font-weight: 700;
 }
@@ -5664,51 +5781,8 @@ div.sl-inline label {
   color: #ffd98a;
   font-size: 10px;
 }
-.pv-prop {
-  display: grid;
-  grid-template-columns: 26px 1fr auto auto;
-  align-items: center;
-  gap: 8px;
-  padding: 2px 6px 2px 16px;
-  border-radius: 8px;
-  font-size: 13px;
-  outline: none;
-}
-.pv-prop:hover,
-.pv-prop:focus-visible,
 .pv-table tr:hover td {
   background: rgba(255, 255, 255, 0.07);
-}
-.pv-ico {
-  width: 26px;
-  height: 26px;
-  display: grid;
-  place-items: center;
-}
-.pv-ico img {
-  max-width: 26px;
-  max-height: 26px;
-  image-rendering: pixelated;
-}
-.pv-ico.plain {
-  border-radius: 6px;
-  background: rgba(255, 255, 255, 0.1);
-  font-size: 12px;
-  font-weight: 700;
-}
-.pv-pname {
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.pv-pnum {
-  min-width: 52px;
-  text-align: right;
-  font-variant-numeric: tabular-nums;
-}
-.pv-pnum.fee {
-  color: var(--muted);
 }
 .pv-table {
   width: 100%;
@@ -5737,7 +5811,7 @@ div.sl-inline label {
 }
 .pv-facts {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 1fr;
   gap: 4px;
 }
 .pv-fact {

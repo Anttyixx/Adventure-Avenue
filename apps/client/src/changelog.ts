@@ -33,7 +33,7 @@ export const CHANGELOG: ChangelogEntry[] = [
       {
         tag: 'new',
         title: 'Click a player card',
-        text: "It opens into that player's overview: their net worth and what it is made of (cash, properties, stock), how it grew each round, every property by district, their stock and their earnings. Hover a property to find it on the board.",
+        text: "It opens into that player's overview along the bottom of the screen, and the board zooms out with everyone else's properties greyed out. See their net worth and what it is made of, their properties as little cards with their rent, how they grew each round, their stock and their earnings. Hover a property to find it on the board.",
       },
     ],
     extras: ['Buying a property claims it as the coins fly, instead of after'],

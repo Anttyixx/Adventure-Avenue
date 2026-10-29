@@ -766,17 +766,20 @@ suits and progress bar); they are always shown. Player cards show the character'
 (trimmed to its drawn pixels, no fade).
 
 **Player overview** (`ui/overview.ts`). Clicking (or Enter on) a player card grows that card into
-the overview over all the cards (anchored where the cards are, as tall as the screen allows,
-scrolling inside): the whole sprite, name, level, rank, suits and status tags (Bankrupt, Shops
-closed, Fees +30%, Boon/Boom); net worth with the goal bar and how much is left; the **net worth
-breakdown** (one bar split into Cash, Properties and Stock with a legend of values and shares);
-**net worth over the game** (a line per round with the goal dashed; hover for each round's value);
-**properties** grouped by district (owned count, "All owned", each property's art, value and fee;
-hovering a district or property lights it up on the board); **stock** (shares, price, value and
-their part of all shares held per district; hovering lights up the district); and **earnings**
-(fees earned and paid, salary, dividends, commission, and what the next promotion pays).
-Previous/next buttons switch player, Close, Escape or clicking the card again folds it back into the
-card. It updates live as the game goes on.
+the overview: a panel as tall as the player cards (at least 230px), its bottom-right corner where
+theirs is, reaching left to leave the bottom-left corner to the action bar, which moves there while
+the overview is open (its question above its options, which wrap). The board zooms out to the whole
+map and greys out every property the player does not own. The panel has columns side by side, each
+scrolling on its own: (1) the whole sprite, name, level, rank, suits and status tags, net worth
+with the goal bar and how much is left, and the **net worth breakdown** (one bar split into Cash,
+Properties and Stock with a legend of values and shares); (2) **properties** as little cards
+grouped by district (owned count), each with its picture, its rent (the fee a rival pays, struck
+through while closed) and its value; hovering a card or a district lights it up on the board;
+(3) **net worth over the game** (a line per round with the goal dashed; hover for each round's
+value), **stock** (shares, price, value and their part of all shares held per district) and
+**earnings** (fees earned and paid, salary, dividends, commission, next promotion's pay). On narrow
+screens the panel scrolls sideways. ‹ › switch player; ✕, Escape or clicking the card again folds
+it back into the card. It updates live as the game goes on.
 
 **Turn moments.** Before the roll, sliding arrows on the board point from the player's square to
 each square their first step can reach; they stay up until the player takes that first step. A token that stops part-way through a walk (a pop-up or a
