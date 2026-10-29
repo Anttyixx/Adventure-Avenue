@@ -777,10 +777,10 @@ line per round with the goal dashed; hover for each round's value); (2) **proper
 cards under their district's name, each with its picture, its rent (the fee a rival pays, struck
 through while closed) and its value; hovering a card or a district lights it up on the board, and
 clicking a card finds it: the pop-up steps aside, the board zooms out to the whole map with that
-property glowing for 3 seconds, then the board zooms back and the pop-up returns; (3) **shares**
-(how many they hold in each district; districts with none dimmed) and **earnings** (fees earned and
-paid, salary, dividends, commission, next promotion's pay). ‹ › switch player; ✕, Escape, a click
-outside it or clicking the card again closes it. It updates live as the game goes on.
+property glowing for 3 seconds, then the board zooms back and the pop-up returns; (3) **shares** (the stock screen's table for this player: each district's name, price, the shares
+they hold and their value, districts with none dimmed, totals at the bottom) and **earnings** (fees earned and
+paid, salary, dividends, commission, next promotion's pay). The ✕ in the top right corner (it stays put while the
+content scrolls), Escape, a click outside it or clicking the card again closes it. It updates live as the game goes on.
 
 **Turn moments.** Before the roll, sliding arrows on the board point from the player's square to
 each square their first step can reach; they stay up until the player takes that first step. A token that stops part-way through a walk (a pop-up or a

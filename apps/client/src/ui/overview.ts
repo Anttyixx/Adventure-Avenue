@@ -16,6 +16,7 @@ import {
   ranking,
   salary,
   squareFee,
+  stockPrice,
   stockValue,
   type GameState,
   type Player,
@@ -24,7 +25,7 @@ import {
 import { SHOP_TIERS, SHOP_TIER_NAMES, STAR3_TIERS, STAR3_TIER_NAMES, propertyIconURL, tierFor } from '../art';
 import { boonIconURL, suitIconURL, wildIconURL } from '../icons';
 import { propIconURL, type PropKey } from '../props';
-import { bodyURL } from '../sprites';
+import { bodyURL, portraitURL } from '../sprites';
 import { shortName } from '../names';
 import { fmt, h } from './dom';
 
@@ -38,8 +39,6 @@ const PARTS = [
 export interface OverviewHooks {
   /** Light up these squares on the board (null: stop). */
   onHover(ids: number[] | null): void;
-  /** Show the previous (-1) or next (+1) player. */
-  onSwitch(step: number): void;
   onClose(): void;
   /** Find a property on the board (it was clicked). */
   onFind(id: number): void;
@@ -107,29 +106,6 @@ export function playerOverview(G: GameState, p: Player, hooks: OverviewHooks): H
           ),
         ),
         tags.length ? h('div', { class: 'pv-tags' }, ...tags) : null,
-      ),
-      h(
-        'div',
-        { class: 'pv-nav' },
-        G.players.length > 1
-          ? h(
-              'button',
-              { class: 'btn small ghost', title: 'Previous player', onclick: () => hooks.onSwitch(-1) },
-              '‹',
-            )
-          : null,
-        G.players.length > 1
-          ? h(
-              'button',
-              { class: 'btn small ghost', title: 'Next player', onclick: () => hooks.onSwitch(1) },
-              '›',
-            )
-          : null,
-        h(
-          'button',
-          { class: 'btn small ghost', title: 'Close', 'aria-label': 'Close', onclick: () => hooks.onClose() },
-          '✕',
-        ),
       ),
     ),
   );
@@ -294,30 +270,71 @@ export function playerOverview(G: GameState, p: Player, hooks: OverviewHooks): H
   );
 
   // ---------------------------------------------------------------- stock
-  // Just how many shares they hold in each district (none: dimmed).
+  // Shares, laid out like the stock screen's table: each district's price, the shares this
+  // player holds there and what they are worth, with the totals at the bottom.
   if (standard) {
-    const total = p.shares.reduce((a, n) => a + n, 0);
-    const list = h(
-      'div',
-      { class: 'pv-shares' },
-      ...G.districts.map((dist, d) => {
-        const n = p.shares[d] ?? 0;
-        const row = h(
-          'div',
-          { class: `pv-share ${n ? '' : 'none'}`, style: `--dc:${dist.color}` },
-          h('i', { class: 'pv-dot' }),
-          h('span', null, dist.name),
-          h('b', null, String(n)),
-        );
-        hover(
-          row,
-          G.nodes.filter((s) => s.d === d && isShopLike(s)).map((s) => s.id),
-          hooks,
-        );
-        return row;
-      }),
+    const pc = PLAYER_COLORS[p.color];
+    let shares = 0;
+    let worth = 0;
+    const rows = G.districts.map((dist, d) => {
+      const n = p.shares[d] ?? 0;
+      const price = stockPrice(G, d);
+      shares += n;
+      worth += n * price;
+      const tr = h(
+        'tr',
+        { class: n ? '' : 'none' },
+        h(
+          'td',
+          { class: 'm-dname' },
+          h('span', { class: 'swatch', style: `background:${dist.color}` }),
+          dist.name,
+        ),
+        h('td', { class: 'm-price' }, fmt(price)),
+        h('td', { class: 'm-cell', style: `--pc:${pc}` }, n ? String(n) : '–'),
+        h('td', { class: 'pv-sval' }, n ? fmt(n * price) : '–'),
+      );
+      hover(
+        tr,
+        G.nodes.filter((s) => s.d === d && isShopLike(s)).map((s) => s.id),
+        hooks,
+      );
+      return tr;
+    });
+    const table = h(
+      'table',
+      { class: 'm-grid pv-grid' },
+      h(
+        'thead',
+        null,
+        h(
+          'tr',
+          null,
+          h('th', { class: 'm-dname' }, 'District'),
+          h('th', { class: 'm-price-h' }, h('span', { class: 'coin-ico' }, 'G'), 'Price'),
+          h(
+            'th',
+            { class: 'm-ph', style: `--pc:${pc}`, title: `${p.name}'s shares` },
+            h('img', { src: portraitURL(p.ch), alt: p.name }),
+          ),
+          h('th', { class: 'pv-sval-h' }, 'Value'),
+        ),
+      ),
+      h(
+        'tbody',
+        null,
+        ...rows,
+        h(
+          'tr',
+          { class: 'pv-total' },
+          h('td', { class: 'm-dname' }, 'Total'),
+          h('td', null),
+          h('td', null, String(shares)),
+          h('td', { class: 'pv-sval' }, fmt(worth)),
+        ),
+      ),
     );
-    colB.append(section('Shares', total ? `${total} in all` : 'None yet', list));
+    colB.append(section('Shares', null, h('div', { class: 'm-grid-wrap' }, table)));
   }
 
   // ---------------------------------------------------------------- money in and out
@@ -354,7 +371,17 @@ export function playerOverview(G: GameState, p: Player, hooks: OverviewHooks): H
     ),
   );
   root.append(colA, colC, colB);
-  return root;
+  // The close button stays in the top right corner while the columns scroll.
+  return h(
+    'div',
+    { class: 'pv-inner' },
+    h(
+      'button',
+      { class: 'pv-close', title: 'Close', 'aria-label': 'Close', onclick: () => hooks.onClose() },
+      '✕',
+    ),
+    root,
+  );
 }
 
 function section(title: string, aside: string | null, ...body: Node[]): HTMLElement {

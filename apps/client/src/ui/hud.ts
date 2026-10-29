@@ -612,8 +612,9 @@ export class Hud {
     const fresh = this.overviewPid < 0 || this.overviewLayer.hidden || !!this.overviewAnim;
     this.overviewPid = pid;
     this.overviewLayer.hidden = false;
-    this.overview.scrollTop = 0;
     this.renderOverview();
+    const body = this.overview.querySelector<HTMLElement>('.pv-body');
+    if (body) body.scrollTop = 0;
     // Everyone else's properties are greyed out on the board while it is open.
     this.board.focusOwner = pid;
     if (fresh) this.popOverview(true);
@@ -630,27 +631,21 @@ export class Hud {
   private renderOverview() {
     const p = this.G.players[this.overviewPid];
     if (!p) return;
-    const keep = this.overview.scrollTop;
-    const order = this.G.order;
+    // The columns scroll inside the pop-up (the close button stays put).
+    const scroller = () => this.overview.querySelector<HTMLElement>('.pv-body');
+    const keep = scroller()?.scrollTop ?? 0;
     clear(this.overview);
     this.overview.style.setProperty('--pc', PLAYER_COLORS[p.color]);
     this.overview.setAttribute('aria-label', `${p.name}: overview`);
     this.overview.append(
       playerOverview(this.G, p, {
         onHover: (ids) => this.lightUp(ids),
-        onSwitch: (step) => {
-          const i = order.indexOf(p.id);
-          this.lightUp(null);
-          this.overviewPid = order[(i + step + order.length) % order.length];
-          this.board.focusOwner = this.overviewPid;
-          this.overview.scrollTop = 0;
-          this.renderOverview();
-        },
         onClose: () => this.closeOverview(),
         onFind: (id) => void this.findOnBoard(id),
       }),
     );
-    this.overview.scrollTop = keep;
+    const body = scroller();
+    if (body) body.scrollTop = keep;
   }
 
   /**
