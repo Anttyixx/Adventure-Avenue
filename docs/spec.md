@@ -325,15 +325,19 @@ boost_d = 1 + 0.00075 x held_d x vol_d
   of the range Calm, the middle Normal and the top third Wild (`volMood`).
 - A trade pays the average of the price before and after it (sells use the same), so buying 99
   shares at once costs the same as buying them in steps.
-- **Sell-off:** when 50+ shares of a district are sold in one turn (by anyone), its confidence drops
-  by 5% (once per district per turn, down to 75%). Each dent is repaired by 50 shares bought there,
-  or 1 share's worth per 10G invested in its shops (`G.market.repair`).
-- The market panel tags each district's mood and shows "Shaken -X%" with repair progress.
+- **Sell-off:** when 75+ shares of a district are sold in one turn (by anyone, in any number of
+  sales), its price is dented by 10%; each further 75 shares add 0.8x the previous step, scaled
+  smoothly (`sellOffCut`: 100 shares -12.8%, 150 -18%, 200 -22.3%, 300 -29.5%; one turn never
+  quite reaches -50%). Dents stack across turns down to -50% at most (`K.confMin`). The seller is
+  paid before the dent lands (the average of the price before and after their shares left). Every
+  share bought there repairs 0.1% (100 shares = 10%), and every 100G invested in its shops repairs
+  1% (`G.market.cut`). Saves from before this rule count each old dent as 5%.
+- The market panel tags each district's mood and shows "Shaken -X%: N shares to recover".
 
 | Action   | Where / when                                                                               | Classic                     | Dynamic                        |
 | -------- | ------------------------------------------------------------------------------------------ | --------------------------- | ------------------------------ |
 | Buy      | Landing on the bank, or passing it with a promotion; Stockbroker; some venture cards       | Up to 99 shares; 10+: x 1.1 | Up to 99 shares; repairs dents |
-| Sell     | Before rolling; when in debt (any number of shares from any districts); stock venture card | 10+ shares: x 0.9           | 50+ in a turn: sell-off dent   |
+| Sell     | Before rolling; when in debt (any number of shares from any districts); stock venture card | 10+ shares: x 0.9           | 75+ in a turn: sell-off dent   |
 | Dividend | Whenever anyone pays a fee or toll in district d                                           | floor(fee x shares / 250)   | Same                           |
 
 **What moves prices:** investing, expansion, domination, venture cards that grow or shrink shops,
@@ -625,8 +629,11 @@ where an unbroken stretch of 4+ is still possible), random among equals.
 **Venture card choices:** Gift shares picks the district it would buy stock in; Bear market picks
 the district where rivals hold the most stock value (counting its own holdings against it).
 
-**Not yet implemented for CPUs:** selling stock before rolling, proposing trades, starting auctions,
-renovating, stock dumps against a leader. These are good targets for a "hard" CPU in the rebuild.
+**Stock dumps:** before rolling, a CPU sells all its shares of one district (75+) when a rival who
+is ahead of it has reached 85% of the goal and holds 500G+ of stock there, picking the district
+where that rival holds the most, to crash the price with a sell-off.
+
+**Not yet implemented for CPUs:** proposing trades, starting auctions, renovating. These are good targets for a "hard" CPU in the rebuild.
 
 ## Interface and art
 

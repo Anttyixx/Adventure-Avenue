@@ -109,6 +109,31 @@ export function stockAppeal(G: GameState, p: Player, d: number): number {
   return appeal;
 }
 
+/**
+ * A stock dump to stop a rival: when a rival ahead of the CPU is within C.dumpNear of the goal,
+ * sell all the CPU's shares (K.sellOff or more) of the district where that rival holds the most
+ * stock value (at least C.dumpRivalValue), crashing it.
+ */
+function stockDump(G: GameState, p: Player): { act: 'sellStock'; d: number; n: number } | null {
+  const mine = netWorth(G, p);
+  let best: { act: 'sellStock'; d: number; n: number } | null = null;
+  let hurt = 0;
+  for (const q of G.players) {
+    if (q.id === p.id || q.bankrupt) continue;
+    const worth = netWorth(G, q);
+    if (worth < G.target * C.dumpNear || worth <= mine) continue;
+    p.shares.forEach((n, d) => {
+      if (n < K.sellOff) return;
+      const v = q.shares[d] * stockPrice(G, d);
+      if (v >= C.dumpRivalValue && v > hurt) {
+        hurt = v;
+        best = { act: 'sellStock', d, n };
+      }
+    });
+  }
+  return best;
+}
+
 /** The district a CPU would buy stock in. */
 function stockPick(G: GameState, p: Player): number {
   let best = -1;
@@ -202,7 +227,7 @@ function decide(G: GameState, req: DecisionRequest): unknown {
   const p = G.players[req.pid];
   switch (req.kind) {
     case 'preRoll':
-      return { act: 'roll' };
+      return (req.canStock && stockDump(G, p)) || { act: 'roll' };
 
     case 'path': {
       let best = req.dests[0].node;

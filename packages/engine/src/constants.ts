@@ -65,13 +65,18 @@ export const K = {
    */
   volMin: 1,
   volMax: 2,
-  /** Sell-offs: selling this many shares of a district in one turn dents its confidence... */
-  sellOff: 50,
-  /** ...by this much (once per district per turn), down to confMin at most. */
-  dent: 0.05,
-  confMin: 0.75,
-  /** Each dent is repaired by this many shares bought back (by anyone, over any rounds)... */
-  dentRepair: 50,
+  /**
+   * Sell-offs: selling sellOff+ shares of one district in a turn (by anyone) dents its price by
+   * `dent`; each further sellOff shares add dentDecay x the previous step, scaled smoothly
+   * (75: -10%, 150: -18%, 300: -29.5%, never quite -50% in one turn). Dents stack across turns
+   * down to confMin at most. The seller is paid before the dent lands.
+   */
+  sellOff: 75,
+  dent: 0.1,
+  dentDecay: 0.8,
+  confMin: 0.5,
+  /** Each share bought back (by anyone, over any rounds) repairs this much of a dent... */
+  repairPerShare: 0.001,
   /** ...and investing in a shop there counts as this many shares per 1G. */
   investRepair: 0.1,
   /** The Bull and Bear market cards' multiplier range. */
@@ -143,6 +148,13 @@ export const K = {
     stockDividendVisits: 3,
     stockDentBonus: 0.5,
     stockVolBonus: 0.05,
+    /**
+     * Stock dumps: before rolling, a CPU sells all its shares of a district (at least
+     * K.sellOff) to crash it when a rival is this close to the goal and holds at least
+     * dumpRivalValue of stock there.
+     */
+    dumpNear: 0.85,
+    dumpRivalValue: 500,
     circusKeep: 500,
     agencyKeep: 300,
     tradeGroupBonus: 0.35,

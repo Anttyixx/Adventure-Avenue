@@ -94,7 +94,7 @@ export function marketView(
           mood === 'calm' ? 'Calm' : mood === 'wild' ? 'Wild' : 'Normal',
         ),
       );
-      if (m.dents[sel] > 0)
+      if (m.cut[sel] > 0.001)
         foot.append(
           ' ',
           h(
@@ -103,7 +103,7 @@ export function marketView(
               class: 'm-shaken',
               title: 'A sell-off cut the price; buying shares or investing here repairs it',
             },
-            `📉 Shaken -${Math.round((1 - confidence(G, sel)) * 100)}%: ${Math.floor(m.repair[sel])}/${K.dentRepair} to recover`,
+            `📉 Shaken -${Math.round((1 - confidence(G, sel)) * 100)}%: ${Math.ceil(m.cut[sel] / K.repairPerShare)} shares to recover`,
           ),
         );
     }

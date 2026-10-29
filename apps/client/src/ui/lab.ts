@@ -94,7 +94,7 @@ const rnd = (n: number) => Math.floor(Math.random() * n);
  * Controls for UI elements that were just added or changed: they shake once and glow so they
  * are easy to find. Update this list with each change.
  */
-const RECENT = new Set(['Stocks lab', 'Stock market']);
+const RECENT = new Set(['Shaken district', 'Stocks lab', 'Stock market']);
 
 /** Which board the lab plays on: Town (square) or Twin Lakes (hex), remembered per browser. */
 const LAB_BOARD_KEY = 'aa-lab-board';
@@ -1320,8 +1320,7 @@ export async function openLab(app: HTMLElement, section?: string) {
       btn('Shaken district', () => {
         G.stocks = 'dynamic';
         const m = market(G);
-        m.dents[0] = Math.min(m.dents[0] + 1, 5);
-        m.repair[0] = 20;
+        m.cut[0] = Math.min(1 - K.confMin, m.cut[0] + 0.18);
         hud.toggleMarket(true);
         hud.renderMarket();
       }),

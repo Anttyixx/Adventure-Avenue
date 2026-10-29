@@ -38,7 +38,7 @@ export const CHANGELOG: ChangelogEntry[] = [
       {
         tag: 'rules',
         title: 'Sell-offs shake a district',
-        text: "Selling 50 or more shares in one turn knocks 5% off that district's price. Buying 50 shares there, or investing in its shops, repairs it.",
+        text: 'Selling 75 or more shares of a district in one turn knocks 10% off its price, and more the more you sell (150 shares: 18%). The seller still gets the price they sold at. Buying shares there or investing in its shops repairs it.',
       },
       {
         tag: 'new',
@@ -51,6 +51,7 @@ export const CHANGELOG: ChangelogEntry[] = [
       'CPUs buy stock more eagerly, picking districts where shops will grow',
       'CPUs line up their venture panels to earn line bonuses',
       'Shops near the bank cost a little less (up to 10% off)',
+      'CPUs dump their stock to crash a district when a rival is close to winning',
       "The stock market shows each district's mood and whether it is shaken",
     ],
   },

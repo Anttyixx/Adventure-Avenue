@@ -83,12 +83,15 @@ export function market(G: GameState): Market {
   const n = G.districts.length;
   G.market ??= {
     vol: new Array(n).fill(1),
-    dents: new Array(n).fill(0),
-    repair: new Array(n).fill(0),
+    cut: new Array(n).fill(0),
     sold: new Array(n).fill(0),
-    dented: new Array(n).fill(false),
+    turnCut: new Array(n).fill(0),
   };
-  return G.market;
+  const m = G.market;
+  // Saves from before the sell-off rework counted whole 5% dents.
+  m.cut ??= (m.dents ?? new Array(n).fill(0)).map((x) => x * 0.05);
+  m.turnCut ??= new Array(n).fill(0);
+  return m;
 }
 
 /** Total shares of a district held by all players. */
@@ -101,10 +104,16 @@ export function dynamicStocks(G: GameState): boolean {
   return G.stocks === 'dynamic';
 }
 
-/** A district's confidence: 1, less K.dent for each sell-off dent not yet repaired. */
+/** How much selling `sold` shares of one district in a turn dents its price (0 below K.sellOff). */
+export function sellOffCut(sold: number): number {
+  if (sold < K.sellOff) return 0;
+  return (K.dent * (1 - Math.pow(K.dentDecay, sold / K.sellOff))) / (1 - K.dentDecay);
+}
+
+/** A district's confidence: 1, less what sell-offs have cut and buyers have not yet repaired. */
 export function confidence(G: GameState, d: number): number {
   if (!dynamicStocks(G)) return 1;
-  return Math.max(K.confMin, 1 - market(G).dents[d] * K.dent);
+  return Math.max(K.confMin, 1 - market(G).cut[d]);
 }
 
 /**

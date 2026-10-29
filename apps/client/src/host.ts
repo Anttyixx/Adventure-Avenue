@@ -439,7 +439,8 @@ export class HotSeat implements GameIO {
         break;
       }
       case 'preRoll':
-        await this.wait(T.cpuPreRoll);
+        // Only a stock dump is worth a pause; a plain roll goes straight on.
+        if ((ans as { act: string }).act !== 'roll') await this.wait(T.cpuPreRoll);
         break;
       case 'venturePanel':
       case 'pickRacer':

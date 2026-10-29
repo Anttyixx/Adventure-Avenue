@@ -194,9 +194,8 @@ export function newMarket(G: GameState): Market {
   const n = G.districts.length;
   return {
     vol: G.districts.map(() => +(K.volMin + rand(G) * (K.volMax - K.volMin)).toFixed(3)),
-    dents: new Array(n).fill(0),
-    repair: new Array(n).fill(0),
+    cut: new Array(n).fill(0),
     sold: new Array(n).fill(0),
-    dented: new Array(n).fill(false),
+    turnCut: new Array(n).fill(0),
   };
 }

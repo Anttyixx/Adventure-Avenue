@@ -103,20 +103,26 @@ const GROUPS: { title: string; settings: Setting[] }[] = [
         key: 'sellOff',
         label: 'Sell-off (shares/turn)',
         step: 5,
-        hint: 'Shares sold in one turn that dent a district',
+        hint: 'Shares sold in one turn before a district is dented',
       },
-      { key: 'dent', label: 'Dent size', step: 0.01, hint: 'Price cut per sell-off (0.05 = -5%)' },
+      { key: 'dent', label: 'First dent', step: 0.01, hint: 'Price cut at that many shares (0.1 = -10%)' },
+      {
+        key: 'dentDecay',
+        label: 'Dent scaling',
+        step: 0.05,
+        hint: 'Each further batch of that many shares cuts this x the previous step',
+      },
       {
         key: 'confMin',
         label: 'Confidence floor',
         step: 0.05,
-        hint: 'Most a district can be dented to (0.75 = -25%)',
+        hint: 'Most a district can be dented to, across turns (0.5 = -50%)',
       },
       {
-        key: 'dentRepair',
-        label: 'Repair per dent',
-        step: 5,
-        hint: "Shares' worth bought back to undo a dent",
+        key: 'repairPerShare',
+        label: 'Repair per share',
+        step: 0.0005,
+        hint: 'Dent each share bought back repairs (0.001 = 1% per 10 shares)',
       },
       {
         key: 'investRepair',
@@ -670,7 +676,7 @@ function makeSandbox(box: HTMLElement) {
       if (G.stocks === 'dynamic')
         rows.push(
           ['Confidence', `${Math.round(confidence(G, d) * 100)}%`],
-          ['Repair progress', `${Math.floor(m.repair[d])}/${K.dentRepair}`],
+          ['Shares to repair', String(Math.ceil(m.cut[d] / K.repairPerShare))],
           ['Sold this turn', String(m.sold[d])],
         );
       return h(
@@ -706,7 +712,7 @@ function makeSandbox(box: HTMLElement) {
               both((b) => {
                 const m = market(b.G);
                 m.sold.fill(0);
-                m.dented.fill(false);
+                m.turnCut.fill(0);
                 b.log.unshift('Next turn');
               }),
           },
@@ -837,7 +843,7 @@ async function simulateSystem(
         st.topHeld.push(held[ti]);
         st.topPrice.push(price[ti]);
         st.topBase.push(stockPriceExact(G, ti, 0));
-        if (stocks === 'dynamic') st.dented.push(...market(G).dents.map((x) => (x > 0 ? 1 : 0)));
+        if (stocks === 'dynamic') st.dented.push(...market(G).cut.map((x) => (x > 0.001 ? 1 : 0)));
         const w = G.players[G.winner];
         if (w)
           st.winStock.push(w.shares.reduce((s, x, d) => s + x * price[d], 0) / Math.max(1, netWorth(G, w)));

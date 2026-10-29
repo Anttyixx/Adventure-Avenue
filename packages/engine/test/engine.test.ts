@@ -8,6 +8,7 @@ import {
   isShopLike,
   market,
   netWorth,
+  sellOffCut,
   shareTradeValue,
   stockPrice,
   stockPriceExact,
@@ -180,8 +181,8 @@ describe('dynamic stocks', () => {
     const up = stockPriceExact(G, 6) / before - 1;
     expect(up).toBeCloseTo(K.shareSlope * 99 * market(G).vol[6]);
     await game.sellStock(p, 6, 99, 0);
-    // Back to no shares held, less the 5% sell-off dent (99 shares sold in one turn).
-    expect(stockPriceExact(G, 6)).toBeCloseTo(before * (1 - K.dent));
+    // Back to no shares held, less the sell-off dent (99 shares sold in one turn).
+    expect(stockPriceExact(G, 6)).toBeCloseTo(before * (1 - sellOffCut(99)));
     // Bought and sold at the average price: the round trip makes no money.
     expect(p.cash).toBeLessThanOrEqual(2000);
   });
@@ -204,26 +205,47 @@ describe('dynamic stocks', () => {
     expect(p.cash).toBe(2000 + Math.floor(value * 1.2));
   });
 
-  it('dents confidence once per turn on a 50+ share sell-off, repaired by buying or investing', async () => {
-    const { G, game } = makeGame('standard', (r) => (r.kind === 'buyStock' ? { d: 6, n: 30 } : undefined));
+  it('dents a district on a 75+ share sell-off, scaling with size, repaired by buying or investing', async () => {
+    const { G, game } = makeGame('standard', (r) => (r.kind === 'buyStock' ? { d: 6, n: 50 } : undefined));
     const p = G.players[0];
-    p.shares[6] = 200;
-    await game.sellStock(p, 6, 30, 0);
+    p.shares[6] = 400;
+    // The seller is paid before the dent lands.
+    const value = shareTradeValue(G, 6, 74, false);
+    await game.sellStock(p, 6, 74, 0);
+    expect(p.cash).toBe(2000 + Math.floor(value));
     expect(confidence(G, 6)).toBe(1);
-    await game.sellStock(p, 6, 30, 0);
-    expect(confidence(G, 6)).toBeCloseTo(0.95);
-    // More selling the same turn does not dent it again.
-    await game.sellStock(p, 6, 60, 0);
-    expect(confidence(G, 6)).toBeCloseTo(0.95);
-    // 30 + 30 shares bought back (over two buys) repair the dent.
+    await game.sellStock(p, 6, 1, 0);
+    expect(confidence(G, 6)).toBeCloseTo(1 - K.dent);
+    // Selling more the same turn deepens it: 150 shares = 10% + 8%.
+    await game.sellStock(p, 6, 75, 0);
+    expect(confidence(G, 6)).toBeCloseTo(1 - K.dent * (1 + K.dentDecay));
+    expect(sellOffCut(300)).toBeCloseTo(K.dent * (1 + 0.8 + 0.64 + 0.512));
+    // Each share bought back repairs K.repairPerShare: 50 shares = 5%.
+    const before = confidence(G, 6);
     await game.buyStockFlow(p, 0);
-    expect(confidence(G, 6)).toBeCloseTo(0.95);
-    await game.buyStockFlow(p, 0);
-    expect(confidence(G, 6)).toBe(1);
-    // Investing counts too: 500G invested = 50 shares' worth.
-    market(G).dents[6] = 1;
-    game.repairDistrict(6, 500 * K.investRepair);
-    expect(confidence(G, 6)).toBe(1);
+    expect(confidence(G, 6)).toBeCloseTo(before + 50 * K.repairPerShare);
+    // Investing counts too: 1,000G invested = 100 shares' worth = 10%.
+    game.repairDistrict(6, 1000 * K.investRepair);
+    expect(confidence(G, 6)).toBeCloseTo(before + 0.15);
+  });
+
+  it('stacks dents across turns down to the confidence floor', async () => {
+    const { G, game } = makeGame();
+    const p = G.players[0];
+    p.shares[6] = 2000;
+    for (let t = 0; t < 4; t++) {
+      await game.sellStock(p, 6, 400, 0);
+      market(G).sold.fill(0);
+      market(G).turnCut.fill(0);
+    }
+    expect(confidence(G, 6)).toBeCloseTo(K.confMin);
+  });
+
+  it('reads old saves with whole 5% dents', () => {
+    const { G } = makeGame();
+    G.market = { vol: G.market!.vol, dents: [0, 0, 0, 0, 0, 0, 2, 0], sold: [], turnCut: [] } as any;
+    delete (G.market as any).cut;
+    expect(confidence(G, 6)).toBeCloseTo(0.9);
   });
 
   it('rolls each district a volatility in range', () => {
@@ -545,6 +567,42 @@ describe('CPU choices', () => {
     owner[0] = owner[1] = owner[2] = 0;
     owner[9] = 1;
     expect(cpuDecide(G, { kind: 'venturePanel', pid: 0, owner })).toBe(3);
+  });
+
+  it('dumps its stock in a district to stop a rival close to the goal', () => {
+    const { G } = makeGame();
+    const [p, q] = G.players;
+    G.target = 3000;
+    q.cash = 2900;
+    p.cash = 100;
+    q.shares[2] = 100;
+    p.shares[2] = 120;
+    p.shares[4] = 120;
+    expect(
+      cpuDecide(G, {
+        kind: 'preRoll',
+        pid: 0,
+        canStock: true,
+        canAuction: false,
+        canRenovate: false,
+        canTrade: false,
+      }),
+    ).toEqual({
+      act: 'sellStock',
+      d: 2,
+      n: 120,
+    });
+    q.cash = 1000;
+    expect(
+      cpuDecide(G, {
+        kind: 'preRoll',
+        pid: 0,
+        canStock: true,
+        canAuction: false,
+        canRenovate: false,
+        canTrade: false,
+      }),
+    ).toEqual({ act: 'roll' });
   });
 
   it('buys stock where shops can still grow, starting with its own', () => {

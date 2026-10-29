@@ -107,13 +107,13 @@ export interface LogLine {
 export interface Market {
   /** How strongly shares move each district's price (K.volMin..K.volMax). */
   vol: number[];
-  /** Sell-off dents per district (confidence = 1 - dents x K.dent). */
-  dents: number[];
-  /** Shares' worth bought back toward repairing the next dent. */
-  repair: number[];
-  /** Shares of each district sold this turn, and whether that has dented it yet. */
+  /** How much sell-offs have cut each district's price (confidence = 1 - cut), 0..1 - K.confMin. */
+  cut: number[];
+  /** Shares of each district sold this turn, and the dent that has caused this turn. */
   sold: number[];
-  dented: boolean[];
+  turnCut: number[];
+  /** Games saved before the sell-off rework: whole 5% dents (read once into `cut`). */
+  dents?: number[];
 }
 
 export interface District {

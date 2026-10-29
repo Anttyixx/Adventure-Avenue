@@ -22,6 +22,7 @@ import {
   bumpFactor,
   dynamicStocks,
   market,
+  sellOffCut,
   shareTradeValue,
   canAfford,
   canPromote,
@@ -169,7 +170,7 @@ export class Game {
     // Sell-offs are counted per turn.
     const m = market(G);
     m.sold.fill(0);
-    m.dented.fill(false);
+    m.turnCut.fill(0);
     await this.emit({ type: 'turnStart', pid: p.id, round: G.round });
     if (p.onBreak || p.closed) {
       await this.emit({ type: 'opened', pids: [p.id] });
@@ -177,7 +178,8 @@ export class Game {
       p.closed = false;
     }
 
-    if (!p.cpu) await this.preRoll(p);
+    // CPUs only act before rolling to dump stock, which takes K.sellOff+ shares of a district.
+    if (!p.cpu || (G.rules === 'standard' && p.shares.some((n) => n >= K.sellOff))) await this.preRoll(p);
     if (G.over) return;
 
     this.chain = 0;
@@ -830,18 +832,11 @@ export class Game {
 
   /**
    * Shares' worth put back into a district (bought, or invested as shares' worth) repairs its
-   * sell-off dents: K.dentRepair per dent, carried over between turns. Nothing builds up while
-   * the district is not dented.
+   * sell-off dent by K.repairPerShare each. Nothing builds up while the district is not dented.
    */
   repairDistrict(d: number, worth: number) {
     const m = market(this.G);
-    if (!m.dents[d]) return;
-    m.repair[d] += worth;
-    while (m.dents[d] > 0 && m.repair[d] >= K.dentRepair) {
-      m.repair[d] -= K.dentRepair;
-      m.dents[d]--;
-    }
-    if (!m.dents[d]) m.repair[d] = 0;
+    m.cut[d] = Math.max(0, m.cut[d] - worth * K.repairPerShare);
   }
 
   async sellStock(p: Player, d: number, n: number, premium: number) {
@@ -852,13 +847,13 @@ export class Game {
     const amount = Math.floor(shareTradeValue(G, d, n, false) * (1 + premium));
     p.shares[d] -= n;
     if (dynamicStocks(G)) {
-      // A sell-off: K.sellOff+ shares of one district sold in a turn dent its confidence, once.
+      // A sell-off: K.sellOff+ shares of one district sold in a turn dent it, more the more
+      // are sold. The seller was paid above, before the dent.
       const m = market(G);
       m.sold[d] += n;
-      if (m.sold[d] >= K.sellOff && !m.dented[d]) {
-        m.dented[d] = true;
-        if (1 - (m.dents[d] + 1) * K.dent >= K.confMin - 1e-9) m.dents[d]++;
-      }
+      const cut = sellOffCut(m.sold[d]);
+      m.cut[d] = Math.min(1 - K.confMin, m.cut[d] + cut - m.turnCut[d]);
+      m.turnCut[d] = cut;
     } else bumpFactor(G, d, false, n);
     await this.pay(null, p, amount, 'Stock sale');
     await this.log(`${p.name} sold ${n} ${G.districts[d].name} shares for ${amount}G.`, p.id, 'stock');
