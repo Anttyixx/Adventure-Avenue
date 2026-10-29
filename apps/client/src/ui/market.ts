@@ -19,6 +19,7 @@ import {
   isShopLike,
   squareFee,
   stockPrice,
+  volMood,
   type GameState,
   type Square,
 } from '@aa/engine';
@@ -81,7 +82,7 @@ export function marketView(
     if (dynamicStocks(G)) {
       const m = market(G);
       const v = m.vol[sel];
-      const mood = v < 0.95 ? 'calm' : v > 1.05 ? 'wild' : 'normal';
+      const mood = volMood(v);
       foot.append(
         ' ',
         h(

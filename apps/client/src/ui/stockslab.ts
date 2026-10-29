@@ -31,7 +31,7 @@ const SAVE_KEY = 'adventure-avenue-stocks-lab';
 const LIVE_KEY = 'adventure-avenue-stocks-lab-live';
 
 interface Setting {
-  /** Path in K, e.g. 'shareMid' or 'cpu.stockAbove'. */
+  /** Path in K, e.g. 'shareSlope' or 'cpu.stockAbove'. */
   key: string;
   label: string;
   step: number;
@@ -80,28 +80,10 @@ const GROUPS: { title: string; settings: Setting[] }[] = [
     title: 'Dynamic',
     settings: [
       {
-        key: 'shareMax',
-        label: 'Curve height',
-        step: 0.1,
-        hint: 'How far the S-curve lifts the price (3.4 = up to 4.4x, plus the tail)',
-      },
-      {
-        key: 'shareMid',
-        label: 'Curve middle (shares)',
-        step: 25,
-        hint: 'Shares held where the S-curve is halfway up',
-      },
-      {
-        key: 'shareSteep',
-        label: 'Curve steepness',
-        step: 0.1,
-        hint: 'Higher = flatter start and end, sharper middle',
-      },
-      {
-        key: 'shareTail',
-        label: 'Tail per share',
+        key: 'shareSlope',
+        label: 'Slope per share',
         step: 0.0001,
-        hint: 'Small rise per share that keeps going past the top (no cap)',
+        hint: 'Price rise per share held, as a part of the base price (0.0015 = +15% per 100 shares at volatility 1)',
       },
       { key: 'volMin', label: 'Volatility min', step: 0.01, hint: 'Calmest a district can roll' },
       { key: 'volMax', label: 'Volatility max', step: 0.01, hint: 'Wildest a district can roll' },
@@ -194,12 +176,9 @@ function curvePrice(avg: number, held: number, vol: number): number {
   return avg * K.stockRate * shareBoost(held, vol);
 }
 
-/** The most 99 more shares can add to the price, anywhere from 0 to 3,000 held. */
-function biggestJump(avg: number, vol: number): number {
-  let most = 0;
-  for (let n = 0; n <= 3000; n += 5)
-    most = Math.max(most, curvePrice(avg, n + 99, vol) - curvePrice(avg, n, vol));
-  return most;
+/** What 100 more shares add to the price (the same anywhere on the line). */
+function per100(avg: number, vol: number): string {
+  return (curvePrice(avg, 100, vol) - curvePrice(avg, 0, vol)).toFixed(2);
 }
 
 const COLORS = { normal: '#3987e5', wild: '#d95926', calm: '#199e70', classic: '#c98500' };
@@ -316,10 +295,10 @@ export function openStocksLab(root: HTMLElement, onBack: () => void) {
       avg = Math.max(10, Number(avgInput.value) || 250);
       drawCurve();
     };
-    const vols = { calm: K.volMin, normal: 1, wild: K.volMax };
+    const vols = { calm: K.volMin, normal: +((K.volMin + K.volMax) / 2).toFixed(2), wild: K.volMax };
     const maxShares = 1000;
     const series: { id: keyof typeof COLORS; label: string; at: (n: number) => number }[] = [
-      { id: 'normal', label: 'Dynamic, normal', at: (n) => curvePrice(avg, n, vols.normal) },
+      { id: 'normal', label: `Dynamic, normal (${vols.normal})`, at: (n) => curvePrice(avg, n, vols.normal) },
       { id: 'wild', label: `Dynamic, wild (${vols.wild})`, at: (n) => curvePrice(avg, n, vols.wild) },
       { id: 'calm', label: `Dynamic, calm (${vols.calm})`, at: (n) => curvePrice(avg, n, vols.calm) },
       { id: 'classic', label: 'Classic (no share effect)', at: () => avg * K.stockRate },
@@ -424,7 +403,7 @@ export function openStocksLab(root: HTMLElement, onBack: () => void) {
       h(
         'p',
         { class: 'hint' },
-        `Biggest jump from 99 more shares (up to 3,000 held): normal +${biggestJump(avg, vols.normal).toFixed(2)}, wild +${biggestJump(avg, vols.wild).toFixed(2)}, calm +${biggestJump(avg, vols.calm).toFixed(2)}.`,
+        `Every 100 shares held add: calm +${per100(avg, vols.calm)}, normal +${per100(avg, vols.normal)}, wild +${per100(avg, vols.wild)}.`,
       ),
       h(
         'div',

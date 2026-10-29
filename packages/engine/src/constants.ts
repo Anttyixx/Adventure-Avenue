@@ -43,21 +43,17 @@ export const K = {
   tradeUp: 1.1,
   tradeDown: 0.9,
   /**
-   * Dynamic stocks. Demand: the price rises with the total shares all players hold in a district
-   * along an S-curve: slow at first, fastest around shareMid, then easing off.
-   * boost = (shareMax x held^shareSteep / (held^shareSteep + shareMid^shareSteep)
-   *          + shareTail x held) x volatility
-   * At normal volatility: 99 held about +12%, 500 about +100%, 750 about +160%, 1,000 about
-   * +205%, and 99 more shares never add more than about 24% of the base price.
-   * shareTail keeps a small rise going past the top, so there is no cap.
+   * Dynamic stocks. Demand: the price rises in a straight line with the total shares all players
+   * hold in a district: boost = 1 + shareSlope x held x volatility. At volatility 1 (the calmest),
+   * every 100 shares add 15% of the base price (+1.5 for a 10G stock); at 2, +3 per 100. No cap.
    */
-  shareMax: 3.4,
-  shareMid: 1025,
-  shareSteep: 1.6,
-  shareTail: 0.0004,
-  /** Each district's volatility, rolled at game start: how strongly shares move its price. */
-  volMin: 0.85,
-  volMax: 1.15,
+  shareSlope: 0.0015,
+  /**
+   * Each district's volatility, rolled evenly at game start: how strongly shares move its price.
+   * The lowest third of the range shows as Calm, the middle as Normal, the top as Wild.
+   */
+  volMin: 1,
+  volMax: 2,
   /** Sell-offs: selling this many shares of a district in one turn dents its confidence... */
   sellOff: 50,
   /** ...by this much (once per district per turn), down to confMin at most. */

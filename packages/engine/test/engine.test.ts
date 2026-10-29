@@ -165,10 +165,9 @@ describe('dynamic stocks', () => {
     await game.buyStockFlow(p, 0);
     expect(p.shares[6]).toBe(99);
     expect(p.cash).toBe(2000 - cost);
-    // 99 shares into an empty district: about +14% at normal volatility.
+    // 99 shares: a straight-line rise of shareSlope x 99 x the district's volatility.
     const up = stockPriceExact(G, 6) / before - 1;
-    expect(up).toBeGreaterThan(0.1);
-    expect(up).toBeLessThan(0.18);
+    expect(up).toBeCloseTo(K.shareSlope * 99 * market(G).vol[6]);
     await game.sellStock(p, 6, 99, 0);
     // Back to no shares held, less the 5% sell-off dent (99 shares sold in one turn).
     expect(stockPriceExact(G, 6)).toBeCloseTo(before * (1 - K.dent));
