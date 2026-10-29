@@ -3396,7 +3396,13 @@ input[type='range'] {
   justify-content: flex-end;
   max-width: 60vw;
   overflow-x: auto;
-  margin: 0;
+  overflow-y: hidden;
+  /* The row scrolls sideways when the buttons don't fit, which also clips them top and bottom:
+     room inside it (taken back with the margin) keeps the Roll button's shake and the buttons'
+     shadows from being cut off. */
+  padding: 8px 6px;
+  margin: -8px -6px;
+  scrollbar-width: thin;
 }
 .prompt-center .btn-row:empty {
   display: none;

@@ -53,6 +53,7 @@ export const CHANGELOG: ChangelogEntry[] = [
       'Shops near the bank cost a little less (up to 10% off)',
       'CPUs dump their stock to crash a district when a rival is close to winning',
       'Player cards show each character from head to toe',
+      'The Roll button no longer gets clipped or shows scroll bars when it bounces',
       "The stock market shows each district's mood and whether it is shaken",
     ],
   },
