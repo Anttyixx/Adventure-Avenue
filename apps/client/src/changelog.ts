@@ -50,7 +50,6 @@ export const CHANGELOG: ChangelogEntry[] = [
       'The default goal is now 10,000G',
       'CPUs buy stock more eagerly, picking districts where shops will grow',
       'CPUs line up their venture panels to earn line bonuses',
-      'Districts near the bank start with slightly cheaper stock (up to 8% off)',
       "The stock market shows each district's mood and whether it is shaken",
     ],
   },

@@ -48,11 +48,6 @@ export const K = {
    */
   growthRate: 0.08,
   /**
-   * Dynamic stocks: the district nearest the bank (by average walk to its squares) has its base
-   * price cut by this much; the farthest has none, and the rest scale in between.
-   */
-  nearBank: 0.08,
-  /**
    * Dynamic stocks' demand: the price rises in a straight line with the total shares all players
    * hold in a district: boost = 1 + shareSlope x held x volatility. At volatility 1 (the calmest),
    * every 100 shares add 7.5% of the price (+0.75 for a 10G stock); at 2, +1.5 per 100. No cap.

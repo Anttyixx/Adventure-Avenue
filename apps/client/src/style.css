@@ -5087,7 +5087,6 @@ button.tb-chip:hover {
 
 /* Dynamic stocks: a district's volatility and sell-off state, in the stock market's note. */
 .m-mood,
-.m-near,
 .m-shaken {
   display: inline-block;
   padding: 1px 8px;
@@ -5107,10 +5106,6 @@ button.tb-chip:hover {
 .m-mood.wild {
   background: rgba(255, 138, 76, 0.2);
   color: #ffb185;
-}
-.m-near {
-  background: rgba(255, 209, 102, 0.16);
-  color: #ffd98a;
 }
 .m-shaken {
   background: rgba(255, 107, 107, 0.18);

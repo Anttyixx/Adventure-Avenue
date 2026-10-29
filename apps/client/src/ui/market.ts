@@ -15,7 +15,6 @@ import {
   confidence,
   dynamicStocks,
   market,
-  nearBankFactor,
   investRoom,
   isShopLike,
   squareFee,
@@ -95,16 +94,6 @@ export function marketView(
           mood === 'calm' ? 'Calm' : mood === 'wild' ? 'Wild' : 'Normal',
         ),
       );
-      const near = Math.round((1 - nearBankFactor(G, sel)) * 100);
-      if (near > 0)
-        foot.append(
-          ' ',
-          h(
-            'span',
-            { class: 'm-near', title: 'Districts near the bank have a lower base price' },
-            `Near the bank -${near}%`,
-          ),
-        );
       if (m.dents[sel] > 0)
         foot.append(
           ' ',

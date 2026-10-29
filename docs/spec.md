@@ -303,7 +303,7 @@ multiplies it by 0.9.
 **Dynamic:**
 
 ```
-price_d = (average base value_d x 0.04 x near_d + average growth_d x 0.08) x factor_d x confidence_d x boost_d
+price_d = (average base value_d x 0.04 + average growth_d x 0.08) x factor_d x confidence_d x boost_d
 boost_d = 1 + 0.00075 x held_d x vol_d
 ```
 
@@ -311,10 +311,6 @@ boost_d = 1 + 0.00075 x held_d x vol_d
   and arcade prizes; negative when a shop shrinks). Growth counts double, so a district its owner
   keeps investing in climbs much faster than one nobody builds up (`districtWorth`). A plot's base
   is the cost of what was built on it.
-- `near_d` makes districts near the bank a little cheaper: the district with the shortest average
-  walk from the bank to its squares (warps count as a step) gets 0.92 (-8%), the farthest 1, and
-  the rest scale between by distance (`nearBankFactor`, `K.nearBank`). The market panel shows
-  "Near the bank -X%".
 - `held_d` is the total shares everyone holds in the district. The price rises in a straight line:
   every 100 shares add 7.5% at volatility 1 (+0.75 for a 10G stock), with no cap. Trades never
   touch the factor.
