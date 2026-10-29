@@ -1275,7 +1275,8 @@ export class BoardView {
     for (const p of order) {
       const t = this.tokens.get(p.id)!;
       if (!t.visible) continue;
-      const active = p.id === this.activePid && !G.over;
+      // The winner keeps the active size through the victory and results.
+      const active = p.id === this.activePid;
       // Grow into the active size, or shrink out of it, over a fraction of a second.
       const want = active ? 1.416 : this.activePid >= 0 ? 0.6885 : 1;
       t.size = motion ? t.size + (want - t.size) * (1 - Math.exp(-dt / 140)) : want;

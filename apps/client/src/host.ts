@@ -672,13 +672,14 @@ export class HotSeat implements GameIO {
         this.refresh();
         break;
       case 'roll': {
-        // Zoom out to show the player and every square the roll could take them to.
-        const mover = G.players[e.pid];
-        const routes = this.game.destinations(mover, e.value);
-        board.frameIds = [mover.node, ...routes.flatMap((r) => r.path)];
         hud.status(`${G.players[e.pid].name} is rolling...`, 'move');
         sound.play('roll');
         await board.rollDie(e.value);
+        // Once the die has landed, zoom out to show the player and every square the roll could
+        // take them to.
+        const mover = G.players[e.pid];
+        const routes = this.game.destinations(mover, e.value);
+        board.frameIds = [mover.node, ...routes.flatMap((r) => r.path)];
         break;
       }
       case 'step':
@@ -867,7 +868,6 @@ export class HotSeat implements GameIO {
           await this.wait(T.victory);
           board.lookAt = null;
         }
-        board.activePid = -1;
         await this.wait(T.gameOver);
         showResults(hud, G, () => {
           this.destroy();

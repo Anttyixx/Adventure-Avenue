@@ -70,6 +70,9 @@ export const buildingName = (b: BuildingKey) => BUILDINGS.find((x) => x.b === b)
 
 const SUIT_TYPES = SUITS as string[];
 
+/** One payment: from (null = the bank), to (null = the bank), amount. */
+type Payment = [Player | null, Player | null, number];
+
 export class Game {
   /** Roll-on / roll-again chain depth for the current turn. */
   chain = 0;
@@ -105,11 +108,34 @@ export class Game {
 
   /** Move money. `from`/`to` null means the bank. */
   async pay(from: Player | null, to: Player | null, amount: number, reason: string) {
-    amount = Math.round(amount);
-    if (amount <= 0) return;
-    if (from) from.cash -= amount;
-    if (to) to.cash += amount;
-    await this.emit({ type: 'money', from: from ? from.id : -1, to: to ? to.id : -1, amount, reason });
+    await this.payAll([[from, to, amount]], reason);
+  }
+
+  /**
+   * Several payments that make up one transaction: every balance changes first, then each payment
+   * is announced, so no one sees a half-done transaction (e.g. net worth dipping then recovering).
+   * Transactions also change the rest of the state (owner, shares, value) before paying.
+   */
+  async payAll(list: Payment[], reason: string) {
+    await this.announcePayments(this.applyPayments(list), reason);
+  }
+
+  /** Move the cash for these payments (no events yet); returns the ones that moved anything. */
+  applyPayments(list: Payment[]): Payment[] {
+    const done: Payment[] = [];
+    for (const [from, to, raw] of list) {
+      const amount = Math.round(raw);
+      if (amount <= 0) continue;
+      if (from) from.cash -= amount;
+      if (to) to.cash += amount;
+      done.push([from, to, amount]);
+    }
+    return done;
+  }
+
+  async announcePayments(done: Payment[], reason: string) {
+    for (const [from, to, amount] of done)
+      await this.emit({ type: 'money', from: from ? from.id : -1, to: to ? to.id : -1, amount, reason });
   }
 
   // ---------------------------------------------------------------- turn loop
@@ -204,11 +230,11 @@ export class Game {
     if (!buildingAvailable(this.G, b, sq.id)) return;
     const cost = buildingCost(b) + K.renovate;
     if (p.cash < cost) return;
-    await this.pay(p, null, cost, 'Renovation');
     sq.b = b;
     sq.value = buildingCost(b);
     sq.lv = 0;
     sq.toll = K.toll0;
+    await this.pay(p, null, cost, 'Renovation');
     await this.emit({ type: 'value', sqs: [sq.id] });
     await this.log(`${p.name} renovated into a ${buildingName(b)}.`, p.id, 'property');
     this.expandAndAnnounce(p.id, sq.g);
@@ -503,8 +529,14 @@ export class Game {
   async buyout(p: Player, sq: Square) {
     const owner = this.G.players[sq.owner];
     const price = sq.value * K.buyoutX;
-    await this.pay(p, owner, sq.value * K.buyoutOwnerX, 'Buyout');
-    await this.pay(p, null, price - sq.value * K.buyoutOwnerX, 'Buyout');
+    sq.owner = p.id;
+    await this.payAll(
+      [
+        [p, owner, sq.value * K.buyoutOwnerX],
+        [p, null, price - sq.value * K.buyoutOwnerX],
+      ],
+      'Buyout',
+    );
     const what = sq.t === 'plot' && sq.b && sq.b !== 'star3' ? buildingName(sq.b) : 'shop';
     await this.log(`${p.name} bought out ${owner.name}'s ${what} for ${price}G.`, p.id, 'property', [
       owner.id,
@@ -514,6 +546,7 @@ export class Game {
 
   /** Buy an unowned square: pay `price` to `seller` (null = bank) and run expansion. */
   async buySquare(p: Player, sq: Square, price: number, seller: Player | null, verb: string) {
+    sq.owner = p.id;
     await this.pay(p, seller, price, 'Purchase');
     await this.log(`${p.name} ${verb} a shop for ${price}G.`, p.id, 'property');
     await this.transfer(sq, p.id);
@@ -544,8 +577,8 @@ export class Game {
     const amount = Math.floor(Math.min(ans.amount, opt.room, max));
     if (amount <= 0) return;
     const sq = this.G.nodes[opt.sq];
-    await this.pay(p, null, amount, 'Investment');
     sq.value += amount;
+    await this.pay(p, null, amount, 'Investment');
     await this.emit({ type: 'value', sqs: [sq.id] });
     await this.log(`${p.name} invested ${amount}G.`, p.id, 'property');
   }
@@ -602,11 +635,12 @@ export class Game {
       const b = await this.ask({ kind: 'build', pid: p.id, sq: sq.id, options });
       const cost = b ? buildingCost(b) : 0;
       if (!b || !canAfford(G, p, cost)) return;
-      await this.pay(p, null, cost, 'Construction');
       sq.b = b;
       sq.value = cost;
       sq.lv = 0;
       sq.toll = K.toll0;
+      sq.owner = p.id;
+      await this.pay(p, null, cost, 'Construction');
       await this.log(`${p.name} built a ${buildingName(b)}.`, p.id, 'property');
       await this.transfer(sq, p.id);
       return;
@@ -651,9 +685,9 @@ export class Game {
         if (p.cash < cost) return;
         const yes = await this.ask({ kind: 'circusUpgrade', pid: p.id, sq: sq.id, cost, tier: sq.lv + 1 });
         if (!yes || p.cash < cost) return;
-        await this.pay(p, null, cost, 'Circus upgrade');
         sq.lv++;
         sq.value += cost;
+        await this.pay(p, null, cost, 'Circus upgrade');
         await this.emit({ type: 'value', sqs: [sq.id] });
         await this.log(
           `${p.name} upgraded the circus. Show fee is now ${K.circus[sq.lv]}G.`,
@@ -769,9 +803,9 @@ export class Game {
     const n = Math.min(Math.floor(ans.n), K.maxBuy, Math.floor(p.cash / unit));
     if (n <= 0) return;
     const cost = Math.ceil(n * unit);
-    await this.pay(p, null, cost, 'Stock');
     p.shares[d] += n;
     bumpFactor(G, d, true, n);
+    await this.pay(p, null, cost, 'Stock');
     await this.log(`${p.name} bought ${n} ${G.districts[d].name} shares for ${cost}G.`, p.id, 'stock');
   }
 
@@ -853,19 +887,19 @@ export class Game {
     const a = G.players[offer.from];
     const b = G.players[offer.to];
     if (accepted) {
+      // Both sides' properties and cash change together, then each part is announced.
       const groups = new Set<number>();
-      for (const id of offer.give) {
-        G.nodes[id].owner = b.id;
+      for (const id of offer.give) G.nodes[id].owner = b.id;
+      for (const id of offer.get) G.nodes[id].owner = a.id;
+      const cash = this.applyPayments([
+        [a, b, offer.cashGive],
+        [b, a, offer.cashGet],
+      ]);
+      for (const id of [...offer.give, ...offer.get]) {
         groups.add(G.nodes[id].g);
-        await this.emit({ type: 'owner', sq: id, owner: b.id });
+        await this.emit({ type: 'owner', sq: id, owner: G.nodes[id].owner });
       }
-      for (const id of offer.get) {
-        G.nodes[id].owner = a.id;
-        groups.add(G.nodes[id].g);
-        await this.emit({ type: 'owner', sq: id, owner: a.id });
-      }
-      await this.pay(a, b, offer.cashGive, 'Trade');
-      await this.pay(b, a, offer.cashGet, 'Trade');
+      await this.announcePayments(cash, 'Trade');
       for (const g of groups) {
         await this.expandAndAnnounce(a.id, g);
         await this.expandAndAnnounce(b.id, g);
@@ -950,6 +984,7 @@ export class Game {
       return;
     }
     const w = G.players[highBidder];
+    sq.owner = w.id;
     await this.pay(w, seller, high, 'Auction');
     await this.log(`${w.name} won the auction for ${high}G.`, w.id, 'property', seller ? [seller.id] : []);
     await this.transfer(sq, w.id);

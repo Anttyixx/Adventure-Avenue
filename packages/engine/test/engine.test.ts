@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { cpuAcceptsTrade } from '../src/cpu';
 import { CARDS } from '../src/cards';
+import { Game } from '../src/engine';
 import { simulate } from '../src/headless';
 import { netWorth, stockPrice } from '../src/rules';
 import { at, makeGame } from './helpers';
@@ -385,5 +386,25 @@ describe('Charity venture card', () => {
     await CARDS.giveLast.run(game, p);
     expect(G.players.map((x) => x.cash)).toEqual(cash);
     expect(G.log.some((l) => l.text.includes('already in last place'))).toBe(true);
+  });
+});
+
+describe('transactions', () => {
+  it('changes ownership and cash together, so net worth never dips mid-purchase', async () => {
+    const { G } = makeGame();
+    const p = G.players[0];
+    const shop = G.nodes.find((s) => s.t === 'shop' && s.owner < 0)!;
+    const before = netWorth(G, p);
+    const seen: number[] = [];
+    const game = new Game(G, {
+      decide: async () => undefined as never,
+      emit: (e) => {
+        if (e.type === 'money' || e.type === 'owner') seen.push(netWorth(G, p));
+      },
+    });
+    await game.buySquare(p, shop, shop.value, null, 'bought');
+    // Paying the shop's value for the shop leaves net worth where it was at every step.
+    expect(seen.length).toBeGreaterThan(0);
+    expect(seen.every((nw) => nw === before)).toBe(true);
   });
 });

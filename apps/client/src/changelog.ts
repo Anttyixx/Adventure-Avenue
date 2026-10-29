@@ -47,6 +47,9 @@ export const CHANGELOG: ChangelogEntry[] = [
       'After a roll the camera zooms out to show everywhere you could land',
       'Name plates sit right above the characters; the steps-left die is bigger and flips a different way each step',
       'Quit asks over the menu instead of behind it',
+      'Net worth no longer dips and recovers when buying, selling or trading: each deal updates it once',
+      'The winner no longer shrinks when they win',
+      'The zoom-out after a roll waits for the die to land',
     ],
   },
   {
