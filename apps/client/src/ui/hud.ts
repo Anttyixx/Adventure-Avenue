@@ -86,10 +86,12 @@ export class Hud {
   cardsWrap = h('div', { class: 'cards-wrap' });
   cards = h('div', { class: 'cards' });
   /**
-   * The player overview: a player's card expanded over the other cards (click a card to open
-   * it), with everything about that player.
+   * The player overview: a pop-up in the middle of the screen with everything about one player
+   * (click their player card to open it).
    */
-  overview = h('div', { class: 'pview glass', role: 'dialog', hidden: true });
+  overview = h('div', { class: 'pview', role: 'dialog', 'aria-modal': 'true' });
+  /** Dims the screen behind the overview pop-up; a click on it closes the pop-up. */
+  overviewLayer = h('div', { class: 'pv-layer', hidden: true });
   overviewPid = -1;
   private overviewAnim: Animation | null = null;
   /** Board highlight to restore when the overview stops lighting up squares. */
@@ -160,12 +162,16 @@ export class Hud {
       this.ask,
       this.cardsWrap,
       this.logDock,
-      this.overview,
+      this.overviewLayer,
       this.tooltip,
       this.modalLayer,
       this.bannerLayer,
     );
     parent.append(this.root);
+    this.overviewLayer.append(this.overview);
+    this.overviewLayer.onclick = (e) => {
+      if (e.target === this.overviewLayer) this.closeOverview();
+    };
 
     this.cb = cb;
     this.fastBtn.onclick = cb.onToggleFast;
@@ -391,9 +397,6 @@ export class Hud {
     // The status line (and the log it opens into) sits on the player cards, as wide as them.
     const cards = this.cardsWrap.getBoundingClientRect();
     this.root.style.setProperty('--cards-w', `${cards.width}px`);
-    // The player overview is as tall as the player cards, its bottom where theirs is.
-    this.root.style.setProperty('--pv-h', `${Math.max(cards.height, 230)}px`);
-    this.root.style.setProperty('--pv-b', `${H - cards.bottom}px`);
     this.root.style.setProperty('--dock-b', `${H - cards.top + 6}px`);
     // Only the folded status line counts, so opening the log never moves anything.
     if (!this.logOpen) {
@@ -408,15 +411,7 @@ export class Hud {
     this.root.style.setProperty('--top-free', `${tools.bottom + 6}px`);
     let right = 0;
     if (!portraitStack && cards.width) right = Math.min(W * 0.4, W - cards.left + 8);
-    // With the overview open it covers the bottom of the screen, cards and all.
-    const pv = this.overviewPid >= 0 ? this.overview.getBoundingClientRect() : null;
-    if (pv && !portraitStack) right = 0;
-    const top = Math.min(
-      ask ? ask.top : Infinity,
-      portraitStack ? lineTop : Infinity,
-      pv ? pv.top : Infinity,
-      pv ? this.logButton.getBoundingClientRect().top : Infinity,
-    );
+    const top = Math.min(ask ? ask.top : Infinity, portraitStack ? lineTop : Infinity);
     const bottom = H - top + 4;
     this.board.insets = {
       top: Math.max(tools.bottom, this.topLeftBottom) + 6,
@@ -605,35 +600,29 @@ export class Hud {
 
   // ------------------------------------------------------------ player overview
 
-  /** Expand a player's card into their overview (or fold it back if it is already open). */
+  /** Pop up a player's overview in the middle of the screen (or close it if it is theirs). */
   openOverview(pid: number) {
     if (!this.G) return;
     if (this.overviewPid === pid) {
       this.closeOverview();
       return;
     }
-    // Opening fresh, or again while it was still folding away: grow out of the card.
-    const grow = this.overviewPid < 0 || this.overview.hidden || !!this.overviewAnim;
+    const fresh = this.overviewPid < 0 || this.overviewLayer.hidden || !!this.overviewAnim;
     this.overviewPid = pid;
-    this.overview.hidden = false;
+    this.overviewLayer.hidden = false;
     this.overview.scrollTop = 0;
     this.renderOverview();
-    this.cardsWrap.classList.add('covered');
-    // The action bar moves to the bottom-left corner, the board zooms out to the whole map and
-    // greys out everyone else's properties.
-    this.root.classList.add('pv-open');
+    // Everyone else's properties are greyed out on the board while it is open.
     this.board.focusOwner = pid;
-    this.updateInsets();
-    if (grow) this.morphOverview(true, pid);
+    if (fresh) this.popOverview(true);
   }
 
   closeOverview() {
-    const pid = this.overviewPid;
-    if (pid < 0) return;
+    if (this.overviewPid < 0) return;
     this.lightUp(null);
     this.overviewPid = -1;
     this.board.focusOwner = -1;
-    this.morphOverview(false, pid);
+    this.popOverview(false);
   }
 
   private renderOverview() {
@@ -672,34 +661,26 @@ export class Hud {
     }
   }
 
-  /** The overview grows out of the player's card, and shrinks back into it when closed. */
-  private morphOverview(open: boolean, pid: number) {
-    const box = this.overview;
-    const card = this.cardEls.get(pid);
+  /** The pop-up grows in from the middle of the screen and shrinks away when closed. */
+  private popOverview(open: boolean) {
+    const layer = this.overviewLayer;
     const done = () => {
       if (open) return;
-      box.hidden = true;
-      this.cardsWrap.classList.remove('covered');
-      this.root.classList.remove('pv-open');
-      clear(box);
-      this.updateInsets();
+      layer.hidden = true;
+      clear(this.overview);
     };
     this.overviewAnim?.cancel();
-    if (!card || matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    if (matchMedia('(prefers-reduced-motion: reduce)').matches) {
       done();
       return;
     }
-    const r = box.getBoundingClientRect();
-    const c = card.getBoundingClientRect();
-    const inset = `inset(${Math.max(0, c.top - r.top)}px ${Math.max(0, r.right - c.right)}px ${Math.max(0, r.bottom - c.bottom)}px ${Math.max(0, c.left - r.left)}px round 12px)`;
-    const full = 'inset(0px 0px 0px 0px round 14px)';
-    const anim = box.animate(
-      [
-        { clipPath: open ? inset : full, opacity: open ? 0.6 : 1 },
-        { clipPath: open ? full : inset, opacity: open ? 1 : 0.4 },
-      ],
-      { duration: open ? 300 : 240, easing: 'cubic-bezier(0.2, 0.8, 0.2, 1)' },
-    );
+    const shown = { transform: 'none', opacity: 1 };
+    const small = { transform: 'scale(0.92)', opacity: 0 };
+    const anim = this.overview.animate(open ? [small, shown] : [shown, small], {
+      duration: open ? 220 : 160,
+      easing: open ? 'cubic-bezier(0.2, 0.9, 0.3, 1.2)' : 'ease-in',
+    });
+    layer.animate([{ opacity: open ? 0 : 1 }, { opacity: open ? 1 : 0 }], { duration: open ? 220 : 160 });
     this.overviewAnim = anim;
     anim.onfinish = () => {
       if (this.overviewAnim === anim) this.overviewAnim = null;

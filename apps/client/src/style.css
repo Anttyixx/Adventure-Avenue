@@ -5395,99 +5395,55 @@ div.sl-inline label {
 
 /* ------------------------------------------------------------ player overview */
 
-/* A player's card expanded over the other cards: everything about that player. It is as tall as
-   the player cards, its bottom right corner where theirs is, and reaches left to leave the
-   bottom-left corner to the action bar (which moves there while it is open). */
-.hud {
-  --ab-slot: clamp(300px, 34vw, 460px);
-}
-.pview {
+/* The player overview: a pop-up in the middle of the screen with everything about one player. */
+.pv-layer {
   position: absolute;
-  right: 10px;
-  bottom: var(--pv-b, 10px);
-  left: calc(var(--free-left, 0px) + 10px + var(--ab-slot) + 12px);
-  height: var(--pv-h, 260px);
-  max-height: calc(100vh - var(--top-free, 50px) - var(--pv-b, 10px) - 8px);
-  box-sizing: border-box;
-  overflow-x: auto;
-  overflow-y: hidden;
-  overscroll-behavior: contain;
-  background: rgba(16, 26, 51, 0.96);
-  border: 1px solid var(--glass-line);
-  border-left: 5px solid var(--pc);
-  border-radius: 14px;
+  inset: 0;
+  z-index: 30;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: rgba(6, 10, 22, 0.3);
 }
-.pview[hidden] {
+.pv-layer[hidden] {
   display: none;
 }
-.hud.upright .pview {
-  left: 6px;
-  right: 6px;
-}
-.hud.pv-open:not(.upright) .prompt-center {
-  left: calc(var(--free-left, 0px) + 10px);
-  right: auto;
-  margin: 0;
-  max-width: var(--ab-slot);
-}
-/* In that narrower corner the question sits above the options, which wrap. */
-.hud.pv-open:not(.upright) .prompt-center:not(.status) {
-  flex-direction: column;
-  align-items: stretch;
-  justify-content: center;
-  gap: 6px;
-  padding: 8px 12px;
-}
-.hud.pv-open:not(.upright) .prompt-center:not(.status) .prompt-text {
-  flex: none;
-}
-.hud.pv-open:not(.upright) .prompt-center .btn-row {
-  flex-wrap: wrap;
-  justify-content: flex-start;
-  max-width: none;
-  overflow: visible;
-  gap: 6px;
-}
-.cards-wrap.covered {
-  pointer-events: none;
+.pview {
+  width: min(980px, 100%);
+  max-height: min(86vh, 720px);
+  box-sizing: border-box;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  background: rgba(16, 26, 51, 0.97);
+  border: 1px solid var(--glass-line);
+  border-top: 5px solid var(--pc);
+  border-radius: 16px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
 }
 .pv-body {
   display: flex;
-  gap: 14px;
-  height: 100%;
-  box-sizing: border-box;
-  padding: 10px 12px;
-  animation: pv-in 0.3s ease-out;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 16px;
+  padding: 14px 16px 16px;
 }
-@keyframes pv-in {
-  from {
-    opacity: 0;
-  }
-}
-/* Columns side by side, each scrolling on its own. */
+/* Three columns side by side (stacked on narrow screens). */
 .pv-col {
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  min-height: 0;
-  overflow-y: auto;
-  padding-right: 4px;
-  scrollbar-width: thin;
+  gap: 12px;
+  min-width: 0;
 }
 .pv-col-a {
-  flex: 0 0 280px;
+  flex: 1 1 260px;
 }
 .pv-col-b {
-  flex: 0 0 250px;
+  flex: 1 1 250px;
 }
 .pv-col-c {
-  flex: 1 1 300px;
-  min-width: 230px;
+  flex: 2 1 300px;
 }
-.pv-col + .pv-col {
-  padding-left: 14px;
-  border-left: 1px solid var(--glass-line);
-}
+
 .pv-head {
   display: flex;
   align-items: flex-end;

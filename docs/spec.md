@@ -765,21 +765,20 @@ turns the order round so its own player's card is at the bottom; turns still go 
 suits and progress bar); they are always shown. Player cards show the character's whole sprite
 (trimmed to its drawn pixels, no fade).
 
-**Player overview** (`ui/overview.ts`). Clicking (or Enter on) a player card grows that card into
-the overview: a panel as tall as the player cards (at least 230px), its bottom-right corner where
-theirs is, reaching left to leave the bottom-left corner to the action bar, which moves there while
-the overview is open (its question above its options, which wrap). The board zooms out to the whole
-map and greys out every property the player does not own. The panel has columns side by side, each
-scrolling on its own: (1) the whole sprite, name, level, rank, suits and status tags, net worth
-with the goal bar and how much is left, and the **net worth breakdown** (one bar split into Cash,
+**Player overview** (`ui/overview.ts`). Clicking (or Enter on) a player card pops up that
+player's overview in the middle of the screen (up to 980px wide, scrolling when taller than the
+screen allows) over a light backdrop; the board and the action bar stay as they are, and every
+property the player does not own is greyed out on the board while it is open. Its columns (stacked
+on narrow screens): (1) the whole sprite, name, level, rank, suits and status tags, net worth with
+the goal bar and how much is left, and the **net worth breakdown** (one bar split into Cash,
 Properties and Stock with a legend of values and shares); (2) **properties** as little cards
 grouped by district (owned count), each with its picture, its rent (the fee a rival pays, struck
 through while closed) and its value; hovering a card or a district lights it up on the board;
 (3) **net worth over the game** (a line per round with the goal dashed; hover for each round's
 value), **stock** (shares, price, value and their part of all shares held per district) and
-**earnings** (fees earned and paid, salary, dividends, commission, next promotion's pay). On narrow
-screens the panel scrolls sideways. ‹ › switch player; ✕, Escape or clicking the card again folds
-it back into the card. It updates live as the game goes on.
+**earnings** (fees earned and paid, salary, dividends, commission, next promotion's pay). ‹ ›
+switch player; ✕, Escape, a click outside it or clicking the card again closes it. It updates
+live as the game goes on.
 
 **Turn moments.** Before the roll, sliding arrows on the board point from the player's square to
 each square their first step can reach; they stay up until the player takes that first step. A token that stops part-way through a walk (a pop-up or a
