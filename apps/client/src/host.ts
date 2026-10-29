@@ -713,7 +713,8 @@ export class HotSeat implements GameIO {
         if (['Purchase', 'Construction', 'Buyout', 'Renovation'].includes(e.reason))
           await this.wait(T.beforePay);
         const from = this.playerPos(e.from);
-        const to = this.playerPos(e.to);
+        // An investment's coins fly into the shop being invested in, not to the bank.
+        const to = e.sq != null ? board.center(G.nodes[e.sq]) : this.playerPos(e.to);
         sound.play(e.to >= 0 && (e.from < 0 || !G.players[e.to].cpu) ? 'coin' : 'pay');
         board.coins(from, to, Math.ceil(e.amount / 50));
         if (e.to >= 0) board.floatText(to.x, to.y, `+${fmt(e.amount)}`, '#7cf29a');

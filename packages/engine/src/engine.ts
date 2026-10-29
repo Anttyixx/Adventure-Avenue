@@ -107,8 +107,8 @@ export class Game {
   }
 
   /** Move money. `from`/`to` null means the bank. */
-  async pay(from: Player | null, to: Player | null, amount: number, reason: string) {
-    await this.payAll([[from, to, amount]], reason);
+  async pay(from: Player | null, to: Player | null, amount: number, reason: string, sq?: number) {
+    await this.announcePayments(this.applyPayments([[from, to, amount]]), reason, sq);
   }
 
   /**
@@ -133,9 +133,16 @@ export class Game {
     return done;
   }
 
-  async announcePayments(done: Payment[], reason: string) {
+  async announcePayments(done: Payment[], reason: string, sq?: number) {
     for (const [from, to, amount] of done)
-      await this.emit({ type: 'money', from: from ? from.id : -1, to: to ? to.id : -1, amount, reason });
+      await this.emit({
+        type: 'money',
+        from: from ? from.id : -1,
+        to: to ? to.id : -1,
+        amount,
+        reason,
+        ...(sq != null ? { sq } : {}),
+      });
   }
 
   // ---------------------------------------------------------------- turn loop
@@ -578,7 +585,7 @@ export class Game {
     if (amount <= 0) return;
     const sq = this.G.nodes[opt.sq];
     sq.value += amount;
-    await this.pay(p, null, amount, 'Investment');
+    await this.pay(p, null, amount, 'Investment', sq.id);
     await this.emit({ type: 'value', sqs: [sq.id] });
     await this.log(`${p.name} invested ${amount}G.`, p.id, 'property');
   }

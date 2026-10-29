@@ -93,7 +93,7 @@ const rnd = (n: number) => Math.floor(Math.random() * n);
  * Controls for UI elements that were just added or changed: they shake once and glow so they
  * are easy to find. Update this list with each change.
  */
-const RECENT = new Set(['Roll and walk', 'Game menu', 'Quit confirm']);
+const RECENT = new Set(['Coins: invest in a shop']);
 
 /** Which board the lab plays on: Town (square) or Twin Lakes (hex), remembered per browser. */
 const LAB_BOARD_KEY = 'aa-lab-board';
@@ -602,6 +602,15 @@ export async function openLab(app: HTMLElement, section?: string) {
       btn('Coins: bank to player', () => {
         board.coins(board.bankPos(), pos(), 6);
         board.floatText(pos().x, pos().y, '+300G', '#7cf29a');
+      }),
+      btn('Coins: invest in a shop', () => {
+        // Investing: the coins fly from the player into one of their shops.
+        const sq =
+          G.nodes.find((n) => n.owner === cur().id && n.t === 'shop') ?? G.nodes.find((n) => n.t === 'shop')!;
+        const to = board.center(sq);
+        board.coins(pos(), to, 4);
+        board.floatText(pos().x, pos().y + 22, '-200G', '#ff8a8a');
+        board.ring(sq.id, '#ffd166', true);
       }),
       btn('Coins: player to rival', () => {
         const q = G.players[(target + 1) % G.players.length];

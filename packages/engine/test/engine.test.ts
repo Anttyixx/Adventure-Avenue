@@ -408,3 +408,19 @@ describe('transactions', () => {
     expect(seen.every((nw) => nw === before)).toBe(true);
   });
 });
+
+describe('investing', () => {
+  it("names the shop in the investment's payment, so the coins can fly to it", async () => {
+    const shopId = { id: -1 };
+    const { G, game, events } = makeGame('standard', (req) =>
+      req.kind === 'invest' ? { sq: shopId.id, amount: 50 } : undefined,
+    );
+    const p = G.players[0];
+    const shop = G.nodes.find((s) => s.t === 'shop')!;
+    shop.owner = p.id;
+    shopId.id = shop.id;
+    await game.investFlow(p, [shop]);
+    const pay = events.find((e) => e.type === 'money' && e.reason === 'Investment');
+    expect(pay).toMatchObject({ sq: shop.id, from: p.id, to: -1 });
+  });
+});

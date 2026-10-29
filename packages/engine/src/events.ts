@@ -12,7 +12,8 @@ export type GameEvent =
   | { type: 'step'; pid: number; from: number; to: number; left: number }
   | { type: 'warp'; pid: number; to: number }
   | { type: 'land'; pid: number; sq: number }
-  | { type: 'money'; from: number; to: number; amount: number; reason: string }
+  /** `sq`: the square the money goes into (an investment), when it is not a player or the bank. */
+  | { type: 'money'; from: number; to: number; amount: number; reason: string; sq?: number }
   | { type: 'owner'; sq: number; owner: number }
   | { type: 'value'; sqs: number[] }
   | { type: 'suit'; pid: number; suit: number; passing?: boolean }

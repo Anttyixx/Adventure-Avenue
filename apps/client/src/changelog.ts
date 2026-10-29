@@ -50,6 +50,7 @@ export const CHANGELOG: ChangelogEntry[] = [
       'Net worth no longer dips and recovers when buying, selling or trading: each deal updates it once',
       'The winner no longer shrinks when they win',
       'The zoom-out after a roll waits for the die to land',
+      'Investing sends the coins into the shop instead of the bank',
     ],
   },
   {
