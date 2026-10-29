@@ -164,36 +164,88 @@ export function playerOverview(G: GameState, p: Player, hooks: OverviewHooks): H
   const values = { cash: p.cash, props, stock };
   const positive = PARTS.filter((s) => standard || s.key !== 'stock');
   const total = positive.reduce((s, part) => s + Math.max(0, values[part.key]), 0);
-  const mix = h('div', { class: 'pv-mix', role: 'img', 'aria-label': 'Net worth by asset' });
-  for (const part of positive) {
-    const v = Math.max(0, values[part.key]);
-    if (!v || !total) continue;
-    mix.append(
-      h('i', {
-        style: `flex-grow:${v};background:${part.color}`,
-        title: `${part.label}: ${fmt(v)} (${Math.round((v / total) * 100)}%)`,
-      }),
-    );
+  // An unfilled ring split by asset, with the hovered (or biggest) part named in the middle.
+  const parts = positive.map((part) => ({ ...part, v: Math.max(0, values[part.key]) }));
+  const biggest = parts.reduce((a, b) => (b.v > a.v ? b : a), parts[0]);
+  const ns = 'http://www.w3.org/2000/svg';
+  const svg = document.createElementNS(ns, 'svg');
+  svg.setAttribute('viewBox', '0 0 100 100');
+  svg.setAttribute('class', 'pv-donut-svg');
+  svg.setAttribute('role', 'img');
+  svg.setAttribute('aria-label', 'Net worth by asset');
+  const R = 40;
+  const C = 2 * Math.PI * R;
+  const track = document.createElementNS(ns, 'circle');
+  for (const [k, v] of Object.entries({ cx: 50, cy: 50, r: R, class: 'pv-donut-track' }))
+    track.setAttribute(k, String(v));
+  svg.append(track);
+  const midPct = h('b', null, '');
+  const what = h('span', null, '');
+  const show = (part: (typeof parts)[number] | null) => {
+    midPct.textContent = part && total ? `${Math.round((part.v / total) * 100)}%` : '-';
+    what.textContent = part ? part.label : 'Nothing yet';
+  };
+  // Each part is an arc of the ring, with a 2px gap on either side when there is more than one.
+  const shown = parts.filter((part) => part.v > 0);
+  const gap = shown.length > 1 ? 2 : 0;
+  let at = 0;
+  const arcs = new Map<string, SVGCircleElement>();
+  for (const part of shown) {
+    const len = (part.v / total) * C;
+    const arc = document.createElementNS(ns, 'circle');
+    for (const [k, v] of Object.entries({
+      cx: 50,
+      cy: 50,
+      r: R,
+      class: 'pv-donut-arc',
+      stroke: part.color,
+      'stroke-dasharray': `${Math.max(0.5, len - gap)} ${C}`,
+      'stroke-dashoffset': String(-at),
+    }))
+      arc.setAttribute(k, String(v));
+    const tip = document.createElementNS(ns, 'title');
+    tip.textContent = `${part.label}: ${fmt(part.v)} (${Math.round((part.v / total) * 100)}%)`;
+    arc.append(tip);
+    arc.addEventListener('pointerenter', () => show(part));
+    arc.addEventListener('pointerleave', () => show(biggest.v ? biggest : null));
+    arcs.set(part.key, arc);
+    svg.append(arc);
+    at += len;
   }
+  show(biggest.v ? biggest : null);
+  const donut = h('div', { class: 'pv-donut' }, svg, h('div', { class: 'pv-donut-mid' }, midPct, what));
   colA.append(
     section(
       'Net worth breakdown',
       null,
-      mix,
       h(
         'div',
-        { class: 'pv-legend' },
-        ...positive.map((part) => {
-          const v = values[part.key];
-          return h(
-            'div',
-            { class: 'pv-leg' },
-            h('i', { style: `background:${part.color}` }),
-            h('span', null, part.label),
-            h('b', { class: v < 0 ? 'neg' : '' }, fmt(v)),
-            h('em', null, total && v > 0 ? `${Math.round((v / total) * 100)}%` : '-'),
-          );
-        }),
+        { class: 'pv-mix' },
+        donut,
+        h(
+          'div',
+          { class: 'pv-legend' },
+          ...parts.map((part) => {
+            const v = values[part.key];
+            const row = h(
+              'div',
+              { class: 'pv-leg' },
+              h('i', { style: `background:${part.color}` }),
+              h('span', null, part.label),
+              h('b', { class: v < 0 ? 'neg' : '' }, fmt(v)),
+              h('em', null, total && v > 0 ? `${Math.round((v / total) * 100)}%` : '-'),
+            );
+            row.onmouseenter = () => {
+              show(part);
+              arcs.get(part.key)?.classList.add('on');
+            };
+            row.onmouseleave = () => {
+              show(biggest.v ? biggest : null);
+              arcs.get(part.key)?.classList.remove('on');
+            };
+            return row;
+          }),
+        ),
       ),
     ),
   );

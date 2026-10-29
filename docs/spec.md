@@ -770,8 +770,7 @@ player's overview in the middle of the screen (up to 980px wide, scrolling when 
 screen allows) over a light backdrop; the board and the action bar stay as they are, and every
 property the player does not own is greyed out on the board while it is open. Its columns (stacked
 on narrow screens): (1) the whole sprite, name, level, rank, suits and status tags, net worth with
-the goal bar and how much is left, and the **net worth breakdown** (one bar split into Cash,
-Properties and Stock with a legend of values and shares); (2) **properties** as little cards
+the goal bar and how much is left, and the **net worth breakdown** (an unfilled ring split into Cash, Properties and Stock, the hovered or biggest part's share in its middle, with a legend of values and shares); (2) **properties** as little cards
 grouped by district (owned count), each with its picture, its rent (the fee a rival pays, struck
 through while closed) and its value; hovering a card or a district lights it up on the board;
 (3) **net worth over the game** (a line per round with the goal dashed; hover for each round's
