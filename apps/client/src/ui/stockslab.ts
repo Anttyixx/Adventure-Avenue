@@ -83,7 +83,7 @@ const GROUPS: { title: string; settings: Setting[] }[] = [
         key: 'shareMax',
         label: 'Curve height',
         step: 0.1,
-        hint: 'How far the S-curve lifts the price (3 = up to 4x, plus the tail)',
+        hint: 'How far the S-curve lifts the price (3.4 = up to 4.4x, plus the tail)',
       },
       {
         key: 'shareMid',
@@ -192,6 +192,14 @@ export function applyLiveStockSettings() {
 /** Price per share for a district whose shops average `avg`, with `held` shares held in total. */
 function curvePrice(avg: number, held: number, vol: number): number {
   return avg * K.stockRate * shareBoost(held, vol);
+}
+
+/** The most 99 more shares can add to the price, anywhere from 0 to 3,000 held. */
+function biggestJump(avg: number, vol: number): number {
+  let most = 0;
+  for (let n = 0; n <= 3000; n += 5)
+    most = Math.max(most, curvePrice(avg, n + 99, vol) - curvePrice(avg, n, vol));
+  return most;
 }
 
 const COLORS = { normal: '#3987e5', wild: '#d95926', calm: '#199e70', classic: '#c98500' };
@@ -412,6 +420,11 @@ export function openStocksLab(root: HTMLElement, onBack: () => void) {
         'p',
         { class: 'hint' },
         `Base price ${(avg * K.stockRate).toFixed(1)}G. Multiplier and confidence at 1. Hover the chart for exact prices.`,
+      ),
+      h(
+        'p',
+        { class: 'hint' },
+        `Biggest jump from 99 more shares (up to 3,000 held): normal +${biggestJump(avg, vols.normal).toFixed(2)}, wild +${biggestJump(avg, vols.wild).toFixed(2)}, calm +${biggestJump(avg, vols.calm).toFixed(2)}.`,
       ),
       h(
         'div',

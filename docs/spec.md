@@ -304,14 +304,16 @@ multiplies it by 0.9.
 
 ```
 price_d = average shop value_d x 0.04 x factor_d x confidence_d x boost_d
-boost_d = 1 + (3 x S(held_d) + 0.0004 x held_d) x vol_d
-S(h)    = h^2.2 / (h^2.2 + 600^2.2)
+boost_d = 1 + (3.4 x S(held_d) + 0.0004 x held_d) x vol_d
+S(h)    = h^1.6 / (h^1.6 + 1025^1.6)
 ```
 
 - `held_d` is the total shares everyone holds in the district. The S-curve rises slowly at first,
-  fastest around 400 to 500 shares, then eases off, so piling into an already busy district pays
-  less and less (for a 250G district: about 10 -> 24 at 500 shares, 32 at 750, 37 at 1,000 and
-  46 at 2,000). The small `0.0004 x held` tail means there is no cap. Trades never touch the factor.
+  fastest around 250 to 500 shares, then eases off, so piling into an already busy district pays
+  less and less. At normal volatility 99 more shares never add more than about 24% of the base
+  price (for a 250G district: about 10 -> 20 at 500 shares, 26 at 750, 31 at 1,000 and 43 at
+  2,000; at most +2.4 per 99 shares). The small `0.0004 x held` tail means there is no cap. Trades
+  never touch the factor.
 - `vol_d` is the district's mood, rolled at game start between 0.85 (Calm) and 1.15 (Wild).
 - A trade pays the average of the price before and after it (sells use the same), so buying 99
   shares at once costs the same as buying them in steps.

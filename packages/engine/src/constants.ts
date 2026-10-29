@@ -47,12 +47,13 @@ export const K = {
    * along an S-curve: slow at first, fastest around shareMid, then easing off.
    * boost = (shareMax x held^shareSteep / (held^shareSteep + shareMid^shareSteep)
    *          + shareTail x held) x volatility
-   * At normal volatility: 99 held about +10%, 500 about +140%, 750 about +215%, 1,000 about
-   * +265%. shareTail keeps a small rise going past the top, so there is no cap.
+   * At normal volatility: 99 held about +12%, 500 about +100%, 750 about +160%, 1,000 about
+   * +205%, and 99 more shares never add more than about 24% of the base price.
+   * shareTail keeps a small rise going past the top, so there is no cap.
    */
-  shareMax: 3,
-  shareMid: 600,
-  shareSteep: 2.2,
+  shareMax: 3.4,
+  shareMid: 1025,
+  shareSteep: 1.6,
   shareTail: 0.0004,
   /** Each district's volatility, rolled at game start: how strongly shares move its price. */
   volMin: 0.85,
