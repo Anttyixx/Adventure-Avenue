@@ -768,13 +768,12 @@ suits and progress bar); they are always shown. Player cards show the character'
 **Player overview** (`ui/overview.ts`). Clicking (or Enter on) a player card pops up that
 player's overview in the middle of the screen (up to 980px wide, scrolling when taller than the
 screen allows) over a light backdrop; the board and the action bar stay as they are, and every
-property the player does not own is greyed out on the board while it is open. Its columns (stacked
-on narrow screens): (1) the whole sprite, name, level, rank, suits and status tags, net worth with
+property the player does not own is greyed out on the board while it is open. Its columns (stacked on narrow screens, with more room from the screen edges on phones): (1) the whole sprite, name, level, rank, suits and status tags, net worth with
 the goal bar and how much is left, and the **net worth breakdown** (an unfilled ring split into Cash, Properties and Stock, the hovered or biggest part's share in its middle, with a legend of values and shares); (2) **properties** as little cards
 grouped by district (owned count), each with its picture, its rent (the fee a rival pays, struck
 through while closed) and its value; hovering a card or a district lights it up on the board;
 (3) **net worth over the game** (a line per round with the goal dashed; hover for each round's
-value), **stock** (shares, price, value and their part of all shares held per district) and
+value), **shares** (how many they hold in each district; districts with none dimmed) and
 **earnings** (fees earned and paid, salary, dividends, commission, next promotion's pay). ‹ ›
 switch player; ✕, Escape, a click outside it or clicking the card again closes it. It updates
 live as the game goes on.

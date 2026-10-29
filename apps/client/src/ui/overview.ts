@@ -16,9 +16,7 @@ import {
   netWorth,
   ranking,
   salary,
-  sharesHeld,
   squareFee,
-  stockPrice,
   stockValue,
   type GameState,
   type Player,
@@ -299,50 +297,30 @@ export function playerOverview(G: GameState, p: Player, hooks: OverviewHooks): H
   );
 
   // ---------------------------------------------------------------- stock
+  // Just how many shares they hold in each district (none: dimmed).
   if (standard) {
-    const rows = p.shares
-      .map((n, d) => ({ n, d }))
-      .filter((r) => r.n > 0)
-      .sort((a, b) => b.n * stockPrice(G, b.d) - a.n * stockPrice(G, a.d));
-    const table = h(
-      'table',
-      { class: 'pv-table' },
-      h(
-        'tr',
-        null,
-        h('th', null, 'District'),
-        h('th', null, 'Shares'),
-        h('th', null, 'Price'),
-        h('th', null, 'Value'),
-        h('th', { title: 'Their part of all the shares held in the district' }, 'Held'),
-      ),
-      ...rows.map(({ n, d }) => {
-        const price = stockPrice(G, d);
-        const all = sharesHeld(G, d);
-        const tr = h(
-          'tr',
-          { style: `--dc:${G.districts[d].color}` },
-          h('td', null, h('i', { class: 'pv-dot' }), G.districts[d].name),
-          h('td', null, String(n)),
-          h('td', null, fmt(price)),
-          h('td', null, h('b', null, fmt(n * price))),
-          h('td', null, all ? `${Math.round((n / all) * 100)}%` : '-'),
+    const total = p.shares.reduce((a, n) => a + n, 0);
+    const list = h(
+      'div',
+      { class: 'pv-shares' },
+      ...G.districts.map((dist, d) => {
+        const n = p.shares[d] ?? 0;
+        const row = h(
+          'div',
+          { class: `pv-share ${n ? '' : 'none'}`, style: `--dc:${dist.color}` },
+          h('i', { class: 'pv-dot' }),
+          h('span', null, dist.name),
+          h('b', null, String(n)),
         );
         hover(
-          tr,
+          row,
           G.nodes.filter((s) => s.d === d && isShopLike(s)).map((s) => s.id),
           hooks,
         );
-        return tr;
+        return row;
       }),
     );
-    colB.append(
-      section(
-        'Stock',
-        rows.length ? fmt(stock) : null,
-        rows.length ? table : h('p', { class: 'pv-empty' }, 'No shares yet.'),
-      ),
-    );
+    colB.append(section('Shares', total ? `${total} in all` : 'None yet', list));
   }
 
   // ---------------------------------------------------------------- money in and out
