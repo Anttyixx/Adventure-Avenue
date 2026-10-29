@@ -23,7 +23,7 @@ import type { BoardView } from '../board';
 import { soundControls } from './soundpanel';
 import { squareInfo, squareName } from '../names';
 import { boonIconURL, suitIconURL, wildIconURL } from '../icons';
-import { portraitURL } from '../sprites';
+import { bodyURL, portraitURL } from '../sprites';
 import { clear, fmt, h } from './dom';
 import { kindIcon, logView, namesInColor, type IconKind } from './log';
 import { marketView } from './market';
@@ -496,7 +496,7 @@ export class Hud {
     const extras = tags.map((t) => h('span', { class: 'tag' }, t));
     const pct = Math.max(0, Math.min(100, (nw / G.target) * 100));
     el.append(
-      h('div', { class: 'pc-side' }, h('img', { class: 'portrait', src: portraitURL(p.ch), alt: '' })),
+      h('div', { class: 'pc-side' }, h('img', { class: 'portrait body', src: bodyURL(p.ch), alt: '' })),
       h(
         'div',
         { class: 'pc-main' },

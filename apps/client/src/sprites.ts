@@ -256,6 +256,55 @@ export function portraitURL(ch: unknown, scale = 4): string {
   return url;
 }
 
+/**
+ * The whole character (first idle frame, facing down) trimmed to its drawn pixels, with no fade:
+ * the player cards show the full body.
+ */
+const bodies = new Map<string, string>();
+export function bodyURL(ch: unknown, scale = 4): string {
+  const def = charDef(ch);
+  const key = `${def.id}|${scale}`;
+  const hit = bodies.get(key);
+  if (hit) return hit;
+  const s = sheets.get(def.id);
+  const cv = document.createElement('canvas');
+  if (!s) {
+    cv.width = FRAME_W * scale;
+    cv.height = FRAME_H * scale;
+    return cv.toDataURL();
+  }
+  // Find the drawn pixels of the frame.
+  const probe = document.createElement('canvas');
+  probe.width = FRAME_W;
+  probe.height = FRAME_H;
+  const pc = probe.getContext('2d', { willReadFrequently: true })!;
+  pc.drawImage(s.idle, 0, 0, FRAME_W, FRAME_H, 0, 0, FRAME_W, FRAME_H);
+  const px = pc.getImageData(0, 0, FRAME_W, FRAME_H).data;
+  let x0 = FRAME_W,
+    y0 = FRAME_H,
+    x1 = -1,
+    y1 = -1;
+  for (let y = 0; y < FRAME_H; y++)
+    for (let x = 0; x < FRAME_W; x++)
+      if (px[(y * FRAME_W + x) * 4 + 3] > 0) {
+        x0 = Math.min(x0, x);
+        y0 = Math.min(y0, y);
+        x1 = Math.max(x1, x);
+        y1 = Math.max(y1, y);
+      }
+  if (x1 < 0) [x0, y0, x1, y1] = [0, 0, FRAME_W - 1, FRAME_H - 1];
+  const w = x1 - x0 + 1;
+  const hgt = y1 - y0 + 1;
+  cv.width = w * scale;
+  cv.height = hgt * scale;
+  const ctx = cv.getContext('2d')!;
+  ctx.imageSmoothingEnabled = false;
+  ctx.drawImage(s.idle, x0, y0, w, hgt, 0, 0, w * scale, hgt * scale);
+  const url = cv.toDataURL();
+  bodies.set(key, url);
+  return url;
+}
+
 /** The whole first idle frame (facing down) as a data URL, for the character picker. */
 const fulls = new Map<string, string>();
 export function characterURL(ch: unknown, scale = 3): string {

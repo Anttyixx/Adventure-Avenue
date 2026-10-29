@@ -94,7 +94,7 @@ const rnd = (n: number) => Math.floor(Math.random() * n);
  * Controls for UI elements that were just added or changed: they shake once and glow so they
  * are easy to find. Update this list with each change.
  */
-const RECENT = new Set(['Shaken district', 'Stocks lab', 'Stock market']);
+const RECENT = new Set(['Swap characters']);
 
 /** Which board the lab plays on: Town (square) or Twin Lakes (hex), remembered per browser. */
 const LAB_BOARD_KEY = 'aa-lab-board';
@@ -324,6 +324,14 @@ export async function openLab(app: HTMLElement, section?: string) {
       }),
       btn('Level up', () => {
         cur().level++;
+        refresh();
+      }),
+      btn('Swap characters', () => {
+        // Every player moves on to the next character, to see each one on the player cards.
+        for (const p of G.players) {
+          const i = CHARACTERS.findIndex((c) => c.id === p.ch);
+          p.ch = CHARACTERS[(i + G.players.length) % CHARACTERS.length].id;
+        }
         refresh();
       }),
     );
