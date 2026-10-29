@@ -44,6 +44,9 @@ export const CHANGELOG: ChangelogEntry[] = [
     extras: [
       'The die shrinks beside the player and counts down the steps left',
       'Direction arrows stay up until the player moves',
+      'After a roll the camera zooms out to show everywhere you could land',
+      'Name plates sit right above the characters; the steps-left die is bigger and flips a different way each step',
+      'Quit asks over the menu instead of behind it',
     ],
   },
   {

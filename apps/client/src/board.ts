@@ -28,6 +28,8 @@ export const squareCenter = (sq: { x: number; y: number }, layout?: BoardLayout)
 
 const isTown = (G: GameState | null) => !G || G.boardId === 'town';
 const TILE = 86;
+/** Ways the steps-left die can flip over: sideways, up and over, and the two diagonals. */
+const DIE_FLIPS = 4;
 
 const reducedMotion = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
@@ -116,6 +118,11 @@ export class BoardView {
   activePid = -1;
   /** While set, the camera shows the whole board (e.g. to watch shops close), whatever the zoom. */
   overviewHold = false;
+  /**
+   * While set, the camera frames these squares in the space the HUD leaves free (e.g. after a
+   * roll: the player and everywhere they could land), refitting as the HUD changes.
+   */
+  frameIds: number[] | null = null;
   /** While set, the camera frames this spot instead of following anyone (e.g. a district). */
   lookAt: { x: number; y: number; z: number } | null = null;
   /** Squares whose gates are moving: when each starts, and whether it is opening. */
@@ -154,6 +161,8 @@ export class BoardView {
     count: number;
     prev: number;
     changed: number;
+    /** How the last change flipped the die (never the same twice running). */
+    flip?: number;
   } | null = null;
   w = 0;
   h = 0;
@@ -274,6 +283,10 @@ export class BoardView {
       this.die.prev = this.die.count;
       this.die.count = left;
       this.die.changed = performance.now();
+      // A different flip from last time: sideways, up and over, or along either diagonal.
+      const last = this.die.flip ?? -1;
+      const pick = Math.floor(Math.random() * (DIE_FLIPS - 1));
+      this.die.flip = pick >= last && last >= 0 ? pick + 1 : pick;
     }
     clearTimeout(t.pause);
     t.walking = true;
@@ -777,6 +790,7 @@ export class BoardView {
     const mid = { x: this.ww / 2 - (left - right) / 2 / fz, y: this.wh / 2 - (top - bottom) / 2 / fz };
     const c = { x: follow.x + (mid.x - follow.x) * b, y: follow.y + (mid.y - follow.y) * b };
     this.camTarget = { x: c.x, y: c.y, z: fz };
+    if (this.frameIds?.length) this.camTarget = this.frameSquares(this.frameIds);
     if (this.lookAt) this.camTarget = { ...this.lookAt };
     const k = reducedMotion() ? 1 : 0.12;
     this.cam.x += (this.camTarget.x - this.cam.x) * k;
@@ -1318,14 +1332,14 @@ export class BoardView {
       // A soft dark outline in the sprite's own shape, all round it, to lift it off the board.
       drawCharacterGlow(ctx, p.ch, walking, facing, frame, sx, sy + px * 3, px);
       drawCharacter(ctx, p.ch, walking, facing, frame, sx, sy + px * 3, px);
-      // Name tag above the character.
+      // Name plate just above the character's head.
       {
         const fs = (active ? 14 : 11) * this.dpr;
         ctx.save();
         ctx.imageSmoothingEnabled = true;
         ctx.font = `${fs}px "Lilita One", sans-serif`;
         const tw = ctx.measureText(p.name).width + fs * 0.9;
-        const ty = sy - h + px * 3 - (active ? 34 : 8) * this.dpr;
+        const ty = sy - h + px * 3 - (active ? 12 : 4) * this.dpr;
         ctx.fillStyle = color;
         ctx.strokeStyle = 'rgba(255,255,255,0.9)';
         ctx.lineWidth = 1.5 * this.dpr;
@@ -1337,25 +1351,6 @@ export class BoardView {
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         ctx.fillText(p.name, sx, ty);
-        ctx.restore();
-      }
-      if (active) {
-        // Smooth marker arrow above the active player.
-        const aw = 9 * this.dpr;
-        const ay = sy - h + px * 3 - 20 * this.dpr + (motion ? Math.sin(now / 180) * 3 * this.dpr : 0);
-        ctx.save();
-        ctx.imageSmoothingEnabled = true;
-        ctx.beginPath();
-        ctx.moveTo(sx - aw, ay);
-        ctx.lineTo(sx + aw, ay);
-        ctx.lineTo(sx, ay + aw * 1.15);
-        ctx.closePath();
-        ctx.lineJoin = 'round';
-        ctx.lineWidth = 3 * this.dpr;
-        ctx.strokeStyle = '#fff';
-        ctx.stroke();
-        ctx.fillStyle = PLAYER_COLORS[p.color];
-        ctx.fill();
         ctx.restore();
       }
     }
@@ -1391,9 +1386,9 @@ export class BoardView {
       return;
     }
     // Small: beside the player's head, easing in from where the roll was shown.
-    const near = this.worldToScreen(at.x + 34, at.y - 78);
+    const near = this.worldToScreen(at.x + 30, at.y - 52);
     const kIn = ease(Math.min(1, (now - d.t0) / 380));
-    let size = 52 + (28 - 52) * kIn;
+    let size = 52 + (34 - 52) * kIn;
     const x = big.x + (near.x - big.x) * kIn;
     let y = big.y + (near.y - big.y) * kIn;
     // Each step flips the die over to the new number, with a little pop.
@@ -1412,7 +1407,13 @@ export class BoardView {
     }
     ctx.save();
     ctx.translate(x, y);
-    ctx.scale(kc < 1 ? flip : 1, 1);
+    if (kc < 1) {
+      // Squash along the flip's axis (rotated for the diagonals) so the face turns over.
+      const turn = [0, Math.PI / 2, Math.PI / 4, -Math.PI / 4][d.flip ?? 0];
+      ctx.rotate(turn);
+      ctx.scale(flip, 1);
+      ctx.rotate(-turn);
+    }
     this.paintDie(ctx, face, size);
     ctx.restore();
   }

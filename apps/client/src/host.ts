@@ -648,6 +648,7 @@ export class HotSeat implements GameIO {
       case 'turnStart': {
         board.directionsPid = -1;
         board.die = null;
+        board.frameIds = null;
         // A beat at the end of the previous turn before the next player starts.
         if (board.activePid >= 0 && board.activePid !== e.pid) await this.wait(T.turnEnd);
         this.link?.turnStart(this.seq, G);
@@ -670,11 +671,16 @@ export class HotSeat implements GameIO {
         hud.banner(`Round ${e.round}`, '#ffd166', T.roundBanner);
         this.refresh();
         break;
-      case 'roll':
+      case 'roll': {
+        // Zoom out to show the player and every square the roll could take them to.
+        const mover = G.players[e.pid];
+        const routes = this.game.destinations(mover, e.value);
+        board.frameIds = [mover.node, ...routes.flatMap((r) => r.path)];
         hud.status(`${G.players[e.pid].name} is rolling...`, 'move');
         sound.play('roll');
         await board.rollDie(e.value);
         break;
+      }
       case 'step':
         // The direction arrows stay up until the player actually moves.
         board.directionsPid = -1;
@@ -689,11 +695,13 @@ export class HotSeat implements GameIO {
         break;
       case 'warp':
         board.directionsPid = -1;
+        board.frameIds = null;
         sound.play('warp');
         await board.warp(e.pid, e.to);
         this.refresh();
         break;
       case 'land':
+        board.frameIds = null;
         sound.play('land');
         board.ring(e.sq, '#ffffff');
         board.walkTarget = -1;

@@ -93,7 +93,7 @@ const rnd = (n: number) => Math.floor(Math.random() * n);
  * Controls for UI elements that were just added or changed: they shake once and glow so they
  * are easy to find. Update this list with each change.
  */
-const RECENT = new Set(['Roll and walk', 'Direction arrows']);
+const RECENT = new Set(['Roll and walk', 'Game menu', 'Quit confirm']);
 
 /** Which board the lab plays on: Town (square) or Twin Lakes (hex), remembered per browser. */
 const LAB_BOARD_KEY = 'aa-lab-board';
@@ -539,8 +539,11 @@ export async function openLab(app: HTMLElement, section?: string) {
         const p = cur();
         setActive(p.id);
         const n = 1 + rnd(K.dieSides);
+        // The camera zooms out to frame everywhere the roll could land.
+        const routes = game.destinations(p, n);
+        board.frameIds = [p.node, ...routes.flatMap((r) => r.path)];
         await board.rollDie(n);
-        const route = game.destinations(p, n)[0].path;
+        const route = routes[0].path;
         board.walkTarget = route[route.length - 1];
         for (let i = 0; i < route.length; i++) {
           p.prev = p.node;
@@ -548,6 +551,7 @@ export async function openLab(app: HTMLElement, section?: string) {
           await board.step(p.id, route[i], route.length - 1 - i);
         }
         board.walkTarget = -1;
+        board.frameIds = null;
         p.prev = -1;
         refresh();
       }),

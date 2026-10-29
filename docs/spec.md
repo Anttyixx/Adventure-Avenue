@@ -626,7 +626,7 @@ with no frame or background and only the bottom fifth fading out (never over a h
 before the name so it never covers the character.
 
 **Motion.** Tokens tween between squares (260 ms, eased, with a hop) and step through walk frames
-every 120 ms (idle frames every 260 ms). The active player has a bobbing pixel arrow; after a roll the die shrinks to sit beside them and flips to the new number of steps left on each step, popping away when they arrive. Pixel coins fly from
+every 120 ms (idle frames every 260 ms). The active player has a bobbing pixel arrow; after a roll the die shrinks to sit beside their head and flips to the new number of steps left on each step (each flip along a different axis from the last: sideways, up and over, or a diagonal), popping away when they arrive. Each character has a name plate just above their head. When a player rolls, the camera zooms out to frame them and every square the roll could take them to (and the routes there) in the space the HUD leaves free (the stock market panel may cover it), until they land. Pixel coins fly from
 payer to payee; floating text shows money changes.
 
 **Action bar.** The current player's options (and most yes/no questions: buying a shop, a buyout,

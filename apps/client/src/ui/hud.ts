@@ -949,6 +949,8 @@ export class Hud {
       head.append(h('button', { class: 'btn small ghost', onclick: () => opts.onClose!() }, 'Close'));
     box.append(head, body);
     const wrap = h('div', { class: 'modal-wrap' }, box);
+    // Dialogs opened from the menu (quit, rules) go over it.
+    if (this.menuModal) wrap.classList.add('over-menu');
     this.modalLayer.append(wrap);
     return {
       el: box,

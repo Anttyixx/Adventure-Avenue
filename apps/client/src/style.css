@@ -4484,6 +4484,9 @@ input[type='range'] {
 .modal-wrap.menu-wrap {
   z-index: 20;
 }
+.modal-wrap.over-menu {
+  z-index: 21;
+}
 .modal.menu-modal {
   width: min(320px, 100%);
 }
