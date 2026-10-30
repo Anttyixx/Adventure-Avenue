@@ -120,7 +120,7 @@ Everything is re-exported from `index.ts`, so the client imports from `'@aa/engi
 | `pick.ts`       | Choosing properties on the board: auctions, renovations, debt sales, trades, cannon, 5x buyout; small prompt builders                                           | `pickOnBoard`, `auctionOnBoard`, `renovateOnBoard`, `debtOnBoard`, `buyoutPrompt`, `cannonOnBoard`, `tradeOnBoard`, `answerTradeOnBoard`, `question`, `factTable`, `feeIfOwned`, `PickCtx`                             |
 | `invest.ts`     | Investing on the board (light up shops, then the amount picker)                                                                                                 | `investOnBoard`                                                                                                                                                                                                        |
 | `market.ts`     | The stock market screen (mini map, district x player grid, shop cards)                                                                                          | `marketView`                                                                                                                                                                                                           |
-| `games.ts`      | Venture grid and arcade minigame windows (Arcade Lab at `#arcade-lab` in `lab.ts`)                                                                              | `VentureView`, `ReelsView`, `MemoryView`, `DerbyView`                                                                                                                                                                  |
+| `games.ts`      | Nonblocking venture board with results in the action bar; arcade minigame windows (Arcade Lab at `#arcade-lab` in `lab.ts`)                                     | `VentureView`, `ReelsView`, `MemoryView`, `DerbyView`                                                                                                                                                                  |
 | `auction.ts`    | Live auction window shown to everyone                                                                                                                           | `AuctionView`                                                                                                                                                                                                          |
 | `log.ts`        | Game log grouped by turn                                                                                                                                        | `logView`, `groupLog`, `kindIcon`, `namesInColor`                                                                                                                                                                      |
 | `activity.ts`   | "X is buying stocks..." text for each decision kind                                                                                                             | `activity`, `PRE_ROLL_STEPS`                                                                                                                                                                                           |
@@ -155,26 +155,26 @@ Everything is re-exported from `index.ts`, so the client imports from `'@aa/engi
 
 One file, grouped by feature with a comment heading each group. Class prefixes to search for:
 
-| Prefix / class                                            | Element                                                        |
-| --------------------------------------------------------- | -------------------------------------------------------------- |
-| `.scene`, `.menu`, `.menu-`                               | Title scene and main menu                                      |
-| `.setup`, `.seat`, `.carousel`                            | Game setup                                                     |
-| `.info-chip`, `.gc-`                                      | Info chip (top left)                                           |
-| `.market-box`, `.mb-`                                     | Stock market button / panel                                    |
-| `.toolbar`, `.zoom-chip`, `.guide-toggle`, `.menu-toggle` | Toolbar (top right)                                            |
-| `.game-menu`, `.gm-`                                      | In-game menu                                                   |
-| `.prompt-center`, `.prompt-text`, `.btn-row`              | Action bar                                                     |
-| `.pcard`, `.pc-`, `.cards`                                | Player cards                                                   |
-| `.log-btn`, `.log-dock`, `.log-`                          | Game log                                                       |
-| `.pv-`                                                    | Player overview                                                |
-| `.guide`, `.guide-`, `.rules`                             | Guide pop-up                                                   |
-| `.modal`, `.modal-`                                       | Dialogs                                                        |
-| `.m-`, `.market`                                          | Stock market screen and tables                                 |
-| `.venture`, `.vgrid`, `.reel`, `.mgrid`, `.lane`          | Venture grid and minigames (reels, memory blocks, derby lanes) |
-| `.auction`, `.au-`, `.tb-`                                | Auction window, trades in the action bar                       |
-| `.banner`                                                 | Banners                                                        |
-| `.lab-`, `.ed-`, `.dev-menu`                              | UI Lab, board editor, dev menu                                 |
-| `.sl-`                                                    | Stocks lab                                                     |
+| Prefix / class                                                           | Element                                                        |
+| ------------------------------------------------------------------------ | -------------------------------------------------------------- |
+| `.scene`, `.menu`, `.menu-`                                              | Title scene and main menu                                      |
+| `.setup`, `.seat`, `.carousel`                                           | Game setup                                                     |
+| `.info-chip`, `.gc-`                                                     | Info chip (top left)                                           |
+| `.market-box`, `.mb-`                                                    | Stock market button / panel                                    |
+| `.toolbar`, `.zoom-chip`, `.guide-toggle`, `.menu-toggle`                | Toolbar (top right)                                            |
+| `.game-menu`, `.gm-`                                                     | In-game menu                                                   |
+| `.prompt-center`, `.prompt-text`, `.btn-row`                             | Action bar                                                     |
+| `.pcard`, `.pc-`, `.cards`                                               | Player cards                                                   |
+| `.log-btn`, `.log-dock`, `.log-`                                         | Game log                                                       |
+| `.pv-`                                                                   | Player overview                                                |
+| `.guide`, `.guide-`, `.rules`                                            | Guide pop-up                                                   |
+| `.modal`, `.modal-`                                                      | Dialogs                                                        |
+| `.m-`, `.market`                                                         | Stock market screen and tables                                 |
+| `.venture-layer`, `.venture-board`, `.vgrid`, `.reel`, `.mgrid`, `.lane` | Venture grid and minigames (reels, memory blocks, derby lanes) |
+| `.auction`, `.au-`, `.tb-`                                               | Auction window, trades in the action bar                       |
+| `.banner`                                                                | Banners                                                        |
+| `.lab-`, `.ed-`, `.dev-menu`                                             | UI Lab, board editor, dev menu                                 |
+| `.sl-`                                                                   | Stocks lab                                                     |
 
 ## Where is ...
 

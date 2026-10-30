@@ -72,21 +72,20 @@ async function confirm(row: HTMLElement, human: boolean, speed: number) {
 export class VentureView {
   m: ReturnType<Hud['modal']>;
   grid = h('div', { class: 'vgrid' });
-  info = h('div', { class: 'v-info', 'aria-live': 'polite' });
-  row = h('div', { class: 'btn-row' });
   panels: HTMLButtonElement[] = [];
   private resolvePick: ((i: number) => void) | null = null;
 
   constructor(
-    hud: Hud,
+    private hud: Hud,
     private G: GameState,
-    pid: number,
+    private pid: number,
   ) {
     const p = G.players[pid];
     this.grid.setAttribute('aria-label', `Venture board · ${p.name}`);
-    this.m = hud.modal('', h('div', { class: 'venture' }, this.grid, this.info));
-    this.m.el.classList.add('venture-modal');
-    this.m.el.querySelector('.modal-head')?.remove();
+    const box = h('div', { class: 'venture-board glass' }, this.grid);
+    const layer = h('div', { class: 'venture-layer' }, box);
+    hud.root.append(layer);
+    this.m = { el: box, body: this.grid, close: () => layer.remove() };
     for (let i = 0; i < 64; i++) {
       const b = h('button', { class: 'panel', 'aria-label': `Venture tile ${i + 1}` });
       b.onclick = () => {
@@ -107,6 +106,7 @@ export class VentureView {
   /** Someone else is picking: show the grid with a note. */
   watch(name: string) {
     this.grid.setAttribute('aria-description', `${name} is picking a tile.`);
+    this.hud.status(`${name} is picking a venture tile…`, 'card');
   }
 
   paint(owner: number[]) {
@@ -119,6 +119,7 @@ export class VentureView {
   }
 
   pick(): Promise<number> {
+    this.hud.status('Choose a venture tile to flip.', 'card');
     this.grid.classList.add('picking');
     return new Promise((r) => (this.resolvePick = r));
   }
@@ -141,18 +142,26 @@ export class VentureView {
     this.grid.classList.remove('picking');
     this.panels.forEach((tile) => (tile.disabled = true));
     const show = async (heading: string, message: string) => {
-      clear(this.info);
-      clear(this.row);
-      this.info.append(
-        h(
-          'div',
-          { class: 'vcard' },
-          h('div', { class: 'vc-title' }, heading),
-          h('div', { class: 'vc-text' }, message),
-          this.row,
-        ),
+      const body = h(
+        'div',
+        { class: 'rich-body venture-result', 'aria-live': 'polite' },
+        h('div', { class: 'rich-title' }, heading),
+        h('div', { class: 'venture-description' }, message),
       );
-      await confirm(this.row, human, speed);
+      const done = this.hud.prompt(
+        body,
+        [{ label: human ? 'OK' : 'Close', value: undefined, main: true }],
+        this.G.players[this.pid].color,
+      );
+      // Observers can dismiss early, or let the result advance automatically.
+      const timer = human
+        ? undefined
+        : window.setTimeout(() => this.hud.resolvePrompt(undefined), T.cpuResult * speed);
+      try {
+        await done;
+      } finally {
+        clearTimeout(timer);
+      }
     };
     if (bonus) {
       await show(

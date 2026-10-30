@@ -400,11 +400,12 @@ economy, so its numbers set match length (see Balance constants).
 
 Landing on a Venture square, or stopping exactly on a suit square, opens the 8 x 8 venture grid; the
 player flips one face-down panel and resolves its card. The board container stays centered and
-stationary, with no header or OK button while choosing. After the flip, a separate message
-animates in underneath with the card's title, description and an OK button. If a line bonus was
-won, its message appears first; dismissing it shows the venture card with its own OK button.
-Spectators and CPU turns show the same sequence with timed dismissal or a Close button.
-On short screens the board shrinks and long message text scrolls to keep the button accessible.
+stationary, with rounded square tiles and no header or OK button in its container. It does not
+dim the background or block interaction with the action bar. After a flip, the action bar shows
+the card's title, description and OK button. A line bonus appears in the action bar first;
+dismissing it shows the card with its own OK button. The board remains visible until the card
+is dismissed. Spectators and CPU turns use the same sequence with timed dismissal or Close.
+On short screens the board shrinks to leave space for the action bar.
 
 - **Grid:** 64 panels, each pre-assigned a random card from the deck for the current rule set. A
   flipped panel takes the player's color. When every panel is flipped, the grid resets.
