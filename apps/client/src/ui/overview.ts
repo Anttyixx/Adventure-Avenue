@@ -37,8 +37,6 @@ const PARTS = [
 ] as const;
 
 export interface OverviewHooks {
-  /** Light up these squares on the board (null: stop). */
-  onHover(ids: number[] | null): void;
   onClose(): void;
   /** Find a property on the board (it was clicked). */
   onFind(id: number): void;
@@ -242,11 +240,6 @@ export function playerOverview(G: GameState, p: Player, hooks: OverviewHooks): H
       h('i', { class: 'pv-dot' }),
       h('span', null, dist?.name ?? 'Row'),
     );
-    hover(
-      head,
-      squares.map((s) => s.id),
-      hooks,
-    );
     propBox.append(
       h(
         'div',
@@ -276,7 +269,7 @@ export function playerOverview(G: GameState, p: Player, hooks: OverviewHooks): H
       const price = stockPrice(G, d);
       shares += n;
       worth += n * price;
-      const tr = h(
+      return h(
         'tr',
         { class: n ? '' : 'none' },
         h(
@@ -289,12 +282,6 @@ export function playerOverview(G: GameState, p: Player, hooks: OverviewHooks): H
         h('td', { class: 'm-cell', style: `--pc:${pc}` }, n ? String(n) : '–'),
         h('td', { class: 'pv-sval' }, n ? fmt(n * price) : '–'),
       );
-      hover(
-        tr,
-        G.nodes.filter((s) => s.d === d && isShopLike(s)).map((s) => s.id),
-        hooks,
-      );
-      return tr;
     });
     const table = h(
       'table',
@@ -375,11 +362,7 @@ export function playerOverview(G: GameState, p: Player, hooks: OverviewHooks): H
   return h(
     'div',
     { class: 'pv-inner' },
-    h(
-      'button',
-      { class: 'pv-close', title: 'Close', 'aria-label': 'Close', onclick: () => hooks.onClose() },
-      '✕',
-    ),
+    h('button', { class: 'btn small ghost pv-close', onclick: () => hooks.onClose() }, 'Close'),
     root,
   );
 }
@@ -391,12 +374,6 @@ function section(title: string, aside: string | null, ...body: Node[]): HTMLElem
     h('div', { class: 'pv-sec-head' }, h('h4', null, title), aside ? h('span', null, aside) : null),
     ...body,
   );
-}
-
-/** Light up `ids` on the board while the pointer (or focus) is on `el`. */
-function hover(el: HTMLElement, ids: number[], hooks: OverviewHooks) {
-  el.onmouseenter = () => hooks.onHover(ids);
-  el.onmouseleave = () => hooks.onHover(null);
 }
 
 /** A little card for one property: its picture, its rent (the fee a rival pays) and its value. */
@@ -430,9 +407,6 @@ function propertyCard(G: GameState, s: Square, color: string, hooks: OverviewHoo
     h('span', { class: 'pv-card-rent' }, rent),
     h('span', { class: 'pv-card-val' }, fmt(s.value)),
   );
-  hover(card, [s.id], hooks);
-  card.onfocus = () => hooks.onHover([s.id]);
-  card.onblur = () => hooks.onHover(null);
   card.onclick = () => hooks.onFind(s.id);
   card.onkeydown = (e) => {
     if (e.key === 'Enter' || e.key === ' ') {

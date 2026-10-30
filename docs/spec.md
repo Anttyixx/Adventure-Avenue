@@ -596,8 +596,7 @@ what was used, the license and links to their pages.
   the next game. In the online build, validate names on the server.
 
 In-game, the Menu button (top right) opens the menu as a pop-up in the middle of the screen, over
-everything; a game on this device pauses while it is open (online games carry on). It has Resume,
-Rules (a summary, opened over the menu), a Fast CPU
+everything; a game on this device pauses while it is open (online games carry on). It has Resume, a Fast CPU
 toggle (speeds up CPU turns and animations), Full screen, the Sound sliders and mute, and a red Quit
 game button. Quit asks for confirmation in a dialog over the menu before returning to the main
 menu (no question once the game is over).
@@ -685,7 +684,7 @@ with no frame or background and only the bottom fifth fading out (never over a h
 before the name so it never covers the character.
 
 **Motion.** Tokens tween between squares (260 ms, eased, with a hop) and step through walk frames
-every 120 ms (idle frames every 260 ms). The active player has a bobbing pixel arrow; after a roll the die shrinks to sit beside their head and flips to the new number of steps left on each step (each flip along a different axis from the last: sideways, up and over, or a diagonal), popping away when they arrive. Each character has a name plate just above their head. When a player rolls, the camera zooms out to frame them and every square the roll could take them to (and the routes there) in the space the HUD leaves free (the stock market panel may cover it), until they land. Pixel coins fly from
+every 120 ms (idle frames every 260 ms). The active player has a bobbing pixel arrow; after a roll the die shrinks to sit beside their head and flips to the new number of steps left on each step (each flip along a different axis from the last: sideways, up and over, or a diagonal), popping away when they arrive. Each character has a name plate just above their head. When a human on this device rolls, the camera zooms out to frame them and every square the roll could take them to (and the routes there) in the space the HUD leaves free (the stock market panel may cover it), until they start walking. Pixel coins fly from
 payer to payee; floating text shows money changes.
 
 **Action bar.** The current player's options (and most yes/no questions: buying a shop, a buyout,
@@ -743,8 +742,13 @@ active player changes, tokens ease to their new sizes (the active one larger, th
 | Interface       | Prompts and status lines rise in, dialogs ease in, venture and Memory Blocks panels flip, revealed cards pop, main buttons give a small nudge | New prompt, dialog or reveal                              |
 
 **Layout.** Scrolling panels hide their scrollbars (they still scroll). The board fills the whole game screen edge to edge, and everything else floats over it
-as dark glass overlays. Top right: the zoom chip and the Menu button (the menu
-also shows the round, target and rule set). Top left: the **info chip**, with the game's name, the board
+as dark glass overlays. Top right: the zoom chip, the Guide button and the Menu button (the menu
+also shows the round, target and rule set). **Guide** (`ui/guide.ts`) opens a pop-up in the middle
+of the screen with a tab per topic: Basics (the goal, shops, buyouts, suits and promotion, special
+squares, before rolling, debt, controls), Stocks (buying and selling, dividends, what sets the
+price, demand and volatility, sell-offs; the classic rules for classic-stock games) and Vacant
+plots (a card per building with its art, price, what a rival and the owner get, and the circus
+upgrade prices). Easy rules show only Basics. It reopens on the last tab read. Top left: the **info chip**, with the game's name, the board
 name, the current round (out of the round limit, if any), the goal (target net worth) and, online,
 a Room button that shows the room code; under it, the Stock market button (Standard rules), which
 morphs into the stock market panel in the top-left corner for anyone to look at (kept up to
@@ -776,10 +780,10 @@ part's share in its middle, with a legend of values and shares), **earnings** in
 earned and paid, salary, dividends, commission, next promotion's pay) and, once the game is over,
 **net worth over the game** (a line per round with the goal dashed; hover for each round's value); (2) **properties** as little
 cards under their district's name, each with its picture, its rent (the fee a rival pays, struck
-through while closed) and its value; hovering a card or a district lights it up on the board, and
-clicking a card finds it: the pop-up steps aside, the board zooms out to the whole map with that
-property glowing for 3 seconds, then the board zooms back and the pop-up returns; (3) **shares** (the stock screen's table for this player: each district's name, price, the shares
-they hold and their value, districts with none dimmed, totals at the bottom). The ✕ in the top right corner (it stays put while the
+through while closed) and its value; clicking a card finds it: the pop-up steps aside, the board zooms out to the whole map
+with every other tile greyed out and white rings spreading from that property for 3 seconds, then
+the board zooms back and the pop-up returns; (3) **shares** (the stock screen's table for this player: each district's name, price, the shares
+they hold and their value, districts with none dimmed, totals at the bottom). The Close button in the top right corner (it stays put while the
 content scrolls), Escape, a click outside it or clicking the card again closes it. It updates live as the game goes on.
 
 **Turn moments.** Before the roll, sliding arrows on the board point from the player's square to
@@ -800,9 +804,20 @@ from 250% to 200% the player stays centered, between 200% and 150% the camera mo
 and from 150% down to 100% the board stays centered with room to spare (`ZOOM_OUT_EXTRA`: 25% further out than fitting the screen). While a choice is open the
 camera keeps the player centered and zooms out just enough to frame every glowing square around
 them (if they are too spread out for that, it frames them all instead; never closer than the
-player's own zoom). The game-over view shows the whole board. The die and on-board pop-ups are
-drawn at screen size so they stay readable at any zoom. Taps on the board are converted through the
-camera so square picking works at any zoom.
+player's own zoom). The game-over view shows the whole board.
+
+**Automatic zoom.** Two kinds:
+
+- _Shows_ play for a few seconds and go back by themselves: shops closing or reopening, a stock
+  price move, finding a property from the player overview, the winner's dance. They play on every
+  screen, and the zoom is locked (wheel, pinch, keys and the chip do nothing) until they end.
+- _Views that wait on the player_: the squares a roll can reach, a choice on the board, a trade.
+  They play only on the screen of the player deciding (a CPU's or another device's path choice
+  glows where the camera already is). The player can zoom them freely (the view keeps its
+  center); when the choice ends (the player starts walking, picks, or the trade closes) the camera
+  goes back to the zoom they had before, and the chip returns a view to its own zoom. The die and on-board pop-ups are
+  drawn at screen size so they stay readable at any zoom. Taps on the board are converted through the
+  camera so square picking works at any zoom.
 
 Phone held sideways: the same overlays in compact form. Phone held upright: a "turn your phone
 sideways" screen with a "Play upright anyway" option, which moves the cards into a 2-column block
@@ -840,7 +855,7 @@ ring/silent switch does not mute the game; the in-game Mute switch still does.
 - **Music:** two looping chiptune tracks: a relaxed one for the main menu, setup and board editor,
   and a bouncier one during games. The music stops for the winning fanfare at the end of a game.
 - **Effects:** button clicks, dice roll, each step, landing, gaining and paying money, buying a
-  shop, a shop's value going up, collecting a suit, promotion, venture cards, warps, the start of a
+  shop, buying out a rival's property (a brass stab, a rising run and a cash-register ring), a shop's value going up, collecting a suit, promotion, venture cards, warps, the start of a
   human player's turn, a new round, bankruptcy and the win fanfare.
 - **Settings:** a speaker button on the main menu and game setup (and the Sound section of the in-game menu) has Music and
   Effects volume sliders and a Mute switch. Settings are saved per device. Audio pauses while the

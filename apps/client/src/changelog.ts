@@ -26,6 +26,34 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: '2026-10-30-guide',
+    date: 'Oct 30, 2026',
+    title: 'Game guide and smarter zoom',
+    features: [
+      {
+        tag: 'new',
+        title: 'Guide',
+        text: 'A new Guide button next to Menu explains the game in tabs: the basic rules, how stocks work, and what every vacant plot building does.',
+      },
+      {
+        tag: 'better',
+        title: 'Zoom stays yours',
+        text: 'You can zoom while choosing where to move, picking a square or trading, and the camera goes back to your own zoom afterwards. Only the player choosing gets zoomed out; short shows like shops closing or a stock move still play for everyone, and lock the zoom until they finish.',
+      },
+      {
+        tag: 'fix',
+        title: 'Circus upgrades',
+        text: 'Stopping on your circus offers the upgrade whenever stock or property can cover it, like any other purchase, and the log says why when it cannot.',
+      },
+    ],
+    extras: [
+      'A sound of its own for buying out a rival',
+      'Player overview: a Close button, and the whole shares table fits',
+      'Finding a property from the overview greys out every other tile',
+      'Hovering the overview no longer lights up the board',
+    ],
+  },
+  {
     id: '2026-10-29-player-overview',
     date: 'Oct 29, 2026',
     title: 'Player overview',

@@ -697,11 +697,14 @@ export class Game {
       case 'star3':
         return this.investFlow(p, ownedShops(G, p.id));
       case 'circus': {
-        if (sq.lv >= 3) return;
+        if (sq.lv >= 3) return this.log(`${p.name}'s circus is already at its top level.`, p.id, 'property');
         const cost = K.circusUp[sq.lv];
-        if (p.cash < cost) return;
+        // Like any purchase, an upgrade may dip into stock and property value (sold at the end of the turn).
+        if (!canAfford(G, p, cost)) {
+          return this.log(`${p.name} can't afford the ${cost}G circus upgrade.`, p.id, 'property');
+        }
         const yes = await this.ask({ kind: 'circusUpgrade', pid: p.id, sq: sq.id, cost, tier: sq.lv + 1 });
-        if (!yes || p.cash < cost) return;
+        if (!yes || !canAfford(G, p, cost)) return;
         sq.lv++;
         sq.value += cost;
         await this.pay(p, null, cost, 'Circus upgrade');

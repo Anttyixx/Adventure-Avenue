@@ -54,7 +54,8 @@ import { SFX_NAMES, TRACK_NAMES, sound, type Track } from '../audio';
 import { guestSetup, setupScreen, type SetupRoom } from './start';
 import type { LobbyInfo, LobbySeat } from '../net/protocol';
 import type { LocalSeat } from '../net/hostroom';
-import { buildPrompt, districtStockModal, rulesModal, stockModal } from './modals';
+import { buildPrompt, districtStockModal, stockModal } from './modals';
+import { guideModal } from './guide';
 import { showResults } from './results';
 import { investOnBoard } from './invest';
 import { AuctionView } from './auction';
@@ -94,7 +95,14 @@ const rnd = (n: number) => Math.floor(Math.random() * n);
  * Controls for UI elements that were just added or changed: they shake once and glow so they
  * are easy to find. Update this list with each change.
  */
-const RECENT = new Set(['Player overview']);
+const RECENT = new Set([
+  'Player overview',
+  'Guide',
+  'buyout',
+  'Circus upgrade',
+  'Roll and walk',
+  'Shops closing',
+]);
 
 /** Which board the lab plays on: Town (square) or Twin Lakes (hex), remembered per browser. */
 const LAB_BOARD_KEY = 'aa-lab-board';
@@ -173,7 +181,7 @@ export async function openLab(app: HTMLElement, section?: string) {
       location.hash = '';
       location.reload();
     },
-    onRules: () => rulesModal(hud, G),
+    onGuide: () => guideModal(hud, G),
     quitQuestion: () => 'Leave the UI Lab and go back to the main menu?',
   });
   board.zoomOut = 1;
@@ -549,10 +557,13 @@ export async function openLab(app: HTMLElement, section?: string) {
         const p = cur();
         setActive(p.id);
         const n = 1 + rnd(K.dieSides);
-        // The camera zooms out to frame everywhere the roll could land.
+        // The camera zooms out to frame everywhere the roll could land (zoom it while it waits),
+        // and goes back to the player's own zoom with the first step.
         const routes = game.destinations(p, n);
         board.frameIds = [p.node, ...routes.flatMap((r) => r.path)];
         await board.rollDie(n);
+        await new Promise((r) => setTimeout(r, 2000));
+        board.frameIds = null;
         const route = routes[0].path;
         board.walkTarget = route[route.length - 1];
         for (let i = 0; i < route.length; i++) {
@@ -561,7 +572,6 @@ export async function openLab(app: HTMLElement, section?: string) {
           await board.step(p.id, route[i], route.length - 1 - i);
         }
         board.walkTarget = -1;
-        board.frameIds = null;
         p.prev = -1;
         refresh();
       }),
@@ -822,7 +832,7 @@ export async function openLab(app: HTMLElement, section?: string) {
           ),
         ),
       ),
-      btn('Rules', () => rulesModal(hud, G)),
+      btn('Guide', () => guideModal(hud, G)),
     );
   }
 

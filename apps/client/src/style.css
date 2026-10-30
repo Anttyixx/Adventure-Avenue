@@ -1737,6 +1737,73 @@ input[type='range'] {
   line-height: 1.45;
 }
 
+/* The game guide: a tab per topic over a page that scrolls (the same height for every tab). */
+.guide {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-height: 0;
+}
+.guide-page {
+  height: min(60vh, 460px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding-right: 6px;
+}
+.guide-page > h4:first-child {
+  margin-top: 0;
+}
+.guide-plots {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 8px;
+  margin-top: 10px;
+}
+.guide-plot {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--glass-line);
+}
+.guide-plot img {
+  width: 52px;
+  height: 52px;
+  flex: none;
+  object-fit: contain;
+  image-rendering: pixelated;
+}
+.guide-plot-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 2px;
+}
+.guide-plot-head b {
+  font-family: var(--head);
+  font-weight: 400;
+  font-size: 16px;
+}
+.guide-plot-head span {
+  font-family: var(--head);
+  color: var(--accent);
+}
+.rules .guide-plot p {
+  font-size: 13px;
+  line-height: 1.35;
+}
+.guide-plot em {
+  font-style: normal;
+  color: var(--muted);
+}
+.rules .guide-plot .guide-note {
+  margin-top: 3px;
+  font-size: 12px;
+  color: var(--muted);
+}
+
 /* market: map + district/player grid on top, shop cards below */
 .market {
   display: flex;
@@ -5432,26 +5499,13 @@ div.sl-inline label {
 .pv-close {
   position: absolute;
   top: 8px;
-  right: 8px;
+  right: 10px;
   z-index: 2;
-  width: 30px;
-  height: 30px;
-  display: grid;
-  place-items: center;
-  border: 1px solid var(--glass-line);
-  border-radius: 50%;
   background: rgba(16, 26, 51, 0.92);
-  color: var(--text);
-  font-size: 14px;
-  cursor: pointer;
-  transition: background 0.15s;
 }
-.pv-close:hover {
-  background: #3a4b86;
-}
-.pv-close:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 2px;
+/* Keep the top right column's heading clear of it. */
+.pv-col-b > .pv-sec:first-child .pv-sec-head {
+  margin-right: 66px;
 }
 .pv-body {
   flex: 1 1 auto;
@@ -5462,7 +5516,7 @@ div.sl-inline label {
   flex-wrap: wrap;
   align-items: flex-start;
   gap: 16px;
-  padding: 14px 44px 16px 16px;
+  padding: 14px 16px 16px;
 }
 /* Three columns side by side (stacked on narrow screens). */
 .pv-col {
@@ -5475,7 +5529,7 @@ div.sl-inline label {
   flex: 1 1 260px;
 }
 .pv-col-b {
-  flex: 1 1 250px;
+  flex: 1 1 290px;
 }
 .pv-col-c {
   flex: 2 1 300px;
@@ -5815,6 +5869,9 @@ div.sl-inline label {
 @media (max-width: 760px) {
   .pv-layer {
     padding: 28px 22px;
+  }
+  .pv-head {
+    padding-right: 66px;
   }
 }
 /* Shares: the stock screen's table for one player, with each district's value and a total. */

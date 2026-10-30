@@ -15,6 +15,7 @@ export type Sfx =
   | 'coin'
   | 'pay'
   | 'buy'
+  | 'buyout'
   | 'grow'
   | 'suit'
   | 'promote'
@@ -35,6 +36,7 @@ export const SFX_NAMES: Sfx[] = [
   'coin',
   'pay',
   'buy',
+  'buyout',
   'grow',
   'suit',
   'promote',
@@ -494,6 +496,16 @@ class AudioEngine {
       case 'buy':
         this.notes(['C5', 'E5', 'G5', 'C6'], t, 0.07, 'square', 0.13);
         this.tone(bus, 'triangle', freq('C6'), t + 0.28, 0.4, 0.2);
+        break;
+      case 'buyout':
+        // Taking a rival's shop: a heavy brass stab, a rising run and a cash-register ring.
+        for (const n of ['C3', 'G3', 'C4'])
+          this.tone(bus, 'sawtooth', freq(n), t, 0.32, 0.11, { cutoff: 1600 });
+        this.tone(bus, 'sine', 160, t, 0.25, 0.4, { to: 50 });
+        this.notes(['C5', 'Eb5', 'G5', 'Bb5', 'C6'], t + 0.24, 0.055, 'square', 0.11);
+        this.tone(bus, 'square', freq('G6'), t + 0.56, 0.1, 0.12, { cutoff: 6000 });
+        this.tone(bus, 'square', freq('C7'), t + 0.64, 0.45, 0.12, { cutoff: 6000 });
+        this.hiss(bus, t + 0.56, 0.25, 0.1, 7000, 3);
         break;
       case 'grow':
         this.tone(bus, 'sine', 500, t, 0.45, 0.22, { to: 1500 });

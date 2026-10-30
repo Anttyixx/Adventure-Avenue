@@ -91,6 +91,27 @@ describe('movement', () => {
   });
 });
 
+describe('circus', () => {
+  it('upgrades when the owner stops there, even past their cash if stock covers it', async () => {
+    const { G, game, asked } = makeGame('standard', (req) =>
+      req.kind === 'circusUpgrade' ? true : undefined,
+    );
+    const p = G.players[0];
+    const plot = at(G, 4, 6);
+    plot.owner = p.id;
+    plot.b = 'circus';
+    plot.lv = 0;
+    plot.value = 200;
+    p.cash = 100;
+    p.shares[0] = 50;
+    await game.landPlot(p, plot);
+    expect(asked.some((r) => r.kind === 'circusUpgrade')).toBe(true);
+    expect(plot.lv).toBe(1);
+    expect(plot.value).toBe(200 + K.circusUp[0]);
+    expect(p.cash).toBe(100 - K.circusUp[0]);
+  });
+});
+
 describe('fees, dividends and commission', () => {
   it('pays dividends to other shareholders and commission to boon holders', async () => {
     const { G, game } = makeGame();

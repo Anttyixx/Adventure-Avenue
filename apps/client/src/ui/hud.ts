@@ -50,7 +50,7 @@ export interface HudCallbacks {
   onToggleFast(): void;
   /** Leave the game (already confirmed by the player). */
   onQuit(): void;
-  onRules(): void;
+  onGuide(): void;
   /** The menu opened (true) or closed: returns whether the game is paused while it is open. */
   onPause?(open: boolean): boolean;
   /** The question to confirm quitting with, or null to quit without asking (game over). */
@@ -96,8 +96,6 @@ export class Hud {
   private overviewAnim: Animation | null = null;
   /** A property from the overview is being shown on the board. */
   private finding = false;
-  /** Board highlight to restore when the overview stops lighting up squares. */
-  private savedHighlight: number[] | null = null;
   /** The game log inside the status line, shown while it is expanded. */
   logBox = h('div', { class: 'sb-log' });
   logOpen = false;
@@ -177,7 +175,7 @@ export class Hud {
 
     this.cb = cb;
     this.fastBtn.onclick = cb.onToggleFast;
-    this.zoomChip.onclick = () => (board.zoomOut = 0);
+    this.zoomChip.onclick = () => board.resetZoom();
     board.onZoom = (pct) => (this.zoomChip.textContent = `${pct}%`);
     this.menuBtn.onclick = () => this.toggleMenu();
     this.marketBox.append(this.marketLabel, this.marketBody);
@@ -188,7 +186,8 @@ export class Hud {
         this.toggleMarket(true);
       }
     };
-    this.toolbar.append(this.zoomChip, this.menuBtn);
+    this.guideBtn.onclick = () => this.cb.onGuide();
+    this.toolbar.append(this.zoomChip, this.guideBtn, this.menuBtn);
     this.buildMenu();
     window.addEventListener('keydown', this.onKey);
     board.onHover = (id, x, y) => this.showTooltip(id, x, y);
@@ -205,6 +204,8 @@ export class Hud {
   // ------------------------------------------------------------ game menu
 
   private cb: HudCallbacks;
+  /** Opens the game guide (rules, stocks, vacant plots), between the zoom chip and Menu. */
+  guideBtn = h('button', { class: 'btn small guide-toggle', title: 'How to play' }, '? Guide');
   menuBtn = h(
     'button',
     { class: 'btn small menu-toggle', 'aria-haspopup': 'true', 'aria-expanded': 'false' },
@@ -248,8 +249,6 @@ export class Hud {
         close(() => {}),
         'resume',
       ),
-      // Rules open over the menu, so the game stays paused while they are read.
-      item('Rules', this.cb.onRules),
       this.fastBtn,
     );
     if (document.fullscreenEnabled) this.menu.append(item('Full screen', toggleFullscreen));
@@ -622,7 +621,6 @@ export class Hud {
 
   closeOverview() {
     if (this.overviewPid < 0) return;
-    this.lightUp(null);
     this.overviewPid = -1;
     this.board.focusOwner = -1;
     this.popOverview(false);
@@ -639,7 +637,6 @@ export class Hud {
     this.overview.setAttribute('aria-label', `${p.name}: overview`);
     this.overview.append(
       playerOverview(this.G, p, {
-        onHover: (ids) => this.lightUp(ids),
         onClose: () => this.closeOverview(),
         onFind: (id) => void this.findOnBoard(id),
       }),
@@ -649,38 +646,27 @@ export class Hud {
   }
 
   /**
-   * A property clicked in the overview: the pop-up steps aside, the board zooms out with that
-   * property glowing, and after a few seconds the board zooms back and the pop-up returns.
+   * A property clicked in the overview: the pop-up steps aside, the board zooms out with every
+   * other tile greyed and that property glowing, and after a few seconds the board zooms back
+   * and the pop-up returns.
    */
   private async findOnBoard(id: number) {
     if (this.finding || this.overviewPid < 0) return;
     this.finding = true;
     const pid = this.overviewPid;
-    this.lightUp(null);
     this.popOverview(false);
-    const before = this.board.highlight;
-    this.board.highlight = [id];
+    this.board.spot = id;
+    this.board.spotColor = PLAYER_COLORS[this.G.players[pid].color];
     this.board.peekWhole = true;
     await new Promise((r) => setTimeout(r, FIND_MS));
     this.board.peekWhole = false;
-    this.board.highlight = before;
+    this.board.spot = -1;
     this.finding = false;
     // Back to the overview unless it was closed meanwhile.
     if (this.overviewPid === pid) {
       this.overviewLayer.hidden = false;
       this.renderOverview();
       this.popOverview(true);
-    }
-  }
-
-  /** Light up squares on the board from the overview, putting back what was lit before. */
-  private lightUp(ids: number[] | null) {
-    if (ids) {
-      this.savedHighlight ??= this.board.highlight;
-      this.board.highlight = ids;
-    } else if (this.savedHighlight) {
-      this.board.highlight = this.savedHighlight;
-      this.savedHighlight = null;
     }
   }
 

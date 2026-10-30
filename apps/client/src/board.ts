@@ -116,12 +116,30 @@ export class BoardView {
   private grass: CanvasPattern | null = null;
   followPid = -1;
   activePid = -1;
-  /** While set, the camera shows the whole board (e.g. to watch shops close), whatever the zoom. */
+  /**
+   * While set, the camera shows the whole board for a choice that waits on the player (a trade).
+   * The player can still zoom; their zoom is put back when it ends.
+   */
   overviewHold = false;
+  /**
+   * While set, the camera shows the whole board for a few seconds (shops closing or opening) and
+   * the zoom is locked until it goes back by itself.
+   */
+  showHold = false;
+  /**
+   * The player's zoom during an automatic view that waits on them (the squares a roll can reach,
+   * a choice, a trade): the view keeps its center at this zoom. Null = the view's own zoom.
+   */
+  private autoZ: number | null = null;
+  /** Which automatic view `autoZ` belongs to; a new view starts at its own zoom again. */
+  private autoKey = '';
   /** The player overview is open: every property not owned by `focusOwner` is greyed out. */
   focusOwner = -1;
   /** While set, the camera shows the whole board (finding a property from the player overview). */
   peekWhole = false;
+  /** A square found from the player overview: every other tile is greyed out and it glows. */
+  spot = -1;
+  spotColor = '#fff';
   /**
    * While set, the camera frames these squares in the space the HUD leaves free (e.g. after a
    * roll: the player and everywhere they could land), refitting as the HUD changes.
@@ -363,7 +381,7 @@ export class BoardView {
 
   private async moveGates(sqs: number[], opening: boolean) {
     if (!sqs.length) return;
-    this.overviewHold = true;
+    this.showHold = true;
     // Gates start moving once the camera has pulled back, one after another; until then they
     // stay as they were (up for closing, down for opening).
     const t0 = performance.now() + T.closeZoom * this.speed;
@@ -371,7 +389,7 @@ export class BoardView {
     await this.wait(T.closeZoom + T.closeStagger * (sqs.length - 1) + T.closeShutter + T.closeHold);
     // Closed gates stay drawn from the state; opened ones stay up until the state says open.
     if (!opening) for (const id of sqs) this.gates.delete(id);
-    this.overviewHold = false;
+    this.showHold = false;
     await this.wait(T.closeZoom);
   }
 
@@ -576,14 +594,15 @@ export class BoardView {
     color: string,
     onPick: (id: number) => void,
     routes?: Map<number, number[]>,
-    opts: { labels?: Map<number, string>; pins?: boolean } = {},
+    opts: { labels?: Map<number, string>; pins?: boolean; fit?: boolean } = {},
   ) {
     this.glow = ids;
     this.glowColor = color;
     this.onPick = onPick;
     this.routes = routes ?? new Map();
     this.hoverRoute = null;
-    this.fitIds = ids;
+    // The camera zooms out to frame the choices unless told not to.
+    this.fitIds = opts.fit === false ? [] : ids;
     this.choiceLabels = opts.labels ?? new Map();
     this.choicePins = opts.pins ?? true;
   }
@@ -731,9 +750,38 @@ export class BoardView {
 
   // ------------------------------------------------------------ camera
 
+  /**
+   * The camera is showing something for a few seconds and goes back by itself (shops closing,
+   * a stock move, finding a property, the winner): the player's zoom is locked meanwhile.
+   */
+  get zoomLocked() {
+    return this.showHold || this.peekWhole || !!this.lookAt || !!this.G?.over;
+  }
+
+  /** An automatic view is up that waits on the player (they may zoom it). */
+  private autoView() {
+    return !!this.frameIds?.length || this.fitIds.length > 0 || this.overviewHold;
+  }
+
   /** Zoom out (positive) or in (negative) by `d`, where 1 is the whole range. */
   zoomBy(d: number) {
+    if (this.zoomLocked) return;
+    if (this.autoView()) {
+      // Zoom the automatic view around its own center; the player's zoom is kept for after.
+      const near = this.followZoom();
+      const far = Math.min(near, this.freeFit().z);
+      const z = (this.autoZ ?? this.camTarget.z) * Math.pow(far / near, d / ZOOM_MAX_OUT);
+      this.autoZ = Math.min(near, Math.max(far, z));
+      return;
+    }
     this.zoomOut = Math.min(ZOOM_MAX_OUT, Math.max(0, this.zoomOut + d));
+  }
+
+  /** The zoom chip: back to fully zoomed in (or, in an automatic view, to the view's own zoom). */
+  resetZoom() {
+    if (this.zoomLocked) return;
+    if (this.autoView()) this.autoZ = null;
+    else this.zoomOut = 0;
   }
 
   private wheel = (e: WheelEvent) => {
@@ -792,7 +840,7 @@ export class BoardView {
   }
 
   updateCamera() {
-    const whole = this.followPid < 0 || this.G?.over || this.overviewHold || this.peekWhole;
+    const whole = this.followPid < 0 || this.G?.over || this.overviewHold || this.showHold || this.peekWhole;
     const out = whole ? ZOOM_MAX_OUT : this.zoomOut;
     const z = this.zoomFor(out);
     // The active player sits in the middle of the screen (the grass carries on past the board).
@@ -806,7 +854,8 @@ export class BoardView {
     }
     // Zoomed out, the camera gradually lets go of the player and eases to the board's center,
     // shifted so the board sits in the middle of the free area (straight there for overviews).
-    const overview = this.followPid < 0 || !!this.G?.over || this.overviewHold || this.peekWhole;
+    const overview =
+      this.followPid < 0 || !!this.G?.over || this.overviewHold || this.showHold || this.peekWhole;
     const t = overview ? 1 : Math.min(1, Math.max(0, (out - ZOOM_BLEND) / (ZOOM_BLEND_END - ZOOM_BLEND)));
     const b = t * t * (3 - 2 * t);
     const { top, right, bottom, left } = this.insets;
@@ -814,6 +863,16 @@ export class BoardView {
     const c = { x: follow.x + (mid.x - follow.x) * b, y: follow.y + (mid.y - follow.y) * b };
     this.camTarget = { x: c.x, y: c.y, z: fz };
     if (this.frameIds?.length) this.camTarget = this.frameSquares(this.frameIds);
+    // The player zoomed an automatic view that waits on them: same center, their zoom. A new
+    // view (or none) drops it, so the camera goes back to the zoom they had before.
+    const key = this.autoView()
+      ? `${this.frameIds?.join() ?? ''}|${this.fitIds.join()}|${this.overviewHold}`
+      : '';
+    if (key !== this.autoKey) {
+      this.autoKey = key;
+      this.autoZ = null;
+    }
+    if (this.autoZ != null && !this.showHold && !this.peekWhole) this.camTarget.z = this.autoZ;
     if (this.lookAt) this.camTarget = { ...this.lookAt };
     const k = reducedMotion() ? 1 : 0.12;
     this.cam.x += (this.camTarget.x - this.cam.x) * k;
@@ -1083,13 +1142,21 @@ export class BoardView {
     }
   }
 
-  /** Player overview: grey out every property the shown player does not own. */
+  /**
+   * Player overview: grey out every property the shown player does not own, or, while a property
+   * found from it is shown, every tile but that one.
+   */
   private drawGreyed(ctx: CanvasRenderingContext2D) {
-    if (this.focusOwner < 0 || !this.G) return;
+    if ((this.focusOwner < 0 && this.spot < 0) || !this.G) return;
     ctx.save();
     ctx.fillStyle = 'rgba(70, 74, 84, 0.72)';
     for (const sq of this.G.nodes) {
-      if ((sq.t !== 'shop' && sq.t !== 'plot') || sq.owner === this.focusOwner) continue;
+      if (
+        this.spot >= 0
+          ? sq.id === this.spot
+          : (sq.t !== 'shop' && sq.t !== 'plot') || sq.owner === this.focusOwner
+      )
+        continue;
       const c = this.center(sq);
       tileShape(ctx, this.G.layout, c.x, c.y, TILE / 2 + 1, 14);
       ctx.fill();
@@ -1098,9 +1165,9 @@ export class BoardView {
   }
 
   private drawGlow(ctx: CanvasRenderingContext2D, now: number) {
+    if (this.spot >= 0) return this.glowTile(ctx, now, this.spot, this.spotColor, true);
     if (!this.glow.length && !this.highlight.length) return;
     const G = this.G!;
-    const pulse = 0.55 + 0.45 * Math.sin(now / 220);
     // Dim everything that is not a choice so the choices stand out.
     const lit = new Set([...this.glow, ...this.highlight]);
     ctx.save();
@@ -1113,40 +1180,47 @@ export class BoardView {
     }
     ctx.restore();
     for (const id of lit) {
-      const c = this.center(G.nodes[id]);
       const strong = this.glow.includes(id) && (!this.highlight.length || this.highlight.includes(id));
-      ctx.save();
-      // A tint over the tile, then a pulsing outline.
-      ctx.globalAlpha = 0.18 + 0.12 * pulse;
-      ctx.fillStyle = this.glowColor;
-      tileShape(ctx, G.layout, c.x, c.y, TILE / 2, 14);
-      ctx.fill();
-      // A white outline that pulses, glowing in the player's color.
-      ctx.globalAlpha = strong ? 0.75 + 0.25 * pulse : 0.5;
-      ctx.shadowColor = this.glowColor;
-      ctx.shadowBlur = 10 + 20 * pulse;
-      ctx.strokeStyle = '#fff';
-      ctx.lineWidth = strong ? 6 + 2 * pulse : 4;
-      tileShape(ctx, G.layout, c.x, c.y, TILE / 2 + 4, 14);
-      ctx.stroke();
-      // White rings that keep spreading out from the choices and fading, to catch the eye.
-      if (strong && !reducedMotion()) {
-        ctx.shadowBlur = 0;
-        for (let i = 0; i < 2; i++) {
-          const k = (now / RING_MS + i / 2 + id * 0.07) % 1;
-          ctx.globalAlpha = 0.95 * (1 - k) * (1 - k);
-          ctx.lineWidth = 5 * (1 - k) + 1.5;
-          tileShape(ctx, G.layout, c.x, c.y, TILE / 2 + 6 + k * 26, 14 + k * 8);
-          ctx.stroke();
-        }
-      }
-      ctx.restore();
+      this.glowTile(ctx, now, id, this.glowColor, strong);
     }
+  }
+
+  /** One lit square: a tint, a pulsing outline and, when `strong`, white rings spreading out. */
+  private glowTile(ctx: CanvasRenderingContext2D, now: number, id: number, color: string, strong: boolean) {
+    const G = this.G!;
+    const pulse = 0.55 + 0.45 * Math.sin(now / 220);
+    const c = this.center(G.nodes[id]);
+    ctx.save();
+    // A tint over the tile, then a pulsing outline.
+    ctx.globalAlpha = 0.18 + 0.12 * pulse;
+    ctx.fillStyle = color;
+    tileShape(ctx, G.layout, c.x, c.y, TILE / 2, 14);
+    ctx.fill();
+    // A white outline that pulses, glowing in the player's color.
+    ctx.globalAlpha = strong ? 0.75 + 0.25 * pulse : 0.5;
+    ctx.shadowColor = color;
+    ctx.shadowBlur = 10 + 20 * pulse;
+    ctx.strokeStyle = '#fff';
+    ctx.lineWidth = strong ? 6 + 2 * pulse : 4;
+    tileShape(ctx, G.layout, c.x, c.y, TILE / 2 + 4, 14);
+    ctx.stroke();
+    // White rings that keep spreading out from the choices and fading, to catch the eye.
+    if (strong && !reducedMotion()) {
+      ctx.shadowBlur = 0;
+      for (let i = 0; i < 2; i++) {
+        const k = (now / RING_MS + i / 2 + id * 0.07) % 1;
+        ctx.globalAlpha = 0.95 * (1 - k) * (1 - k);
+        ctx.lineWidth = 5 * (1 - k) + 1.5;
+        tileShape(ctx, G.layout, c.x, c.y, TILE / 2 + 6 + k * 26, 14 + k * 8);
+        ctx.stroke();
+      }
+    }
+    ctx.restore();
   }
 
   /** Bouncing pins and labels over choice squares, drawn above the tokens. */
   private drawPins(ctx: CanvasRenderingContext2D, now: number, motion: boolean) {
-    if (!this.glow.length) return;
+    if (!this.glow.length || this.spot >= 0) return;
     const G = this.G!;
     for (const id of this.glow) {
       const c = this.center(G.nodes[id]);

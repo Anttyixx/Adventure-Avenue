@@ -24,7 +24,8 @@ import { FAST_CPU_SPEED, TIMING as T } from './timing';
 import { fmt, h } from './ui/dom';
 import { DerbyView, MemoryView, ReelsView, VentureView } from './ui/games';
 import { Hud, type PromptButton } from './ui/hud';
-import { buildPrompt, districtStockModal, rulesModal, stockModal } from './ui/modals';
+import { buildPrompt, districtStockModal, stockModal } from './ui/modals';
+import { guideModal } from './ui/guide';
 import { showResults } from './ui/results';
 import { investOnBoard } from './ui/invest';
 import { AuctionView } from './ui/auction';
@@ -101,7 +102,7 @@ export class HotSeat implements GameIO {
       onToggleFast: () => this.toggleFast(),
       onQuit: () => this.quit(),
       quitQuestion: () => this.quitQuestion(),
-      onRules: () => rulesModal(this.hud, this.G),
+      onGuide: () => guideModal(this.hud, this.G),
       onPause: (open) => this.setPaused(open),
     });
     // Online, this device's own player's card sits at the bottom of the stack.
@@ -428,11 +429,13 @@ export class HotSeat implements GameIO {
     const p = this.G.players[req.pid];
     switch (req.kind) {
       case 'path': {
+        // Shown where the camera already is: only the player choosing gets zoomed out.
         this.board.setChoices(
           req.dests.map((d) => d.node),
           PLAYER_COLORS[p.color],
           () => {},
           new Map(req.dests.map((d) => [d.node, d.path])),
+          { fit: false },
         );
         this.board.previewRoute(ans as number);
         await this.wait(T.cpuPath);
@@ -548,6 +551,9 @@ export class HotSeat implements GameIO {
               'Fee when rivals land here',
               `${fmt(feeIfOwned(G, req.sq, p.id))} → ${fmt(feeIfOwned(G, req.sq, p.id, req.tier))}`,
             ],
+            ...(req.cost > p.cash
+              ? ([['More than your cash', 'sell at the end of your turn']] as [string, string][])
+              : []),
           ]),
           [
             { label: 'Upgrade', value: true, main: true },
@@ -680,15 +686,19 @@ export class HotSeat implements GameIO {
         sound.play('roll');
         await board.rollDie(e.value);
         // Once the die has landed, zoom out to show the player and every square the roll could
-        // take them to.
+        // take them to: only on the screen of the human who rolled (they pick where to go).
         const mover = G.players[e.pid];
-        const routes = this.game.destinations(mover, e.value);
-        board.frameIds = [mover.node, ...routes.flatMap((r) => r.path)];
+        if (this.localHuman(mover.id)) {
+          const routes = this.game.destinations(mover, e.value);
+          board.frameIds = [mover.node, ...routes.flatMap((r) => r.path)];
+        }
         break;
       }
       case 'step':
-        // The direction arrows stay up until the player actually moves.
+        // The direction arrows stay up until the player actually moves. Once they do, the
+        // camera goes back to the player's own zoom.
         board.directionsPid = -1;
+        board.frameIds = null;
         // A small sound as the hop starts; the step sounds as the token lands on the square.
         hud.status(`${G.players[e.pid].name} is moving...`, 'move');
         sound.play('hop');
@@ -723,7 +733,7 @@ export class HotSeat implements GameIO {
             if (n.owner === e.from && this.owners.get(n.id) !== e.from) {
               this.owners.set(n.id, e.from);
               this.values.set(n.id, n.value);
-              sound.play('buy');
+              sound.play(e.reason === 'Buyout' ? 'buyout' : 'buy');
               board.ring(n.id, '#ffd166', true);
             }
         // An investment's coins fly into the shop being invested in, not to the bank.
