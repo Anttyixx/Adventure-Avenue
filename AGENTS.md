@@ -63,6 +63,9 @@ When the spec and the code disagree, ask the owner which is right; then fix the 
   must choose (see `decisions.ts`), `emit(event)` after every state change (see `events.ts`).
   Add a new choice by adding it to `DecisionMap`, answering it in the CPU (`cpu.ts`), in the
   client (`host.ts` `human()`), and in `ui/activity.ts` (the "X is ..." status text).
+- **Venture card numbers** in `packages/engine/src/cards.ts` are permanent reference numbers.
+  Keep existing numbers when reordering cards; give new cards unused numbers. The Guide reads
+  the same card data, and numbers are shown only on flipped panels.
 - **The game state (`GameState`, `types.ts`) is one plain serializable object.** Saves and online
   play copy it as JSON, so no classes, Maps or functions in it. Old saves must keep loading: new
   fields are optional, with a fallback where they are read.

@@ -1,29 +1,34 @@
 /**
  * The game guide: a pop-up in the middle of the screen (the Guide button in the toolbar) with a
- * tab per topic: the basic rules, how stocks work and what each vacant plot building does.
+ * tab per topic: the basic rules, stocks, vacant plot buildings and numbered venture cards.
  */
-import { BUILDINGS, K, type GameState } from '@aa/engine';
+import { BUILDINGS, CARD_LIST, K, type GameState } from '@aa/engine';
 import { BUILDING_INFO } from '../names';
 import { propIconURL, type PropKey } from '../props';
 import { clear, fmt, h } from './dom';
 import type { Hud } from './hud';
 
-type Tab = 'basics' | 'stocks' | 'plots';
+type Tab = 'basics' | 'stocks' | 'plots' | 'venture';
 
 /** The tab last read, so the guide reopens where the player left it. */
 let lastTab: Tab = 'basics';
 
-export function guideModal(hud: Hud, G: GameState | null) {
+export function guideModal(hud: Hud, G: GameState | null, initialTab?: Tab) {
   const easy = G?.rules === 'easy';
   // Easy rules have no stocks or vacant plots.
   const tabs: [Tab, string][] = easy
-    ? [['basics', 'Basics']]
+    ? [
+        ['basics', 'Basics'],
+        ['venture', 'Venture cards'],
+      ]
     : [
         ['basics', 'Basics'],
         ['stocks', 'Stocks'],
         ['plots', 'Vacant plots'],
+        ['venture', 'Venture cards'],
       ];
-  let tab: Tab = tabs.some(([t]) => t === lastTab) ? lastTab : 'basics';
+  const preferred = initialTab ?? lastTab;
+  let tab: Tab = tabs.some(([t]) => t === preferred) ? preferred : 'basics';
   const bar = h('div', { class: 'seg guide-tabs', role: 'tablist' });
   const page = h('div', { class: 'rules guide-page', role: 'tabpanel' });
   const show = () => {
@@ -34,7 +39,15 @@ export function guideModal(hud: Hud, G: GameState | null) {
       b.setAttribute('aria-selected', String(on));
     }
     clear(page);
-    page.append(...(tab === 'basics' ? basics(G) : tab === 'stocks' ? stocks(G) : plots()));
+    page.append(
+      ...(tab === 'basics'
+        ? basics(G)
+        : tab === 'stocks'
+          ? stocks(G)
+          : tab === 'venture'
+            ? ventureCards(easy)
+            : plots()),
+    );
     page.scrollTop = 0;
   };
   for (const [t, label] of tabs)
@@ -120,7 +133,7 @@ function stocks(G: GameState | null): Node[] {
       ? [
           ...sec(
             'What sets the price',
-            "The price follows the shops in the district: their starting value counts a little, and the value added by investing counts twice as much. So investing in a district's shops is the surest way to lift its stock.",
+            'The price follows the shops in the district: their starting value sets the base price, and shop growth raises it more gently. A 50% rise in average shop value adds 37.5% to the underlying share price before other boosts.',
           ),
           ...sec(
             'Demand and volatility',
@@ -174,6 +187,41 @@ function plots(): Node[] {
           ),
         ),
       ),
+    ),
+  ];
+}
+
+/** The same card data drives the game and this reference, so descriptions stay in sync. */
+function ventureCards(easy: boolean): Node[] {
+  return [
+    ...sec(
+      'Venture cards',
+      'Match the number on a flipped tile to its card below. Stock cards are marked Standard only and are not drawn in Easy rules.',
+    ),
+    h(
+      'ol',
+      { class: 'guide-cards' },
+      ...[...CARD_LIST]
+        .sort((a, b) => a.number - b.number)
+        .map((card) =>
+          h(
+            'li',
+            { class: 'guide-card', value: card.number },
+            h(
+              'div',
+              { class: 'guide-card-heading' },
+              h('b', null, `#${card.number} · ${card.title}`),
+              card.std
+                ? h(
+                    'span',
+                    { class: 'guide-note' },
+                    easy ? 'Standard only · not in this game' : 'Standard only',
+                  )
+                : null,
+            ),
+            h('p', null, card.text),
+          ),
+        ),
     ),
   ];
 }

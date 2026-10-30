@@ -26,6 +26,18 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: '2026-10-30-venture-numbers',
+    date: 'Oct 30, 2026',
+    title: 'Venture cards by number',
+    features: [
+      {
+        tag: 'new',
+        title: 'Know your venture cards',
+        text: 'Flipped venture tiles now show a fixed card number. Find every numbered card and its effect in Guide → Venture cards, with stock cards marked Standard only.',
+      },
+    ],
+  },
+  {
     id: '2026-10-30-action-text-reveal',
     date: 'Oct 30, 2026',
     title: 'A little life in each message',

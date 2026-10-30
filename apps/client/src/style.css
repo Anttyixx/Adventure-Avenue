@@ -6012,3 +6012,36 @@ div.sl-inline label {
     margin-top: 6px;
   }
 }
+
+/* Venture reference numbers stay legible on small board tiles. */
+.venture-board .panel {
+  color: #fff;
+  font-family: var(--head);
+  font-size: clamp(10px, calc(var(--venture-size) / 20), 18px);
+  line-height: 1;
+  text-shadow: 0 1px 2px #000;
+}
+.guide-tabs {
+  flex-wrap: wrap;
+}
+.guide-cards {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: 8px;
+}
+.guide-card {
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.06);
+}
+.guide-card-heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 12px;
+}
+.guide-card p {
+  margin: 4px 0 0;
+}

@@ -115,6 +115,7 @@ const RECENT = new Set([
   'Derby: photo finish',
   'Player overview',
   'Guide',
+  'Venture card guide',
   'buyout',
   'Circus upgrade',
   'Roll and walk',
@@ -903,6 +904,7 @@ export async function openLab(app: HTMLElement, section?: string) {
         ),
       ),
       btn('Guide', () => guideModal(hud, G)),
+      btn('Venture card guide', () => guideModal(hud, G, 'venture')),
     );
   }
 
@@ -917,6 +919,7 @@ export async function openLab(app: HTMLElement, section?: string) {
         const panel = await view.pick();
         G.vg.owner[panel] = p.id;
         const card = CARD_LIST[rnd(CARD_LIST.length)];
+        G.vg.cards[panel] = card.id;
         await view.reveal(panel, card.title, card.text, ...labLines(G.vg.owner, panel, p.id), true, 1);
         result('Venture panel', panel);
       }),
@@ -927,6 +930,7 @@ export async function openLab(app: HTMLElement, section?: string) {
         const panel = free[rnd(free.length)];
         G.vg.owner[panel] = p.id;
         const card = CARD_LIST[rnd(CARD_LIST.length)];
+        G.vg.cards[panel] = card.id;
         await view.reveal(panel, card.title, card.text, ...labLines(G.vg.owner, panel, p.id), false, 1);
       }),
       btn('Line of 5 bonus', async () => {
@@ -937,6 +941,7 @@ export async function openLab(app: HTMLElement, section?: string) {
         G.vg.owner[panel] = -1;
         const view = new VentureView(hud, G, p.id);
         G.vg.owner[panel] = p.id;
+        G.vg.cards[panel] = 'bank50';
         await view.reveal(
           panel,
           'Bank bonus',

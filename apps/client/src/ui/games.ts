@@ -3,6 +3,7 @@
  * (pick a panel, stop the reels, pick a block, back a racer) and then reveal the engine's result.
  */
 import {
+  CARDS,
   DERBY_LENGTH,
   DERBY_RACERS,
   MEMORY_SHOW_MS,
@@ -115,6 +116,12 @@ export class VentureView {
       b.classList.toggle('flipped', o >= 0);
       b.style.background = o >= 0 ? PLAYER_COLORS[this.G.players[o].color] : '';
       b.disabled = o >= 0;
+      const card = o >= 0 ? CARDS[this.G.vg.cards[i]] : undefined;
+      b.textContent = card ? String(card.number) : '';
+      b.setAttribute(
+        'aria-label',
+        card ? `Venture card ${card.number}: ${card.title}` : `Venture tile ${i + 1}`,
+      );
     });
   }
 
@@ -169,7 +176,8 @@ export class VentureView {
         `${lines.length > 1 ? `${lines.length} lines` : `Line of ${lines[0].length}`}! +${fmt(bonus)}`,
       );
     }
-    await show(title, text);
+    const card = CARDS[this.G.vg.cards[panel]];
+    await show(card ? `#${card.number} · ${title}` : title, text);
     this.m.close();
   }
 }

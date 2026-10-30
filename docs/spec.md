@@ -410,6 +410,11 @@ dismissing it shows the card with its own OK button. The board remains visible u
 is dismissed. Spectators and CPU turns use the same sequence with timed dismissal or Close.
 On short screens the board shrinks to leave space for the action bar.
 
+- **Card numbers:** each card has a permanent number (1–30), shared across Standard and Easy.
+  Flipped panels show the card number in the player’s color; face-down panels hide it. The
+  result heading includes the same number. Guide → Venture cards lists all numbers, titles
+  and effects, including clearly marked Standard-only cards. Numbering is independent of the
+  randomly assigned panel position and persists when reopening the board or loading a save.
 - **Grid:** 64 panels, each pre-assigned a random card from the deck for the current rule set. A
   flipped panel takes the player's color. When every panel is flipped, the grid resets.
 - **Line bonus:** after flipping, count each straight line (row, column and both diagonals) of the
@@ -764,7 +769,8 @@ of the screen with a tab per topic: Basics (the goal, shops, buyouts, suits and 
 squares, before rolling, debt, controls), Stocks (buying and selling, dividends, what sets the
 price, demand and volatility, sell-offs; the classic rules for classic-stock games) and Vacant
 plots (a card per building with its art, price, what a rival and the owner get, and the circus
-upgrade prices). Easy rules show only Basics. It reopens on the last tab read. Top left: the **info chip**, with the game's name, the board
+upgrade prices), and Venture cards (all 30 fixed numbers, titles and effects, with Standard-only
+cards marked). Easy rules show Basics and Venture cards. It reopens on the last tab read. Top left: the **info chip**, with the game's name, the board
 name, the current round (out of the round limit, if any), the goal (target net worth) and, online,
 a Room button that shows the room code; under it, the Stock market button (Standard rules), which
 morphs into the stock market panel in the top-left corner for anyone to look at (kept up to
