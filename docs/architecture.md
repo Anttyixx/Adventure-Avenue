@@ -218,7 +218,7 @@ first touch or key press, as browsers require.
 
 `Hud.askSize()` captures the visible size and synchronously releases any previous animation.
 `morphAsk()` measures the destination once, holds its content in a temporary `.ask-content`
-wrapper at that width and height, then animates the shell for 240ms. Measurements retain
+wrapper at that width and height, then animates the shell for 740ms. Measurements retain
 fractional pixels. Prompt text uses a 220ms Web Animations clip-path reveal, started once per new message
 after sizing begins. It does not move text or alter layout, survives reparenting without
 restarting, and is skipped with reduced motion. The former CSS `rise` animation must not be

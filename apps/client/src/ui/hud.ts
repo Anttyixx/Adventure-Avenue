@@ -924,7 +924,7 @@ export class Hud {
         { width: `${from.w}px`, height: `${from.h}px`, minHeight: '0px' },
         { width: `${to.w}px`, height: `${to.h}px`, minHeight: '0px' },
       ],
-      { duration: 240, easing: 'cubic-bezier(0.2, 0.8, 0.2, 1)' },
+      { duration: 740, easing: 'cubic-bezier(0.2, 0.8, 0.2, 1)' },
     );
     this.askAnim = anim;
     const end = () => {

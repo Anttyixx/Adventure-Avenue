@@ -26,6 +26,15 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: '2026-10-30-slower-action-morph',
+    date: 'Oct 30, 2026',
+    title: 'A gentler action bar',
+    extras: [
+      'Action bar resizing takes half a second longer for a calmer transition. Buttons still respond immediately.',
+    ],
+    features: [],
+  },
+  {
     id: '2026-10-30-immediate-results',
     date: 'Oct 30, 2026',
     title: 'Results when you act',

@@ -790,7 +790,7 @@ its pending waiting message from both the action bar and log. Confirmed purchase
 construction, renovations, investments, circus upgrades, stock trades and fees announce their
 result at the committed money event, before animation delays. Results are not announced as
 successful merely because a button was pressed; the engine must first confirm the action. Landing announcements are presentation-only, not extra saved log entries. When a player on this device has a choice to make, the bar morphs (eases its width and
-height) into their options, and morphs back to the status line once they answer. During a resize,
+height, over 740ms) into their options, and morphs back to the status line once they answer. During a resize,
 text keeps its destination layout so it does not repeatedly wrap. New messages use a 220ms stepped reveal without sliding or changing their layout. Buttons
 are usable immediately and screen readers receive the complete message. Reduced motion skips
 the text reveal. Reparenting during resizing never restarts the reveal; repeated identical status messages reuse the same content, and size measurements
