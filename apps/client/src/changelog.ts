@@ -26,6 +26,18 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: '2026-10-30-steady-action-text',
+    date: 'Oct 30, 2026',
+    title: 'Steadier action bar text',
+    features: [
+      {
+        tag: 'fix',
+        title: 'No bouncing text',
+        text: 'Action bar text no longer slides in again during resizing. Small and expanded prompts keep more precise spacing, and repeated status messages stay in place.',
+      },
+    ],
+  },
+  {
     id: '2026-10-30-action-bar-resize',
     date: 'Oct 30, 2026',
     title: 'Smoother action bar',

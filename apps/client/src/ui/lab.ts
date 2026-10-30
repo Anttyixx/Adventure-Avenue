@@ -98,6 +98,7 @@ const rnd = (n: number) => Math.floor(Math.random() * n);
  */
 const RECENT = new Set([
   'Action bar resize test',
+  'Repeated status text',
   'Turn prompt',
   'Buy prompt',
   'Venture grid (play)',
@@ -412,6 +413,13 @@ export async function openLab(app: HTMLElement, section?: string) {
     const s = addSection('prompts', 'Action bar & banners');
     row(
       s,
+      btn('Repeated status text', async () => {
+        hud.cancelPrompt();
+        for (let i = 0; i < 8; i++) {
+          hud.tick('Waiting for the next player…', 'wait');
+          await new Promise((resolve) => setTimeout(resolve, 100));
+        }
+      }),
       btn('Action bar resize test', async () => {
         // Includes updates faster than a morph, as happens during chained game events.
         const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));

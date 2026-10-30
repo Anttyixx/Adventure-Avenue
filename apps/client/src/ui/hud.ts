@@ -73,6 +73,7 @@ export class Hud {
   private logLabel = h('div', { class: 'lb-label' }, 'Game log');
   private lastAction: { text: string; kind?: IconKind } | null = null;
   private waiting: { text: string; kind?: IconKind } | null = null;
+  private shownStatus: { text: string; kind?: IconKind } | null = null;
   /** The Game log button's place while folded (it is hidden while the log is open). */
   private lineRect = { top: 0, left: 0, right: 0, width: 0, height: 0 };
   /** How many log lines the open log last showed, so new ones can fade in. */
@@ -806,6 +807,13 @@ export class Hud {
    */
   private showStatus() {
     if (this.promptResolve) return;
+    const cur = this.waiting ?? this.lastAction;
+    if (
+      this.ask.classList.contains('status') &&
+      this.shownStatus?.text === cur?.text &&
+      this.shownStatus?.kind === cur?.kind
+    )
+      return;
     const from = this.askSize();
     this.fillStatus();
     this.morphAsk(from);
@@ -814,6 +822,7 @@ export class Hud {
   private fillStatus() {
     const a = this.ask;
     const cur = this.waiting ?? this.lastAction;
+    this.shownStatus = cur;
     clear(a);
     a.classList.remove('stacked');
     a.classList.add('status');
@@ -823,7 +832,7 @@ export class Hud {
       a.append(
         h(
           'div',
-          { class: 'prompt-text ask-status rise' },
+          { class: 'prompt-text ask-status' },
           kindIcon(cur.kind),
           h('span', { class: 'tick-text' }, ...namesInColor(this.G, cur.text)),
         ),
@@ -867,14 +876,15 @@ export class Hud {
     this.updateInsets();
     if (!from || !a.classList.contains('show') || matchMedia('(prefers-reduced-motion: reduce)').matches)
       return;
-    const to = { w: a.offsetWidth, h: a.offsetHeight };
+    const rect = a.getBoundingClientRect();
+    const to = { w: rect.width, h: rect.height };
     if (Math.abs(to.w - from.w) < 1 && Math.abs(to.h - from.h) < 1) return;
     const style = getComputedStyle(a);
     const content = h('div', { class: 'ask-content' });
     // Keep the destination layout, including phone/stacked prompts, for the whole morph.
     Object.assign(content.style, {
-      width: `${a.clientWidth - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight)}px`,
-      height: `${a.clientHeight - parseFloat(style.paddingTop) - parseFloat(style.paddingBottom)}px`,
+      width: `${to.w - parseFloat(style.borderLeftWidth) - parseFloat(style.borderRightWidth) - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight)}px`,
+      height: `${to.h - parseFloat(style.borderTopWidth) - parseFloat(style.borderBottomWidth) - parseFloat(style.paddingTop) - parseFloat(style.paddingBottom)}px`,
       flexDirection: style.flexDirection,
       alignItems: style.alignItems,
       justifyContent: style.justifyContent,
@@ -1063,7 +1073,7 @@ export class Hud {
       'stacked',
       buttons.some((b) => b.icon),
     );
-    const head = h('div', { class: 'prompt-text rise' });
+    const head = h('div', { class: 'prompt-text' });
     this.ask.style.removeProperty('--pc');
     if (color != null) {
       head.append(h('span', { class: 'dot', style: `background:${PLAYER_COLORS[color]}` }));
