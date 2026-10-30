@@ -1,8 +1,8 @@
 /**
- * Dark-glass overlays floating over the board: info chip, toolbar, action bar (the status line
- * when no options are up), Game log button (expands into the log), player cards, stock market and
- * menu pop-ups,
- * tooltip, modals and banners.
+ * Dark-glass overlays floating over the board: info chip, toolbar (zoom chip, Guide, Menu),
+ * action bar (the status line when no options are up), Game log button (expands into the log),
+ * player cards and the player overview pop-up, stock market panel, menu pop-up, tooltip, modals
+ * and banners. HotSeat (host.ts) drives it; `prompt()` is how most human decisions are asked.
  */
 import {
   PLAYER_COLORS,

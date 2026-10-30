@@ -1,3 +1,8 @@
+/**
+ * The game's data types. `GameState` is the whole match as one plain, serializable object
+ * (saved to localStorage and copied between devices online), so it holds no classes, Maps or
+ * functions. Fields added later are optional so old saves keep loading.
+ */
 export type RuleSet = 'standard' | 'easy';
 
 export type SuitType = 'spade' | 'heart' | 'diamond' | 'club';

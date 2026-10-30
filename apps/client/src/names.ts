@@ -1,3 +1,7 @@
+/**
+ * Names and descriptions of squares for the interface: tooltips, prompts, the log and the guide.
+ * `BUILDING_INFO` says what each vacant plot building does for a rival and for its owner.
+ */
 import { BUILDINGS, type GameState, type Square } from '@aa/engine';
 
 const SPECIAL: Record<string, string> = {

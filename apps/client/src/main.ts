@@ -1,3 +1,8 @@
+/**
+ * Start-up and screen routing. Loads the art, checks for a newer build, then opens the screen the
+ * address asks for (#ui-lab, #stocks-lab, #editor, an invite link) or the main menu, and wires
+ * the screens together: menu -> setup -> game, hosting, joining, resuming and the board editor.
+ */
 import { K, cloneState, newGame, type BoardDef } from '@aa/engine';
 import { sound } from './audio';
 import { HotSeat } from './host';

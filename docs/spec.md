@@ -27,28 +27,26 @@ intent and the prototype as a working example. Multiplayer in the prototype is l
 
 ## Architecture
 
-One shared rules engine runs on the server; the client only draws and sends intents.
+There is no game server: every device runs the shared rules engine, and the client only draws.
+Full details in `docs/architecture.md`; where each file lives is in `docs/codemap.md`.
 
-- `apps/client` (GitHub Pages): board with HD tiles and pixel sprites; UI (scoreboard, actions,
-  modals); sends intents, plays events. In hot-seat the engine runs locally.
-- `apps/server` (Node + Socket.IO on Fly.io): rooms, seats, room codes; turn runner asks one seat;
-  timers, CPU seats, reconnect; snapshot + action log per turn.
-- `packages/engine` (shared): game state, board data, constants, every formula; turn state machine
-  that emits decision requests and events; seeded RNG, CPU decision rules, unit tests and
-  simulations.
+- `packages/engine` (shared): game state, board data, constants, every formula; the turn flow,
+  which raises decision requests and emits events; seeded RNG, CPU decision rules, unit tests
+  and simulations.
+- `apps/client` (GitHub Pages): the board (HD tiles and pixel sprites on a canvas) and the HTML
+  interface. It runs the engine, answers decisions from the UI or the CPU rules and animates the
+  events. Online games connect browsers directly (WebRTC through PeerJS) and keep every copy of
+  the engine in lockstep by sharing decision answers (see "Online multiplayer").
+- `apps/server`: not used; see its README for when one would be worth adding.
 
-The engine never touches the DOM or sockets: it takes the current state plus a decision and returns
-the new state and a list of events. The client renders events; the server validates intents and
-runs the engine.
+The engine never touches the DOM or sockets. The `Game` class raises decisions through
+`GameIO.decide(request)` and announces changes through `GameIO.emit(event)`; the client's
+`HotSeat` answers decisions (UI, CPU, or the network) and renders events.
 
-**Porting from the prototype:** its turn flow is written as async functions that await a human or
-CPU decision (`ask`, `modalChoose`, `stockModal`...). In the engine, replace each await with a
-"decision needed" request that carries the options; the client (hot-seat) or server (online)
-answers it. All rendering, `floatAt`, `coins` and log text stay in the client.
-
-> Implementation note: the engine's `Game` class raises decisions through `GameIO.decide(request)`
-> and announces changes through `GameIO.emit(event)`. The hot-seat host answers from the UI or the
-> CPU rules; a server host will answer from sockets.
+**Porting from the prototype:** its turn flow was written as async functions that await a human
+or CPU decision (`ask`, `modalChoose`, `stockModal`...). In the engine each await became a
+decision request that carries the options; all rendering, floating text, coins and log text stay
+in the client.
 
 ## Game state
 

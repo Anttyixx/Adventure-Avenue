@@ -1,7 +1,9 @@
 /**
- * The player overview: everything about one player, shown when their player card is clicked
- * (the card expands over the other cards). Net worth and how it splits between cash, properties
- * and stock, its history, the properties by district, the stock held and the money earned.
+ * The player overview: everything about one player, in a pop-up in the middle of the screen
+ * when their player card is clicked (the pop-up itself is managed by `Hud.openOverview`). Net
+ * worth and how it splits between cash, properties and stock, the money earned, the properties
+ * by district (click one to find it on the board), the shares held and, once the game is over,
+ * net worth over the game.
  */
 import {
   BUILDINGS,

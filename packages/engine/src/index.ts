@@ -1,3 +1,4 @@
+/** The engine's public API: the client imports everything from '@aa/engine'. */
 export * from './constants';
 export * from './types';
 export * from './decisions';

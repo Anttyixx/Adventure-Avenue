@@ -1,6 +1,7 @@
 /**
- * Modal dialogs for human decisions: stocks, investing, building and renovating, trades,
- * auctions, debt and the rules summary.
+ * Dialogs and prompts for human decisions: buying and selling stock (and the district picker
+ * for stock venture cards), the investment amount, and the building choice for plots and
+ * renovations. Choices made on the board (trades, auctions, debt...) are in pick.ts.
  */
 import {
   BUILDINGS,
