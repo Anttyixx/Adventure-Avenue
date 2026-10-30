@@ -817,6 +817,7 @@ export class Hud {
     const from = this.askSize();
     this.fillStatus();
     this.morphAsk(from);
+    this.revealAskText();
   }
 
   private fillStatus() {
@@ -838,6 +839,21 @@ export class Hud {
         ),
       );
     }
+  }
+
+  /** Reveal the complete laid-out message without moving text or delaying its buttons. */
+  private revealAskText() {
+    const text = this.ask.querySelector<HTMLElement>('.prompt-text');
+    if (!text || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    // A JS animation stays on the same timeline when the resize wrapper is removed.
+    // Keep the whole message in the DOM for wrapping, selection and screen readers.
+    text.animate(
+      [
+        { clipPath: 'inset(0 100% 0 0)', opacity: 0.6 },
+        { clipPath: 'inset(0 0% 0 0)', opacity: 1 },
+      ],
+      { duration: 220, easing: 'steps(16, end)' },
+    );
   }
 
   /** Release the temporary layout before measuring or replacing the bar's content. */
@@ -1112,6 +1128,7 @@ export class Hud {
         row.append(el);
       }
       this.morphAsk(from);
+      this.revealAskText();
     });
   }
 

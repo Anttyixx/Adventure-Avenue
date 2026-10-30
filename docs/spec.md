@@ -776,8 +776,9 @@ rolling and walking are waits too) or else the last thing that happened, with th
 that kind of action and player names in their colors. A wait stays until the next action or wait
 replaces it. When a player on this device has a choice to make, the bar morphs (eases its width and
 height) into their options, and morphs back to the status line once they answer. During a resize,
-text keeps its destination layout so it does not repeatedly wrap. Text has no separate sliding
-animation, repeated identical status messages reuse the same content, and size measurements
+text keeps its destination layout so it does not repeatedly wrap. New messages use a 220ms stepped reveal without sliding or changing their layout. Buttons
+are usable immediately and screen readers receive the complete message. Reduced motion skips
+the text reveal. Reparenting during resizing never restarts the reveal; repeated identical status messages reuse the same content, and size measurements
 retain fractional pixels to avoid a small text shift at the end of a resize. Rapid updates start from the
 bar's visible size, and changes to screen size or player-card space retarget the resize. Reduced
 motion skips the size animation. The UI Lab's “Action bar resize test” exercises short, long and

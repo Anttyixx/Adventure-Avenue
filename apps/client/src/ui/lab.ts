@@ -97,6 +97,7 @@ const rnd = (n: number) => Math.floor(Math.random() * n);
  * are easy to find. Update this list with each change.
  */
 const RECENT = new Set([
+  'Text reveal',
   'Action bar resize test',
   'Repeated status text',
   'Turn prompt',
@@ -413,6 +414,16 @@ export async function openLab(app: HTMLElement, section?: string) {
     const s = addSection('prompts', 'Action bar & banners');
     row(
       s,
+      btn('Text reveal', async () => {
+        hud.cancelPrompt();
+        hud.tick('Your turn is coming up…', 'wait');
+        await new Promise((resolve) => setTimeout(resolve, 650));
+        await hud.prompt(
+          'Choose a venture tile, then press OK to reveal your reward.',
+          [{ label: 'OK', value: true, main: true }],
+          cur().color,
+        );
+      }),
       btn('Repeated status text', async () => {
         hud.cancelPrompt();
         for (let i = 0; i < 8; i++) {

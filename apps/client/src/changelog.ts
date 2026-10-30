@@ -26,6 +26,18 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: '2026-10-30-action-text-reveal',
+    date: 'Oct 30, 2026',
+    title: 'A little life in each message',
+    features: [
+      {
+        tag: 'better',
+        title: 'Quick text reveal',
+        text: 'New action bar messages reveal with a quick typing-style sweep. Text stays in place, buttons work immediately, and reduced motion shows the message instantly.',
+      },
+    ],
+  },
+  {
     id: '2026-10-30-steady-action-text',
     date: 'Oct 30, 2026',
     title: 'Steadier action bar text',
