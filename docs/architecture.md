@@ -236,3 +236,10 @@ explicit. `Hud.tick()` accepts a result hold duration. `status()` records the ac
 immediately for the log, while the action bar holds the preceding result up to 2.5 seconds.
 New results cancel old timers; movement/turn statuses bypass the hold, local prompts clear it,
 and HUD destruction cancels it. This timer never blocks engine or network decisions.
+
+`paymentActivity()` formats confirmed transaction results from money events. `HotSeat.emit`
+publishes these before `beforePay`/money animation waits, using already committed engine state.
+Buyouts have split payments, so the early message does not present one part as the total.
+`Hud.finishPrompt()` clears the completed wait and its timer, including the log's waiting line.
+The later engine log remains authoritative and adds full transaction details without extra log entries.
+UI Lab: “Buy result timing” uses an isolated cloned game and an actual engine purchase.

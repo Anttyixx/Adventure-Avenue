@@ -26,6 +26,18 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: '2026-10-30-immediate-results',
+    date: 'Oct 30, 2026',
+    title: 'Results when you act',
+    features: [
+      {
+        tag: 'fix',
+        title: 'Bought means bought',
+        text: 'Confirmed purchases and other money actions update the action bar before their animations. Completing a choice no longer brings back its old deciding message.',
+      },
+    ],
+  },
+  {
     id: '2026-10-30-observer-status',
     date: 'Oct 30, 2026',
     title: 'Follow every turn',

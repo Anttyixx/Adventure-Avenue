@@ -785,8 +785,11 @@ Card movement without a matching roll describes the number of spaces without cla
 Landing announces the named space. Completed actions and landings remain in the action bar
 for up to 2.5 seconds before a pending waiting message replaces them. A newer result, actual
 movement or a new turn replaces stale text immediately. The game does not pause for this timer;
-the game log shows the pending decision immediately. Local players receive their interactive
-choices immediately. Landing announcements are presentation-only, not extra saved log entries. When a player on this device has a choice to make, the bar morphs (eases its width and
+the game log shows the pending decision immediately. Local players receive their interactive choices immediately. Resolving a local prompt removes
+its pending waiting message from both the action bar and log. Confirmed purchases, buyouts,
+construction, renovations, investments, circus upgrades, stock trades and fees announce their
+result at the committed money event, before animation delays. Results are not announced as
+successful merely because a button was pressed; the engine must first confirm the action. Landing announcements are presentation-only, not extra saved log entries. When a player on this device has a choice to make, the bar morphs (eases its width and
 height) into their options, and morphs back to the status line once they answer. During a resize,
 text keeps its destination layout so it does not repeatedly wrap. New messages use a 220ms stepped reveal without sliding or changing their layout. Buttons
 are usable immediately and screen readers receive the complete message. Reduced motion skips

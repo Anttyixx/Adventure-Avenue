@@ -30,7 +30,7 @@ import { showResults } from './ui/results';
 import { investOnBoard } from './ui/invest';
 import { AuctionView } from './ui/auction';
 import { confettiRain } from './ui/confetti';
-import { activity, PRE_ROLL_STEPS } from './ui/activity';
+import { activity, paymentActivity, PRE_ROLL_STEPS } from './ui/activity';
 import {
   answerTradeOnBoard,
   auctionOnBoard,
@@ -733,6 +733,11 @@ export class HotSeat implements GameIO {
         await this.wait(T.land);
         break;
       case 'money': {
+        // The engine has committed the payment and property changes already. Announce that
+        // result before any pacing delay, so a completed choice never looks undecided.
+        const completed = paymentActivity(G, e);
+        if (completed)
+          hud.tick(completed.text, completed.kind, this.localHuman(G.order[G.turn]) ? 0 : T.actionResult);
         // Buying something: a beat after the choice before the coins go to the bank.
         if (['Purchase', 'Construction', 'Buyout', 'Renovation'].includes(e.reason))
           await this.wait(T.beforePay);

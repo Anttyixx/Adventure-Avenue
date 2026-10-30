@@ -2,7 +2,7 @@
  * What a player is doing while the game waits on their choice, for the status line and the
  * waiting line in the game log ("Rosa is buying stocks...").
  */
-import type { DecisionRequest, GameState } from '@aa/engine';
+import type { DecisionRequest, GameEvent, GameState } from '@aa/engine';
 import type { IconKind } from './log';
 
 export interface Activity {
@@ -78,3 +78,34 @@ export const PRE_ROLL_STEPS = {
   auction: { what: 'choosing a shop to auction', kind: 'property' },
   renovate: { what: 'choosing a shop to renovate', kind: 'property' },
 } as const satisfies Record<string, { what: string; kind: IconKind }>;
+
+/** Money events arrive after the engine commits the action, before its visual effects. */
+export function paymentActivity(G: GameState, event: Extract<GameEvent, { type: 'money' }>): Activity | null {
+  const payer = G.players[event.from]?.name;
+  const receiver = G.players[event.to]?.name;
+  const amount = `${event.amount.toLocaleString('en-US')}G`;
+  const result = (text: string, kind: IconKind = 'property'): Activity => ({ text, kind });
+  switch (event.reason) {
+    case 'Purchase':
+      return payer ? result(`${payer} bought a property for ${amount}.`) : null;
+    case 'Construction':
+      return payer ? result(`${payer} built a new building for ${amount}.`) : null;
+    // A buyout has multiple payments. Do not mistake a single payment for its total price.
+    case 'Buyout':
+      return payer ? result(`${payer} bought out a rival property.`) : null;
+    case 'Renovation':
+      return payer ? result(`${payer} renovated a property for ${amount}.`) : null;
+    case 'Investment':
+      return payer ? result(`${payer} invested ${amount} in a shop.`) : null;
+    case 'Circus upgrade':
+      return payer ? result(`${payer} upgraded the circus for ${amount}.`) : null;
+    case 'Stock':
+      return payer ? result(`${payer} bought shares for ${amount}.`, 'stock') : null;
+    case 'Stock sale':
+      return receiver ? result(`${receiver} sold shares for ${amount}.`, 'stock') : null;
+    case 'Fee':
+      return payer && receiver ? result(`${payer} paid ${receiver} ${amount}.`, 'money') : null;
+    default:
+      return null;
+  }
+}

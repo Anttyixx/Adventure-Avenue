@@ -1151,8 +1151,12 @@ export class Hud {
   private finishPrompt() {
     this.promptResolve = null;
     this.mainButton = null;
-    // Back to the status line.
+    // The choice is complete. Never restore its old "deciding" message while effects animate.
+    this.waiting = null;
+    clearTimeout(this.resultTimer);
+    this.resultUntil = 0;
     this.showStatus();
+    if (this.logOpen) this.renderLog();
   }
 
   cancelPrompt() {

@@ -43,6 +43,7 @@ import { clear, fmt, h } from './dom';
 import { shortName } from '../names';
 import { DerbyView, MemoryView, ReelsView, VentureView } from './games';
 import { Hud } from './hud';
+import { paymentActivity } from './activity';
 import { clearGuest, loadGuest, saveGuest } from '../save';
 import { mainMenu } from './menu';
 import { openWhatsNew } from './whatsnew';
@@ -97,6 +98,7 @@ const rnd = (n: number) => Math.floor(Math.random() * n);
  * are easy to find. Update this list with each change.
  */
 const RECENT = new Set([
+  'Buy result timing',
   'Observer result → waiting',
   'Text reveal',
   'Action bar resize test',
@@ -416,6 +418,36 @@ export async function openLab(app: HTMLElement, section?: string) {
     const s = addSection('prompts', 'Action bar & banners');
     row(
       s,
+      btn('Buy result timing', async () => {
+        const copy = cloneState(G);
+        const p = copy.players[cur().id];
+        const sq = copy.nodes.find((n) => n.t === 'shop')!;
+        sq.owner = -1;
+        hud.status(`${p.name} is deciding whether to buy the shop...`, 'property', true);
+        const yes = await hud.prompt(
+          'Buy this property?',
+          [
+            { label: 'Buy', value: true, main: true },
+            { label: 'Pass', value: false },
+          ],
+          p.color,
+        );
+        if (!yes) {
+          hud.tick(`${p.name} passed on the property.`, 'property');
+          return;
+        }
+        const game = new Game(copy, {
+          ...cpuIO(() => copy),
+          emit: async (event) => {
+            if (event.type === 'money') {
+              const completed = paymentActivity(copy, event);
+              if (completed) hud.tick(completed.text, completed.kind);
+              await new Promise((resolve) => setTimeout(resolve, 2000));
+            } else if (event.type === 'log') hud.tick(event.text, event.kind);
+          },
+        });
+        await game.buySquare(p, sq, sq.value, null, 'bought');
+      }),
       btn('Observer result → waiting', () => {
         hud.cancelPrompt();
         hud.tick(`${cur().name} landed on Bay Market.`, 'move', 2500);
