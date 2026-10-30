@@ -309,7 +309,8 @@ document.addEventListener(
 function route() {
   const lab = location.hash.match(/^#ui-lab(?:\/(\w+))?/);
   const joinCode = new URLSearchParams(location.search).get('join');
-  if (lab) void openLab(app, lab[1]);
+  if (location.hash.startsWith('#arcade-lab')) void openLab(app, 'arcade');
+  else if (lab) void openLab(app, lab[1]);
   else if (location.hash.startsWith('#stocks-lab'))
     openStocksLab(app, () => {
       location.hash = '';

@@ -79,7 +79,8 @@ export const LAB_SECTIONS = [
   { id: 'prompts', title: 'Action bar & banners' },
   { id: 'board', title: 'Board effects' },
   { id: 'dialogs', title: 'Dialogs' },
-  { id: 'games', title: 'Venture & arcade' },
+  { id: 'games', title: 'Venture' },
+  { id: 'arcade', title: 'Arcade Lab' },
   { id: 'art', title: 'Property designs' },
   { id: 'panels', title: 'Log, market & results' },
 ] as const;
@@ -96,6 +97,17 @@ const rnd = (n: number) => Math.floor(Math.random() * n);
  * are easy to find. Update this list with each change.
  */
 const RECENT = new Set([
+  'Venture grid (play)',
+  'Venture (CPU view)',
+  'Line of 5 bonus',
+  'Lucky Reels',
+  'Memory Blocks',
+  'Coin Derby',
+  'Reels: jackpot',
+  'Reels: pair',
+  'Reels: no match',
+  'Memory: every prize',
+  'Derby: photo finish',
   'Player overview',
   'Guide',
   'buyout',
@@ -877,6 +889,15 @@ export async function openLab(app: HTMLElement, section?: string) {
         );
       }),
     );
+  }
+
+  // Arcade Lab: replay each game or inspect a known outcome without changing a save.
+  {
+    const s = addSection(
+      'arcade',
+      'Arcade Lab',
+      'Play as often as you like. These games use sample players and never change your saved game. Outcome controls preview specific results.',
+    );
     row(
       s,
       btn('Lucky Reels', async () => {
@@ -928,6 +949,49 @@ export async function openLab(app: HTMLElement, section?: string) {
         }
         await view.race(backers, frames, coins, pos.indexOf(Math.max(...pos)), true, 1);
         result('Derby pick', pick);
+      }),
+    );
+  }
+
+  {
+    const s = sections.get('arcade')!;
+    for (const [label, symbols, prize] of [
+      ['Reels: jackpot', ['seven', 'seven', 'seven'], '300G'],
+      ['Reels: pair', ['coin', 'coin', 'wild'], '20G'],
+      ['Reels: no match', ['coin', 'wild', 'stock'], 'No match'],
+    ] as [string, ReelSymbol[], string][]) {
+      row(
+        s,
+        btn(label, async () => {
+          const view = new ReelsView(
+            hud,
+            symbols.map((symbol) => new Array<ReelSymbol>(8).fill(symbol)),
+            cur().name,
+          );
+          await view.show(symbols, prize, true, 1);
+        }),
+      );
+    }
+    row(
+      s,
+      btn('Memory: every prize', async () => {
+        for (const prize of ['shopsUp', 'gold', 'wild', 'shopsDown', 'small'] as MemoryPrize[]) {
+          const view = new MemoryView(hud, new Array<MemoryPrize>(9).fill(prize), cur().name);
+          const picked = await view.play();
+          await view.show(picked, prize, true, 1);
+        }
+      }),
+      btn('Derby: photo finish', async () => {
+        const view = new DerbyView(hud, G, cur().name);
+        const picked = await view.pick();
+        const backers = new Array<number>(DERBY_RACERS).fill(-1);
+        backers[picked] = cur().id;
+        const frames = Array.from({ length: 101 }, (_, f) =>
+          Array.from({ length: DERBY_RACERS }, (_, i) =>
+            Math.min(DERBY_LENGTH, f * (i === picked ? 1 : 0.99)),
+          ),
+        );
+        await view.race(backers, frames, [1, 2, 3, 4, 5], picked, true, 1);
       }),
     );
   }

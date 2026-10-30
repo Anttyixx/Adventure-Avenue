@@ -2128,6 +2128,57 @@ input[type='range'] {
   flex-direction: column;
   align-items: center;
 }
+/* Only the board determines the center; result cards never change its position. */
+.modal.venture-modal {
+  --venture-size: min(360px, calc(100vw - 64px), max(112px, calc(100dvh - 280px)));
+  position: relative;
+  width: calc(var(--venture-size) + 32px);
+  overflow: visible;
+  flex-shrink: 0;
+}
+.venture-modal .vgrid {
+  width: var(--venture-size);
+}
+.venture-modal .v-info {
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(420px, calc(100vw - 32px));
+  margin-top: 12px;
+  min-height: 0;
+}
+.venture-modal .vcard {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: calc((100dvh - var(--venture-size)) / 2 - 32px);
+  animation: venture-result-in 0.25s ease-out;
+}
+.venture-modal .vc-text {
+  overflow-y: auto;
+  min-height: 0;
+}
+.venture-modal .btn-row {
+  flex-shrink: 0;
+  margin: 0;
+  justify-content: center;
+}
+@keyframes venture-result-in {
+  from {
+    opacity: 0;
+    transform: translateY(-12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .venture-modal .vcard {
+    animation: none;
+  }
+}
 .vgrid {
   display: grid;
   grid-template-columns: repeat(8, 1fr);
@@ -5935,4 +5986,80 @@ div.sl-inline label {
 .pcard[role='button']:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
+}
+
+/* Arcade: clear controls, selected reels and readable results on short screens. */
+.arcade-modal .btn-row {
+  justify-content: center;
+  flex-wrap: wrap;
+}
+.arcade-modal .btn {
+  min-height: 44px;
+}
+.arcade-modal .g-result {
+  border-radius: 10px;
+  padding: 8px;
+  background: rgba(123, 75, 214, 0.14);
+}
+.arcade-modal .reel.next-reel {
+  border-color: #ba9bff;
+  box-shadow: 0 0 16px #7b4bd666;
+}
+.arcade-modal .reel.stopped {
+  box-shadow: inset 0 0 0 2px #ffd84a;
+}
+.arcade-modal .block {
+  transition:
+    transform 0.2s,
+    box-shadow 0.2s;
+}
+.arcade-modal .mgrid.picking .block:hover,
+.arcade-modal .mgrid.picking .block:focus-visible {
+  transform: translateY(-3px);
+  box-shadow: 0 0 0 3px #ffd84a;
+}
+.arcade-modal .block:disabled {
+  opacity: 1;
+}
+.arcade-modal .runner.backed {
+  outline: 3px solid #ffd84a;
+}
+@media (max-height: 500px) {
+  .arcade-modal {
+    padding: 10px;
+  }
+  .arcade-modal .modal-head {
+    margin-bottom: 4px;
+  }
+  .arcade-modal .hint {
+    margin: 4px 0;
+  }
+  .arcade-modal .g-result {
+    font-size: 20px;
+    margin-top: 4px;
+    padding: 4px;
+  }
+  .arcade-modal .mgrid {
+    width: 240px;
+    gap: 4px;
+  }
+  .arcade-modal .block {
+    aspect-ratio: 2.4;
+  }
+  .arcade-modal .btn-row {
+    margin-top: 6px;
+  }
+}
+
+@media (max-height: 500px) {
+  .venture-modal .vcard {
+    padding: 6px 12px;
+    gap: 4px;
+  }
+  .venture-modal .vc-title {
+    font-size: 20px;
+  }
+  .venture-modal .btn {
+    padding: 6px 16px;
+  }
 }

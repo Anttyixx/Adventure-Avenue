@@ -399,7 +399,12 @@ economy, so its numbers set match length (see Balance constants).
 ## Venture cards
 
 Landing on a Venture square, or stopping exactly on a suit square, opens the 8 x 8 venture grid; the
-player flips one face-down panel and resolves its card.
+player flips one face-down panel and resolves its card. The board container stays centered and
+stationary, with no header or OK button while choosing. After the flip, a separate message
+animates in underneath with the card's title, description and an OK button. If a line bonus was
+won, its message appears first; dismissing it shows the venture card with its own OK button.
+Spectators and CPU turns show the same sequence with timed dismissal or a Close button.
+On short screens the board shrinks and long message text scrolls to keep the button accessible.
 
 - **Grid:** 64 panels, each pre-assigned a random card from the deck for the current rule set. A
   flipped panel takes the player's color. When every panel is flipped, the grid resets.
@@ -448,6 +453,15 @@ player's next turn begins.
 cleared. This is what makes "until your next turn" effects expire.
 
 ## Arcade minigames
+
+Arcade windows keep instructions and results clearly separated. Lucky Reels highlights the next
+reel and names each Stop button by reel number. Memory Blocks shows a remember/pick/reveal
+status and enables blocks only during the pick. Coin Derby highlights your racer and counts
+down before the race. Buttons stay usable on landscape phones.
+
+**Arcade Lab:** the dev menu's Arcade Lab (`#arcade-lab`, also a UI Lab section) provides replay
+buttons for all three games, fixed reel jackpot/pair/no-match previews, a tour of every memory
+prize, and a close derby finish. It uses sample state and leaves saved games untouched.
 
 Landing on the Arcade picks one of three short games at random; prizes scale with the player's level
 (L) so they stay relevant late in the match.

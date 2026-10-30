@@ -26,6 +26,19 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: '2026-10-30-venture-reveal',
+    extras: ['Clearer arcade controls and results', 'Arcade Lab: replay games and try specific outcomes'],
+    date: 'Oct 30, 2026',
+    title: 'Venture and arcade polish',
+    features: [
+      {
+        tag: 'better',
+        title: 'One reveal at a time',
+        text: 'The venture board stays centered while your card appears underneath. Line bonuses appear first, with their own OK button before the card is revealed.',
+      },
+    ],
+  },
+  {
     id: '2026-10-30-guide',
     date: 'Oct 30, 2026',
     title: 'Game guide and smarter zoom',

@@ -23,6 +23,9 @@ When the spec and the code disagree, ask the owner which is right; then fix the 
 
 ## Workflow rules
 
+- **Explain things simply.** The owner has limited coding experience. Use plain language and
+  keep explanations short and easy to understand. Explain technical terms when needed, and
+  save deeper technical detail for when the owner asks for it.
 - **Branches.** Work happens on `dev`. Only merge or push to `main` when the owner says the build
   is stable. Pushing `dev` deploys the preview to `/dev/` on GitHub Pages; pushing `main` deploys
   the site root.

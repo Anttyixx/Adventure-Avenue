@@ -157,6 +157,7 @@ function openDevMenu() {
           },
           'Board editor',
         ),
+        h('button', { class: 'btn', onclick: () => go('#arcade-lab') }, 'Arcade Lab'),
         h('button', { class: 'btn', onclick: () => location.reload() }, 'Reload page'),
       ),
     ),
