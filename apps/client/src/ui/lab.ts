@@ -97,6 +97,9 @@ const rnd = (n: number) => Math.floor(Math.random() * n);
  * are easy to find. Update this list with each change.
  */
 const RECENT = new Set([
+  'Action bar resize test',
+  'Turn prompt',
+  'Buy prompt',
   'Venture grid (play)',
   'Venture (CPU view)',
   'Line of 5 bonus',
@@ -409,6 +412,42 @@ export async function openLab(app: HTMLElement, section?: string) {
     const s = addSection('prompts', 'Action bar & banners');
     row(
       s,
+      btn('Action bar resize test', async () => {
+        // Includes updates faster than a morph, as happens during chained game events.
+        const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+        const short = () => {
+          void hud.prompt('Ready?', [{ label: 'OK', value: true, main: true }]);
+        };
+        const long = () => {
+          void hud.prompt(
+            question('Property dividend', [
+              [
+                'Reward',
+                'Receive 30G for every property you own. Buy shares, improve your shops, and return to the bank to collect your promotion.',
+              ],
+            ]),
+            [
+              { label: 'OK', value: true, main: true },
+              { label: 'Details', value: false },
+            ],
+            cur().color,
+          );
+        };
+        short();
+        await wait(350);
+        long();
+        await wait(350);
+        short();
+        await wait(80);
+        long();
+        await wait(80);
+        hud.cancelPrompt();
+        hud.status('Waiting for the next player…', 'wait');
+        await wait(80);
+        long();
+        await wait(350);
+        short();
+      }),
       btn('Turn prompt', async () =>
         result(
           'Turn prompt',

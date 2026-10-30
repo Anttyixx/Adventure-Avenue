@@ -3435,9 +3435,15 @@ input[type='range'] {
   white-space: nowrap;
   text-overflow: ellipsis;
 }
-/* Clips the content while the bar eases between sizes. */
+/* The shell clips a fixed destination layout, so text never rewraps mid-animation. */
 .prompt-center.morphing {
   overflow: hidden;
+  justify-content: center;
+}
+.prompt-center > .ask-content {
+  display: flex;
+  flex: none;
+  min-width: 0;
 }
 .prompt-center.show {
   opacity: 1;

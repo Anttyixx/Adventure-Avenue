@@ -213,3 +213,13 @@ first touch or key press, as browsers require.
   in `boards/builtin.ts`; the board tests check it is valid.
 - **New sound:** add the name to `Sfx` and `SFX_NAMES` and a `case` in `AudioEngine.play`
   (`audio.ts`).
+
+### Action bar resizing
+
+`Hud.askSize()` captures the visible size and synchronously releases any previous animation.
+`morphAsk()` measures the destination once, holds its content in a temporary `.ask-content`
+wrapper at that width and height, then animates the shell for 240ms. Completion unwraps the
+same nodes, preserving listeners and focus. The root/card ResizeObserver retargets the bar
+when available space changes. A MutationObserver batches later text and form changes into one
+resize per frame. Both observers are disconnected when the HUD is destroyed. Reduced motion
+uses the natural layout immediately. UI Lab: “Action bar resize test”.

@@ -775,7 +775,11 @@ on a player to do ("Blue is buying stocks...", "Blue is deciding which space to 
 rolling and walking are waits too) or else the last thing that happened, with the log icon for
 that kind of action and player names in their colors. A wait stays until the next action or wait
 replaces it. When a player on this device has a choice to make, the bar morphs (eases its width and
-height) into their options, and morphs back to the status line once they answer. Above the player
+height) into their options, and morphs back to the status line once they answer. During a resize,
+text keeps its destination layout so it does not repeatedly wrap. Rapid updates start from the
+bar's visible size, and changes to screen size or player-card space retarget the resize. Reduced
+motion skips the size animation. The UI Lab's “Action bar resize test” exercises short, long and
+interrupted prompts. Above the player
 cards, right-aligned: the **Game log button**; tapping it morphs it into the game log (turn by
 turn, newest at the bottom, scrollable back to the start of the game), exactly as wide as the
 cards and fitting between the toolbar and the cards. The current turn's card ends with a waiting

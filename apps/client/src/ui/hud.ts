@@ -79,6 +79,11 @@ export class Hud {
   private logSeen = -1;
   /** The action bar morphing between sizes (status line, options). */
   private askAnim: Animation | null = null;
+  /** Holds the new content at its final width while the surrounding bar resizes. */
+  private askContent: HTMLElement | null = null;
+  private resize: ResizeObserver;
+  private askChanges: MutationObserver;
+  private askFrame = 0;
   /** Round, target and rules, shown at the top of the game menu. */
   gameInfo = h('div', { class: 'gm-info' });
   /** The current player's options, centered near the bottom of the board. */
@@ -191,12 +196,34 @@ export class Hud {
     this.buildMenu();
     window.addEventListener('keydown', this.onKey);
     board.onHover = (id, x, y) => this.showTooltip(id, x, y);
-    const resize = new ResizeObserver(() => this.updateInsets());
-    resize.observe(this.root);
-    resize.observe(this.cardsWrap);
+    this.resize = new ResizeObserver(() => {
+      // A phone rotation or changed card width can change the space available to the bar.
+      const from = this.askSize();
+      this.morphAsk(from);
+    });
+    this.resize.observe(this.root);
+    this.resize.observe(this.cardsWrap);
+    this.askChanges = new MutationObserver((records) => {
+      // Prices, coin icons and form details can change after prompt() has returned.
+      // Ignore our own shell/wrapper moves so they cannot trigger an animation loop.
+      const changed = records.some(
+        ({ target }) =>
+          target !== this.ask && !(target instanceof Element && target.classList.contains('ask-content')),
+      );
+      if (!changed || this.askFrame || !this.ask.classList.contains('show')) return;
+      this.askFrame = requestAnimationFrame(() => {
+        this.askFrame = 0;
+        this.morphAsk(this.askSize());
+      });
+    });
+    this.askChanges.observe(this.ask, { childList: true, characterData: true, subtree: true });
   }
 
   destroy() {
+    this.resize.disconnect();
+    this.askChanges.disconnect();
+    cancelAnimationFrame(this.askFrame);
+    this.stopAskMorph();
     window.removeEventListener('keydown', this.onKey);
     this.root.remove();
   }
@@ -804,35 +831,72 @@ export class Hud {
     }
   }
 
-  /** The action bar's size now (mid-morph if one is running), or null while it is hidden. */
+  /** Release the temporary layout before measuring or replacing the bar's content. */
+  private stopAskMorph() {
+    const anim = this.askAnim;
+    this.askAnim = null;
+    // Clear callbacks first: an old cancellation must never finish a newer animation.
+    if (anim) {
+      anim.onfinish = null;
+      anim.oncancel = null;
+      anim.cancel();
+    }
+    if (this.askContent) {
+      const focused = this.ask.contains(document.activeElement)
+        ? (document.activeElement as HTMLElement)
+        : null;
+      this.askContent.replaceWith(...this.askContent.childNodes);
+      this.askContent = null;
+      focused?.focus({ preventScroll: true });
+    }
+    this.ask.classList.remove('morphing');
+  }
+
+  /** Capture the visible size before cancelling, including an interrupted resize. */
   private askSize() {
     const a = this.ask;
-    const size = a.classList.contains('show') ? { w: a.offsetWidth, h: a.offsetHeight } : null;
-    this.askAnim?.cancel();
+    const rect = a.getBoundingClientRect();
+    const size = a.classList.contains('show') ? { w: rect.width, h: rect.height } : null;
+    this.stopAskMorph();
     return size;
   }
 
-  /** Ease the action bar from its old size to the size of its new content. */
+  /** Measure once, then resize the shell without repeatedly rewrapping its text. */
   private morphAsk(from: { w: number; h: number } | null) {
     const a = this.ask;
     this.updateInsets();
     if (!from || !a.classList.contains('show') || matchMedia('(prefers-reduced-motion: reduce)').matches)
       return;
     const to = { w: a.offsetWidth, h: a.offsetHeight };
-    if (Math.abs(to.w - from.w) < 2 && Math.abs(to.h - from.h) < 2) return;
+    if (Math.abs(to.w - from.w) < 1 && Math.abs(to.h - from.h) < 1) return;
+    const style = getComputedStyle(a);
+    const content = h('div', { class: 'ask-content' });
+    // Keep the destination layout, including phone/stacked prompts, for the whole morph.
+    Object.assign(content.style, {
+      width: `${a.clientWidth - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight)}px`,
+      height: `${a.clientHeight - parseFloat(style.paddingTop) - parseFloat(style.paddingBottom)}px`,
+      flexDirection: style.flexDirection,
+      alignItems: style.alignItems,
+      justifyContent: style.justifyContent,
+      gap: style.gap,
+    });
+    const focused = a.contains(document.activeElement) ? (document.activeElement as HTMLElement) : null;
+    content.append(...a.childNodes);
+    a.append(content);
+    focused?.focus({ preventScroll: true });
+    this.askContent = content;
     a.classList.add('morphing');
     const anim = a.animate(
       [
         { width: `${from.w}px`, height: `${from.h}px`, minHeight: '0px' },
         { width: `${to.w}px`, height: `${to.h}px`, minHeight: '0px' },
       ],
-      { duration: 280, easing: 'cubic-bezier(0.2, 0.8, 0.2, 1)' },
+      { duration: 240, easing: 'cubic-bezier(0.2, 0.8, 0.2, 1)' },
     );
     this.askAnim = anim;
     const end = () => {
       if (this.askAnim !== anim) return;
-      this.askAnim = null;
-      a.classList.remove('morphing');
+      this.stopAskMorph();
       this.updateInsets();
     };
     anim.onfinish = end;
@@ -1000,6 +1064,7 @@ export class Hud {
       buttons.some((b) => b.icon),
     );
     const head = h('div', { class: 'prompt-text rise' });
+    this.ask.style.removeProperty('--pc');
     if (color != null) {
       head.append(h('span', { class: 'dot', style: `background:${PLAYER_COLORS[color]}` }));
       this.ask.style.setProperty('--pc', PLAYER_COLORS[color]);

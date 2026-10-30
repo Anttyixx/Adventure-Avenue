@@ -26,6 +26,18 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: '2026-10-30-action-bar-resize',
+    date: 'Oct 30, 2026',
+    title: 'Smoother action bar',
+    features: [
+      {
+        tag: 'fix',
+        title: 'Steadier prompts',
+        text: 'The action bar resizes without repeatedly rewrapping its text. Quick changes continue smoothly from the current size, including when the screen size changes.',
+      },
+    ],
+  },
+  {
     id: '2026-10-30-stock-growth',
     date: 'Oct 30, 2026',
     title: 'Gentler stock growth',
