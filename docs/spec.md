@@ -307,14 +307,17 @@ multiplies it by 0.9.
 **Dynamic:**
 
 ```
-price_d = (average base value_d x 0.04 + average growth_d x 0.08) x factor_d x confidence_d x boost_d
+price_d = (average base value_d x 0.04 + average growth_d x 0.03) x factor_d x confidence_d x boost_d
 boost_d = 1 + 0.00075 x held_d x vol_d
 ```
 
 - A shop's growth is its value above its base value (investing, ownership bonuses, venture cards
-  and arcade prizes; negative when a shop shrinks). Growth counts double, so a district its owner
-  keeps investing in climbs much faster than one nobody builds up (`districtWorth`). A plot's base
-  is the cost of what was built on it.
+  and arcade prizes; negative when a shop shrinks). Growth counts at 75% of the base-value rate:
+  a 50% rise in average shop value raises the underlying share price by 37.5%, before the other
+  multipliers (`districtWorth`). This reduces growth's direct price effect by 62.5% from the former
+  0.08 rate, without changing the shares-held boost. A plot's base is the cost of what was built on it.
+  The lower rate also softens losses from shrinking shops. Existing Dynamic saves use the new rate
+  when loaded, so developed districts reprice immediately; Classic stocks are unchanged.
 - `held_d` is the total shares everyone holds in the district. The price rises in a straight line:
   every 100 shares add 7.5% at volatility 1 (+0.75 for a 10G stock), with no cap. Trades never
   touch the factor.

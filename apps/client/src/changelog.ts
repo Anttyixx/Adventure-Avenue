@@ -26,6 +26,18 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: '2026-10-30-stock-growth',
+    date: 'Oct 30, 2026',
+    title: 'Gentler stock growth',
+    features: [
+      {
+        tag: 'rules',
+        title: 'Shop upgrades move stocks less',
+        text: 'Shop growth now has 62.5% less influence on Dynamic share prices. The boost from buying shares stays the same. Existing Dynamic saves use the new prices when loaded; Classic stocks are unchanged.',
+      },
+    ],
+  },
+  {
     id: '2026-10-30-venture-action-bar',
     date: 'Oct 30, 2026',
     title: 'Venture results in the action bar',

@@ -89,7 +89,7 @@ const GROUPS: { title: string; settings: Setting[] }[] = [
         key: 'growthRate',
         label: 'Price per shop growth',
         step: 0.005,
-        hint: 'Shop value above base (investing, ownership, cards) counts at this instead (0.08 = double)',
+        hint: 'Shop value above base (investing, ownership, cards) counts at this rate (default 0.03; base rate 0.04)',
       },
       {
         key: 'shareSlope',

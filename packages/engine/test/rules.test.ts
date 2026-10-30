@@ -7,12 +7,14 @@ import {
   lineBonus,
   lineThrough,
   linesThrough,
+  market,
   maxValue,
   netWorth,
   salary,
   shopFee,
   squareFee,
   stockPrice,
+  stockPriceExact,
 } from '../src/rules';
 import { at, makeGame } from './helpers';
 
@@ -111,6 +113,47 @@ describe('stocks and salary', () => {
     const { G } = makeGame();
     // Brick Row: shops 160, 200, 220 (180 is a vacant plot)
     expect(stockPrice(G, 0)).toBe(Math.round(((160 + 200 + 220) / 3) * 0.04));
+  });
+
+  it.each([
+    [300, 13.475],
+    [-300, 6.125],
+  ])(
+    'prices a %iG change in shop value with gentler growth and the same demand boost',
+    (change, expected) => {
+      const { G } = makeGame();
+      G.stocks = 'dynamic';
+      const shops = G.nodes.filter((s) => s.d === 0 && s.t === 'shop');
+      expect(shops).toHaveLength(3);
+      shops.forEach((s) => {
+        s.base = 200;
+        s.value = 200;
+      });
+      G.players[0].shares[0] = 100;
+      G.players[1].shares[0] = 100;
+      market(G).vol[0] = 1.5;
+      expect(stockPriceExact(G, 0)).toBeCloseTo(9.8);
+      // Spread the change across the district so the shrink case keeps every shop positive.
+      shops.forEach((s) => {
+        s.value += change / shops.length;
+      });
+      expect(stockPriceExact(G, 0)).toBeCloseTo(expected);
+      // Another 100 shares still adds the same demand multiplier: 1.225 -> 1.3375.
+      G.players[1].shares[0] += 100;
+      expect(stockPriceExact(G, 0) / expected).toBeCloseTo(1.3375 / 1.225);
+    },
+  );
+
+  it('keeps Classic growth tied to total shop value', () => {
+    const { G } = makeGame();
+    G.stocks = 'classic';
+    const shops = G.nodes.filter((s) => s.d === 0 && s.t === 'shop');
+    shops.forEach((s) => {
+      s.base = 200;
+      s.value = 300;
+    });
+    G.players[0].shares[0] = 200;
+    expect(stockPriceExact(G, 0)).toBeCloseTo(12);
   });
 
   it('pays salary 600 + 250 x level + 15% of shop value', () => {

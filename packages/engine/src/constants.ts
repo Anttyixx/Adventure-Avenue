@@ -50,9 +50,9 @@ export const K = {
   tradeDown: 0.9,
   /**
    * Dynamic stocks. Shop growth (value above the shops' base) counts at growthRate instead of
-   * stockRate, so investing in a district moves its stock twice as much as its starting value.
+   * stockRate: a 50% rise in average shop value adds 37.5% to the underlying share price.
    */
-  growthRate: 0.08,
+  growthRate: 0.03,
   /**
    * Dynamic stocks' demand: the price rises in a straight line with the total shares all players
    * hold in a district: boost = 1 + shareSlope x held x volatility. At volatility 1 (the calmest),
