@@ -63,6 +63,7 @@ export class HotSeat implements GameIO {
   speed = 1;
   /** Which human currently holds the device (for "Pass the device" prompts). */
   holder = -1;
+  private movementRoll: { pid: number; value: number } | null = null;
   venture: VentureView | null = null;
   reels: ReelsView | null = null;
   memory: MemoryView | null = null;
@@ -383,8 +384,9 @@ export class HotSeat implements GameIO {
   private waitOn(req: DecisionRequest) {
     // Before the roll, arrows on the board show which ways the player can go.
     if (req.kind === 'preRoll') this.board.directionsPid = req.pid;
-    const a = activity(this.G, req);
-    this.hud.status(a.text, a.kind);
+    const roll = this.movementRoll?.pid === req.pid ? this.movementRoll.value : undefined;
+    const a = activity(this.G, req, roll);
+    this.hud.status(a.text, a.kind, req.kind === 'path');
   }
 
   /** A choice for a player on this device. */
@@ -672,7 +674,8 @@ export class HotSeat implements GameIO {
         this.refresh();
         if (this.localHuman(p.id)) sound.play('turn');
         hud.banner(`${p.name}'s turn`, PLAYER_COLORS[p.color], T.turnBanner);
-        hud.status(`${p.name} is deciding what to do...`, 'wait');
+        this.movementRoll = null;
+        hud.status(`${p.name} is deciding what to do...`, 'wait', true);
         await this.wait(p.cpu ? T.turnStartCpu : T.turnStartHuman);
         break;
       }
@@ -682,7 +685,8 @@ export class HotSeat implements GameIO {
         this.refresh();
         break;
       case 'roll': {
-        hud.status(`${G.players[e.pid].name} is rolling...`, 'move');
+        this.movementRoll = { pid: e.pid, value: e.value };
+        hud.status(`${G.players[e.pid].name} is rolling...`, 'move', true);
         sound.play('roll');
         await board.rollDie(e.value);
         // Once the die has landed, zoom out to show the player and every square the roll could
@@ -700,7 +704,7 @@ export class HotSeat implements GameIO {
         board.directionsPid = -1;
         board.frameIds = null;
         // A small sound as the hop starts; the step sounds as the token lands on the square.
-        hud.status(`${G.players[e.pid].name} is moving...`, 'move');
+        hud.status(`${G.players[e.pid].name} is moving...`, 'move', true);
         sound.play('hop');
         await board.step(e.pid, e.to, e.left);
         sound.play('step');
@@ -716,6 +720,12 @@ export class HotSeat implements GameIO {
         this.refresh();
         break;
       case 'land':
+        this.movementRoll = null;
+        hud.tick(
+          `${G.players[e.pid].name} landed on ${squareName(G, G.nodes[e.sq])}.`,
+          'move',
+          this.localHuman(e.pid) ? 0 : T.actionResult,
+        );
         board.frameIds = null;
         sound.play('land');
         board.ring(e.sq, '#ffffff');
@@ -906,7 +916,7 @@ export class HotSeat implements GameIO {
         break;
       }
       case 'log':
-        hud.tick(e.text, e.kind);
+        hud.tick(e.text, e.kind, this.localHuman(G.order[G.turn]) ? 0 : T.actionResult);
         break;
       case 'notice':
         hud.tick(e.text, 'alert');

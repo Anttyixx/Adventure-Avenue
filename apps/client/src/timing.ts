@@ -15,6 +15,8 @@ export const TIMING = {
   dieHold: 650,
   /** Pause after landing so players see where the token stopped. */
   land: 1000,
+  /** Observers can read a result before the action bar switches to a waiting message. */
+  actionResult: 2500,
   /** The end of a turn, before the next player's turn starts. */
   turnEnd: 1000,
 

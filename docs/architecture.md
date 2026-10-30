@@ -227,3 +227,12 @@ same nodes, preserving listeners and focus. The root/card ResizeObserver retarge
 when available space changes. A MutationObserver batches later text and form changes into one
 resize per frame. Both observers are disconnected when the HUD is destroyed. Reduced motion
 uses the natural layout immediately. UI Lab: “Action bar resize test”.
+
+### Observer result and wait messages
+
+`HotSeat` announces `land` using `squareName` and remembers the latest roll for movement
+choices. `activity()` combines a matching roll and path decision; non-roll movement stays
+explicit. `Hud.tick()` accepts a result hold duration. `status()` records the actual wait
+immediately for the log, while the action bar holds the preceding result up to 2.5 seconds.
+New results cancel old timers; movement/turn statuses bypass the hold, local prompts clear it,
+and HUD destruction cancels it. This timer never blocks engine or network decisions.

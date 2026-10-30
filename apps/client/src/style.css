@@ -3432,8 +3432,11 @@ input[type='range'] {
 }
 .ask-status .tick-text {
   overflow: hidden;
-  white-space: nowrap;
-  text-overflow: ellipsis;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
 }
 /* The shell clips a fixed destination layout, so text never rewraps mid-animation. */
 .prompt-center.morphing {

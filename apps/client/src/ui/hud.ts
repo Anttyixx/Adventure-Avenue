@@ -73,6 +73,8 @@ export class Hud {
   private logLabel = h('div', { class: 'lb-label' }, 'Game log');
   private lastAction: { text: string; kind?: IconKind } | null = null;
   private waiting: { text: string; kind?: IconKind } | null = null;
+  private resultUntil = 0;
+  private resultTimer = 0;
   private shownStatus: { text: string; kind?: IconKind } | null = null;
   /** The Game log button's place while folded (it is hidden while the log is open). */
   private lineRect = { top: 0, left: 0, right: 0, width: 0, height: 0 };
@@ -221,6 +223,7 @@ export class Hud {
   }
 
   destroy() {
+    clearTimeout(this.resultTimer);
     this.resize.disconnect();
     this.askChanges.disconnect();
     cancelAnimationFrame(this.askFrame);
@@ -753,7 +756,9 @@ export class Hud {
   // ------------------------------------------------------------ status line and log
 
   /** Show the last thing that happened on the status line (it ends any wait). */
-  tick(text: string, kind?: IconKind) {
+  tick(text: string, kind?: IconKind, holdMs = 0) {
+    clearTimeout(this.resultTimer);
+    this.resultUntil = performance.now() + holdMs;
     this.lastAction = { text, kind };
     this.waiting = null;
     this.showStatus();
@@ -800,14 +805,16 @@ export class Hud {
     };
   }
 
-  /** Show what is going on now: the wait if the game is waiting, else the last action. */
-  /**
-   * When no options are up, the action bar is the status line: what is going on now (the wait
-   * if the game is waiting, else the last action), easing to the new size.
-   */
+  /** Let observers read a completed action before replacing it with the pending choice. */
+  private currentStatus() {
+    return this.waiting && performance.now() < this.resultUntil
+      ? this.lastAction
+      : (this.waiting ?? this.lastAction);
+  }
+
   private showStatus() {
     if (this.promptResolve) return;
-    const cur = this.waiting ?? this.lastAction;
+    const cur = this.currentStatus();
     if (
       this.ask.classList.contains('status') &&
       this.shownStatus?.text === cur?.text &&
@@ -822,7 +829,7 @@ export class Hud {
 
   private fillStatus() {
     const a = this.ask;
-    const cur = this.waiting ?? this.lastAction;
+    const cur = this.currentStatus();
     this.shownStatus = cur;
     clear(a);
     a.classList.remove('stacked');
@@ -1079,6 +1086,8 @@ export class Hud {
    */
   prompt<T>(text: string | Node, buttons: PromptButton<T>[], color?: number): Promise<T> {
     this.cancelPrompt();
+    clearTimeout(this.resultTimer);
+    this.resultUntil = 0;
     // The bar morphs from whatever it showed (the status line or other options) to these.
     const from = this.askSize();
     clear(this.ask);
@@ -1155,11 +1164,24 @@ export class Hud {
    * Show what the game is waiting on, e.g. "Rosa is buying stocks...". It stays until the next
    * action or wait replaces it, so the line never drops back to an older action in between.
    */
-  status(text: string, kind?: IconKind) {
-    // Repeats (e.g. one per step of a walk) leave the line as it is.
-    if (this.waiting?.text === text && this.waiting.kind === kind) return;
+  status(text: string, kind?: IconKind, immediate = false) {
+    if (immediate) {
+      clearTimeout(this.resultTimer);
+      this.resultUntil = 0;
+    }
+    if (this.waiting?.text === text && this.waiting.kind === kind && !immediate) return;
     this.waiting = { text, kind };
     this.showStatus();
+    clearTimeout(this.resultTimer);
+    const remaining = this.resultUntil - performance.now();
+    if (remaining > 0) {
+      this.resultTimer = window.setTimeout(() => {
+        this.resultTimer = 0;
+        this.resultUntil = 0;
+        this.showStatus();
+      }, remaining);
+    }
+    // The log always shows the actual pending decision, even while the bar holds a result.
     if (this.logOpen) this.renderLog();
   }
 

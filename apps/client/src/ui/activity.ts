@@ -11,14 +11,16 @@ export interface Activity {
   kind: IconKind;
 }
 
-export function activity(G: GameState, req: DecisionRequest): Activity {
+export function activity(G: GameState, req: DecisionRequest, rolled?: number): Activity {
   const name = G.players[req.pid].name;
   const is = (what: string, kind: IconKind): Activity => ({ text: `${name} is ${what}...`, kind });
   switch (req.kind) {
     case 'preRoll':
       return is('deciding what to do', 'wait');
     case 'path':
-      return is('deciding which space to go to', 'move');
+      return rolled === req.steps
+        ? { text: `${name} rolled a ${rolled} and is deciding where to move...`, kind: 'move' }
+        : is(`deciding where to move ${req.steps} spaces`, 'move');
     case 'buyShop':
       return is('deciding whether to buy the shop', 'property');
     case 'build':

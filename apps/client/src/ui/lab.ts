@@ -97,6 +97,7 @@ const rnd = (n: number) => Math.floor(Math.random() * n);
  * are easy to find. Update this list with each change.
  */
 const RECENT = new Set([
+  'Observer result → waiting',
   'Text reveal',
   'Action bar resize test',
   'Repeated status text',
@@ -415,6 +416,11 @@ export async function openLab(app: HTMLElement, section?: string) {
     const s = addSection('prompts', 'Action bar & banners');
     row(
       s,
+      btn('Observer result → waiting', () => {
+        hud.cancelPrompt();
+        hud.tick(`${cur().name} landed on Bay Market.`, 'move', 2500);
+        hud.status(`${cur().name} is deciding whether to buy the shop...`, 'property');
+      }),
       btn('Text reveal', async () => {
         hud.cancelPrompt();
         hud.tick('Your turn is coming up…', 'wait');

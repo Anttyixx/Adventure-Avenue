@@ -26,6 +26,18 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: '2026-10-30-observer-status',
+    date: 'Oct 30, 2026',
+    title: 'Follow every turn',
+    features: [
+      {
+        tag: 'better',
+        title: 'Results before waiting',
+        text: 'While watching another player, the action bar shows their roll and movement choice together and names the space they land on. Results stay briefly before changing to a waiting message. Your own choices remain available immediately.',
+      },
+    ],
+  },
+  {
     id: '2026-10-30-venture-numbers',
     date: 'Oct 30, 2026',
     title: 'Venture cards by number',

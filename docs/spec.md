@@ -779,8 +779,14 @@ nobody here, it is the status line: one line saying what is going on now: what t
 on a player to do ("Blue is buying stocks...", "Blue is deciding which space to go to...", see
 `ui/activity.ts`; the turn starts with "Blue is deciding what to do..." and a three-dot icon, and
 rolling and walking are waits too) or else the last thing that happened, with the log icon for
-that kind of action and player names in their colors. A wait stays until the next action or wait
-replaces it. When a player on this device has a choice to make, the bar morphs (eases its width and
+that kind of action and player names in their colors. A wait stays until the next action or wait replaces it. For observers (CPU or remote turns),
+a roll and destination choice are combined: “Rosa rolled a 5 and is deciding where to move...”.
+Card movement without a matching roll describes the number of spaces without claiming a die roll.
+Landing announces the named space. Completed actions and landings remain in the action bar
+for up to 2.5 seconds before a pending waiting message replaces them. A newer result, actual
+movement or a new turn replaces stale text immediately. The game does not pause for this timer;
+the game log shows the pending decision immediately. Local players receive their interactive
+choices immediately. Landing announcements are presentation-only, not extra saved log entries. When a player on this device has a choice to make, the bar morphs (eases its width and
 height) into their options, and morphs back to the status line once they answer. During a resize,
 text keeps its destination layout so it does not repeatedly wrap. New messages use a 220ms stepped reveal without sliding or changing their layout. Buttons
 are usable immediately and screen readers receive the complete message. Reduced motion skips
