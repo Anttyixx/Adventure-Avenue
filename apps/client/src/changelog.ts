@@ -26,6 +26,18 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: '2026-10-30-cleaner-setup',
+    date: 'Oct 30, 2026',
+    title: 'A cleaner way to start',
+    features: [
+      {
+        tag: 'better',
+        title: 'Set up your next game',
+        text: 'A clearer layout puts your map, players and winning goal first. Extra rules, board tools and online invites tuck away, and a summary beside Start game helps you check your choices.',
+      },
+    ],
+  },
+  {
     id: '2026-10-30-slower-action-morph',
     date: 'Oct 30, 2026',
     title: 'A gentler action bar',

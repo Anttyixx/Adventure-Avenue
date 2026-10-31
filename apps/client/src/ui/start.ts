@@ -30,7 +30,7 @@ import { lobbySeats } from './online';
 import { digitPicker } from './digits';
 import { closeSoundPopover, soundButton } from './soundpanel';
 import { sound } from '../audio';
-import { clear, h } from './dom';
+import { clear, fmt, h } from './dom';
 
 const NAMES = [
   'Rosa',
@@ -155,6 +155,22 @@ function seg<T>(
   );
 }
 
+/** Optional setup tools keep their open state when changing a setting redraws the screen. */
+function setupDetails(label: string, ...children: Node[]): HTMLElement {
+  const key = `adventure-avenue-setup-${label}`;
+  const details = h(
+    'details',
+    {
+      class: 'setup-details',
+      open: readJSON(key, false),
+      ontoggle: () => writeJSON(key, details.open),
+    },
+    h('summary', null, label),
+    h('div', { class: 'setup-details-body' }, ...children),
+  );
+  return details;
+}
+
 /**
  * The rules panel: target net worth (arrows on each digit, in 1,000G steps), round limit, rule
  * set and vacant plots. Without `edit` everything is shown but locked.
@@ -172,65 +188,86 @@ function rulesPanel(st: RuleSettings, edit?: (patch: Partial<RuleSettings>) => v
   return h(
     'section',
     { class: 'setup-panel glass rules-panel' },
-    h('h3', null, 'Rules'),
-    h('div', { class: 'opt target-opt' }, h('div', { class: 'opt-label' }, 'Target net worth'), target.el),
-    seg(
-      'Round limit',
-      K.roundCapOptions as unknown as number[],
-      st.roundCap,
-      (v) => (v ? String(v) : 'None'),
-      edit && ((v) => edit({ roundCap: v })),
-    ),
-    seg(
-      'Rule set',
-      ['standard', 'easy'] as RuleSet[],
-      st.rules,
-      (v) => (v === 'standard' ? 'Standard' : 'Easy'),
-      edit && ((v) => edit({ rules: v })),
-    ),
+    h('h3', null, '3 · Game settings'),
     h(
-      'p',
-      { class: 'hint' },
-      st.rules === 'standard'
-        ? 'Standard: districts, vacant plots and the stock market.'
-        : 'Easy: rows of connected shops, no plots and no stock market.',
+      'div',
+      { class: 'setup-rule-basics' },
+      h(
+        'div',
+        { class: 'setup-rule-choice' },
+        seg(
+          'Rule set',
+          ['standard', 'easy'] as RuleSet[],
+          st.rules,
+          (v) => (v === 'standard' ? 'Standard' : 'Easy'),
+          edit && ((v) => edit({ rules: v })),
+        ),
+        h(
+          'p',
+          { class: 'hint' },
+          st.rules === 'standard'
+            ? 'Standard: districts, vacant plots and the stock market.'
+            : 'Easy: rows of connected shops, no plots and no stock market.',
+        ),
+      ),
+      h(
+        'div',
+        { class: 'opt target-opt' },
+        h('div', { class: 'opt-label' }, 'Winning goal'),
+        target.el,
+        h('p', { class: 'hint' }, 'Reach this net worth, then return to the bank.'),
+      ),
     ),
-    st.rules === 'standard'
-      ? seg(
-          'Vacant plots',
-          ['none', 'few', 'some', 'lot', 'all'] as PlotSetting[],
-          st.plots,
-          (v) => PLOT_LABEL[v],
-          edit && ((v) => edit({ plots: v })),
-        )
-      : null,
-    st.rules === 'standard'
-      ? h(
-          'p',
-          { class: 'hint' },
-          st.plots === 'all'
-            ? 'Every property starts as a vacant plot, and any building can be built any number of times.'
-            : `Some properties start as vacant plots (up to ${K.plotMax}). Each building can be built at most ${K.buildingLimit} times.`,
-        )
-      : null,
-    st.rules === 'standard'
-      ? seg(
-          'Stocks',
-          ['dynamic', 'classic'] as StockSystem[],
-          st.stocks,
-          (v) => (v === 'dynamic' ? 'Dynamic' : 'Classic'),
-          edit && ((v) => edit({ stocks: v })),
-        )
-      : null,
-    st.rules === 'standard'
-      ? h(
-          'p',
-          { class: 'hint' },
-          st.stocks === 'dynamic'
-            ? 'Dynamic: prices rise with the shares everyone holds; selling 50+ in a turn shakes a district until it is bought back.'
-            : 'Classic: buying or selling 10+ shares at once moves the price 10%.',
-        )
-      : null,
+    setupDetails(
+      'More settings',
+      h(
+        'div',
+        { class: 'setup-advanced-grid' },
+        seg(
+          'Round limit',
+          K.roundCapOptions as unknown as number[],
+          st.roundCap,
+          (v) => (v ? String(v) : 'None'),
+          edit && ((v) => edit({ roundCap: v })),
+        ),
+        st.rules === 'standard'
+          ? seg(
+              'Vacant plots',
+              ['none', 'few', 'some', 'lot', 'all'] as PlotSetting[],
+              st.plots,
+              (v) => PLOT_LABEL[v],
+              edit && ((v) => edit({ plots: v })),
+            )
+          : null,
+        st.rules === 'standard'
+          ? h(
+              'p',
+              { class: 'hint' },
+              st.plots === 'all'
+                ? 'Every property starts as a vacant plot, and any building can be built any number of times.'
+                : `Some properties start as vacant plots (up to ${K.plotMax}). Each building can be built at most ${K.buildingLimit} times.`,
+            )
+          : null,
+        st.rules === 'standard'
+          ? seg(
+              'Stocks',
+              ['dynamic', 'classic'] as StockSystem[],
+              st.stocks,
+              (v) => (v === 'dynamic' ? 'Dynamic' : 'Classic'),
+              edit && ((v) => edit({ stocks: v })),
+            )
+          : null,
+        st.rules === 'standard'
+          ? h(
+              'p',
+              { class: 'hint' },
+              st.stocks === 'dynamic'
+                ? `Dynamic: buying shares lifts prices. Selling ${K.sellOff}+ in a turn shakes the district.`
+                : 'Classic: buying or selling 10+ shares at once moves the price 10%.',
+            )
+          : null,
+      ),
+    ),
   );
 }
 
@@ -483,7 +520,7 @@ export function setupScreen(
     return h(
       'section',
       { class: 'setup-panel glass board-panel' },
-      h('h3', null, 'Board'),
+      h('h3', null, '1 · Choose a map'),
       h(
         'div',
         { class: 'carousel' },
@@ -509,20 +546,23 @@ export function setupScreen(
           }),
         ),
       ),
-      h(
-        'div',
-        { class: 'btn-row center' },
-        importBtn,
+      setupDetails(
+        'Board tools',
         h(
-          'button',
-          {
-            class: 'btn small ghost',
-            onclick: () => {
-              leaveRoom();
-              handlers.onEditor(mine ? board : null);
+          'div',
+          { class: 'btn-row center board-tools' },
+          importBtn,
+          h(
+            'button',
+            {
+              class: 'btn small ghost',
+              onclick: () => {
+                leaveRoom();
+                handlers.onEditor(mine ? board : null);
+              },
             },
-          },
-          mine ? 'Edit this board' : 'Board editor',
+            mine ? 'Edit this board' : 'Board editor',
+          ),
         ),
       ),
       notice ? h('p', { class: 'hint board-notice' }, notice) : null,
@@ -637,24 +677,14 @@ export function setupScreen(
       h(
         'div',
         { class: 'panel-head' },
-        h('h3', null, 'Players'),
+        h('h3', null, '2 · Players'),
         h('button', { class: 'btn ghost small', onclick: () => (shuffle(), draw()) }, 'Shuffle characters'),
       ),
-      joinBox(),
-      room
-        ? h(
-            'p',
-            { class: 'hint' },
-            j
-              ? `${j} friend${j > 1 ? 's' : ''} joined: this will be an online game.`
-              : 'Friends tap Join on the main menu and type this code; they take a CPU seat. If nobody joins, you play on this device.',
-          )
-        : null,
       seg(
-        'Players in the game',
+        'Total players',
         Array.from({ length: MAX_PLAYERS - 1 }, (_, i) => i + 2),
         total,
-        (v) => `${v} players`,
+        (v) => String(v),
         (v) => {
           total = v;
           humans = Math.min(humans, v - joined());
@@ -664,17 +694,39 @@ export function setupScreen(
         (v) => v < humans + j,
       ),
       seg(
-        'Humans on this device (the rest are friends or CPUs)',
+        'Playing on this device',
         Array.from({ length: total }, (_, i) => i + 1),
         humans,
-        (v) => `${v} human${v > 1 ? 's' : ''}`,
+        (v) => String(v),
         (v) => {
           humans = v;
           draw();
         },
         (v) => v > total - j,
       ),
+      h(
+        'p',
+        { class: 'hint' },
+        `${humans} on this device · ${j} online · ${total - humans - j} CPU${total - humans - j === 1 ? '' : 's'}`,
+      ),
       h('div', { class: 'seats' }, ...Array.from({ length: total }, (_, i) => seatCard(i))),
+      roomState !== 'none'
+        ? setupDetails(
+            'Invite friends online',
+            h(
+              'div',
+              { class: 'setup-invite' },
+              joinBox(),
+              h(
+                'p',
+                { class: 'hint' },
+                j
+                  ? `${j} friend${j > 1 ? 's' : ''} joined. This will be an online game.`
+                  : 'Share the code or invite link. Friends who join take a CPU seat.',
+              ),
+            ),
+          )
+        : null,
     );
   };
 
@@ -726,6 +778,7 @@ export function setupScreen(
         },
         'New game',
       ),
+      h('p', { class: 'setup-intro' }, 'Choose a map, pick your players, and make it your game.'),
       h(
         'div',
         { class: 'setup-grid' },
@@ -739,7 +792,17 @@ export function setupScreen(
       h(
         'footer',
         { class: 'setup-foot' },
-        loadSave() ? h('small', { class: 'hint' }, 'Starting replaces the game in progress.') : null,
+        h(
+          'div',
+          { class: 'setup-summary' },
+          h('strong', null, board.name),
+          h(
+            'span',
+            null,
+            `${total} players · ${st.rules === 'standard' ? 'Standard' : 'Easy'} · ${fmt(st.target)} goal`,
+          ),
+          loadSave() ? h('small', { class: 'hint' }, 'Starting replaces the game in progress.') : null,
+        ),
         start,
       ),
     );
@@ -814,7 +877,7 @@ export function guestSetup(root: HTMLElement, room: GuestSetupRoom, handlers: Gu
         h(
           'section',
           { class: 'setup-panel glass board-panel' },
-          h('h3', null, 'Board'),
+          h('h3', null, '1 · Choose a map'),
           board
             ? h('div', { class: 'carousel locked' }, boardStage(board, false))
             : h('p', { class: 'hint' }, lobby ? lobby.boardName : 'Loading...'),

@@ -1101,3 +1101,14 @@ rebuild.
 - [ ] Turn timer length, and whether it applies in private rooms with friends.
 - [ ] Board size: keep 44 squares, or offer small and large boards with different targets?
 - [x] Name for the game: **Adventure Avenue**. Currency name still open (currently "G").
+
+### Game setup layout
+
+The Play setup groups choices as 1 · Choose a map, 2 · Players, and 3 · Game settings.
+Desktop and wide landscape screens place the map beside player seats, with settings below;
+narrow screens stack them in that order. Rule set and winning goal are always visible.
+More settings expands round limit, vacant plots and stocks; Board tools expands import/editor
+actions, and Invite friends online expands room status and sharing. Native disclosures remember
+their open state across setup redraws. Player counts use short labels with a local/online/CPU
+breakdown. The sticky Start footer summarizes map, player count, rules and winning goal, and
+retains the saved-game replacement warning. Joined guests still have locked host settings.

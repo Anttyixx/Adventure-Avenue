@@ -6048,3 +6048,228 @@ div.sl-inline label {
 .guide-card p {
   margin: 4px 0 0;
 }
+
+/* Game setup: clear choices first, with secondary tools tucked away. */
+.setup-wrap {
+  width: min(1120px, 100%);
+  gap: 18px;
+  padding-top: 24px;
+}
+.setup-intro {
+  margin: -10px 0 0;
+  color: var(--muted);
+  font-size: 14px;
+}
+.setup-grid {
+  grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+  grid-template-areas: 'board players' 'rules rules';
+  gap: 18px;
+}
+.setup-panel {
+  padding: 20px;
+  gap: 16px;
+  min-width: 0;
+  background: rgba(16, 26, 51, 0.94);
+}
+.setup-panel h3 {
+  font-size: 20px;
+  color: #fff;
+}
+.setup-panel .hint {
+  margin: 0;
+  line-height: 1.5;
+}
+.setup-panel .opt-label {
+  color: #d4dced;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+.setup-panel .seg-btn {
+  min-height: 38px;
+  padding: 6px 14px;
+}
+.setup-panel .seats {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.setup-panel .panel-head {
+  flex-wrap: wrap;
+}
+.setup-panel .panel-head .btn {
+  font-size: 11px;
+}
+.setup-rule-basics {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+}
+.setup-rule-choice {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.setup-details {
+  border-top: 1px solid var(--glass-line);
+  padding-top: 12px;
+}
+.setup-details summary {
+  cursor: pointer;
+  color: #c6d3eb;
+  font-size: 13px;
+  padding: 4px 0;
+}
+.setup-details summary:hover {
+  color: #fff;
+}
+.setup-details-body {
+  padding-top: 14px;
+}
+.setup-advanced-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px 24px;
+}
+.setup-advanced-grid > .hint {
+  align-self: center;
+}
+.setup-invite {
+  display: grid;
+  gap: 10px;
+}
+.setup-invite .room-code {
+  margin: 0;
+}
+.setup .car-thumb {
+  min-height: 140px;
+  max-height: 230px;
+}
+.setup .car-dots {
+  gap: 2px;
+}
+.setup .car-dot {
+  width: 26px;
+  height: 26px;
+  border: 8px solid transparent;
+  background-clip: content-box;
+}
+.setup .car-dot.on {
+  transform: none;
+}
+.setup-summary {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-right: auto;
+  min-width: 0;
+}
+.setup-summary strong {
+  color: #fff;
+}
+.setup-summary span {
+  font-size: 13px;
+  color: #d4dced;
+}
+.setup-foot {
+  z-index: 2;
+  padding-top: 16px;
+  background: rgba(16, 26, 51, 0.96);
+  border-top: 1px solid var(--glass-line);
+  gap: 16px;
+}
+@media (max-width: 700px) {
+  .setup-wrap {
+    padding: 14px 12px 0;
+    gap: 14px;
+  }
+  .setup-grid {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas: 'board' 'players' 'rules';
+    gap: 14px;
+  }
+  .setup-panel {
+    padding: 16px;
+  }
+  .setup-rule-basics,
+  .setup-advanced-grid {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 14px;
+  }
+  .setup-foot {
+    margin-left: -12px;
+    margin-right: -12px;
+    padding: 12px;
+    flex-wrap: wrap;
+  }
+  .setup-summary {
+    flex: 1 1 180px;
+  }
+  .setup-foot .btn.big {
+    flex: 1 1 140px;
+  }
+}
+@media (max-height: 500px) and (min-width: 701px) {
+  .setup-wrap {
+    padding-top: 12px;
+    gap: 12px;
+  }
+  .setup-head h2 {
+    font-size: 26px;
+  }
+  .setup-panel {
+    padding: 14px;
+    gap: 10px;
+  }
+  .setup .car-thumb {
+    max-height: 160px;
+    min-height: 110px;
+  }
+  .setup .car-thumb .thumb {
+    max-height: 140px;
+    width: auto !important;
+    max-width: 100%;
+  }
+}
+/* Compact seat rows make the whole party easy to scan before starting. */
+.setup-intro {
+  color: #173253;
+  font-weight: 600;
+}
+.setup .seat-card {
+  position: relative;
+  display: grid;
+  grid-template-columns: 54px minmax(0, 1fr);
+  grid-template-rows: auto auto;
+  gap: 2px 10px;
+  padding: 10px;
+  border-top: 0;
+  border-left: 4px solid var(--pc);
+  align-items: center;
+}
+.setup .seat-card .char-btn {
+  grid-row: 1 / span 2;
+  width: 54px;
+  height: 64px;
+}
+.setup .seat-card .char-btn img {
+  width: auto;
+  height: 60px;
+  max-width: 100%;
+}
+.setup .seat-card .name {
+  text-align: left;
+  min-width: 0;
+  align-self: end;
+}
+.setup .seat-card .name.cpu {
+  padding: 0;
+}
+.setup .seat-tag {
+  grid-column: 2;
+  align-self: start;
+}
+.setup .setup-advanced-grid {
+  grid-template-columns: minmax(0, 1fr);
+  gap: 8px;
+}
+.setup .setup-advanced-grid > .opt:not(:first-child) {
+  margin-top: 8px;
+}
