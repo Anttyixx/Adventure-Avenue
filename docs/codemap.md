@@ -9,21 +9,22 @@ Keep this map current: when you add, move or rename a file or a major function, 
 
 ## Top level
 
-| Path                                                                        | What it is                                                                                 |
-| --------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
-| `AGENTS.md`                                                                 | Guide for AI assistants: workflow rules and conventions (read first)                       |
-| `CLAUDE.md`                                                                 | Loads `AGENTS.md` for Claude Code                                                          |
-| `README.md`                                                                 | Short project overview for people                                                          |
-| `docs/spec.md`                                                              | The full game spec: rules, interface, online play, constants                               |
-| `docs/architecture.md`                                                      | How the engine, client, camera, HUD and online play fit together                           |
-| `docs/codemap.md`                                                           | This file                                                                                  |
-| `packages/engine/`                                                          | The rules engine (no DOM), npm workspace `@aa/engine`                                      |
-| `apps/client/`                                                              | The browser game (Vite + TypeScript), npm workspace `@aa/client`                           |
-| `apps/server/`                                                              | Placeholder; not used (online play is browser to browser)                                  |
-| `reference/`                                                                | Place for the original prototype (not added yet)                                           |
-| `.github/workflows/`                                                        | `ci.yml` (lint, typecheck, test, build on every push), `pages.yml` (deploy)                |
-| `package.json`                                                              | Workspace scripts: `dev`, `build`, `preview`, `test`, `lint`, `typecheck`, `format`, `sim` |
-| `eslint.config.js`, `.prettierrc`, `tsconfig.base.json`, `vitest.config.ts` | Tooling config                                                                             |
+| Path                                                                        | What it is                                                                                  |
+| --------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------- |
+| `AGENTS.md`                                                                 | Guide for AI assistants: workflow rules and conventions (read first)                        |
+| `CLAUDE.md`                                                                 | Loads `AGENTS.md` for Claude Code                                                           |
+| `README.md`                                                                 | Short project overview for people                                                           |
+| `docs/spec.md`                                                              | The full game spec: rules, interface, online play, constants                                |
+| `docs/architecture.md`                                                      | How the engine, client, camera, HUD and online play fit together                            |
+| `docs/codemap.md`                                                           | This file                                                                                   |
+| `docs/design.md`                                                            | Design guide: how UI elements look and are built (colors, type, buttons, motion, board art) |
+| `packages/engine/`                                                          | The rules engine (no DOM), npm workspace `@aa/engine`                                       |
+| `apps/client/`                                                              | The browser game (Vite + TypeScript), npm workspace `@aa/client`                            |
+| `apps/server/`                                                              | Placeholder; not used (online play is browser to browser)                                   |
+| `reference/`                                                                | Place for the original prototype (not added yet)                                            |
+| `.github/workflows/`                                                        | `ci.yml` (lint, typecheck, test, build on every push), `pages.yml` (deploy)                 |
+| `package.json`                                                              | Workspace scripts: `dev`, `build`, `preview`, `test`, `lint`, `typecheck`, `format`, `sim`  |
+| `eslint.config.js`, `.prettierrc`, `tsconfig.base.json`, `vitest.config.ts` | Tooling config                                                                              |
 
 ## Engine: `packages/engine/src`
 

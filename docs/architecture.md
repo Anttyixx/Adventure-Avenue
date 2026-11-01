@@ -207,7 +207,7 @@ first touch or key press, as browsers require.
   `HotSeat.emit` (`host.ts`).
 - **New venture card:** add an entry to `CARDS` in `cards.ts` (mark stock cards `std` so the Easy
   deck leaves them out).
-- **New UI element:** build it with `h()`, style it in `style.css`, add a UI Lab control and list
+- **New UI element:** design it by `docs/design.md`, build it with `h()`, style it in `style.css`, add a UI Lab control and list
   it in `RECENT` (`ui/lab.ts`).
 - **New built-in board:** draw it as a text map in `boards/maps.ts`, add it to `BUILT_IN_BOARDS`
   in `boards/builtin.ts`; the board tests check it is valid.

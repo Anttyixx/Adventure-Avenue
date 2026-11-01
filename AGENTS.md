@@ -11,13 +11,14 @@ online (browser to browser), with CPU players filling empty seats.
 
 ## Read first
 
-| File                               | What it gives you                                                                |
-| ---------------------------------- | -------------------------------------------------------------------------------- |
-| `AGENTS.md` (this file)            | How to work on the project: rules, workflow, conventions                         |
-| `docs/architecture.md`             | How the pieces work together: engine, client, camera, HUD, online play, saves    |
-| `docs/codemap.md`                  | Where everything lives: every file, its key functions, and a "where is X" index  |
-| `docs/spec.md`                     | The game's rules and interface in full detail (the source of truth for behavior) |
-| `packages/engine/src/constants.ts` | Every balance number, each with a comment                                        |
+| File                               | What it gives you                                                                     |
+| ---------------------------------- | ------------------------------------------------------------------------------------- |
+| `AGENTS.md` (this file)            | How to work on the project: rules, workflow, conventions                              |
+| `docs/architecture.md`             | How the pieces work together: engine, client, camera, HUD, online play, saves         |
+| `docs/codemap.md`                  | Where everything lives: every file, its key functions, and a "where is X" index       |
+| `docs/design.md`                   | How UI elements look and are built: colors, type, buttons, pop-ups, motion, board art |
+| `docs/spec.md`                     | The game's rules and interface in full detail (the source of truth for behavior)      |
+| `packages/engine/src/constants.ts` | Every balance number, each with a comment                                             |
 
 When the spec and the code disagree, ask the owner which is right; then fix the other one.
 
@@ -40,7 +41,8 @@ When the spec and the code disagree, ask the owner which is right; then fix the 
   1. Add an entry at the top of `apps/client/src/changelog.ts` (shown in "What's new" on the main
      menu): biggest changes as `features`, small ones as `extras`.
   2. Update `docs/spec.md` so it describes the new behavior.
-  3. UI changes: add a control for any new UI element to the UI Lab (`apps/client/src/ui/lab.ts`),
+  3. UI changes: design and build them by `docs/design.md` (tokens, buttons, pop-ups, motion,
+     board art) and go through its checklist. Add a control for any new UI element to the UI Lab (`apps/client/src/ui/lab.ts`),
      and list the controls touched by the change in `RECENT` at the top of `lab.ts` (they shake
      and glow so the owner can find them).
 - **Engine changes that alter what happens in a game** (rules, decisions, randomness) must bump
@@ -73,6 +75,10 @@ When the spec and the code disagree, ask the owner which is right; then fix the 
   with `h(tag, attrs, ...children)` from `ui/dom.ts`; money is written with `fmt(n)` ("1,200G",
   turned into a coin icon on screen by `coins.ts`). Styles are in one file, `src/style.css`,
   grouped by feature with a comment above each group.
+- **UI look and feel follows `docs/design.md`.** Use its color tokens, fonts, button variants,
+  surfaces and motion patterns; copy the nearest existing element instead of inventing a new
+  style. If a change sets a new pattern (a new kind of element, color meaning or animation), add
+  it to `docs/design.md` in the same commit.
 - **Match the surrounding code:** its naming, comment density and idiom. Comments explain why or
   what a piece is for, in plain English; doc comments (`/** */`) on exported functions and on
   non-obvious fields.
@@ -153,5 +159,5 @@ apps/client/          Vite + TypeScript browser client
   src/ui/hud.ts       Hud: every overlay on the game screen
   src/ui/*.ts         menus, dialogs, pickers, labs, editor
   src/net/            online play (PeerJS, lockstep)
-docs/                 spec.md, architecture.md, codemap.md
+docs/                 spec.md, architecture.md, codemap.md, design.md
 ```

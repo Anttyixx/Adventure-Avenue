@@ -67,6 +67,7 @@ apps/server/       not used (online play needs no server)
 docs/spec.md          the game spec (rules and interface)
 docs/architecture.md  how the code works
 docs/codemap.md       where everything lives
+docs/design.md        how UI elements look and are built
 AGENTS.md             guide for AI assistants (CLAUDE.md loads it)
 reference/            place for the original prototype (not added yet)
 ```
