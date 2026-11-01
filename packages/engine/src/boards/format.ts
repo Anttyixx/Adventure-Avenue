@@ -164,7 +164,7 @@ export function validateBoard(def: BoardDef): BoardCheck {
     if (s.d == null || s.d < 0 || s.d >= def.districts.length)
       errors.push(`Shop ${where(s)} has no district.`);
     const base = s.base ?? 0;
-    if (!s.plot && (base < L.minBase || base > L.maxBase))
+    if (!s.plot && !s.autoBase && (base < L.minBase || base > L.maxBase))
       errors.push(`Shop ${where(s)} needs a value between ${L.minBase}G and ${L.maxBase}G.`);
   }
   def.districts.forEach((d, i) => {
@@ -252,6 +252,7 @@ export function boardToFile(def: BoardDef): BoardFile {
       if (s.t === 'shop') {
         out.d = s.d;
         out.base = s.base;
+        if (s.autoBase) out.autoBase = true;
         if (s.plot) out.plot = true;
       }
       if (s.t === 'warp' && s.link != null) out.link = s.link;
@@ -290,6 +291,7 @@ export function boardFromFile(data: unknown, id: string): { board?: BoardDef; er
     if (q.t === 'shop') {
       out.d = isNum(q.d) ? Math.floor(q.d) : -1;
       out.base = isNum(q.base) ? Math.round(q.base) : 0;
+      if (q.autoBase === true) out.autoBase = true;
       if (q.plot) out.plot = true;
     }
     if (q.t === 'warp' && isNum(q.link)) out.link = Math.floor(q.link);

@@ -26,6 +26,23 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: '2026-11-01-editor-tile-options',
+    date: 'Nov 1, 2026',
+    title: 'Simpler roads and smarter property values',
+    features: [
+      {
+        tag: 'better',
+        title: 'Tile options on the right',
+        text: 'Select a tile to change its district or starting value. New properties use Auto: prices rise with walking distance from the bank. You can choose a fixed value instead.',
+      },
+      {
+        tag: 'better',
+        title: 'More room for your board',
+        text: 'Adjacent tiles always connect, so leave a gap to separate paths. The Link tool is gone. Moving groups follow your pointer from their middle, and the action bar stays centered and compact until there are options to choose.',
+      },
+    ],
+  },
+  {
     id: '2026-11-01-editor-group-selection',
     date: 'Nov 1, 2026',
     title: 'Build and rearrange your board',

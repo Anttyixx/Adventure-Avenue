@@ -1,5 +1,6 @@
 /** Grid-snapped group movement shared by the editor preview and placement. */
-import { autoEdges, edgeKey, type BoardDef } from '@aa/engine';
+import { autoEdges, type BoardDef } from '@aa/engine';
+import { cellAt, cellCenter } from '../geometry';
 
 type Cell = { x: number; y: number };
 
@@ -23,14 +24,8 @@ export function selectionPositions(
   );
 }
 
-/** Replace destination tiles in one operation, retaining moved properties and surviving cut links. */
-export function moveSelection(
-  board: BoardDef,
-  selection: ReadonlySet<number>,
-  anchor: Cell,
-  target: Cell,
-  cuts: ReadonlySet<string>,
-) {
+/** Replace destination tiles in one operation, retaining moved properties and connecting all neighboring tiles. */
+export function moveSelection(board: BoardDef, selection: ReadonlySet<number>, anchor: Cell, target: Cell) {
   const positions = selectionPositions(board, selection, anchor, target);
   if (
     !positions.size ||
@@ -51,18 +46,21 @@ export function moveSelection(
     }
     return result;
   });
-  const nextCuts = new Set<string>();
-  for (const [a, b] of autoEdges(squares, new Set(), board.layout)) {
-    if (cuts.has(edgeKey(kept[a].sq, kept[b].sq))) nextCuts.add(edgeKey(squares[a], squares[b]));
-  }
   return {
     board: {
       ...board,
       squares,
-      edges: autoEdges(squares, nextCuts, board.layout),
+      edges: autoEdges(squares, new Set(), board.layout),
       bank: squares.findIndex((sq) => sq.t === 'bank'),
     },
-    cuts: nextCuts,
     selection: new Set([...selection].map((i) => ids.get(i)!)),
   };
+}
+
+/** The grid cell nearest the group's center, so a move follows the pointer from the middle. */
+export function selectionAnchor(board: BoardDef, selection: ReadonlySet<number>): Cell {
+  const centers = [...selection].map((i) => cellCenter(board.layout, board.squares[i].x, board.squares[i].y));
+  const x = (Math.min(...centers.map((c) => c.x)) + Math.max(...centers.map((c) => c.x))) / 2;
+  const y = (Math.min(...centers.map((c) => c.y)) + Math.max(...centers.map((c) => c.y))) / 2;
+  return cellAt(board.layout, board.cols, board.rows, x, y) ?? board.squares[[...selection][0]];
 }

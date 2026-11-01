@@ -2799,7 +2799,8 @@ input[type='range'] {
   border: 1px solid var(--glass-line);
   flex: none;
 }
-.ed-inspector select {
+.ed-inspector select,
+.ed-tile-inspector select {
   background: rgba(255, 255, 255, 0.08);
   border: 1px solid var(--glass-line);
   border-radius: 8px;
@@ -2807,7 +2808,8 @@ input[type='range'] {
   padding: 6px 8px;
   font: inherit;
 }
-.ed-inspector option {
+.ed-inspector option,
+.ed-tile-inspector option {
   background: var(--navy-2);
   color: var(--text);
 }
@@ -3136,18 +3138,34 @@ input[type='range'] {
   object-fit: contain;
 }
 .editor .ed-actions {
-  left: 10px;
-  right: calc(var(--ed-palette-w) + 30px);
+  left: 50%;
+  right: auto;
+  margin: 0;
+  width: max-content;
   bottom: calc(16px + var(--badge-h, 0px));
-  max-width: min(920px, calc(100% - var(--ed-palette-w) - 50px));
+  max-width: calc(100% - 24px);
   max-height: min(58vh, 480px);
   padding: 14px 18px;
   overflow: hidden;
   z-index: 3;
 }
+.editor .ed-actions.show {
+  transform: translateX(-50%);
+}
+.editor .ed-actions.status {
+  min-height: 0;
+  padding: 9px 14px;
+}
+.editor .ed-actions.status .ed-action-content {
+  display: block;
+}
+.editor .ed-actions.status .ed-action-tools {
+  display: none;
+}
+
 .ed-action-content {
   display: grid;
-  grid-template-columns: minmax(160px, 1fr) auto;
+  grid-template-columns: minmax(0, max-content) auto;
   align-items: center;
   gap: 12px 18px;
   min-width: 0;
@@ -3156,7 +3174,7 @@ input[type='range'] {
 }
 .ed-action-content > .prompt-text {
   margin: 0;
-  max-width: 330px;
+  max-width: none;
 }
 .editor .ed-action-tools {
   display: flex;
@@ -3244,12 +3262,12 @@ input[type='range'] {
     max-height: 64vh;
   }
   .ed-action-content {
-    grid-template-columns: minmax(100px, 1fr) auto;
+    grid-template-columns: minmax(0, max-content) auto;
     gap: 8px;
   }
   .ed-action-content > .prompt-text {
     font-size: 13px;
-    max-width: 230px;
+    max-width: none;
   }
   .editor .ed-action-tools {
     max-width: 220px;
@@ -6549,11 +6567,7 @@ div.sl-inline label {
 .editor .ed-palette[hidden] {
   display: none;
 }
-.editor:not(.ed-placing) .ed-actions {
-  right: 10px;
-  left: 76px;
-  max-width: min(920px, calc(100% - 96px));
-}
+
 .ed-moving .ed-canvas {
   cursor: none;
 }
@@ -6564,5 +6578,54 @@ div.sl-inline label {
   .ed-info > .btn {
     padding: 5px 8px;
     font-size: 11px;
+  }
+}
+
+/* Selected tile options float on the right, independently of the action bar. */
+.ed-tile-inspector {
+  position: absolute;
+  top: 66px;
+  right: 10px;
+  width: min(290px, calc(100% - 88px));
+  max-height: calc(100% - 172px);
+  overflow: auto;
+  padding: 14px;
+  z-index: 4;
+  border-radius: var(--radius);
+}
+.ed-tile-inspector[hidden] {
+  display: none;
+}
+.ed-tile-head {
+  position: sticky;
+  top: 0;
+  background: var(--navy);
+  padding-bottom: 6px;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.ed-tile-head h2 {
+  margin: 0;
+  font: 20px var(--head);
+}
+.ed-tile-inspector .ed-field {
+  margin: 10px 0;
+  gap: 6px;
+}
+.ed-tile-inspector .digits {
+  max-width: 100%;
+}
+@media (max-width: 900px), (max-height: 560px) {
+  .ed-tile-inspector {
+    top: 56px;
+    width: 240px;
+    padding: 10px;
+    max-height: calc(100% - 156px);
+  }
+  .ed-tile-head h2 {
+    font-size: 17px;
   }
 }

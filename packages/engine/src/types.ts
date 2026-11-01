@@ -191,6 +191,8 @@ export interface BoardSquareDef {
   /** District index for shops and plots. */
   d?: number;
   base?: number;
+  /** Assign a starting value from walking distance to the bank at game start. */
+  autoBase?: boolean;
   /** Preferred as a vacant plot when the game's plot setting picks plots. */
   plot?: boolean;
   /** Warp squares: the index of the square landing here takes you to. */

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { autoEdges, areNeighbors, edgeKey, type BoardDef } from '@aa/engine';
-import { moveSelection, selectionPositions } from '../src/ui/editor-selection';
+import { autoEdges, areNeighbors, type BoardDef } from '@aa/engine';
+import { moveSelection, selectionPositions, selectionAnchor } from '../src/ui/editor-selection';
 
 function fixture(layout: 'square' | 'hex' = 'square'): BoardDef {
   const squares: BoardDef['squares'] = [
@@ -27,7 +27,7 @@ describe('board editor group movement', () => {
   it('replaces occupied destinations, including overlapping source cells, and keeps properties', () => {
     const board = fixture();
     const before = structuredClone(board);
-    const result = moveSelection(board, new Set([0, 1]), board.squares[0], { x: 3, y: 2 }, new Set())!;
+    const result = moveSelection(board, new Set([0, 1]), board.squares[0], { x: 3, y: 2 })!;
     expect(result.board.squares).toHaveLength(4);
     expect(result.board.squares.slice(0, 2)).toEqual([
       { x: 3, y: 2, t: 'bank' },
@@ -39,20 +39,19 @@ describe('board editor group movement', () => {
     expect(result.board.squares[3].link).toBe(2);
     expect(board).toEqual(before);
   });
-  it('keeps moved cut links, and discards cuts belonging to overwritten tiles', () => {
+  it('always connects neighboring tiles after a move, even if the source had a cut', () => {
     const board = fixture();
-    const cuts = new Set([
-      edgeKey(board.squares[0], board.squares[1]),
-      edgeKey(board.squares[1], board.squares[2]),
-    ]);
-    const result = moveSelection(board, new Set([0, 1]), board.squares[0], { x: 3, y: 2 }, cuts)!;
-    expect(result.cuts).toEqual(new Set([edgeKey(result.board.squares[0], result.board.squares[1])]));
-    expect(result.board.edges).not.toContainEqual([0, 1]);
-    expect(cuts.size).toBe(2);
+    board.edges = [];
+    const result = moveSelection(board, new Set([0, 1]), board.squares[0], { x: 3, y: 2 })!;
+    expect(result.board.edges).toContainEqual([0, 1]);
+  });
+  it('anchors a group in its middle rather than at the first tile', () => {
+    const board = fixture();
+    expect(selectionAnchor(board, new Set([0, 1, 2]))).toEqual({ x: 3, y: 2 });
   });
   it('remaps bank and surviving warp indices after replacing earlier tiles', () => {
     const board = fixture();
-    const result = moveSelection(board, new Set([3]), board.squares[3], board.squares[0], new Set())!;
+    const result = moveSelection(board, new Set([3]), board.squares[3], board.squares[0])!;
     expect(result.board.bank).toBe(-1);
     const warps = result.board.squares.filter((s) => s.t === 'warp');
     expect(warps[0].link).toBe(3);
@@ -60,8 +59,8 @@ describe('board editor group movement', () => {
   });
   it('refuses placement if any part of the group lies outside the grid', () => {
     const board = fixture();
-    expect(moveSelection(board, new Set([0, 1]), board.squares[0], { x: 31, y: 2 }, new Set())).toBeNull();
-    expect(moveSelection(board, new Set([0, 1]), board.squares[1], { x: 0, y: 0 }, new Set())).toBeNull();
+    expect(moveSelection(board, new Set([0, 1]), board.squares[0], { x: 31, y: 2 })).toBeNull();
+    expect(moveSelection(board, new Set([0, 1]), board.squares[1], { x: 0, y: 0 })).toBeNull();
   });
   for (const target of [
     { x: 5, y: 5 },
@@ -78,7 +77,7 @@ describe('board editor group movement', () => {
           );
         }
       expect(cells.get(0)).toEqual(target);
-      const result = moveSelection(board, selection, board.squares[0], target, new Set())!;
+      const result = moveSelection(board, selection, board.squares[0], target)!;
       expect(result.selection.size).toBe(3);
     });
 });

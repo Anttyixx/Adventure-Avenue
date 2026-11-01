@@ -2,14 +2,13 @@
  * Board editor (#editor): paint squares on a grid, set up districts and shop values, check the
  * board for problems, save it in this browser, export/import board files and test-play it.
  *
- * Squares in neighboring cells connect automatically; the Links tool cuts or restores a single
- * connection. The preview is drawn with the same painter as the game board.
+ * Squares in neighboring cells always connect; leave a gap to keep paths apart. The preview
+ * is drawn with the same painter as the game board.
  */
 import {
   BOARD_LIMITS,
   BUILT_IN_BOARDS,
   autoEdges,
-  edgeKey,
   newGame,
   validateBoard,
   type BoardDef,
@@ -31,9 +30,10 @@ import {
 } from '../boardstore';
 import { clear, h } from './dom';
 import { boardThumb } from './thumb';
-import { moveSelection, selectionPositions } from './editor-selection';
+import { digitPicker } from './digits';
+import { moveSelection, selectionPositions, selectionAnchor } from './editor-selection';
 
-type Tool = SquareType | 'plot' | 'select' | 'place' | 'erase' | 'link';
+type Tool = SquareType | 'plot' | 'select' | 'place' | 'erase';
 
 const PALETTE: { group: string; items: { tool: Tool; label: string; hint: string }[] }[] = [
   {
@@ -42,7 +42,6 @@ const PALETTE: { group: string; items: { tool: Tool; label: string; hint: string
       { tool: 'select', label: 'Select', hint: 'Click a tile or drag to select a group.' },
       { tool: 'place', label: 'Place', hint: 'Choose tiles to place on the board.' },
       { tool: 'erase', label: 'Erase', hint: 'Remove squares (click or drag).' },
-      { tool: 'link', label: 'Link', hint: 'Click a link between two squares to cut or restore it.' },
     ],
   },
   {
@@ -272,23 +271,6 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
     cols: BOARD_LIMITS.maxCols,
     rows: BOARD_LIMITS.maxRows,
   };
-  // Cut links are remembered as cell pairs so they survive edits to other squares.
-  let cuts = new Set<string>();
-  const deriveCuts = () => {
-    // A board with no stored connections (e.g. brand new) has nothing cut.
-    if (!board.edges.length) {
-      cuts = new Set();
-      return;
-    }
-    const auto = autoEdges(board.squares, new Set(), board.layout);
-    const have = new Set(board.edges.map(([a, b]) => edgeKey(board.squares[a], board.squares[b])));
-    cuts = new Set(
-      auto
-        .filter(([a, b]) => !have.has(edgeKey(board.squares[a], board.squares[b])))
-        .map(([a, b]) => edgeKey(board.squares[a], board.squares[b])),
-    );
-  };
-  deriveCuts();
   let tool: Tool = 'select';
   let settings = false;
   let district = 0;
@@ -297,7 +279,7 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
   let moving: { anchor: { x: number; y: number }; target: { x: number; y: number } } | null = null;
   let marquee: { start: { x: number; y: number }; end: { x: number; y: number } } | null = null;
   let placeTool: Tool = 'shop';
-  const isPlacing = () => tool !== 'select' && tool !== 'erase' && tool !== 'link';
+  const isPlacing = () => tool !== 'select' && tool !== 'erase';
   const clearSelection = () => {
     selected = null;
     selection.clear();
@@ -375,6 +357,12 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
   const stage = h('div', { class: 'ed-stage' });
   const canvas = h('canvas', { class: 'ed-canvas' }) as HTMLCanvasElement;
   stage.append(canvas);
+  const tileInspector = h('div', {
+    class: 'ed-tile-inspector glass',
+    role: 'dialog',
+    'aria-label': 'Tile options',
+    hidden: true,
+  });
   const inspector = h('div', { class: 'ed-inspector' });
   const actionbar = h('div', {
     class: 'ed-actions prompt-center glass show',
@@ -382,7 +370,7 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
   });
   const actionContent = h('div', { class: 'ed-action-content' });
   actionbar.append(actionContent);
-  root.append(stage, info, topbar, palette, toolBar, actionbar);
+  root.append(stage, info, topbar, palette, toolBar, tileInspector, actionbar);
   let notice = '';
   let noticeBad = false;
   let noticeTimer = 0;
@@ -442,7 +430,7 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
   // ------------------------------------------------------------ model helpers
 
   const recompute = () => {
-    board.edges = autoEdges(board.squares, cuts, board.layout);
+    board.edges = autoEdges(board.squares, new Set(), board.layout);
     board.bank = board.squares.findIndex((s) => s.t === 'bank');
     // Warps pair up in reading order: the 1st with the 2nd, the 3rd with the 4th, and so on.
     const warps = board.squares
@@ -456,7 +444,7 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
     }
   };
   const snapshot = () => {
-    undo.push(JSON.stringify({ board, cuts: [...cuts] }));
+    undo.push(JSON.stringify(board));
     if (undo.length > 100) undo.shift();
   };
   const changed = () => {
@@ -467,9 +455,7 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
   const doUndo = () => {
     const last = undo.pop();
     if (!last) return say('Nothing to undo.');
-    const s = JSON.parse(last) as { board: BoardDef; cuts: string[] };
-    board = s.board;
-    cuts = new Set(s.cuts);
+    board = JSON.parse(last) as BoardDef;
     clearSelection();
     nameInput.value = board.name;
     changed();
@@ -486,7 +472,7 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
       else if (selected != null && selected > i) selected--;
       return true;
     }
-    if (tool === 'select' || tool === 'place' || tool === 'link') return false;
+    if (tool === 'select' || tool === 'place') return false;
     const t: SquareType = tool === 'plot' ? 'shop' : tool;
     if (t === 'shop' && !board.districts.length) {
       board.districts.push({ name: DISTRICT_NAMES[0], color: DISTRICT_COLORS[0] });
@@ -500,7 +486,7 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
             y,
             t,
             d: district,
-            base: prev?.t === 'shop' && prev.base ? prev.base : 160 + district * 30,
+            ...(prev?.t === 'shop' && !prev.autoBase ? { base: prev.base } : { autoBase: true }),
             ...(tool === 'plot' ? { plot: true } : {}),
           }
         : { x, y, t };
@@ -566,7 +552,12 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
     const paletteRect = palette.getBoundingClientRect();
     const top =
       Math.max(info.getBoundingClientRect().bottom, topbar.getBoundingClientRect().bottom) - r.top + 6;
-    const right = palette.hidden ? 0 : Math.min(r.width * 0.4, r.right - paletteRect.left + 8);
+    const side = !palette.hidden
+      ? paletteRect
+      : !tileInspector.hidden
+        ? tileInspector.getBoundingClientRect()
+        : null;
+    const right = side ? Math.min(r.width * 0.4, r.right - side.left + 8) : 0;
     const bottom = r.height - actionbar.offsetTop + 4;
     const near = nearZoom(r.width, r.height, w, hh);
     const far = Math.min(near, fitZoom(r.width - right, r.height - top - bottom, w, hh));
@@ -623,36 +614,8 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
       boardImageKey = imageKey;
     }
     ctx.drawImage(boardImage, 0, 0, w, hh);
-    // Links
-    if (tool === 'link') {
-      for (const [a, b, key] of neighborPairs()) {
-        const pa = center(board.squares[a]);
-        const pb = center(board.squares[b]);
-        const mx = (pa.x + pb.x) / 2;
-        const my = (pa.y + pb.y) / 2;
-        const cut = cuts.has(key);
-        ctx.beginPath();
-        ctx.arc(mx, my, 13, 0, Math.PI * 2);
-        ctx.fillStyle = cut ? '#e5484d' : '#30a46c';
-        ctx.fill();
-        ctx.lineWidth = 3;
-        ctx.strokeStyle = '#fff';
-        ctx.stroke();
-        ctx.beginPath();
-        if (cut) {
-          ctx.moveTo(mx - 5, my - 5);
-          ctx.lineTo(mx + 5, my + 5);
-          ctx.moveTo(mx + 5, my - 5);
-          ctx.lineTo(mx - 5, my + 5);
-        } else {
-          ctx.moveTo(mx - 6, my);
-          ctx.lineTo(mx + 6, my);
-        }
-        ctx.stroke();
-      }
-    }
     // Hover and selection
-    if (hover && tool !== 'link' && !moving) {
+    if (hover && !moving) {
       const c = center(hover);
       ctx.lineWidth = 4;
       ctx.strokeStyle = tool === 'erase' ? '#e5484d' : '#ffd166';
@@ -700,14 +663,6 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
     for (let y = 0; y < board.rows; y++) ctx.fillText(String(y + 1), 22, center({ x: 0, y }).y);
   };
 
-  /** Every pair of squares in neighboring cells, with its link key. */
-  const neighborPairs = (): [number, number, string][] => {
-    const out: [number, number, string][] = [];
-    for (const [a, b] of autoEdges(board.squares, new Set(), board.layout))
-      out.push([a, b, edgeKey(board.squares[a], board.squares[b])]);
-    return out;
-  };
-
   const toWorld = (e: PointerEvent | MouseEvent) => {
     const r = canvas.getBoundingClientRect();
     return { x: (e.clientX - r.left - ox) / scale, y: (e.clientY - r.top - oy) / scale };
@@ -723,30 +678,14 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
     if (moving) {
       const target = toCell(e);
       if (!target) return;
-      const result = moveSelection(board, selection, moving.anchor, target, cuts);
+      const result = moveSelection(board, selection, moving.anchor, target);
       if (!result) return say('Keep the whole group inside the board.', true);
       snapshot();
       board = result.board;
-      cuts = result.cuts;
       selection = result.selection;
       moving = null;
       selected = selection.size === 1 ? [...selection][0] : null;
       changed();
-      return;
-    }
-    if (tool === 'link') {
-      const w = toWorld(e);
-      for (const [a, b, key] of neighborPairs()) {
-        const pa = center(board.squares[a]);
-        const pb = center(board.squares[b]);
-        if (Math.hypot((pa.x + pb.x) / 2 - w.x, (pa.y + pb.y) / 2 - w.y) < 24) {
-          snapshot();
-          if (cuts.has(key)) cuts.delete(key);
-          else cuts.add(key);
-          changed();
-          return;
-        }
-      }
       return;
     }
     const cell = toCell(e);
@@ -891,7 +830,6 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
     select: 'M5 3l14 10-7 1-3 7z',
     place: 'M4 4h12v12H4zM18 14v8M14 18h8',
     erase: 'M4 13l9-10 8 8-9 10H9l-5-5zM8 9l8 8M12 21h9',
-    link: 'M10 14l4-4M8 16l-1 1a4 4 0 01-6-6l5-5a4 4 0 016 0M16 8l1-1a4 4 0 016 6l-5 5a4 4 0 01-6 0',
   };
   for (const { tool: t, label } of PALETTE[0].items) {
     const icon = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
@@ -1009,6 +947,7 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
     actionContent.style.width = '';
     actionbar.classList.remove('morphing');
     clear(inspector);
+    clear(tileInspector);
     nameInput.value = board.name;
     const unsaved = JSON.stringify(board) !== savedJSON;
     const inList = listBoards().some((b) => b.id === board.id);
@@ -1036,7 +975,7 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
                 ? selection.size
                   ? `${selection.size} tile${selection.size === 1 ? '' : 's'} selected`
                   : 'Click a tile, or drag to select a group'
-                : `${label}: ${tool === 'link' ? 'click a connection to cut or restore it' : tool === 'erase' ? 'click or drag to remove squares' : 'click or drag to place tiles'}`),
+                : `${label}: ${tool === 'erase' ? 'click or drag to remove squares' : 'click or drag to place tiles'}`),
       ),
       h(
         'div',
@@ -1048,8 +987,8 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
                 {
                   class: 'btn small main',
                   onclick: () => {
-                    const sq = board.squares[[...selection][0]];
-                    moving = { anchor: { x: sq.x, y: sq.y }, target: { x: sq.x, y: sq.y } };
+                    const anchor = selectionAnchor(board, selection);
+                    moving = { anchor, target: { ...anchor } };
                     notice = '';
                     drawInspector();
                     redraw();
@@ -1119,7 +1058,6 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
               return;
             snapshot();
             board.layout = l;
-            cuts = new Set();
             drawPalette();
             changed();
             say(
@@ -1254,12 +1192,29 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
       );
 
     // Selected square
-    const squarePanel = h('div');
+    const squarePanel = tileInspector;
     squarePanel.hidden =
       settings || tool !== 'select' || selected == null || selection.size !== 1 || !!moving;
-    inspector.append(squarePanel);
+    squarePanel.append(
+      h(
+        'div',
+        { class: 'ed-tile-head' },
+        h('h2', null, 'Tile options'),
+        h(
+          'button',
+          {
+            class: 'btn small ghost',
+            onclick: () => {
+              clearSelection();
+              drawInspector();
+              redraw();
+            },
+          },
+          'Close',
+        ),
+      ),
+    );
     const sq = selected != null ? board.squares[selected] : null;
-    squarePanel.append(h('h4', null, 'Selected square'));
     if (!sq) squarePanel.append(h('p', { class: 'hint' }, 'Use Select and click a square to edit it.'));
     else {
       squarePanel.append(
@@ -1272,7 +1227,7 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
       if (sq.t === 'shop') {
         const dSel = h(
           'select',
-          null,
+          { 'aria-label': 'District' },
           ...board.districts.map((d, i) => h('option', { value: String(i), selected: i === sq.d }, d.name)),
         ) as HTMLSelectElement;
         dSel.onchange = () => {
@@ -1280,22 +1235,50 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
           sq.d = Number(dSel.value);
           changed();
         };
-        const base = h('input', {
-          type: 'number',
-          min: String(BOARD_LIMITS.minBase),
-          max: String(BOARD_LIMITS.maxBase),
-          step: '10',
-          value: String(sq.base ?? 200),
-          class: 'num',
-        }) as HTMLInputElement;
-        base.onchange = () => {
+        const pricing = h(
+          'select',
+          { 'aria-label': 'Starting value' },
+          h('option', { value: 'auto', selected: !!sq.autoBase }, 'Auto'),
+          h('option', { value: 'fixed', selected: !sq.autoBase }, 'Fixed value'),
+        );
+        pricing.onchange = () => {
           snapshot();
-          sq.base = Math.max(
-            BOARD_LIMITS.minBase,
-            Math.min(BOARD_LIMITS.maxBase, Math.round(Number(base.value) / 10) * 10 || 200),
-          );
+          if (pricing.value === 'auto') {
+            sq.autoBase = true;
+            delete sq.base;
+          } else {
+            sq.base = preview().nodes[selected!].base || 200;
+            delete sq.autoBase;
+          }
           changed();
         };
+        squarePanel.append(field('Starting value', pricing));
+        if (sq.autoBase)
+          squarePanel.append(
+            h(
+              'p',
+              { class: 'hint' },
+              'Auto: cheaper near the bank, higher farther away. The value is set when the game starts.',
+            ),
+          );
+        else {
+          const picker = digitPicker({
+            min: BOARD_LIMITS.minBase,
+            max: BOARD_LIMITS.maxBase,
+            unit: 10,
+            value: sq.base ?? 200,
+            suffix: 'G',
+            onChange(value) {
+              snapshot();
+              sq.base = value;
+              recompute();
+              redraw();
+              status.textContent = 'Unsaved changes';
+              status.classList.add('unsaved');
+            },
+          });
+          squarePanel.append(field('Property value', picker.el));
+        }
         const plot = h('input', { type: 'checkbox', checked: !!sq.plot }) as HTMLInputElement;
         plot.onchange = () => {
           snapshot();
@@ -1305,7 +1288,6 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
         };
         squarePanel.append(
           field('District', dSel),
-          field('Shop value (G)', base),
           h('label', { class: 'check' }, plot, 'Vacant plot (Standard rules)'),
         );
       }
@@ -1328,13 +1310,12 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
       ...check.warnings.map((w) => h('p', { class: 'ed-warn' }, w)),
       ...(check.errors.length ? [] : [h('p', { class: 'ed-ok' }, 'This board is playable.')]),
     );
-    controls.hidden =
-      !settings && tool !== 'shop' && tool !== 'plot' && (tool !== 'select' || selected == null || !!moving);
+    controls.hidden = !settings && tool !== 'shop' && tool !== 'plot';
     actionbar.classList.toggle('ed-action-error', !!notice && noticeBad);
-    actionbar.classList.toggle(
-      'ed-action-expanded',
-      settings || (tool === 'select' && selected != null && !moving),
-    );
+    actionbar.classList.toggle('ed-action-expanded', settings);
+    const hasOptions =
+      settings || tool === 'shop' || tool === 'plot' || (tool === 'select' && selection.size > 0);
+    actionbar.classList.toggle('status', !hasOptions);
     morphActions(from);
   };
 
@@ -1375,7 +1356,6 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
     if (!confirmLeave()) return;
     snapshot();
     board = { ...res.board, cols: BOARD_LIMITS.maxCols, rows: BOARD_LIMITS.maxRows };
-    deriveCuts();
     clearSelection();
     savedJSON = '';
     changed();
@@ -1406,7 +1386,6 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
 
   const load = (b: BoardDef, saved: boolean) => {
     board = { ...structuredClone(b), cols: BOARD_LIMITS.maxCols, rows: BOARD_LIMITS.maxRows };
-    deriveCuts();
     clearSelection();
     undo.length = 0;
     savedJSON = saved ? JSON.stringify(board) : '';

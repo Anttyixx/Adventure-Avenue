@@ -361,15 +361,23 @@ The board is drawn in `board.ts` in its own style: bright and physical, unlike t
   coordinates, so the background scales with tiles and never exposes an edge. Games and the
   editor draw it separately below transparent board caches (`paintBoard(..., false)`); do not
   bake grass into those caches, which would introduce texture seams at their boundaries.
-- **Builder tool bar:** a glass panel centered vertically 10px from the left edge. Stack four
-  44px icon buttons (Select, Place, Erase, Link), drawn as simple 24px line SVGs. The active tool
+- **Builder tool bar:** a glass panel centered vertically 10px from the left edge. Stack three
+  44px icon buttons (Select, Place, Erase), drawn as simple 24px line SVGs. The active tool
   uses gold with a contrasting inset outline; tool names appear to the right on hover or keyboard
   focus. Accessible button names and bottom-bar instructions cover touch use. Only Place shows
   the right-hand tile pane. Board settings is a small ghost button in the top-left info bar.
   Select draws a translucent gold drag rectangle and dashed gold tile outlines. Its Move and
   Erase actions live in the bottom bar. While moving, hide the canvas cursor, show only source
   outlines at the old cells and draw the group at its snapped destination with gold outlines
-  (red if outside the grid). Keep a Cancel action visible; Escape also cancels.
+  (red if outside the grid). Anchor the preview at the selection center. Keep a Cancel action
+  visible; Escape also cancels.
+- **Builder tile options:** a nonmodal glass panel at the top right, with a title and Close
+  button. Show only for one selected tile, never during a group move. Keep it above the bottom
+  bar, scroll its body on phones, and use the shared digit picker for fixed starting values.
+- **Builder action bar:** center on the full window using a 50% anchor and horizontal translation,
+  independent of the right pane. Size to the text and controls up to window margins. No controls
+  means the compact status style (no minimum prompt height); choices expand it. Keep the existing
+  shell morph and text reveal, with reduced motion respected.
 - **Builder:** hide decorative scenery (trees, ponds and flower beds) while editing; keep
   grass, roads and playable tiles. Games and test play show scenery as usual.
 - **Tiles** (86 units on a 100-unit grid): cream `#fdfbf5` (bank `#fff6d6`), rounded (radius 12),

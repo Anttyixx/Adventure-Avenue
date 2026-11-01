@@ -140,9 +140,9 @@ code changes.
 **Custom boards (added Oct 2026).** Players build boards in the in-game board editor, save them
 in the browser, and export/import them as `.aaboard.json` files (format tag
 `adventure-avenue-board`, version 1: name, author, grid size, districts, squares and
-connections). Squares in neighboring cells connect automatically; single connections can be
-cut. A board is playable only if it has exactly one bank, every suit (or a change-of-suit
-square), at least 4 shops, every shop in a district with a 50-2,000G value, backstreets in
+connections). Squares in neighboring cells always connect automatically; leave an empty cell between tiles
+to keep paths apart. Opening an old board in the builder restores any previously cut connections. A board is playable only if it has exactly one bank, every suit (or a change-of-suit
+square), at least 4 shops, every shop in a district with a fixed 50-2,000G value or Auto pricing, backstreets in
 pairs, every warp leading to another warp, and every square reachable from the bank (by road or
 warp). Grids range from 4 x 4 to 32 x 20 (up to 320
 squares). Each board uses a square grid (4 neighbors per cell) or a hex grid (pointy-top
@@ -170,28 +170,42 @@ these limits. The chip runs from 250% close to 100% fully out. Wheel, pinch and 
 same steps as in play; tapping the chip resets to 250%. Camera scale eases with the game's
 0.12 factor, or changes immediately with reduced motion. Pinching does not place tiles;
 board picking uses the current camera transform at every zoom. Form typing keeps its normal keys.
-An icon-only toolbar is centered vertically 10px from the left edge: Select, Place, Erase and
-Link. Hovering or focusing an icon shows its name; the active tool has a gold fill and inset
-outline. Buttons have accessible names and work with keyboard and touch. Erase removes squares,
-and Link cuts or restores neighboring connections. Board settings is in the top-left info bar.
+An icon-only toolbar is centered vertically 10px from the left edge: Select, Place and Erase.
+Hovering or focusing an icon shows its name; the active tool has a gold fill and inset
+outline. Buttons have accessible names and work with keyboard and touch. Erase removes squares.
+Board settings is in the top-left info bar.
 Only Place shows the scrollable tile pane on the right, with two columns of actual tile art.
 Choosing a tile keeps Place active; clicking or dragging on the board places it. Returning to
 Place remembers the last chosen tile. The pane is hidden for every other tool and board settings.
 Select clicks one tile or drags a selection rectangle around multiple tiles. Selected tiles have
-gold dashed outlines, and the bottom action bar offers Move and Erase. One selected tile also
-shows its editable details. Erase deletes the whole selection in one undoable action.
-Move hides the canvas cursor and lifts the selection as a group; outlines remain at its original
+gold dashed outlines, and the bottom action bar offers Move and Erase. One selected tile opens a
+nonmodal Tile options panel on the right (with a Close button),
+including district, Auto/fixed starting value and vacant-plot status for properties. It hides
+when selection changes to a group or movement begins. New properties default to Auto; older
+fixed values remain unchanged. Auto values are assigned at game start using shortest walking
+distance from the bank (warps count as a step), scaled from 100G for the nearest property to
+500G for the farthest, rounded to 10G. Equal-distance or unreachable editing previews use 100G.
+Auto values skip the existing near-bank district discount; fixed values keep that discount.
+The Auto flag survives saving and exporting/importing the board. Erase deletes the whole
+selection in one undoable action.
+Move hides the canvas cursor and lifts the selection as a group, anchored at its middle
+(within grid snapping) rather than its first tile. Browsers cannot reposition the system cursor;
+the group instead centers under the pointer as it moves. Outlines remain at its original
 cells while the tile art follows the pointer and snaps to the grid. A click (or tap) places the
 group. Destination tiles underneath the group are erased and replaced; selected tiles may overlap
-their own old cells. Tile properties and surviving cut links are kept, and hex-grid movement
+their own old cells. Tile properties are kept and adjacent tiles automatically connect. Hex-grid movement
 preserves the group's geometry across odd/even rows. The entire group must fit inside the grid;
 out-of-bounds previews have red outlines and cannot be placed. Cancel or Escape abandons the move
 without changing the board. Undo restores the full move, including any replaced tiles.
 Menu holds New board, My boards, Import, Export and Back to main menu.
 The bottom action bar uses the game's glass styling, 740ms width/height morph and short text
-reveal (both respect reduced motion). It floats at the bottom, uses the space beside the tile pane only during Place, and adapts to placement,
-selection, erasing, links or board settings. Shop placement shows a compact district picker; square
-selection shows its editable details; board settings contains layout, author, districts and problems. Save, export and validation feedback appears in the action bar.
+reveal (both respect reduced motion). It floats at the bottom, centered on the entire window at
+every screen size, and adapts to placement,
+selection, erasing or board settings. Its width fits the current text and options, up to the
+window margins. With no options it uses the collapsed status line; it expands only for controls
+(such as Move/Erase, Cancel, a placement district picker or board settings). Single-tile details
+are in the right-side panel. Board settings contains layout, author, districts and problems.
+Save, export and validation feedback appears in the action bar.
 
 **Built-in boards.** Every built-in board has the bank in the middle of the map, exactly 4
 properties in each district (8 districts, 32 properties), its Stockbroker squares as far from the
@@ -253,7 +267,7 @@ raises both fees and shop values.
 | Tide Walk   | 0,5 · 0,4 · 1,3 · 2,3    | 220 / 240 / 260 / 280 | 0,4                    |
 | Plaza       | 4,3 · 5,3 · 6,3          | 320 / 340 / 360       | none                   |
 
-**Near the bank, cheaper:** at game start every district's base values are cut by up to 10%
+**Near the bank, cheaper:** at game start every district's fixed base values are cut by up to 10%
 (`K.nearBank`) depending on how near it is to the bank: the district with the shortest average walk
 from the bank to its squares (warps count as a step) gets the full 10%, the farthest keeps its map
 prices, and the rest scale in between. Prices round to 5G. This applies to every board, custom ones

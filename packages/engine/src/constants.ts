@@ -24,6 +24,8 @@ export const K = {
    * rest scale in between. Prices round to 5G.
    */
   nearBank: 0.1,
+  /** Auto-priced custom properties: nearest/farthest walking distance, rounded in G steps. */
+  autoProperty: { min: 100, max: 500, step: 10 },
   feeRate: 0.2,
   /** Fee multiplier by squares owned in the group (index = count, capped at 4). */
   mult: [0, 1, 1.3, 1.6, 2.0],

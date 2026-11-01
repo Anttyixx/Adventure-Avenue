@@ -253,6 +253,12 @@ UI Lab: “Buy result timing” uses an isolated cloned game and an actual engin
 bar moves or erases the group. Movement is a preview until placement, so Cancel does not mutate
 the saved board. The base cache omits lifted tiles and their roads, then draws source outlines
 and snapped tile art above it. `ui/editor-selection.ts` translates hex groups in axial coordinates,
-checks bounds, replaces destination tiles, remaps indices and retains surviving cut links.
+checks bounds, replaces destination tiles, remaps indices and connects every adjacent tile.
 A committed move or group erase takes one undo snapshot. Place alone exposes the tile pane;
-Board settings is in the top-left info bar.
+Board settings is in the top-left info bar. Single selection draws a separate right-side options
+panel; the centered action bar switches to status styling whenever it has no controls.
+`selectionAnchor` chooses the cell nearest the group's center; it never tries to warp the OS cursor.
+`BoardSquareDef.autoBase` is optional and persists through board files. At new-game setup, bank
+BFS distances determine Auto property values from `K.autoProperty`, after the fixed-price district
+discount and before plot selection. Existing game saves already contain resolved prices. New-game
+behavior changes require the protocol version bump.

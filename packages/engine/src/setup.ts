@@ -37,7 +37,22 @@ export function newGame(opts: MatchOptions): GameState {
     nodes[a].nb.push(b);
     nodes[b].nb.push(a);
   }
-  discountNearBank(nodes, board.bank, board.districts.length);
+  const distances = bankDistances(nodes, board.bank);
+  discountNearBank(nodes, distances, board.districts.length);
+  // Auto values use each property's walk, without applying a second district discount.
+  const reachable = nodes.filter((s) => s.t === 'shop' && Number.isFinite(distances[s.id]));
+  const nearest = Math.min(...reachable.map((s) => distances[s.id]));
+  const farthest = Math.max(...reachable.map((s) => distances[s.id]));
+  const pricing = K.autoProperty;
+  for (const s of nodes) {
+    if (s.t !== 'shop' || !board.squares[s.id].autoBase) continue;
+    const ratio =
+      farthest > nearest && Number.isFinite(distances[s.id])
+        ? (distances[s.id] - nearest) / (farthest - nearest)
+        : 0;
+    s.base = Math.round((pricing.min + ratio * (pricing.max - pricing.min)) / pricing.step) * pricing.step;
+    s.value = s.base;
+  }
   const players: Player[] = opts.seats.map((seat, i) => ({
     id: i,
     slot: i,
@@ -105,12 +120,9 @@ export function newGame(opts: MatchOptions): GameState {
   return G;
 }
 
-/**
- * Make properties cheaper the nearer their district is to the bank: the nearest district (by the
- * average walk from the bank to its squares, warps counting as a step) loses K.nearBank of its base
- * values, the farthest none, the rest in proportion.
- */
-function discountNearBank(nodes: Square[], bank: number, districts: number) {
+/** Shortest walk from the bank, counting a warp as one movement step. */
+function bankDistances(nodes: Square[], bank: number) {
+  if (!nodes[bank]) return new Array<number>(nodes.length).fill(Infinity);
   const dist = new Array(nodes.length).fill(Infinity);
   dist[bank] = 0;
   const q = [bank];
@@ -124,6 +136,11 @@ function discountNearBank(nodes: Square[], bank: number, districts: number) {
         q.push(m);
       }
   }
+  return dist;
+}
+
+/** Apply the existing near-bank district discount to fixed prices. */
+function discountNearBank(nodes: Square[], dist: number[], districts: number) {
   const avg = Array.from({ length: districts }, (_, d) => {
     const ds = nodes.filter((s) => s.d === d && Number.isFinite(dist[s.id])).map((s) => dist[s.id]);
     return ds.length ? ds.reduce((a, b) => a + b, 0) / ds.length : NaN;
