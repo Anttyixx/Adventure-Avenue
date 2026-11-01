@@ -26,6 +26,15 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: '2026-11-01-editor-no-decorations',
+    date: 'Nov 1, 2026',
+    title: 'A clearer board builder',
+    features: [],
+    extras: [
+      'Trees, ponds and flower beds stay hidden while editing a board and appear when you start a game or test play.',
+    ],
+  },
+  {
     id: '2026-11-01-infinite-grass',
     date: 'Nov 1, 2026',
     title: 'Grass as far as you can see',

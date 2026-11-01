@@ -153,6 +153,9 @@ The builder opens an empty maximum-size 32 × 20 grid. New templates, remixes an
 boards also have the full editing grid. Saved boards and exports keep that editing space.
 Starting a game (including test play) trims unused outer rows and columns from a copy;
 interior gaps, connections, warp partners and hex geometry stay intact.
+Trees, ponds, flower beds and other decorative scenery stay hidden in the builder so the
+editing grid is clear. Roads and playable tiles remain visible. Decorations appear automatically
+when a game or test play starts; they do not affect game rules.
 The editor uses the normal game screen's full-screen board and floating HUD: the board name and
 save status sit in an info chip at top left; the zoom chip, Undo, Save, Test play and Menu sit at top right.
 The board fills the entire canvas behind the HUD, with no space reserved beside or below it.

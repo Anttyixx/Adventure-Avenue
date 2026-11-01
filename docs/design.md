@@ -361,6 +361,8 @@ The board is drawn in `board.ts` in its own style: bright and physical, unlike t
   coordinates, so the background scales with tiles and never exposes an edge. Games and the
   editor draw it separately below transparent board caches (`paintBoard(..., false)`); do not
   bake grass into those caches, which would introduce texture seams at their boundaries.
+- **Builder:** hide decorative scenery (trees, ponds and flower beds) while editing; keep
+  grass, roads and playable tiles. Games and test play show scenery as usual.
 - **Tiles** (86 units on a 100-unit grid): cream `#fdfbf5` (bank `#fff6d6`), rounded (radius 12),
   a soft shadow offset down-right (`rgba(0,0,0,.18)`, +2/+5). Owned tiles are filled with a tint
   of the owner's color; property tiles have a 6px border in the district color. Vacant plots are a

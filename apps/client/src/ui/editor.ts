@@ -559,7 +559,7 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
       const ctx = boardImage.getContext('2d')!;
       ctx.scale(imageScale, imageScale);
       const G = preview();
-      paintBoard(ctx, G, false);
+      paintBoard(ctx, G, false, false);
       // Empty cells
       const used = new Set(board.squares.map((s) => `${s.x},${s.y}`));
       ctx.setLineDash([8, 6]);

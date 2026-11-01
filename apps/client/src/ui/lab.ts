@@ -100,6 +100,7 @@ const rnd = (n: number) => Math.floor(Math.random() * n);
  */
 const RECENT = new Set([
   'Open board editor',
+  'Board builder: clear editing grid',
   'Board builder: infinite grass',
   'Board builder: centered zoom',
   'Board builder: tile palette',
@@ -1555,6 +1556,7 @@ export async function openLab(app: HTMLElement, section?: string) {
           'Board builder: action bar',
           'Board builder: centered zoom',
           'Board builder: infinite grass',
+          'Board builder: clear editing grid',
         ] as const
       ).map((label) =>
         btn(label, () => {

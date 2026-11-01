@@ -1609,9 +1609,14 @@ export class BoardView {
 }
 
 /** Draw scenery, roads and tiles. Live views paint grass separately beneath this transparent layer. */
-export function paintBoard(ctx: CanvasRenderingContext2D, G: GameState, background = true) {
+export function paintBoard(
+  ctx: CanvasRenderingContext2D,
+  G: GameState,
+  background = true,
+  decorations = true,
+) {
   if (background) paintGrass(ctx);
-  drawScenery(ctx, G);
+  drawScenery(ctx, G, decorations);
   for (const sq of G.nodes) drawSquare(ctx, G, sq);
 }
 
@@ -1745,7 +1750,7 @@ export function paintGrass(ctx: CanvasRenderingContext2D) {
   ctx.restore();
 }
 
-function drawScenery(ctx: CanvasRenderingContext2D, G: GameState) {
+function drawScenery(ctx: CanvasRenderingContext2D, G: GameState, decorations: boolean) {
   // Roads along every edge
   ctx.lineCap = 'round';
   for (const [w, c] of [
@@ -1766,6 +1771,9 @@ function drawScenery(ctx: CanvasRenderingContext2D, G: GameState) {
       }
     }
   }
+
+  // Keep roads visible while the builder hides purely decorative scenery.
+  if (!decorations) return;
 
   if (!isTown(G)) {
     drawCustomDecor(ctx, G);
