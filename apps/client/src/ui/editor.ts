@@ -32,15 +32,16 @@ import {
 import { clear, h } from './dom';
 import { boardThumb } from './thumb';
 
-type Tool = SquareType | 'plot' | 'select' | 'erase' | 'link';
+type Tool = SquareType | 'plot' | 'select' | 'move' | 'erase' | 'link';
 
 const PALETTE: { group: string; items: { tool: Tool; label: string; hint: string }[] }[] = [
   {
     group: 'Tools',
     items: [
       { tool: 'select', label: 'Select', hint: 'Pick a square to edit its details.' },
+      { tool: 'move', label: 'Move', hint: 'Pick a square, then an empty space to move it.' },
       { tool: 'erase', label: 'Erase', hint: 'Remove squares (click or drag).' },
-      { tool: 'link', label: 'Links', hint: 'Click a link between two squares to cut or restore it.' },
+      { tool: 'link', label: 'Link', hint: 'Click a link between two squares to cut or restore it.' },
     ],
   },
   {
@@ -334,6 +335,12 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
     h('button', { class: 'btn small main', onclick: () => doPlay() }, 'Test play'),
     h('button', { class: 'btn small', onclick: () => editorMenu() }, 'Menu'),
   );
+  const toolBar = h('div', {
+    class: 'ed-tool-bar glass',
+    role: 'toolbar',
+    'aria-label': 'Board tools',
+    'aria-orientation': 'vertical',
+  });
   const palette = h('div', { class: 'ed-palette glass', 'aria-label': 'Tile palette' });
   const stage = h('div', { class: 'ed-stage' });
   const canvas = h('canvas', { class: 'ed-canvas' }) as HTMLCanvasElement;
@@ -345,7 +352,7 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
   });
   const actionContent = h('div', { class: 'ed-action-content' });
   actionbar.append(actionContent);
-  root.append(stage, info, topbar, palette, actionbar);
+  root.append(stage, info, topbar, palette, toolBar, actionbar);
   let notice = '';
   let noticeBad = false;
   let noticeTimer = 0;
@@ -449,7 +456,7 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
       else if (selected != null && selected > i) selected--;
       return true;
     }
-    if (tool === 'select' || tool === 'link') return false;
+    if (tool === 'select' || tool === 'move' || tool === 'link') return false;
     const t: SquareType = tool === 'plot' ? 'shop' : tool;
     if (t === 'shop' && !board.districts.length) {
       board.districts.push({ name: DISTRICT_NAMES[0], color: DISTRICT_COLORS[0] });
@@ -667,6 +674,28 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
     }
     const cell = toCell(e);
     if (!cell) return;
+    if (tool === 'move') {
+      const i = indexAt(cell.x, cell.y);
+      if (i >= 0) {
+        selected = i;
+        notice = '';
+        redraw();
+        drawInspector();
+      } else if (selected != null) {
+        snapshot();
+        const sq = board.squares[selected];
+        // Cuts describe cell pairs: retain any cut that follows this square to its new cell.
+        const previous = { x: sq.x, y: sq.y };
+        const neighbors = board.squares.filter((other) => other !== sq && cuts.has(edgeKey(previous, other)));
+        for (const other of neighbors) cuts.delete(edgeKey(previous, other));
+        sq.x = cell.x;
+        sq.y = cell.y;
+        for (const other of neighbors) cuts.add(edgeKey(sq, other));
+        selected = null;
+        changed();
+      }
+      return;
+    }
     if (tool === 'select') {
       settings = false;
       notice = '';
@@ -756,6 +785,50 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
   });
 
   // ------------------------------------------------------------ palette
+
+  const toolButtons = new Map<Tool, HTMLButtonElement>();
+  const syncTools = () => {
+    for (const [t, button] of toolButtons) {
+      const active = tool === t && !settings;
+      button.classList.toggle('on', active);
+      button.setAttribute('aria-pressed', String(active));
+    }
+  };
+  const paths: Record<string, string> = {
+    select: 'M5 3l14 10-7 1-3 7z',
+    move: 'M12 3v18M3 12h18M8 7l4-4 4 4M8 17l4 4 4-4M7 8l-4 4 4 4M17 8l4 4-4 4',
+    erase: 'M4 13l9-10 8 8-9 10H9l-5-5zM8 9l8 8M12 21h9',
+    link: 'M10 14l4-4M8 16l-1 1a4 4 0 01-6-6l5-5a4 4 0 016 0M16 8l1-1a4 4 0 016 6l-5 5a4 4 0 01-6 0',
+  };
+  for (const { tool: t, label } of PALETTE[0].items) {
+    const icon = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    icon.setAttribute('viewBox', '0 0 24 24');
+    icon.setAttribute('aria-hidden', 'true');
+    const path = document.createElementNS(icon.namespaceURI, 'path');
+    path.setAttribute('d', paths[t]);
+    icon.append(path);
+    const button = h(
+      'button',
+      {
+        class: 'btn ghost ed-tool-button',
+        'aria-label': label,
+        'aria-pressed': 'false',
+        onclick: () => {
+          tool = t;
+          selected = null;
+          settings = false;
+          notice = '';
+          drawPalette();
+          redraw();
+          drawInspector();
+        },
+      },
+      icon,
+      h('span', { class: 'ed-tool-tip', 'aria-hidden': 'true' }, label),
+    );
+    toolButtons.set(t, button);
+    toolBar.append(button);
+  }
 
   const drawPalette = () => {
     clear(palette);
@@ -850,15 +923,7 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
 
     const controls = h('div', { class: 'ed-context-controls' });
     clear(actionContent);
-    const chooseTool = (next: Tool) => {
-      tool = tool === next ? 'select' : next;
-      selected = null;
-      settings = false;
-      notice = '';
-      drawPalette();
-      redraw();
-      drawInspector();
-    };
+    syncTools();
     const label = PALETTE.flatMap((g) => g.items).find((it) => it.tool === tool)?.label;
     actionContent.append(
       h(
@@ -871,24 +936,15 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
               ? selected == null
                 ? 'Choose a tile, or select a square'
                 : 'Edit square'
-              : `${label}: ${tool === 'link' ? 'click a connection to cut or restore it' : tool === 'erase' ? 'click or drag to remove squares' : 'click a space to place a tile'}`),
+              : tool === 'move'
+                ? selected == null
+                  ? 'Move: select a square'
+                  : 'Move: choose an empty space'
+                : `${label}: ${tool === 'link' ? 'click a connection to cut or restore it' : tool === 'erase' ? 'click or drag to remove squares' : 'click a space to place a tile'}`),
       ),
       h(
         'div',
         { class: 'ed-action-tools btn-row' },
-        ...(['select', 'erase', 'link'] as Tool[]).map((t) =>
-          h(
-            'button',
-            { class: `btn small ${tool === t && !settings ? 'on' : 'ghost'}`, onclick: () => chooseTool(t) },
-            t === 'select'
-              ? settings || tool !== 'select' || selected != null
-                ? 'Done'
-                : 'Select'
-              : t === 'erase'
-                ? 'Erase'
-                : 'Links',
-          ),
-        ),
         h(
           'button',
           {

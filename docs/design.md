@@ -361,6 +361,10 @@ The board is drawn in `board.ts` in its own style: bright and physical, unlike t
   coordinates, so the background scales with tiles and never exposes an edge. Games and the
   editor draw it separately below transparent board caches (`paintBoard(..., false)`); do not
   bake grass into those caches, which would introduce texture seams at their boundaries.
+- **Builder tool bar:** a glass panel centered vertically 10px from the left edge. Stack four
+  44px icon buttons (Select, Move, Erase, Link), drawn as simple 24px line SVGs. The active tool
+  uses gold with a contrasting inset outline; tool names appear to the right on hover or keyboard
+  focus. Accessible button names and bottom-bar instructions cover touch use.
 - **Builder:** hide decorative scenery (trees, ponds and flower beds) while editing; keep
   grass, roads and playable tiles. Games and test play show scenery as usual.
 - **Tiles** (86 units on a 100-unit grid): cream `#fdfbf5` (bank `#fff6d6`), rounded (radius 12),

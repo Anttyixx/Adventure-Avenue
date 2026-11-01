@@ -26,6 +26,18 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: '2026-11-01-editor-tool-toolbar',
+    date: 'Nov 1, 2026',
+    title: 'Your board tools, close at hand',
+    features: [
+      {
+        tag: 'better',
+        title: 'A compact tool bar',
+        text: 'Select, Move, Erase and Link now have their own icons on the left side of the board builder. Hover or focus a tool to see its name. Use Move to pick a tile and place it in an empty space.',
+      },
+    ],
+  },
+  {
     id: '2026-11-01-editor-no-decorations',
     date: 'Nov 1, 2026',
     title: 'A clearer board builder',

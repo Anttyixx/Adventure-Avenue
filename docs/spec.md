@@ -170,6 +170,13 @@ these limits. The chip runs from 250% close to 100% fully out. Wheel, pinch and 
 same steps as in play; tapping the chip resets to 250%. Camera scale eases with the game's
 0.12 factor, or changes immediately with reduced motion. Pinching does not place tiles;
 board picking uses the current camera transform at every zoom. Form typing keeps its normal keys.
+An icon-only toolbar is centered vertically 10px from the left edge: Select, Move, Erase and
+Link. Hovering or focusing an icon shows its name; the active tool has a gold fill and inset
+outline. Buttons have accessible names and work with keyboard and touch. Select edits a square,
+Erase removes squares, and Link cuts or restores neighboring connections. Move selects an
+existing square, then relocates it to an empty cell, keeping its properties and cut connections;
+occupied cells select a different square instead of replacing it. Moves support Undo.
+Tool instructions stay visible in the bottom action bar; Board settings remains there.
 Menu holds New board, My boards, Import, Export and Back to main menu. A scrollable palette
 replaces the player cards on the right, showing two columns of actual game tile artwork at both
 desktop and phone landscape sizes.

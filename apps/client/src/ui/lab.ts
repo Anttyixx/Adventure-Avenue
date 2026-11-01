@@ -99,6 +99,7 @@ const rnd = (n: number) => Math.floor(Math.random() * n);
  * are easy to find. Update this list with each change.
  */
 const RECENT = new Set([
+  'Board builder: tool toolbar',
   'Open board editor',
   'Board builder: clear editing grid',
   'Board builder: infinite grass',
@@ -1552,6 +1553,7 @@ export async function openLab(app: HTMLElement, section?: string) {
       }),
       ...(
         [
+          'Board builder: tool toolbar',
           'Board builder: tile palette',
           'Board builder: action bar',
           'Board builder: centered zoom',
