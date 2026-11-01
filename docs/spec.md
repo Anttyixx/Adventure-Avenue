@@ -185,6 +185,19 @@ board thumbnails always show property tiles, and editing an old board discards i
 Place uses a pencil icon. Only Place shows the scrollable tile pane on the right, with two columns of actual tile art.
 Choosing a tile keeps Place active; clicking or dragging on the board places it. Returning to
 Place remembers the last chosen tile. The pane is hidden for every other tool and board settings.
+While placing Property tiles, the action bar shows a centered horizontal row of rounded district
+color squares, replacing the district dropdown. A new board offers ten distinct colors and supports
+up to ten saved districts. Unused colors are choices only: selecting one does not create an empty
+district; placing its first property creates it with that color and name. Each square has an
+accessible district name/count, hover title and a selected outline/check mark.
+Painting or reassigning a property cannot take a district past four; repainting one already in the
+same district does not consume capacity. Full districts are disabled in the single-tile district
+selector. When a district reaches four, its color shrinks/fades away over 160ms; the remaining
+colors slide into centered positions over 220ms. Reduced motion removes/recenters immediately.
+Painting pauses until another color is chosen, so continuing a stroke cannot spill into another
+district. Erasing, replacement, reassignment or Undo that frees capacity restores the color.
+When all ten districts are full, the row has no choices and the action bar collapses to status.
+
 Select clicks one tile or drags a selection rectangle around multiple tiles. Selected tiles have
 gold dashed outlines, and the bottom action bar offers Move and Erase. One selected tile opens a
 nonmodal Tile options panel on the right (with a Close button),

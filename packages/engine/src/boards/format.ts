@@ -15,7 +15,7 @@ export const BOARD_LIMITS = {
   maxRows: 20,
   maxSquares: 320,
   minProperties: 4,
-  maxDistricts: 8,
+  maxDistricts: 10,
   /** Every declared district must contain exactly this many property tiles. */
   districtSize: 4,
   minBase: 50,

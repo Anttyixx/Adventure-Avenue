@@ -99,6 +99,8 @@ const rnd = (n: number) => Math.floor(Math.random() * n);
  * are easy to find. Update this list with each change.
  */
 const RECENT = new Set([
+  'Board builder: district colors',
+  'Board builder: district capacity',
   'Board builder: property tile',
   'Board builder: four properties',
   'Board builder: protected bank',
@@ -1564,6 +1566,8 @@ export async function openLab(app: HTMLElement, section?: string) {
       }),
       ...(
         [
+          'Board builder: district colors',
+          'Board builder: district capacity',
           'Board builder: property tile',
           'Board builder: four properties',
           'Board builder: protected bank',
@@ -1592,7 +1596,8 @@ export async function openLab(app: HTMLElement, section?: string) {
               label.endsWith('tile options') ||
               label.endsWith('auto connections') ||
               label.endsWith('district averages') ||
-              label.endsWith('four properties')
+              label.endsWith('four properties') ||
+              label.endsWith('district capacity')
               ? BUILT_IN_BOARDS[0]
               : null,
             {
@@ -1625,7 +1630,9 @@ export async function openLab(app: HTMLElement, section?: string) {
             label.endsWith('place tiles') ||
             label.endsWith('tile palette') ||
             label.endsWith('place pencil') ||
-            label.endsWith('property tile')
+            label.endsWith('property tile') ||
+            label.endsWith('district colors') ||
+            label.endsWith('district capacity')
           )
             holder.querySelector<HTMLButtonElement>('.ed-tool-button[aria-label="Place"]')?.click();
           holder.append(

@@ -276,3 +276,14 @@ arithmetic mean. This runs before plot selection in `newGame` and is also the ed
 Defaults are independent of overrides, so Reset simply deletes `startingValue`. Legacy tile
 `base`/`autoBase` fields remain readable but no longer set new-game prices. Resumed game saves
 already contain resolved base/value fields and keep them. New-game changes bump `NET_VERSION`.
+
+### Editor district capacity and color row
+
+`ui/editor-districts.ts` owns the ten default colors/names, `districtChoices` and
+`canAssignProperty`. Choices include unsaved color slots; the first placement lazily appends a
+real district. Empty latent slots never enter validation or saved board data. `ui/editor.ts`
+guards both painting and reassignment before mutation and clears the active choice when full.
+`ui/district-picker.ts` retains button nodes during inspector rebuilds, captures old positions,
+shrinks completed choices and translates survivors into their centered layout. Undo can cancel
+a departure; hiding/destroying the row cancels stale animations and focus survives selection.
+The engine board limit is ten districts; every declared district still requires four properties.

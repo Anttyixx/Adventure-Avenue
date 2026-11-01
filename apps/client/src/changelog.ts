@@ -26,6 +26,23 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: '2026-11-01-ten-district-colors',
+    date: 'Nov 1, 2026',
+    title: 'Pick your district by color',
+    features: [
+      {
+        tag: 'better',
+        title: 'Ten district colors in the action bar',
+        text: 'Choose a rounded color square when placing properties. Boards can have up to ten districts. Full districts shrink away and the remaining colors slide back to the center.',
+      },
+      {
+        tag: 'fix',
+        title: 'Four properties, with no overflow',
+        text: 'Placing or reassigning a property cannot give a district more than four. When a district fills, choose another color to keep building. Freeing a space brings its color back.',
+      },
+    ],
+  },
+  {
     id: '2026-11-01-four-properties-random-plots',
     date: 'Nov 1, 2026',
     title: 'Four properties in every district',

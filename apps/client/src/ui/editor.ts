@@ -33,6 +33,14 @@ import {
 import { clear, h, fmt } from './dom';
 import { boardThumb } from './thumb';
 import { digitPicker } from './digits';
+import {
+  DISTRICT_COLORS,
+  DISTRICT_NAMES,
+  districtChoices,
+  canAssignProperty,
+  type DistrictChoice,
+} from './editor-districts';
+import { districtPicker } from './district-picker';
 import { moveSelection, selectionPositions, selectionAnchor, ensureEditorBank } from './editor-selection';
 
 type Tool = Exclude<SquareType, 'plot'> | 'select' | 'place' | 'erase';
@@ -87,27 +95,6 @@ const PALETTE: { group: string; items: { tool: Tool; label: string; hint: string
   },
 ];
 
-const DISTRICT_COLORS = [
-  '#ff4d4d',
-  '#2f9bff',
-  '#2ecc71',
-  '#ffc21a',
-  '#9b5cff',
-  '#13c4b4',
-  '#ff4fa8',
-  '#ff8a1f',
-];
-const DISTRICT_NAMES = [
-  'Brick Row',
-  'Bay Market',
-  'Greenway',
-  'Gold Street',
-  'Lilac Lane',
-  'Tide Walk',
-  'Plaza',
-  'Maple Court',
-];
-
 function blankBoard(
   cols = BOARD_LIMITS.maxCols,
   rows = BOARD_LIMITS.maxRows,
@@ -119,10 +106,7 @@ function blankBoard(
     layout,
     cols,
     rows,
-    districts: [
-      { name: DISTRICT_NAMES[0], color: DISTRICT_COLORS[0] },
-      { name: DISTRICT_NAMES[1], color: DISTRICT_COLORS[1] },
-    ],
+    districts: [],
     squares: [{ x: Math.floor(cols / 2), y: Math.floor(rows / 2), t: 'bank' }],
     edges: [],
     bank: 0,
@@ -295,7 +279,8 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
   };
   let tool: Tool = 'select';
   let settings = false;
-  let district = 0;
+  let district = board.districts.length ? 0 : -1;
+  let pendingDistrict: DistrictChoice | null = board.districts.length ? null : districtChoices(board)[0];
   let selected: number | null = null;
   let selection = new Set<number>();
   let moving: { anchor: { x: number; y: number }; target: { x: number; y: number } } | null = null;
@@ -499,9 +484,14 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
     }
     if (tool === 'select' || tool === 'place') return false;
     const t: SquareType = tool;
-    if (t === 'shop' && !board.districts.length) {
-      board.districts.push({ name: DISTRICT_NAMES[0], color: DISTRICT_COLORS[0] });
-      district = 0;
+    if (t === 'shop') {
+      if (pendingDistrict) {
+        if (board.districts.length >= BOARD_LIMITS.maxDistricts) return false;
+        board.districts.push({ name: pendingDistrict.name, color: pendingDistrict.color });
+        district = board.districts.length - 1;
+        pendingDistrict = null;
+      }
+      if (!canAssignProperty(board, district, i)) return false;
     }
     const prev = i >= 0 ? board.squares[i] : null;
     const sq: BoardSquareDef =
@@ -917,6 +907,9 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
           seats: [{ name: 'Builder', cpu: true, ch: 'farmer' }],
           board: {
             ...board,
+            districts: pendingDistrict
+              ? [...board.districts, { name: pendingDistrict.name, color: pendingDistrict.color }]
+              : board.districts,
             cols: 1,
             rows: 1,
             edges: [],
@@ -926,7 +919,9 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
                 x: 0,
                 y: 0,
                 t: it.tool as SquareType,
-                ...(it.tool === 'shop' ? { d: district, base: 200 } : {}),
+                ...(it.tool === 'shop'
+                  ? { d: pendingDistrict ? board.districts.length : district, base: 200 }
+                  : {}),
               },
             ],
           },
@@ -967,8 +962,34 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
   const field = (label: string, input: HTMLElement) =>
     h('label', { class: 'ed-field' }, h('span', null, label), input);
 
+  const districtRow = districtPicker(
+    (choice) => {
+      district = choice.index ?? -1;
+      pendingDistrict = choice.index == null ? choice : null;
+      notice = '';
+      drawPalette();
+      drawInspector();
+      redraw();
+    },
+    () => {
+      if (!destroyed) {
+        drawInspector();
+        redraw();
+      }
+    },
+  );
+
   const drawInspector = () => {
     const from = actionbar.getBoundingClientRect();
+    districtRow.capture();
+    const choices = districtChoices(board);
+    if (district >= 0 && (!board.districts[district] || !canAssignProperty(board, district))) district = -1;
+    if (pendingDistrict && !choices.some((d) => d.index == null && d.color === pendingDistrict!.color))
+      pendingDistrict = null;
+    const activeChoice = choices.find((d) =>
+      pendingDistrict ? d.index == null && d.color === pendingDistrict.color : d.index === district,
+    );
+    const hasDistrictChoices = choices.some((d) => d.count < BOARD_LIMITS.districtSize);
     if (actionAnimation) {
       actionAnimation.onfinish = null;
       actionAnimation.cancel();
@@ -1005,7 +1026,11 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
                 ? selection.size
                   ? `${selection.size} tile${selection.size === 1 ? '' : 's'} selected`
                   : 'Click a tile, or drag to select a group'
-                : `${label}: ${tool === 'erase' ? 'click or drag to remove squares' : 'click or drag to place tiles'}`),
+                : tool === 'shop' && !activeChoice
+                  ? hasDistrictChoices
+                    ? 'Choose a district color to place properties'
+                    : 'All districts have 4 properties'
+                  : `${label}: ${tool === 'erase' ? 'click or drag to remove squares' : 'click or drag to place tiles'}`),
       ),
       h(
         'div',
@@ -1132,18 +1157,9 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
     // Districts
     const districtPanel = h('div', { class: 'ed-district-panel' });
     districtPanel.hidden = !settings;
-    if (!settings && tool === 'shop') {
-      const active = h(
-        'select',
-        { 'aria-label': 'Active district' },
-        ...board.districts.map((d, i) => h('option', { value: String(i), selected: i === district }, d.name)),
-      ) as HTMLSelectElement;
-      active.onchange = () => {
-        district = Number(active.value);
-        drawPalette();
-      };
-      inspector.append(field('District for new properties', active));
-    }
+    const showDistrictRow = !settings && tool === 'shop' && (hasDistrictChoices || districtRow.hasButtons());
+    if (showDistrictRow) inspector.append(districtRow.el);
+    districtRow.update(choices, activeChoice?.key ?? null, showDistrictRow);
     inspector.append(districtPanel);
     districtPanel.append(
       h('h4', null, 'Districts'),
@@ -1272,7 +1288,7 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
               const i = board.districts.length;
               const free =
                 DISTRICT_COLORS.find((c) => !board.districts.some((d) => d.color === c)) ??
-                DISTRICT_COLORS[i % 8];
+                DISTRICT_COLORS[i % DISTRICT_COLORS.length];
               board.districts.push({
                 name:
                   DISTRICT_NAMES.find((n) => !board.districts.some((d) => d.name === n)) ??
@@ -1328,9 +1344,23 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
         const dSel = h(
           'select',
           { 'aria-label': 'District' },
-          ...board.districts.map((d, i) => h('option', { value: String(i), selected: i === sq.d }, d.name)),
+          ...board.districts.map((d, i) =>
+            h(
+              'option',
+              {
+                value: String(i),
+                selected: i === sq.d,
+                disabled: i !== sq.d && !canAssignProperty(board, i, selected!),
+              },
+              d.name,
+            ),
+          ),
         ) as HTMLSelectElement;
         dSel.onchange = () => {
+          if (!canAssignProperty(board, Number(dSel.value), selected!)) {
+            dSel.value = String(sq.d);
+            return say('That district already has 4 properties.', true);
+          }
           snapshot();
           sq.d = Number(dSel.value);
           changed();
@@ -1363,10 +1393,13 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
       ...check.warnings.map((w) => h('p', { class: 'ed-warn' }, w)),
       ...(check.errors.length ? [] : [h('p', { class: 'ed-ok' }, 'This board is playable.')]),
     );
-    controls.hidden = !settings && tool !== 'shop';
+    controls.hidden = !settings && !(tool === 'shop' && (hasDistrictChoices || districtRow.hasButtons()));
     actionbar.classList.toggle('ed-action-error', !!notice && noticeBad);
     actionbar.classList.toggle('ed-action-expanded', settings);
-    const hasOptions = settings || tool === 'shop' || (tool === 'select' && selection.size > 0);
+    const hasOptions =
+      settings ||
+      (tool === 'shop' && (hasDistrictChoices || districtRow.hasButtons())) ||
+      (tool === 'select' && selection.size > 0);
     actionbar.classList.toggle('status', !hasOptions);
     morphActions(from);
   };
@@ -1620,6 +1653,7 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
     ro.disconnect();
     clearTimeout(noticeTimer);
     actionAnimation?.cancel();
+    districtRow.destroy();
     root.remove();
   }
 

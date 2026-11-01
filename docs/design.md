@@ -372,6 +372,13 @@ The board is drawn in `board.ts` in its own style: bright and physical, unlike t
   outlines at the old cells and draw the group at its snapped destination with gold outlines
   (red if outside the grid). Anchor the preview at the selection center. Keep a Cancel action
   visible; Escape also cancels.
+- **Property district colors:** center a horizontal row on the action bar. Use ten distinct
+  default district colors, 40px rounded-square buttons (34px on landscape phones), 8px/6px gaps,
+  and a white outline plus dark check for selection. Accessible names and hover titles include
+  the district name and property count. Keep the row's button nodes across inspector redraws,
+  retaining keyboard focus. Full districts shrink to 25% and fade over 160ms; then the remaining
+  buttons translate to their newly centered positions over 220ms. Cancel departure when Undo
+  restores capacity. Reduced motion removes and lays out immediately.
 - **Builder tile options:** a nonmodal glass panel at the top right, with a title and Close
   button. Show only for one selected tile, never during a group move. Keep it above the bottom
   bar and scroll its body on phones. Show district and a read-only starting
