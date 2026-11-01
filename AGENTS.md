@@ -101,6 +101,7 @@ Requests refer to parts of the game by these names:
 - **Board** (`apps/client/src/board.ts`):
   - **tiles/squares**, **districts** (color groups of shops), **vacant plots** (empty properties
     that get a building).
+  - **background:** `board.ts` `paintGrass` covers the visible camera area with world-aligned grass. Live views draw `paintBoard(..., false)` into transparent caches so no grass seam appears at board edges.
   - **auto zoom / camera:** see "Camera" in `docs/architecture.md`.
 - **Board builder:** `ui/editor.ts` uses a full 32 × 20 editing grid, a floating two-column palette painted with `board.ts` `paintSquare` and a game-style morphing bottom action bar. Its HUD overlaps the full-screen board; zoom stays centered on the screen and shares game sizing/input rules in `zoom.ts`. `boardstore.ts` `boardForPlay` trims a copy at game start, preserving hex geometry and the saved editing grid.
 - **Menus and tools:**

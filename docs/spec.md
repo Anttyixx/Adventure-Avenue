@@ -156,6 +156,10 @@ interior gaps, connections, warp partners and hex geometry stay intact.
 The editor uses the normal game screen's full-screen board and floating HUD: the board name and
 save status sit in an info chip at top left; the zoom chip, Undo, Save, Test play and Menu sit at top right.
 The board fills the entire canvas behind the HUD, with no space reserved beside or below it.
+Grass is a separate, repeating background beneath the tiles and scenery. Both the builder and
+normal games fill the entire visible camera area, including outside the board, at every zoom
+and screen size. The pattern is anchored in board coordinates and scales with the tiles;
+there is no finite background border or texture seam where the board layer ends.
 Zoom always keeps the board's center at the center of the full screen. It shares the game's
 zoom sizing: a close view of 1.65 × screen fit (2.2 × on small screens), a whole-board limit
 calculated from the space left by the HUD with a 3% margin, and geometric interpolation between

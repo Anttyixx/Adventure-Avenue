@@ -26,6 +26,18 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: '2026-11-01-infinite-grass',
+    date: 'Nov 1, 2026',
+    title: 'Grass as far as you can see',
+    features: [
+      {
+        tag: 'better',
+        title: 'A background without edges',
+        text: 'Grass now extends across the whole screen in the board builder and in games. It stays lined up with the tiles as you zoom, with no background borders or texture seams at the edge of the board.',
+      },
+    ],
+  },
+  {
     id: '2026-10-31-editor-centered-zoom',
     date: 'Oct 31, 2026',
     title: 'Zoom your board as you build',

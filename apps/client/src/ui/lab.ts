@@ -100,6 +100,7 @@ const rnd = (n: number) => Math.floor(Math.random() * n);
  */
 const RECENT = new Set([
   'Open board editor',
+  'Board builder: infinite grass',
   'Board builder: centered zoom',
   'Board builder: tile palette',
   'Board builder: action bar',
@@ -1549,7 +1550,12 @@ export async function openLab(app: HTMLElement, section?: string) {
         location.reload();
       }),
       ...(
-        ['Board builder: tile palette', 'Board builder: action bar', 'Board builder: centered zoom'] as const
+        [
+          'Board builder: tile palette',
+          'Board builder: action bar',
+          'Board builder: centered zoom',
+          'Board builder: infinite grass',
+        ] as const
       ).map((label) =>
         btn(label, () => {
           const holder = h('div', { class: 'lab-screen' });
@@ -1561,6 +1567,12 @@ export async function openLab(app: HTMLElement, section?: string) {
               hud.tick('Board builder test play pressed.');
             },
           });
+          if (label.endsWith('infinite grass')) {
+            for (let i = 0; i < 30; i++)
+              holder
+                .querySelector('.ed-canvas')
+                ?.dispatchEvent(new KeyboardEvent('keydown', { key: '-', bubbles: true }));
+          }
           if (label.endsWith('action bar'))
             holder.querySelector<HTMLButtonElement>('.ed-action-tools button:last-child')?.click();
           holder.append(

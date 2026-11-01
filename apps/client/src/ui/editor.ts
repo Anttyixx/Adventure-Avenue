@@ -17,7 +17,7 @@ import {
   type BoardSquareDef,
   type SquareType,
 } from '@aa/engine';
-import { paintBoard, paintSquare, worldSize } from '../board';
+import { paintBoard, paintGrass, paintSquare, worldSize } from '../board';
 import { ZOOM_MAX_OUT, ZOOM_STEP, fitZoom, nearZoom, zoomScale, wheelZoomStep } from '../zoom';
 import { cellAt, cellCenter, tileShape } from '../geometry';
 import {
@@ -548,6 +548,7 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
     ctx.fillStyle = '#16213f';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
     ctx.setTransform(scale * dpr, 0, 0, scale * dpr, ox * dpr, oy * dpr);
+    paintGrass(ctx);
     // Cache the board and empty grid during camera motion, as the game caches its scenery.
     const imageScale = Math.min(2, Math.max(1, Math.ceil(near * dpr * 2) / 2));
     const imageKey = `${imageScale}:${JSON.stringify(board)}`;
@@ -558,7 +559,7 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
       const ctx = boardImage.getContext('2d')!;
       ctx.scale(imageScale, imageScale);
       const G = preview();
-      paintBoard(ctx, G);
+      paintBoard(ctx, G, false);
       // Empty cells
       const used = new Set(board.squares.map((s) => `${s.x},${s.y}`));
       ctx.setLineDash([8, 6]);

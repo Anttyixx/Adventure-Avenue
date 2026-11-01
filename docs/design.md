@@ -357,7 +357,10 @@ straight to the end state.
 The board is drawn in `board.ts` in its own style: bright and physical, unlike the dark HUD.
 
 - **World:** green grass (`GRASS #92d268`, a seamless texture) everywhere, trees, flower beds,
-  ponds; roads join neighboring tiles.
+  ponds; roads join neighboring tiles. `paintGrass` fills the visible camera area in world
+  coordinates, so the background scales with tiles and never exposes an edge. Games and the
+  editor draw it separately below transparent board caches (`paintBoard(..., false)`); do not
+  bake grass into those caches, which would introduce texture seams at their boundaries.
 - **Tiles** (86 units on a 100-unit grid): cream `#fdfbf5` (bank `#fff6d6`), rounded (radius 12),
   a soft shadow offset down-right (`rgba(0,0,0,.18)`, +2/+5). Owned tiles are filled with a tint
   of the owner's color; property tiles have a 6px border in the district color. Vacant plots are a

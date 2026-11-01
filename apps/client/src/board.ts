@@ -112,7 +112,6 @@ export class BoardView {
   private pinchDist = 0;
   fitIds: number[] = [];
   insets: Insets = { top: 0, right: 0, bottom: 0, left: 0 };
-  private grass: CanvasPattern | null = null;
   followPid = -1;
   activePid = -1;
   /**
@@ -965,11 +964,8 @@ export class BoardView {
       (fy - this.cam.y * this.cam.z) * this.dpr,
     );
     ctx.imageSmoothingEnabled = true;
-    // Grass all around the board, in world space so it lines up with the board's own grass.
-    this.grass ??= ctx.createPattern(grassTile(), 'repeat');
-    ctx.fillStyle = this.grass ?? GRASS;
-    const pad = 4000;
-    ctx.fillRect(-pad, -pad, this.ww + pad * 2, this.wh + pad * 2);
+    // Paint the visible world, rather than a fixed rectangle around the board.
+    paintGrass(ctx);
     ctx.drawImage(this.cache, 0, 0, this.ww, this.wh);
 
     const motion = !reducedMotion();
@@ -1608,12 +1604,13 @@ export class BoardView {
     cv.height = Math.round(this.wh * scale);
     const ctx = cv.getContext('2d')!;
     ctx.setTransform(scale, 0, 0, scale, 0, 0);
-    paintBoard(ctx, G);
+    paintBoard(ctx, G, false);
   }
 }
 
-/** Draw the static board (scenery, roads and every square) in world units. Used by the editor too. */
-export function paintBoard(ctx: CanvasRenderingContext2D, G: GameState) {
+/** Draw scenery, roads and tiles. Live views paint grass separately beneath this transparent layer. */
+export function paintBoard(ctx: CanvasRenderingContext2D, G: GameState, background = true) {
+  if (background) paintGrass(ctx);
   drawScenery(ctx, G);
   for (const sq of G.nodes) drawSquare(ctx, G, sq);
 }
@@ -1720,12 +1717,35 @@ export function grassTile(): HTMLCanvasElement {
   return cv;
 }
 
-function drawScenery(ctx: CanvasRenderingContext2D, G: GameState) {
-  const { w: WORLD_W, h: WORLD_H } = worldSize(G);
-  // Grass: the same tiling texture as around the board, so there is no edge.
-  ctx.fillStyle = ctx.createPattern(grassTile(), 'repeat')!;
-  ctx.fillRect(0, 0, WORLD_W, WORLD_H);
+const grassPatterns = new WeakMap<CanvasRenderingContext2D, CanvasPattern>();
 
+/** Fill the entire visible canvas with world-aligned grass at the board's current zoom. */
+export function paintGrass(ctx: CanvasRenderingContext2D) {
+  let pattern = grassPatterns.get(ctx);
+  if (!pattern) {
+    pattern = ctx.createPattern(grassTile(), 'repeat') ?? undefined;
+    if (pattern) grassPatterns.set(ctx, pattern);
+  }
+  // The inverse camera transform gives the visible world, even when it lies beyond the board.
+  // A small overscan covers edge pixels at fractional zoom and on high-density screens.
+  const inverse = ctx.getTransform().inverse();
+  const corners = [
+    inverse.transformPoint({ x: 0, y: 0 }),
+    inverse.transformPoint({ x: ctx.canvas.width, y: 0 }),
+    inverse.transformPoint({ x: 0, y: ctx.canvas.height }),
+    inverse.transformPoint({ x: ctx.canvas.width, y: ctx.canvas.height }),
+  ];
+  const left = Math.floor(Math.min(...corners.map((p) => p.x))) - 1;
+  const top = Math.floor(Math.min(...corners.map((p) => p.y))) - 1;
+  const right = Math.ceil(Math.max(...corners.map((p) => p.x))) + 1;
+  const bottom = Math.ceil(Math.max(...corners.map((p) => p.y))) + 1;
+  ctx.save();
+  ctx.fillStyle = pattern ?? GRASS;
+  ctx.fillRect(left, top, right - left, bottom - top);
+  ctx.restore();
+}
+
+function drawScenery(ctx: CanvasRenderingContext2D, G: GameState) {
   // Roads along every edge
   ctx.lineCap = 'round';
   for (const [w, c] of [
