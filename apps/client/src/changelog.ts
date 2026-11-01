@@ -26,6 +26,18 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: '2026-10-31-editor-game-hud',
+    date: 'Oct 31, 2026',
+    title: 'Build with a familiar view',
+    features: [
+      {
+        tag: 'better',
+        title: 'The board builder feels like the game',
+        text: 'Build on a full-screen board with floating game-style controls. Two columns of real tile examples take the place of player cards, and the bottom action bar smoothly changes its prompts and controls as you work.',
+      },
+    ],
+  },
+  {
     id: '2026-11-01-board-builder',
     date: 'Nov 1, 2026',
     title: 'More room to build',

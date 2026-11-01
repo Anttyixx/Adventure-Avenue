@@ -46,6 +46,7 @@ import { Hud } from './hud';
 import { paymentActivity } from './activity';
 import { clearGuest, loadGuest, saveGuest } from '../save';
 import { mainMenu } from './menu';
+import { openEditor } from './editor';
 import { openWhatsNew } from './whatsnew';
 import { openCredits } from './credits';
 import { pickCharacter } from './charpick';
@@ -99,6 +100,8 @@ const rnd = (n: number) => Math.floor(Math.random() * n);
  */
 const RECENT = new Set([
   'Open board editor',
+  'Board builder: tile palette',
+  'Board builder: action bar',
   'Game setup',
   'Game setup (friend joined)',
   'Game setup (offline)',
@@ -1544,6 +1547,34 @@ export async function openLab(app: HTMLElement, section?: string) {
         }
         location.reload();
       }),
+      ...(['Board builder: tile palette', 'Board builder: action bar'] as const).map((label) =>
+        btn(label, () => {
+          const holder = h('div', { class: 'lab-screen' });
+          root.append(holder);
+          const close = openEditor(holder, null, {
+            onExit: () => holder.remove(),
+            onPlay: () => {
+              holder.remove();
+              hud.tick('Board builder test play pressed.');
+            },
+          });
+          if (label.endsWith('action bar'))
+            holder.querySelector<HTMLButtonElement>('.ed-action-tools button:last-child')?.click();
+          holder.append(
+            h(
+              'button',
+              {
+                class: 'btn small lab-back',
+                onclick: () => {
+                  close();
+                  holder.remove();
+                },
+              },
+              'Back to UI Lab',
+            ),
+          );
+        }),
+      ),
       btn('Open board editor', () => {
         location.hash = '#editor';
         location.reload();

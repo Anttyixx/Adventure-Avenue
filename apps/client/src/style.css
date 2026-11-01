@@ -3059,6 +3059,223 @@ input[type='range'] {
   flex: 1;
 }
 
+/* Board builder: the game screen's floating HUD with tile examples instead of player cards. */
+.editor {
+  display: block;
+  padding: 0;
+  --ed-palette-w: 260px;
+  --pc: var(--accent);
+}
+.editor .ed-stage {
+  position: absolute;
+  inset: 0;
+  border-radius: 0;
+}
+.ed-info {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  max-width: calc(100% - 380px);
+  z-index: 2;
+}
+.ed-info .ed-name {
+  width: 160px;
+  font-size: 15px;
+  border: 0;
+}
+.editor .ed-top {
+  padding: 0;
+  z-index: 2;
+}
+.editor .ed-palette {
+  position: absolute;
+  right: 10px;
+  bottom: calc(10px + var(--badge-h, 0px));
+  width: var(--ed-palette-w);
+  max-height: calc(100% - 76px - var(--badge-h, 0px));
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 10px;
+  z-index: 1;
+}
+.ed-palette-title {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.ed-palette-title .hint {
+  margin: 0;
+}
+.editor .ed-tools {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+}
+.editor .ed-tool {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  min-height: 100px;
+  padding: 4px;
+  color: var(--text);
+  font-size: 12px;
+  transition:
+    background 0.15s,
+    border-color 0.15s;
+}
+.editor .ed-tool.on {
+  color: #3b2a00;
+}
+.ed-tile-example {
+  display: block;
+  width: 90px;
+  height: 81px;
+  max-width: 100%;
+  object-fit: contain;
+}
+.editor .ed-actions {
+  left: 10px;
+  right: calc(var(--ed-palette-w) + 30px);
+  bottom: calc(16px + var(--badge-h, 0px));
+  max-width: min(920px, calc(100% - var(--ed-palette-w) - 50px));
+  max-height: min(58vh, 480px);
+  padding: 14px 18px;
+  overflow: hidden;
+  z-index: 3;
+}
+.ed-action-content {
+  display: grid;
+  grid-template-columns: minmax(160px, 1fr) auto;
+  align-items: center;
+  gap: 12px 18px;
+  min-width: 0;
+  max-width: 100%;
+  flex: none;
+}
+.ed-action-content > .prompt-text {
+  margin: 0;
+  max-width: 330px;
+}
+.editor .ed-action-tools {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0;
+  justify-content: flex-end;
+  max-width: 330px;
+}
+.ed-context-controls {
+  grid-column: 1 / -1;
+  min-width: 0;
+  overflow: auto;
+  max-height: 36vh;
+}
+.ed-context-controls:has(.ed-inspector > [hidden]:only-child) {
+  display: none;
+}
+.ed-inspector {
+  padding: 0;
+  overflow: visible;
+}
+.ed-inspector:has(> :not([hidden])) {
+  border-top: 1px solid var(--glass-line);
+  padding-top: 8px;
+}
+.ed-inspector .ed-field {
+  gap: 4px;
+}
+.ed-actions [hidden] {
+  display: none;
+}
+.ed-actions.ed-action-error {
+  --pc: var(--bad);
+}
+.ed-actions.ed-action-expanded .ed-action-content {
+  width: min(600px, 100%);
+}
+.ed-district-panel .ed-district {
+  grid-template-columns: 18px 30px minmax(80px, 1fr) 24px 28px;
+}
+.ed-menu-actions {
+  display: grid;
+  gap: 10px;
+}
+@media (max-width: 900px), (max-height: 560px) {
+  .editor {
+    --ed-palette-w: 180px;
+  }
+  .ed-info {
+    max-width: calc(100% - 310px);
+    gap: 4px;
+    padding: 4px 6px;
+  }
+  .ed-info .ed-name {
+    width: 110px;
+    font-size: 13px;
+    padding: 3px 5px;
+  }
+  .ed-info .ed-status {
+    font-size: 10px;
+  }
+  .ed-info .gc-title {
+    font-size: 13px;
+  }
+  .editor .ed-palette {
+    padding: 6px;
+    max-height: calc(100% - 66px - var(--badge-h, 0px));
+  }
+  .editor .ed-tool {
+    min-height: 76px;
+    font-size: 10px;
+  }
+  .ed-tile-example {
+    width: 66px;
+    height: 59px;
+  }
+  .ed-palette-title .hint {
+    font-size: 10px;
+  }
+  .editor .ed-actions {
+    padding: 8px 10px;
+    min-height: 76px;
+    bottom: calc(10px + var(--badge-h, 0px));
+    max-height: 64vh;
+  }
+  .ed-action-content {
+    grid-template-columns: minmax(100px, 1fr) auto;
+    gap: 8px;
+  }
+  .ed-action-content > .prompt-text {
+    font-size: 13px;
+    max-width: 230px;
+  }
+  .editor .ed-action-tools {
+    max-width: 220px;
+    gap: 4px;
+  }
+  .editor .ed-action-tools .btn {
+    padding: 6px 9px;
+    font-size: 12px;
+  }
+  .ed-context-controls {
+    max-height: 32vh;
+  }
+}
+
+/* Keep active builder controls legible over the board. */
+.editor .ed-top .btn.main {
+  background: var(--accent);
+  color: #3b2a00;
+}
+.editor .ed-action-tools .btn.on {
+  color: #3b2a00;
+}
+.editor .ed-actions .prompt-text {
+  -webkit-line-clamp: unset;
+}
+
 /* UI Lab: full screens shown over the lab */
 .lab-screen {
   position: fixed;
@@ -6272,55 +6489,4 @@ div.sl-inline label {
 }
 .setup .setup-advanced-grid > .opt:not(:first-child) {
   margin-top: 8px;
-}
-
-/* Board builder: palette beside the canvas, task controls below it. */
-.ed-palette {
-  min-height: 0;
-  overscroll-behavior: contain;
-}
-.ed-tool {
-  min-height: 40px;
-  color: var(--text);
-}
-.ed-actions {
-  padding: 8px 12px;
-  max-height: 38vh;
-  overflow: auto;
-  flex-shrink: 0;
-}
-.ed-actions > strong {
-  font-family: var(--head);
-  font-weight: 400;
-}
-.ed-action-tools {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  margin-top: 6px;
-}
-.ed-inspector {
-  padding: 0;
-}
-.ed-board-settings:not([hidden]),
-.ed-district-panel:not([hidden]) {
-  max-width: 650px;
-}
-.ed-district-panel .ed-district {
-  grid-template-columns: 18px 30px minmax(80px, 1fr) 24px 28px;
-}
-.ed-actions [hidden] {
-  display: none;
-}
-@media (max-width: 900px), (max-height: 560px) {
-  .ed-tools {
-    grid-template-columns: minmax(0, 1fr);
-  }
-  .ed-actions {
-    max-height: 34vh;
-    padding: 5px 8px;
-  }
-  .ed-palette {
-    padding: 4px 6px;
-  }
 }

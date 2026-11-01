@@ -153,12 +153,17 @@ The builder opens an empty maximum-size 32 × 20 grid. New templates, remixes an
 boards also have the full editing grid. Saved boards and exports keep that editing space.
 Starting a game (including test play) trims unused outer rows and columns from a copy;
 interior gaps, connections, warp partners and hex geometry stay intact.
-A scrollable palette on the right uses two columns on large screens and one on smaller screens.
+The editor uses the normal game screen's full-screen board and floating HUD: the board name and
+save status sit in an info chip at top left; Undo, Save, Test play and Menu sit at top right.
+Menu holds New board, My boards, Import, Export and Back to main menu. A scrollable palette
+replaces the player cards on the right, showing two columns of actual game tile artwork at both
+desktop and phone landscape sizes.
 Clicking a tile selects it, clicking it again deselects it, and choosing another replaces it.
 Clicking a board space places the selected tile; dragging paints a stroke. With no tile selected,
-clicking an existing square opens its details. The bottom action bar adapts to placement,
-selection, erasing, links or board settings. Shop placement shows district controls; square
-selection shows its editable details; board settings contains layout, author, districts and problems.
+clicking an existing square opens its details. The bottom action bar uses the game's glass styling, 740ms width/height morph and short text
+reveal (both respect reduced motion). It floats below the board, beside the palette, and adapts to placement,
+selection, erasing, links or board settings. Shop placement shows a compact district picker; square
+selection shows its editable details; board settings contains layout, author, districts and problems. Save, export and validation feedback appears in the action bar.
 
 **Built-in boards.** Every built-in board has the bank in the middle of the map, exactly 4
 properties in each district (8 districts, 32 properties), its Stockbroker squares as far from the

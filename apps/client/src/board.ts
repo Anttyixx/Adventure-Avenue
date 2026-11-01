@@ -2195,6 +2195,11 @@ function warpColor(G: GameState, sq: Square): string {
   return WARP_COLORS[Math.max(0, roots.indexOf(find(sq.id))) % WARP_COLORS.length];
 }
 
+/** Draw one tile using the same art as the game board (also used by the builder palette). */
+export function paintSquare(ctx: CanvasRenderingContext2D, G: GameState, sq: Square) {
+  drawSquare(ctx, G, sq);
+}
+
 function drawSquare(ctx: CanvasRenderingContext2D, G: GameState, sq: Square) {
   const L = G.layout;
   const c = squareCenter(sq, L);

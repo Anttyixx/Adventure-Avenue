@@ -96,7 +96,7 @@ Requests refer to parts of the game by these names:
   - **tiles/squares**, **districts** (color groups of shops), **vacant plots** (empty properties
     that get a building).
   - **auto zoom / camera:** see "Camera" in `docs/architecture.md`.
-- **Board builder:** `ui/editor.ts` uses a full 32 × 20 editing grid, a right tile palette and a task-based bottom action bar. `boardstore.ts` `boardForPlay` trims a copy at game start, preserving hex geometry and the saved editing grid.
+- **Board builder:** `ui/editor.ts` uses a full 32 × 20 editing grid, a floating two-column palette painted with `board.ts` `paintSquare` and a game-style morphing bottom action bar. Its info chip and toolbar float over the full-screen canvas. `boardstore.ts` `boardForPlay` trims a copy at game start, preserving hex geometry and the saved editing grid.
 - **Menus and tools:**
   - **main menu**, **game setup**, **What's new** (`changelog.ts`), **Credits**.
   - **version chip:** bottom right of the main menu only; holding it 3 s on test builds opens the

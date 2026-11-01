@@ -17,7 +17,7 @@ import {
   type BoardSquareDef,
   type SquareType,
 } from '@aa/engine';
-import { paintBoard, worldSize } from '../board';
+import { paintBoard, paintSquare, worldSize } from '../board';
 import { cellAt, cellCenter, tileShape } from '../geometry';
 import {
   deleteBoard,
@@ -304,35 +304,86 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
     maxlength: String(BOARD_LIMITS.nameLength),
   }) as HTMLInputElement;
   const status = h('span', { class: 'ed-status' });
-  const topbar = h(
+  const info = h(
     'div',
-    { class: 'ed-top glass' },
-    h('button', { class: 'btn small ghost', onclick: () => leave() }, '← Back'),
+    { class: 'ed-info info-chip glass' },
+    h('span', { class: 'gc-title' }, 'Board builder'),
     nameInput,
     status,
-    h('span', { class: 'ed-spacer' }),
-    h('button', { class: 'btn small', onclick: () => newBoardDialog() }, 'New'),
-    h('button', { class: 'btn small', onclick: () => myBoardsDialog() }, 'My boards'),
+  );
+  const topbar = h(
+    'div',
+    { class: 'ed-top toolbar' },
     h('button', { class: 'btn small', onclick: () => doUndo(), title: 'Undo (Ctrl+Z)' }, 'Undo'),
     h('button', { class: 'btn small', onclick: () => doSave() }, 'Save'),
-    h('button', { class: 'btn small', onclick: () => doImport() }, 'Import'),
-    h('button', { class: 'btn small', onclick: () => doExport() }, 'Export'),
     h('button', { class: 'btn small main', onclick: () => doPlay() }, 'Test play'),
+    h('button', { class: 'btn small', onclick: () => editorMenu() }, 'Menu'),
   );
-  const palette = h('div', { class: 'ed-palette glass' });
+  const palette = h('div', { class: 'ed-palette glass', 'aria-label': 'Tile palette' });
   const stage = h('div', { class: 'ed-stage' });
   const canvas = h('canvas', { class: 'ed-canvas' }) as HTMLCanvasElement;
   stage.append(canvas);
-  const inspector = h('div', { class: 'ed-inspector glass' });
-  const actionbar = h('div', { class: 'ed-actions glass', 'aria-label': 'Editing actions' });
-  const toast = h('div', { class: 'ed-toast' });
-  root.append(topbar, h('div', { class: 'ed-main' }, stage, palette), actionbar, toast);
+  const inspector = h('div', { class: 'ed-inspector' });
+  const actionbar = h('div', {
+    class: 'ed-actions prompt-center glass show',
+    'aria-label': 'Editing actions',
+  });
+  const actionContent = h('div', { class: 'ed-action-content' });
+  actionbar.append(actionContent);
+  root.append(stage, info, topbar, palette, actionbar);
+  let notice = '';
+  let noticeBad = false;
+  let noticeTimer = 0;
+  let actionAnimation: Animation | null = null;
+  let lastPrompt = '';
 
   const say = (text: string, bad = false) => {
-    toast.textContent = text;
-    toast.className = `ed-toast show ${bad ? 'bad' : ''}`;
-    clearTimeout((say as unknown as { t: number }).t);
-    (say as unknown as { t: number }).t = window.setTimeout(() => (toast.className = 'ed-toast'), 2600);
+    notice = text;
+    noticeBad = bad;
+    clearTimeout(noticeTimer);
+    drawInspector();
+    noticeTimer = window.setTimeout(() => {
+      notice = '';
+      drawInspector();
+    }, 3200);
+  };
+
+  // Match the game's 740 ms shell morph while keeping the new content at its final size.
+  const morphActions = (from: DOMRect) => {
+    const to = actionbar.getBoundingClientRect();
+    const prompt = actionContent.querySelector<HTMLElement>('.prompt-text');
+    if (prompt && prompt.textContent !== lastPrompt) {
+      lastPrompt = prompt.textContent ?? '';
+      if (!matchMedia('(prefers-reduced-motion: reduce)').matches)
+        prompt.animate(
+          [
+            { clipPath: 'inset(0 100% 0 0)', opacity: 0.6 },
+            { clipPath: 'inset(0)', opacity: 1 },
+          ],
+          { duration: 220, easing: 'steps(16, end)' },
+        );
+    }
+    if (
+      matchMedia('(prefers-reduced-motion: reduce)').matches ||
+      (Math.abs(to.width - from.width) < 1 && Math.abs(to.height - from.height) < 1)
+    )
+      return;
+    actionContent.style.width = `${actionContent.getBoundingClientRect().width}px`;
+    actionbar.classList.add('morphing');
+    const anim = actionbar.animate(
+      [
+        { width: `${from.width}px`, height: `${from.height}px`, minHeight: '0' },
+        { width: `${to.width}px`, height: `${to.height}px`, minHeight: '0' },
+      ],
+      { duration: 740, easing: 'cubic-bezier(0.2, 0.8, 0.2, 1)' },
+    );
+    actionAnimation = anim;
+    anim.onfinish = () => {
+      if (actionAnimation !== anim) return;
+      actionAnimation = null;
+      actionContent.style.width = '';
+      actionbar.classList.remove('morphing');
+    };
   };
 
   // ------------------------------------------------------------ model helpers
@@ -444,9 +495,14 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
     canvas.style.width = `${r.width}px`;
     canvas.style.height = `${r.height}px`;
     const { w, h: hh } = worldSize(board);
-    scale = Math.min(r.width / w, r.height / hh);
-    ox = (r.width - w * scale) / 2;
-    oy = (r.height - hh * scale) / 2;
+    const paletteRect = palette.getBoundingClientRect();
+    const top =
+      Math.max(info.getBoundingClientRect().bottom, topbar.getBoundingClientRect().bottom) - r.top + 16;
+    const freeW = Math.max(1, paletteRect.left - r.left - 20);
+    const freeH = Math.max(1, r.height - top - Math.min(160, r.height * 0.3));
+    scale = Math.min(freeW / w, freeH / hh);
+    ox = (freeW - w * scale) / 2;
+    oy = top + (freeH - hh * scale) / 2;
     const ctx = canvas.getContext('2d')!;
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.fillStyle = '#16213f';
@@ -561,6 +617,7 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
     if (!cell) return;
     if (tool === 'select') {
       settings = false;
+      notice = '';
       const i = indexAt(cell.x, cell.y);
       selected = i >= 0 ? i : null;
       redraw();
@@ -597,10 +654,48 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
 
   const drawPalette = () => {
     clear(palette);
+    palette.append(
+      h(
+        'div',
+        { class: 'ed-palette-title' },
+        h('span', { class: 'gc-title' }, 'Tiles'),
+        h('span', { class: 'hint' }, 'Choose one to place'),
+      ),
+    );
     for (const g of PALETTE.filter((g) => g.group !== 'Tools')) {
       palette.append(h('h4', null, g.group));
       const row = h('div', { class: 'ed-tools' });
       for (const it of g.items) {
+        const example = h('canvas', { class: 'ed-tile-example', 'aria-hidden': 'true' }) as HTMLCanvasElement;
+        example.width = 200;
+        example.height = 180;
+        const tile = newGame({
+          rules: 'standard',
+          target: 5000,
+          roundCap: 0,
+          seed: 1,
+          seats: [{ name: 'Builder', cpu: true, ch: 'farmer' }],
+          board: {
+            ...board,
+            cols: 1,
+            rows: 1,
+            edges: [],
+            bank: 0,
+            squares: [
+              {
+                x: 0,
+                y: 0,
+                t: it.tool === 'plot' ? 'shop' : (it.tool as SquareType),
+                ...(it.tool === 'shop' || it.tool === 'plot' ? { d: district, base: 200 } : {}),
+              },
+            ],
+          },
+        });
+        if (it.tool === 'plot') tile.nodes[0].t = 'plot';
+        const ctx = example.getContext('2d')!;
+        ctx.scale(1.4, 1.4);
+        ctx.translate(-29, -38);
+        paintSquare(ctx, tile, tile.nodes[0]);
         row.append(
           h(
             'button',
@@ -612,13 +707,14 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
                 tool = tool === it.tool ? 'select' : it.tool;
                 selected = null;
                 settings = false;
+                notice = '';
                 drawPalette();
                 drawInspector();
                 redraw();
-                say(it.hint);
               },
             },
-            it.label,
+            example,
+            h('span', null, it.label),
           ),
         );
       }
@@ -632,6 +728,14 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
     h('label', { class: 'ed-field' }, h('span', null, label), input);
 
   const drawInspector = () => {
+    const from = actionbar.getBoundingClientRect();
+    if (actionAnimation) {
+      actionAnimation.onfinish = null;
+      actionAnimation.cancel();
+      actionAnimation = null;
+    }
+    actionContent.style.width = '';
+    actionbar.classList.remove('morphing');
     clear(inspector);
     nameInput.value = board.name;
     const unsaved = JSON.stringify(board) !== savedJSON;
@@ -640,36 +744,44 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
     status.classList.toggle('unsaved', unsaved || !inList);
 
     const controls = h('div', { class: 'ed-context-controls' });
-    clear(actionbar);
+    clear(actionContent);
     const chooseTool = (next: Tool) => {
       tool = tool === next ? 'select' : next;
       selected = null;
       settings = false;
+      notice = '';
       drawPalette();
       redraw();
       drawInspector();
     };
     const label = PALETTE.flatMap((g) => g.items).find((it) => it.tool === tool)?.label;
-    actionbar.append(
+    actionContent.append(
       h(
-        'strong',
-        null,
-        settings
-          ? 'Board settings'
-          : tool === 'select'
-            ? selected == null
-              ? 'Choose a tile, or select a square'
-              : 'Edit square'
-            : `${label}: ${tool === 'link' ? 'click a connection' : tool === 'erase' ? 'click or drag to remove squares' : 'click a space to place'}`,
+        'div',
+        { class: 'prompt-text', role: 'status', 'aria-live': 'polite' },
+        notice ||
+          (settings
+            ? 'Board settings'
+            : tool === 'select'
+              ? selected == null
+                ? 'Choose a tile, or select a square'
+                : 'Edit square'
+              : `${label}: ${tool === 'link' ? 'click a connection to cut or restore it' : tool === 'erase' ? 'click or drag to remove squares' : 'click a space to place a tile'}`),
       ),
       h(
         'div',
-        { class: 'ed-action-tools' },
+        { class: 'ed-action-tools btn-row' },
         ...(['select', 'erase', 'link'] as Tool[]).map((t) =>
           h(
             'button',
             { class: `btn small ${tool === t && !settings ? 'on' : 'ghost'}`, onclick: () => chooseTool(t) },
-            t === 'select' ? 'Select' : t === 'erase' ? 'Erase' : 'Links',
+            t === 'select'
+              ? settings || tool !== 'select' || selected != null
+                ? 'Done'
+                : 'Select'
+              : t === 'erase'
+                ? 'Erase'
+                : 'Links',
           ),
         ),
         h(
@@ -678,6 +790,7 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
             class: `btn small ${settings ? 'on' : 'ghost'}`,
             onclick: () => {
               settings = !settings;
+              notice = '';
               selected = null;
               tool = 'select';
               drawPalette();
@@ -689,7 +802,7 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
         ),
       ),
     );
-    actionbar.append(controls);
+    actionContent.append(controls);
     controls.append(inspector);
     // Board settings
     const author = h('input', {
@@ -719,6 +832,7 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
             snapshot();
             board.layout = l;
             cuts = new Set();
+            drawPalette();
             changed();
             say(
               l === 'hex'
@@ -755,7 +869,19 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
 
     // Districts
     const districtPanel = h('div', { class: 'ed-district-panel' });
-    districtPanel.hidden = !settings && tool !== 'shop' && tool !== 'plot';
+    districtPanel.hidden = !settings;
+    if (!settings && (tool === 'shop' || tool === 'plot')) {
+      const active = h(
+        'select',
+        { 'aria-label': 'Active district' },
+        ...board.districts.map((d, i) => h('option', { value: String(i), selected: i === district }, d.name)),
+      ) as HTMLSelectElement;
+      active.onchange = () => {
+        district = Number(active.value);
+        drawPalette();
+      };
+      inspector.append(field('District for new shops', active));
+    }
     inspector.append(districtPanel);
     districtPanel.append(
       h('h4', null, 'Districts'),
@@ -928,6 +1054,11 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
       ...check.warnings.map((w) => h('p', { class: 'ed-warn' }, w)),
       ...(check.errors.length ? [] : [h('p', { class: 'ed-ok' }, 'This board is playable.')]),
     );
+    controls.hidden =
+      !settings && tool !== 'shop' && tool !== 'plot' && (tool !== 'select' || selected == null);
+    actionbar.classList.toggle('ed-action-error', !!notice && noticeBad);
+    actionbar.classList.toggle('ed-action-expanded', settings || (tool === 'select' && selected != null));
+    morphActions(from);
   };
 
   nameInput.onchange = () => {
@@ -1026,6 +1157,35 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
     };
     root.append(wrap);
     return close;
+  };
+
+  const editorMenu = () => {
+    const item = (label: string, act: () => void) =>
+      h(
+        'button',
+        {
+          class: 'btn',
+          onclick: () => {
+            close();
+            act();
+          },
+        },
+        label,
+      );
+    const close = modal(
+      'Board builder',
+      h(
+        'div',
+        { class: 'ed-menu-actions' },
+        item('New board', newBoardDialog),
+        item('My boards', myBoardsDialog),
+        item('Import board', () => {
+          void doImport();
+        }),
+        item('Export board', doExport),
+        item('Back to main menu', leave),
+      ),
+    );
   };
 
   const newBoardDialog = () => {
@@ -1131,6 +1291,8 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
   function destroy() {
     window.removeEventListener('keydown', onKey);
     ro.disconnect();
+    clearTimeout(noticeTimer);
+    actionAnimation?.cancel();
     root.remove();
   }
 
