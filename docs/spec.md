@@ -149,6 +149,17 @@ squares). Each board uses a square grid (4 neighbors per cell) or a hex grid (po
 hexagons, odd rows shifted half a cell right, 6 neighbors per cell); the file stores it as
 `layout`, and files without one are square.
 
+The builder opens an empty maximum-size 32 × 20 grid. New templates, remixes and reopened
+boards also have the full editing grid. Saved boards and exports keep that editing space.
+Starting a game (including test play) trims unused outer rows and columns from a copy;
+interior gaps, connections, warp partners and hex geometry stay intact.
+A scrollable palette on the right uses two columns on large screens and one on smaller screens.
+Clicking a tile selects it, clicking it again deselects it, and choosing another replaces it.
+Clicking a board space places the selected tile; dragging paints a stroke. With no tile selected,
+clicking an existing square opens its details. The bottom action bar adapts to placement,
+selection, erasing, links or board settings. Shop placement shows district controls; square
+selection shows its editable details; board settings contains layout, author, districts and problems.
+
 **Built-in boards.** Every built-in board has the bank in the middle of the map, exactly 4
 properties in each district (8 districts, 32 properties), its Stockbroker squares as far from the
 bank as the roads allow, and Boon and Boom far apart. Town (square, 14 x 7, 50 squares: a ring with

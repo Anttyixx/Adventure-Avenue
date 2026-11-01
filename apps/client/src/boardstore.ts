@@ -123,3 +123,23 @@ export function pickBoardFile(): Promise<File | null> {
     input.click();
   });
 }
+
+/** Remove unused outer cells for play, keeping the editor's saved grid intact. */
+export function boardForPlay(board: BoardDef): BoardDef {
+  const out = structuredClone(board);
+  if (!out.squares.length) return out;
+  const minY = Math.min(...out.squares.map((s) => s.y));
+  // An odd-row hex origin changes the stagger. Convert through axial coordinates so roads
+  // keep exactly the same shape and connections after shifting the origin.
+  const xs = out.squares.map((s) =>
+    out.layout === 'hex' ? s.x - (s.y - (s.y & 1)) / 2 + (s.y - minY - ((s.y - minY) & 1)) / 2 : s.x,
+  );
+  const minX = Math.min(...xs);
+  out.squares.forEach((s, i) => {
+    s.x = xs[i] - minX;
+    s.y -= minY;
+  });
+  out.cols = Math.max(...out.squares.map((s) => s.x)) + 1;
+  out.rows = Math.max(...out.squares.map((s) => s.y)) + 1;
+  return out;
+}

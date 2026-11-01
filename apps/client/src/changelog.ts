@@ -26,6 +26,18 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: '2026-11-01-board-builder',
+    date: 'Nov 1, 2026',
+    title: 'More room to build',
+    features: [
+      {
+        tag: 'better',
+        title: 'A new board builder',
+        text: 'Build on a full 32 × 20 grid. Choose tiles from the scrolling palette on the right, click again to deselect, and place them on the board. The action bar follows your editing task, and unused outer space disappears when you play.',
+      },
+    ],
+  },
+  {
     id: '2026-10-30-cleaner-setup',
     date: 'Oct 30, 2026',
     title: 'A cleaner way to start',

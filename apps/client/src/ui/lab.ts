@@ -98,6 +98,7 @@ const rnd = (n: number) => Math.floor(Math.random() * n);
  * are easy to find. Update this list with each change.
  */
 const RECENT = new Set([
+  'Open board editor',
   'Game setup',
   'Game setup (friend joined)',
   'Game setup (offline)',

@@ -2859,7 +2859,7 @@ input[type='range'] {
   flex: 1;
   min-height: 0;
   display: grid;
-  grid-template-columns: 170px 1fr 270px;
+  grid-template-columns: minmax(0, 1fr) 250px;
   gap: 8px;
 }
 .ed-palette,
@@ -2875,8 +2875,8 @@ input[type='range'] {
   color: var(--accent);
 }
 .ed-tools {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 4px;
 }
 .ed-tool {
@@ -3044,7 +3044,7 @@ input[type='range'] {
 }
 @media (max-width: 900px), (max-height: 560px) {
   .ed-main {
-    grid-template-columns: 130px 1fr 210px;
+    grid-template-columns: minmax(0, 1fr) 125px;
   }
   .ed-name {
     width: 150px;
@@ -6272,4 +6272,55 @@ div.sl-inline label {
 }
 .setup .setup-advanced-grid > .opt:not(:first-child) {
   margin-top: 8px;
+}
+
+/* Board builder: palette beside the canvas, task controls below it. */
+.ed-palette {
+  min-height: 0;
+  overscroll-behavior: contain;
+}
+.ed-tool {
+  min-height: 40px;
+  color: var(--text);
+}
+.ed-actions {
+  padding: 8px 12px;
+  max-height: 38vh;
+  overflow: auto;
+  flex-shrink: 0;
+}
+.ed-actions > strong {
+  font-family: var(--head);
+  font-weight: 400;
+}
+.ed-action-tools {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 6px;
+}
+.ed-inspector {
+  padding: 0;
+}
+.ed-board-settings:not([hidden]),
+.ed-district-panel:not([hidden]) {
+  max-width: 650px;
+}
+.ed-district-panel .ed-district {
+  grid-template-columns: 18px 30px minmax(80px, 1fr) 24px 28px;
+}
+.ed-actions [hidden] {
+  display: none;
+}
+@media (max-width: 900px), (max-height: 560px) {
+  .ed-tools {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .ed-actions {
+    max-height: 34vh;
+    padding: 5px 8px;
+  }
+  .ed-palette {
+    padding: 4px 6px;
+  }
 }

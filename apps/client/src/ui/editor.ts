@@ -102,7 +102,11 @@ const DISTRICT_NAMES = [
   'Maple Court',
 ];
 
-function blankBoard(cols = 12, rows = 7, layout: BoardLayout = 'square'): BoardDef {
+function blankBoard(
+  cols = BOARD_LIMITS.maxCols,
+  rows = BOARD_LIMITS.maxRows,
+  layout: BoardLayout = 'square',
+): BoardDef {
   return {
     id: newBoardId(),
     name: 'My board',
@@ -260,7 +264,11 @@ export interface EditorHandlers {
 }
 
 export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers: EditorHandlers) {
-  let board: BoardDef = structuredClone(initial ?? starterLoop());
+  let board: BoardDef = {
+    ...structuredClone(initial ?? blankBoard()),
+    cols: BOARD_LIMITS.maxCols,
+    rows: BOARD_LIMITS.maxRows,
+  };
   // Cut links are remembered as cell pairs so they survive edits to other squares.
   let cuts = new Set<string>();
   const deriveCuts = () => {
@@ -278,7 +286,8 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
     );
   };
   deriveCuts();
-  let tool: Tool = 'shop';
+  let tool: Tool = 'select';
+  let settings = false;
   let district = 0;
   let selected: number | null = null;
   let hover: { x: number; y: number } | null = null;
@@ -315,8 +324,9 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
   const canvas = h('canvas', { class: 'ed-canvas' }) as HTMLCanvasElement;
   stage.append(canvas);
   const inspector = h('div', { class: 'ed-inspector glass' });
+  const actionbar = h('div', { class: 'ed-actions glass', 'aria-label': 'Editing actions' });
   const toast = h('div', { class: 'ed-toast' });
-  root.append(topbar, h('div', { class: 'ed-main' }, palette, stage, inspector), toast);
+  root.append(topbar, h('div', { class: 'ed-main' }, stage, palette), actionbar, toast);
 
   const say = (text: string, bad = false) => {
     toast.textContent = text;
@@ -408,15 +418,23 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
   let scale = 1;
   let ox = 0;
   let oy = 0;
-  const preview = () =>
-    newGame({
+  const preview = () => {
+    const game = newGame({
       rules: 'standard',
       target: 5000,
       roundCap: 0,
       seats: [{ name: 'Editor', cpu: true, ch: 'farmer' }],
-      board: { ...board, id: 'custom:editor', bank: Math.max(0, board.bank) },
+      board: {
+        ...board,
+        id: 'custom:editor',
+        bank: Math.max(0, board.bank),
+        squares: board.squares.length ? board.squares : [{ x: 0, y: 0, t: 'bank' }],
+      },
       seed: 1,
     });
+    if (!board.squares.length) game.nodes = [];
+    return game;
+  };
 
   const redraw = () => {
     const r = stage.getBoundingClientRect();
@@ -542,6 +560,7 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
     const cell = toCell(e);
     if (!cell) return;
     if (tool === 'select') {
+      settings = false;
       const i = indexAt(cell.x, cell.y);
       selected = i >= 0 ? i : null;
       redraw();
@@ -578,7 +597,7 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
 
   const drawPalette = () => {
     clear(palette);
-    for (const g of PALETTE) {
+    for (const g of PALETTE.filter((g) => g.group !== 'Tools')) {
       palette.append(h('h4', null, g.group));
       const row = h('div', { class: 'ed-tools' });
       for (const it of g.items) {
@@ -588,9 +607,13 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
             {
               class: `ed-tool ${tool === it.tool ? 'on' : ''}`,
               title: it.hint,
+              'aria-pressed': String(tool === it.tool),
               onclick: () => {
-                tool = it.tool;
+                tool = tool === it.tool ? 'select' : it.tool;
+                selected = null;
+                settings = false;
                 drawPalette();
+                drawInspector();
                 redraw();
                 say(it.hint);
               },
@@ -616,42 +639,59 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
     status.textContent = !inList ? 'Not saved yet' : unsaved ? 'Unsaved changes' : 'Saved';
     status.classList.toggle('unsaved', unsaved || !inList);
 
-    // Board settings
-    const cols = h('input', {
-      type: 'number',
-      min: String(BOARD_LIMITS.minCols),
-      max: String(BOARD_LIMITS.maxCols),
-      value: String(board.cols),
-      class: 'num',
-    }) as HTMLInputElement;
-    const rows = h('input', {
-      type: 'number',
-      min: String(BOARD_LIMITS.minRows),
-      max: String(BOARD_LIMITS.maxRows),
-      value: String(board.rows),
-      class: 'num',
-    }) as HTMLInputElement;
-    const resize = () => {
-      const c = Math.max(
-        BOARD_LIMITS.minCols,
-        Math.min(BOARD_LIMITS.maxCols, Math.floor(Number(cols.value)) || board.cols),
-      );
-      const r = Math.max(
-        BOARD_LIMITS.minRows,
-        Math.min(BOARD_LIMITS.maxRows, Math.floor(Number(rows.value)) || board.rows),
-      );
-      const lost = board.squares.filter((s) => s.x >= c || s.y >= r).length;
-      if (lost && !confirm(`Shrinking the grid removes ${lost} square${lost > 1 ? 's' : ''}. Continue?`))
-        return drawInspector();
-      snapshot();
-      board.cols = c;
-      board.rows = r;
-      board.squares = board.squares.filter((s) => s.x < c && s.y < r);
+    const controls = h('div', { class: 'ed-context-controls' });
+    clear(actionbar);
+    const chooseTool = (next: Tool) => {
+      tool = tool === next ? 'select' : next;
       selected = null;
-      changed();
+      settings = false;
+      drawPalette();
+      redraw();
+      drawInspector();
     };
-    cols.onchange = resize;
-    rows.onchange = resize;
+    const label = PALETTE.flatMap((g) => g.items).find((it) => it.tool === tool)?.label;
+    actionbar.append(
+      h(
+        'strong',
+        null,
+        settings
+          ? 'Board settings'
+          : tool === 'select'
+            ? selected == null
+              ? 'Choose a tile, or select a square'
+              : 'Edit square'
+            : `${label}: ${tool === 'link' ? 'click a connection' : tool === 'erase' ? 'click or drag to remove squares' : 'click a space to place'}`,
+      ),
+      h(
+        'div',
+        { class: 'ed-action-tools' },
+        ...(['select', 'erase', 'link'] as Tool[]).map((t) =>
+          h(
+            'button',
+            { class: `btn small ${tool === t && !settings ? 'on' : 'ghost'}`, onclick: () => chooseTool(t) },
+            t === 'select' ? 'Select' : t === 'erase' ? 'Erase' : 'Links',
+          ),
+        ),
+        h(
+          'button',
+          {
+            class: `btn small ${settings ? 'on' : 'ghost'}`,
+            onclick: () => {
+              settings = !settings;
+              selected = null;
+              tool = 'select';
+              drawPalette();
+              redraw();
+              drawInspector();
+            },
+          },
+          'Board settings',
+        ),
+      ),
+    );
+    actionbar.append(controls);
+    controls.append(inspector);
+    // Board settings
     const author = h('input', {
       value: board.author ?? '',
       maxlength: '32',
@@ -689,7 +729,10 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
         },
         label,
       );
-    inspector.append(
+    const boardSettings = h('div', { class: 'ed-board-settings' });
+    inspector.append(boardSettings);
+    boardSettings.hidden = !settings;
+    boardSettings.append(
       h('h4', null, 'Board'),
       h(
         'div',
@@ -702,12 +745,19 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
           layoutBtn('hex', 'Hex grid'),
         ),
       ),
-      h('div', { class: 'ed-row' }, field('Columns', cols), field('Rows', rows)),
+      h(
+        'p',
+        { class: 'hint' },
+        `${board.cols} × ${board.rows} grid. Unused outer space is trimmed for games.`,
+      ),
       field('Made by', author),
     );
 
     // Districts
-    inspector.append(
+    const districtPanel = h('div', { class: 'ed-district-panel' });
+    districtPanel.hidden = !settings && tool !== 'shop' && tool !== 'plot';
+    inspector.append(districtPanel);
+    districtPanel.append(
       h('h4', null, 'Districts'),
       h('p', { class: 'hint' }, 'New shops go in the active district.'),
     );
@@ -740,7 +790,7 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
         selected = null;
         changed();
       };
-      inspector.append(
+      districtPanel.append(
         h(
           'div',
           { class: `ed-district ${i === district ? 'on' : ''}` },
@@ -764,7 +814,7 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
       );
     });
     if (board.districts.length < BOARD_LIMITS.maxDistricts)
-      inspector.append(
+      districtPanel.append(
         h(
           'button',
           {
@@ -790,11 +840,14 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
       );
 
     // Selected square
+    const squarePanel = h('div');
+    squarePanel.hidden = settings || tool !== 'select' || selected == null;
+    inspector.append(squarePanel);
     const sq = selected != null ? board.squares[selected] : null;
-    inspector.append(h('h4', null, 'Selected square'));
-    if (!sq) inspector.append(h('p', { class: 'hint' }, 'Use Select and click a square to edit it.'));
+    squarePanel.append(h('h4', null, 'Selected square'));
+    if (!sq) squarePanel.append(h('p', { class: 'hint' }, 'Use Select and click a square to edit it.'));
     else {
-      inspector.append(
+      squarePanel.append(
         h(
           'p',
           { class: 'hint' },
@@ -835,13 +888,13 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
           else delete sq.plot;
           changed();
         };
-        inspector.append(
+        squarePanel.append(
           field('District', dSel),
           field('Shop value (G)', base),
           h('label', { class: 'check' }, plot, 'Vacant plot (Standard rules)'),
         );
       }
-      inspector.append(
+      squarePanel.append(
         h(
           'button',
           {
@@ -859,9 +912,12 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
     }
 
     // Problems
+    const problems = h('div');
+    problems.hidden = !settings;
+    inspector.append(problems);
     const check = validateBoard(board);
     const props = board.squares.filter((s) => s.t === 'shop').length;
-    inspector.append(
+    problems.append(
       h('h4', null, check.errors.length ? `Problems (${check.errors.length})` : 'Ready to play'),
       h(
         'p',
@@ -910,7 +966,7 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
     if (!res.board) return say(res.error ?? 'Could not read that file.', true);
     if (!confirmLeave()) return;
     snapshot();
-    board = res.board;
+    board = { ...res.board, cols: BOARD_LIMITS.maxCols, rows: BOARD_LIMITS.maxRows };
     deriveCuts();
     selected = null;
     savedJSON = '';
@@ -941,7 +997,7 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
   };
 
   const load = (b: BoardDef, saved: boolean) => {
-    board = structuredClone(b);
+    board = { ...structuredClone(b), cols: BOARD_LIMITS.maxCols, rows: BOARD_LIMITS.maxRows };
     deriveCuts();
     selected = null;
     undo.length = 0;
@@ -995,8 +1051,10 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
         opt('Starter loop (square)', 'A playable loop around the edge to build on.', () => starterLoop()),
         opt('Lakeside (hex)', 'A winding hex road around a lake, with a shortcut.', () => hexStarter()),
         opt('Hex loop', 'A simple loop on a hex grid.', () => hexLoop()),
-        opt('Blank square grid', 'An empty 12 x 7 square grid.', () => blankBoard()),
-        opt('Blank hex grid', 'An empty 14 x 9 hex grid.', () => blankBoard(14, 9, 'hex')),
+        opt('Blank square grid', 'An empty 32 × 20 square grid.', () => blankBoard()),
+        opt('Blank hex grid', 'An empty 32 × 20 hex grid.', () =>
+          blankBoard(BOARD_LIMITS.maxCols, BOARD_LIMITS.maxRows, 'hex'),
+        ),
         ...BUILT_IN_BOARDS.map((b) =>
           opt(`Copy of ${b.name}`, `The built-in ${b.layout ?? 'square'} board, to remix.`, () => ({
             ...structuredClone(b),

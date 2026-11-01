@@ -5,6 +5,7 @@
  */
 import { K, cloneState, newGame, type BoardDef } from '@aa/engine';
 import { sound } from './audio';
+import { boardForPlay } from './boardstore';
 import { HotSeat } from './host';
 import { checkForUpdate } from './update';
 import { installCoins } from './coins';
@@ -69,7 +70,7 @@ function showSetup() {
     {
       onStart(opts, online) {
         close();
-        const G = newGame(opts);
+        const G = newGame({ ...opts, ...(opts.board ? { board: boardForPlay(opts.board) } : {}) });
         if (online && room) startHosted(room, G);
         else play(G);
       },
@@ -284,7 +285,7 @@ function showEditor(board: BoardDef | null) {
         ch: chars[i],
       }));
       play(
-        newGame({ rules: 'standard', target: K.defaultTarget, roundCap: 0, seats, board: b }),
+        newGame({ rules: 'standard', target: K.defaultTarget, roundCap: 0, seats, board: boardForPlay(b) }),
         () => showEditor(b),
         false,
       );
