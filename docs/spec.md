@@ -154,7 +154,15 @@ boards also have the full editing grid. Saved boards and exports keep that editi
 Starting a game (including test play) trims unused outer rows and columns from a copy;
 interior gaps, connections, warp partners and hex geometry stay intact.
 The editor uses the normal game screen's full-screen board and floating HUD: the board name and
-save status sit in an info chip at top left; Undo, Save, Test play and Menu sit at top right.
+save status sit in an info chip at top left; the zoom chip, Undo, Save, Test play and Menu sit at top right.
+The board fills the entire canvas behind the HUD, with no space reserved beside or below it.
+Zoom always keeps the board's center at the center of the full screen. It shares the game's
+zoom sizing: a close view of 1.65 × screen fit (2.2 × on small screens), a whole-board limit
+calculated from the space left by the HUD with a 3% margin, and geometric interpolation between
+these limits. The chip runs from 250% close to 100% fully out. Wheel, pinch and - / + use the
+same steps as in play; tapping the chip resets to 250%. Camera scale eases with the game's
+0.12 factor, or changes immediately with reduced motion. Pinching does not place tiles;
+board picking uses the current camera transform at every zoom. Form typing keeps its normal keys.
 Menu holds New board, My boards, Import, Export and Back to main menu. A scrollable palette
 replaces the player cards on the right, showing two columns of actual game tile artwork at both
 desktop and phone landscape sizes.

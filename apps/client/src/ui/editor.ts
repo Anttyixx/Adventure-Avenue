@@ -18,6 +18,7 @@ import {
   type SquareType,
 } from '@aa/engine';
 import { paintBoard, paintSquare, worldSize } from '../board';
+import { ZOOM_MAX_OUT, ZOOM_STEP, fitZoom, nearZoom, zoomScale, wheelZoomStep } from '../zoom';
 import { cellAt, cellCenter, tileShape } from '../geometry';
 import {
   deleteBoard,
@@ -311,9 +312,23 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
     nameInput,
     status,
   );
+  const zoomChip = h(
+    'button',
+    {
+      class: 'zoom-chip',
+      title: 'Zoom: scroll, pinch or - / +. Tap to reset.',
+      'aria-label': 'Reset board zoom',
+      onclick: () => {
+        zoomOut = 0;
+        redraw();
+      },
+    },
+    '250%',
+  );
   const topbar = h(
     'div',
     { class: 'ed-top toolbar' },
+    zoomChip,
     h('button', { class: 'btn small', onclick: () => doUndo(), title: 'Undo (Ctrl+Z)' }, 'Undo'),
     h('button', { class: 'btn small', onclick: () => doSave() }, 'Save'),
     h('button', { class: 'btn small main', onclick: () => doPlay() }, 'Test play'),
@@ -383,6 +398,7 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
       actionAnimation = null;
       actionContent.style.width = '';
       actionbar.classList.remove('morphing');
+      redraw();
     };
   };
 
@@ -467,6 +483,16 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
   // ------------------------------------------------------------ canvas
 
   let scale = 1;
+  let cameraScale: number | null = null;
+  let boardImage: HTMLCanvasElement | null = null;
+  let boardImageKey = '';
+  let zoomOut = 0;
+  let zoomFrame = 0;
+  let destroyed = false;
+  const zoomBy = (delta: number) => {
+    zoomOut = Math.max(0, Math.min(ZOOM_MAX_OUT, zoomOut + delta));
+    redraw();
+  };
   let ox = 0;
   let oy = 0;
   const preview = () => {
@@ -488,6 +514,9 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
   };
 
   const redraw = () => {
+    if (destroyed) return;
+    cancelAnimationFrame(zoomFrame);
+    zoomFrame = 0;
     const r = stage.getBoundingClientRect();
     const dpr = Math.min(3, window.devicePixelRatio || 1);
     canvas.width = Math.max(1, Math.round(r.width * dpr));
@@ -495,34 +524,57 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
     canvas.style.width = `${r.width}px`;
     canvas.style.height = `${r.height}px`;
     const { w, h: hh } = worldSize(board);
+    // The HUD overlaps the board. Only the far zoom's sizing uses its occupied area;
+    // every zoom level keeps the board's center at the center of the entire screen.
     const paletteRect = palette.getBoundingClientRect();
     const top =
-      Math.max(info.getBoundingClientRect().bottom, topbar.getBoundingClientRect().bottom) - r.top + 16;
-    const freeW = Math.max(1, paletteRect.left - r.left - 20);
-    const freeH = Math.max(1, r.height - top - Math.min(160, r.height * 0.3));
-    scale = Math.min(freeW / w, freeH / hh);
-    ox = (freeW - w * scale) / 2;
-    oy = top + (freeH - hh * scale) / 2;
+      Math.max(info.getBoundingClientRect().bottom, topbar.getBoundingClientRect().bottom) - r.top + 6;
+    const right = Math.min(r.width * 0.4, r.right - paletteRect.left + 8);
+    const bottom = r.height - actionbar.offsetTop + 4;
+    const near = nearZoom(r.width, r.height, w, hh);
+    const far = Math.min(near, fitZoom(r.width - right, r.height - top - bottom, w, hh));
+    const target = zoomScale(near, far, zoomOut);
+    const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+    cameraScale = cameraScale == null || reduced ? target : cameraScale + (target - cameraScale) * 0.12;
+    if (Math.abs(target - cameraScale) < 0.0001) cameraScale = target;
+    else zoomFrame = requestAnimationFrame(redraw);
+    scale = cameraScale;
+    ox = (r.width - w * scale) / 2;
+    oy = (r.height - hh * scale) / 2;
+    const out = far < near ? Math.log(scale / near) / Math.log(far / near) : 0;
+    zoomChip.textContent = `${Math.round(250 - 150 * Math.max(0, Math.min(1, out)))}%`;
     const ctx = canvas.getContext('2d')!;
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.fillStyle = '#16213f';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
     ctx.setTransform(scale * dpr, 0, 0, scale * dpr, ox * dpr, oy * dpr);
-    const G = preview();
-    paintBoard(ctx, G);
-    // Empty cells
-    const used = new Set(board.squares.map((s) => `${s.x},${s.y}`));
-    ctx.setLineDash([8, 6]);
-    ctx.lineWidth = 2;
-    ctx.strokeStyle = 'rgba(255,255,255,0.45)';
-    for (let y = 0; y < board.rows; y++)
-      for (let x = 0; x < board.cols; x++) {
-        if (used.has(`${x},${y}`)) continue;
-        const c = center({ x, y });
-        tileShape(ctx, board.layout, c.x, c.y, 40, 12);
-        ctx.stroke();
-      }
-    ctx.setLineDash([]);
+    // Cache the board and empty grid during camera motion, as the game caches its scenery.
+    const imageScale = Math.min(2, Math.max(1, Math.ceil(near * dpr * 2) / 2));
+    const imageKey = `${imageScale}:${JSON.stringify(board)}`;
+    if (!boardImage || imageKey !== boardImageKey) {
+      boardImage = h('canvas') as HTMLCanvasElement;
+      boardImage.width = Math.ceil(w * imageScale);
+      boardImage.height = Math.ceil(hh * imageScale);
+      const ctx = boardImage.getContext('2d')!;
+      ctx.scale(imageScale, imageScale);
+      const G = preview();
+      paintBoard(ctx, G);
+      // Empty cells
+      const used = new Set(board.squares.map((s) => `${s.x},${s.y}`));
+      ctx.setLineDash([8, 6]);
+      ctx.lineWidth = 2;
+      ctx.strokeStyle = 'rgba(255,255,255,0.45)';
+      for (let y = 0; y < board.rows; y++)
+        for (let x = 0; x < board.cols; x++) {
+          if (used.has(`${x},${y}`)) continue;
+          const c = center({ x, y });
+          tileShape(ctx, board.layout, c.x, c.y, 40, 12);
+          ctx.stroke();
+        }
+      ctx.setLineDash([]);
+      boardImageKey = imageKey;
+    }
+    ctx.drawImage(boardImage, 0, 0, w, hh);
     // Links
     if (tool === 'link') {
       for (const [a, b, key] of neighborPairs()) {
@@ -596,8 +648,7 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
 
   let painting = false;
   let paintedThisStroke = false;
-  canvas.addEventListener('pointerdown', (e) => {
-    canvas.setPointerCapture(e.pointerId);
+  const beginStroke = (e: PointerEvent) => {
     if (tool === 'link') {
       const w = toWorld(e);
       for (const [a, b, key] of neighborPairs()) {
@@ -629,8 +680,54 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
     snapshot();
     if (place(cell.x, cell.y)) paintedThisStroke = true;
     changed();
+  };
+  const touches = new Map<number, { x: number; y: number }>();
+  let touchStart: PointerEvent | null = null;
+  let pinching = false;
+  let pinchDistance = 0;
+  const span = () => {
+    const [a, b] = [...touches.values()];
+    return a && b ? Math.hypot(a.x - b.x, a.y - b.y) : 0;
+  };
+  canvas.addEventListener(
+    'wheel',
+    (e) => {
+      e.preventDefault();
+      zoomBy(wheelZoomStep(e.deltaY, e.deltaMode));
+    },
+    { passive: false },
+  );
+  canvas.addEventListener('pointerdown', (e) => {
+    canvas.setPointerCapture(e.pointerId);
+    if (e.pointerType === 'touch') {
+      touches.set(e.pointerId, { x: e.clientX, y: e.clientY });
+      if (touches.size === 1) {
+        touchStart = e;
+        pinching = false;
+      } else {
+        pinching = true;
+        touchStart = null;
+        endStroke();
+      }
+      pinchDistance = span();
+      return;
+    }
+    beginStroke(e);
   });
   canvas.addEventListener('pointermove', (e) => {
+    if (touches.has(e.pointerId)) {
+      touches.set(e.pointerId, { x: e.clientX, y: e.clientY });
+      if (pinching) {
+        const distance = span();
+        if (distance && pinchDistance) zoomBy(Math.log(pinchDistance / distance) * 0.8);
+        pinchDistance = distance;
+        return;
+      }
+      if (touchStart && Math.hypot(e.clientX - touchStart.clientX, e.clientY - touchStart.clientY) > 8) {
+        beginStroke(touchStart);
+        touchStart = null;
+      }
+    }
     const cell = toCell(e);
     const moved = cell?.x !== hover?.x || cell?.y !== hover?.y;
     hover = cell;
@@ -643,8 +740,15 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
     if (painting && !paintedThisStroke) undo.pop();
     painting = false;
   };
-  canvas.addEventListener('pointerup', endStroke);
-  canvas.addEventListener('pointercancel', endStroke);
+  const releasePointer = (e: PointerEvent) => {
+    if (e.type === 'pointerup' && touches.has(e.pointerId) && !pinching && touchStart) beginStroke(e);
+    touches.delete(e.pointerId);
+    touchStart = null;
+    pinchDistance = span();
+    endStroke();
+  };
+  canvas.addEventListener('pointerup', releasePointer);
+  canvas.addEventListener('pointercancel', releasePointer);
   canvas.addEventListener('pointerleave', () => {
     hover = null;
     redraw();
@@ -1278,6 +1382,16 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
   };
 
   const onKey = (e: KeyboardEvent) => {
+    if (
+      (e.target as HTMLElement).closest('input, textarea, select, [contenteditable]') ||
+      root.querySelector('.ed-modal')
+    )
+      return;
+    if (['-', '_', '=', '+'].includes(e.key)) {
+      e.preventDefault();
+      zoomBy(e.key === '-' || e.key === '_' ? ZOOM_STEP : -ZOOM_STEP);
+      return;
+    }
     if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') {
       e.preventDefault();
       doUndo();
@@ -1289,6 +1403,8 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
   document.fonts?.ready.then(() => redraw());
 
   function destroy() {
+    destroyed = true;
+    cancelAnimationFrame(zoomFrame);
     window.removeEventListener('keydown', onKey);
     ro.disconnect();
     clearTimeout(noticeTimer);

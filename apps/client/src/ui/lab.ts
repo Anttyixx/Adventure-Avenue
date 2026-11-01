@@ -100,6 +100,7 @@ const rnd = (n: number) => Math.floor(Math.random() * n);
  */
 const RECENT = new Set([
   'Open board editor',
+  'Board builder: centered zoom',
   'Board builder: tile palette',
   'Board builder: action bar',
   'Game setup',
@@ -1547,7 +1548,9 @@ export async function openLab(app: HTMLElement, section?: string) {
         }
         location.reload();
       }),
-      ...(['Board builder: tile palette', 'Board builder: action bar'] as const).map((label) =>
+      ...(
+        ['Board builder: tile palette', 'Board builder: action bar', 'Board builder: centered zoom'] as const
+      ).map((label) =>
         btn(label, () => {
           const holder = h('div', { class: 'lab-screen' });
           root.append(holder);

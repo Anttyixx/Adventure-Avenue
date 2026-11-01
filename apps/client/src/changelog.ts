@@ -26,6 +26,18 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: '2026-10-31-editor-centered-zoom',
+    date: 'Oct 31, 2026',
+    title: 'Zoom your board as you build',
+    features: [
+      {
+        tag: 'better',
+        title: 'A full-screen board',
+        text: 'The board now fills the screen behind the builder controls. Scroll, pinch or use - and + to zoom around the screen center, with the same zoom range and board sizing as the game. Tap the zoom chip to reset.',
+      },
+    ],
+  },
+  {
     id: '2026-10-31-editor-game-hud',
     date: 'Oct 31, 2026',
     title: 'Build with a familiar view',

@@ -20,6 +20,9 @@ import { drawBoonIcon, drawCoin, drawSparkle, SUIT_CHARS } from './icons';
 import { Facing, FRAME_H, FRAME_W, drawCharacter, drawCharacterGlow, facingFor } from './sprites';
 import { TIMING as T } from './timing';
 
+import { ZOOM_MAX_OUT, fitZoom, nearZoom, zoomScale, wheelZoomStep } from './zoom';
+export { ZOOM_STEP } from './zoom';
+
 export { worldSize };
 
 /** Center of a square's cell for the board's layout. */
@@ -65,10 +68,6 @@ export interface Insets {
   left: number;
 }
 
-/** Furthest zoom-out, in steps: the whole board fitted into the area the HUD leaves free. */
-const ZOOM_MAX_OUT = 1.3;
-/** One wheel notch or key press: 1/30 of the range, shown as 5% on the zoom chip. */
-export const ZOOM_STEP = ZOOM_MAX_OUT / 30;
 /**
  * From 250% to 200% on the zoom chip the camera stays on the player; between 200% and 150% (a
  * third and two thirds of the way out) it moves to the board's center, and stays there below.
@@ -787,8 +786,7 @@ export class BoardView {
   private wheel = (e: WheelEvent) => {
     e.preventDefault();
     // Trackpads send many small deltas, mouse wheels a few big ones.
-    const px = e.deltaMode === 1 ? e.deltaY * 33 : e.deltaY;
-    this.zoomBy(Math.max(-ZOOM_STEP, Math.min(ZOOM_STEP, (px / 100) * ZOOM_STEP)));
+    this.zoomBy(wheelZoomStep(e.deltaY, e.deltaMode));
   };
 
   private pinchDown = (e: PointerEvent) => {
@@ -812,7 +810,7 @@ export class BoardView {
   zoomFor(out: number) {
     const near = this.followZoom();
     const far = Math.min(near, this.freeFit().z);
-    return near * Math.pow(far / near, out / ZOOM_MAX_OUT);
+    return zoomScale(near, far, out);
   }
 
   /**
@@ -821,9 +819,7 @@ export class BoardView {
    */
   freeFit() {
     const { top, right, bottom, left } = this.insets;
-    const fw = Math.max(100, this.w - left - right);
-    const fh = Math.max(100, this.h - top - bottom);
-    return { z: Math.min(fw / this.ww, fh / this.wh) * 0.97 };
+    return { z: fitZoom(this.w - left - right, this.h - top - bottom, this.ww, this.wh) };
   }
 
   /**
@@ -835,8 +831,7 @@ export class BoardView {
   }
 
   followZoom() {
-    const small = Math.min(this.w, this.h) < 520;
-    return Math.min(this.w / this.ww, this.h / this.wh) * (small ? 2.2 : 1.65);
+    return nearZoom(this.w, this.h, this.ww, this.wh);
   }
 
   updateCamera() {
