@@ -26,6 +26,23 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: '2026-11-01-editor-group-selection',
+    date: 'Nov 1, 2026',
+    title: 'Build and rearrange your board',
+    features: [
+      {
+        tag: 'better',
+        title: 'Select and move whole groups',
+        text: 'Click a tile or drag around several, then Move or Erase them from the action bar. Moving tiles follow your pointer, snap to the grid and replace tiles underneath. Cancel a move or undo it any time.',
+      },
+      {
+        tag: 'better',
+        title: 'A dedicated Place tool',
+        text: 'Place shows the tile pane when you need it and hides it when you switch tools. Board settings now sits in the top-left info bar.',
+      },
+    ],
+  },
+  {
     id: '2026-11-01-editor-tool-toolbar',
     date: 'Nov 1, 2026',
     title: 'Your board tools, close at hand',

@@ -246,3 +246,13 @@ Buyouts have split payments, so the early message does not present one part as t
 `Hud.finishPrompt()` clears the completed wait and its timer, including the log's waiting line.
 The later engine log remains authoritative and adds full transaction details without extra log entries.
 UI Lab: “Buy result timing” uses an isolated cloned game and an actual engine purchase.
+
+### Board editor selection
+
+`ui/editor.ts` keeps a set of selected square indices. Click or drag selects tiles; the action
+bar moves or erases the group. Movement is a preview until placement, so Cancel does not mutate
+the saved board. The base cache omits lifted tiles and their roads, then draws source outlines
+and snapped tile art above it. `ui/editor-selection.ts` translates hex groups in axial coordinates,
+checks bounds, replaces destination tiles, remaps indices and retains surviving cut links.
+A committed move or group erase takes one undo snapshot. Place alone exposes the tile pane;
+Board settings is in the top-left info bar.

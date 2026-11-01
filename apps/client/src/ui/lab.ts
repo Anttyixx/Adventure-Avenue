@@ -99,6 +99,9 @@ const rnd = (n: number) => Math.floor(Math.random() * n);
  * are easy to find. Update this list with each change.
  */
 const RECENT = new Set([
+  'Board builder: place tiles',
+  'Board builder: group selection',
+  'Board builder: board settings',
   'Board builder: tool toolbar',
   'Open board editor',
   'Board builder: clear editing grid',
@@ -1553,6 +1556,9 @@ export async function openLab(app: HTMLElement, section?: string) {
       }),
       ...(
         [
+          'Board builder: place tiles',
+          'Board builder: group selection',
+          'Board builder: board settings',
           'Board builder: tool toolbar',
           'Board builder: tile palette',
           'Board builder: action bar',
@@ -1564,21 +1570,23 @@ export async function openLab(app: HTMLElement, section?: string) {
         btn(label, () => {
           const holder = h('div', { class: 'lab-screen' });
           root.append(holder);
-          const close = openEditor(holder, null, {
+          const close = openEditor(holder, label.endsWith('group selection') ? BUILT_IN_BOARDS[0] : null, {
             onExit: () => holder.remove(),
             onPlay: () => {
               holder.remove();
               hud.tick('Board builder test play pressed.');
             },
           });
-          if (label.endsWith('infinite grass')) {
+          if (label.endsWith('infinite grass') || label.endsWith('group selection')) {
             for (let i = 0; i < 30; i++)
               holder
                 .querySelector('.ed-canvas')
                 ?.dispatchEvent(new KeyboardEvent('keydown', { key: '-', bubbles: true }));
           }
-          if (label.endsWith('action bar'))
-            holder.querySelector<HTMLButtonElement>('.ed-action-tools button:last-child')?.click();
+          if (label.endsWith('action bar') || label.endsWith('board settings'))
+            holder.querySelector<HTMLButtonElement>('.ed-info > button')?.click();
+          if (label.endsWith('place tiles') || label.endsWith('tile palette'))
+            holder.querySelector<HTMLButtonElement>('.ed-tool-button[aria-label="Place"]')?.click();
           holder.append(
             h(
               'button',

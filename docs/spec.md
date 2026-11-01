@@ -170,20 +170,26 @@ these limits. The chip runs from 250% close to 100% fully out. Wheel, pinch and 
 same steps as in play; tapping the chip resets to 250%. Camera scale eases with the game's
 0.12 factor, or changes immediately with reduced motion. Pinching does not place tiles;
 board picking uses the current camera transform at every zoom. Form typing keeps its normal keys.
-An icon-only toolbar is centered vertically 10px from the left edge: Select, Move, Erase and
+An icon-only toolbar is centered vertically 10px from the left edge: Select, Place, Erase and
 Link. Hovering or focusing an icon shows its name; the active tool has a gold fill and inset
-outline. Buttons have accessible names and work with keyboard and touch. Select edits a square,
-Erase removes squares, and Link cuts or restores neighboring connections. Move selects an
-existing square, then relocates it to an empty cell, keeping its properties and cut connections;
-occupied cells select a different square instead of replacing it. Moves support Undo.
-Tool instructions stay visible in the bottom action bar; Board settings remains there.
-Menu holds New board, My boards, Import, Export and Back to main menu. A scrollable palette
-replaces the player cards on the right, showing two columns of actual game tile artwork at both
-desktop and phone landscape sizes.
-Clicking a tile selects it, clicking it again deselects it, and choosing another replaces it.
-Clicking a board space places the selected tile; dragging paints a stroke. With no tile selected,
-clicking an existing square opens its details. The bottom action bar uses the game's glass styling, 740ms width/height morph and short text
-reveal (both respect reduced motion). It floats below the board, beside the palette, and adapts to placement,
+outline. Buttons have accessible names and work with keyboard and touch. Erase removes squares,
+and Link cuts or restores neighboring connections. Board settings is in the top-left info bar.
+Only Place shows the scrollable tile pane on the right, with two columns of actual tile art.
+Choosing a tile keeps Place active; clicking or dragging on the board places it. Returning to
+Place remembers the last chosen tile. The pane is hidden for every other tool and board settings.
+Select clicks one tile or drags a selection rectangle around multiple tiles. Selected tiles have
+gold dashed outlines, and the bottom action bar offers Move and Erase. One selected tile also
+shows its editable details. Erase deletes the whole selection in one undoable action.
+Move hides the canvas cursor and lifts the selection as a group; outlines remain at its original
+cells while the tile art follows the pointer and snaps to the grid. A click (or tap) places the
+group. Destination tiles underneath the group are erased and replaced; selected tiles may overlap
+their own old cells. Tile properties and surviving cut links are kept, and hex-grid movement
+preserves the group's geometry across odd/even rows. The entire group must fit inside the grid;
+out-of-bounds previews have red outlines and cannot be placed. Cancel or Escape abandons the move
+without changing the board. Undo restores the full move, including any replaced tiles.
+Menu holds New board, My boards, Import, Export and Back to main menu.
+The bottom action bar uses the game's glass styling, 740ms width/height morph and short text
+reveal (both respect reduced motion). It floats at the bottom, uses the space beside the tile pane only during Place, and adapts to placement,
 selection, erasing, links or board settings. Shop placement shows a compact district picker; square
 selection shows its editable details; board settings contains layout, author, districts and problems. Save, export and validation feedback appears in the action bar.
 

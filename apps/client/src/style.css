@@ -6544,3 +6544,25 @@ div.sl-inline label {
 .ed-tool-button:focus-visible .ed-tool-tip {
   visibility: visible;
 }
+
+/* Placement owns the tile pane; selection and movement use the full board width. */
+.editor .ed-palette[hidden] {
+  display: none;
+}
+.editor:not(.ed-placing) .ed-actions {
+  right: 10px;
+  left: 76px;
+  max-width: min(920px, calc(100% - 96px));
+}
+.ed-moving .ed-canvas {
+  cursor: none;
+}
+.ed-info > .btn {
+  flex-shrink: 0;
+}
+@media (max-width: 760px), (max-height: 500px) {
+  .ed-info > .btn {
+    padding: 5px 8px;
+    font-size: 11px;
+  }
+}

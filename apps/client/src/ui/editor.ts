@@ -31,15 +31,16 @@ import {
 } from '../boardstore';
 import { clear, h } from './dom';
 import { boardThumb } from './thumb';
+import { moveSelection, selectionPositions } from './editor-selection';
 
-type Tool = SquareType | 'plot' | 'select' | 'move' | 'erase' | 'link';
+type Tool = SquareType | 'plot' | 'select' | 'place' | 'erase' | 'link';
 
 const PALETTE: { group: string; items: { tool: Tool; label: string; hint: string }[] }[] = [
   {
     group: 'Tools',
     items: [
-      { tool: 'select', label: 'Select', hint: 'Pick a square to edit its details.' },
-      { tool: 'move', label: 'Move', hint: 'Pick a square, then an empty space to move it.' },
+      { tool: 'select', label: 'Select', hint: 'Click a tile or drag to select a group.' },
+      { tool: 'place', label: 'Place', hint: 'Choose tiles to place on the board.' },
       { tool: 'erase', label: 'Erase', hint: 'Remove squares (click or drag).' },
       { tool: 'link', label: 'Link', hint: 'Click a link between two squares to cut or restore it.' },
     ],
@@ -292,6 +293,17 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
   let settings = false;
   let district = 0;
   let selected: number | null = null;
+  let selection = new Set<number>();
+  let moving: { anchor: { x: number; y: number }; target: { x: number; y: number } } | null = null;
+  let marquee: { start: { x: number; y: number }; end: { x: number; y: number } } | null = null;
+  let placeTool: Tool = 'shop';
+  const isPlacing = () => tool !== 'select' && tool !== 'erase' && tool !== 'link';
+  const clearSelection = () => {
+    selected = null;
+    selection.clear();
+    moving = null;
+    marquee = null;
+  };
   let hover: { x: number; y: number } | null = null;
   let savedJSON = JSON.stringify(board);
   const undo: string[] = [];
@@ -313,6 +325,24 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
     nameInput,
     status,
   );
+  const settingsButton = h(
+    'button',
+    {
+      class: 'btn small ghost',
+      'aria-pressed': 'false',
+      onclick: () => {
+        settings = !settings;
+        notice = '';
+        clearSelection();
+        tool = 'select';
+        drawPalette();
+        drawInspector();
+        redraw();
+      },
+    },
+    'Board settings',
+  );
+  info.append(settingsButton);
   const zoomChip = h(
     'button',
     {
@@ -440,7 +470,7 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
     const s = JSON.parse(last) as { board: BoardDef; cuts: string[] };
     board = s.board;
     cuts = new Set(s.cuts);
-    selected = null;
+    clearSelection();
     nameInput.value = board.name;
     changed();
   };
@@ -456,7 +486,7 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
       else if (selected != null && selected > i) selected--;
       return true;
     }
-    if (tool === 'select' || tool === 'move' || tool === 'link') return false;
+    if (tool === 'select' || tool === 'place' || tool === 'link') return false;
     const t: SquareType = tool === 'plot' ? 'shop' : tool;
     if (t === 'shop' && !board.districts.length) {
       board.districts.push({ name: DISTRICT_NAMES[0], color: DISTRICT_COLORS[0] });
@@ -536,7 +566,7 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
     const paletteRect = palette.getBoundingClientRect();
     const top =
       Math.max(info.getBoundingClientRect().bottom, topbar.getBoundingClientRect().bottom) - r.top + 6;
-    const right = Math.min(r.width * 0.4, r.right - paletteRect.left + 8);
+    const right = palette.hidden ? 0 : Math.min(r.width * 0.4, r.right - paletteRect.left + 8);
     const bottom = r.height - actionbar.offsetTop + 4;
     const near = nearZoom(r.width, r.height, w, hh);
     const far = Math.min(near, fitZoom(r.width - right, r.height - top - bottom, w, hh));
@@ -558,7 +588,7 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
     paintGrass(ctx);
     // Cache the board and empty grid during camera motion, as the game caches its scenery.
     const imageScale = Math.min(2, Math.max(1, Math.ceil(near * dpr * 2) / 2));
-    const imageKey = `${imageScale}:${JSON.stringify(board)}`;
+    const imageKey = `${imageScale}:${moving ? [...selection].join(',') : ''}:${JSON.stringify(board)}`;
     if (!boardImage || imageKey !== boardImageKey) {
       boardImage = h('canvas') as HTMLCanvasElement;
       boardImage.width = Math.ceil(w * imageScale);
@@ -566,6 +596,16 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
       const ctx = boardImage.getContext('2d')!;
       ctx.scale(imageScale, imageScale);
       const G = preview();
+      if (moving) {
+        // Remove lifted tiles and their roads, then remap the painter's neighbor indices.
+        const visible = G.nodes.filter((sq) => !selection.has(sq.id));
+        const ids = new Map(visible.map((sq, i) => [sq.id, i]));
+        G.nodes = visible.map((sq, id) => ({
+          ...sq,
+          id,
+          nb: sq.nb.filter((i) => ids.has(i)).map((i) => ids.get(i)!),
+        }));
+      }
       paintBoard(ctx, G, false, false);
       // Empty cells
       const used = new Set(board.squares.map((s) => `${s.x},${s.y}`));
@@ -612,21 +652,44 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
       }
     }
     // Hover and selection
-    if (hover && tool !== 'link') {
+    if (hover && tool !== 'link' && !moving) {
       const c = center(hover);
       ctx.lineWidth = 4;
       ctx.strokeStyle = tool === 'erase' ? '#e5484d' : '#ffd166';
       tileShape(ctx, board.layout, c.x, c.y, 46, 14);
       ctx.stroke();
     }
-    if (selected != null && board.squares[selected]) {
-      const c = center(board.squares[selected]);
-      ctx.lineWidth = 5;
-      ctx.strokeStyle = '#4cc9f0';
+    for (const i of selection) {
+      const c = center(board.squares[i]);
+      ctx.lineWidth = 4;
+      ctx.strokeStyle = '#ffd166';
       ctx.setLineDash([10, 6]);
       tileShape(ctx, board.layout, c.x, c.y, 48, 15);
       ctx.stroke();
       ctx.setLineDash([]);
+    }
+    if (marquee) {
+      const { start, end } = marquee;
+      ctx.fillStyle = 'rgba(255,209,102,0.14)';
+      ctx.strokeStyle = '#ffd166';
+      ctx.lineWidth = 2 / scale;
+      ctx.fillRect(start.x, start.y, end.x - start.x, end.y - start.y);
+      ctx.strokeRect(start.x, start.y, end.x - start.x, end.y - start.y);
+    }
+    if (moving) {
+      const G = preview();
+      const positions = selectionPositions(board, selection, moving.anchor, moving.target);
+      const valid = [...positions.values()].every(
+        (c) => c.x >= 0 && c.y >= 0 && c.x < board.cols && c.y < board.rows,
+      );
+      for (const [i, cell] of positions) {
+        paintSquare(ctx, G, { ...G.nodes[i], ...cell });
+        const c = center(cell);
+        ctx.strokeStyle = valid ? '#ffd166' : '#e5484d';
+        ctx.lineWidth = 4;
+        tileShape(ctx, board.layout, c.x, c.y, 48, 15);
+        ctx.stroke();
+      }
     }
     // Cell coordinates along the edges
     ctx.fillStyle = 'rgba(255,255,255,0.75)';
@@ -657,6 +720,20 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
   let painting = false;
   let paintedThisStroke = false;
   const beginStroke = (e: PointerEvent) => {
+    if (moving) {
+      const target = toCell(e);
+      if (!target) return;
+      const result = moveSelection(board, selection, moving.anchor, target, cuts);
+      if (!result) return say('Keep the whole group inside the board.', true);
+      snapshot();
+      board = result.board;
+      cuts = result.cuts;
+      selection = result.selection;
+      moving = null;
+      selected = selection.size === 1 ? [...selection][0] : null;
+      changed();
+      return;
+    }
     if (tool === 'link') {
       const w = toWorld(e);
       for (const [a, b, key] of neighborPairs()) {
@@ -674,35 +751,15 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
     }
     const cell = toCell(e);
     if (!cell) return;
-    if (tool === 'move') {
-      const i = indexAt(cell.x, cell.y);
-      if (i >= 0) {
-        selected = i;
-        notice = '';
-        redraw();
-        drawInspector();
-      } else if (selected != null) {
-        snapshot();
-        const sq = board.squares[selected];
-        // Cuts describe cell pairs: retain any cut that follows this square to its new cell.
-        const previous = { x: sq.x, y: sq.y };
-        const neighbors = board.squares.filter((other) => other !== sq && cuts.has(edgeKey(previous, other)));
-        for (const other of neighbors) cuts.delete(edgeKey(previous, other));
-        sq.x = cell.x;
-        sq.y = cell.y;
-        for (const other of neighbors) cuts.add(edgeKey(sq, other));
-        selected = null;
-        changed();
-      }
-      return;
-    }
     if (tool === 'select') {
       settings = false;
       notice = '';
+      const w = toWorld(e);
+      marquee = { start: w, end: w };
       const i = indexAt(cell.x, cell.y);
+      selection = new Set(i >= 0 ? [i] : []);
       selected = i >= 0 ? i : null;
       redraw();
-      drawInspector();
       return;
     }
     painting = true;
@@ -753,12 +810,43 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
         pinchDistance = distance;
         return;
       }
+      if (moving) {
+        const cell = toCell(e);
+        if (cell) moving.target = cell;
+        redraw();
+        return;
+      }
       if (touchStart && Math.hypot(e.clientX - touchStart.clientX, e.clientY - touchStart.clientY) > 8) {
         beginStroke(touchStart);
         touchStart = null;
       }
     }
     const cell = toCell(e);
+    if (moving) {
+      if (cell) moving.target = cell;
+      redraw();
+      return;
+    }
+    if (marquee) {
+      marquee.end = toWorld(e);
+      const { start, end } = marquee;
+      if (Math.hypot(end.x - start.x, end.y - start.y) * scale > 6) {
+        selection = new Set(
+          board.squares.flatMap((sq, i) => {
+            const c = center(sq);
+            return c.x >= Math.min(start.x, end.x) &&
+              c.x <= Math.max(start.x, end.x) &&
+              c.y >= Math.min(start.y, end.y) &&
+              c.y <= Math.max(start.y, end.y)
+              ? [i]
+              : [];
+          }),
+        );
+        selected = selection.size === 1 ? [...selection][0] : null;
+      }
+      redraw();
+      return;
+    }
     const moved = cell?.x !== hover?.x || cell?.y !== hover?.y;
     hover = cell;
     if (painting && cell && moved && place(cell.x, cell.y)) {
@@ -767,6 +855,11 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
     } else if (moved) redraw();
   });
   const endStroke = () => {
+    if (marquee) {
+      marquee = null;
+      drawInspector();
+      redraw();
+    }
     if (painting && !paintedThisStroke) undo.pop();
     painting = false;
   };
@@ -789,14 +882,14 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
   const toolButtons = new Map<Tool, HTMLButtonElement>();
   const syncTools = () => {
     for (const [t, button] of toolButtons) {
-      const active = tool === t && !settings;
+      const active = (t === 'place' ? isPlacing() : tool === t) && !settings;
       button.classList.toggle('on', active);
       button.setAttribute('aria-pressed', String(active));
     }
   };
   const paths: Record<string, string> = {
     select: 'M5 3l14 10-7 1-3 7z',
-    move: 'M12 3v18M3 12h18M8 7l4-4 4 4M8 17l4 4 4-4M7 8l-4 4 4 4M17 8l4 4-4 4',
+    place: 'M4 4h12v12H4zM18 14v8M14 18h8',
     erase: 'M4 13l9-10 8 8-9 10H9l-5-5zM8 9l8 8M12 21h9',
     link: 'M10 14l4-4M8 16l-1 1a4 4 0 01-6-6l5-5a4 4 0 016 0M16 8l1-1a4 4 0 016 6l-5 5a4 4 0 01-6 0',
   };
@@ -814,8 +907,8 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
         'aria-label': label,
         'aria-pressed': 'false',
         onclick: () => {
-          tool = t;
-          selected = null;
+          tool = t === 'place' ? placeTool : t;
+          clearSelection();
           settings = false;
           notice = '';
           drawPalette();
@@ -882,8 +975,9 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
               title: it.hint,
               'aria-pressed': String(tool === it.tool),
               onclick: () => {
-                tool = tool === it.tool ? 'select' : it.tool;
-                selected = null;
+                tool = it.tool;
+                placeTool = it.tool;
+                clearSelection();
                 settings = false;
                 notice = '';
                 drawPalette();
@@ -924,6 +1018,10 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
     const controls = h('div', { class: 'ed-context-controls' });
     clear(actionContent);
     syncTools();
+    palette.hidden = !isPlacing() || settings;
+    root.classList.toggle('ed-placing', !palette.hidden);
+    root.classList.toggle('ed-moving', !!moving);
+    settingsButton.setAttribute('aria-pressed', String(settings));
     const label = PALETTE.flatMap((g) => g.items).find((it) => it.tool === tool)?.label;
     actionContent.append(
       h(
@@ -932,35 +1030,64 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
         notice ||
           (settings
             ? 'Board settings'
-            : tool === 'select'
-              ? selected == null
-                ? 'Choose a tile, or select a square'
-                : 'Edit square'
-              : tool === 'move'
-                ? selected == null
-                  ? 'Move: select a square'
-                  : 'Move: choose an empty space'
-                : `${label}: ${tool === 'link' ? 'click a connection to cut or restore it' : tool === 'erase' ? 'click or drag to remove squares' : 'click a space to place a tile'}`),
+            : moving
+              ? 'Move the group, then click to place · Esc to cancel'
+              : tool === 'select'
+                ? selection.size
+                  ? `${selection.size} tile${selection.size === 1 ? '' : 's'} selected`
+                  : 'Click a tile, or drag to select a group'
+                : `${label}: ${tool === 'link' ? 'click a connection to cut or restore it' : tool === 'erase' ? 'click or drag to remove squares' : 'click or drag to place tiles'}`),
       ),
       h(
         'div',
         { class: 'ed-action-tools btn-row' },
-        h(
-          'button',
-          {
-            class: `btn small ${settings ? 'on' : 'ghost'}`,
-            onclick: () => {
-              settings = !settings;
-              notice = '';
-              selected = null;
-              tool = 'select';
-              drawPalette();
-              redraw();
-              drawInspector();
-            },
-          },
-          'Board settings',
-        ),
+        ...(tool === 'select' && selection.size && !moving && !settings
+          ? [
+              h(
+                'button',
+                {
+                  class: 'btn small main',
+                  onclick: () => {
+                    const sq = board.squares[[...selection][0]];
+                    moving = { anchor: { x: sq.x, y: sq.y }, target: { x: sq.x, y: sq.y } };
+                    notice = '';
+                    drawInspector();
+                    redraw();
+                  },
+                },
+                'Move',
+              ),
+              h(
+                'button',
+                {
+                  class: 'btn small danger',
+                  onclick: () => {
+                    snapshot();
+                    board.squares = board.squares.filter((_, i) => !selection.has(i));
+                    clearSelection();
+                    changed();
+                  },
+                },
+                'Erase',
+              ),
+            ]
+          : []),
+        ...(moving
+          ? [
+              h(
+                'button',
+                {
+                  class: 'btn small ghost',
+                  onclick: () => {
+                    moving = null;
+                    drawInspector();
+                    redraw();
+                  },
+                },
+                'Cancel',
+              ),
+            ]
+          : []),
       ),
     );
     actionContent.append(controls);
@@ -1074,7 +1201,7 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
         for (const s of board.squares) if (s.t === 'shop' && s.d! > i) s.d!--;
         board.districts.splice(i, 1);
         district = Math.min(district, Math.max(0, board.districts.length - 1));
-        selected = null;
+        clearSelection();
         changed();
       };
       districtPanel.append(
@@ -1128,7 +1255,8 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
 
     // Selected square
     const squarePanel = h('div');
-    squarePanel.hidden = settings || tool !== 'select' || selected == null;
+    squarePanel.hidden =
+      settings || tool !== 'select' || selected == null || selection.size !== 1 || !!moving;
     inspector.append(squarePanel);
     const sq = selected != null ? board.squares[selected] : null;
     squarePanel.append(h('h4', null, 'Selected square'));
@@ -1181,21 +1309,6 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
           h('label', { class: 'check' }, plot, 'Vacant plot (Standard rules)'),
         );
       }
-      squarePanel.append(
-        h(
-          'button',
-          {
-            class: 'btn small danger',
-            onclick: () => {
-              snapshot();
-              board.squares.splice(selected!, 1);
-              selected = null;
-              changed();
-            },
-          },
-          'Delete square',
-        ),
-      );
     }
 
     // Problems
@@ -1216,9 +1329,12 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
       ...(check.errors.length ? [] : [h('p', { class: 'ed-ok' }, 'This board is playable.')]),
     );
     controls.hidden =
-      !settings && tool !== 'shop' && tool !== 'plot' && (tool !== 'select' || selected == null);
+      !settings && tool !== 'shop' && tool !== 'plot' && (tool !== 'select' || selected == null || !!moving);
     actionbar.classList.toggle('ed-action-error', !!notice && noticeBad);
-    actionbar.classList.toggle('ed-action-expanded', settings || (tool === 'select' && selected != null));
+    actionbar.classList.toggle(
+      'ed-action-expanded',
+      settings || (tool === 'select' && selected != null && !moving),
+    );
     morphActions(from);
   };
 
@@ -1260,7 +1376,7 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
     snapshot();
     board = { ...res.board, cols: BOARD_LIMITS.maxCols, rows: BOARD_LIMITS.maxRows };
     deriveCuts();
-    selected = null;
+    clearSelection();
     savedJSON = '';
     changed();
     say(
@@ -1291,7 +1407,7 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
   const load = (b: BoardDef, saved: boolean) => {
     board = { ...structuredClone(b), cols: BOARD_LIMITS.maxCols, rows: BOARD_LIMITS.maxRows };
     deriveCuts();
-    selected = null;
+    clearSelection();
     undo.length = 0;
     savedJSON = saved ? JSON.stringify(board) : '';
     changed();
@@ -1444,6 +1560,13 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
       root.querySelector('.ed-modal')
     )
       return;
+    if (e.key === 'Escape') {
+      if (moving) moving = null;
+      else clearSelection();
+      drawInspector();
+      redraw();
+      return;
+    }
     if (['-', '_', '=', '+'].includes(e.key)) {
       e.preventDefault();
       zoomBy(e.key === '-' || e.key === '_' ? ZOOM_STEP : -ZOOM_STEP);
