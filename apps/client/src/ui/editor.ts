@@ -7,6 +7,8 @@
  */
 import {
   BOARD_LIMITS,
+  K,
+  districtStartingValues,
   BUILT_IN_BOARDS,
   autoEdges,
   newGame,
@@ -28,10 +30,10 @@ import {
   readBoardFile,
   saveBoard,
 } from '../boardstore';
-import { clear, h } from './dom';
+import { clear, h, fmt } from './dom';
 import { boardThumb } from './thumb';
 import { digitPicker } from './digits';
-import { moveSelection, selectionPositions, selectionAnchor } from './editor-selection';
+import { moveSelection, selectionPositions, selectionAnchor, ensureEditorBank } from './editor-selection';
 
 type Tool = SquareType | 'plot' | 'select' | 'place' | 'erase';
 
@@ -54,7 +56,6 @@ const PALETTE: { group: string; items: { tool: Tool; label: string; hint: string
   {
     group: 'Core',
     items: [
-      { tool: 'bank', label: 'Bank', hint: 'Start square; promotions and wins happen here. Exactly one.' },
       { tool: 'spade', label: '♠ Spade', hint: 'Suit square.' },
       { tool: 'heart', label: '♥ Heart', hint: 'Suit square.' },
       { tool: 'diamond', label: '♦ Diamond', hint: 'Suit square.' },
@@ -119,9 +120,9 @@ function blankBoard(
       { name: DISTRICT_NAMES[0], color: DISTRICT_COLORS[0] },
       { name: DISTRICT_NAMES[1], color: DISTRICT_COLORS[1] },
     ],
-    squares: [],
+    squares: [{ x: Math.floor(cols / 2), y: Math.floor(rows / 2), t: 'bank' }],
     edges: [],
-    bank: -1,
+    bank: 0,
   };
 }
 
@@ -430,6 +431,7 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
   // ------------------------------------------------------------ model helpers
 
   const recompute = () => {
+    board = ensureEditorBank(board);
     board.edges = autoEdges(board.squares, new Set(), board.layout);
     board.bank = board.squares.findIndex((s) => s.t === 'bank');
     // Warps pair up in reading order: the 1st with the 2nd, the 3rd with the 4th, and so on.
@@ -465,6 +467,7 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
 
   const place = (x: number, y: number) => {
     const i = indexAt(x, y);
+    if (i >= 0 && board.squares[i].t === 'bank') return false;
     if (tool === 'erase') {
       if (i < 0) return false;
       board.squares.splice(i, 1);
@@ -486,7 +489,6 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
             y,
             t,
             d: district,
-            ...(prev?.t === 'shop' && !prev.autoBase ? { base: prev.base } : { autoBase: true }),
             ...(tool === 'plot' ? { plot: true } : {}),
           }
         : { x, y, t };
@@ -645,10 +647,16 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
       const valid = [...positions.values()].every(
         (c) => c.x >= 0 && c.y >= 0 && c.x < board.cols && c.y < board.rows,
       );
+      const touchesBank = board.squares.some(
+        (sq, i) =>
+          sq.t === 'bank' &&
+          !selection.has(i) &&
+          [...positions.values()].some((c) => c.x === sq.x && c.y === sq.y),
+      );
       for (const [i, cell] of positions) {
         paintSquare(ctx, G, { ...G.nodes[i], ...cell });
         const c = center(cell);
-        ctx.strokeStyle = valid ? '#ffd166' : '#e5484d';
+        ctx.strokeStyle = valid && !touchesBank ? '#ffd166' : '#e5484d';
         ctx.lineWidth = 4;
         tileShape(ctx, board.layout, c.x, c.y, 48, 15);
         ctx.stroke();
@@ -679,7 +687,7 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
       const target = toCell(e);
       if (!target) return;
       const result = moveSelection(board, selection, moving.anchor, target);
-      if (!result) return say('Keep the whole group inside the board.', true);
+      if (!result) return say('Keep the group inside the board and clear of the bank.', true);
       snapshot();
       board = result.board;
       selection = result.selection;
@@ -828,7 +836,7 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
   };
   const paths: Record<string, string> = {
     select: 'M5 3l14 10-7 1-3 7z',
-    place: 'M4 4h12v12H4zM18 14v8M14 18h8',
+    place: 'M15 4l5 5M4 15L15 4a3.5 3.5 0 015 5L9 20l-6 1zM4 15l5 5',
     erase: 'M4 13l9-10 8 8-9 10H9l-5-5zM8 9l8 8M12 21h9',
   };
   for (const { tool: t, label } of PALETTE[0].items) {
@@ -996,19 +1004,25 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
                 },
                 'Move',
               ),
-              h(
-                'button',
-                {
-                  class: 'btn small danger',
-                  onclick: () => {
-                    snapshot();
-                    board.squares = board.squares.filter((_, i) => !selection.has(i));
-                    clearSelection();
-                    changed();
-                  },
-                },
-                'Erase',
-              ),
+              ...([...selection].some((i) => board.squares[i].t === 'bank')
+                ? []
+                : [
+                    h(
+                      'button',
+                      {
+                        class: 'btn small danger',
+                        onclick: () => {
+                          snapshot();
+                          board.squares = board.squares.filter(
+                            (sq, i) => sq.t === 'bank' || !selection.has(i),
+                          );
+                          clearSelection();
+                          changed();
+                        },
+                      },
+                      'Erase',
+                    ),
+                  ]),
             ]
           : []),
         ...(moving
@@ -1113,6 +1127,7 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
       h('h4', null, 'Districts'),
       h('p', { class: 'hint' }, 'New shops go in the active district.'),
     );
+    const pricing = districtStartingValues(board);
     board.districts.forEach((d, i) => {
       const count = board.squares.filter((s) => s.t === 'shop' && s.d === i).length;
       const name = h('input', { value: d.name, maxlength: '24' }) as HTMLInputElement;
@@ -1142,26 +1157,74 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
         clearSelection();
         changed();
       };
+      const row = h(
+        'div',
+        { class: `ed-district ${i === district ? 'on' : ''}` },
+        h('input', {
+          type: 'radio',
+          name: 'ed-district',
+          checked: i === district,
+          title: 'Active district',
+          onchange: () => {
+            district = i;
+            if (tool !== 'plot') tool = 'shop';
+            drawPalette();
+            drawInspector();
+          },
+        }),
+        color,
+        name,
+        h('small', null, String(count)),
+        del,
+      );
+      const valueLabel = h(
+        'span',
+        { class: 'hint' },
+        d.startingValue == null ? `Default · ${fmt(pricing.defaults[i])}` : 'Custom average',
+      );
+      const reset = h(
+        'button',
+        {
+          class: 'btn small ghost',
+          disabled: d.startingValue == null,
+          onclick: () => {
+            snapshot();
+            delete d.startingValue;
+            changed();
+          },
+        },
+        'Reset',
+      );
+      const picker = digitPicker({
+        min: K.districtProperty.minAverage,
+        max: K.districtProperty.maxAverage,
+        value: pricing.averages[i],
+        unit: K.districtProperty.step,
+        suffix: 'G',
+        onChange(value) {
+          snapshot();
+          d.startingValue = value;
+          recompute();
+          redraw();
+          reset.disabled = false;
+          valueLabel.textContent = 'Custom average';
+          status.textContent = 'Unsaved changes';
+          status.classList.add('unsaved');
+        },
+      });
       districtPanel.append(
         h(
           'div',
-          { class: `ed-district ${i === district ? 'on' : ''}` },
-          h('input', {
-            type: 'radio',
-            name: 'ed-district',
-            checked: i === district,
-            title: 'Active district',
-            onchange: () => {
-              district = i;
-              if (tool !== 'plot') tool = 'shop';
-              drawPalette();
-              drawInspector();
-            },
-          }),
-          color,
-          name,
-          h('small', null, String(count)),
-          del,
+          { class: 'ed-district-card' },
+          row,
+          h(
+            'div',
+            { class: 'ed-district-pricing', role: 'group', 'aria-label': `${d.name} starting average` },
+            h('span', { class: 'ed-price-title' }, 'Starting average'),
+            valueLabel,
+            picker.el,
+            reset,
+          ),
         ),
       );
     });
@@ -1217,6 +1280,10 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
     const sq = selected != null ? board.squares[selected] : null;
     if (!sq) squarePanel.append(h('p', { class: 'hint' }, 'Use Select and click a square to edit it.'));
     else {
+      if (sq.t === 'bank')
+        squarePanel.append(
+          h('p', { class: 'hint' }, 'Every board needs a bank. You can move it, but it cannot be erased.'),
+        );
       squarePanel.append(
         h(
           'p',
@@ -1235,50 +1302,13 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
           sq.d = Number(dSel.value);
           changed();
         };
-        const pricing = h(
-          'select',
-          { 'aria-label': 'Starting value' },
-          h('option', { value: 'auto', selected: !!sq.autoBase }, 'Auto'),
-          h('option', { value: 'fixed', selected: !sq.autoBase }, 'Fixed value'),
+        squarePanel.append(
+          h(
+            'p',
+            { class: 'hint' },
+            `Starting value: ${fmt(preview().nodes[selected!].base)}. Set its district's average in Board settings.`,
+          ),
         );
-        pricing.onchange = () => {
-          snapshot();
-          if (pricing.value === 'auto') {
-            sq.autoBase = true;
-            delete sq.base;
-          } else {
-            sq.base = preview().nodes[selected!].base || 200;
-            delete sq.autoBase;
-          }
-          changed();
-        };
-        squarePanel.append(field('Starting value', pricing));
-        if (sq.autoBase)
-          squarePanel.append(
-            h(
-              'p',
-              { class: 'hint' },
-              'Auto: cheaper near the bank, higher farther away. The value is set when the game starts.',
-            ),
-          );
-        else {
-          const picker = digitPicker({
-            min: BOARD_LIMITS.minBase,
-            max: BOARD_LIMITS.maxBase,
-            unit: 10,
-            value: sq.base ?? 200,
-            suffix: 'G',
-            onChange(value) {
-              snapshot();
-              sq.base = value;
-              recompute();
-              redraw();
-              status.textContent = 'Unsaved changes';
-              status.classList.add('unsaved');
-            },
-          });
-          squarePanel.append(field('Property value', picker.el));
-        }
         const plot = h('input', { type: 'checkbox', checked: !!sq.plot }) as HTMLInputElement;
         plot.onchange = () => {
           snapshot();
@@ -1467,8 +1497,8 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
         opt('Starter loop (square)', 'A playable loop around the edge to build on.', () => starterLoop()),
         opt('Lakeside (hex)', 'A winding hex road around a lake, with a shortcut.', () => hexStarter()),
         opt('Hex loop', 'A simple loop on a hex grid.', () => hexLoop()),
-        opt('Blank square grid', 'An empty 32 × 20 square grid.', () => blankBoard()),
-        opt('Blank hex grid', 'An empty 32 × 20 hex grid.', () =>
+        opt('Blank square grid', 'A 32 × 20 square grid with a bank.', () => blankBoard()),
+        opt('Blank hex grid', 'A 32 × 20 hex grid with a bank.', () =>
           blankBoard(BOARD_LIMITS.maxCols, BOARD_LIMITS.maxRows, 'hex'),
         ),
         ...BUILT_IN_BOARDS.map((b) =>

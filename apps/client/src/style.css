@@ -6629,3 +6629,46 @@ div.sl-inline label {
     font-size: 17px;
   }
 }
+
+/* District starting averages stay with the district's name and color in Board settings. */
+.ed-district-card {
+  padding: 8px;
+  margin-bottom: 8px;
+  border: 1px solid var(--glass-line);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.05);
+}
+.ed-district-pricing {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 6px 10px;
+  padding-top: 6px;
+}
+.ed-price-title {
+  font-size: 12px;
+  color: var(--muted);
+}
+.ed-district-pricing .digits {
+  gap: 4px;
+}
+
+.ed-district-pricing > .hint {
+  justify-self: end;
+}
+.ed-district-pricing .digits {
+  justify-content: flex-start;
+  margin: 4px 0;
+}
+.ed-district-pricing .dg-face {
+  width: 32px;
+  height: 36px;
+  font-size: 24px;
+}
+.ed-district-pricing .dg-arrow {
+  width: 32px;
+  height: 24px;
+}
+.ed-district-pricing .dg-col.fixed .dg-face {
+  margin: 24px 0;
+}

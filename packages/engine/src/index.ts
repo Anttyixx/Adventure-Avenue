@@ -6,6 +6,7 @@ export * from './events';
 export * from './rules';
 export * from './rng';
 export * from './setup';
+export * from './property-values';
 export * from './engine';
 export * from './cards';
 export * from './cpu';

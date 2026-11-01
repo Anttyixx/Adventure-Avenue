@@ -99,6 +99,9 @@ const rnd = (n: number) => Math.floor(Math.random() * n);
  * are easy to find. Update this list with each change.
  */
 const RECENT = new Set([
+  'Board builder: protected bank',
+  'Board builder: district averages',
+  'Board builder: place pencil',
   'Board builder: tile options',
   'Board builder: compact action bar',
   'Board builder: auto connections',
@@ -1559,6 +1562,9 @@ export async function openLab(app: HTMLElement, section?: string) {
       }),
       ...(
         [
+          'Board builder: protected bank',
+          'Board builder: district averages',
+          'Board builder: place pencil',
           'Board builder: tile options',
           'Board builder: compact action bar',
           'Board builder: auto connections',
@@ -1580,7 +1586,8 @@ export async function openLab(app: HTMLElement, section?: string) {
             holder,
             label.endsWith('group selection') ||
               label.endsWith('tile options') ||
-              label.endsWith('auto connections')
+              label.endsWith('auto connections') ||
+              label.endsWith('district averages')
               ? BUILT_IN_BOARDS[0]
               : null,
             {
@@ -1602,9 +1609,17 @@ export async function openLab(app: HTMLElement, section?: string) {
                 .querySelector('.ed-canvas')
                 ?.dispatchEvent(new KeyboardEvent('keydown', { key: '-', bubbles: true }));
           }
-          if (label.endsWith('action bar') || label.endsWith('board settings'))
+          if (
+            label.endsWith('action bar') ||
+            label.endsWith('board settings') ||
+            label.endsWith('district averages')
+          )
             holder.querySelector<HTMLButtonElement>('.ed-info > button')?.click();
-          if (label.endsWith('place tiles') || label.endsWith('tile palette'))
+          if (
+            label.endsWith('place tiles') ||
+            label.endsWith('tile palette') ||
+            label.endsWith('place pencil')
+          )
             holder.querySelector<HTMLButtonElement>('.ed-tool-button[aria-label="Place"]')?.click();
           holder.append(
             h(

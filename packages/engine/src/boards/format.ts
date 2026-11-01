@@ -2,6 +2,7 @@
  * Custom boards: the file format players export and import, the rules a board must follow to
  * be playable, and helpers the board editor uses.
  */
+import { K } from '../constants';
 import type { BoardDef, BoardLayout, BoardSquareDef, District, SquareType } from '../types';
 
 export const BOARD_FILE_FORMAT = 'adventure-avenue-board';
@@ -163,12 +164,18 @@ export function validateBoard(def: BoardDef): BoardCheck {
   for (const s of props) {
     if (s.d == null || s.d < 0 || s.d >= def.districts.length)
       errors.push(`Shop ${where(s)} has no district.`);
-    const base = s.base ?? 0;
-    if (!s.plot && !s.autoBase && (base < L.minBase || base > L.maxBase))
-      errors.push(`Shop ${where(s)} needs a value between ${L.minBase}G and ${L.maxBase}G.`);
   }
   def.districts.forEach((d, i) => {
     if (!d.name?.trim()) errors.push(`District ${i + 1} needs a name.`);
+    if (
+      d.startingValue != null &&
+      (!Number.isInteger(d.startingValue) ||
+        d.startingValue < K.districtProperty.minAverage ||
+        d.startingValue > K.districtProperty.maxAverage)
+    )
+      errors.push(
+        `District "${d.name}" needs a starting average between ${K.districtProperty.minAverage}G and ${K.districtProperty.maxAverage}G.`,
+      );
     if (!props.some((s) => s.d === i)) warnings.push(`District "${d.name}" has no squares.`);
     else if (props.filter((s) => s.d === i).every((s) => s.plot))
       warnings.push(
@@ -246,7 +253,11 @@ export function boardToFile(def: BoardDef): BoardFile {
     layout: def.layout ?? 'square',
     cols: def.cols,
     rows: def.rows,
-    districts: def.districts.map((d) => ({ name: d.name, color: d.color })),
+    districts: def.districts.map((d) => ({
+      name: d.name,
+      color: d.color,
+      ...(d.startingValue != null ? { startingValue: d.startingValue } : {}),
+    })),
     squares: def.squares.map((s) => {
       const out: BoardSquareDef = { x: s.x, y: s.y, t: s.t };
       if (s.t === 'shop') {
@@ -307,7 +318,7 @@ export function boardFromFile(data: unknown, id: string): { board?: BoardDef; er
     const q = d as Partial<District>;
     const color = typeof q?.color === 'string' && /^#[0-9a-f]{6}$/i.test(q.color) ? q.color : '#cccccc';
     const name = typeof q?.name === 'string' ? q.name.slice(0, 24) : `District ${i + 1}`;
-    return { name, color };
+    return { name, color, ...(isNum(q.startingValue) ? { startingValue: Math.round(q.startingValue) } : {}) };
   });
   const name = typeof f.name === 'string' ? f.name.slice(0, BOARD_LIMITS.nameLength) : 'Imported board';
   const bank = squares.findIndex((s) => s.t === 'bank');

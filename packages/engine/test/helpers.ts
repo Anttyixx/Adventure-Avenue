@@ -48,7 +48,7 @@ export function makeGame(rules: RuleSet = 'standard', answer: Answerer = () => u
     board: TEST_TOWN,
     plots: 'none',
   });
-  // The map's own prices, without the near-bank discount, so rule tests use round numbers.
+  // Restore the fixture's own prices so rule tests are independent of starting-price policy.
   TEST_TOWN.squares.forEach((s, i) => {
     G.nodes[i].base = s.base ?? 0;
     G.nodes[i].value = s.base ?? 0;

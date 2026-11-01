@@ -18,14 +18,15 @@ export const K = {
   roundCapOptions: [0, 15, 20, 30],
 
   // Shops
-  /**
-   * Property prices near the bank: the district with the shortest average walk from the bank has
-   * its shops' base values cut by this much at game start; the farthest keeps full price, and the
-   * rest scale in between. Prices round to 5G.
-   */
-  nearBank: 0.1,
-  /** Auto-priced custom properties: nearest/farthest walking distance, rounded in G steps. */
-  autoProperty: { min: 100, max: 500, step: 10 },
+  /** District starting averages: distance-based defaults, picker limits and nearest/farthest spread. */
+  districtProperty: {
+    defaultMin: 100,
+    defaultMax: 500,
+    step: 10,
+    minAverage: 80,
+    maxAverage: 1970,
+    spread: 30,
+  },
   feeRate: 0.2,
   /** Fee multiplier by squares owned in the group (index = count, capped at 4). */
   mult: [0, 1, 1.3, 1.6, 2.0],

@@ -36,7 +36,7 @@ the RNG state (`rng`). Nothing in it depends on rendering, so it can be saved, c
 (`cloneState`) and sent over the network as JSON.
 
 `newGame(options)` (`setup.ts`) builds a fresh state from a `BoardDef` and `MatchOptions`: places
-players at the bank, picks vacant plots, applies the near-bank price discount, rolls each
+players at the bank, resolves district starting prices, picks vacant plots, rolls each
 district's stock volatility and shuffles the venture deck.
 
 ### The turn flow (`engine.ts`)
@@ -84,7 +84,7 @@ answers) and real games (answers from the UI or the network).
 
 ### Boards
 
-Boards are data (`BoardDef`): squares on a grid (`x`, `y`, type, district, base price), edges
+Boards are data (`BoardDef`): squares on a grid (`x`, `y`, type and district), edges
 between them, districts and the bank. Built-in boards are text maps in `boards/maps.ts` (one
 character per cell, legend at the top of the file), turned into `BoardDef`s by `fromMap`.
 `boards/format.ts` defines the `.aaboard.json` file format and `validateBoard` (the rules a
@@ -258,7 +258,17 @@ A committed move or group erase takes one undo snapshot. Place alone exposes the
 Board settings is in the top-left info bar. Single selection draws a separate right-side options
 panel; the centered action bar switches to status styling whenever it has no controls.
 `selectionAnchor` chooses the cell nearest the group's center; it never tries to warp the OS cursor.
-`BoardSquareDef.autoBase` is optional and persists through board files. At new-game setup, bank
-BFS distances determine Auto property values from `K.autoProperty`, after the fixed-price district
-discount and before plot selection. Existing game saves already contain resolved prices. New-game
-behavior changes require the protocol version bump.
+`ensureEditorBank` seeds a missing bank and removes duplicate banks when opening an editing board.
+Painting and erasing skip the bank; selection groups cannot replace an unselected bank and their
+Erase action is hidden when they contain one. The Place icon is a pencil.
+
+### District starting prices
+
+`property-values.ts` `districtStartingValues(board)` uses BFS over roads and warp links, then
+resolves each district's distance-based default, optional `District.startingValue` override and
+per-property prices. For four properties the result is average-30, average, average, average+30,
+ranked by walking distance with coordinate/index tie breaks. Other group sizes keep the same
+arithmetic mean. This runs before plot selection in `newGame` and is also the editor's preview.
+Defaults are independent of overrides, so Reset simply deletes `startingValue`. Legacy tile
+`base`/`autoBase` fields remain readable but no longer set new-game prices. Resumed game saves
+already contain resolved base/value fields and keep them. New-game changes bump `NET_VERSION`.

@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import { autoEdges, areNeighbors, type BoardDef } from '@aa/engine';
-import { moveSelection, selectionPositions, selectionAnchor } from '../src/ui/editor-selection';
+import {
+  moveSelection,
+  selectionPositions,
+  selectionAnchor,
+  ensureEditorBank,
+} from '../src/ui/editor-selection';
 
 function fixture(layout: 'square' | 'hex' = 'square'): BoardDef {
   const squares: BoardDef['squares'] = [
@@ -49,13 +54,29 @@ describe('board editor group movement', () => {
     const board = fixture();
     expect(selectionAnchor(board, new Set([0, 1, 2]))).toEqual({ x: 3, y: 2 });
   });
-  it('remaps bank and surviving warp indices after replacing earlier tiles', () => {
+  it('refuses a move onto an unselected bank', () => {
     const board = fixture();
-    const result = moveSelection(board, new Set([3]), board.squares[3], board.squares[0])!;
-    expect(result.board.bank).toBe(-1);
+    expect(moveSelection(board, new Set([3]), board.squares[3], board.squares[0])).toBeNull();
+  });
+  it('allows the bank to move and remaps surviving warp indices when other tiles are replaced', () => {
+    const board = fixture();
+    const bankMove = moveSelection(board, new Set([0]), board.squares[0], { x: 9, y: 9 })!;
+    expect(bankMove.board.squares.filter((s) => s.t === 'bank')).toEqual([{ x: 9, y: 9, t: 'bank' }]);
+    const result = moveSelection(board, new Set([3]), board.squares[3], board.squares[1])!;
+    expect(result.board.bank).toBe(0);
     const warps = result.board.squares.filter((s) => s.t === 'warp');
     expect(warps[0].link).toBe(3);
     expect(warps[1].link).toBe(2);
+  });
+  it('seeds a missing bank without replacing an existing tile, and repairs duplicate banks', () => {
+    const board = { ...fixture(), squares: fixture().squares.filter((s) => s.t !== 'bank') };
+    const before = structuredClone(board);
+    const result = ensureEditorBank(board);
+    expect(result.squares).toHaveLength(board.squares.length + 1);
+    expect(result.squares[result.bank].t).toBe('bank');
+    expect(board).toEqual(before);
+    result.squares.push({ x: 0, y: 0, t: 'bank' });
+    expect(ensureEditorBank(result).squares.filter((s) => s.t === 'bank')).toHaveLength(1);
   });
   it('refuses placement if any part of the group lies outside the grid', () => {
     const board = fixture();

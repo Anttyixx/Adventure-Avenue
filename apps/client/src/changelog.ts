@@ -26,6 +26,23 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: '2026-11-01-editor-bank-district-prices',
+    date: 'Nov 1, 2026',
+    title: 'A safe bank and simple district pricing',
+    features: [
+      {
+        tag: 'better',
+        title: 'Your bank stays on the board',
+        text: 'New boards start with a bank. Move it where you like, but erasing, painting or moving other tiles onto it cannot remove it. Place now has a pencil icon.',
+      },
+      {
+        tag: 'rules',
+        title: 'Set one starting average per district',
+        text: 'In Board settings, set a district’s average starting value or reset it to the distance-based default. In a four-property district, two shops use the average, the nearest costs 30G less and the farthest costs 30G more. Tile-by-tile price controls are gone.',
+      },
+    ],
+  },
+  {
     id: '2026-11-01-editor-tile-options',
     date: 'Nov 1, 2026',
     title: 'Simpler roads and smarter property values',

@@ -33,6 +33,9 @@ export function moveSelection(board: BoardDef, selection: ReadonlySet<number>, a
   )
     return null;
   const occupied = new Set([...positions.values()].map((c) => `${c.x},${c.y}`));
+  // A group may move the bank, but other tiles must never replace it.
+  if (board.squares.some((sq, i) => sq.t === 'bank' && !selection.has(i) && occupied.has(`${sq.x},${sq.y}`)))
+    return null;
   const kept = board.squares
     .map((sq, i) => ({ sq, i }))
     .filter(({ sq, i }) => selection.has(i) || !occupied.has(`${sq.x},${sq.y}`));
@@ -63,4 +66,31 @@ export function selectionAnchor(board: BoardDef, selection: ReadonlySet<number>)
   const x = (Math.min(...centers.map((c) => c.x)) + Math.max(...centers.map((c) => c.x))) / 2;
   const y = (Math.min(...centers.map((c) => c.y)) + Math.max(...centers.map((c) => c.y))) / 2;
   return cellAt(board.layout, board.cols, board.rows, x, y) ?? board.squares[[...selection][0]];
+}
+
+/** Every editing board starts with exactly one bank, repairing older incomplete boards. */
+export function ensureEditorBank(board: BoardDef): BoardDef {
+  const first = board.squares.findIndex((sq) => sq.t === 'bank');
+  if (first >= 0)
+    return {
+      ...board,
+      squares: board.squares.filter((sq, i) => sq.t !== 'bank' || i === first),
+      bank: first,
+    };
+  const center = { x: Math.floor(board.cols / 2), y: Math.floor(board.rows / 2) };
+  const cells = Array.from({ length: board.cols * board.rows }, (_, i) => ({
+    x: i % board.cols,
+    y: Math.floor(i / board.cols),
+  }));
+  const used = new Set(board.squares.map((sq) => `${sq.x},${sq.y}`));
+  cells.sort(
+    (a, b) => Math.hypot(a.x - center.x, a.y - center.y) - Math.hypot(b.x - center.x, b.y - center.y),
+  );
+  const cell = cells.find((c) => !used.has(`${c.x},${c.y}`));
+  const squares = cell
+    ? [...board.squares, { ...cell, t: 'bank' as const }]
+    : board.squares.map((sq) =>
+        sq.x === center.x && sq.y === center.y ? { ...center, t: 'bank' as const } : sq,
+      );
+  return { ...board, squares, bank: squares.findIndex((sq) => sq.t === 'bank') };
 }

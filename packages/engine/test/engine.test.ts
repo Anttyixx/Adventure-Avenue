@@ -566,18 +566,32 @@ describe('shop growth and stock', () => {
   });
 });
 
-describe('property prices near the bank', () => {
-  it('cuts the nearest district by K.nearBank and leaves the farthest at full price', () => {
-    const board = BOARDS.town;
-    const G = newGame({ rules: 'easy', target: 5000, roundCap: 0, seats: cpuSeats(2), seed: 1, board });
-    const cut = G.districts.map((_, d) => {
-      const i = G.nodes.findIndex((s) => s.d === d);
-      return 1 - G.nodes[i].base / board.squares[i].base!;
+describe('district starting prices', () => {
+  it('gives built-in districts a distance-based average and a 30G spread at either end', () => {
+    const G = newGame({
+      rules: 'easy',
+      target: 5000,
+      roundCap: 0,
+      seats: cpuSeats(2),
+      seed: 1,
+      board: BOARDS.town,
     });
-    expect(Math.max(...cut)).toBeGreaterThan(K.nearBank - 0.02);
-    expect(Math.max(...cut)).toBeLessThan(K.nearBank + 0.02);
-    expect(Math.min(...cut)).toBeCloseTo(0);
-    expect(G.nodes.every((s) => s.base % 5 === 0)).toBe(true);
+    const averages = G.districts.map((_, d) => {
+      const prices = G.nodes
+        .filter((s) => s.d === d)
+        .map((s) => s.base)
+        .sort((a, b) => a - b);
+      const average = prices.reduce((a, b) => a + b, 0) / prices.length;
+      expect(prices).toEqual([
+        average - K.districtProperty.spread,
+        average,
+        average,
+        average + K.districtProperty.spread,
+      ]);
+      return average;
+    });
+    expect(Math.min(...averages)).toBe(K.districtProperty.defaultMin);
+    expect(Math.max(...averages)).toBe(K.districtProperty.defaultMax);
   });
 });
 

@@ -1,4 +1,5 @@
 import { K } from './constants';
+import { districtStartingValues } from './property-values';
 import { BOARDS } from './boards/builtin';
 import { buildDeck } from './cards';
 import { rand, shuffle } from './rng';
@@ -14,6 +15,7 @@ export const PLAYER_COLOR_NAMES = ['red', 'blue', 'green', 'purple', 'orange'];
 export function newGame(opts: MatchOptions): GameState {
   const board = opts.board ?? BOARDS[opts.boardId ?? 'town'];
   const seed = opts.seed ?? Math.floor(Math.random() * 2 ** 31);
+  const pricing = districtStartingValues(board);
   const nodes: Square[] = board.squares.map((s, id) => {
     const isPlot = false;
     return {
@@ -24,8 +26,8 @@ export function newGame(opts: MatchOptions): GameState {
       nb: [],
       d: s.d ?? -1,
       g: -1,
-      base: s.base ?? 0,
-      value: isPlot ? 0 : (s.base ?? 0),
+      base: pricing.values[id],
+      value: isPlot ? 0 : pricing.values[id],
       owner: -1,
       b: null,
       lv: 0,
@@ -36,22 +38,6 @@ export function newGame(opts: MatchOptions): GameState {
   for (const [a, b] of board.edges) {
     nodes[a].nb.push(b);
     nodes[b].nb.push(a);
-  }
-  const distances = bankDistances(nodes, board.bank);
-  discountNearBank(nodes, distances, board.districts.length);
-  // Auto values use each property's walk, without applying a second district discount.
-  const reachable = nodes.filter((s) => s.t === 'shop' && Number.isFinite(distances[s.id]));
-  const nearest = Math.min(...reachable.map((s) => distances[s.id]));
-  const farthest = Math.max(...reachable.map((s) => distances[s.id]));
-  const pricing = K.autoProperty;
-  for (const s of nodes) {
-    if (s.t !== 'shop' || !board.squares[s.id].autoBase) continue;
-    const ratio =
-      farthest > nearest && Number.isFinite(distances[s.id])
-        ? (distances[s.id] - nearest) / (farthest - nearest)
-        : 0;
-    s.base = Math.round((pricing.min + ratio * (pricing.max - pricing.min)) / pricing.step) * pricing.step;
-    s.value = s.base;
   }
   const players: Player[] = opts.seats.map((seat, i) => ({
     id: i,
@@ -118,43 +104,6 @@ export function newGame(opts: MatchOptions): GameState {
   G.market = newMarket(G);
   G.hist.push(players.map((p) => netWorth(G, p)));
   return G;
-}
-
-/** Shortest walk from the bank, counting a warp as one movement step. */
-function bankDistances(nodes: Square[], bank: number) {
-  if (!nodes[bank]) return new Array<number>(nodes.length).fill(Infinity);
-  const dist = new Array(nodes.length).fill(Infinity);
-  dist[bank] = 0;
-  const q = [bank];
-  while (q.length) {
-    const n = q.shift()!;
-    const sq = nodes[n];
-    const link = sq.link ?? -1;
-    for (const m of link >= 0 ? [...sq.nb, link] : sq.nb)
-      if (dist[m] === Infinity) {
-        dist[m] = dist[n] + 1;
-        q.push(m);
-      }
-  }
-  return dist;
-}
-
-/** Apply the existing near-bank district discount to fixed prices. */
-function discountNearBank(nodes: Square[], dist: number[], districts: number) {
-  const avg = Array.from({ length: districts }, (_, d) => {
-    const ds = nodes.filter((s) => s.d === d && Number.isFinite(dist[s.id])).map((s) => dist[s.id]);
-    return ds.length ? ds.reduce((a, b) => a + b, 0) / ds.length : NaN;
-  });
-  const known = avg.filter((a) => !Number.isNaN(a));
-  const lo = Math.min(...known);
-  const hi = Math.max(...known);
-  if (!(hi > lo)) return;
-  for (const s of nodes) {
-    if (s.d < 0 || Number.isNaN(avg[s.d]) || !s.base) continue;
-    const cut = K.nearBank * (1 - (avg[s.d] - lo) / (hi - lo));
-    s.base = Math.round((s.base * (1 - cut)) / 5) * 5;
-    s.value = s.base;
-  }
 }
 
 /**

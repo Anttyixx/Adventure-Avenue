@@ -124,6 +124,8 @@ export interface Market {
 export interface District {
   name: string;
   color: string;
+  /** Omit to use the default average based on walking distance from the bank. */
+  startingValue?: number;
 }
 
 export interface GameState {
@@ -190,8 +192,9 @@ export interface BoardSquareDef {
   t: SquareType;
   /** District index for shops and plots. */
   d?: number;
+  /** Legacy per-property price in older board files; new games use district averages. */
   base?: number;
-  /** Assign a starting value from walking distance to the bank at game start. */
+  /** Legacy Auto flag, retained when importing older board files. */
   autoBase?: boolean;
   /** Preferred as a vacant plot when the game's plot setting picks plots. */
   plot?: boolean;

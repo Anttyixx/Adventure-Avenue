@@ -142,14 +142,18 @@ in the browser, and export/import them as `.aaboard.json` files (format tag
 `adventure-avenue-board`, version 1: name, author, grid size, districts, squares and
 connections). Squares in neighboring cells always connect automatically; leave an empty cell between tiles
 to keep paths apart. Opening an old board in the builder restores any previously cut connections. A board is playable only if it has exactly one bank, every suit (or a change-of-suit
-square), at least 4 shops, every shop in a district with a fixed 50-2,000G value or Auto pricing, backstreets in
+square), at least 4 shops, every shop in a district with a valid starting average, backstreets in
 pairs, every warp leading to another warp, and every square reachable from the bank (by road or
 warp). Grids range from 4 x 4 to 32 x 20 (up to 320
 squares). Each board uses a square grid (4 neighbors per cell) or a hex grid (pointy-top
 hexagons, odd rows shifted half a cell right, 6 neighbors per cell); the file stores it as
 `layout`, and files without one are square.
 
-The builder opens an empty maximum-size 32 × 20 grid. New templates, remixes and reopened
+The builder opens a maximum-size 32 × 20 grid with a bank near the center.
+The bank is provided automatically, including for older incomplete boards, and cannot be
+erased or overwritten. It can be selected and moved; selections containing it have no Erase
+action. The erase tool skips it and groups cannot be placed over an unselected bank.
+The bank is not offered in the Place palette. New templates, remixes and reopened
 boards also have the full editing grid. Saved boards and exports keep that editing space.
 Starting a game (including test play) trims unused outer rows and columns from a copy;
 interior gaps, connections, warp partners and hex geometry stay intact.
@@ -174,20 +178,28 @@ An icon-only toolbar is centered vertically 10px from the left edge: Select, Pla
 Hovering or focusing an icon shows its name; the active tool has a gold fill and inset
 outline. Buttons have accessible names and work with keyboard and touch. Erase removes squares.
 Board settings is in the top-left info bar.
-Only Place shows the scrollable tile pane on the right, with two columns of actual tile art.
+Place uses a pencil icon. Only Place shows the scrollable tile pane on the right, with two columns of actual tile art.
 Choosing a tile keeps Place active; clicking or dragging on the board places it. Returning to
 Place remembers the last chosen tile. The pane is hidden for every other tool and board settings.
 Select clicks one tile or drags a selection rectangle around multiple tiles. Selected tiles have
 gold dashed outlines, and the bottom action bar offers Move and Erase. One selected tile opens a
 nonmodal Tile options panel on the right (with a Close button),
-including district, Auto/fixed starting value and vacant-plot status for properties. It hides
-when selection changes to a group or movement begins. New properties default to Auto; older
-fixed values remain unchanged. Auto values are assigned at game start using shortest walking
-distance from the bank (warps count as a step), scaled from 100G for the nearest property to
-500G for the farthest, rounded to 10G. Equal-distance or unreachable editing previews use 100G.
-Auto values skip the existing near-bank district discount; fixed values keep that discount.
-The Auto flag survives saving and exporting/importing the board. Erase deletes the whole
-selection in one undoable action.
+including district and vacant-plot status for properties. It hides when selection changes to a
+group or movement begins. It displays the resolved starting value without a per-tile value editor.
+Starting values are configured per district in Board settings. Each district has a starting-average
+digit picker and Reset button; unset averages use a default based on the district's mean shortest
+walking distance from the bank (warps count as a step). Default averages scale from 100G for the
+nearest district to 500G for the farthest, rounded to 10G. When all district distances tie, or a district is unreachable, its default is 100G.
+Reset removes the override and follows the current distance-based default again.
+Within a four-property district, two properties start exactly at the average, the closest starts
+30G below it and the farthest 30G above it. Distance ties use row, column, then square index for a
+stable result. A single-property district uses the average; with any larger count only the two
+extremes differ, so the arithmetic mean remains the chosen average. Starting averages range from
+80G to 1,970G, keeping all property values within 50G–2,000G. This policy applies to new games on
+all boards and replaces both per-property price overrides and the old near-bank discount. Old
+game saves retain their already-resolved values; legacy board price fields are readable but are
+not used to price new games. District overrides survive saves and board-file round trips.
+Erase deletes a selection without a bank in one undoable action.
 Move hides the canvas cursor and lifts the selection as a group, anchored at its middle
 (within grid snapping) rather than its first tile. Browsers cannot reposition the system cursor;
 the group instead centers under the pointer as it moves. Outlines remain at its original
@@ -267,11 +279,11 @@ raises both fees and shop values.
 | Tide Walk   | 0,5 · 0,4 · 1,3 · 2,3    | 220 / 240 / 260 / 280 | 0,4                    |
 | Plaza       | 4,3 · 5,3 · 6,3          | 320 / 340 / 360       | none                   |
 
-**Near the bank, cheaper:** at game start every district's fixed base values are cut by up to 10%
-(`K.nearBank`) depending on how near it is to the bank: the district with the shortest average walk
-from the bank to its squares (warps count as a step) gets the full 10%, the farthest keeps its map
-prices, and the rest scale in between. Prices round to 5G. This applies to every board, custom ones
-included, and both rule sets; the tables above list the map's prices before it.
+**Starting property prices:** every new game resolves district averages from the current bank
+and roads, unless the district has an explicit starting average. Closest and farthest properties
+receive the -30G/+30G adjustments described in the builder section above. There is no additional
+near-bank percentage discount. The table above records legacy prototype map values; current
+starting values are generated from district averages.
 
 **Rows** (Easy rules): groups are runs of shop squares that are directly connected, broken by any
 non-shop square. They are computed from the graph at game start; a row of 1 can never expand.
