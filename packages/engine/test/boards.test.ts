@@ -42,6 +42,7 @@ function ringBoard(): BoardDef {
     'shop',
     'venture',
   ];
+  for (const i of [7, 15, 16]) types[i] = 'venture';
   const squares: BoardSquareDef[] = cells.map(([x, y], i) => {
     const t = types[i] as BoardSquareDef['t'];
     return t === 'shop' ? { x, y, t, d: i < 9 ? 0 : 1, base: 150 + i * 10 } : { x, y, t };
@@ -88,6 +89,19 @@ describe('custom boards', () => {
     expect(sortEdges(board!.edges)).toEqual(sortEdges(TOWN.edges));
     expect(board!.bank).toBe(TOWN.bank);
     expect(validateBoard(board!).errors).toEqual([]);
+  });
+
+  it('requires exactly four properties in every declared district, including empty districts', () => {
+    const board = structuredClone(TOWN);
+    expect(validateBoard(board).errors).toEqual([]);
+    board.districts.push({ name: 'Empty', color: '#ffffff' });
+    expect(validateBoard(board).errors).toContain('District "Empty" has 0 properties; it needs exactly 4.');
+    board.districts.pop();
+    const prop = board.squares.find((s) => s.t === 'shop' && s.d === 0)!;
+    prop.d = 1;
+    const errors = validateBoard(board).errors.join(' ');
+    expect(errors).toMatch(/3 properties; it needs exactly 4/);
+    expect(errors).toMatch(/5 properties; it needs exactly 4/);
   });
 
   it('rejects files that are not boards', () => {
@@ -175,6 +189,16 @@ function hexBoard(): BoardDef {
       ? { x, y, t: special[i] }
       : { x, y, t: 'shop', d: Math.floor(i / 9), base: 160 + (i % 5) * 20 },
   );
+  const counts = new Map<number, number>();
+  for (const sq of squares)
+    if (sq.t === 'shop') {
+      const n = counts.get(sq.d!) ?? 0;
+      if (n >= 4) {
+        sq.t = 'venture';
+        delete sq.d;
+        delete sq.base;
+      } else counts.set(sq.d!, n + 1);
+    }
   return {
     id: 'hex',
     name: 'Lakeside',

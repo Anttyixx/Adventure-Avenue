@@ -99,6 +99,8 @@ const rnd = (n: number) => Math.floor(Math.random() * n);
  * are easy to find. Update this list with each change.
  */
 const RECENT = new Set([
+  'Board builder: property tile',
+  'Board builder: four properties',
   'Board builder: protected bank',
   'Board builder: district averages',
   'Board builder: place pencil',
@@ -1562,6 +1564,8 @@ export async function openLab(app: HTMLElement, section?: string) {
       }),
       ...(
         [
+          'Board builder: property tile',
+          'Board builder: four properties',
           'Board builder: protected bank',
           'Board builder: district averages',
           'Board builder: place pencil',
@@ -1587,7 +1591,8 @@ export async function openLab(app: HTMLElement, section?: string) {
             label.endsWith('group selection') ||
               label.endsWith('tile options') ||
               label.endsWith('auto connections') ||
-              label.endsWith('district averages')
+              label.endsWith('district averages') ||
+              label.endsWith('four properties')
               ? BUILT_IN_BOARDS[0]
               : null,
             {
@@ -1612,13 +1617,15 @@ export async function openLab(app: HTMLElement, section?: string) {
           if (
             label.endsWith('action bar') ||
             label.endsWith('board settings') ||
-            label.endsWith('district averages')
+            label.endsWith('district averages') ||
+            label.endsWith('four properties')
           )
             holder.querySelector<HTMLButtonElement>('.ed-info > button')?.click();
           if (
             label.endsWith('place tiles') ||
             label.endsWith('tile palette') ||
-            label.endsWith('place pencil')
+            label.endsWith('place pencil') ||
+            label.endsWith('property tile')
           )
             holder.querySelector<HTMLButtonElement>('.ed-tool-button[aria-label="Place"]')?.click();
           holder.append(

@@ -35,7 +35,7 @@ import { boardThumb } from './thumb';
 import { digitPicker } from './digits';
 import { moveSelection, selectionPositions, selectionAnchor, ensureEditorBank } from './editor-selection';
 
-type Tool = SquareType | 'plot' | 'select' | 'place' | 'erase';
+type Tool = Exclude<SquareType, 'plot'> | 'select' | 'place' | 'erase';
 
 const PALETTE: { group: string; items: { tool: Tool; label: string; hint: string }[] }[] = [
   {
@@ -49,8 +49,11 @@ const PALETTE: { group: string; items: { tool: Tool; label: string; hint: string
   {
     group: 'Property',
     items: [
-      { tool: 'shop', label: 'Shop', hint: 'A shop in the active district.' },
-      { tool: 'plot', label: 'Vacant plot', hint: 'Standard rules: players build here. Easy rules: a shop.' },
+      {
+        tool: 'shop',
+        label: 'Property',
+        hint: 'A property in the active district. Game setup chooses which become vacant plots.',
+      },
     ],
   },
   {
@@ -126,6 +129,25 @@ function blankBoard(
   };
 }
 
+/** Keep template roads intact while assigning exactly four properties to each district. */
+function templateDistricts(board: BoardDef): BoardDef {
+  const properties = board.squares.filter((sq) => sq.t === 'shop');
+  const count = Math.floor(properties.length / BOARD_LIMITS.districtSize);
+  board.districts = Array.from(
+    { length: count },
+    (_, i) => board.districts[i] ?? { name: DISTRICT_NAMES[i], color: DISTRICT_COLORS[i] },
+  );
+  properties.forEach((sq, i) => {
+    if (i >= count * BOARD_LIMITS.districtSize) {
+      sq.t = 'venture';
+      delete sq.d;
+      delete sq.base;
+    } else sq.d = Math.floor(i / BOARD_LIMITS.districtSize);
+    delete sq.plot;
+  });
+  return board;
+}
+
 /** A ready-to-play loop around the edge of the grid, to start from. */
 function starterLoop(cols = 10, rows = 6): BoardDef {
   const b = blankBoard(cols, rows);
@@ -158,7 +180,7 @@ function starterLoop(cols = 10, rows = 6): BoardDef {
   });
   b.edges = autoEdges(b.squares);
   b.bank = b.squares.findIndex((s) => s.t === 'bank');
-  return b;
+  return templateDistricts(b);
 }
 
 /**
@@ -238,7 +260,6 @@ function hexStarter(): BoardDef {
       t: 'shop',
       d: district(i),
       base: 160 + ((i * 3) % 8) * 20,
-      ...(i === 9 || i === 28 ? { plot: true } : {}),
     };
   });
   const kinds: SquareType[] = ['shop', 'shop', 'boom', 'shop', 'shop', 'broker'];
@@ -249,7 +270,7 @@ function hexStarter(): BoardDef {
   );
   b.edges = autoEdges(b.squares, new Set(), 'hex');
   b.bank = 0;
-  return b;
+  return templateDistricts(b);
 }
 
 /** A ring around the edge of a hex grid, to start a hex board from. */
@@ -432,6 +453,7 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
 
   const recompute = () => {
     board = ensureEditorBank(board);
+    for (const sq of board.squares) if (sq.t === 'shop') delete sq.plot;
     board.edges = autoEdges(board.squares, new Set(), board.layout);
     board.bank = board.squares.findIndex((s) => s.t === 'bank');
     // Warps pair up in reading order: the 1st with the 2nd, the 3rd with the 4th, and so on.
@@ -476,7 +498,7 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
       return true;
     }
     if (tool === 'select' || tool === 'place') return false;
-    const t: SquareType = tool === 'plot' ? 'shop' : tool;
+    const t: SquareType = tool;
     if (t === 'shop' && !board.districts.length) {
       board.districts.push({ name: DISTRICT_NAMES[0], color: DISTRICT_COLORS[0] });
       district = 0;
@@ -489,7 +511,6 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
             y,
             t,
             d: district,
-            ...(tool === 'plot' ? { plot: true } : {}),
           }
         : { x, y, t };
     if (prev && JSON.stringify(prev) === JSON.stringify(sq)) return false;
@@ -523,6 +544,7 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
   const preview = () => {
     const game = newGame({
       rules: 'standard',
+      plots: 'none',
       target: 5000,
       roundCap: 0,
       seats: [{ name: 'Editor', cpu: true, ch: 'farmer' }],
@@ -888,6 +910,7 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
         example.height = 180;
         const tile = newGame({
           rules: 'standard',
+          plots: 'none',
           target: 5000,
           roundCap: 0,
           seed: 1,
@@ -902,13 +925,12 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
               {
                 x: 0,
                 y: 0,
-                t: it.tool === 'plot' ? 'shop' : (it.tool as SquareType),
-                ...(it.tool === 'shop' || it.tool === 'plot' ? { d: district, base: 200 } : {}),
+                t: it.tool as SquareType,
+                ...(it.tool === 'shop' ? { d: district, base: 200 } : {}),
               },
             ],
           },
         });
-        if (it.tool === 'plot') tile.nodes[0].t = 'plot';
         const ctx = example.getContext('2d')!;
         ctx.scale(1.4, 1.4);
         ctx.translate(-29, -38);
@@ -1110,7 +1132,7 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
     // Districts
     const districtPanel = h('div', { class: 'ed-district-panel' });
     districtPanel.hidden = !settings;
-    if (!settings && (tool === 'shop' || tool === 'plot')) {
+    if (!settings && tool === 'shop') {
       const active = h(
         'select',
         { 'aria-label': 'Active district' },
@@ -1120,12 +1142,16 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
         district = Number(active.value);
         drawPalette();
       };
-      inspector.append(field('District for new shops', active));
+      inspector.append(field('District for new properties', active));
     }
     inspector.append(districtPanel);
     districtPanel.append(
       h('h4', null, 'Districts'),
-      h('p', { class: 'hint' }, 'New shops go in the active district.'),
+      h(
+        'p',
+        { class: 'hint' },
+        'Each district needs exactly 4 properties. New properties go in the active district.',
+      ),
     );
     const pricing = districtStartingValues(board);
     board.districts.forEach((d, i) => {
@@ -1146,7 +1172,7 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
       del.onclick = () => {
         if (
           count &&
-          !confirm(`Delete "${d.name}"? Its ${count} shop${count > 1 ? 's' : ''} will be removed.`)
+          !confirm(`Delete "${d.name}"? Its ${count} propert${count === 1 ? 'y' : 'ies'} will be removed.`)
         )
           return;
         snapshot();
@@ -1167,14 +1193,21 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
           title: 'Active district',
           onchange: () => {
             district = i;
-            if (tool !== 'plot') tool = 'shop';
+            tool = 'shop';
             drawPalette();
             drawInspector();
           },
         }),
         color,
         name,
-        h('small', null, String(count)),
+        h(
+          'small',
+          {
+            class: count === BOARD_LIMITS.districtSize ? '' : 'ed-err',
+            title: 'Properties in this district',
+          },
+          `${count}/${BOARD_LIMITS.districtSize}`,
+        ),
         del,
       );
       const valueLabel = h(
@@ -1288,7 +1321,7 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
         h(
           'p',
           { class: 'hint' },
-          `Column ${sq.x + 1}, row ${sq.y + 1}: ${PALETTE.flatMap((g) => g.items).find((it) => it.tool === (sq.t === 'shop' && sq.plot ? 'plot' : sq.t))?.label ?? sq.t}`,
+          `Column ${sq.x + 1}, row ${sq.y + 1}: ${PALETTE.flatMap((g) => g.items).find((it) => it.tool === sq.t)?.label ?? sq.t}`,
         ),
       );
       if (sq.t === 'shop') {
@@ -1309,17 +1342,7 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
             `Starting value: ${fmt(preview().nodes[selected!].base)}. Set its district's average in Board settings.`,
           ),
         );
-        const plot = h('input', { type: 'checkbox', checked: !!sq.plot }) as HTMLInputElement;
-        plot.onchange = () => {
-          snapshot();
-          if (plot.checked) sq.plot = true;
-          else delete sq.plot;
-          changed();
-        };
-        squarePanel.append(
-          field('District', dSel),
-          h('label', { class: 'check' }, plot, 'Vacant plot (Standard rules)'),
-        );
+        squarePanel.append(field('District', dSel));
       }
     }
 
@@ -1334,17 +1357,16 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
       h(
         'p',
         { class: 'hint' },
-        `${board.squares.length} squares, ${props} shops, ${board.districts.length} districts.`,
+        `${board.squares.length} squares, ${props} properties, ${board.districts.length} districts.`,
       ),
       ...check.errors.map((e) => h('p', { class: 'ed-err' }, e)),
       ...check.warnings.map((w) => h('p', { class: 'ed-warn' }, w)),
       ...(check.errors.length ? [] : [h('p', { class: 'ed-ok' }, 'This board is playable.')]),
     );
-    controls.hidden = !settings && tool !== 'shop' && tool !== 'plot';
+    controls.hidden = !settings && tool !== 'shop';
     actionbar.classList.toggle('ed-action-error', !!notice && noticeBad);
     actionbar.classList.toggle('ed-action-expanded', settings);
-    const hasOptions =
-      settings || tool === 'shop' || tool === 'plot' || (tool === 'select' && selection.size > 0);
+    const hasOptions = settings || tool === 'shop' || (tool === 'select' && selection.size > 0);
     actionbar.classList.toggle('status', !hasOptions);
     morphActions(from);
   };

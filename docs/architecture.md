@@ -91,7 +91,11 @@ character per cell, legend at the top of the file), turned into `BoardDef`s by `
 board must meet to be playable), shared by the board editor and imports. Grids are `square` or
 `hex` (pointy-top, odd rows shifted right); `apps/client/src/geometry.ts` places cells and draws
 tile outlines for both. Which properties start as vacant plots is not fixed by the map: `newGame`
-picks them from the plot setting (`MatchOptions.plots`), preferring squares the map marks.
+picks 0/1/2/3/4 uniformly shuffled properties per district from the plot setting
+(`MatchOptions.plots`), using `G.rng`. No board-wide cap or legacy plot hints influence selection.
+Validation requires exactly four properties per declared district, including rejecting empty ones.
+The editor represents all properties as board `shop` tiles, strips legacy plot hints and previews
+with `plots: none`; only a running game distinguishes shops from vacant plots.
 
 ## The client (`apps/client`)
 

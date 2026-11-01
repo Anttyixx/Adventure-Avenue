@@ -245,7 +245,7 @@ function rulesPanel(st: RuleSettings, edit?: (patch: Partial<RuleSettings>) => v
               { class: 'hint' },
               st.plots === 'all'
                 ? 'Every property starts as a vacant plot, and any building can be built any number of times.'
-                : `Some properties start as vacant plots (up to ${K.plotMax}). Each building can be built at most ${K.buildingLimit} times.`,
+                : `Each district starts with ${K.plotsPerDistrict[st.plots]} random vacant plot${K.plotsPerDistrict[st.plots] === 1 ? '' : 's'} out of 4 properties. Each building can be built at most ${K.buildingLimit} times.`,
             )
           : null,
         st.rules === 'standard'

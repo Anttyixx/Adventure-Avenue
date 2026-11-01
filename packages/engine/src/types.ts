@@ -196,7 +196,7 @@ export interface BoardSquareDef {
   base?: number;
   /** Legacy Auto flag, retained when importing older board files. */
   autoBase?: boolean;
-  /** Preferred as a vacant plot when the game's plot setting picks plots. */
+  /** Legacy board hint; new games pick vacant plots randomly from the game setting. */
   plot?: boolean;
   /** Warp squares: the index of the square landing here takes you to. */
   link?: number;

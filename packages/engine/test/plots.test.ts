@@ -14,20 +14,49 @@ const plotCount = (plots: PlotSetting, boardId?: string) =>
   game(plots, boardId).nodes.filter((s) => s.t === 'plot').length;
 
 describe('vacant plot setting', () => {
-  it('turns more properties into plots for each step up, at most 21 unless all', () => {
-    expect(plotCount('none')).toBe(0);
-    const counts = (['few', 'some', 'lot'] as PlotSetting[]).map((p) => plotCount(p));
-    expect(counts[0]).toBeGreaterThan(0);
-    expect(counts[1]).toBeGreaterThan(counts[0]);
-    expect(counts[2]).toBeGreaterThan(counts[1]);
-    for (const b of BUILT_IN_BOARDS) expect(plotCount('lot', b.id)).toBeLessThanOrEqual(K.plotMax);
-    expect(plotCount('all')).toBe(32);
-  });
+  it.each(['none', 'few', 'some', 'lot', 'all'] as PlotSetting[])(
+    '%s selects the exact count in every district on every built-in board',
+    (setting) => {
+      for (const board of BUILT_IN_BOARDS) {
+        const G = game(setting, board.id);
+        for (let d = 0; d < G.districts.length; d++) {
+          const properties = G.nodes.filter((s) => s.d === d && (s.t === 'shop' || s.t === 'plot'));
+          expect(properties).toHaveLength(4);
+          expect(
+            properties.filter((s) => s.t === 'plot'),
+            `${board.name}, district ${d}`,
+          ).toHaveLength(K.plotsPerDistrict[setting]);
+          expect(properties.filter((s) => s.t === 'shop')).toHaveLength(4 - K.plotsPerDistrict[setting]);
+        }
+      }
+      expect(plotCount(setting)).toBe(8 * K.plotsPerDistrict[setting]);
+    },
+  );
 
-  it('leaves every district at least one shop unless all', () => {
-    const G = game('lot');
-    for (let d = 0; d < G.districts.length; d++)
-      expect(G.nodes.some((s) => s.d === d && s.t === 'shop')).toBe(true);
+  it('uses seeded random selection, with no preference for legacy board plot hints', () => {
+    const board = BUILT_IN_BOARDS[0];
+    const withHints = { ...board, squares: board.squares.map((s, i) => ({ ...s, plot: i % 2 === 0 })) };
+    const start = (b: typeof board, seed: number) =>
+      newGame({
+        rules: 'standard',
+        target: 5000,
+        roundCap: 0,
+        seats: cpuSeats(4),
+        seed,
+        board: b,
+        plots: 'some',
+      });
+    expect(start(board, 3)).toEqual(start(withHints, 3));
+    const choices = new Set(
+      Array.from({ length: 12 }, (_, i) =>
+        JSON.stringify(
+          start(board, i + 1)
+            .nodes.filter((s) => s.t === 'plot')
+            .map((s) => s.id),
+        ),
+      ),
+    );
+    expect(choices.size).toBeGreaterThan(1);
   });
 
   it('easy rules have no plots whatever the setting', () => {

@@ -142,7 +142,8 @@ in the browser, and export/import them as `.aaboard.json` files (format tag
 `adventure-avenue-board`, version 1: name, author, grid size, districts, squares and
 connections). Squares in neighboring cells always connect automatically; leave an empty cell between tiles
 to keep paths apart. Opening an old board in the builder restores any previously cut connections. A board is playable only if it has exactly one bank, every suit (or a change-of-suit
-square), at least 4 shops, every shop in a district with a valid starting average, backstreets in
+square), at least one district, exactly 4 properties in every declared district, a valid starting
+average for each district, backstreets in
 pairs, every warp leading to another warp, and every square reachable from the bank (by road or
 warp). Grids range from 4 x 4 to 32 x 20 (up to 320
 squares). Each board uses a square grid (4 neighbors per cell) or a hex grid (pointy-top
@@ -178,13 +179,16 @@ An icon-only toolbar is centered vertically 10px from the left edge: Select, Pla
 Hovering or focusing an icon shows its name; the active tool has a gold fill and inset
 outline. Buttons have accessible names and work with keyboard and touch. Erase removes squares.
 Board settings is in the top-left info bar.
+The builder has one Property tile instead of separate Shop and Vacant plot choices. The saved
+board records property locations and districts, not which start vacant. The editor preview and
+board thumbnails always show property tiles, and editing an old board discards its plot hints.
 Place uses a pencil icon. Only Place shows the scrollable tile pane on the right, with two columns of actual tile art.
 Choosing a tile keeps Place active; clicking or dragging on the board places it. Returning to
 Place remembers the last chosen tile. The pane is hidden for every other tool and board settings.
 Select clicks one tile or drags a selection rectangle around multiple tiles. Selected tiles have
 gold dashed outlines, and the bottom action bar offers Move and Erase. One selected tile opens a
 nonmodal Tile options panel on the right (with a Close button),
-including district and vacant-plot status for properties. It hides when selection changes to a
+including district for properties. It hides when selection changes to a
 group or movement begins. It displays the resolved starting value without a per-tile value editor.
 Starting values are configured per district in Board settings. Each district has a starting-average
 digit picker and Reset button; unset averages use a default based on the district's mean shortest
@@ -193,8 +197,8 @@ nearest district to 500G for the farthest, rounded to 10G. When all district dis
 Reset removes the override and follows the current distance-based default again.
 Within a four-property district, two properties start exactly at the average, the closest starts
 30G below it and the farthest 30G above it. Distance ties use row, column, then square index for a
-stable result. A single-property district uses the average; with any larger count only the two
-extremes differ, so the arithmetic mean remains the chosen average. Starting averages range from
+stable result. Incomplete editing previews keep the average with only their nearest/farthest properties offset,
+but districts with any count other than four cannot be played. Starting averages range from
 80G to 1,970G, keeping all property values within 50G–2,000G. This policy applies to new games on
 all boards and replaces both per-property price overrides and the old near-bank discount. Old
 game saves retain their already-resolved values; legacy board price fields are readable but are
@@ -320,13 +324,23 @@ shops and buildings charge nothing until the owner's next turn starts.
 
 ## Vacant plots (Standard rules)
 
-Some district squares start empty, as set by the **Vacant plots** option when a game starts: None,
-A few (15% of properties), Some (30%), A lot (50%) or All. Except with All there are at most 21 plots
-(spread over the districts, every district keeping at least one shop) and at most 3 of each
-building on the board (7 buildings x 3 = 21); with All every property is a plot and buildings have
-no limit. Squares a custom board marks as plots are picked first. The first player to stop on a
-plot may build one of seven buildings, and each building has one effect on rivals and a different
-one for its owner. Built plots show only the building's art on the tile (no name).
+Every valid district has exactly four properties. Game creation uses the **Vacant plots** setting
+to choose that many random vacant plots independently in each district:
+
+| Setting | Vacant plots per district | Shops per district |
+| ------- | ------------------------- | ------------------ |
+| None    | 0                         | 4                  |
+| A few   | 1                         | 3                  |
+| Some    | 2                         | 2                  |
+| A lot   | 3                         | 1                  |
+| All     | 4                         | 0                  |
+
+Selection uses the seeded game RNG, so every device gets the same result. There is no board-wide
+plot cap and legacy map plot hints do not affect the choice. Easy rules always make all properties
+shops. Existing game saves keep their already-chosen plots.
+Each building can be built at most 3 times, except with All, which has no building limit. The
+first player to stop on a plot may build one of seven buildings; each has an effect on rivals and
+a different one for its owner. Built plots show only the building's art on the tile (no name).
 
 | Building      | Cost   | When a rival lands                                                                                                                         | When the owner lands                                                                  | Fee label on board |
 | ------------- | ------ | ------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------- | ------------------ |

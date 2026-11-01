@@ -26,6 +26,23 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: '2026-11-01-four-properties-random-plots',
+    date: 'Nov 1, 2026',
+    title: 'Four properties in every district',
+    features: [
+      {
+        tag: 'rules',
+        title: 'Exactly four properties',
+        text: 'Each district needs exactly four properties before a board can be played. The builder now has one Property tile, with no preset shops or vacant plots.',
+      },
+      {
+        tag: 'rules',
+        title: 'Vacant plots chosen per district',
+        text: 'Game setup randomly chooses 0, 1, 2, 3 or all 4 properties in each district as vacant plots for None, A few, Some, A lot or All. There is no board-wide plot cap. Easy games keep every property as a shop.',
+      },
+    ],
+  },
+  {
     id: '2026-11-01-editor-bank-district-prices',
     date: 'Nov 1, 2026',
     title: 'A safe bank and simple district pricing',

@@ -10,10 +10,9 @@ export const K = {
   targetMax: 90000,
   /** The die has faces 1 to dieSides. */
   dieSides: 7,
-  /** Share of properties that start as vacant plots for each plot setting (Standard rules). */
-  plotShare: { none: 0, few: 0.15, some: 0.3, lot: 0.5, all: 1 },
-  /** Most vacant plots on a board, and of each building, unless the setting is 'all'. */
-  plotMax: 21,
+  /** Random vacant plots per four-property district at game creation (Standard rules). */
+  plotsPerDistrict: { none: 0, few: 1, some: 2, lot: 3, all: 4 },
+  /** Most copies of each vacant-plot building, unless the plot setting is 'all'. */
   buildingLimit: 3,
   roundCapOptions: [0, 15, 20, 30],
 

@@ -161,7 +161,7 @@ function plots(): Node[] {
     h(
       'p',
       null,
-      `Some properties start as empty plots (set in game setup). The first player to stop on one may build on it. Each building can be built at most ${K.buildingLimit} times, unless every property is a plot. Before rolling you can renovate a building into another for ${fmt(K.renovate)} plus the new building's price.`,
+      `Every district has four properties. Game setup randomly makes 0, 1, 2, 3 or 4 of them vacant for None, A few, Some, A lot or All. The first player to stop on one may build on it. Each building can be built at most ${K.buildingLimit} times, unless every property is a plot. Before rolling you can renovate a building into another for ${fmt(K.renovate)} plus the new building's price.`,
     ),
     h(
       'div',

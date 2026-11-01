@@ -53,18 +53,9 @@ export function boardThumb(board: BoardDef, maxW = 220, maxH = 130): HTMLCanvasE
   for (const sq of board.squares) {
     const c = pos(sq);
     ctx.fillStyle =
-      sq.t === 'shop'
-        ? sq.plot
-          ? '#ffffff'
-          : (board.districts[sq.d ?? -1]?.color ?? '#cccccc')
-        : (TYPE_COLOR[sq.t] ?? '#fdfbf5');
+      sq.t === 'shop' ? (board.districts[sq.d ?? -1]?.color ?? '#cccccc') : (TYPE_COLOR[sq.t] ?? '#fdfbf5');
     tileShape(ctx, board.layout, c.x, c.y, s / 2, Math.max(1, s * 0.2));
     ctx.fill();
-    if (sq.t === 'shop' && sq.plot) {
-      ctx.strokeStyle = board.districts[sq.d ?? -1]?.color ?? '#888';
-      ctx.lineWidth = 1.5;
-      ctx.stroke();
-    }
   }
   return cv;
 }

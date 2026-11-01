@@ -16,14 +16,14 @@ export const BOARD_LIMITS = {
   maxSquares: 320,
   minProperties: 4,
   maxDistricts: 8,
-  /** Shops and plots per district (built-in boards use exactly this many). */
+  /** Every declared district must contain exactly this many property tiles. */
   districtSize: 4,
   minBase: 50,
   maxBase: 2000,
   nameLength: 32,
 };
 
-/** Every square type a board may use. `plot` is stored as a shop with `plot: true`. */
+/** Every board tile type. Property tiles use `shop`; vacant plots are chosen at game start. */
 export const PLACEABLE: SquareType[] = [
   'shop',
   'bank',
@@ -157,13 +157,13 @@ export function validateBoard(def: BoardDef): BoardCheck {
     );
 
   const props = sq.filter((s) => s.t === 'shop');
-  if (props.length < L.minProperties) errors.push(`Add at least ${L.minProperties} shops.`);
-  if (def.districts.length === 0 && props.length) errors.push('Add a district for the shops.');
+  if (props.length < L.minProperties) errors.push(`Add at least ${L.minProperties} properties.`);
+  if (def.districts.length === 0 && props.length) errors.push('Add a district for the properties.');
   if (def.districts.length > L.maxDistricts)
     errors.push(`A board can have at most ${L.maxDistricts} districts.`);
   for (const s of props) {
     if (s.d == null || s.d < 0 || s.d >= def.districts.length)
-      errors.push(`Shop ${where(s)} has no district.`);
+      errors.push(`Property ${where(s)} has no district.`);
   }
   def.districts.forEach((d, i) => {
     if (!d.name?.trim()) errors.push(`District ${i + 1} needs a name.`);
@@ -176,16 +176,9 @@ export function validateBoard(def: BoardDef): BoardCheck {
       errors.push(
         `District "${d.name}" needs a starting average between ${K.districtProperty.minAverage}G and ${K.districtProperty.maxAverage}G.`,
       );
-    if (!props.some((s) => s.d === i)) warnings.push(`District "${d.name}" has no squares.`);
-    else if (props.filter((s) => s.d === i).every((s) => s.plot))
-      warnings.push(
-        `District "${d.name}" only has vacant plots, so it has no stock price until one is built.`,
-      );
     const n = props.filter((s) => s.d === i).length;
-    if (n && n !== L.districtSize)
-      warnings.push(
-        `District "${d.name}" has ${n} shops and plots; districts work best with exactly ${L.districtSize}.`,
-      );
+    if (n !== L.districtSize)
+      errors.push(`District "${d.name}" has ${n} properties; it needs exactly ${L.districtSize}.`);
   });
 
   const backs = sq.filter((s) => s.t === 'back').length;

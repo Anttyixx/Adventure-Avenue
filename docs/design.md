@@ -365,7 +365,8 @@ The board is drawn in `board.ts` in its own style: bright and physical, unlike t
   44px icon buttons (Select, Place, Erase), drawn as simple 24px line SVGs; Place is a pencil. The active tool
   uses gold with a contrasting inset outline; tool names appear to the right on hover or keyboard
   focus. Accessible button names and bottom-bar instructions cover touch use. Only Place shows
-  the right-hand tile pane. Board settings is a small ghost button in the top-left info bar.
+  the right-hand tile pane. The only property option is Property; there are no Shop/Vacant plot
+  choices or per-tile vacancy checkboxes. Preview properties with the game painter and plots disabled. Board settings is a small ghost button in the top-left info bar.
   Select draws a translucent gold drag rectangle and dashed gold tile outlines. Its Move and
   Erase actions live in the bottom bar. While moving, hide the canvas cursor, show only source
   outlines at the old cells and draw the group at its snapped destination with gold outlines
@@ -373,12 +374,13 @@ The board is drawn in `board.ts` in its own style: bright and physical, unlike t
   visible; Escape also cancels.
 - **Builder tile options:** a nonmodal glass panel at the top right, with a title and Close
   button. Show only for one selected tile, never during a group move. Keep it above the bottom
-  bar and scroll its body on phones. Show district, vacant-plot status and a read-only starting
+  bar and scroll its body on phones. Show district and a read-only starting
   value for properties; the bank explains that it can move but cannot be erased.
 - **District starting values:** each district card in Board settings groups its name/color,
   Starting average digit picker, Default/Custom hint and Reset button. Use the compact shared
   digit picker; keep Reset beside it so it remains reachable on landscape phones. Disable Reset
-  while the district already follows its default. Hide Erase for any selection containing the bank.
+  while the district already follows its default. Show property counts as n/4, marking incomplete
+  districts in the error color. Hide Erase for any selection containing the bank.
 - **Builder action bar:** center on the full window using a 50% anchor and horizontal translation,
   independent of the right pane. Size to the text and controls up to window margins. No controls
   means the compact status style (no minimum prompt height); choices expand it. Keep the existing

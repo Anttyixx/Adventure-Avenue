@@ -4,7 +4,7 @@ import { BOARDS } from './boards/builtin';
 import { buildDeck } from './cards';
 import { rand, shuffle } from './rng';
 import { computeRows, netWorth } from './rules';
-import type { BoardSquareDef, GameState, Market, MatchOptions, Player, Square } from './types';
+import type { GameState, Market, MatchOptions, Player, Square } from './types';
 
 export const PLAYER_COLORS = ['#e5484d', '#3e7bfa', '#30a46c', '#a855f7', '#f76b15'];
 
@@ -89,7 +89,7 @@ export function newGame(opts: MatchOptions): GameState {
     plots: opts.rules === 'standard' ? (opts.plots ?? 'few') : 'none',
     stocks: opts.stocks ?? 'dynamic',
   };
-  if (opts.rules === 'standard') choosePlots(G, board.squares);
+  if (opts.rules === 'standard') choosePlots(G);
   if (opts.rules === 'standard') {
     G.groups = board.districts.map((_, d) => nodes.filter((s) => s.d === d).map((s) => s.id));
   } else {
@@ -106,36 +106,18 @@ export function newGame(opts: MatchOptions): GameState {
   return G;
 }
 
-/**
- * Turn some properties into vacant plots, as many as the game's plot setting asks for (at most
- * K.plotMax unless 'all'). Squares the board marks as plots go first; the rest are random,
- * spread evenly over the districts, and no district is left without a shop unless 'all'.
- */
-function choosePlots(G: GameState, defs: BoardSquareDef[]) {
+/** Pick the configured number of vacant plots independently in each district, using the game RNG. */
+function choosePlots(G: GameState) {
   const setting = G.plots ?? 'few';
-  const props = G.nodes.filter((s) => s.t === 'shop');
-  const want =
-    setting === 'all' ? props.length : Math.min(K.plotMax, Math.round(props.length * K.plotShare[setting]));
-  if (!want) return;
-  const order = shuffle(G, props.slice()).sort(
-    (a, b) => Number(!!defs[b.id].plot) - Number(!!defs[a.id].plot),
-  );
-  const perDistrict = new Map<number, number>();
-  const size = (d: number) => props.filter((s) => s.d === d).length;
-  const chosen: Square[] = [];
-  while (chosen.length < want) {
-    // The district with the fewest plots so far, taking marked and earlier-shuffled squares first.
-    const next = order
-      .filter((s) => !chosen.includes(s))
-      .filter((s) => setting === 'all' || (perDistrict.get(s.d) ?? 0) < size(s.d) - 1)
-      .sort((a, b) => (perDistrict.get(a.d) ?? 0) - (perDistrict.get(b.d) ?? 0))[0];
-    if (!next) break;
-    chosen.push(next);
-    perDistrict.set(next.d, (perDistrict.get(next.d) ?? 0) + 1);
-  }
-  for (const s of chosen) {
-    s.t = 'plot';
-    s.value = 0;
+  const count = K.plotsPerDistrict[setting];
+  if (!count) return;
+  for (let d = 0; d < G.districts.length; d++) {
+    const properties = G.nodes.filter((s) => s.t === 'shop' && s.d === d);
+    const chosen = shuffle(G, properties).slice(0, setting === 'all' ? properties.length : count);
+    for (const sq of chosen) {
+      sq.t = 'plot';
+      sq.value = 0;
+    }
   }
 }
 
