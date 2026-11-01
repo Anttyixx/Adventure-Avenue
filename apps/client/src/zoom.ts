@@ -2,6 +2,13 @@
 export const ZOOM_MAX_OUT = 1.3;
 /** One wheel notch or key press changes the zoom chip by 5%. */
 export const ZOOM_STEP = ZOOM_MAX_OUT / 30;
+/** Builder-only close extension: ten more 5% steps above the existing 250% view. */
+export const EDITOR_ZOOM_MIN_OUT = -ZOOM_MAX_OUT / 3;
+
+/** The builder keeps its original percent mapping, extending it to 300% at the close limit. */
+export function editorZoomPercent(out: number) {
+  return Math.round(250 - (150 * Math.max(EDITOR_ZOOM_MIN_OUT, Math.min(ZOOM_MAX_OUT, out))) / ZOOM_MAX_OUT);
+}
 
 /** Close view: 1.65 times screen fit, or 2.2 on small screens. */
 export function nearZoom(width: number, height: number, worldWidth: number, worldHeight: number) {

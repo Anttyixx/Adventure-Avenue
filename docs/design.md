@@ -391,7 +391,11 @@ The board is drawn in `board.ts` in its own style: bright and physical, unlike t
 - **Builder action bar:** center on the full window using a 50% anchor and horizontal translation,
   independent of the right pane. Size to the text and controls up to window margins. No controls
   means the compact status style (no minimum prompt height); choices expand it. Keep the existing
-  shell morph and text reveal, with reduced motion respected.
+  shell morph, but measure its content at the final width/height and hold both for the whole
+  resize. Its fixed content must have no `max-width: 100%` clamp from the animated shell.
+  Builder text and newly shown options use a smooth 220ms opacity/4px settle rather than the
+  game's stepped text sweep. Release old locks before retargeting; reduced motion uses natural
+  layout immediately.
 - **Builder:** hide decorative scenery (trees, ponds and flower beds) while editing; keep
   grass, roads and playable tiles. Games and test play show scenery as usual.
 - **Tiles** (86 units on a 100-unit grid): cream `#fdfbf5` (bank `#fff6d6`), rounded (radius 12),

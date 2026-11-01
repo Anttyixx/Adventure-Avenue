@@ -19,7 +19,16 @@ import {
   type SquareType,
 } from '@aa/engine';
 import { paintBoard, paintGrass, paintSquare, worldSize } from '../board';
-import { ZOOM_MAX_OUT, ZOOM_STEP, fitZoom, nearZoom, zoomScale, wheelZoomStep } from '../zoom';
+import {
+  EDITOR_ZOOM_MIN_OUT,
+  editorZoomPercent,
+  ZOOM_MAX_OUT,
+  ZOOM_STEP,
+  fitZoom,
+  nearZoom,
+  zoomScale,
+  wheelZoomStep,
+} from '../zoom';
 import { cellAt, cellCenter, tileShape } from '../geometry';
 import {
   deleteBoard,
@@ -339,11 +348,11 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
       title: 'Zoom: scroll, pinch or - / +. Tap to reset.',
       'aria-label': 'Reset board zoom',
       onclick: () => {
-        zoomOut = 0;
+        zoomOut = EDITOR_ZOOM_MIN_OUT;
         redraw();
       },
     },
-    '250%',
+    '300%',
   );
   const topbar = h(
     'div',
@@ -383,6 +392,9 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
   let noticeTimer = 0;
   let actionAnimation: Animation | null = null;
   let lastPrompt = '';
+  let lastButtons = '';
+  let lastContext = '';
+  let entranceAnimations: Animation[] = [];
 
   const say = (text: string, bad = false) => {
     notice = text;
@@ -395,27 +407,49 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
     }, 3200);
   };
 
-  // Match the game's 740 ms shell morph while keeping the new content at its final size.
+  // Release the old fixed layout before measuring the next destination, even on interruption.
+  const stopActionMorph = () => {
+    if (actionAnimation) {
+      actionAnimation.onfinish = null;
+      actionAnimation.cancel();
+      actionAnimation = null;
+    }
+    actionbar.classList.remove('morphing');
+    actionContent.style.removeProperty('--ed-content-width');
+    actionContent.style.removeProperty('--ed-content-height');
+  };
+
+  // Measure at natural size once; the animated shell must never constrain its contents.
   const morphActions = (from: DOMRect) => {
     const to = actionbar.getBoundingClientRect();
+    const contentSize = actionContent.getBoundingClientRect();
+    const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
     const prompt = actionContent.querySelector<HTMLElement>('.prompt-text');
-    if (prompt && prompt.textContent !== lastPrompt) {
-      lastPrompt = prompt.textContent ?? '';
-      if (!matchMedia('(prefers-reduced-motion: reduce)').matches)
-        prompt.animate(
-          [
-            { clipPath: 'inset(0 100% 0 0)', opacity: 0.6 },
-            { clipPath: 'inset(0)', opacity: 1 },
-          ],
-          { duration: 220, easing: 'steps(16, end)' },
+    const buttons = actionContent.querySelector<HTMLElement>('.ed-action-tools');
+    const context = actionContent.querySelector<HTMLElement>('.ed-context-controls');
+    const buttonKey = buttons?.textContent ?? '';
+    const contextKey = settings ? 'settings' : tool === 'shop' ? 'districts' : '';
+    const enter = (el: HTMLElement | null) => {
+      if (el && !reduced)
+        entranceAnimations.push(
+          el.animate(
+            [
+              { opacity: 0, transform: 'translateY(4px)' },
+              { opacity: 1, transform: 'translateY(0)' },
+            ],
+            { duration: 220, easing: 'ease-out' },
+          ),
         );
-    }
-    if (
-      matchMedia('(prefers-reduced-motion: reduce)').matches ||
-      (Math.abs(to.width - from.width) < 1 && Math.abs(to.height - from.height) < 1)
-    )
-      return;
-    actionContent.style.width = `${actionContent.getBoundingClientRect().width}px`;
+    };
+    if (prompt?.textContent !== lastPrompt) enter(prompt);
+    if (buttonKey && buttonKey !== lastButtons) enter(buttons);
+    if (contextKey === 'settings' && contextKey !== lastContext) enter(context);
+    lastPrompt = prompt?.textContent ?? '';
+    lastButtons = buttonKey;
+    lastContext = contextKey;
+    if (reduced || (Math.abs(to.width - from.width) < 1 && Math.abs(to.height - from.height) < 1)) return;
+    actionContent.style.setProperty('--ed-content-width', `${contentSize.width}px`);
+    actionContent.style.setProperty('--ed-content-height', `${contentSize.height}px`);
     actionbar.classList.add('morphing');
     const anim = actionbar.animate(
       [
@@ -427,9 +461,7 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
     actionAnimation = anim;
     anim.onfinish = () => {
       if (actionAnimation !== anim) return;
-      actionAnimation = null;
-      actionContent.style.width = '';
-      actionbar.classList.remove('morphing');
+      stopActionMorph();
       redraw();
     };
   };
@@ -522,11 +554,11 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
   let cameraScale: number | null = null;
   let boardImage: HTMLCanvasElement | null = null;
   let boardImageKey = '';
-  let zoomOut = 0;
+  let zoomOut = EDITOR_ZOOM_MIN_OUT;
   let zoomFrame = 0;
   let destroyed = false;
   const zoomBy = (delta: number) => {
-    zoomOut = Math.max(0, Math.min(ZOOM_MAX_OUT, zoomOut + delta));
+    zoomOut = Math.max(EDITOR_ZOOM_MIN_OUT, Math.min(ZOOM_MAX_OUT, zoomOut + delta));
     redraw();
   };
   let ox = 0;
@@ -583,8 +615,9 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
     scale = cameraScale;
     ox = (r.width - w * scale) / 2;
     oy = (r.height - hh * scale) / 2;
-    const out = far < near ? Math.log(scale / near) / Math.log(far / near) : 0;
-    zoomChip.textContent = `${Math.round(250 - 150 * Math.max(0, Math.min(1, out)))}%`;
+    const out =
+      far < near ? (Math.log(scale / near) / Math.log(far / near)) * ZOOM_MAX_OUT : EDITOR_ZOOM_MIN_OUT;
+    zoomChip.textContent = `${editorZoomPercent(out)}%`;
     const ctx = canvas.getContext('2d')!;
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.fillStyle = '#16213f';
@@ -592,7 +625,8 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
     ctx.setTransform(scale * dpr, 0, 0, scale * dpr, ox * dpr, oy * dpr);
     paintGrass(ctx);
     // Cache the board and empty grid during camera motion, as the game caches its scenery.
-    const imageScale = Math.min(2, Math.max(1, Math.ceil(near * dpr * 2) / 2));
+    const closest = zoomScale(near, far, EDITOR_ZOOM_MIN_OUT);
+    const imageScale = Math.min(2, Math.max(1, Math.ceil(closest * dpr * 2) / 2));
     const imageKey = `${imageScale}:${moving ? [...selection].join(',') : ''}:${JSON.stringify(board)}`;
     if (!boardImage || imageKey !== boardImageKey) {
       boardImage = h('canvas') as HTMLCanvasElement;
@@ -980,6 +1014,7 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
   );
 
   const drawInspector = () => {
+    if (destroyed) return;
     const from = actionbar.getBoundingClientRect();
     districtRow.capture();
     const choices = districtChoices(board);
@@ -990,13 +1025,9 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
       pendingDistrict ? d.index == null && d.color === pendingDistrict.color : d.index === district,
     );
     const hasDistrictChoices = choices.some((d) => d.count < BOARD_LIMITS.districtSize);
-    if (actionAnimation) {
-      actionAnimation.onfinish = null;
-      actionAnimation.cancel();
-      actionAnimation = null;
-    }
-    actionContent.style.width = '';
-    actionbar.classList.remove('morphing');
+    stopActionMorph();
+    for (const animation of entranceAnimations) animation.cancel();
+    entranceAnimations = [];
     clear(inspector);
     clear(tileInspector);
     nameInput.value = board.name;
@@ -1642,9 +1673,17 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
     }
   };
   window.addEventListener('keydown', onKey);
-  const ro = new ResizeObserver(() => redraw());
+  // Remeasure responsive/font changes without replacing inputs or disturbing their focus.
+  const retargetActions = () => {
+    if (destroyed) return;
+    const from = actionbar.getBoundingClientRect();
+    stopActionMorph();
+    morphActions(from);
+    redraw();
+  };
+  const ro = new ResizeObserver(retargetActions);
   ro.observe(stage);
-  document.fonts?.ready.then(() => redraw());
+  document.fonts?.ready.then(retargetActions);
 
   function destroy() {
     destroyed = true;
@@ -1652,7 +1691,8 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
     window.removeEventListener('keydown', onKey);
     ro.disconnect();
     clearTimeout(noticeTimer);
-    actionAnimation?.cancel();
+    stopActionMorph();
+    for (const animation of entranceAnimations) animation.cancel();
     districtRow.destroy();
     root.remove();
   }

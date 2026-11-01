@@ -287,3 +287,16 @@ guards both painting and reassignment before mutation and clears the active choi
 shrinks completed choices and translates survivors into their centered layout. Undo can cancel
 a departure; hiding/destroying the row cancels stale animations and focus survives selection.
 The engine board limit is ten districts; every declared district still requires four properties.
+
+### Builder zoom and action-bar layout
+
+`zoom.ts` keeps the game curve unchanged. The builder uses `EDITOR_ZOOM_MIN_OUT` (-one third
+of the old range) and `editorZoomPercent` to extend 250%–100% to 300%–100%, adding ten 5% steps.
+Its initial/reset view is 300%; cache resolution includes this closer limit.
+
+`ui/editor.ts` captures the current shell rectangle, releases old locks, renders and measures the
+new natural layout once, then sets `--ed-content-width/height` while the shell animates. The
+morphing content overrides its parent-relative max-width and keeps its own final height, so no
+intermediate shell size can rewrap it. New prompt/options settle with transform and opacity.
+Stage resize, font readiness and each district departure retarget this layout safely; completion
+releases the locks. The game's `Hud.morphAsk` and its stepped reveal remain unchanged.

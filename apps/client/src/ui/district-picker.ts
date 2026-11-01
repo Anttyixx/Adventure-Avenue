@@ -6,7 +6,7 @@ import type { DistrictChoice } from './editor-districts';
 type Entry = { button: HTMLButtonElement; exit?: Animation; slide?: Animation };
 
 /** Create an accessible district-color row with completion and recentering animations. */
-export function districtPicker(onSelect: (choice: DistrictChoice) => void, onEmpty: () => void) {
+export function districtPicker(onSelect: (choice: DistrictChoice) => void, onLayoutChange: () => void) {
   const el = h('div', { class: 'ed-district-picker', role: 'group', 'aria-label': 'District colors' });
   const entries = new Map<string, Entry>();
   let previous = new Map<string, DOMRect>();
@@ -68,10 +68,8 @@ export function districtPicker(onSelect: (choice: DistrictChoice) => void, onEmp
           e.button.remove();
           entries.delete(key);
           slide(before);
-          if (!entries.size) {
-            el.hidden = true;
-            onEmpty();
-          }
+          if (!entries.size) el.hidden = true;
+          onLayoutChange();
         };
       }
       for (let i = 0; i < choices.length; i++) {

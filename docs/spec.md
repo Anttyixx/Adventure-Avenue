@@ -168,12 +168,13 @@ Grass is a separate, repeating background beneath the tiles and scenery. Both th
 normal games fill the entire visible camera area, including outside the board, at every zoom
 and screen size. The pattern is anchored in board coordinates and scales with the tiles;
 there is no finite background border or texture seam where the board layer ends.
-Zoom always keeps the board's center at the center of the full screen. It shares the game's
-zoom sizing: a close view of 1.65 × screen fit (2.2 × on small screens), a whole-board limit
-calculated from the space left by the HUD with a 3% margin, and geometric interpolation between
-these limits. The chip runs from 250% close to 100% fully out. Wheel, pinch and - / + use the
-same steps as in play; tapping the chip resets to 250%. Camera scale eases with the game's
-0.12 factor, or changes immediately with reduced motion. Pinching does not place tiles;
+Zoom always keeps the board's center at the center of the full screen. The existing 250% view
+uses the game's sizing: 1.65 × screen fit (2.2 × on small screens). The 100% whole-board limit
+uses the space left by the HUD with a 3% margin. The builder extends the same geometric curve
+beyond 250% to a new 300% close limit; every scale from 250% down to 100% is unchanged.
+It opens and resets at 300%. Wheel, pinch and - / + still use 5% steps, with forty steps from
+300% to 100%. Game zoom is unchanged. Camera scale eases with the game's 0.12 factor, or
+changes immediately with reduced motion. Pinching does not place tiles;
 board picking uses the current camera transform at every zoom. Form typing keeps its normal keys.
 An icon-only toolbar is centered vertically 10px from the left edge: Select, Place and Erase.
 Hovering or focusing an icon shows its name; the active tool has a gold fill and inset
@@ -227,8 +228,13 @@ preserves the group's geometry across odd/even rows. The entire group must fit i
 out-of-bounds previews have red outlines and cannot be placed. Cancel or Escape abandons the move
 without changing the board. Undo restores the full move, including any replaced tiles.
 Menu holds New board, My boards, Import, Export and Back to main menu.
-The bottom action bar uses the game's glass styling, 740ms width/height morph and short text
-reveal (both respect reduced motion). It floats at the bottom, centered on the entire window at
+The bottom action bar uses the game's glass styling and a 740ms shell width/height morph.
+Before the morph, its contents are laid out at the destination width and height; those sizes are
+held independently of the shell, without a max-width clamp, until it finishes. Text never changes
+line wrapping at intermediate widths or snaps into place at the end. New text/options fade and
+settle over 220ms. Interrupted changes, window resizing, font readiness and district removals
+retarget the destination after releasing the old fixed layout. Reduced motion uses natural size
+immediately with no entrance animation. It floats at the bottom, centered on the entire window at
 every screen size, and adapts to placement,
 selection, erasing or board settings. Its width fits the current text and options, up to the
 window margins. With no options it uses the collapsed status line; it expands only for controls

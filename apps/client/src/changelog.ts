@@ -26,6 +26,23 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: '2026-11-01-editor-300-smooth-bar',
+    date: 'Nov 1, 2026',
+    title: 'Get closer and build smoothly',
+    features: [
+      {
+        tag: 'better',
+        title: 'Zoom the builder to 300%',
+        text: 'Get a closer look at your board with a new 300% zoom limit. The existing zoom levels and 5% steps stay the same.',
+      },
+      {
+        tag: 'fix',
+        title: 'A smoother action bar',
+        text: 'Text and options keep their final layout while the action bar changes size, so words no longer wrap and snap back at the end. New controls settle into place smoothly.',
+      },
+    ],
+  },
+  {
     id: '2026-11-01-ten-district-colors',
     date: 'Nov 1, 2026',
     title: 'Pick your district by color',

@@ -3172,6 +3172,14 @@ input[type='range'] {
   max-width: 100%;
   flex: none;
 }
+/* Freeze destination layout independently of the shell's animated width and height. */
+.editor .ed-actions.morphing .ed-action-content {
+  width: var(--ed-content-width);
+  min-width: var(--ed-content-width);
+  max-width: none;
+  height: var(--ed-content-height);
+  flex: none;
+}
 .ed-action-content > .prompt-text {
   margin: 0;
   max-width: none;

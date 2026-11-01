@@ -99,6 +99,8 @@ const rnd = (n: number) => Math.floor(Math.random() * n);
  * are easy to find. Update this list with each change.
  */
 const RECENT = new Set([
+  'Board builder: 300% zoom',
+  'Board builder: stable action bar',
   'Board builder: district colors',
   'Board builder: district capacity',
   'Board builder: property tile',
@@ -1566,6 +1568,8 @@ export async function openLab(app: HTMLElement, section?: string) {
       }),
       ...(
         [
+          'Board builder: 300% zoom',
+          'Board builder: stable action bar',
           'Board builder: district colors',
           'Board builder: district capacity',
           'Board builder: property tile',
@@ -1614,7 +1618,7 @@ export async function openLab(app: HTMLElement, section?: string) {
             label.endsWith('tile options') ||
             label.endsWith('auto connections')
           ) {
-            for (let i = 0; i < 30; i++)
+            for (let i = 0; i < 40; i++)
               holder
                 .querySelector('.ed-canvas')
                 ?.dispatchEvent(new KeyboardEvent('keydown', { key: '-', bubbles: true }));
