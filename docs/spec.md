@@ -203,23 +203,18 @@ Specials (Venture, Roll-on, Take-a-break, Boon, Boom, Stockbroker, Arcade), and 
 (Warp, Cannon, Portal).
 Choosing a tile keeps Place active; clicking or dragging on the board places it. Returning to
 Place remembers the last chosen tile. The pane is hidden for every other tool and board settings.
-While placing Property tiles, the action bar shows a centered horizontal row of rounded district
-color squares, replacing the district dropdown. A new board offers ten distinct colors and supports
-up to ten saved districts. Unused colors are choices only: selecting one does not create an empty
-district; placing its first property creates it with that color and name. Each square has an
-accessible district name/count, hover title and a selected outline/check mark.
-Painting or reassigning a property cannot take a district past four; repainting one already in the
-same district does not consume capacity. Full districts are disabled in the single-tile district
-selector. When a district reaches four, its color shrinks/fades away over 160ms; the remaining
-colors slide into centered positions over 220ms. Reduced motion removes/recenters immediately.
-Entering Property placement automatically selects the leftmost available district color. Players
-can manually choose another color; when it reaches four, the leftmost available color becomes
-active immediately. Continuous painting can therefore continue into that district without a
-fifth property being added to the completed one. Erasing, replacement, reassignment or Undo that frees capacity restores the color.
-When all ten districts are full, the row has no choices and the action bar collapses to status.
+**Districts are automatic.** There is no color picker: each new property goes into the first
+district that has fewer than four properties (so a gap left by erasing is filled first); when
+every district is full, the next property starts a new district in the next unused color and name
+(ten colors, up to ten districts). The action bar says where the next one goes ("Property: goes
+into Bay Market (2 of 4)"), and the Property tile in the Tiles pane shows that district's color.
+Painting over an existing property keeps its district. A property can still be moved to another
+district (with room) from the tile info panel. When all ten districts are full, the action bar
+says so and properties can't be placed.
 
-Select clicks one tile or drags a selection rectangle around multiple tiles. Selected tiles have
-gold dashed outlines, and the bottom action bar offers Move and Erase. One selected tile opens a
+Select clicks one tile or drags a selection rectangle around multiple tiles. Selected tiles glow
+the way a game shows its choices (a gold tint, a pulsing white outline glowing gold, and, for up to
+six tiles, white rings spreading out), and the bottom action bar offers Move and Erase. One selected tile opens a
 nonmodal tile info panel on the right with the tile name as its heading, a smaller column/row subtitle and a Close button,
 including a labeled district selector and a separate starting-value row for properties. It hides when selection changes to a
 group or movement begins. It displays the resolved starting value without a per-tile value editor.
@@ -237,7 +232,23 @@ but districts with any count other than four cannot be played. Starting averages
 all boards and replaces both per-property price overrides and the old near-bank discount. Old
 game saves retain their already-resolved values; legacy board price fields are readable but are
 not used to price new games. District overrides survive saves and board-file round trips.
-Erase deletes a selection without a bank in one undoable action.
+Erase deletes the selection in one undoable action. If the bank is part of it, everything else
+is erased and the bank stays (the action bar says so); Erase is only missing when the bank is the
+only thing selected.
+
+**Placing and erasing feedback.** A placed tile bounces up slightly and settles while a gold ring
+with sparkles grows from it (the game's purchase ring); an erased tile leaves a red ring. The
+chosen tile in the Tiles pane glows like a game choice (pulsing white outline in a gold glow,
+white rings spreading out). Reduced motion keeps the outlines still and skips the rings.
+
+**Problem badges.** Every tile with a problem shows a round badge in its top-right corner: red if
+the board can't be played until it's fixed, yellow for a warning (the game still works, e.g. a
+dead end or only one district). The badge shows the number of properties its district is missing
+("2"), otherwise "!". Selecting the tile lists its problems at the top of the tile info panel,
+worst first. The Board settings button carries the board's problem count (red: errors; yellow:
+only warnings), and Board settings lists every problem, errors first; a problem tied to tiles can
+be clicked to select its first tile and glide the view to it. Board-wide problems (missing suits,
+too few properties, no venture squares) appear only there.
 Move hides the canvas cursor and lifts the selection as a group, anchored at its middle
 (within grid snapping) rather than its first tile. Browsers cannot reposition the system cursor;
 the group instead centers under the pointer as it moves. Outlines remain at its original

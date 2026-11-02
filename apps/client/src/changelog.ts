@@ -26,6 +26,29 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: '2026-11-02-builder-badges',
+    date: 'Nov 2, 2026',
+    title: 'Board builder: problem badges and automatic districts',
+    features: [
+      {
+        tag: 'new',
+        title: 'See problems on the tiles',
+        text: 'Tiles with a problem get a badge: red when the board can’t be played yet, yellow when it’s only worth fixing. Select a tile to read what’s wrong. Board settings shows the count and every problem; click one to jump to its tile.',
+      },
+      {
+        tag: 'better',
+        title: 'Districts fill themselves',
+        text: 'No more picking colors: each property joins the first district that still needs one, and a new district starts when the others are full.',
+      },
+      {
+        tag: 'better',
+        title: 'Livelier building',
+        text: 'Placed tiles bounce in with a gold ring, and selected tiles glow the way choices do in a game.',
+      },
+    ],
+    extras: ['Erase works with the bank selected (the bank stays)'],
+  },
+  {
     id: '2026-11-02-warps-portals',
     date: 'Nov 2, 2026',
     title: 'Warps and portals, simplified',

@@ -6591,66 +6591,6 @@ div.sl-inline label {
   }
 }
 
-/* Property placement: centered district colors with a clear selected mark. */
-.ed-district-picker {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  width: max-content;
-  max-width: 100%;
-  margin: 0 auto;
-  padding: 4px;
-}
-.ed-district-picker[hidden] {
-  display: none;
-}
-.ed-district-chip {
-  position: relative;
-  flex: 0 0 40px;
-  width: 40px;
-  height: 40px;
-  padding: 0;
-  border: 2px solid transparent;
-  border-radius: 9px;
-  background: var(--dc);
-  cursor: pointer;
-}
-.ed-district-chip[aria-pressed='true'] {
-  border-color: var(--text);
-  box-shadow: 0 0 0 2px var(--navy);
-}
-.ed-district-chip[aria-pressed='true']::after {
-  content: '';
-  position: absolute;
-  left: 13px;
-  top: 8px;
-  width: 8px;
-  height: 14px;
-  border: solid var(--navy);
-  border-width: 0 3px 3px 0;
-  transform: rotate(45deg);
-}
-.ed-district-chip:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 3px;
-}
-@media (max-width: 900px), (max-height: 560px) {
-  .ed-district-picker {
-    gap: 6px;
-  }
-  .ed-district-chip {
-    flex-basis: 34px;
-    width: 34px;
-    height: 34px;
-    border-radius: 8px;
-  }
-  .ed-district-chip[aria-pressed='true']::after {
-    left: 10px;
-    top: 5px;
-  }
-}
-
 /* Selected transport destination and board-link picker. */
 .ed-link-info {
   display: grid;
@@ -7291,4 +7231,109 @@ div.sl-inline label {
 .ed-link-info .ed-row {
   gap: 6px;
   margin-top: 2px;
+}
+
+/* Board builder problems: a count on the Board settings button, the selected tile's own list,
+   and Board settings rows that jump to their tile. Red = can't play yet, yellow = worth fixing. */
+.ed-info > .btn {
+  position: relative;
+}
+.ed-badge {
+  position: absolute;
+  top: -7px;
+  right: -7px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  background: #e5484d;
+  box-shadow:
+    0 0 0 2px #fff,
+    0 2px 6px rgba(0, 0, 0, 0.35);
+  color: #fff;
+  font: 400 11px/1 var(--head);
+  animation: ed-badge-in 0.3s cubic-bezier(0.2, 0.9, 0.3, 1.4);
+}
+.ed-badge.warn {
+  background: #ffc21a;
+  color: #3b2a00;
+}
+.ed-badge[hidden] {
+  display: none;
+}
+@keyframes ed-badge-in {
+  from {
+    transform: scale(0.4);
+    opacity: 0;
+  }
+}
+.ed-tile-issues {
+  margin-bottom: 10px;
+}
+.ed-issue-link {
+  cursor: pointer;
+  transition: filter 0.15s;
+}
+.ed-issue-link:hover {
+  filter: brightness(1.25);
+}
+.ed-issue-link:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+/* The chosen tile in the Tiles pane glows like a choice in a game: a pulsing white outline in a
+   gold glow, and white rings spreading out and fading. */
+.editor .ed-tool.on {
+  background: transparent;
+  box-shadow: none;
+}
+/* Matches the tile inside its picture (the art is the game's tile, drawn a little above center). */
+.editor .ed-tool.on::before,
+.editor .ed-tool.on::after {
+  content: '';
+  position: absolute;
+  inset: 11% 8% 13%;
+  border-radius: 12px;
+  pointer-events: none;
+}
+.editor .ed-tool.on::before {
+  border: 3px solid #fff;
+  box-shadow:
+    0 0 12px 2px var(--accent),
+    inset 0 0 10px rgba(255, 209, 102, 0.6);
+  animation: ed-tile-pulse 0.9s ease-in-out infinite alternate;
+}
+.editor .ed-tool.on::after {
+  border: 2px solid #fff;
+  animation: ed-tile-ring 1.4s ease-out infinite;
+}
+@keyframes ed-tile-pulse {
+  from {
+    opacity: 0.7;
+    box-shadow:
+      0 0 6px 1px var(--accent),
+      inset 0 0 6px rgba(255, 209, 102, 0.4);
+  }
+}
+@keyframes ed-tile-ring {
+  from {
+    transform: scale(1);
+    opacity: 0.9;
+  }
+  to {
+    transform: scale(1.14);
+    opacity: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .editor .ed-tool.on::before,
+  .ed-badge {
+    animation: none;
+  }
+  .editor .ed-tool.on::after {
+    display: none;
+  }
 }

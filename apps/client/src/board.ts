@@ -399,23 +399,7 @@ export class BoardView {
     this.fx.push({
       t0: performance.now(),
       dur: 700,
-      draw: (ctx, k) => {
-        ctx.save();
-        ctx.globalAlpha = 1 - k;
-        ctx.strokeStyle = color;
-        ctx.lineWidth = 6 * (1 - k) + 1;
-        const s = TILE / 2 + 4 + k * 26;
-        tileShape(ctx, this.G?.layout, c.x, c.y, s, 14);
-        ctx.stroke();
-        if (sparkles) {
-          for (let i = 0; i < 8; i++) {
-            const a = (i / 8) * Math.PI * 2;
-            const r = 30 + k * 50;
-            drawSparkle(ctx, c.x + Math.cos(a) * r, c.y + Math.sin(a) * r, 8 * (1 - k * 0.5), '#ffe066');
-          }
-        }
-        ctx.restore();
-      },
+      draw: (ctx, k) => drawRingBurst(ctx, this.G?.layout, c, color, k, sparkles),
     });
   }
 
@@ -1179,35 +1163,7 @@ export class BoardView {
 
   /** One lit square: a tint, a pulsing outline and, when `strong`, white rings spreading out. */
   private glowTile(ctx: CanvasRenderingContext2D, now: number, id: number, color: string, strong: boolean) {
-    const G = this.G!;
-    const pulse = 0.55 + 0.45 * Math.sin(now / 220);
-    const c = this.center(G.nodes[id]);
-    ctx.save();
-    // A tint over the tile, then a pulsing outline.
-    ctx.globalAlpha = 0.18 + 0.12 * pulse;
-    ctx.fillStyle = color;
-    tileShape(ctx, G.layout, c.x, c.y, TILE / 2, 14);
-    ctx.fill();
-    // A white outline that pulses, glowing in the player's color.
-    ctx.globalAlpha = strong ? 0.75 + 0.25 * pulse : 0.5;
-    ctx.shadowColor = color;
-    ctx.shadowBlur = 10 + 20 * pulse;
-    ctx.strokeStyle = '#fff';
-    ctx.lineWidth = strong ? 6 + 2 * pulse : 4;
-    tileShape(ctx, G.layout, c.x, c.y, TILE / 2 + 4, 14);
-    ctx.stroke();
-    // White rings that keep spreading out from the choices and fading, to catch the eye.
-    if (strong && !reducedMotion()) {
-      ctx.shadowBlur = 0;
-      for (let i = 0; i < 2; i++) {
-        const k = (now / RING_MS + i / 2 + id * 0.07) % 1;
-        ctx.globalAlpha = 0.95 * (1 - k) * (1 - k);
-        ctx.lineWidth = 5 * (1 - k) + 1.5;
-        tileShape(ctx, G.layout, c.x, c.y, TILE / 2 + 6 + k * 26, 14 + k * 8);
-        ctx.stroke();
-      }
-    }
-    ctx.restore();
+    drawTileGlow(ctx, this.G!.layout, this.center(this.G!.nodes[id]), color, now, strong, id);
   }
 
   /** Bouncing pins and labels over choice squares, drawn above the tokens. */
@@ -2224,6 +2180,74 @@ function warpColor(G: GameState, sq: Square): string {
 }
 
 /** Draw one tile using the same art as the game board (also used by the builder palette). */
+/**
+ * A lit square, as choices are shown in a game: a tint of `color`, a pulsing white outline
+ * glowing in `color`, and (when `strong`) white rings that keep spreading out and fading.
+ * `seed` staggers the rings between neighboring squares. The board editor uses it too.
+ */
+export function drawTileGlow(
+  ctx: CanvasRenderingContext2D,
+  layout: BoardLayout | undefined,
+  c: { x: number; y: number },
+  color: string,
+  now: number,
+  strong: boolean,
+  seed = 0,
+) {
+  const pulse = 0.55 + 0.45 * Math.sin(now / 220);
+  ctx.save();
+  // A tint over the tile, then a pulsing outline.
+  ctx.globalAlpha = 0.18 + 0.12 * pulse;
+  ctx.fillStyle = color;
+  tileShape(ctx, layout, c.x, c.y, TILE / 2, 14);
+  ctx.fill();
+  // A white outline that pulses, glowing in the color.
+  ctx.globalAlpha = strong ? 0.75 + 0.25 * pulse : 0.5;
+  ctx.shadowColor = color;
+  ctx.shadowBlur = 10 + 20 * pulse;
+  ctx.strokeStyle = '#fff';
+  ctx.lineWidth = strong ? 6 + 2 * pulse : 4;
+  tileShape(ctx, layout, c.x, c.y, TILE / 2 + 4, 14);
+  ctx.stroke();
+  // White rings that keep spreading out and fading, to catch the eye.
+  if (strong && !reducedMotion()) {
+    ctx.shadowBlur = 0;
+    for (let i = 0; i < 2; i++) {
+      const k = (now / RING_MS + i / 2 + seed * 0.07) % 1;
+      ctx.globalAlpha = 0.95 * (1 - k) * (1 - k);
+      ctx.lineWidth = 5 * (1 - k) + 1.5;
+      tileShape(ctx, layout, c.x, c.y, TILE / 2 + 6 + k * 26, 14 + k * 8);
+      ctx.stroke();
+    }
+  }
+  ctx.restore();
+}
+
+/** One ring growing and fading from a square (`k` 0 → 1), with gold sparkles if asked. */
+export function drawRingBurst(
+  ctx: CanvasRenderingContext2D,
+  layout: BoardLayout | undefined,
+  c: { x: number; y: number },
+  color: string,
+  k: number,
+  sparkles = false,
+) {
+  ctx.save();
+  ctx.globalAlpha = 1 - k;
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 6 * (1 - k) + 1;
+  tileShape(ctx, layout, c.x, c.y, TILE / 2 + 4 + k * 26, 14);
+  ctx.stroke();
+  if (sparkles) {
+    for (let i = 0; i < 8; i++) {
+      const a = (i / 8) * Math.PI * 2;
+      const r = 30 + k * 50;
+      drawSparkle(ctx, c.x + Math.cos(a) * r, c.y + Math.sin(a) * r, 8 * (1 - k * 0.5), '#ffe066');
+    }
+  }
+  ctx.restore();
+}
+
 export function paintSquare(ctx: CanvasRenderingContext2D, G: GameState, sq: Square) {
   drawSquare(ctx, G, sq);
 }

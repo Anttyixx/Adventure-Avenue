@@ -253,7 +253,26 @@ UI Lab: “Buy result timing” uses an isolated cloned game and an actual engin
 
 ### Board builder overview
 
-`ui/editor.ts` uses a full 32 × 20 editing grid, a floating two-column palette painted with `board.ts` `paintSquare` and a game-style morphing bottom action bar. Select, Place and Erase live in an icon toolbar centered on the left edge. Only Place shows the tile pane. It has a fixed Tiles title and a scrolling two-column art-only list grouped as Properties, Suits, Specials and Transport (Warp, Cannon, Portal). Tile art fills its columns, without card backgrounds, captions, hover names or selection checkmarks; accessible names and a selection glow remain. Select clicks or drag-selects tiles; the action bar moves or erases the selection. Group movement snaps to the grid, shows source outlines and replaces destination tiles. Board settings lives in the top-left info bar. Warps are four-point stars in up to five fixed pairs; circular portals replace backstreets, with five colors/two each and required matching-color or bank destinations configured in tile info. Portals trigger on entering during movement and preserve remaining steps; route paths include the zero-cost exit, which does not retrigger. Warps trigger only on landing. Warp/portal placement and single-tile editing use the action-bar color row (two per color, full colors animate out and placement picks the leftmost available). Tile info shows the linked tile and supports Change link by clicking a compatible board tile; editor-links.ts swaps existing partners within color limits. A selected transport alone draws an animated gold arch to its destination (static for reduced motion). Transport identities use optional channel/toBank fields and transport.ts reconnects indices after edits. Adjacent tiles always connect; gaps separate paths. A single selected tile opens a right-side options panel, with district options. The builder has one Property tile, never preassigned shops or vacant plots. Every declared district must have exactly four properties to be playable, and placement/reassignment cannot add a fifth. Up to ten districts are supported. Property placement uses a centered color-square row: unused colors create districts on first placement, full districts animate out and the remaining colors slide to center; Property placement starts with the leftmost available color and automatically selects the leftmost available color whenever a district fills; manual choices remain active until full. Standard game setup randomly chooses 0/1/2/3/4 vacant plots per district for None/Few/Some/Lot/All; Easy always uses shops. Property starting prices come from each district's average in Board settings: nearest -30G, farthest +30G, others at the average; unset averages use walking distance from the bank and Reset clears an override. Every editing board has one protected bank that can be moved but never erased or overwritten. Place uses a pencil icon. Moves anchor at the selection center. The board hover cell uses a tinted fill and contrasting screen-sized dark/bright strokes so it remains clear at any zoom. The action bar stays centered on the window and collapses when it has no options. During its morph, content width and height stay fixed at the destination size with no parent-width clamp; new messages use the game's 220ms stepped typing reveal while new controls fade/settle. Unchanged messages retain their DOM node and animation timeline. Its HUD overlaps the full-screen board; zoom stays centered on the screen and shares game sizing/input rules in `zoom.ts`, with a builder-only 300% close limit that preserves the existing 250%–100% scale curve. `boardstore.ts` `boardForPlay` trims a copy at game start, preserving hex geometry and the saved editing grid.
+`ui/editor.ts` (`openEditor`) edits a `BoardDef` on a full 32 × 20 grid drawn on its own canvas
+with the game's painters (`paintBoard`, `paintSquare`, `drawTileGlow`, `drawRingBurst` from
+`board.ts`). The screen is the game's HUD layout:
+
+- **Info chip** (top left): name, save status, Board settings (with the problem-count badge).
+- **Toolbar** (top right): zoom chip (tap: reset zoom and recenter), Undo, Save, Test play, Menu.
+- **Tool rail** (left): Select, Pan, Place, Erase. Pan also works with right/middle-drag,
+  Space+drag, two fingers and arrow keys; the camera eases (`pan`, `cameraPan`, `clampPan`).
+- **Tiles pane** (right, only while placing): the game's tile art; the chosen one glows.
+- **Side panels** (right): Board settings (grid, author, district cards with steppers, problems)
+  and the selected tile's info (its problems, district, starting value, warp/portal links).
+- **Action bar** (bottom): what the tool does or where the next property goes, plus Move / Erase
+  for a selection (Erase keeps the bank). Morphs like the game's.
+- **On the board:** selected tiles glow like game choices; placed tiles bounce inside a gold ring;
+  tiles with problems carry red/yellow badges (`BoardIssue`s from `validateBoard`); a selected
+  warp/portal shows its link line (`drawLink`).
+
+Districts are automatic (`nextDistrict`), warp/portal colors are automatic (`transport.ts`), every
+edit is one undo step (`snapshot`), and `recompute` re-derives roads, the bank, transport links and
+problems after each change. Questions use the game-style `ask()` pop-up.
 
 ### Board editor selection
 
@@ -281,17 +300,17 @@ Defaults are independent of overrides, so Reset simply deletes `startingValue`. 
 `base`/`autoBase` fields remain readable but no longer set new-game prices. Resumed game saves
 already contain resolved base/value fields and keep them. New-game changes bump `NET_VERSION`.
 
-### Editor district capacity and color row
+### Editor districts and problems
 
 `ui/editor-districts.ts` owns the ten default colors/names, `districtChoices` and
-`canAssignProperty`. Choices include unsaved color slots; the first placement lazily appends a
-real district. Empty latent slots never enter validation or saved board data. `ui/editor.ts`
-guards both painting and reassignment before mutation. It selects the leftmost available color
-on entering Property and after completion, while respecting manual choices until they fill.
-`ui/district-picker.ts` retains button nodes during inspector rebuilds, captures old positions,
-shrinks completed choices and translates survivors into their centered layout. Undo can cancel
-a departure; hiding/destroying the row cancels stale animations and focus survives selection.
-The engine board limit is ten districts; every declared district still requires four properties.
+`canAssignProperty`. Placing a property asks `nextDistrict()` in `ui/editor.ts`: the lowest-index
+district with fewer than four properties, else the first unused color as a new district (appended
+on first placement, so empty districts never enter saved data). There is no color picker.
+
+`validateBoard` (`boards/format.ts`) returns `issues` besides the `errors`/`warnings` strings:
+each `BoardIssue` has a level, the board-wide text, the squares it concerns, a per-tile text and a
+badge mark. The editor groups them by square (`tileIssues`) to draw badges on the canvas, list a
+selected tile's problems, count them on the Board settings button and link problem rows to tiles.
 
 ### Builder zoom and action-bar layout
 

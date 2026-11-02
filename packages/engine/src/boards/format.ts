@@ -63,6 +63,24 @@ export interface BoardFile {
 export interface BoardCheck {
   errors: string[];
   warnings: string[];
+  /** Every problem with the tiles it concerns, for showing problems on the tiles themselves. */
+  issues: BoardIssue[];
+}
+
+/**
+ * One problem with a board. Errors stop it from being played; warnings are worth fixing but the
+ * game still runs.
+ */
+export interface BoardIssue {
+  level: 'error' | 'warning';
+  /** The problem as listed for the whole board. */
+  text: string;
+  /** Indices of the squares it concerns (none: about the board as a whole). */
+  squares?: number[];
+  /** How it reads when listed for one of those squares (defaults to `text`). */
+  tileText?: string;
+  /** A short mark for the square's badge, e.g. how many properties are missing (default "!"). */
+  badge?: string;
 }
 
 const where = (s: { x: number; y: number }) => `(${s.x + 1}, ${s.y + 1})`;
@@ -120,88 +138,124 @@ export function edgeKey(a: { x: number; y: number }, b: { x: number; y: number }
 
 /** Check that a board can be played. Errors block play; warnings are worth a look. */
 export function validateBoard(def: BoardDef): BoardCheck {
-  const errors: string[] = [];
-  const warnings: string[] = [];
+  const issues: BoardIssue[] = [];
   const L = BOARD_LIMITS;
   const sq = def.squares;
+  const ix = (s: BoardSquareDef) => sq.indexOf(s);
+  type Extra = Omit<BoardIssue, 'level' | 'text'>;
+  const error = (text: string, extra: Extra = {}) => issues.push({ level: 'error', text, ...extra });
+  const warn = (text: string, extra: Extra = {}) => issues.push({ level: 'warning', text, ...extra });
+  const result = (): BoardCheck => ({
+    errors: [...new Set(issues.filter((i) => i.level === 'error').map((i) => i.text))],
+    warnings: [...new Set(issues.filter((i) => i.level === 'warning').map((i) => i.text))],
+    issues,
+  });
 
-  if (!def.name?.trim()) errors.push('Give the board a name.');
+  if (!def.name?.trim()) error('Give the board a name.');
   if (def.cols < L.minCols || def.cols > L.maxCols || def.rows < L.minRows || def.rows > L.maxRows)
-    errors.push(`The grid must be ${L.minCols}-${L.maxCols} columns by ${L.minRows}-${L.maxRows} rows.`);
-  if (sq.length > L.maxSquares) errors.push(`A board can have at most ${L.maxSquares} squares.`);
+    error(`The grid must be ${L.minCols}-${L.maxCols} columns by ${L.minRows}-${L.maxRows} rows.`);
+  if (sq.length > L.maxSquares) error(`A board can have at most ${L.maxSquares} squares.`);
   if (sq.length === 0) {
-    errors.push('Place some squares to build a board.');
-    return { errors, warnings };
+    error('Place some squares to build a board.');
+    return result();
   }
 
   const cells = new Set<string>();
-  for (const s of sq) {
+  sq.forEach((s, i) => {
     const k = `${s.x},${s.y}`;
-    if (cells.has(k)) errors.push(`Two squares share the cell ${where(s)}.`);
+    if (cells.has(k)) error(`Two squares share the cell ${where(s)}.`, { squares: [i] });
     cells.add(k);
     if (s.x < 0 || s.y < 0 || s.x >= def.cols || s.y >= def.rows)
-      errors.push(`Square ${where(s)} is outside the grid.`);
-    if (!PLACEABLE.includes(s.t)) errors.push(`Square ${where(s)} has an unknown type "${s.t}".`);
-  }
+      error(`Square ${where(s)} is outside the grid.`, { squares: [i], tileText: 'Outside the grid.' });
+    if (!PLACEABLE.includes(s.t)) error(`Square ${where(s)} has an unknown type "${s.t}".`, { squares: [i] });
+  });
 
   const banks = sq.filter((s) => s.t === 'bank');
   if (banks.length !== 1)
-    errors.push(banks.length ? 'A board needs exactly one bank.' : 'Add a bank: players start there.');
+    error(banks.length ? 'A board needs exactly one bank.' : 'Add a bank: players start there.', {
+      squares: banks.length > 1 ? banks.map(ix) : undefined,
+    });
 
   const hasChange = sq.some((s) => s.t === 'change');
   const missing = (['spade', 'heart', 'diamond', 'club'] as SquareType[]).filter(
     (t) => !sq.some((s) => s.t === t),
   );
   if (missing.length && !hasChange)
-    errors.push(
+    error(
       `Add the missing suit square${missing.length > 1 ? 's' : ''} (${missing.join(', ')}) or a change-of-suit square, so players can be promoted.`,
     );
 
   const props = sq.filter((s) => s.t === 'shop');
-  if (props.length < L.minProperties) errors.push(`Add at least ${L.minProperties} properties.`);
-  if (def.districts.length === 0 && props.length) errors.push('Add a district for the properties.');
-  if (def.districts.length > L.maxDistricts)
-    errors.push(`A board can have at most ${L.maxDistricts} districts.`);
+  if (props.length < L.minProperties) error(`Add at least ${L.minProperties} properties.`);
+  if (def.districts.length === 0 && props.length) error('Add a district for the properties.');
+  if (def.districts.length > L.maxDistricts) error(`A board can have at most ${L.maxDistricts} districts.`);
   for (const s of props) {
     if (s.d == null || s.d < 0 || s.d >= def.districts.length)
-      errors.push(`Property ${where(s)} has no district.`);
+      error(`Property ${where(s)} has no district.`, {
+        squares: [ix(s)],
+        tileText: 'This property has no district.',
+      });
   }
   def.districts.forEach((d, i) => {
-    if (!d.name?.trim()) errors.push(`District ${i + 1} needs a name.`);
+    const own = props.filter((s) => s.d === i).map(ix);
+    if (!d.name?.trim()) error(`District ${i + 1} needs a name.`, { squares: own });
     if (
       d.startingValue != null &&
       (!Number.isInteger(d.startingValue) ||
         d.startingValue < K.districtProperty.minAverage ||
         d.startingValue > K.districtProperty.maxAverage)
     )
-      errors.push(
+      error(
         `District "${d.name}" needs a starting average between ${K.districtProperty.minAverage}G and ${K.districtProperty.maxAverage}G.`,
+        { squares: own },
       );
-    const n = props.filter((s) => s.d === i).length;
-    if (n !== L.districtSize)
-      errors.push(`District "${d.name}" has ${n} properties; it needs exactly ${L.districtSize}.`);
+    const n = own.length;
+    if (n !== L.districtSize) {
+      const short = L.districtSize - n;
+      error(`District "${d.name}" has ${n} properties; it needs exactly ${L.districtSize}.`, {
+        squares: own,
+        tileText:
+          short > 0
+            ? `${d.name} has ${n} of ${L.districtSize} properties: add ${short} more.`
+            : `${d.name} has ${n} properties: remove ${-short}.`,
+        badge: short > 0 ? String(short) : '!',
+      });
+    }
   });
+  if (def.districts.length === 1 && props.length)
+    warn('Only one district: stocks and district bonuses work best with several.');
 
   // Warps and portals: each links to its pair (same kind, same color, both ways) or the bank.
   for (const type of ['warp', 'portal'] as const) {
     const Name = type === 'warp' ? 'Warp' : 'Portal';
     const tiles = sq.filter((s) => s.t === type);
     const colors = new Set(tiles.filter((s) => !s.toBank && s.channel != null).map((s) => s.channel));
-    if (colors.size > 5) errors.push(`Use at most five ${type} pairs.`);
-    for (let c = 0; c < 5; c++)
-      if (tiles.filter((s) => !s.toBank && s.channel === c).length > 2)
-        errors.push(`Only two ${type} tiles can share a color.`);
+    if (colors.size > 5) error(`Use at most five ${type} pairs.`);
+    for (let c = 0; c < 5; c++) {
+      const same = tiles.filter((s) => !s.toBank && s.channel === c);
+      if (same.length > 2) error(`Only two ${type} tiles can share a color.`, { squares: same.map(ix) });
+    }
     for (const s of tiles) {
-      const i = sq.indexOf(s),
+      const i = ix(s),
         target = s.link == null ? null : sq[s.link];
       if (s.channel != null && (!Number.isInteger(s.channel) || s.channel < 0 || s.channel > 4))
-        errors.push(`Invalid ${type} color at ${where(s)}.`);
+        error(`Invalid ${type} color at ${where(s)}.`, { squares: [i] });
       if (!target || target === s)
-        errors.push(`${Name} ${where(s)} is not linked yet: link it to another ${type} or the bank.`);
+        error(`${Name} ${where(s)} is not linked yet: link it to another ${type} or the bank.`, {
+          squares: [i],
+          tileText: `Not linked yet: link it to another ${type} or the bank.`,
+        });
       else if (s.toBank) {
-        if (target.t !== 'bank') errors.push(`${Name} ${where(s)} must lead to the bank.`);
+        if (target.t !== 'bank')
+          error(`${Name} ${where(s)} must lead to the bank.`, {
+            squares: [i],
+            tileText: 'Must lead to the bank.',
+          });
       } else if (target.t !== type || target.link !== i || target.channel !== s.channel)
-        errors.push(`${Name} ${where(s)} must be linked with its paired ${type}.`);
+        error(`${Name} ${where(s)} must be linked with its paired ${type}.`, {
+          squares: [i],
+          tileText: `Must be linked with its paired ${type}.`,
+        });
     }
   }
 
@@ -209,11 +263,13 @@ export function validateBoard(def: BoardDef): BoardCheck {
   const nb: number[][] = sq.map(() => []);
   for (const [a, b] of def.edges) {
     if (!sq[a] || !sq[b] || a === b) {
-      errors.push('The board has a broken connection.');
+      error('The board has a broken connection.');
       continue;
     }
     if (!areNeighbors(def.layout, sq[a], sq[b]))
-      errors.push(`Squares ${where(sq[a])} and ${where(sq[b])} are connected but not next to each other.`);
+      error(`Squares ${where(sq[a])} and ${where(sq[b])} are connected but not next to each other.`, {
+        squares: [a, b],
+      });
     nb[a].push(b);
     nb[b].push(a);
   }
@@ -223,12 +279,19 @@ export function validateBoard(def: BoardDef): BoardCheck {
     if ((s.t === 'warp' || s.t === 'portal') && s.link != null && sq[s.link]) reach[i].push(s.link);
   });
   sq.forEach((s, i) => {
-    if (nb[i].length === 0 && sq.length > 1) errors.push(`Square ${where(s)} is not connected to anything.`);
+    if (nb[i].length === 0 && sq.length > 1)
+      error(`Square ${where(s)} is not connected to anything.`, {
+        squares: [i],
+        tileText: 'Not connected to anything: put it next to another tile.',
+      });
     else if (nb[i].length === 1)
-      warnings.push(`Square ${where(s)} is a dead end: players turn around there.`);
+      warn(`Square ${where(s)} is a dead end: players turn around there.`, {
+        squares: [i],
+        tileText: 'A dead end: players turn around here.',
+      });
   });
   if (banks.length === 1) {
-    const start = sq.indexOf(banks[0]);
+    const start = ix(banks[0]);
     const seen = new Set([start]);
     const queue = [start];
     while (queue.length) {
@@ -238,17 +301,19 @@ export function validateBoard(def: BoardDef): BoardCheck {
         queue.push(n);
       }
     }
-    const cut = sq.filter((_, i) => !seen.has(i));
+    const cut = sq.flatMap((_, i) => (seen.has(i) ? [] : [i]));
+    // Lone tiles already say they aren't connected; mark the rest of a cut-off area.
     if (cut.length && cut.length < sq.length)
-      errors.push(
-        `${cut.length} square${cut.length > 1 ? 's are' : ' is'} not reachable from the bank, e.g. ${where(cut[0])}.`,
+      error(
+        `${cut.length} square${cut.length > 1 ? 's are' : ' is'} not reachable from the bank, e.g. ${where(sq[cut[0]])}.`,
+        { squares: cut.filter((i) => nb[i].length > 0), tileText: 'Players can’t reach this from the bank.' },
       );
   }
 
   if (!sq.some((s) => s.t === 'venture'))
-    warnings.push('No venture squares: venture cards only come from stopping on suit squares.');
-  if (sq.length < 16) warnings.push('Small boards make for short, crowded games.');
-  return { errors: [...new Set(errors)], warnings: [...new Set(warnings)] };
+    warn('No venture squares: venture cards only come from stopping on suit squares.');
+  if (sq.length < 16) warn('Small boards make for short, crowded games.');
+  return result();
 }
 
 /** Turn a board into the file players export. */

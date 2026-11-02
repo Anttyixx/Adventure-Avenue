@@ -260,7 +260,7 @@ describe('hex boards', () => {
 
 describe('built-in boards', () => {
   it.each(BUILT_IN_BOARDS.map((b) => [b.name, b] as const))('%s is valid with no warnings', (_, b) => {
-    expect(validateBoard(b)).toEqual({ errors: [], warnings: [] });
+    expect(validateBoard(b)).toMatchObject({ errors: [], warnings: [], issues: [] });
     expect(new Set(BUILT_IN_BOARDS.map((x) => x.id)).size).toBe(BUILT_IN_BOARDS.length);
   });
 
@@ -291,5 +291,25 @@ describe('built-in boards', () => {
     ]);
     expect(b.edges).toHaveLength(8);
     expect(() => fromMap({ ...b, layout: 'square', districts: [], map: ['B?'] })).toThrow(/unknown/);
+  });
+});
+
+describe('board problems on tiles', () => {
+  it('ties problems to the tiles they concern, with a badge and a level', () => {
+    const b = structuredClone(BUILT_IN_BOARDS[0]);
+    // Take one property out of district 0 and add an unlinked warp next to the bank.
+    const gone = b.squares.findIndex((s) => s.t === 'shop' && s.d === 0);
+    b.squares.splice(gone, 1);
+    const bank = b.squares[b.squares.findIndex((s) => s.t === 'bank')];
+    b.squares.push({ x: bank.x, y: bank.y + 1, t: 'warp' });
+    b.edges = autoEdges(b.squares, new Set(), b.layout);
+    b.bank = b.squares.findIndex((s) => s.t === 'bank');
+    const { issues } = validateBoard(b);
+    const district = issues.find((i) => i.text.includes(b.districts[0].name));
+    expect(district).toMatchObject({ level: 'error', badge: '1' });
+    expect(district!.squares).toHaveLength(3);
+    const warp = issues.find((i) => i.tileText?.startsWith('Not linked yet'));
+    expect(warp?.squares).toEqual([b.squares.length - 1]);
+    expect(issues.filter((i) => i.level === 'warning').every((i) => i.text)).toBe(true);
   });
 });

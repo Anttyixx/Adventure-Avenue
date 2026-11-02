@@ -55,20 +55,20 @@ a default browser widget.
 
 ### 2.2 Which container?
 
-| The player needs to...                                                  | Use                                                              | Examples                                                     |
-| ----------------------------------------------------------------------- | ---------------------------------------------------------------- | ------------------------------------------------------------ |
-| Make **this turn's** choice (2-6 options), or read what's happening now | **Action bar** (bottom center)                                   | Buy this shop?, Roll, choose a building, "Rosa is moving..." |
-| Pick a **square** on the board                                          | **Board highlight** (glowing squares) + action bar explaining it | Choose where to move, cannon target, invest in a shop        |
-| Edit **many settings** or a **long list** while still seeing the board  | **Side panel** (right edge, nonmodal)                            | Board settings, the selected tile's options, the Tiles pane  |
-| Read or decide something **big**, with the board out of the way         | **Pop-up** (centered, dims the board)                            | Guide, player overview, menu, stock screen, results          |
-| Answer a **yes/no** that can lose something                             | **Question pop-up** (small pop-up, Cancel + answer)              | Discard changes?, Delete district?, Quit game?               |
-| **Choose one of many things** that have pictures                        | **Card grid** in a pop-up                                        | New board templates                                          |
-| **Manage a list** of saved things                                       | **List rows** in a pop-up                                        | My boards                                                    |
-| Be **told** something happened (no answer needed)                       | **Banner** (top center, fades) or the status line                | "Rosa's turn", "Bay Market stock up!"                        |
-| See **details on demand** about something on the board                  | **Tooltip**                                                      | Hovering/tapping a square                                    |
-| Get to a **screen-wide tool** or info at any time                       | **Toolbar / info chip** (top corners)                            | Zoom, Guide, Menu, game name and goal                        |
-| Pick a **tool** in an editor                                            | **Tool rail** (icon buttons, left edge)                          | Select, Pan, Place, Erase                                    |
-| Pick **one color/category** while doing something else                  | **Color row** inside the action bar                              | District color while placing properties                      |
+| The player needs to...                                                  | Use                                                                                  | Examples                                                     |
+| ----------------------------------------------------------------------- | ------------------------------------------------------------------------------------ | ------------------------------------------------------------ |
+| Make **this turn's** choice (2-6 options), or read what's happening now | **Action bar** (bottom center)                                                       | Buy this shop?, Roll, choose a building, "Rosa is moving..." |
+| Pick a **square** on the board                                          | **Board highlight** (glowing squares) + action bar explaining it                     | Choose where to move, cannon target, invest in a shop        |
+| Edit **many settings** or a **long list** while still seeing the board  | **Side panel** (right edge, nonmodal)                                                | Board settings, the selected tile's options, the Tiles pane  |
+| Read or decide something **big**, with the board out of the way         | **Pop-up** (centered, dims the board)                                                | Guide, player overview, menu, stock screen, results          |
+| Answer a **yes/no** that can lose something                             | **Question pop-up** (small pop-up, Cancel + answer)                                  | Discard changes?, Delete district?, Quit game?               |
+| **Choose one of many things** that have pictures                        | **Card grid** in a pop-up                                                            | New board templates                                          |
+| **Manage a list** of saved things                                       | **List rows** in a pop-up                                                            | My boards                                                    |
+| Be **told** something happened (no answer needed)                       | **Banner** (top center, fades) or the status line                                    | "Rosa's turn", "Bay Market stock up!"                        |
+| See **details on demand** about something on the board                  | **Tooltip**                                                                          | Hovering/tapping a square                                    |
+| Get to a **screen-wide tool** or info at any time                       | **Toolbar / info chip** (top corners)                                                | Zoom, Guide, Menu, game name and goal                        |
+| Pick a **tool** in an editor                                            | **Tool rail** (icon buttons, left edge)                                              | Select, Pan, Place, Erase                                    |
+| Pick **one color/category** while doing something else                  | Let **the game decide** and say so; a color row only if the player truly must choose | Districts and warp/portal colors (automatic)                 |
 
 Rules of thumb:
 
@@ -99,7 +99,8 @@ Rules of thumb:
 | A color                                         | Round **swatch** wrapping a hidden `<input type=color>`      |
 | A square on the board                           | **Board highlight** (`board.setChoices`)                     |
 | One of many pictured things                     | **Cards** (picture on top, title, one-line description)      |
-| A category while placing                        | **Color row** of rounded squares                             |
+| A category while placing                        | Decide it automatically; say it in the action bar            |
+| Show that something needs fixing                | **Problem badge** (red / yellow) on it; list on select       |
 
 Never use: native-looking range sliders for money, free-typed numbers for money, dropdowns with
 two options (use segmented pills), tiny ✕ glyphs as close buttons.
@@ -394,7 +395,7 @@ Each element: **purpose**, **placement**, **anatomy**, **spec**, **behavior**, t
   - **Status line** (`.status`): one line, an icon for the kind of event, names in their colors,
     ellipsis when long. "Rosa is buying stocks...", "Board settings · 2 problems to fix".
   - **Options**: question on the left (player-color dot first, or a `question()` fact strip),
-    buttons on the right with the main one gold. A **color row** (districts) can sit under it.
+    buttons on the right with the main one gold.
 - **Spec:** glass, 2px border in `--pc` (the deciding player's color), min height 92px (options),
   grows up to 75% taller for rich content, width = content (max 920px).
 - **Motion:** morphs size between states (740ms, content laid out at its final size so text never
@@ -515,15 +516,22 @@ if (!(await ask(`Delete ${d.name}?`, 'Its 4 properties will be removed from the 
 
 - A side panel (§5.4) titled "Tiles" with the hint "Pick one, then click or drag on the board";
   groups (PROPERTIES, SUITS, SPECIALS, TRANSPORT) use section headings; tiles are the game's own
-  tile art in a two-column grid. The chosen tile has a **gold tint + inset gold ring** and lifts
-  2px. Shown only while placing.
+  tile art in a two-column grid. The chosen tile glows like a game choice (pulsing white outline
+  in a gold glow + white rings spreading out, CSS `::before`/`::after` matched to the tile).
+  Shown only while placing.
 
-### 5.13 Color row (inside the action bar)
+### 5.13 Problem badges and lists
 
-- Rounded 40px squares (34px phones), gap 8; chosen one has a white outline and a dark check.
-- Use only when the player must pick a category **while working** (district while placing
-  properties). If the game can decide the color itself, don't show a row (warps and portals get
-  their pair color automatically).
+- **Where:** on the thing with the problem (a tile's top-right corner) and, with a count, on the
+  button that opens the full list (Board settings). Red = can't continue until fixed; yellow =
+  worth fixing, still works. A number when it's meaningful ("2" properties missing), else "!".
+- **On select:** the thing's own problems are listed first in its panel (red/yellow rows, worst
+  first, one plain sentence each saying how to fix it).
+- **In the full list:** errors first; rows tied to a thing are clickable (they select it and move
+  the view to it).
+- **Don't** use a color row or picker for something the game can decide (districts and
+  warp/portal colors are assigned automatically; the action bar says what will happen:
+  "Property: goes into Bay Market (2 of 4)").
 
 ### 5.14 Player cards (bottom right)
 
@@ -565,7 +573,15 @@ if (!(await ask(`Delete ${d.name}?`, 'Its 4 properties will be removed from the 
   glows with rings.
 - **Builder hover cell:** light tint + 6px dark outer / 3px bright inner outline in screen pixels
   (gold; red while erasing).
-- **Builder selection:** dashed gold outlines; marquee is a translucent gold rectangle.
+- **Builder selection:** selected tiles glow like game choices (`drawTileGlow` from `board.ts`:
+  gold tint, pulsing white outline in a gold glow, spreading white rings for up to six tiles);
+  the marquee is a translucent gold rectangle.
+- **Placing / erasing:** a placed tile bounces (scale up to 1.14 and back, 650ms) inside a gold
+  ring with sparkles (`drawRingBurst`, the game's purchase ring); an erased tile leaves a red ring.
+- **Problem badges:** a round badge at a tile's top-right corner (screen-sized, ~20px): red
+  `#e5484d` with white text for errors, yellow `#ffc21a` with dark text for warnings, white ring
+  and a soft shadow. It shows a number when there's one to give (properties missing), else "!".
+  The same badge sits on the button that opens the full list (Board settings) with the count.
 - **Link line** (selected warp/portal, `drawLink`): a quadratic arc whose bend is at the **middle
   of the line, at right angles to it** (upper side), bend = 14% of length (16-90 units) — gentle,
   always visible. Dark 9px outline, 4px line in the link color at 55% opacity, white source ring,

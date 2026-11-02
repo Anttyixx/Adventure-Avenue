@@ -16,12 +16,14 @@ import {
   autoEdges,
   newGame,
   validateBoard,
+  type BoardCheck,
+  type BoardIssue,
   type BoardDef,
   type BoardLayout,
   type BoardSquareDef,
   type SquareType,
 } from '@aa/engine';
-import { paintBoard, paintGrass, paintSquare, worldSize } from '../board';
+import { drawRingBurst, drawTileGlow, paintBoard, paintGrass, paintSquare, worldSize } from '../board';
 import {
   EDITOR_ZOOM_MIN_OUT,
   editorZoomPercent,
@@ -52,7 +54,6 @@ import {
   canAssignProperty,
   type DistrictChoice,
 } from './editor-districts';
-import { districtPicker } from './district-picker';
 import { moveSelection, selectionPositions, selectionAnchor, ensureEditorBank } from './editor-selection';
 
 type Tool = Exclude<SquareType, 'plot'> | 'select' | 'pan' | 'place' | 'erase';
@@ -112,6 +113,9 @@ const PALETTE: { group: string; items: { tool: Tool; label: string; hint: string
     ],
   },
 ];
+
+/** How long a placed or erased tile's effect plays. */
+const TILE_FX_MS = 650;
 
 const plural = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? one : many}`;
 
@@ -430,8 +434,14 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
   };
   let tool: Tool = 'select';
   let settings = false;
-  let district = board.districts.length ? 0 : -1;
-  let pendingDistrict: DistrictChoice | null = board.districts.length ? null : districtChoices(board)[0];
+  /**
+   * Where the next property goes: the first district still short of four (so gaps are filled
+   * first), else a new district in the next unused color. Null when all ten are full.
+   */
+  const nextDistrict = (): DistrictChoice | null =>
+    districtChoices(board)
+      .filter((d) => d.count < BOARD_LIMITS.districtSize)
+      .sort((a, b) => (a.index ?? Infinity) - (b.index ?? Infinity))[0] ?? null;
   let selected: number | null = null;
   let choosingLink = false;
   let selection = new Set<number>();
@@ -447,6 +457,17 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
     marquee = null;
   };
   let hover: { x: number; y: number } | null = null;
+  /** The board's problems, and each tile's own (refreshed with the panels). */
+  let check: BoardCheck = { errors: [], warnings: [], issues: [] };
+  let tileIssues = new Map<number, BoardIssue[]>();
+  const refreshCheck = () => {
+    check = validateBoard(board);
+    tileIssues = new Map();
+    for (const issue of check.issues)
+      for (const i of issue.squares ?? []) tileIssues.set(i, [...(tileIssues.get(i) ?? []), issue]);
+  };
+  /** Tiles just placed (a bounce and a gold ring) or erased (a red ring), with when it happened. */
+  let tileFx: { x: number; y: number; t0: number; erased: boolean }[] = [];
   let savedJSON = JSON.stringify(board);
   const undo: string[] = [];
 
@@ -484,6 +505,9 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
     },
     'Board settings',
   );
+  /** The board's problem count on the Board settings button: red errors, else yellow warnings. */
+  const settingsBadge = h('span', { class: 'ed-badge', 'aria-hidden': 'true', hidden: true });
+  settingsButton.append(settingsBadge);
   info.append(settingsButton);
   const zoomChip = h(
     'button',
@@ -651,6 +675,22 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
     board.edges = autoEdges(board.squares, new Set(), board.layout);
     board.bank = board.squares.findIndex((s) => s.t === 'bank');
     connectTransports(board);
+    refreshCheck();
+    {
+      const bad = check.errors.length;
+      const warn = check.warnings.length;
+      settingsBadge.hidden = !bad && !warn;
+      settingsBadge.textContent = String(bad || warn);
+      settingsBadge.classList.toggle('warn', !bad);
+      settingsButton.setAttribute(
+        'aria-label',
+        bad
+          ? `Board settings: ${plural(bad, 'problem')} to fix`
+          : warn
+            ? `Board settings: ${plural(warn, 'warning')}`
+            : 'Board settings',
+      );
+    }
   };
   const snapshot = () => {
     undo.push(JSON.stringify(board));
@@ -660,6 +700,8 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
     recompute();
     redraw();
     drawInspector();
+    // The Property tile in the Tiles pane shows the next district's color.
+    if (tool === 'shop') drawPalette();
   };
   const doUndo = () => {
     const last = undo.pop();
@@ -677,6 +719,7 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
     if (i >= 0 && board.squares[i].t === 'bank') return false;
     if (tool === 'erase') {
       if (i < 0) return false;
+      tileFx.push({ x, y, t0: performance.now(), erased: true });
       board.squares.splice(i, 1);
       if (selected === i) selected = null;
       else if (selected != null && selected > i) selected--;
@@ -684,14 +727,14 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
     }
     if (tool === 'select' || tool === 'pan' || tool === 'place') return false;
     const t: SquareType = tool;
+    let d = -1;
     if (t === 'shop') {
-      if (pendingDistrict) {
-        if (board.districts.length >= BOARD_LIMITS.maxDistricts) return false;
-        board.districts.push({ name: pendingDistrict.name, color: pendingDistrict.color });
-        district = board.districts.length - 1;
-        pendingDistrict = null;
-      }
-      if (!canAssignProperty(board, district, i)) return false;
+      // Properties fill districts automatically; painting over one keeps its district.
+      if (i >= 0 && board.squares[i].t === 'shop') return false;
+      const next = nextDistrict();
+      if (!next) return false;
+      if (next.index == null) board.districts.push({ name: next.name, color: next.color });
+      d = next.index ?? board.districts.length - 1;
     }
     const prev = i >= 0 ? board.squares[i] : null;
     const sq: BoardSquareDef =
@@ -700,7 +743,7 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
             x,
             y,
             t,
-            d: district,
+            d,
           }
         : // New warps and portals start unlinked (grey); linking them gives them a color.
           { x, y, t };
@@ -714,6 +757,7 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
     if (j >= 0) board.squares[j] = sq;
     else board.squares.push(sq);
     selected = indexAt(x, y);
+    tileFx.push({ x, y, t0: performance.now(), erased: false });
     return true;
   };
 
@@ -736,6 +780,20 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
   // eases toward it like the zoom does; dragging moves it directly.
   const pan = { x: 0, y: 0 };
   let cameraPan: { x: number; y: number } | null = null;
+  /** Go to a tile: close the settings, select it and glide the view to it. */
+  const showTile = (i: number) => {
+    const { w, h: hh } = worldSize(board);
+    const c = center(board.squares[i]);
+    settings = false;
+    tool = 'select';
+    selection = new Set([i]);
+    selected = i;
+    pan.x = c.x - w / 2;
+    pan.y = c.y - hh / 2;
+    drawPalette();
+    drawInspector();
+    redraw();
+  };
   /** Center the view on the tiles (the grid's middle when there are none). */
   const centerOnBoard = () => {
     const { w, h: hh } = worldSize(board);
@@ -766,6 +824,13 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
     clampPan(r.width, r.height, scale);
     cameraPan = { ...pan };
     redraw();
+  };
+  let previewCache: { key: string; G: ReturnType<typeof newGame> } | null = null;
+  /** The editing board as a game (for painting tiles), rebuilt only when the board changes. */
+  const previewGame = () => {
+    const key = JSON.stringify(board);
+    if (previewCache?.key !== key) previewCache = { key, G: preview() };
+    return previewCache.G;
   };
   const preview = () => {
     const game = newGame({
@@ -906,14 +971,32 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
       ctx.stroke();
       ctx.restore();
     }
-    for (const i of selection) {
-      const c = center(board.squares[i]);
-      ctx.lineWidth = 4;
-      ctx.strokeStyle = '#ffd166';
-      ctx.setLineDash([10, 6]);
-      tileShape(ctx, board.layout, c.x, c.y, 48, 15);
-      ctx.stroke();
-      ctx.setLineDash([]);
+    // Selected tiles glow like a game's choices: a gold tint, a pulsing white outline and (for
+    // a few tiles) white rings spreading out. Big groups skip the rings to stay calm.
+    const now = reduced ? 0 : performance.now();
+    for (const i of selection)
+      if (board.squares[i] && !moving)
+        drawTileGlow(ctx, board.layout, center(board.squares[i]), '#ffd166', now, selection.size <= 6, i);
+    // Just-placed tiles bounce up and settle inside a gold ring with sparkles; erased ones leave a
+    // red ring.
+    tileFx = reduced ? [] : tileFx.filter((f) => now - f.t0 < TILE_FX_MS);
+    for (const f of tileFx) {
+      const k = (now - f.t0) / TILE_FX_MS;
+      const c = center(f);
+      if (!f.erased) {
+        const G = previewGame();
+        const node = G.nodes[indexAt(f.x, f.y)];
+        const pop = 1 + 0.14 * Math.sin(Math.PI * Math.min(1, k * 1.6));
+        if (node && pop > 1.001) {
+          ctx.save();
+          ctx.translate(c.x, c.y);
+          ctx.scale(pop, pop);
+          ctx.translate(-c.x, -c.y);
+          paintSquare(ctx, G, node);
+          ctx.restore();
+        }
+      }
+      drawRingBurst(ctx, board.layout, c, f.erased ? '#ff8a8a' : '#ffd166', k, !f.erased);
     }
     if (marquee) {
       const { start, end } = marquee;
@@ -951,6 +1034,44 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
     ctx.textBaseline = 'middle';
     for (let x = 0; x < board.cols; x++) ctx.fillText(String(x + 1), center({ x, y: 0 }).x, 22);
     for (let y = 0; y < board.rows; y++) ctx.fillText(String(y + 1), 22, center({ x: 0, y }).y);
+    if (!moving) drawBadges(ctx);
+    if (!reduced && (selection.size || tileFx.length) && !zoomFrame)
+      zoomFrame = requestAnimationFrame(redraw);
+  };
+
+  /**
+   * A badge in the top-right corner of each tile with a problem: red when the board can't be
+   * played until it's fixed, yellow when it's only worth fixing. It shows a number when there is
+   * one to give (properties missing from the tile's district), else "!". Screen-sized.
+   */
+  const drawBadges = (ctx: CanvasRenderingContext2D) => {
+    const r = Math.min(10 / scale, 16);
+    for (const [i, list] of tileIssues) {
+      const sq = board.squares[i];
+      if (!sq) continue;
+      const bad = list.some((x) => x.level === 'error');
+      const mark = list.find((x) => x.level === (bad ? 'error' : 'warning') && x.badge)?.badge ?? '!';
+      const c = center(sq);
+      const x = c.x + 34;
+      const y = c.y - 34;
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(x, y, r, 0, Math.PI * 2);
+      ctx.fillStyle = bad ? '#e5484d' : '#ffc21a';
+      ctx.shadowColor = 'rgba(0,0,0,0.35)';
+      ctx.shadowBlur = 4;
+      ctx.fill();
+      ctx.shadowBlur = 0;
+      ctx.lineWidth = Math.min(2 / scale, 3);
+      ctx.strokeStyle = '#fff';
+      ctx.stroke();
+      ctx.fillStyle = bad ? '#fff' : '#3b2a00';
+      ctx.font = `${r * 1.35}px "Lilita One", sans-serif`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(mark, x, y + r * 0.08);
+      ctx.restore();
+    }
   };
 
   const toWorld = (e: PointerEvent | MouseEvent) => {
@@ -1195,10 +1316,6 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
         'aria-label': label,
         'aria-pressed': 'false',
         onclick: () => {
-          if (t === 'place' && placeTool === 'shop') {
-            district = -1;
-            pendingDistrict = null;
-          }
           tool = t === 'place' ? placeTool : t;
           clearSelection();
           settings = false;
@@ -1221,6 +1338,7 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
       ? (document.activeElement as HTMLElement).dataset.tool
       : null;
     clear(paletteList);
+    const next = nextDistrict();
     for (const g of PALETTE.filter((g) => g.group !== 'Tools')) {
       const section = h('section', { class: 'ed-tile-category', 'aria-label': g.group });
       section.append(h('div', { class: 'ed-side-sec-head' }, h('h4', null, g.group)));
@@ -1238,9 +1356,10 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
           seats: [{ name: 'Builder', cpu: true, ch: 'farmer' }],
           board: {
             ...board,
-            districts: pendingDistrict
-              ? [...board.districts, { name: pendingDistrict.name, color: pendingDistrict.color }]
-              : board.districts,
+            districts:
+              next && next.index == null
+                ? [...board.districts, { name: next.name, color: next.color }]
+                : board.districts,
             cols: 1,
             rows: 1,
             edges: [],
@@ -1250,8 +1369,9 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
                 x: 0,
                 y: 0,
                 t: it.tool as SquareType,
+                // The Property tile shows the color the next property will get.
                 ...(it.tool === 'shop'
-                  ? { d: pendingDistrict ? board.districts.length : district, base: 200 }
+                  ? { d: next ? (next.index ?? board.districts.length) : -1, base: 200 }
                   : {}),
               },
             ],
@@ -1271,10 +1391,6 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
               'data-tool': it.tool,
               'aria-pressed': String(tool === it.tool),
               onclick: () => {
-                if (it.tool === 'shop' && tool !== 'shop') {
-                  district = -1;
-                  pendingDistrict = null;
-                }
                 tool = it.tool;
                 placeTool = it.tool;
                 clearSelection();
@@ -1304,42 +1420,11 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
   const field = (label: string, input: HTMLElement) =>
     h('label', { class: 'ed-field' }, h('span', null, label), input);
 
-  const districtRow = districtPicker(
-    (choice) => {
-      district = choice.index ?? -1;
-      pendingDistrict = choice.index == null ? choice : null;
-      notice = '';
-      drawPalette();
-      drawInspector();
-      redraw();
-    },
-    () => {
-      if (!destroyed) {
-        drawInspector();
-        redraw();
-      }
-    },
-  );
-
   const drawInspector = () => {
     if (destroyed) return;
     const from = actionbar.getBoundingClientRect();
     const previousPrompt = actionContent.querySelector<HTMLElement>('.prompt-text');
-    districtRow.capture();
-    const choices = districtChoices(board);
-    if (district >= 0 && (!board.districts[district] || !canAssignProperty(board, district))) district = -1;
-    if (pendingDistrict && !choices.some((d) => d.index == null && d.color === pendingDistrict!.color))
-      pendingDistrict = null;
-    let activeChoice = choices.find((d) =>
-      pendingDistrict ? d.index == null && d.color === pendingDistrict.color : d.index === district,
-    );
-    if (!activeChoice) {
-      activeChoice = choices.find((d) => d.count < BOARD_LIMITS.districtSize);
-      district = activeChoice?.index ?? -1;
-      pendingDistrict = activeChoice?.index == null ? (activeChoice ?? null) : null;
-      if (tool === 'shop') drawPalette();
-    }
-    const hasDistrictChoices = choices.some((d) => d.count < BOARD_LIMITS.districtSize);
+    const next = nextDistrict();
     stopActionMorph();
     for (const animation of entranceAnimations) animation.cancel();
     entranceAnimations = [];
@@ -1351,7 +1436,7 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
     status.textContent = !inList ? 'Not saved yet' : unsaved ? 'Unsaved changes' : 'Saved';
     status.classList.toggle('unsaved', unsaved || !inList);
 
-    const check = validateBoard(board);
+    refreshCheck();
     const controls = h('div', { class: 'ed-context-controls' });
     clear(actionContent);
     syncTools();
@@ -1380,10 +1465,10 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
                   : 'Click a tile, or drag to select a group'
                 : tool === 'pan'
                   ? 'Drag to move around the board · tap the zoom to recenter'
-                  : tool === 'shop' && !activeChoice
-                    ? hasDistrictChoices
-                      ? 'Choose a district color to place properties'
-                      : 'All districts have 4 properties'
+                  : tool === 'shop'
+                    ? next
+                      ? `Property: goes into ${next.name} (${next.count} of ${BOARD_LIMITS.districtSize}) · click or drag to place`
+                      : 'All ten districts have 4 properties'
                     : `${label}: ${tool === 'erase' ? 'click or drag to remove squares' : 'click or drag to place tiles'}`),
       ),
       h(
@@ -1406,7 +1491,8 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
                 },
                 'Move',
               ),
-              ...([...selection].some((i) => board.squares[i].t === 'bank')
+              // Erase skips the bank, so it's offered unless the bank is all that's selected.
+              ...([...selection].every((i) => board.squares[i].t === 'bank')
                 ? []
                 : [
                     h(
@@ -1415,11 +1501,13 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
                         class: 'btn small danger',
                         onclick: () => {
                           snapshot();
+                          const keptBank = [...selection].some((i) => board.squares[i].t === 'bank');
                           board.squares = board.squares.filter(
                             (sq, i) => sq.t === 'bank' || !selection.has(i),
                           );
                           clearSelection();
                           changed();
+                          if (keptBank) say('Erased. The bank stays: every board needs one.');
                         },
                       },
                       'Erase',
@@ -1538,7 +1626,6 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
           board.squares = board.squares.filter((s) => !(s.t === 'shop' && s.d === i));
           for (const s of board.squares) if (s.t === 'shop' && s.d! > i) s.d!--;
           board.districts.splice(i, 1);
-          district = Math.min(district, Math.max(0, board.districts.length - 1));
           clearSelection();
           changed();
         };
@@ -1621,7 +1708,6 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
                       `District ${i + 1}`,
                     color: free,
                   });
-                  district = i;
                   changed();
                 },
               },
@@ -1666,8 +1752,25 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
               plural(board.districts.length, 'district'),
             ].join(' · '),
           ),
-          ...check.errors.map((e) => h('p', { class: 'ed-err' }, e)),
-          ...check.warnings.map((w) => h('p', { class: 'ed-warn' }, w)),
+          // Errors first; a problem on particular tiles can be clicked to go to the first one.
+          ...[...check.issues]
+            .sort((a, b) => Number(b.level === 'error') - Number(a.level === 'error'))
+            .filter((x, k, all) => all.findIndex((y) => y.text === x.text) === k)
+            .map((x) => {
+              const at = x.squares?.[0];
+              const row = h('p', { class: x.level === 'error' ? 'ed-err' : 'ed-warn' }, x.text);
+              if (at != null && board.squares[at]) {
+                row.classList.add('ed-issue-link');
+                row.setAttribute('role', 'button');
+                row.tabIndex = 0;
+                row.title = 'Show it on the board';
+                row.onclick = row.onkeydown = (e: Event) => {
+                  if (e instanceof KeyboardEvent && e.key !== 'Enter' && e.key !== ' ') return;
+                  showTile(at);
+                };
+              }
+              return row;
+            }),
           ...(check.errors.length ? [] : [h('p', { class: 'ed-ok' }, 'This board is playable.')]),
         ),
       );
@@ -1681,9 +1784,6 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
       );
       body.scrollTop = keepScroll;
     }
-    const showDistrictRow = !settings && tool === 'shop' && (hasDistrictChoices || districtRow.hasButtons());
-    if (showDistrictRow) inspector.append(districtRow.el);
-    districtRow.update(choices, activeChoice?.key ?? null, showDistrictRow);
 
     // Selected square
     const squarePanel = tileInspector;
@@ -1705,6 +1805,20 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
     );
     if (!sq) squareBody.append(h('p', { class: 'hint' }, 'Use Select and click a square to edit it.'));
     else {
+      // This tile's problems first, worst first, as the badge on it promised.
+      const own = [...(tileIssues.get(selected!) ?? [])].sort(
+        (a, b) => Number(b.level === 'error') - Number(a.level === 'error'),
+      );
+      if (own.length)
+        squareBody.append(
+          h(
+            'div',
+            { class: 'ed-tile-issues' },
+            ...own.map((x) =>
+              h('p', { class: x.level === 'error' ? 'ed-err' : 'ed-warn' }, x.tileText ?? x.text),
+            ),
+          ),
+        );
       if (sq.t === 'bank')
         squareBody.append(
           h('p', { class: 'hint' }, 'Every board needs a bank. You can move it, but it cannot be erased.'),
@@ -1804,11 +1918,9 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
       }
     }
 
-    controls.hidden = !(tool === 'shop' && (hasDistrictChoices || districtRow.hasButtons()));
+    controls.hidden = true;
     actionbar.classList.toggle('ed-action-error', !!notice && noticeBad);
-    const hasOptions =
-      (tool === 'shop' && (hasDistrictChoices || districtRow.hasButtons())) ||
-      (tool === 'select' && selection.size > 0);
+    const hasOptions = tool === 'select' && selection.size > 0;
     actionbar.classList.toggle('status', !hasOptions);
     const nextPrompt = actionContent.querySelector<HTMLElement>('.prompt-text');
     // Keep an unchanged message on its original reveal timeline across inspector updates.
@@ -2192,7 +2304,6 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
     stopActionMorph();
     promptAnimation?.cancel();
     for (const animation of entranceAnimations) animation.cancel();
-    districtRow.destroy();
     root.remove();
   }
 
