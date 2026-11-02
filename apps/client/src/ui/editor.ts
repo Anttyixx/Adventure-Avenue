@@ -784,6 +784,7 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
   const showTile = (i: number) => {
     const { w, h: hh } = worldSize(board);
     const c = center(board.squares[i]);
+    clearSelection();
     settings = false;
     tool = 'select';
     selection = new Set([i]);
@@ -1420,6 +1421,26 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
   const field = (label: string, input: HTMLElement) =>
     h('label', { class: 'ed-field' }, h('span', null, label), input);
 
+  const problemEntry = (issue: BoardIssue, onTile = false) => {
+    const at = onTile ? undefined : issue.squares?.find((i) => !!board.squares[i]);
+    const tile = at == null ? null : board.squares[at];
+    const level = issue.level === 'error' ? 'Needs fixing' : 'Worth checking';
+    const row = h(
+      tile ? 'button' : 'div',
+      {
+        class: `ed-problem-entry ${issue.level}${tile ? ' ed-issue-link' : ''}`,
+        ...(tile ? { type: 'button' } : {}),
+      },
+      h('span', { class: 'ed-problem-level' }, level),
+      h('span', { class: 'ed-problem-text' }, onTile ? (issue.tileText ?? issue.text) : issue.text),
+      tile
+        ? h('span', { class: 'ed-problem-target' }, `View tile · Column ${tile.x + 1}, row ${tile.y + 1} →`)
+        : null,
+    );
+    if (at != null) row.onclick = () => showTile(at);
+    return row;
+  };
+
   const drawInspector = () => {
     if (destroyed) return;
     const from = actionbar.getBoundingClientRect();
@@ -1756,21 +1777,7 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
           ...[...check.issues]
             .sort((a, b) => Number(b.level === 'error') - Number(a.level === 'error'))
             .filter((x, k, all) => all.findIndex((y) => y.text === x.text) === k)
-            .map((x) => {
-              const at = x.squares?.[0];
-              const row = h('p', { class: x.level === 'error' ? 'ed-err' : 'ed-warn' }, x.text);
-              if (at != null && board.squares[at]) {
-                row.classList.add('ed-issue-link');
-                row.setAttribute('role', 'button');
-                row.tabIndex = 0;
-                row.title = 'Show it on the board';
-                row.onclick = row.onkeydown = (e: Event) => {
-                  if (e instanceof KeyboardEvent && e.key !== 'Enter' && e.key !== ' ') return;
-                  showTile(at);
-                };
-              }
-              return row;
-            }),
+            .map((x) => problemEntry(x)),
           ...(check.errors.length ? [] : [h('p', { class: 'ed-ok' }, 'This board is playable.')]),
         ),
       );
@@ -1810,15 +1817,7 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
         (a, b) => Number(b.level === 'error') - Number(a.level === 'error'),
       );
       if (own.length)
-        squareBody.append(
-          h(
-            'div',
-            { class: 'ed-tile-issues' },
-            ...own.map((x) =>
-              h('p', { class: x.level === 'error' ? 'ed-err' : 'ed-warn' }, x.tileText ?? x.text),
-            ),
-          ),
-        );
+        squareBody.append(h('div', { class: 'ed-tile-issues' }, ...own.map((x) => problemEntry(x, true))));
       if (sq.t === 'bank')
         squareBody.append(
           h('p', { class: 'hint' }, 'Every board needs a bank. You can move it, but it cannot be erased.'),
@@ -2235,6 +2234,7 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
       root.querySelector('.ed-modal')
     )
       return;
+    if (e.key === ' ' && (e.target as HTMLElement).closest('button, [role="button"], a')) return;
     if (e.key === ' ' && !e.repeat) {
       e.preventDefault();
       spaceHeld = true;

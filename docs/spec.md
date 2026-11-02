@@ -1296,3 +1296,10 @@ pulses as each one arrives; the source has a small ring. Reduced motion shows th
 
 Legacy backstreets in stored boards, files and saved games become portals; older boards that
 stored mutual links without colors get colors automatically. Lagoon's odd warp leads to the bank.
+
+Problem entries in Board settings and tile info share inset cards with 14px body text, 1.45 line
+height, clear spacing, a colored side edge and a plain severity label (Needs fixing or Worth
+checking). Tile-related settings entries are full-width buttons with a View tile position hint.
+Click, Enter or Space closes settings, selects the first valid affected tile, centers the camera
+on it and opens tile info. Board-wide entries remain readable, noninteractive cards. Tile info
+uses the shorter tile-specific wording where available.

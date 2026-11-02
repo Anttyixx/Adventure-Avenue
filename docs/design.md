@@ -713,3 +713,10 @@ _Request: "Let builders set each district's starting price."_
 - [ ] Looked at in a browser on desktop and 844 × 390; nothing cut off, no dead space.
 - [ ] UI Lab control added (a meaningful state, not one per tweak) and listed in `RECENT`.
 - [ ] If it introduced a new pattern, this guide is updated in the same commit.
+
+Problem entries in Board settings and tile info share inset cards with 14px body text, 1.45 line
+height, clear spacing, a colored side edge and a plain severity label (Needs fixing or Worth
+checking). Tile-related settings entries are full-width buttons with a View tile position hint.
+Click, Enter or Space closes settings, selects the first valid affected tile, centers the camera
+on it and opens tile info. Board-wide entries remain readable, noninteractive cards. Tile info
+uses the shorter tile-specific wording where available.

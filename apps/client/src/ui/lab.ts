@@ -101,6 +101,7 @@ const rnd = (n: number) => Math.floor(Math.random() * n);
 const RECENT = new Set([
   'Board builder',
   'Board builder: Town',
+  'Board builder: Problems',
   'Board builder: Board settings',
   'Board builder: Tiles pane',
   'Board builder: Pan',
@@ -1555,6 +1556,7 @@ export async function openLab(app: HTMLElement, section?: string) {
         [
           ['Board builder', null],
           ['Board builder: Town', null],
+          ['Board builder: Problems', '.ed-info > button'],
           ['Board builder: Board settings', '.ed-info > button'],
           ['Board builder: Tiles pane', '.ed-tool-button[aria-label="Place"]'],
           ['Board builder: Pan', '.ed-tool-button[aria-label="Pan"]'],
@@ -1570,7 +1572,20 @@ export async function openLab(app: HTMLElement, section?: string) {
               : label.endsWith('Warps and portals')
                 ? (BUILT_IN_BOARDS.find((b) => b.squares.some((s) => s.t === 'warp')) ?? null)
                 : BUILT_IN_BOARDS[0];
-          const close = openEditor(holder, start, {
+          const preview = label.endsWith('Problems') && start ? structuredClone(start) : start;
+          if (label.endsWith('Problems') && preview) {
+            const property = preview.squares.find((s) => s.t === 'shop');
+            if (property) {
+              property.t = 'venture';
+              delete property.d;
+            }
+            const special = preview.squares.find((s) => s.t === 'venture' && s !== property);
+            if (special) {
+              special.t = 'warp';
+              delete special.link;
+            }
+          }
+          const close = openEditor(holder, preview, {
             onExit: () => holder.remove(),
             onPlay: () => {
               holder.remove();

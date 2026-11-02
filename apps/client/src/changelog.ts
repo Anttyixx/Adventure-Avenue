@@ -26,6 +26,18 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: '2026-11-02-readable-problems',
+    date: 'Nov 2, 2026',
+    title: 'Clearer board problems',
+    features: [
+      {
+        tag: 'better',
+        title: 'Find and fix board problems',
+        text: 'Problems have clearer text, spacing and severity labels in Board settings and tile info. Click a tile-related problem to select its tile, bring it into view and open its info panel.',
+      },
+    ],
+  },
+  {
     id: '2026-11-02-builder-badges',
     date: 'Nov 2, 2026',
     title: 'Board builder: problem badges and automatic districts',

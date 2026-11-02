@@ -7272,16 +7272,49 @@ div.sl-inline label {
 .ed-tile-issues {
   margin-bottom: 10px;
 }
+/* Shared problem cards in Board settings and selected tile info. */
+.ed-problem-entry {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 6px;
+  width: 100%;
+  margin: 8px 0;
+  padding: 10px 12px;
+  border: 1px solid var(--glass-line);
+  border-left: 3px solid var(--bad);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text);
+  font: 400 14px/1.45 var(--body);
+  text-align: left;
+  overflow-wrap: anywhere;
+}
+.ed-problem-entry.warning {
+  border-left-color: var(--accent);
+}
+.ed-problem-level {
+  color: var(--bad);
+  font-size: 11px;
+  font-weight: 700;
+}
+.ed-problem-entry.warning .ed-problem-level {
+  color: var(--accent);
+}
+.ed-problem-target {
+  color: var(--muted);
+  font-size: 12px;
+}
 .ed-issue-link {
   cursor: pointer;
-  transition: filter 0.15s;
+  transition: background 0.15s;
 }
 .ed-issue-link:hover {
-  filter: brightness(1.25);
+  background: rgba(255, 255, 255, 0.1);
 }
 .ed-issue-link:focus-visible {
   outline: 2px solid var(--accent);
-  outline-offset: 1px;
+  outline-offset: 2px;
 }
 
 /* The chosen tile in the Tiles pane glows like a choice in a game: a pulsing white outline in a
