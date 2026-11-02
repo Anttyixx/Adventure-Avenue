@@ -26,6 +26,23 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: '2026-11-02-calm-action-messages',
+    date: 'Nov 2, 2026',
+    title: 'Smoother turns and clearer messages',
+    features: [
+      {
+        tag: 'better',
+        title: 'Events come before waiting',
+        text: 'Action messages get reading time and queue during bursts. Movement and waiting text return only after a quiet gap. Purchases announce once and accepted trades clear their considering message before effects play.',
+      },
+      {
+        tag: 'better',
+        title: 'Gentler turn handoffs',
+        text: 'Turns pause for two seconds before switching players, with an extra second for the camera glide. The pause before purchase payments is now half a second. Suit pickups happen immediately, whether passing or stopping.',
+      },
+    ],
+  },
+  {
     id: '2026-11-02-readable-problems',
     date: 'Nov 2, 2026',
     title: 'Clearer board problems',

@@ -15,10 +15,19 @@ export const TIMING = {
   dieHold: 650,
   /** Pause after landing so players see where the token stopped. */
   land: 1000,
-  /** Observers can read a result before the action bar switches to a waiting message. */
+  /** Everyone gets reading time before the bar can return to low-priority activity. */
   actionResult: 2500,
+  /** Shorter reading slots when several events arrive together; UI time is never CPU-scaled. */
+  actionBurst: 1200,
+  /** Quiet buffer before returning to movement/waiting text. */
+  actionIdleGrace: 1500,
+  actionQueueLimit: 6,
   /** The end of a turn, before the next player's turn starts. */
-  turnEnd: 1000,
+  turnEnd: 2000,
+  /** Extra time for a smooth camera handoff between players. */
+  turnPanExtra: 1000,
+  /** Camera glide: the previous ~0.6 seconds plus one extra second. */
+  turnCamera: 1600,
 
   /** Start of a turn: banner time, and the pause before CPU / human turns continue. */
   turnBanner: 1300,
@@ -27,12 +36,12 @@ export const TIMING = {
   roundBanner: 1400,
 
   /** A beat after deciding to buy, before the coins fly to the bank. */
-  beforePay: 1000,
+  beforePay: 500,
   /** Money moving, a square changing owner or value, a suit picked up. */
   money: 1000,
   owner: 1100,
   value: 1000,
-  suit: 1000,
+  suit: 0,
   promote: 1800,
   /** A district's stock rising: the zoom to its squares (and back), then the banner and arrows. */
   stockZoom: 600,

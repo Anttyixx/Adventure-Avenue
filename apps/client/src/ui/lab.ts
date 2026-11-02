@@ -43,7 +43,7 @@ import { clear, fmt, h } from './dom';
 import { shortName } from '../names';
 import { DerbyView, MemoryView, ReelsView, VentureView } from './games';
 import { Hud } from './hud';
-import { paymentActivity } from './activity';
+import { paymentActivity, paymentLogMatches } from './activity';
 import { clearGuest, loadGuest, saveGuest } from '../save';
 import { mainMenu } from './menu';
 import { openEditor } from './editor';
@@ -109,6 +109,8 @@ const RECENT = new Set([
   'Game setup',
   'Game setup (friend joined)',
   'Game setup (offline)',
+  'Event burst → quiet fallback',
+  'Turn handoff',
   'Buy result timing',
   'Observer result → waiting',
   'Text reveal',
@@ -429,6 +431,20 @@ export async function openLab(app: HTMLElement, section?: string) {
     const s = addSection('prompts', 'Action bar & banners');
     row(
       s,
+      btn('Event burst → quiet fallback', async () => {
+        hud.cancelPrompt();
+        hud.tick(`${cur().name} collected the spade.`, 'suit');
+        hud.status(`${cur().name} is moving...`, 'move', true);
+        await new Promise((r) => setTimeout(r, 250));
+        hud.tick(`${cur().name} paid a shop fee.`, 'money');
+        hud.status(`${cur().name} is moving...`, 'move', true);
+        await new Promise((r) => setTimeout(r, 2200));
+        hud.tick(`${cur().name} reached the bank.`, 'move');
+        hud.status(`${cur().name} is deciding what to do...`, 'wait', true);
+      }),
+      btn('Turn handoff', () => {
+        board.handoffTo((board.followPid + 1) % G.players.length, T.turnCamera);
+      }),
       btn('Buy result timing', async () => {
         const copy = cloneState(G);
         const p = copy.players[cur().id];
@@ -447,14 +463,17 @@ export async function openLab(app: HTMLElement, section?: string) {
           hud.tick(`${p.name} passed on the property.`, 'property');
           return;
         }
+        let payment: Extract<import('@aa/engine').GameEvent, { type: 'money' }> | null = null;
         const game = new Game(copy, {
           ...cpuIO(() => copy),
           emit: async (event) => {
             if (event.type === 'money') {
+              payment = event;
               const completed = paymentActivity(copy, event);
               if (completed) hud.tick(completed.text, completed.kind);
-              await new Promise((resolve) => setTimeout(resolve, 2000));
-            } else if (event.type === 'log') hud.tick(event.text, event.kind);
+              await new Promise((resolve) => setTimeout(resolve, T.beforePay + T.money));
+            } else if (event.type === 'log' && (!payment || !paymentLogMatches(copy, payment, event.text)))
+              hud.tick(event.text, event.kind);
           },
         });
         await game.buySquare(p, sq, sq.value, null, 'bought');

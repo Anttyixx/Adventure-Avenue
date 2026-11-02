@@ -1,3 +1,4 @@
+import { StatusMessages } from './status-messages';
 /**
  * Dark-glass overlays floating over the board: info chip, toolbar (zoom chip, Guide, Menu),
  * action bar (the status line when no options are up), Game log button (expands into the log),
@@ -71,10 +72,10 @@ export class Hud {
   });
   logWrap = h('div', { class: 'lb-wrap' }, this.logButton);
   private logLabel = h('div', { class: 'lb-label' }, 'Game log');
-  private lastAction: { text: string; kind?: IconKind } | null = null;
-  private waiting: { text: string; kind?: IconKind } | null = null;
-  private resultUntil = 0;
-  private resultTimer = 0;
+  private messages = new StatusMessages(() => this.showStatus());
+  private get waiting() {
+    return this.messages.waiting;
+  }
   private shownStatus: { text: string; kind?: IconKind } | null = null;
   /** The Game log button's place while folded (it is hidden while the log is open). */
   private lineRect = { top: 0, left: 0, right: 0, width: 0, height: 0 };
@@ -223,7 +224,7 @@ export class Hud {
   }
 
   destroy() {
-    clearTimeout(this.resultTimer);
+    this.messages.destroy();
     this.resize.disconnect();
     this.askChanges.disconnect();
     cancelAnimationFrame(this.askFrame);
@@ -757,11 +758,12 @@ export class Hud {
 
   /** Show the last thing that happened on the status line (it ends any wait). */
   tick(text: string, kind?: IconKind, holdMs = 0) {
-    clearTimeout(this.resultTimer);
-    this.resultUntil = performance.now() + holdMs;
-    this.lastAction = { text, kind };
-    this.waiting = null;
-    this.showStatus();
+    this.messages.push({ text, kind }, holdMs);
+    if (this.logOpen) this.renderLog();
+  }
+
+  /** Refresh history even when a duplicate announcement is omitted from the action bar. */
+  refreshLog() {
     if (this.logOpen) this.renderLog();
   }
 
@@ -807,9 +809,7 @@ export class Hud {
 
   /** Let observers read a completed action before replacing it with the pending choice. */
   private currentStatus() {
-    return this.waiting && performance.now() < this.resultUntil
-      ? this.lastAction
-      : (this.waiting ?? this.lastAction);
+    return this.messages.current;
   }
 
   private showStatus() {
@@ -1086,8 +1086,7 @@ export class Hud {
    */
   prompt<T>(text: string | Node, buttons: PromptButton<T>[], color?: number): Promise<T> {
     this.cancelPrompt();
-    clearTimeout(this.resultTimer);
-    this.resultUntil = 0;
+    this.messages.decision();
     // The bar morphs from whatever it showed (the status line or other options) to these.
     const from = this.askSize();
     clear(this.ask);
@@ -1152,40 +1151,22 @@ export class Hud {
     this.promptResolve = null;
     this.mainButton = null;
     // The choice is complete. Never restore its old "deciding" message while effects animate.
-    this.waiting = null;
-    clearTimeout(this.resultTimer);
-    this.resultUntil = 0;
+    this.messages.decision();
     this.showStatus();
     if (this.logOpen) this.renderLog();
   }
 
   cancelPrompt() {
+    this.messages.decision();
     this.promptResolve = null;
     this.mainButton = null;
   }
 
   /**
-   * Show what the game is waiting on, e.g. "Rosa is buying stocks...". It stays until the next
-   * action or wait replaces it, so the line never drops back to an older action in between.
+   * Low-priority activity fills quiet gaps after event reading time and an idle grace period.
    */
-  status(text: string, kind?: IconKind, immediate = false) {
-    if (immediate) {
-      clearTimeout(this.resultTimer);
-      this.resultUntil = 0;
-    }
-    if (this.waiting?.text === text && this.waiting.kind === kind && !immediate) return;
-    this.waiting = { text, kind };
-    this.showStatus();
-    clearTimeout(this.resultTimer);
-    const remaining = this.resultUntil - performance.now();
-    if (remaining > 0) {
-      this.resultTimer = window.setTimeout(() => {
-        this.resultTimer = 0;
-        this.resultUntil = 0;
-        this.showStatus();
-      }, remaining);
-    }
-    // The log always shows the actual pending decision, even while the bar holds a result.
+  status(text: string, kind?: IconKind, _immediate = false) {
+    this.messages.fallback({ text, kind });
     if (this.logOpen) this.renderLog();
   }
 

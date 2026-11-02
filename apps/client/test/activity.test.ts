@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { Game, newGame, cpuSeats, type GameState } from '@aa/engine';
-import { activity, paymentActivity } from '../src/ui/activity';
+import { activity, paymentActivity, paymentLogMatches } from '../src/ui/activity';
 
 const G = { players: [{ name: 'Rosa' }] } as GameState;
 const path = { kind: 'path', pid: 0, steps: 5, dests: [] } as const;
@@ -101,5 +101,38 @@ describe('confirmed transaction messages', () => {
 
   it('leaves unrelated payment presentations unchanged', () => {
     expect(paymentActivity(G, { type: 'money', from: -1, to: 0, amount: 300, reason: 'Venture' })).toBeNull();
+  });
+});
+
+describe('payment summary consolidation', () => {
+  it.each([
+    ['Purchase', 'Rosa bought a shop for 100G.'],
+    ['Construction', 'Rosa built a Circus.'],
+    ['Buyout', "Rosa bought out Sam's shop for 500G."],
+    ['Renovation', 'Rosa renovated into a Home.'],
+    ['Investment', 'Rosa invested 100G.'],
+    ['Circus upgrade', 'Rosa upgraded the circus. Show fee is now 100G.'],
+    ['Stock', 'Rosa bought 20 Brick Row shares for 200G.'],
+    ['Stock sale', 'Rosa sold 20 Brick Row shares for 200G.'],
+    ['Fee', 'Rosa paid Sam 100G.'],
+  ])('matches the detailed %s log to its committed payment', (reason, text) => {
+    expect(
+      paymentLogMatches(
+        G,
+        {
+          type: 'money',
+          from: reason === 'Stock sale' ? -1 : 0,
+          to: reason === 'Stock sale' ? 0 : -1,
+          amount: 100,
+          reason,
+        },
+        text,
+      ),
+    ).toBe(true);
+  });
+  it('keeps unrelated and other-player logs', () => {
+    const payment = { type: 'money' as const, from: 0, to: -1, amount: 100, reason: 'Purchase' };
+    expect(paymentLogMatches(G, payment, 'Rosa collected the spade.')).toBe(false);
+    expect(paymentLogMatches(G, payment, 'Sam bought a shop for 100G.')).toBe(false);
   });
 });

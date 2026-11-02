@@ -103,6 +103,13 @@ export class BoardView {
   // Camera: world point at the focus, and zoom in CSS px per world unit.
   cam = { x: 650, y: 400, z: 1 };
   camTarget = { x: 650, y: 400, z: 1 };
+  private handoff: { from: { x: number; y: number; z: number }; start: number; duration: number } | null =
+    null;
+  /** Slow only the turn handoff; ordinary movement and zoom keep their usual easing. */
+  handoffTo(pid: number, duration: number) {
+    this.followPid = pid;
+    this.handoff = { from: { ...this.cam }, start: performance.now(), duration };
+  }
   /**
    * How far the player has zoomed out with the wheel or a pinch: 0 = close on the active
    * player, up to ZOOM_MAX_OUT = the whole board clear of the HUD. Past
@@ -853,6 +860,16 @@ export class BoardView {
     }
     if (this.autoZ != null && !this.showHold && !this.peekWhole) this.camTarget.z = this.autoZ;
     if (this.lookAt) this.camTarget = { ...this.lookAt };
+    if (this.handoff) {
+      const t = reducedMotion()
+        ? 1
+        : Math.min(1, (performance.now() - this.handoff.start) / this.handoff.duration);
+      const k = t * t * (3 - 2 * t);
+      for (const axis of ['x', 'y', 'z'] as const)
+        this.cam[axis] = this.handoff.from[axis] + (this.camTarget[axis] - this.handoff.from[axis]) * k;
+      if (t === 1) this.handoff = null;
+      return;
+    }
     const k = reducedMotion() ? 1 : 0.12;
     this.cam.x += (this.camTarget.x - this.cam.x) * k;
     this.cam.y += (this.camTarget.y - this.cam.y) * k;

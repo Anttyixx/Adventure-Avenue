@@ -720,3 +720,15 @@ checking). Tile-related settings entries are full-width buttons with a View tile
 Click, Enter or Space closes settings, selects the first valid affected tile, centers the camera
 on it and opens tile info. Board-wide entries remain readable, noninteractive cards. Tile info
 uses the shorter tile-specific wording where available.
+
+### Action-bar event priority and quiet gaps
+
+`ui/status-messages.ts` schedules event text independently of engine/animation pacing. Keep
+results for 2.5 seconds (1.2 per slot during bursts), then a 1.5-second quiet grace before activity
+fallback. Waiting/moving never bypass results, even when a caller requests an immediate update.
+Keep at most six pending events; full history remains in the log. Player-choice controls take
+priority immediately and clear stale announcements. Keep the existing morph and typing reveal;
+never replay the same purchase for its summary and detailed log. UI Lab’s Event burst → quiet
+fallback and Turn handoff controls demonstrate the intended pacing. Turn-camera glides use a
+1.6-second smoothstep only during handoff; ordinary following keeps its existing easing and
+reduced motion snaps the camera.

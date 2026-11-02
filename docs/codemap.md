@@ -236,3 +236,6 @@ All in `localStorage`, prefixed `adventure-avenue-`: `save-v1` (the saved game),
 setup), `audio`, `fast` (Fast CPU), `names`, `online-name`, `net-token` (this device's id
 online), `guest`, `guest-in-game` (rejoin info), `boards` (custom boards), `stocks-lab`,
 `stocks-lab-live`, `seen-update`, `update-tried`.
+
+`apps/client/src/ui/status-messages.ts`: bounded action-bar event queue, result reading slots,
+quiet fallback grace and immediate decision interruption; tested with fake timers.

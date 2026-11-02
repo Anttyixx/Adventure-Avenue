@@ -943,6 +943,7 @@ export class Game {
         [a, b, offer.cashGive],
         [b, a, offer.cashGet],
       ]);
+      await this.log(`${a.name} and ${b.name} made a trade.`, a.id, 'property', [b.id]);
       for (const id of [...offer.give, ...offer.get]) {
         groups.add(G.nodes[id].g);
         await this.emit({ type: 'owner', sq: id, owner: G.nodes[id].owner });
@@ -952,7 +953,6 @@ export class Game {
         await this.expandAndAnnounce(a.id, g);
         await this.expandAndAnnounce(b.id, g);
       }
-      await this.log(`${a.name} and ${b.name} made a trade.`, a.id, 'property', [b.id]);
     } else {
       await this.log(`${b.name} declined ${a.name}'s trade.`, a.id, 'property', [b.id]);
     }

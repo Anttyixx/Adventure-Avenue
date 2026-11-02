@@ -1303,3 +1303,24 @@ checking). Tile-related settings entries are full-width buttons with a View tile
 Click, Enter or Space closes settings, selects the first valid affected tile, centers the camera
 on it and opens tile info. Board-wide entries remain readable, noninteractive cards. Tile info
 uses the shorter tile-specific wording where available.
+
+### Action-bar message pacing
+
+Real events outrank movement and waiting text. Event messages have 2.5 seconds of reading time;
+bursts use 1.2-second slots, keeping at most six pending messages (the full history stays in the
+log). Identical pending/current messages do not replay. The final result remains until both its
+reading time plus a 1.5-second grace and the activity-change quiet buffer have passed. Repeated
+moving/waiting updates never force a result away. These UI times are not reduced by Fast CPU.
+Actual player-choice prompts appear immediately and discard stale queued announcements.
+Payment summaries announce committed transactions once; corresponding detailed log entries
+remain in history without another action-bar announcement, including multi-payment buyouts.
+Suit collection is announced at pickup, without waiting for its later log entry. Accepted trades
+announce their committed result before ownership/payment effects, clearing stale consideration.
+
+At normal speed the end-of-turn pause is 2 seconds, followed by a smooth 1.6-second camera glide
+(previously about 0.6). The existing human/CPU introductory pauses remain 0.7/1.2 seconds, with
+one additional second allowed for the glide on handoffs. The extra handoff does not apply to the
+first turn or repeated turns by the same player. Fast CPU scales gameplay pacing as before;
+reduced motion snaps the camera. Purchase/construction/buyout/renovation pre-payment pauses
+are 0.5 seconds. Suit tiles skip the usual one-second landing pause and have no pickup pause;
+visual effects still play immediately. Other decision delays stay unchanged.

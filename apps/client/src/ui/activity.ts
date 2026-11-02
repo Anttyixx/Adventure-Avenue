@@ -109,3 +109,25 @@ export function paymentActivity(G: GameState, event: Extract<GameEvent, { type: 
       return null;
   }
 }
+
+/** A transaction's detailed log remains in history, but its early result already filled the bar. */
+export function paymentLogMatches(
+  G: GameState,
+  payment: Extract<GameEvent, { type: 'money' }>,
+  text: string,
+) {
+  const actor = G.players[payment.reason === 'Stock sale' ? payment.to : payment.from]?.name;
+  if (!actor || !text.startsWith(`${actor} `)) return false;
+  const patterns: Record<string, RegExp> = {
+    Purchase: / bought a shop for /,
+    Construction: / built a /,
+    Buyout: / bought out /,
+    Renovation: / renovated into /,
+    Investment: / invested /,
+    'Circus upgrade': / upgraded the circus/,
+    Stock: / bought \d+ .+ shares for /,
+    'Stock sale': / sold \d+ .+ shares for /,
+    Fee: / paid /,
+  };
+  return patterns[payment.reason]?.test(text) ?? false;
+}

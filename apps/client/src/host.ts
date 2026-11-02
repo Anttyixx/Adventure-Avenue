@@ -4,6 +4,7 @@
  */
 import {
   Game,
+  SUITS,
   netWorth,
   stockPrice,
   K,
@@ -30,7 +31,7 @@ import { showResults } from './ui/results';
 import { investOnBoard } from './ui/invest';
 import { AuctionView } from './ui/auction';
 import { confettiRain } from './ui/confetti';
-import { activity, paymentActivity, PRE_ROLL_STEPS } from './ui/activity';
+import { activity, paymentActivity, paymentLogMatches, PRE_ROLL_STEPS } from './ui/activity';
 import {
   answerTradeOnBoard,
   auctionOnBoard,
@@ -308,9 +309,13 @@ export class HotSeat implements GameIO {
 
   // ------------------------------------------------------------ decisions
 
+  private summarizedPayments: Extract<GameEvent, { type: 'money' }>[] = [];
+  private suitMessage: string | null = null;
+
   async decide<T extends DecisionKind>(req: DecisionRequest<T>): Promise<DecisionAnswer<T>> {
     if (this.dead) return never();
     await this.pauseGate();
+    this.summarizedPayments = [];
     const seq = this.seq++;
     if (this.link) return (await this.decideOnline(seq, req as DecisionRequest)) as DecisionAnswer<T>;
     const p = this.G.players[req.pid];
@@ -662,7 +667,8 @@ export class HotSeat implements GameIO {
         board.die = null;
         board.frameIds = null;
         // A beat at the end of the previous turn before the next player starts.
-        if (board.activePid >= 0 && board.activePid !== e.pid) await this.wait(T.turnEnd);
+        const handoff = board.activePid >= 0 && board.activePid !== e.pid;
+        if (handoff) await this.wait(T.turnEnd);
         this.link?.turnStart(this.seq, G);
         if (this.saving) saveGame(G, this.link?.saveInfo?.());
         const p = G.players[e.pid];
@@ -671,12 +677,13 @@ export class HotSeat implements GameIO {
         board.walkTarget = -1;
         hud.activePid = e.pid;
         this.updateSpeed();
+        if (handoff) board.handoffTo(e.pid, T.turnCamera * this.speed);
         this.refresh();
         if (this.localHuman(p.id)) sound.play('turn');
         hud.banner(`${p.name}'s turn`, PLAYER_COLORS[p.color], T.turnBanner);
         this.movementRoll = null;
         hud.status(`${p.name} is deciding what to do...`, 'wait', true);
-        await this.wait(p.cpu ? T.turnStartCpu : T.turnStartHuman);
+        await this.wait((p.cpu ? T.turnStartCpu : T.turnStartHuman) + (handoff ? T.turnPanExtra : 0));
         break;
       }
       case 'roundStart':
@@ -721,23 +728,27 @@ export class HotSeat implements GameIO {
         break;
       case 'land':
         this.movementRoll = null;
-        hud.tick(
-          `${G.players[e.pid].name} landed on ${squareName(G, G.nodes[e.sq])}.`,
-          'move',
-          this.localHuman(e.pid) ? 0 : T.actionResult,
-        );
+        if (![...SUITS, 'change'].includes(G.nodes[e.sq].t))
+          hud.tick(
+            `${G.players[e.pid].name} landed on ${squareName(G, G.nodes[e.sq])}.`,
+            'move',
+            this.localHuman(e.pid) ? 0 : T.actionResult,
+          );
         board.frameIds = null;
         sound.play('land');
         board.ring(e.sq, '#ffffff');
         board.walkTarget = -1;
-        await this.wait(T.land);
+        if (![...SUITS, 'change'].includes(G.nodes[e.sq].t)) await this.wait(T.land);
         break;
       case 'money': {
         // The engine has committed the payment and property changes already. Announce that
         // result before any pacing delay, so a completed choice never looks undecided.
         const completed = paymentActivity(G, e);
-        if (completed)
-          hud.tick(completed.text, completed.kind, this.localHuman(G.order[G.turn]) ? 0 : T.actionResult);
+        if (completed) {
+          if (!this.summarizedPayments.some((p) => p.reason === e.reason && p.from === e.from))
+            hud.tick(completed.text, completed.kind);
+          this.summarizedPayments.push(e);
+        }
         // Buying something: a beat after the choice before the coins go to the bank.
         if (['Purchase', 'Construction', 'Buyout', 'Renovation'].includes(e.reason))
           await this.wait(T.beforePay);
@@ -787,6 +798,8 @@ export class HotSeat implements GameIO {
         if (!this.passing) await this.wait(T.value);
         break;
       case 'suit': {
+        this.suitMessage = e.suit >= 0 ? `${G.players[e.pid].name} collected the ${SUITS[e.suit]}.` : null;
+        hud.tick(this.suitMessage ?? `${G.players[e.pid].name} collected a wild card.`, 'suit');
         sound.play('suit');
         const text = e.suit >= 0 ? SUIT_CHARS[e.suit] : 'Wild card!';
         const color = e.suit === 1 || e.suit === 2 ? '#ff6b6b' : '#ffffff';
@@ -798,7 +811,7 @@ export class HotSeat implements GameIO {
         }
         const pos = board.tokenPos(e.pid);
         board.floatText(pos.x, pos.y, text, color);
-        await this.wait(T.suit);
+        // Pickup effects run immediately, without a stopped-tile pause.
         break;
       }
       case 'promote': {
@@ -920,9 +933,20 @@ export class HotSeat implements GameIO {
         });
         break;
       }
-      case 'log':
-        hud.tick(e.text, e.kind, this.localHuman(G.order[G.turn]) ? 0 : T.actionResult);
+      case 'log': {
+        hud.refreshLog();
+        if (e.text === this.suitMessage) {
+          this.suitMessage = null;
+          break;
+        }
+        const payments = this.summarizedPayments.filter((p) => paymentLogMatches(G, p, e.text));
+        if (payments.length) {
+          this.summarizedPayments = this.summarizedPayments.filter((p) => !payments.includes(p));
+          break;
+        }
+        hud.tick(e.text, e.kind);
         break;
+      }
       case 'notice':
         hud.tick(e.text, 'alert');
         break;
