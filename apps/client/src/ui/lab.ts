@@ -104,6 +104,7 @@ const RECENT = new Set([
   'Board builder: Board settings',
   'Board builder: Tiles pane',
   'Board builder: Pan',
+  'Board builder: Warps and portals',
   'Game setup',
   'Game setup (friend joined)',
   'Game setup (offline)',
@@ -1557,12 +1558,19 @@ export async function openLab(app: HTMLElement, section?: string) {
           ['Board builder: Board settings', '.ed-info > button'],
           ['Board builder: Tiles pane', '.ed-tool-button[aria-label="Place"]'],
           ['Board builder: Pan', '.ed-tool-button[aria-label="Pan"]'],
+          ['Board builder: Warps and portals', null],
         ] as const
       ).map(([label, press]) =>
         btn(label, () => {
           const holder = h('div', { class: 'lab-screen' });
           root.append(holder);
-          const close = openEditor(holder, label === 'Board builder' ? null : BUILT_IN_BOARDS[0], {
+          const start =
+            label === 'Board builder'
+              ? null
+              : label.endsWith('Warps and portals')
+                ? (BUILT_IN_BOARDS.find((b) => b.squares.some((s) => s.t === 'warp')) ?? null)
+                : BUILT_IN_BOARDS[0];
+          const close = openEditor(holder, start, {
             onExit: () => holder.remove(),
             onPlay: () => {
               holder.remove();

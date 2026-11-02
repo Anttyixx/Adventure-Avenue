@@ -26,6 +26,29 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: '2026-11-02-warps-portals',
+    date: 'Nov 2, 2026',
+    title: 'Warps and portals, simplified',
+    features: [
+      {
+        tag: 'rules',
+        title: 'Warps and portals work the same way',
+        text: 'Both link to a partner of their kind or to the bank. A warp sends you when you stop on it; a portal sends you as you step on it, and you keep moving.',
+      },
+      {
+        tag: 'better',
+        title: 'Colors pick themselves',
+        text: 'New warps and portals are placed grey. Select one, press Link and click its partner or the bank: pairs get their own color, bank links turn gold.',
+      },
+      {
+        tag: 'better',
+        title: 'A clearer link line',
+        text: 'The line to a linked tile bends gently at its middle, in the link’s color, with glowing dots traveling to where it leads.',
+      },
+    ],
+    extras: ['Unlink a warp or portal from its tile info'],
+  },
+  {
     id: '2026-11-02-builder-pan',
     date: 'Nov 2, 2026',
     title: 'Board builder: move around and a cleaner look',

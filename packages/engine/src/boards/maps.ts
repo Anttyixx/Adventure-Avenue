@@ -88,9 +88,9 @@ export function fromMap({ id, name, layout, districts, map, warps = [] }: MapBoa
   const remaining = squares.filter((s, i) => s.t === 'warp' && !paired.has(i));
   for (let k = 0; k < remaining.length; k++) remaining[k].channel = channel + Math.floor(k / 2);
   if (remaining.length % 2) {
+    // An odd one out leads to the bank.
     const last = remaining[remaining.length - 1];
-    last.t = 'portal';
-    last.channel = 0;
+    delete last.channel;
     last.toBank = true;
   }
   connectTransports({ squares } as BoardDef);

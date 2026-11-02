@@ -480,7 +480,8 @@ export class Game {
         if (to >= 0 && to !== sq.id && G.nodes[to]) {
           await this.log(`${p.name} warped away.`, p.id, 'move');
           await this.warp(p, to);
-          if (sq.t === 'portal' && G.nodes[to].t === 'bank') await this.bankVisit(p, true);
+          // Either kind may lead to the bank: arriving there counts as stopping at it.
+          if (G.nodes[to].t === 'bank') await this.bankVisit(p, true);
         }
         return;
       }

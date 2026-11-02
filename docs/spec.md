@@ -143,7 +143,7 @@ in the browser, and export/import them as `.aaboard.json` files (format tag
 connections). Squares in neighboring cells always connect automatically; leave an empty cell between tiles
 to keep paths apart. Opening an old board in the builder restores any previously cut connections. A board is playable only if it has exactly one bank, every suit (or a change-of-suit
 square), at least one district, exactly 4 properties in every declared district, a valid starting
-average for each district, at most five mutual warp pairs, at most two portals per color across five colors, valid portal destinations, and every square reachable from the bank (by road or
+average for each district, every warp and portal linked (to a partner of its kind or the bank), at most five pairs of each kind, and every square reachable from the bank (by road or
 warp). Grids range from 4 x 4 to 32 x 20 (up to 320
 squares). Each board uses a square grid (4 neighbors per cell) or a hex grid (pointy-top
 hexagons, odd rows shifted half a cell right, 6 neighbors per cell); the file stores it as
@@ -588,8 +588,8 @@ player's next turn begins.
 | Boon           | 20% commission: the bank pays you 20% of every fee anyone else pays                               | Stacks with nothing; the higher rate wins                     |
 | Boom           | Same, at 50%                                                                                      | Same as Boon                                                  |
 | Stockbroker    | Buy stock (Standard). Becomes a Venture square in Easy rules                                      | Stock market                                                  |
-| Portal         | Teleport to the matching color or the bank; bank arrivals apply a normal bank visit               | Five colors, at most two portals per color                    |
-| Warp           | Landing sends you only to its paired warp; arrival does not teleport again                        | Up to five pairs; four-pointed stars share their pair color   |
+| Portal         | Stepping on it jumps to its partner portal or the bank, then keep moving; bank arrivals visit it  | Up to five pairs (auto colors) plus any number to the bank    |
+| Warp           | Stopping on it jumps to its partner warp or the bank; arrival does not teleport again             | Up to five pairs (auto colors) plus any number to the bank    |
 | Cannon         | Pick another player and warp to their square. Suits and bank still apply there; nothing else does | Suits, bank, promotion, win                                   |
 | Arcade         | Play one random minigame (see Arcade minigames)                                                   | Cash, shop values, wild suit cards, stock                     |
 | Venture        | Venture grid                                                                                      | See Venture cards                                             |
@@ -1250,47 +1250,38 @@ their open state across setup redraws. Player counts use short labels with a loc
 breakdown. The sticky Start footer summarizes map, player count, rules and winning goal, and
 retains the saved-game replacement warning. Joined guests still have locked host settings.
 
-### Paired warps and portals
+### Warps and portals
 
-Warps use a four-pointed star and teleport on landing only to their partner, without triggering
-another teleport on arrival. There are at most five pairs (ten warps). Pair slots stay stable
-when moving or deleting tiles. An unmatched warp is invalid for play. The action bar lets builders choose a pair while placing or editing a selected warp.
+Warps (four-pointed stars) and portals (round swirls) work the same way except for what sets
+them off:
 
-Portals replace backstreets and use a circular swirling portal. Entering a portal during a walk
-teleports immediately, including on the final step. The teleport costs no additional step;
-remaining steps continue from the exit with free direction. Route choices include the teleport
-and all remaining steps. Both entry and exit appear in route previews, but only entry counts
-as a movement step. Five color slots allow at most
-two portals each. Choose a color in the action bar; the tile info panel offers Matching portal or Bank as the
-destination. Matching requires another portal of that color; Bank allows a single portal.
-Arriving at the exit portal does not chain another teleport. A later walking step onto another
-portal can trigger it normally. Every portal must link to a matching portal or the bank to be
-valid for play. Arriving at the bank applies a passing visit if steps remain, or a landing visit
-if no steps remain. Placement blocks an eleventh tile of either transport type; validation also checks
-color capacity, mutual warp links and portal destinations. Export/import retains color and
-bank settings. Legacy backstreets in stored boards/files and local saved matches become portals.
-Built-in warp networks now use fixed pairs; Lagoon’s remaining unpaired endpoint becomes a
-bank-linked portal.
+- **A warp** sends a player who **stops** on it (passing over one does nothing).
+- **A portal** sends a player who **steps** on it during a walk, including on the last step. The
+  jump costs no step: they keep moving from where it leads with any steps left, in a free
+  direction. Route choices include the jump; arriving on the exit portal doesn't jump again.
 
-### Selecting and changing transport links
+Each tile links to **one** place: another tile of the same kind (the two become a **pair**, both
+ways) or **the bank** (one way; any number of warps and portals may lead to the bank). Arriving at
+the bank counts as a visit: a passing visit if steps are left, a stop if not.
 
-A single selected warp or portal shows its linked tile’s type and column/row in tile info (or
-Not linked). Change link starts a board picker: click another warp for a warp, or another portal
-or the bank for a portal. Clicking an incompatible tile keeps the picker open with guidance.
-Cancel link change or Escape exits without edits. A successful link change is one Undo action.
-When re-pairing occupied slots, previous partners swap into the old color slot, retaining the
-five-pair/two-per-color limits; selected portals and their new portal partners use the same color.
-Only the selected source shows an arched connection to its destination. Gold dashes flow toward
-the destination, with a dark contrast stroke and destination dot. Hide the line for group
-selection, movement, other tools, settings or deselection. Reduced motion uses a static line.
+**Colors are automatic.** A new warp or portal is placed **grey and unlinked**. When it is linked
+to a partner, the pair gets the first of five colors (purple, cyan, orange, pink, green) that no
+other pair of its kind uses; tiles linked to the bank turn **gold**. So there are at most five
+warp pairs and five portal pairs, plus any number of bank links. Every tile must be linked before
+the board can be played.
 
-### Transport action-bar colors
+**Linking in the builder.** Selecting one warp or portal shows where it leads in the tile info
+panel (with a dot in its color) and Link / Change link and Unlink buttons. Link starts a board
+picker (the action bar says to click a tile or the bank; Escape cancels): click another tile of
+the same kind or the bank. A tile only ever has one link, so if the picked tile already had a
+partner, that old partner becomes unlinked (grey). Unlink leaves both tiles of the pair unlinked.
+Every change is one Undo step. With all five colors of a kind in use, a new pair is refused with
+a hint to unlink one or link to the bank.
 
-Placing warps or portals shows five rounded color squares centered in the action bar, with the
-same selection, completion and recentering animations as property districts. Each color allows
-two tiles of that transport type. Select the leftmost available color on entering placement,
-retain manual choices until full, then automatically select the leftmost available color. A full
-color disappears; after all five fill, the action bar collapses. Painting cannot exceed a color’s
-capacity. Warp and portal counts are separate. A single selected transport also uses this row
-for changing its color/pair; its current color remains available, other full colors are hidden.
-The tile info panel retains linked-tile details, Change link and portal destination settings.
+**The link line.** Only the selected tile shows its link: a gentle arc whose bend sits at the
+middle of the line, at right angles to it (always on the upper side), drawn in the link's color
+over a dark outline. Glowing dots with short tails travel along it toward the destination, which
+pulses as each one arrives; the source has a small ring. Reduced motion shows the dots still.
+
+Legacy backstreets in stored boards, files and saved games become portals; older boards that
+stored mutual links without colors get colors automatically. Lagoon's odd warp leads to the bank.

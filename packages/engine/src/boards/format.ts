@@ -182,11 +182,14 @@ export function validateBoard(def: BoardDef): BoardCheck {
       errors.push(`District "${d.name}" has ${n} properties; it needs exactly ${L.districtSize}.`);
   });
 
+  // Warps and portals: each links to its pair (same kind, same color, both ways) or the bank.
   for (const type of ['warp', 'portal'] as const) {
+    const Name = type === 'warp' ? 'Warp' : 'Portal';
     const tiles = sq.filter((s) => s.t === type);
-    if (tiles.length > 10) errors.push(`Use at most five ${type} pairs.`);
+    const colors = new Set(tiles.filter((s) => !s.toBank && s.channel != null).map((s) => s.channel));
+    if (colors.size > 5) errors.push(`Use at most five ${type} pairs.`);
     for (let c = 0; c < 5; c++)
-      if (tiles.filter((s) => s.channel === c).length > 2)
+      if (tiles.filter((s) => !s.toBank && s.channel === c).length > 2)
         errors.push(`Only two ${type} tiles can share a color.`);
     for (const s of tiles) {
       const i = sq.indexOf(s),
@@ -194,14 +197,11 @@ export function validateBoard(def: BoardDef): BoardCheck {
       if (s.channel != null && (!Number.isInteger(s.channel) || s.channel < 0 || s.channel > 4))
         errors.push(`Invalid ${type} color at ${where(s)}.`);
       if (!target || target === s)
-        errors.push(`${type === 'warp' ? 'Warp' : 'Portal'} ${where(s)} does not lead anywhere.`);
-      else if (type === 'warp') {
-        if (target.t !== 'warp' || target.link !== i || (s.channel != null && target.channel !== s.channel))
-          errors.push(`Warp ${where(s)} must lead to its paired warp.`);
-      } else if (
-        s.toBank ? target.t !== 'bank' : target.t !== 'portal' || (s.channel ?? 0) !== (target.channel ?? 0)
-      )
-        errors.push(`Portal ${where(s)} must lead to its matching color or the bank.`);
+        errors.push(`${Name} ${where(s)} is not linked yet: link it to another ${type} or the bank.`);
+      else if (s.toBank) {
+        if (target.t !== 'bank') errors.push(`${Name} ${where(s)} must lead to the bank.`);
+      } else if (target.t !== type || target.link !== i || target.channel !== s.channel)
+        errors.push(`${Name} ${where(s)} must be linked with its paired ${type}.`);
     }
   }
 

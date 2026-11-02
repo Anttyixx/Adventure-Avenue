@@ -1,4 +1,4 @@
-import { TRANSPORT_COLORS } from '@aa/engine';
+import { transportColor } from '@aa/engine';
 /**
  * The HD board: a 1300 x 800 logical canvas with 100-unit squares, scaled to the container
  * and devicePixelRatio. The static board is cached offscreen and redrawn only when the state
@@ -2173,8 +2173,10 @@ function specialIcon(ctx: CanvasRenderingContext2D, G: GameState, sq: Square, x:
       break;
     case 'portal':
     case 'warp': {
-      // A swirling portal in the color its linked warps share.
-      const col = TRANSPORT_COLORS[sq.channel ?? -1] ?? warpColor(G, sq);
+      // A pair shares its color, bank links are gold, unlinked tiles grey (games saved before
+      // pairs had colors work theirs out from the links).
+      const col =
+        sq.channel == null && !sq.toBank && (sq.link ?? -1) >= 0 ? warpColor(G, sq) : transportColor(sq);
       const g = ctx.createRadialGradient(x, y, 2, x, y, 24);
       g.addColorStop(0, '#ffffff');
       g.addColorStop(0.45, col);

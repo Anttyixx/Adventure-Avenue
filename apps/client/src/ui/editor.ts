@@ -1,4 +1,4 @@
-import { linkEditorTiles } from './editor-links';
+import { linkEditorTiles, unlinkEditorTile } from './editor-links';
 /**
  * Board editor (#editor): paint squares on a grid, set up districts and shop values, check the
  * board for problems, save it in this browser, export/import board files and test-play it.
@@ -9,8 +9,7 @@ import { linkEditorTiles } from './editor-links';
 import {
   BOARD_LIMITS,
   connectTransports,
-  TRANSPORT_NAMES,
-  TRANSPORT_COLORS,
+  transportColor,
   K,
   districtStartingValues,
   BUILT_IN_BOARDS,
@@ -319,6 +318,105 @@ function hexLoop(cols = 11, rows = 7): BoardDef {
   return b;
 }
 
+/**
+ * The line from a selected warp or portal to where it leads: a gentle arc that bends at its
+ * middle, at right angles to the line (always the upper side), in the link's color. Glowing dots
+ * travel along it toward the destination, which pulses as they arrive. Widths are in screen
+ * pixels at any zoom (`scale`); reduced motion draws it still.
+ */
+function drawLink(
+  ctx: CanvasRenderingContext2D,
+  a: { x: number; y: number },
+  b: { x: number; y: number },
+  color: string,
+  scale: number,
+  still: boolean,
+) {
+  const dx = b.x - a.x;
+  const dy = b.y - a.y;
+  const length = Math.hypot(dx, dy) || 1;
+  // The normal pointing up the screen (or right, for a vertical line).
+  let nx = -dy / length;
+  let ny = dx / length;
+  if (ny > 0 || (Math.abs(ny) < 1e-6 && nx < 0)) {
+    nx = -nx;
+    ny = -ny;
+  }
+  const bend = Math.min(90, Math.max(16, length * 0.14));
+  // A quadratic curve's middle sits halfway to its control point.
+  const c = { x: (a.x + b.x) / 2 + nx * bend * 2, y: (a.y + b.y) / 2 + ny * bend * 2 };
+  const at = (t: number) => ({
+    x: (1 - t) * (1 - t) * a.x + 2 * (1 - t) * t * c.x + t * t * b.x,
+    y: (1 - t) * (1 - t) * a.y + 2 * (1 - t) * t * c.y + t * t * b.y,
+  });
+  const px = 1 / scale;
+  const now = performance.now();
+  ctx.save();
+  ctx.lineCap = 'round';
+  ctx.beginPath();
+  ctx.moveTo(a.x, a.y);
+  ctx.quadraticCurveTo(c.x, c.y, b.x, b.y);
+  ctx.strokeStyle = 'rgba(16, 26, 51, 0.8)';
+  ctx.lineWidth = 9 * px;
+  ctx.stroke();
+  ctx.strokeStyle = color;
+  ctx.globalAlpha = 0.55;
+  ctx.lineWidth = 4 * px;
+  ctx.stroke();
+  ctx.globalAlpha = 1;
+  // Where it starts: a small ring.
+  ctx.beginPath();
+  ctx.arc(a.x, a.y, 7 * px, 0, Math.PI * 2);
+  ctx.fillStyle = '#fff';
+  ctx.fill();
+  ctx.lineWidth = 3 * px;
+  ctx.strokeStyle = color;
+  ctx.stroke();
+  // Dots traveling to the destination, each with a short fading tail.
+  const period = 1500;
+  const dots = 3;
+  for (let k = 0; k < dots; k++) {
+    const head = still ? (k + 0.5) / dots : (now / period + k / dots) % 1;
+    for (let tail = 5; tail >= 0; tail--) {
+      const t = head - tail * 0.018;
+      if (t < 0) continue;
+      const p = at(t);
+      // Fade in after leaving and out before arriving, so dots never pop.
+      const edge = Math.min(1, t / 0.08, (1 - t) / 0.08);
+      ctx.globalAlpha = Math.max(0, edge) * (1 - tail / 6);
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, (tail === 0 ? 5.5 : 4.5 - tail * 0.5) * px, 0, Math.PI * 2);
+      ctx.fillStyle = tail === 0 ? '#fff' : color;
+      if (tail === 0) {
+        ctx.shadowColor = color;
+        ctx.shadowBlur = 10;
+      }
+      ctx.fill();
+      ctx.shadowBlur = 0;
+    }
+  }
+  ctx.globalAlpha = 1;
+  // Where it leads: a filled ring that pulses outward as each dot arrives.
+  if (!still) {
+    const k = ((now / period) * dots) % 1;
+    ctx.globalAlpha = (1 - k) * 0.8;
+    ctx.beginPath();
+    ctx.arc(b.x, b.y, (10 + k * 22) * px, 0, Math.PI * 2);
+    ctx.lineWidth = 3 * px;
+    ctx.strokeStyle = color;
+    ctx.stroke();
+    ctx.globalAlpha = 1;
+  }
+  ctx.beginPath();
+  ctx.arc(b.x, b.y, 9 * px, 0, Math.PI * 2);
+  ctx.fillStyle = color;
+  ctx.fill();
+  ctx.lineWidth = 3 * px;
+  ctx.strokeStyle = '#fff';
+  ctx.stroke();
+  ctx.restore();
+}
+
 export interface EditorHandlers {
   onExit(): void;
   onPlay(board: BoardDef): void;
@@ -339,7 +437,6 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
   let selection = new Set<number>();
   let moving: { anchor: { x: number; y: number }; target: { x: number; y: number } } | null = null;
   let marquee: { start: { x: number; y: number }; end: { x: number; y: number } } | null = null;
-  const transportColor = { warp: 0, portal: 0 };
   let placeTool: Tool = 'shop';
   const isPlacing = () => tool !== 'select' && tool !== 'pan' && tool !== 'erase';
   const clearSelection = () => {
@@ -596,14 +693,6 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
       }
       if (!canAssignProperty(board, district, i)) return false;
     }
-    if ((t === 'warp' || t === 'portal') && board.squares.filter((s, j) => s.t === t && j !== i).length >= 10)
-      return false;
-    if (
-      (t === 'warp' || t === 'portal') &&
-      board.squares.filter((s, j) => j !== i && s.t === t && s.channel === transportColor[t]).length >= 2
-    )
-      return false;
-    if ((t === 'warp' || t === 'portal') && transportColor[t] < 0) return false;
     const prev = i >= 0 ? board.squares[i] : null;
     const sq: BoardSquareDef =
       t === 'shop'
@@ -613,7 +702,8 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
             t,
             d: district,
           }
-        : { x, y, t, ...(t === 'warp' || t === 'portal' ? { channel: transportColor[t] } : {}) };
+        : // New warps and portals start unlinked (grey); linking them gives them a color.
+          { x, y, t };
     if (prev && JSON.stringify(prev) === JSON.stringify(sq)) return false;
     if (t === 'bank') {
       // Only one bank: moving it replaces the old one.
@@ -797,31 +887,7 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
       linked &&
       (source.t === 'warp' || source.t === 'portal')
     ) {
-      const a = center(source),
-        b = center(linked);
-      const dx = b.x - a.x,
-        dy = b.y - a.y,
-        distance = Math.hypot(dx, dy);
-      const lift = Math.min(180, Math.max(70, distance * 0.3));
-      const control = { x: (a.x + b.x) / 2, y: Math.min(a.y, b.y) - lift };
-      ctx.save();
-      ctx.beginPath();
-      ctx.moveTo(a.x, a.y);
-      ctx.quadraticCurveTo(control.x, control.y, b.x, b.y);
-      ctx.strokeStyle = '#17213a';
-      ctx.lineWidth = 7 / scale;
-      ctx.stroke();
-      ctx.strokeStyle = '#ffd166';
-      ctx.lineWidth = 3 / scale;
-      ctx.setLineDash([10 / scale, 7 / scale]);
-      ctx.lineDashOffset = reduced ? 0 : (-performance.now() * 0.045) / scale;
-      ctx.stroke();
-      ctx.setLineDash([]);
-      ctx.beginPath();
-      ctx.arc(b.x, b.y, 10 / scale, 0, Math.PI * 2);
-      ctx.fillStyle = '#ffd166';
-      ctx.fill();
-      ctx.restore();
+      drawLink(ctx, center(source), center(linked), transportColor(source), scale, reduced);
       if (!reduced && !zoomFrame) zoomFrame = requestAnimationFrame(redraw);
     }
     // Hover and selection
@@ -918,10 +984,11 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
       const target = indexAt(cell.x, cell.y);
       const copy = structuredClone(board);
       if (!linkEditorTiles(copy, selected, target)) {
+        const type = board.squares[selected].t;
         say(
-          board.squares[selected].t === 'warp'
-            ? 'Choose another warp tile.'
-            : 'Choose another portal tile or the bank.',
+          board.squares[target]?.t === type
+            ? `All five ${type} colors are in use. Unlink a pair first, or link this one to the bank.`
+            : `Pick another ${type} or the bank.`,
           true,
         );
         return;
@@ -1132,8 +1199,6 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
             district = -1;
             pendingDistrict = null;
           }
-          if (t === 'place' && (placeTool === 'warp' || placeTool === 'portal'))
-            transportColor[placeTool] = 0;
           tool = t === 'place' ? placeTool : t;
           clearSelection();
           settings = false;
@@ -1185,7 +1250,6 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
                 x: 0,
                 y: 0,
                 t: it.tool as SquareType,
-                ...(it.tool === 'warp' || it.tool === 'portal' ? { channel: transportColor[it.tool] } : {}),
                 ...(it.tool === 'shop'
                   ? { d: pendingDistrict ? board.districts.length : district, base: 200 }
                   : {}),
@@ -1211,8 +1275,6 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
                   district = -1;
                   pendingDistrict = null;
                 }
-                if ((it.tool === 'warp' || it.tool === 'portal') && tool !== it.tool)
-                  transportColor[it.tool] = 0;
                 tool = it.tool;
                 placeTool = it.tool;
                 clearSelection();
@@ -1259,38 +1321,11 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
     },
   );
 
-  const transportRow = districtPicker(
-    (choice) => {
-      const sq = selected == null ? null : board.squares[selected];
-      if (tool === 'select' && sq && (sq.t === 'warp' || sq.t === 'portal')) {
-        if (board.squares.filter((s) => s !== sq && s.t === sq.t && s.channel === choice.index).length >= 2)
-          return;
-        snapshot();
-        sq.channel = choice.index!;
-        changed();
-      } else if (tool === 'warp' || tool === 'portal') {
-        transportColor[tool] = choice.index!;
-        notice = '';
-        drawPalette();
-        drawInspector();
-        redraw();
-      }
-    },
-    () => {
-      if (!destroyed) {
-        drawInspector();
-        redraw();
-      }
-    },
-    { capacity: 2, noun: 'tiles', label: 'Transport colors', keepSelected: true },
-  );
-
   const drawInspector = () => {
     if (destroyed) return;
     const from = actionbar.getBoundingClientRect();
     const previousPrompt = actionContent.querySelector<HTMLElement>('.prompt-text');
     districtRow.capture();
-    transportRow.capture();
     const choices = districtChoices(board);
     if (district >= 0 && (!board.districts[district] || !canAssignProperty(board, district))) district = -1;
     if (pendingDistrict && !choices.some((d) => d.index == null && d.color === pendingDistrict!.color))
@@ -1305,37 +1340,6 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
       if (tool === 'shop') drawPalette();
     }
     const hasDistrictChoices = choices.some((d) => d.count < BOARD_LIMITS.districtSize);
-    const picked = selected == null ? null : board.squares[selected];
-    const editingTransport =
-      tool === 'select' &&
-      selection.size === 1 &&
-      !moving &&
-      picked &&
-      (picked.t === 'warp' || picked.t === 'portal')
-        ? picked
-        : null;
-    const transportType = tool === 'warp' || tool === 'portal' ? tool : editingTransport?.t;
-    const transportChoices: DistrictChoice[] = TRANSPORT_COLORS.map((color, c) => ({
-      key: String(c),
-      index: c,
-      color,
-      name: `${TRANSPORT_NAMES[c]} ${transportType === 'warp' ? 'pair' : 'portal'}`,
-      count: board.squares.filter((s) => s.t === transportType && s.channel === c).length,
-    }));
-    if (tool === 'warp' || tool === 'portal') {
-      const color = transportColor[tool];
-      if (!transportChoices.some((c) => c.index === color && c.count < 2)) {
-        transportColor[tool] = transportChoices.find((c) => c.count < 2)?.index ?? -1;
-        drawPalette();
-      }
-    }
-    const transportSelected =
-      editingTransport?.channel ?? (tool === 'warp' || tool === 'portal' ? transportColor[tool] : -1);
-    const hasTransportChoices = transportChoices.some(
-      (c) => c.count < 2 || (!!editingTransport && c.index === transportSelected),
-    );
-    const showTransportRow =
-      !settings && !!transportType && (hasTransportChoices || transportRow.hasButtons());
     stopActionMorph();
     for (const animation of entranceAnimations) animation.cancel();
     entranceAnimations = [];
@@ -1363,7 +1367,7 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
         'div',
         { class: 'prompt-text', role: 'status', 'aria-live': 'polite' },
         notice ||
-          (choosingLink ? 'Click a tile on the board to link it · Escape to cancel' : '') ||
+          (choosingLink ? 'Click a tile or the bank to link to · Escape to cancel' : '') ||
           (settings
             ? check.errors.length
               ? `Board settings · ${check.errors.length} problem${check.errors.length === 1 ? '' : 's'} to fix before playing`
@@ -1385,7 +1389,7 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
       h(
         'div',
         { class: 'ed-action-tools btn-row' },
-        ...(tool === 'select' && selection.size && !moving && !settings
+        ...(tool === 'select' && selection.size && !moving && !settings && !choosingLink
           ? [
               h(
                 'button',
@@ -1680,12 +1684,6 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
     const showDistrictRow = !settings && tool === 'shop' && (hasDistrictChoices || districtRow.hasButtons());
     if (showDistrictRow) inspector.append(districtRow.el);
     districtRow.update(choices, activeChoice?.key ?? null, showDistrictRow);
-    if (showTransportRow) inspector.append(transportRow.el);
-    transportRow.update(
-      transportChoices,
-      transportChoices.find((c) => c.index === transportSelected)?.key ?? null,
-      showTransportRow,
-    );
 
     // Selected square
     const squarePanel = tileInspector;
@@ -1714,65 +1712,57 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
       if (sq.t === 'warp' || sq.t === 'portal') {
         const type = sq.t;
         const linked = sq.link == null ? null : board.squares[sq.link];
-        const linkedName = linked
-          ? `${linked.t === 'bank' ? 'Bank' : type === 'warp' ? 'Warp' : 'Portal'} · Column ${linked.x + 1}, row ${linked.y + 1}`
-          : 'Not linked';
+        const linkedName = !linked
+          ? 'Not linked yet'
+          : linked.t === 'bank'
+            ? 'The bank'
+            : `${type === 'warp' ? 'Warp' : 'Portal'} · column ${linked.x + 1}, row ${linked.y + 1}`;
         squareBody.append(
           h(
             'div',
-            { class: 'ed-link-info' },
-            h('span', { class: 'hint' }, 'Linked tile'),
-            h('strong', null, linkedName),
+            { class: 'ed-link-info', style: `--lc:${transportColor(sq)}` },
+            h('span', { class: 'hint' }, 'Leads to'),
+            h('strong', null, h('i', { class: 'ed-link-dot' }), linkedName),
             h(
-              'button',
-              {
-                class: 'btn small ghost',
-                onclick: () => {
-                  choosingLink = !choosingLink;
-                  notice = '';
-                  drawInspector();
-                  redraw();
+              'div',
+              { class: 'ed-row' },
+              h(
+                'button',
+                {
+                  class: `btn small ${choosingLink ? 'ghost' : 'main'}`,
+                  onclick: () => {
+                    choosingLink = !choosingLink;
+                    notice = '';
+                    drawInspector();
+                    redraw();
+                  },
                 },
-              },
-              choosingLink ? 'Cancel link change' : 'Change link',
+                choosingLink ? 'Cancel' : linked ? 'Change link' : 'Link',
+              ),
+              linked && !choosingLink
+                ? h(
+                    'button',
+                    {
+                      class: 'btn small ghost',
+                      onclick: () => {
+                        snapshot();
+                        unlinkEditorTile(board, selected!);
+                        changed();
+                      },
+                    },
+                    'Unlink',
+                  )
+                : null,
             ),
           ),
-          choosingLink
-            ? h(
-                'p',
-                { class: 'hint', role: 'status' },
-                type === 'warp'
-                  ? 'Click another warp on the board. Existing partners will swap.'
-                  : 'Click another portal or the bank. Portal colors will match.',
-              )
-            : '',
-        );
-
-        if (type === 'portal') {
-          const destination = h(
-            'select',
-            { 'aria-label': 'Portal destination' },
-            h('option', { value: 'pair', selected: !sq.toBank }, 'Matching portal'),
-            h('option', { value: 'bank', selected: !!sq.toBank }, 'Bank'),
-          ) as HTMLSelectElement;
-          destination.onchange = () => {
-            snapshot();
-            sq.toBank = destination.value === 'bank';
-            changed();
-          };
-          squareBody.append(field('Destination', destination));
-        }
-        squareBody.append(
           h(
             'p',
             { class: 'hint' },
-            sq.link == null
-              ? 'Place a matching tile to complete this connection.'
-              : sq.toBank
-                ? 'Teleport to the bank on passing, then keep moving.'
-                : type === 'portal'
-                  ? 'Teleport on passing, then keep moving from the matching portal.'
-                  : 'Land here to teleport to its paired warp.',
+            choosingLink
+              ? `Click another ${type} or the bank. A ${type} links to one tile; if the one you pick already has a partner, that partner is unlinked.`
+              : type === 'warp'
+                ? 'Players who stop here jump to its link.'
+                : 'Players who step on it jump to its link and keep moving.',
           ),
         );
       }
@@ -1814,11 +1804,9 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
       }
     }
 
-    controls.hidden =
-      !showTransportRow && !(tool === 'shop' && (hasDistrictChoices || districtRow.hasButtons()));
+    controls.hidden = !(tool === 'shop' && (hasDistrictChoices || districtRow.hasButtons()));
     actionbar.classList.toggle('ed-action-error', !!notice && noticeBad);
     const hasOptions =
-      showTransportRow ||
       (tool === 'shop' && (hasDistrictChoices || districtRow.hasButtons())) ||
       (tool === 'select' && selection.size > 0);
     actionbar.classList.toggle('status', !hasOptions);
@@ -2205,7 +2193,6 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
     promptAnimation?.cancel();
     for (const animation of entranceAnimations) animation.cancel();
     districtRow.destroy();
-    transportRow.destroy();
     root.remove();
   }
 

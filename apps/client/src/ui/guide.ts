@@ -100,7 +100,7 @@ function basics(G: GameState | null): Node[] {
     ),
     ...sec(
       'Special squares',
-      'Venture squares (and suit squares) flip a venture card. Roll-on rolls again. Take-a-break closes your shops until your next turn. Boon and Boom pay you a share of the fees others pay. Warp squares send you to another part of the board. The cannon fires you to another player. The arcade plays a minigame.',
+      'Venture squares (and suit squares) flip a venture card. Roll-on rolls again. Take-a-break closes your shops until your next turn. Boon and Boom pay you a share of the fees others pay. Warps (stop on one) and portals (just step on one, then keep moving) send you to their partner of the same color, or gold ones to the bank. The cannon fires you to another player. The arcade plays a minigame.',
     ),
     ...sec(
       'Before rolling',

@@ -76,10 +76,10 @@ export function squareInfo(G: GameState, sq: Square): string {
       G.rules === 'easy'
         ? 'Draw a venture card: pick a panel on the venture board.'
         : 'Stockbroker: buy shares in any district.',
-    portal: 'Portal: teleport to the matching color or the bank as you pass, then keep moving.',
+    portal: `Step on it to jump to ${G.nodes[sq.link ?? -1]?.t === 'bank' ? 'the bank' : 'its partner portal (same color)'}, then keep moving.`,
     arcade: 'Play an arcade game for prizes: Lucky Reels, Memory Blocks or Coin Derby.',
     cannon: 'Fire yourself to any other player on the board.',
-    warp: 'Land here to warp to the matching warp square (same color), even in another area of the map.',
+    warp: `Stop here to jump to ${G.nodes[sq.link ?? -1]?.t === 'bank' ? 'the bank' : 'its partner warp (same color), even in another part of the map'}.`,
   };
   return info[sq.t] ?? '';
 }

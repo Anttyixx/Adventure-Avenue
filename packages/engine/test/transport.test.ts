@@ -28,42 +28,53 @@ describe('paired transport', () => {
     connectTransports(b);
     expect(first.link).toBeUndefined();
   });
-  it('connects portals only to the same color or bank and round-trips settings', () => {
+  it('pairs tiles of one color, sends bank links to the bank, and round-trips', () => {
     const b = board();
     b.squares.push(
       { x: 0, y: 0, t: 'portal', channel: 2 },
-      { x: 1, y: 0, t: 'portal', channel: 2, toBank: true },
+      { x: 1, y: 0, t: 'portal', channel: 2 },
       { x: 2, y: 0, t: 'portal', channel: 3, toBank: true },
+      { x: 3, y: 0, t: 'warp', toBank: true },
+      { x: 4, y: 0, t: 'warp' },
     );
     connectTransports(b);
-    expect(b.squares.at(-3)!.link).toBe(b.squares.length - 2);
-    expect(b.squares.at(-2)!.link).toBe(b.bank);
-    expect(b.squares.at(-1)!.link).toBe(b.bank);
+    const n = b.squares.length;
+    expect(b.squares[n - 5].link).toBe(n - 4);
+    expect(b.squares[n - 4].link).toBe(n - 5);
+    // Bank links lose any color; an unlinked tile has neither link nor color.
+    expect(b.squares[n - 3]).toMatchObject({ link: b.bank, toBank: true });
+    expect(b.squares[n - 3].channel).toBeUndefined();
+    expect(b.squares[n - 2]).toMatchObject({ link: b.bank, toBank: true });
+    expect(b.squares[n - 1].link).toBeUndefined();
     expect(boardFromFile(boardToFile(b), 'copy').board?.squares).toEqual(boardToFile(b).squares);
   });
-  it('rejects missing partners, more than ten tiles and more than two of a color', () => {
+  it('rejects unlinked tiles and more than two tiles of a color', () => {
     const b = board();
-    b.squares.push({ x: 0, y: 0, t: 'warp', channel: 0 });
+    b.squares.push({ x: 0, y: 0, t: 'warp' });
     connectTransports(b);
-    expect(validateBoard(b).errors.join(' ')).toMatch(/does not lead anywhere/);
-    for (let i = 0; i < 11; i++) b.squares.push({ x: i, y: 0, t: 'portal', channel: 0, toBank: true });
-    connectTransports(b);
-    expect(validateBoard(b).errors.join(' ')).toMatch(/at most five/);
+    expect(validateBoard(b).errors.join(' ')).toMatch(/not linked yet/);
+    b.squares.pop();
+    const start = b.squares.length;
+    b.squares.push(
+      { x: 0, y: 0, t: 'portal', channel: 0, link: start + 1 },
+      { x: 1, y: 0, t: 'portal', channel: 0, link: start },
+      { x: 2, y: 0, t: 'portal', channel: 0, link: start },
+    );
     expect(validateBoard(b).errors.join(' ')).toMatch(/Only two/);
   });
-  it('a bank portal applies one normal bank visit', async () => {
+  it('a bank warp applies one bank visit when stopped on', async () => {
     const { G, game } = makeGame();
     const bank = G.nodes.find((s) => s.t === 'bank')!;
-    const portal = G.nodes.find((s) => s !== bank)!;
-    portal.t = 'portal';
-    portal.link = bank.id;
-    portal.toBank = true;
+    const warp = G.nodes.find((s) => s !== bank)!;
+    warp.t = 'warp';
+    warp.link = bank.id;
+    warp.toBank = true;
     const visit = vi.spyOn(game, 'bankVisit').mockResolvedValue(undefined);
-    await game.land(G.players[0], portal);
+    await game.land(G.players[0], warp);
     expect(G.players[0].node).toBe(bank.id);
     expect(visit).toHaveBeenCalledExactlyOnceWith(G.players[0], true);
   });
-  it('rejects one-way warp networks and mismatched portal colors', () => {
+  it('rejects one-way links and pairs of different colors', () => {
     const b = board(),
       start = b.squares.length;
     b.squares.push(
@@ -77,7 +88,7 @@ describe('paired transport', () => {
       { x: 0, y: 0, t: 'portal', channel: 0, link: start + 1 },
       { x: 1, y: 0, t: 'portal', channel: 1, link: start },
     );
-    expect(validateBoard(b).errors.join(' ')).toMatch(/matching color/);
+    expect(validateBoard(b).errors.join(' ')).toMatch(/paired portal/);
   });
   it('landing teleports once without bouncing back', async () => {
     const { G, game } = makeGame();

@@ -7274,3 +7274,21 @@ div.sl-inline label {
     padding: 6px 8px 8px;
   }
 }
+/* The selected warp's or portal's link: a dot in the link's color before where it leads. */
+.ed-link-info strong {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.ed-link-dot {
+  flex: none;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--lc);
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.85);
+}
+.ed-link-info .ed-row {
+  gap: 6px;
+  margin-top: 2px;
+}
