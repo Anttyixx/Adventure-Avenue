@@ -388,7 +388,10 @@ export class HotSeat implements GameIO {
   /** Say on the status line (and in the log) what the game is waiting on this player to do. */
   private waitOn(req: DecisionRequest) {
     // Before the roll, arrows on the board show which ways the player can go.
-    if (req.kind === 'preRoll') this.board.directionsPid = req.pid;
+    if (req.kind === 'preRoll') {
+      this.board.directionsPid = req.pid;
+      if (this.G.players[req.pid].cpu) return;
+    }
     const roll = this.movementRoll?.pid === req.pid ? this.movementRoll.value : undefined;
     const a = activity(this.G, req, roll);
     this.hud.status(a.text, a.kind, req.kind === 'path');
@@ -668,6 +671,11 @@ export class HotSeat implements GameIO {
         board.frameIds = null;
         // A beat at the end of the previous turn before the next player starts.
         const handoff = board.activePid >= 0 && board.activePid !== e.pid;
+        hud.action(
+          `handoff:${G.round}:${G.turn}:${e.pid}`,
+          handoff ? `Passing the turn to ${G.players[e.pid].name}...` : `${G.players[e.pid].name}'s turn.`,
+          'move',
+        );
         if (handoff) await this.wait(T.turnEnd);
         this.link?.turnStart(this.seq, G);
         if (this.saving) saveGame(G, this.link?.saveInfo?.());
@@ -682,7 +690,6 @@ export class HotSeat implements GameIO {
         if (this.localHuman(p.id)) sound.play('turn');
         hud.banner(`${p.name}'s turn`, PLAYER_COLORS[p.color], T.turnBanner);
         this.movementRoll = null;
-        hud.status(`${p.name} is deciding what to do...`, 'wait', true);
         await this.wait((p.cpu ? T.turnStartCpu : T.turnStartHuman) + (handoff ? T.turnPanExtra : 0));
         break;
       }
@@ -693,14 +700,21 @@ export class HotSeat implements GameIO {
         break;
       case 'roll': {
         this.movementRoll = { pid: e.pid, value: e.value };
-        hud.status(`${G.players[e.pid].name} is rolling...`, 'move', true);
+        hud.action('rolling', `${G.players[e.pid].name} is rolling...`, 'move');
         sound.play('roll');
-        await board.rollDie(e.value);
+        const mover = G.players[e.pid];
+        const routes = this.game.destinations(mover, e.value);
+        // A CPU's existing route preview supplies the stationary result beat; don't add a
+        // second hold before it. Single-route rolls and human rolls use the die hold.
+        const routePreviewHolds = mover.cpu && routes.length > 1;
+        await board.rollDie(
+          e.value,
+          () => hud.action('roll-result', `${mover.name} rolled a ${e.value}.`, 'move'),
+          routePreviewHolds ? 0 : T.dieHold,
+        );
         // Once the die has landed, zoom out to show the player and every square the roll could
         // take them to: only on the screen of the human who rolled (they pick where to go).
-        const mover = G.players[e.pid];
         if (this.localHuman(mover.id)) {
-          const routes = this.game.destinations(mover, e.value);
           board.frameIds = [mover.node, ...routes.flatMap((r) => r.path)];
         }
         break;
@@ -711,7 +725,7 @@ export class HotSeat implements GameIO {
         board.directionsPid = -1;
         board.frameIds = null;
         // A small sound as the hop starts; the step sounds as the token lands on the square.
-        hud.status(`${G.players[e.pid].name} is moving...`, 'move', true);
+        hud.action('moving', `${G.players[e.pid].name} is moving...`, 'move');
         sound.play('hop');
         await board.step(e.pid, e.to, e.left);
         sound.play('step');
@@ -720,6 +734,7 @@ export class HotSeat implements GameIO {
         if (e.left === 0) board.walkTarget = -1;
         break;
       case 'warp':
+        hud.action('warping', `${G.players[e.pid].name} is teleporting...`, 'move');
         board.directionsPid = -1;
         board.frameIds = null;
         sound.play('warp');
@@ -729,10 +744,10 @@ export class HotSeat implements GameIO {
       case 'land':
         this.movementRoll = null;
         if (![...SUITS, 'change'].includes(G.nodes[e.sq].t))
-          hud.tick(
+          hud.action(
+            'landing',
             `${G.players[e.pid].name} landed on ${squareName(G, G.nodes[e.sq])}.`,
             'move',
-            this.localHuman(e.pid) ? 0 : T.actionResult,
           );
         board.frameIds = null;
         sound.play('land');
@@ -745,8 +760,10 @@ export class HotSeat implements GameIO {
         // result before any pacing delay, so a completed choice never looks undecided.
         const completed = paymentActivity(G, e);
         if (completed) {
-          if (!this.summarizedPayments.some((p) => p.reason === e.reason && p.from === e.from))
-            hud.tick(completed.text, completed.kind);
+          if (!this.summarizedPayments.some((p) => p.reason === e.reason && p.from === e.from)) {
+            if (this.passing) hud.tick(completed.text, completed.kind, T.actionResult, true);
+            else hud.action(`payment:${e.reason}:${e.from}`, completed.text, completed.kind);
+          }
           this.summarizedPayments.push(e);
         }
         // Buying something: a beat after the choice before the coins go to the bank.
@@ -799,7 +816,15 @@ export class HotSeat implements GameIO {
         break;
       case 'suit': {
         this.suitMessage = e.suit >= 0 ? `${G.players[e.pid].name} collected the ${SUITS[e.suit]}.` : null;
-        hud.tick(this.suitMessage ?? `${G.players[e.pid].name} collected a wild card.`, 'suit');
+        if (e.passing)
+          hud.tick(
+            this.suitMessage ?? `${G.players[e.pid].name} collected a wild card.`,
+            'suit',
+            T.actionResult,
+            true,
+          );
+        else
+          hud.action('suit', this.suitMessage ?? `${G.players[e.pid].name} collected a wild card.`, 'suit');
         sound.play('suit');
         const text = e.suit >= 0 ? SUIT_CHARS[e.suit] : 'Wild card!';
         const color = e.suit === 1 || e.suit === 2 ? '#ff6b6b' : '#ffffff';
@@ -816,6 +841,11 @@ export class HotSeat implements GameIO {
       }
       case 'promote': {
         const p = G.players[e.pid];
+        hud.action(
+          'promotion',
+          `${p.name} was promoted to level ${e.level} and earned ${e.salary}G.`,
+          'suit',
+        );
         sound.play('promote');
         board.confetti(e.pid);
         board.dance(e.pid, T.promote);
@@ -830,6 +860,7 @@ export class HotSeat implements GameIO {
       }
       case 'venture': {
         const p = G.players[e.pid];
+        hud.action('venture', `${p.name} drew ${e.title}.`, 'card');
         sound.play('venture');
         const view = this.venture ?? new VentureView(hud, G, e.pid);
         this.venture = null;
@@ -839,6 +870,7 @@ export class HotSeat implements GameIO {
       }
       case 'reels': {
         const p = G.players[e.pid];
+        hud.action('reels', `${p.name} is playing Lucky Reels...`, 'arcade');
         const view = this.reels ?? new ReelsView(hud, [e.result, e.result, e.result], p.name);
         this.reels = null;
         await view.show(e.result, e.prize, this.localHuman(p.id), this.speed);
@@ -847,6 +879,7 @@ export class HotSeat implements GameIO {
       }
       case 'memory': {
         const p = G.players[e.pid];
+        hud.action('memory', `${p.name} is revealing Memory Blocks...`, 'arcade');
         const view = this.memory ?? new MemoryView(hud, e.prizes, p.name);
         this.memory = null;
         if (!this.localHuman(p.id)) await view.hide(this.speed);
@@ -856,6 +889,7 @@ export class HotSeat implements GameIO {
       }
       case 'derby': {
         const lander = G.players[this.game.current.id];
+        hud.action('derby', 'Coin Derby is racing...', 'arcade');
         const view = this.derby ?? new DerbyView(hud, G, lander.name);
         this.derby = null;
         await view.race(e.backers, e.frames, e.coins, e.winner, this.localHuman(lander.id), this.speed);
@@ -863,16 +897,31 @@ export class HotSeat implements GameIO {
         break;
       }
       case 'auctionStart':
+        hud.action('auction', 'The auction is starting...', 'property');
         this.auction?.end(-1, 0, 0);
         this.auction = new AuctionView(hud, G, e.sq, e.seller, e.opening, e.bidders);
         board.setChoices([e.sq], '#ffd166', () => {}, undefined, { pins: false });
         await this.wait(T.cpuDecision);
         break;
       case 'auctionBid':
+        hud.action(
+          `auction-bid:${e.pid}:${e.bid}:${e.raised}`,
+          e.raised
+            ? `${G.players[e.pid].name} bid ${fmt(e.bid)}.`
+            : `${G.players[e.pid].name} passed on bidding.`,
+          'money',
+        );
         this.auction?.bid(e.pid, e.bid, e.raised);
         await this.wait(T.cpuDecision * 0.6);
         break;
       case 'auctionEnd': {
+        hud.action(
+          'auction-result',
+          e.winner >= 0
+            ? `${G.players[e.winner].name} won the auction for ${fmt(e.price)}.`
+            : 'The auction ended with no sale.',
+          'property',
+        );
         const view = this.auction;
         this.auction = null;
         this.refresh();
@@ -884,12 +933,14 @@ export class HotSeat implements GameIO {
         this.refresh();
         break;
       case 'closed': {
+        hud.action('shops-closing', 'Shops are closing...', 'effect');
         this.refresh();
         const shut = G.nodes.filter((sq) => e.pids.includes(sq.owner)).map((sq) => sq.id);
         await board.closeShops(shut);
         break;
       }
       case 'opened': {
+        hud.action('shops-opening', 'Shops are reopening...', 'effect');
         const open = G.nodes.filter((sq) => e.pids.includes(sq.owner)).map((sq) => sq.id);
         await board.openShops(open);
         this.refresh();
@@ -897,6 +948,7 @@ export class HotSeat implements GameIO {
       }
       case 'bankrupt': {
         const p = G.players[e.pid];
+        hud.action('bankrupt', `${p.name} went bankrupt.`, 'alert');
         sound.play('bankrupt');
         hud.banner(`${p.name} went bankrupt!`, '#e5484d', T.bankruptBanner);
         this.refresh();
@@ -904,6 +956,7 @@ export class HotSeat implements GameIO {
         break;
       }
       case 'gameOver': {
+        hud.action('game-over', `${G.players[e.winner].name} wins!`, 'alert');
         if (this.saving) clearSave();
         sound.music(null);
         sound.play('win');
@@ -944,7 +997,9 @@ export class HotSeat implements GameIO {
           this.summarizedPayments = this.summarizedPayments.filter((p) => !payments.includes(p));
           break;
         }
-        hud.tick(e.text, e.kind);
+        if (e.text.includes('made a trade.') || (e.text.includes(' declined ') && e.text.includes('trade.')))
+          hud.action('trade', e.text, e.kind);
+        else hud.tick(e.text, e.kind, T.actionResult, this.passing);
         break;
       }
       case 'notice':
@@ -973,6 +1028,11 @@ export class HotSeat implements GameIO {
       const ids = G.nodes.filter((s) => s.d === d).map((s) => s.id);
       if (!ids.length) continue;
       const dist = G.districts[d];
+      this.hud.action(
+        `stock-change:${d}:${now[d]}`,
+        `${dist.name} stock ${up ? 'rose' : 'fell'}: ${fmt(before[d])} → ${fmt(now[d])}.`,
+        'stock',
+      );
       this.board.lookAt = this.board.frameSquares(ids);
       await this.wait(T.stockZoom);
       sound.play(up ? 'grow' : 'pay');

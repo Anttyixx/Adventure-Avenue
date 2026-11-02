@@ -559,7 +559,7 @@ export class BoardView {
     });
   }
 
-  async rollDie(value: number) {
+  async rollDie(value: number, onResult?: () => void, resultHold: number = T.dieHold) {
     const roll = reducedMotion() ? 250 : T.dieRoll;
     const die = {
       value,
@@ -572,7 +572,8 @@ export class BoardView {
     this.die = die;
     await this.wait(roll);
     this.die = { ...die, phase: 'shown', t0: performance.now() };
-    await this.wait(T.dieHold);
+    onResult?.();
+    if (resultHold > 0) await this.wait(resultHold);
     // Then it shrinks to sit beside the player and counts the steps down.
     if (this.die?.value === value) this.die = { ...this.die, phase: 'small', t0: performance.now() };
   }

@@ -26,6 +26,18 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: '2026-11-02-action-lifecycle',
+    date: 'Nov 2, 2026',
+    title: 'Messages follow the action',
+    features: [
+      {
+        tag: 'fix',
+        title: 'The current action comes first',
+        text: 'The action bar explains turn handoffs and switches as rolling, moving and other actions actually start. Roll results show for a second before movement. Suit pickups briefly take priority over moving, then movement text resumes. Short CPU choices no longer flash deciding messages.',
+      },
+    ],
+  },
+  {
     id: '2026-11-02-calm-action-messages',
     date: 'Nov 2, 2026',
     title: 'Smoother turns and clearer messages',

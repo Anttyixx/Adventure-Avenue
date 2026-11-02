@@ -95,7 +95,7 @@ Requests refer to parts of the game by these names:
   - **toolbar:** top right; the **zoom chip**, the **Guide** button (`ui/guide.ts`, a centered
     pop-up with tabs) and the **Menu** button (a centered pop-up that pauses games on this device).
   - **action bar** (`.prompt-center`): the current player's options at the bottom, or the
-    **status line** when no options are up; it morphs between the two. `ui/status-messages.ts` gives event results priority, queues bursts and debounces idle activity; actual choices interrupt stale announcements.
+    **status line** when no options are up; it morphs between the two. `ui/status-messages.ts` gives new action phases priority over old results, protects brief in-phase overlays and debounces idle activity; actual choices interrupt stale announcements.
   - **Game log button:** above the player cards; it morphs into the **game log**.
   - **player cards:** bottom right. Clicking one opens the **player overview** (or "player
     info pop-up", `ui/overview.ts`) in the middle of the screen.

@@ -757,8 +757,14 @@ export class Hud {
   // ------------------------------------------------------------ status line and log
 
   /** Show the last thing that happened on the status line (it ends any wait). */
-  tick(text: string, kind?: IconKind, holdMs = 0) {
-    this.messages.push({ text, kind }, holdMs);
+  tick(text: string, kind?: IconKind, holdMs = 0, overlay = false) {
+    this.messages.push({ text, kind }, holdMs, overlay);
+    if (this.logOpen) this.renderLog();
+  }
+
+  /** The action now happening; its boundary clears stale messages from the previous action. */
+  action(key: string, text: string, kind?: IconKind) {
+    this.messages.phase(key, { text, kind });
     if (this.logOpen) this.renderLog();
   }
 

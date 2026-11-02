@@ -925,13 +925,12 @@ morphs into the stock market panel in the top-left corner for anyone to look at 
 date) and morphs back into the button when closed. Bottom center: the **action bar**. While the game waits on
 nobody here, it is the status line: one line saying what is going on now: what the game is waiting
 on a player to do ("Blue is buying stocks...", "Blue is deciding which space to go to...", see
-`ui/activity.ts`; the turn starts with "Blue is deciding what to do..." and a three-dot icon, and
-rolling and walking are waits too) or else the last thing that happened, with the log icon for
+`ui/activity.ts`; turn handoffs have their own message, and rolling/walking are active phases) or else the last thing that happened, with the log icon for
 that kind of action and player names in their colors. A wait stays until the next action or wait replaces it. For observers (CPU or remote turns),
 a roll and destination choice are combined: “Rosa rolled a 5 and is deciding where to move...”.
 Card movement without a matching roll describes the number of spaces without claiming a die roll.
 Landing announces the named space. Completed actions and landings remain in the action bar
-for up to 2.5 seconds before a pending waiting message replaces them. A newer result, actual
+for one second within their action; generic waiting is deferred for 1.2 seconds of quiet. A newer result, actual
 movement or a new turn replaces stale text immediately. The game does not pause for this timer;
 the game log shows the pending decision immediately. Local players receive their interactive choices immediately. Resolving a local prompt removes
 its pending waiting message from both the action bar and log. Confirmed purchases, buyouts,
@@ -1306,16 +1305,26 @@ uses the shorter tile-specific wording where available.
 
 ### Action-bar message pacing
 
-Real events outrank movement and waiting text. Event messages have 2.5 seconds of reading time;
-bursts use 1.2-second slots, keeping at most six pending messages (the full history stays in the
-log). Identical pending/current messages do not replay. The final result remains until both its
-reading time plus a 1.5-second grace and the activity-change quiet buffer have passed. Repeated
-moving/waiting updates never force a result away. These UI times are not reduced by Fast CPU.
-Actual player-choice prompts appear immediately and discard stale queued announcements.
-Payment summaries announce committed transactions once; corresponding detailed log entries
-remain in history without another action-bar announcement, including multi-payment buyouts.
-Suit collection is announced at pickup, without waiting for its later log entry. Accepted trades
-announce their committed result before ownership/payment effects, clearing stale consideration.
+The bar follows actual action phases: turn handoff, rolling, roll result, movement, teleport,
+landing, payment, promotion, stock changes, minigames, auction bids/results, closing/reopening and game over. Starting a
+new phase immediately discards messages queued for the previous phase; text never claims a
+previous action is still happening. Handoffs show Passing the turn to [name] throughout the
+end-turn pause and camera glide. The first turn says [name]’s turn. CPU pre-roll does not insert
+a fleeting deciding message before an automatic roll.
+
+The die result appears as soon as it settles and remains for about one second while the token
+stays still (Fast CPU scales this gameplay pause). For CPU rolls with a route choice, the
+existing 1.1-second route preview supplies that beat; do not stack another die hold before it. The first walking step immediately shows moving.
+Suit pickups and fees during movement overlay it for one second, regardless of repeated steps,
+then return to moving. Same-action bursts use 0.8-second slots with at most six pending events;
+the full history stays in the log. New actions supersede those overlays immediately. These text
+reading slots are not Fast CPU-scaled. Identical current/pending text does not replay.
+
+Generic waiting/deciding is a fallback, deferred for 1.2 seconds of quiet. Its quiet buffer and
+an event’s one-second reading slot overlap rather than adding together. If another action starts
+before that timer expires, the waiting message never appears. Actual player-choice prompts
+remain immediate and discard stale announcements. Payment summaries announce once; detailed
+log entries remain in history. Accepted trades announce before ownership/payment effects.
 
 At normal speed the end-of-turn pause is 2 seconds, followed by a smooth 1.6-second camera glide
 (previously about 0.6). The existing human/CPU introductory pauses remain 0.7/1.2 seconds, with

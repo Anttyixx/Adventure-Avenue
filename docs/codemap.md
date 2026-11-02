@@ -237,5 +237,5 @@ setup), `audio`, `fast` (Fast CPU), `names`, `online-name`, `net-token` (this de
 online), `guest`, `guest-in-game` (rejoin info), `boards` (custom boards), `stocks-lab`,
 `stocks-lab-live`, `seen-update`, `update-tried`.
 
-`apps/client/src/ui/status-messages.ts`: bounded action-bar event queue, result reading slots,
-quiet fallback grace and immediate decision interruption; tested with fake timers.
+`apps/client/src/ui/status-messages.ts`: action-phase transitions, bounded in-phase event queue, short reading slots,
+debounced fallback and immediate decision interruption; tested with fake timers.

@@ -12,15 +12,15 @@ export const TIMING = {
   warp: 750,
   /** Die tumbling, then how long the result stays before moving. */
   dieRoll: 900,
-  dieHold: 650,
+  dieHold: 1000,
   /** Pause after landing so players see where the token stopped. */
   land: 1000,
   /** Everyone gets reading time before the bar can return to low-priority activity. */
-  actionResult: 2500,
+  actionResult: 1000,
   /** Shorter reading slots when several events arrive together; UI time is never CPU-scaled. */
-  actionBurst: 1200,
+  actionBurst: 800,
   /** Quiet buffer before returning to movement/waiting text. */
-  actionIdleGrace: 1500,
+  actionIdleGrace: 1200,
   actionQueueLimit: 6,
   /** The end of a turn, before the next player's turn starts. */
   turnEnd: 2000,

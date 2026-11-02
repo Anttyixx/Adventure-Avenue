@@ -721,14 +721,19 @@ Click, Enter or Space closes settings, selects the first valid affected tile, ce
 on it and opens tile info. Board-wide entries remain readable, noninteractive cards. Tile info
 uses the shorter tile-specific wording where available.
 
-### Action-bar event priority and quiet gaps
+### Action-bar lifecycle priority and quiet gaps
 
-`ui/status-messages.ts` schedules event text independently of engine/animation pacing. Keep
-results for 2.5 seconds (1.2 per slot during bursts), then a 1.5-second quiet grace before activity
-fallback. Waiting/moving never bypass results, even when a caller requests an immediate update.
-Keep at most six pending events; full history remains in the log. Player-choice controls take
-priority immediately and clear stale announcements. Keep the existing morph and typing reveal;
-never replay the same purchase for its summary and detailed log. UI Lab’s Event burst → quiet
-fallback and Turn handoff controls demonstrate the intended pacing. Turn-camera glides use a
-1.6-second smoothstep only during handoff; ordinary following keeps its existing easing and
-reduced motion snaps the camera.
+`ui/status-messages.ts` gives new action phases priority over old result timers. A phase change
+clears obsolete events immediately; repeated updates for the same phase preserve short event
+overlays. Show Passing the turn to [name] throughout handoff, Rolling during die animation,
+Rolled [n] during its one-second hold, then Moving from the first step. Suit/fee overlays last
+one second while walking continues, then resume moving without another idle delay. Same-phase
+bursts use 0.8-second slots, at most six pending events. Full history stays in the log.
+
+Generic waiting is deferred for 1.2 seconds; overlap that debounce with event reading time,
+never add them. Known automatic CPU pre-rolls skip deciding text. Actual controls remain
+immediate. Use `hud.action(key,text,kind)` for a real phase, `hud.tick(..., hold, true)` for an
+in-phase overlay, and `hud.status` for fallback activity. Preserve the existing morph/typing
+reveal and duplicate-purchase consolidation. UI Lab’s Action lifecycle and Event burst → quiet
+fallback controls demonstrate the priorities. Turn-camera glides stay 1.6 seconds with reduced
+motion snapping the camera; no other decision delays change.

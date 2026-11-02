@@ -8,6 +8,8 @@ export interface StatusMessage {
 export class StatusMessages {
   current: StatusMessage | null = null;
   waiting: StatusMessage | null = null;
+  private activity: StatusMessage | null = null;
+  private phaseKey: string | null = null;
   private pending: { message: StatusMessage; hold: number }[] = [];
   private event = false;
   private since = 0;
@@ -15,9 +17,28 @@ export class StatusMessages {
   private quietSince = 0;
   private timer: ReturnType<typeof setTimeout> | undefined;
   constructor(private changed: () => void) {}
-  push(message: StatusMessage, hold = T.actionResult as number) {
-    if (this.current?.text === message.text && this.current.kind === message.kind && this.event) return;
+  /** A real action boundary always supersedes announcements from the previous action. */
+  phase(key: string, message: StatusMessage) {
+    if (this.phaseKey === key) {
+      this.waiting = null;
+      this.activity = message;
+      if (!this.event) {
+        this.current = message;
+        this.changed();
+      }
+      this.schedule();
+      return;
+    }
+    this.decision();
+    this.phaseKey = key;
+    this.activity = message;
+    this.current = message;
+    this.changed();
+  }
+  push(message: StatusMessage, hold = T.actionResult as number, overlay = false) {
+    if (this.current?.text === message.text && this.current.kind === message.kind) return;
     if (this.pending.some((p) => p.message.text === message.text && p.message.kind === message.kind)) return;
+    if (!overlay) this.activity = null;
     this.waiting = null;
     this.quietSince = performance.now();
     if (this.event) {
@@ -43,6 +64,8 @@ export class StatusMessages {
     this.pending = [];
     this.waiting = null;
     this.event = false;
+    this.activity = null;
+    this.phaseKey = null;
   }
   destroy() {
     clearTimeout(this.timer);
@@ -58,8 +81,13 @@ export class StatusMessages {
     clearTimeout(this.timer);
     if (!this.event) {
       if (this.waiting && this.current !== this.waiting) {
-        this.current = this.waiting;
-        this.changed();
+        this.timer = setTimeout(
+          () => {
+            this.current = this.waiting;
+            this.changed();
+          },
+          Math.max(0, this.quietSince + T.actionIdleGrace - performance.now()),
+        );
       }
       return;
     }
@@ -71,12 +99,17 @@ export class StatusMessages {
         this.present(next.message, next.hold);
         this.schedule();
       }, delay);
-    } else if (this.waiting) {
-      const delay = Math.max(
-        0,
-        this.since + this.hold + T.actionIdleGrace - now,
-        this.quietSince + T.actionIdleGrace - now,
+    } else if (this.activity && !this.waiting) {
+      this.timer = setTimeout(
+        () => {
+          this.event = false;
+          this.current = this.activity;
+          this.changed();
+        },
+        Math.max(0, this.since + this.hold - now),
       );
+    } else if (this.waiting) {
+      const delay = Math.max(0, this.since + this.hold - now, this.quietSince + T.actionIdleGrace - now);
       this.timer = setTimeout(() => {
         this.event = false;
         this.current = this.waiting;

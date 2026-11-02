@@ -109,6 +109,7 @@ const RECENT = new Set([
   'Game setup',
   'Game setup (friend joined)',
   'Game setup (offline)',
+  'Action lifecycle',
   'Event burst → quiet fallback',
   'Turn handoff',
   'Buy result timing',
@@ -431,15 +432,34 @@ export async function openLab(app: HTMLElement, section?: string) {
     const s = addSection('prompts', 'Action bar & banners');
     row(
       s,
+      btn('Action lifecycle', async () => {
+        const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
+        hud.cancelPrompt();
+        hud.action('handoff-demo', `Passing the turn to ${cur().name}...`, 'move');
+        await wait(900);
+        hud.action('rolling-demo', `${cur().name} is rolling...`, 'move');
+        await wait(T.dieRoll);
+        hud.action('rolled-demo', `${cur().name} rolled a 4.`, 'move');
+        await wait(T.dieHold);
+        hud.action('moving-demo', `${cur().name} is moving...`, 'move');
+        await wait(300);
+        hud.tick(`${cur().name} collected the spade.`, 'suit', T.actionResult, true);
+        for (let i = 0; i < 4; i++) {
+          await wait(300);
+          hud.action('moving-demo', `${cur().name} is moving...`, 'move');
+        }
+        hud.action('landing-demo', `${cur().name} landed on a shop.`, 'move');
+        await wait(T.land);
+        hud.action('payment-demo', `${cur().name} bought the property.`, 'property');
+      }),
       btn('Event burst → quiet fallback', async () => {
         hud.cancelPrompt();
-        hud.tick(`${cur().name} collected the spade.`, 'suit');
-        hud.status(`${cur().name} is moving...`, 'move', true);
+        hud.action('burst-moving', `${cur().name} is moving...`, 'move');
+        hud.tick(`${cur().name} collected the spade.`, 'suit', T.actionResult, true);
         await new Promise((r) => setTimeout(r, 250));
-        hud.tick(`${cur().name} paid a shop fee.`, 'money');
-        hud.status(`${cur().name} is moving...`, 'move', true);
+        hud.tick(`${cur().name} paid a shop fee.`, 'money', T.actionResult, true);
         await new Promise((r) => setTimeout(r, 2200));
-        hud.tick(`${cur().name} reached the bank.`, 'move');
+        hud.action('burst-bank', `${cur().name} reached the bank.`, 'move');
         hud.status(`${cur().name} is deciding what to do...`, 'wait', true);
       }),
       btn('Turn handoff', () => {
