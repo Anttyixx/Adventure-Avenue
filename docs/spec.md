@@ -183,7 +183,14 @@ Board settings is in the top-left info bar.
 The builder has one Property tile instead of separate Shop and Vacant plot choices. The saved
 board records property locations and districts, not which start vacant. The editor preview and
 board thumbnails always show property tiles, and editing an old board discards its plot hints.
-Place uses a pencil icon. Only Place shows the scrollable tile pane on the right, with two columns of actual tile art.
+Place uses a pencil icon. Only Place shows the tile pane on the right. Its Tiles title stays at
+the top while the list scrolls. Tiles appear as art-only buttons in two columns, without individual
+card backgrounds, borders or captions. Hovering or keyboard focus shows the tile name in a
+floating tooltip; accessible button names and hints remain available. Selection uses a small
+check and glow, with scroll position and keyboard focus kept after picking a tile.
+The categories are Properties (Property), Suits (Spade, Heart, Diamond, Club, Change suit),
+Specials (Venture, Roll-on, Take-a-break, Boon, Boom, Stockbroker, Arcade), and Transport
+(Warp, Cannon, Backstreet).
 Choosing a tile keeps Place active; clicking or dragging on the board places it. Returning to
 Place remembers the last chosen tile. The pane is hidden for every other tool and board settings.
 While placing Property tiles, the action bar shows a centered horizontal row of rounded district

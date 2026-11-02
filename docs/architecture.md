@@ -302,3 +302,11 @@ reveal. Unchanged prompt nodes are reused across inspector rebuilds so the revea
 New options settle with transform and opacity.
 Stage resize, font readiness and each district departure retarget this layout safely; completion
 releases the locks. The game's `Hud.morphAsk` and its stepped reveal remain unchanged.
+
+### Builder tile pane
+
+The palette's fixed Tiles heading sits above `.ed-palette-list`, which scrolls category sections
+with two-column art-only buttons. `PALETTE` groups properties, suits, specials and transport.
+A shared root-level tooltip avoids scroll-container clipping and shows names on hover/focus.
+`drawPalette` preserves list scrolling and the focused tool across rebuilds; changing tools or
+scrolling hides stale tooltips. Accessible names and descriptions do not depend on visible captions.

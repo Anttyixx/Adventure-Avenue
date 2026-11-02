@@ -365,7 +365,11 @@ The board is drawn in `board.ts` in its own style: bright and physical, unlike t
   44px icon buttons (Select, Place, Erase), drawn as simple 24px line SVGs; Place is a pencil. The active tool
   uses gold with a contrasting inset outline; tool names appear to the right on hover or keyboard
   focus. Accessible button names and bottom-bar instructions cover touch use. Only Place shows
-  the right-hand tile pane. The only property option is Property; there are no Shop/Vacant plot
+  the right-hand tile pane. Keep its Tiles title fixed above the scrolling list. Group the
+  two-column tile art into Properties, Suits, Specials and Transport. Tile buttons are transparent,
+  borderless and have no captions or card surfaces. Use a small gold check/glow for selection.
+  Show names in a navy tooltip to the left on hover/focus, outside the scroll clipping area;
+  keep accessible labels, focus outlines and the list's scroll position. The only property option is Property; there are no Shop/Vacant plot
   choices or per-tile vacancy checkboxes. Preview properties with the game painter and plots disabled. Board settings is a small ghost button in the top-left info bar.
   Select draws a translucent gold drag rectangle and dashed gold tile outlines. Its Move and
   Erase actions live in the bottom bar. While moving, hide the canvas cursor, show only source

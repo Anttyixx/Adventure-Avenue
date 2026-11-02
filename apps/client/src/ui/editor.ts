@@ -64,7 +64,7 @@ const PALETTE: { group: string; items: { tool: Tool; label: string; hint: string
     ],
   },
   {
-    group: 'Property',
+    group: 'Properties',
     items: [
       {
         tool: 'shop',
@@ -74,32 +74,33 @@ const PALETTE: { group: string; items: { tool: Tool; label: string; hint: string
     ],
   },
   {
-    group: 'Core',
+    group: 'Suits',
     items: [
-      { tool: 'spade', label: '♠ Spade', hint: 'Suit square.' },
-      { tool: 'heart', label: '♥ Heart', hint: 'Suit square.' },
-      { tool: 'diamond', label: '♦ Diamond', hint: 'Suit square.' },
-      { tool: 'club', label: '♣ Club', hint: 'Suit square.' },
+      { tool: 'spade', label: 'Spade', hint: 'Suit square.' },
+      { tool: 'heart', label: 'Heart', hint: 'Suit square.' },
+      { tool: 'diamond', label: 'Diamond', hint: 'Suit square.' },
+      { tool: 'club', label: 'Club', hint: 'Suit square.' },
       { tool: 'change', label: 'Change suit', hint: 'Gives its current suit, then rotates.' },
-      { tool: 'venture', label: 'Venture', hint: 'Flip a venture card.' },
     ],
   },
   {
-    group: 'Special',
+    group: 'Specials',
     items: [
+      { tool: 'venture', label: 'Venture', hint: 'Flip a venture card.' },
       { tool: 'roll', label: 'Roll-on', hint: 'Roll again.' },
       { tool: 'break', label: 'Take-a-break', hint: 'Your shops close until your next turn.' },
       { tool: 'boon', label: 'Boon', hint: '20% commission on fees.' },
       { tool: 'boom', label: 'Boom', hint: '50% commission on fees.' },
       { tool: 'broker', label: 'Stockbroker', hint: 'Buy stock (a venture square in Easy rules).' },
-      { tool: 'back', label: 'Backstreet', hint: 'Warps to the other backstreet. Use two.' },
-      {
-        tool: 'warp',
-        label: 'Warp',
-        hint: 'Landing here warps you to its partner (warps pair up in reading order). Use them in pairs to reach a separate area.',
-      },
       { tool: 'arcade', label: 'Arcade', hint: 'Plays a minigame.' },
+    ],
+  },
+  {
+    group: 'Transport',
+    items: [
+      { tool: 'warp', label: 'Warp', hint: 'Landing here warps you to its partner. Use them in pairs.' },
       { tool: 'cannon', label: 'Cannon', hint: 'Fires you to another player.' },
+      { tool: 'back', label: 'Backstreet', hint: 'Warps to the other backstreet. Use two.' },
     ],
   },
 ];
@@ -370,6 +371,20 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
     'aria-orientation': 'vertical',
   });
   const palette = h('div', { class: 'ed-palette glass', 'aria-label': 'Tile palette' });
+  const paletteList = h('div', { class: 'ed-palette-list' });
+  palette.append(h('h3', { class: 'ed-palette-title' }, 'Tiles'), paletteList);
+  const tileTooltip = h('div', { class: 'ed-tile-tooltip', role: 'tooltip', hidden: true });
+  const hideTileName = () => {
+    tileTooltip.hidden = true;
+  };
+  const showTileName = (button: HTMLElement, name: string) => {
+    tileTooltip.textContent = name;
+    tileTooltip.hidden = false;
+    const rect = button.getBoundingClientRect();
+    tileTooltip.style.left = `${Math.max(8, rect.left - tileTooltip.offsetWidth - 8)}px`;
+    tileTooltip.style.top = `${Math.max(8, Math.min(window.innerHeight - tileTooltip.offsetHeight - 8, rect.top + (rect.height - tileTooltip.offsetHeight) / 2))}px`;
+  };
+  paletteList.addEventListener('scroll', hideTileName);
   const stage = h('div', { class: 'ed-stage' });
   const canvas = h('canvas', { class: 'ed-canvas' }) as HTMLCanvasElement;
   stage.append(canvas);
@@ -386,7 +401,7 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
   });
   const actionContent = h('div', { class: 'ed-action-content' });
   actionbar.append(actionContent);
-  root.append(stage, info, topbar, palette, toolBar, tileInspector, actionbar);
+  root.append(stage, info, topbar, palette, toolBar, tileInspector, actionbar, tileTooltip);
   let notice = '';
   let noticeBad = false;
   let noticeTimer = 0;
@@ -928,17 +943,15 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
   }
 
   const drawPalette = () => {
-    clear(palette);
-    palette.append(
-      h(
-        'div',
-        { class: 'ed-palette-title' },
-        h('span', { class: 'gc-title' }, 'Tiles'),
-        h('span', { class: 'hint' }, 'Choose one to place'),
-      ),
-    );
+    const scroll = paletteList.scrollTop;
+    const focused = palette.contains(document.activeElement)
+      ? (document.activeElement as HTMLElement).dataset.tool
+      : null;
+    hideTileName();
+    clear(paletteList);
     for (const g of PALETTE.filter((g) => g.group !== 'Tools')) {
-      palette.append(h('h4', null, g.group));
+      const section = h('section', { class: 'ed-tile-category', 'aria-label': g.group });
+      section.append(h('h4', null, g.group));
       const row = h('div', { class: 'ed-tools' });
       for (const it of g.items) {
         const example = h('canvas', { class: 'ed-tile-example', 'aria-hidden': 'true' }) as HTMLCanvasElement;
@@ -981,8 +994,14 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
             'button',
             {
               class: `ed-tool ${tool === it.tool ? 'on' : ''}`,
-              title: it.hint,
+              'aria-label': it.label,
+              'aria-description': it.hint,
+              'data-tool': it.tool,
               'aria-pressed': String(tool === it.tool),
+              onmouseenter: (e: MouseEvent) => showTileName(e.currentTarget as HTMLElement, it.label),
+              onmouseleave: hideTileName,
+              onfocus: (e: FocusEvent) => showTileName(e.currentTarget as HTMLElement, it.label),
+              onblur: hideTileName,
               onclick: () => {
                 tool = it.tool;
                 placeTool = it.tool;
@@ -995,12 +1014,17 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
               },
             },
             example,
-            h('span', null, it.label),
           ),
         );
       }
-      palette.append(row);
+      section.append(row);
+      paletteList.append(section);
     }
+    paletteList.scrollTop = scroll;
+    if (focused)
+      paletteList
+        .querySelector<HTMLButtonElement>(`[data-tool="${focused}"]`)
+        ?.focus({ preventScroll: true });
   };
 
   // ------------------------------------------------------------ inspector
@@ -1053,6 +1077,7 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
     clear(actionContent);
     syncTools();
     palette.hidden = !isPlacing() || settings;
+    if (palette.hidden) hideTileName();
     root.classList.toggle('ed-placing', !palette.hidden);
     root.classList.toggle('ed-moving', !!moving);
     settingsButton.setAttribute('aria-pressed', String(settings));

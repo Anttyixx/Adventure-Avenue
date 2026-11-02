@@ -26,6 +26,18 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: '2026-11-01-builder-tile-sidebar',
+    date: 'Nov 1, 2026',
+    title: 'A cleaner tile pane',
+    features: [
+      {
+        tag: 'better',
+        title: 'Just the tiles',
+        text: 'The builder tile pane now shows two columns of tile art without cards or captions. Hover or focus a tile to see its name. Find tiles under Properties, Suits, Specials and Transport, with warps, cannons and backstreets together.',
+      },
+    ],
+  },
+  {
     id: '2026-11-01-builder-typing-reveal',
     date: 'Nov 1, 2026',
     title: 'Typing text in the board builder',

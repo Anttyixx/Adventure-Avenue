@@ -3095,18 +3095,37 @@ input[type='range'] {
   bottom: calc(10px + var(--badge-h, 0px));
   width: var(--ed-palette-w);
   max-height: calc(100% - 76px - var(--badge-h, 0px));
-  overflow-y: auto;
-  overscroll-behavior: contain;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
   padding: 10px;
   z-index: 1;
 }
 .ed-palette-title {
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
+  flex: none;
+  margin: 0 0 6px;
+  font: 20px var(--head);
+  color: var(--text);
 }
-.ed-palette-title .hint {
-  margin: 0;
+.ed-palette-list {
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 3px;
+}
+.ed-tile-tooltip {
+  position: fixed;
+  z-index: 20;
+  padding: 6px 10px;
+  background: var(--navy);
+  border: 1px solid var(--glass-line);
+  border-radius: 8px;
+  color: var(--text);
+  font: 14px var(--body);
+  pointer-events: none;
+}
+.ed-tile-tooltip[hidden] {
+  display: none;
 }
 .editor .ed-tools {
   display: grid;
@@ -3114,21 +3133,38 @@ input[type='range'] {
   gap: 6px;
 }
 .editor .ed-tool {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 2px;
-  min-height: 100px;
-  padding: 4px;
-  color: var(--text);
-  font-size: 12px;
-  transition:
-    background 0.15s,
-    border-color 0.15s;
+  position: relative;
+  display: grid;
+  place-items: center;
+  min-height: 84px;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
 }
 .editor .ed-tool.on {
-  color: #3b2a00;
+  background: transparent;
+  border: 0;
+}
+.editor .ed-tool.on .ed-tile-example {
+  filter: drop-shadow(0 0 3px var(--accent));
+}
+.editor .ed-tool.on::after {
+  content: '✓';
+  position: absolute;
+  right: calc(50% - 38px);
+  top: 3px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: var(--navy);
+  font: 14px var(--body);
+}
+.editor .ed-tool:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
 }
 .ed-tile-example {
   display: block;
@@ -3253,15 +3289,18 @@ input[type='range'] {
     max-height: calc(100% - 66px - var(--badge-h, 0px));
   }
   .editor .ed-tool {
-    min-height: 76px;
-    font-size: 10px;
+    min-height: 62px;
+  }
+  .editor .ed-tool.on::after {
+    right: calc(50% - 30px);
+    top: 0;
   }
   .ed-tile-example {
     width: 66px;
     height: 59px;
   }
-  .ed-palette-title .hint {
-    font-size: 10px;
+  .ed-palette-title {
+    font-size: 17px;
   }
   .editor .ed-actions {
     padding: 8px 10px;
