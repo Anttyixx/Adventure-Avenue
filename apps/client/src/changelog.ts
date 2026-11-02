@@ -26,6 +26,29 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: '2026-11-02-builder-pan',
+    date: 'Nov 2, 2026',
+    title: 'Board builder: move around and a cleaner look',
+    features: [
+      {
+        tag: 'new',
+        title: 'Pan around the board',
+        text: 'Drag with the new Pan tool, the right mouse button, Space held, or two fingers to move around the whole grid. Arrow keys glide too. Tap the zoom percentage to reset the zoom and center your board.',
+      },
+      {
+        tag: 'better',
+        title: 'Board settings in a side panel',
+        text: 'Board settings now opens beside the board, with a card per district: its color, name, property count and a simple - / + starting price.',
+      },
+      {
+        tag: 'better',
+        title: 'Tidier menus',
+        text: 'New board shows a picture of every template, My boards shows each board trimmed to its tiles, and questions use the game’s own pop-ups.',
+      },
+    ],
+    extras: ['Escape closes Board settings', 'Boards open centered on their tiles'],
+  },
+  {
     id: '2026-11-01-transport-color-bar',
     date: 'Nov 1, 2026',
     title: 'Transport colors in the action bar',

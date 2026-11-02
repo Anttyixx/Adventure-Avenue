@@ -45,7 +45,7 @@ import {
 } from '../boardstore';
 import { clear, h, fmt } from './dom';
 import { boardThumb } from './thumb';
-import { digitPicker } from './digits';
+import { stepper } from './stepper';
 import {
   DISTRICT_COLORS,
   DISTRICT_NAMES,
@@ -56,13 +56,14 @@ import {
 import { districtPicker } from './district-picker';
 import { moveSelection, selectionPositions, selectionAnchor, ensureEditorBank } from './editor-selection';
 
-type Tool = Exclude<SquareType, 'plot'> | 'select' | 'place' | 'erase';
+type Tool = Exclude<SquareType, 'plot'> | 'select' | 'pan' | 'place' | 'erase';
 
 const PALETTE: { group: string; items: { tool: Tool; label: string; hint: string }[] }[] = [
   {
     group: 'Tools',
     items: [
       { tool: 'select', label: 'Select', hint: 'Click a tile or drag to select a group.' },
+      { tool: 'pan', label: 'Pan', hint: 'Drag to move around the board.' },
       { tool: 'place', label: 'Place', hint: 'Choose tiles to place on the board.' },
       { tool: 'erase', label: 'Erase', hint: 'Remove squares (click or drag).' },
     ],
@@ -112,6 +113,40 @@ const PALETTE: { group: string; items: { tool: Tool; label: string; hint: string
     ],
   },
 ];
+
+const plural = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? one : many}`;
+
+/** A small line icon (24 x 24 path) for icon buttons. */
+function icon(d: string): SVGSVGElement {
+  const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  svg.setAttribute('viewBox', '0 0 24 24');
+  svg.setAttribute('aria-hidden', 'true');
+  const path = document.createElementNS(svg.namespaceURI, 'path');
+  path.setAttribute('d', d);
+  svg.append(path);
+  return svg;
+}
+const TRASH = 'M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3';
+
+/** The head of a side panel: a title (and a line under it) with Close on the right. */
+function sideHead(title: string, sub: string | null, onClose: () => void): HTMLElement {
+  return h(
+    'div',
+    { class: 'ed-side-head' },
+    h('div', { class: 'ed-side-title' }, h('h2', null, title), sub ? h('p', null, sub) : null),
+    h('button', { class: 'btn small ghost', onclick: onClose }, 'Close'),
+  );
+}
+
+/** A titled group in a side panel, with an optional note on the right of the title. */
+function sideSection(title: string, aside: string | null, ...body: (Node | null)[]): HTMLElement {
+  return h(
+    'section',
+    { class: 'ed-side-sec' },
+    h('div', { class: 'ed-side-sec-head' }, h('h4', null, title), aside ? h('span', null, aside) : null),
+    ...body,
+  );
+}
 
 function blankBoard(
   cols = BOARD_LIMITS.maxCols,
@@ -306,7 +341,7 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
   let marquee: { start: { x: number; y: number }; end: { x: number; y: number } } | null = null;
   const transportColor = { warp: 0, portal: 0 };
   let placeTool: Tool = 'shop';
-  const isPlacing = () => tool !== 'select' && tool !== 'erase';
+  const isPlacing = () => tool !== 'select' && tool !== 'pan' && tool !== 'erase';
   const clearSelection = () => {
     choosingLink = false;
     selected = null;
@@ -357,10 +392,11 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
     'button',
     {
       class: 'zoom-chip',
-      title: 'Zoom: scroll, pinch or - / +. Tap to reset.',
-      'aria-label': 'Reset board zoom',
+      title: 'Zoom: scroll, pinch or - / +. Tap to reset the zoom and center the board.',
+      'aria-label': 'Reset zoom and center the board',
       onclick: () => {
         zoomOut = EDITOR_ZOOM_MIN_OUT;
+        centerOnBoard();
         redraw();
       },
     },
@@ -383,14 +419,32 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
   });
   const palette = h('div', { class: 'ed-palette glass', 'aria-label': 'Tile palette' });
   const paletteList = h('div', { class: 'ed-palette-list' });
-  palette.append(h('h3', { class: 'ed-palette-title' }, 'Tiles'), paletteList);
+  palette.append(
+    h(
+      'div',
+      { class: 'ed-side-head' },
+      h(
+        'div',
+        { class: 'ed-side-title' },
+        h('h2', null, 'Tiles'),
+        h('p', null, 'Pick one, then click or drag on the board'),
+      ),
+    ),
+    paletteList,
+  );
   const stage = h('div', { class: 'ed-stage' });
   const canvas = h('canvas', { class: 'ed-canvas' }) as HTMLCanvasElement;
   stage.append(canvas);
   const tileInspector = h('div', {
-    class: 'ed-tile-inspector glass',
+    class: 'ed-side ed-tile-inspector glass',
     role: 'dialog',
     'aria-label': 'Tile options',
+    hidden: true,
+  });
+  const settingsPanel = h('div', {
+    class: 'ed-side ed-settings glass',
+    role: 'dialog',
+    'aria-label': 'Board settings',
     hidden: true,
   });
   const inspector = h('div', { class: 'ed-inspector' });
@@ -400,7 +454,7 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
   });
   const actionContent = h('div', { class: 'ed-action-content' });
   actionbar.append(actionContent);
-  root.append(stage, info, topbar, palette, toolBar, tileInspector, actionbar);
+  root.append(stage, info, topbar, palette, toolBar, tileInspector, settingsPanel, actionbar);
   let notice = '';
   let noticeBad = false;
   let noticeTimer = 0;
@@ -531,7 +585,7 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
       else if (selected != null && selected > i) selected--;
       return true;
     }
-    if (tool === 'select' || tool === 'place') return false;
+    if (tool === 'select' || tool === 'pan' || tool === 'place') return false;
     const t: SquareType = tool;
     if (t === 'shop') {
       if (pendingDistrict) {
@@ -588,6 +642,41 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
   };
   let ox = 0;
   let oy = 0;
+  // Panning: where the view's center sits, in board units from the grid's center. The camera
+  // eases toward it like the zoom does; dragging moves it directly.
+  const pan = { x: 0, y: 0 };
+  let cameraPan: { x: number; y: number } | null = null;
+  /** Center the view on the tiles (the grid's middle when there are none). */
+  const centerOnBoard = () => {
+    const { w, h: hh } = worldSize(board);
+    const cs = board.squares.map((sq) => center(sq));
+    if (!cs.length) {
+      pan.x = pan.y = 0;
+      return;
+    }
+    const xs = cs.map((c) => c.x);
+    const ys = cs.map((c) => c.y);
+    pan.x = (Math.min(...xs) + Math.max(...xs)) / 2 - w / 2;
+    pan.y = (Math.min(...ys) + Math.max(...ys)) / 2 - hh / 2;
+  };
+  /** Keep part of the grid on screen: the view's center can't wander past its edges. */
+  const clampPan = (viewW: number, viewH: number, s: number) => {
+    const { w, h: hh } = worldSize(board);
+    const limX = Math.max(0, w / 2 - viewW / 2 / s + 150);
+    const limY = Math.max(0, hh / 2 - viewH / 2 / s + 150);
+    pan.x = Math.max(-limX, Math.min(limX, pan.x));
+    pan.y = Math.max(-limY, Math.min(limY, pan.y));
+  };
+  let panning: { x: number; y: number } | null = null;
+  let spaceHeld = false;
+  const panBy = (dx: number, dy: number) => {
+    pan.x -= dx / scale;
+    pan.y -= dy / scale;
+    const r = stage.getBoundingClientRect();
+    clampPan(r.width, r.height, scale);
+    cameraPan = { ...pan };
+    redraw();
+  };
   const preview = () => {
     const game = newGame({
       rules: 'standard',
@@ -625,9 +714,11 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
       Math.max(info.getBoundingClientRect().bottom, topbar.getBoundingClientRect().bottom) - r.top + 6;
     const side = !palette.hidden
       ? paletteRect
-      : !tileInspector.hidden
-        ? tileInspector.getBoundingClientRect()
-        : null;
+      : !settingsPanel.hidden
+        ? settingsPanel.getBoundingClientRect()
+        : !tileInspector.hidden
+          ? tileInspector.getBoundingClientRect()
+          : null;
     const right = side ? Math.min(r.width * 0.4, r.right - side.left + 8) : 0;
     const bottom = r.height - actionbar.offsetTop + 4;
     const near = nearZoom(r.width, r.height, w, hh);
@@ -638,8 +729,15 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
     if (Math.abs(target - cameraScale) < 0.0001) cameraScale = target;
     else zoomFrame = requestAnimationFrame(redraw);
     scale = cameraScale;
-    ox = (r.width - w * scale) / 2;
-    oy = (r.height - hh * scale) / 2;
+    clampPan(r.width, r.height, target);
+    cameraPan =
+      cameraPan == null || reduced
+        ? { ...pan }
+        : { x: cameraPan.x + (pan.x - cameraPan.x) * 0.15, y: cameraPan.y + (pan.y - cameraPan.y) * 0.15 };
+    if (Math.hypot(pan.x - cameraPan.x, pan.y - cameraPan.y) < 0.5) cameraPan = { ...pan };
+    else if (!zoomFrame) zoomFrame = requestAnimationFrame(redraw);
+    ox = r.width / 2 - (w / 2 + cameraPan.x) * scale;
+    oy = r.height / 2 - (hh / 2 + cameraPan.y) * scale;
     const out =
       far < near ? (Math.log(scale / near) / Math.log(far / near)) * ZOOM_MAX_OUT : EDITOR_ZOOM_MIN_OUT;
     zoomChip.textContent = `${editorZoomPercent(out)}%`;
@@ -835,6 +933,11 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
       changed();
       return;
     }
+    if (tool === 'pan') {
+      panning = { x: e.clientX, y: e.clientY };
+      root.classList.add('ed-grabbing');
+      return;
+    }
     if (tool === 'select') {
       settings = false;
       notice = '';
@@ -860,6 +963,12 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
     const [a, b] = [...touches.values()];
     return a && b ? Math.hypot(a.x - b.x, a.y - b.y) : 0;
   };
+  /** Two fingers: their midpoint drags the view while their spread zooms. */
+  const midpoint = () => {
+    const [a, b] = [...touches.values()];
+    return a && b ? { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 } : null;
+  };
+  let pinchMid: { x: number; y: number } | null = null;
   canvas.addEventListener(
     'wheel',
     (e) => {
@@ -868,8 +977,16 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
     },
     { passive: false },
   );
+  canvas.addEventListener('contextmenu', (e) => e.preventDefault());
   canvas.addEventListener('pointerdown', (e) => {
     canvas.setPointerCapture(e.pointerId);
+    // The middle or right button, or Space held, drags the view with any tool.
+    if (e.pointerType !== 'touch' && (e.button === 1 || e.button === 2 || spaceHeld)) {
+      e.preventDefault();
+      panning = { x: e.clientX, y: e.clientY };
+      root.classList.add('ed-grabbing');
+      return;
+    }
     if (e.pointerType === 'touch') {
       touches.set(e.pointerId, { x: e.clientX, y: e.clientY });
       if (touches.size === 1) {
@@ -878,9 +995,11 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
       } else {
         pinching = true;
         touchStart = null;
+        panning = null;
         endStroke();
       }
       pinchDistance = span();
+      pinchMid = midpoint();
       return;
     }
     beginStroke(e);
@@ -892,6 +1011,14 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
         const distance = span();
         if (distance && pinchDistance) zoomBy(Math.log(pinchDistance / distance) * 0.8);
         pinchDistance = distance;
+        const mid = midpoint();
+        if (mid && pinchMid) panBy(mid.x - pinchMid.x, mid.y - pinchMid.y);
+        pinchMid = mid;
+        return;
+      }
+      if (panning) {
+        panBy(e.clientX - panning.x, e.clientY - panning.y);
+        panning = { x: e.clientX, y: e.clientY };
         return;
       }
       if (moving) {
@@ -904,6 +1031,11 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
         beginStroke(touchStart);
         touchStart = null;
       }
+    }
+    if (panning) {
+      panBy(e.clientX - panning.x, e.clientY - panning.y);
+      panning = { x: e.clientX, y: e.clientY };
+      return;
     }
     const cell = toCell(e);
     if (moving) {
@@ -939,6 +1071,10 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
     } else if (moved) redraw();
   });
   const endStroke = () => {
+    if (panning) {
+      panning = null;
+      root.classList.remove('ed-grabbing');
+    }
     if (marquee) {
       marquee = null;
       drawInspector();
@@ -952,6 +1088,7 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
     touches.delete(e.pointerId);
     touchStart = null;
     pinchDistance = span();
+    pinchMid = midpoint();
     endStroke();
   };
   canvas.addEventListener('pointerup', releasePointer);
@@ -973,6 +1110,7 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
   };
   const paths: Record<string, string> = {
     select: 'M5 3l14 10-7 1-3 7z',
+    pan: 'M12 3v18M3 12h18M12 3l-3 3M12 3l3 3M12 21l-3-3M12 21l3-3M3 12l3-3M3 12l3 3M21 12l-3-3M21 12l-3 3',
     place: 'M15 4l5 5M4 15L15 4a3.5 3.5 0 015 5L9 20l-6 1zM4 15l5 5',
     erase: 'M4 13l9-10 8 8-9 10H9l-5-5zM8 9l8 8M12 21h9',
   };
@@ -1020,7 +1158,7 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
     clear(paletteList);
     for (const g of PALETTE.filter((g) => g.group !== 'Tools')) {
       const section = h('section', { class: 'ed-tile-category', 'aria-label': g.group });
-      section.append(h('h4', null, g.group));
+      section.append(h('div', { class: 'ed-side-sec-head' }, h('h4', null, g.group)));
       const row = h('div', { class: 'ed-tools' });
       for (const it of g.items) {
         const example = h('canvas', { class: 'ed-tile-example', 'aria-hidden': 'true' }) as HTMLCanvasElement;
@@ -1209,6 +1347,7 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
     status.textContent = !inList ? 'Not saved yet' : unsaved ? 'Unsaved changes' : 'Saved';
     status.classList.toggle('unsaved', unsaved || !inList);
 
+    const check = validateBoard(board);
     const controls = h('div', { class: 'ed-context-controls' });
     clear(actionContent);
     syncTools();
@@ -1216,6 +1355,7 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
     root.classList.toggle('ed-placing', !palette.hidden);
     root.classList.toggle('ed-moving', !!moving);
     root.classList.toggle('ed-linking', choosingLink);
+    root.classList.toggle('ed-pan', tool === 'pan');
     settingsButton.setAttribute('aria-pressed', String(settings));
     const label = PALETTE.flatMap((g) => g.items).find((it) => it.tool === tool)?.label;
     actionContent.append(
@@ -1225,18 +1365,22 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
         notice ||
           (choosingLink ? 'Click a tile on the board to link it · Escape to cancel' : '') ||
           (settings
-            ? 'Board settings'
+            ? check.errors.length
+              ? `Board settings · ${check.errors.length} problem${check.errors.length === 1 ? '' : 's'} to fix before playing`
+              : 'Board settings · ready to play'
             : moving
               ? 'Move the group, then click to place · Esc to cancel'
               : tool === 'select'
                 ? selection.size
                   ? `${selection.size} tile${selection.size === 1 ? '' : 's'} selected`
                   : 'Click a tile, or drag to select a group'
-                : tool === 'shop' && !activeChoice
-                  ? hasDistrictChoices
-                    ? 'Choose a district color to place properties'
-                    : 'All districts have 4 properties'
-                  : `${label}: ${tool === 'erase' ? 'click or drag to remove squares' : 'click or drag to place tiles'}`),
+                : tool === 'pan'
+                  ? 'Drag to move around the board · tap the zoom to recenter'
+                  : tool === 'shop' && !activeChoice
+                    ? hasDistrictChoices
+                      ? 'Choose a district color to place properties'
+                      : 'All districts have 4 properties'
+                    : `${label}: ${tool === 'erase' ? 'click or drag to remove squares' : 'click or drag to place tiles'}`),
       ),
       h(
         'div',
@@ -1299,71 +1443,240 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
     );
     actionContent.append(controls);
     controls.append(inspector);
-    // Board settings
-    const author = h('input', {
-      value: board.author ?? '',
-      maxlength: '32',
-      placeholder: 'Your name',
-    }) as HTMLInputElement;
-    author.onchange = () => {
-      board.author = author.value.trim() || undefined;
-      drawInspector();
-    };
-    // Grid layout: square or hex. Squares keep their cells; connections are recalculated.
-    const layoutBtn = (l: BoardLayout, label: string) =>
-      h(
-        'button',
-        {
-          class: `btn small ${(board.layout ?? 'square') === l ? 'on' : 'ghost'}`,
-          onclick: () => {
-            if ((board.layout ?? 'square') === l) return;
-            if (
-              board.squares.length &&
-              !confirm(
-                `Switch to a ${label.toLowerCase()}? Squares stay in their cells, but which squares connect will change.`,
+    // Board settings: a side panel on the right while it is open.
+    const keepScroll = settingsPanel.querySelector('.ed-side-body')?.scrollTop ?? 0;
+    clear(settingsPanel);
+    settingsPanel.hidden = !settings;
+    if (settings) {
+      const author = h('input', {
+        value: board.author ?? '',
+        maxlength: '32',
+        placeholder: 'Your name',
+      }) as HTMLInputElement;
+      author.onchange = () => {
+        board.author = author.value.trim() || undefined;
+        drawInspector();
+      };
+      // Grid layout: square or hex. Tiles keep their cells; connections are recalculated.
+      const layoutBtn = (l: BoardLayout, label: string) => {
+        const on = (board.layout ?? 'square') === l;
+        return h(
+          'button',
+          {
+            class: `seg-btn ${on ? 'on' : ''}`,
+            'aria-pressed': String(on),
+            onclick: async () => {
+              if (on) return;
+              if (
+                board.squares.length &&
+                !(await ask(
+                  `Switch to a ${label.toLowerCase()} grid?`,
+                  'Tiles stay in their cells, but which tiles connect will change.',
+                  'Switch',
+                ))
               )
-            )
-              return;
-            snapshot();
-            board.layout = l;
-            drawPalette();
-            changed();
-            say(
-              l === 'hex'
-                ? 'Hex grid: each tile can connect to six neighbors.'
-                : 'Square grid: each tile connects up, down, left and right.',
-            );
+                return;
+              snapshot();
+              board.layout = l;
+              drawPalette();
+              changed();
+              say(
+                l === 'hex'
+                  ? 'Hex grid: each tile can connect to six neighbors.'
+                  : 'Square grid: each tile connects up, down, left and right.',
+              );
+            },
           },
-        },
-        label,
-      );
-    const boardSettings = h('div', { class: 'ed-board-settings' });
-    inspector.append(boardSettings);
-    boardSettings.hidden = !settings;
-    boardSettings.append(
-      h('h4', null, 'Board'),
-      h(
-        'div',
-        { class: 'ed-field' },
-        h('span', null, 'Grid'),
-        h(
+          label,
+        );
+      };
+      const pricing = districtStartingValues(board);
+      const cards = board.districts.map((d, i) => {
+        const count = board.squares.filter((s) => s.t === 'shop' && s.d === i).length;
+        const name = h('input', {
+          class: 'ed-dname',
+          value: d.name,
+          maxlength: '24',
+          'aria-label': 'District name',
+        }) as HTMLInputElement;
+        name.onchange = () => {
+          snapshot();
+          d.name = name.value.trim() || d.name;
+          changed();
+        };
+        const color = h('input', {
+          type: 'color',
+          value: d.color,
+          'aria-label': `${d.name} color`,
+        }) as HTMLInputElement;
+        color.onchange = () => {
+          snapshot();
+          d.color = color.value;
+          changed();
+        };
+        const del = h(
+          'button',
+          { class: 'ed-icon-btn', 'aria-label': `Delete ${d.name}`, title: 'Delete district' },
+          icon(TRASH),
+        );
+        del.onclick = async () => {
+          if (
+            count &&
+            !(await ask(
+              `Delete ${d.name}?`,
+              `Its ${count} propert${count === 1 ? 'y' : 'ies'} will be removed from the board.`,
+              'Delete',
+              true,
+            ))
+          )
+            return;
+          snapshot();
+          board.squares = board.squares.filter((s) => !(s.t === 'shop' && s.d === i));
+          for (const s of board.squares) if (s.t === 'shop' && s.d! > i) s.d!--;
+          board.districts.splice(i, 1);
+          district = Math.min(district, Math.max(0, board.districts.length - 1));
+          clearSelection();
+          changed();
+        };
+        const note = h(
+          'small',
+          { title: 'Auto prices rise with the walk from the bank: nearest district cheapest.' },
+          d.startingValue == null ? 'Auto, by distance' : `Custom · auto is ${fmt(pricing.defaults[i])}`,
+        );
+        const reset = h(
+          'button',
+          {
+            class: 'ed-link-btn',
+            hidden: d.startingValue == null,
+            onclick: () => {
+              snapshot();
+              delete d.startingValue;
+              changed();
+            },
+          },
+          'Use auto',
+        );
+        const price = stepper({
+          value: pricing.averages[i],
+          min: K.districtProperty.minAverage,
+          max: K.districtProperty.maxAverage,
+          step: K.districtProperty.step,
+          label: `${d.name} starting average`,
+          onStart: snapshot,
+          onChange(value) {
+            d.startingValue = value;
+            recompute();
+            redraw();
+            note.textContent = `Custom · auto is ${fmt(pricing.defaults[i])}`;
+            reset.hidden = false;
+            status.textContent = 'Unsaved changes';
+            status.classList.add('unsaved');
+          },
+        });
+        return h(
           'div',
-          { class: 'ed-row ed-layout' },
-          layoutBtn('square', 'Square grid'),
-          layoutBtn('hex', 'Hex grid'),
+          { class: 'ed-dcard', style: `--dc:${d.color}` },
+          h(
+            'div',
+            { class: 'ed-dcard-top' },
+            h('label', { class: 'ed-swatch', title: 'Change color' }, color),
+            name,
+            h(
+              'span',
+              {
+                class: `ed-count ${count === BOARD_LIMITS.districtSize ? 'full' : ''}`,
+                title: 'Properties in this district',
+              },
+              `${count}/${BOARD_LIMITS.districtSize}`,
+            ),
+            del,
+          ),
+          h(
+            'div',
+            { class: 'ed-dcard-price' },
+            h('div', { class: 'ed-price-label' }, h('span', null, 'Starting average'), note, reset),
+            price.el,
+          ),
+        );
+      });
+      const add =
+        board.districts.length < BOARD_LIMITS.maxDistricts
+          ? h(
+              'button',
+              {
+                class: 'ed-add',
+                onclick: () => {
+                  snapshot();
+                  const i = board.districts.length;
+                  const free =
+                    DISTRICT_COLORS.find((c) => !board.districts.some((d) => d.color === c)) ??
+                    DISTRICT_COLORS[i % DISTRICT_COLORS.length];
+                  board.districts.push({
+                    name:
+                      DISTRICT_NAMES.find((n) => !board.districts.some((d) => d.name === n)) ??
+                      `District ${i + 1}`,
+                    color: free,
+                  });
+                  district = i;
+                  changed();
+                },
+              },
+              '+ Add district',
+            )
+          : null;
+      const props = board.squares.filter((s) => s.t === 'shop').length;
+      const body = h(
+        'div',
+        { class: 'ed-side-body' },
+        sideSection(
+          'Board',
+          null,
+          h(
+            'div',
+            { class: 'ed-field' },
+            h('span', null, 'Grid'),
+            h('div', { class: 'seg ed-seg' }, layoutBtn('square', 'Square'), layoutBtn('hex', 'Hex')),
+          ),
+          field('Made by', author),
         ),
-      ),
-      h(
-        'p',
-        { class: 'hint' },
-        `${board.cols} × ${board.rows} grid. Unused outer space is trimmed for games.`,
-      ),
-      field('Made by', author),
-    );
-
-    // Districts
-    const districtPanel = h('div', { class: 'ed-district-panel' });
-    districtPanel.hidden = !settings;
+        sideSection(
+          'Districts',
+          `${board.districts.length} of ${BOARD_LIMITS.maxDistricts}`,
+          h(
+            'p',
+            { class: 'hint' },
+            'Each needs exactly 4 properties. In a game the nearest one costs 30G less than the average and the farthest 30G more.',
+          ),
+          ...cards,
+          add,
+        ),
+        sideSection(
+          check.errors.length ? 'Problems' : 'Ready to play',
+          check.errors.length ? String(check.errors.length) : null,
+          h(
+            'p',
+            { class: 'hint' },
+            [
+              plural(board.squares.length, 'tile'),
+              plural(props, 'property', 'properties'),
+              plural(board.districts.length, 'district'),
+            ].join(' · '),
+          ),
+          ...check.errors.map((e) => h('p', { class: 'ed-err' }, e)),
+          ...check.warnings.map((w) => h('p', { class: 'ed-warn' }, w)),
+          ...(check.errors.length ? [] : [h('p', { class: 'ed-ok' }, 'This board is playable.')]),
+        ),
+      );
+      settingsPanel.append(
+        sideHead('Board settings', null, () => {
+          settings = false;
+          drawInspector();
+          redraw();
+        }),
+        body,
+      );
+      body.scrollTop = keepScroll;
+    }
     const showDistrictRow = !settings && tool === 'shop' && (hasDistrictChoices || districtRow.hasButtons());
     if (showDistrictRow) inspector.append(districtRow.el);
     districtRow.update(choices, activeChoice?.key ?? null, showDistrictRow);
@@ -1373,148 +1686,6 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
       transportChoices.find((c) => c.index === transportSelected)?.key ?? null,
       showTransportRow,
     );
-    inspector.append(districtPanel);
-    districtPanel.append(
-      h('h4', null, 'Districts'),
-      h(
-        'p',
-        { class: 'hint' },
-        'Each district needs exactly 4 properties. New properties go in the active district.',
-      ),
-    );
-    const pricing = districtStartingValues(board);
-    board.districts.forEach((d, i) => {
-      const count = board.squares.filter((s) => s.t === 'shop' && s.d === i).length;
-      const name = h('input', { value: d.name, maxlength: '24' }) as HTMLInputElement;
-      name.onchange = () => {
-        snapshot();
-        d.name = name.value.trim() || d.name;
-        changed();
-      };
-      const color = h('input', { type: 'color', value: d.color, class: 'ed-color' }) as HTMLInputElement;
-      color.onchange = () => {
-        snapshot();
-        d.color = color.value;
-        changed();
-      };
-      const del = h('button', { class: 'btn small ghost', title: 'Delete district' }, '✕');
-      del.onclick = () => {
-        if (
-          count &&
-          !confirm(`Delete "${d.name}"? Its ${count} propert${count === 1 ? 'y' : 'ies'} will be removed.`)
-        )
-          return;
-        snapshot();
-        board.squares = board.squares.filter((s) => !(s.t === 'shop' && s.d === i));
-        for (const s of board.squares) if (s.t === 'shop' && s.d! > i) s.d!--;
-        board.districts.splice(i, 1);
-        district = Math.min(district, Math.max(0, board.districts.length - 1));
-        clearSelection();
-        changed();
-      };
-      const row = h(
-        'div',
-        { class: `ed-district ${i === district ? 'on' : ''}` },
-        h('input', {
-          type: 'radio',
-          name: 'ed-district',
-          checked: i === district,
-          title: 'Active district',
-          onchange: () => {
-            district = i;
-            tool = 'shop';
-            drawPalette();
-            drawInspector();
-          },
-        }),
-        color,
-        name,
-        h(
-          'small',
-          {
-            class: count === BOARD_LIMITS.districtSize ? '' : 'ed-err',
-            title: 'Properties in this district',
-          },
-          `${count}/${BOARD_LIMITS.districtSize}`,
-        ),
-        del,
-      );
-      const valueLabel = h(
-        'span',
-        { class: 'hint' },
-        d.startingValue == null ? `Default · ${fmt(pricing.defaults[i])}` : 'Custom average',
-      );
-      const reset = h(
-        'button',
-        {
-          class: 'btn small ghost',
-          disabled: d.startingValue == null,
-          onclick: () => {
-            snapshot();
-            delete d.startingValue;
-            changed();
-          },
-        },
-        'Reset',
-      );
-      const picker = digitPicker({
-        min: K.districtProperty.minAverage,
-        max: K.districtProperty.maxAverage,
-        value: pricing.averages[i],
-        unit: K.districtProperty.step,
-        suffix: 'G',
-        onChange(value) {
-          snapshot();
-          d.startingValue = value;
-          recompute();
-          redraw();
-          reset.disabled = false;
-          valueLabel.textContent = 'Custom average';
-          status.textContent = 'Unsaved changes';
-          status.classList.add('unsaved');
-        },
-      });
-      districtPanel.append(
-        h(
-          'div',
-          { class: 'ed-district-card' },
-          row,
-          h(
-            'div',
-            { class: 'ed-district-pricing', role: 'group', 'aria-label': `${d.name} starting average` },
-            h('span', { class: 'ed-price-title' }, 'Starting average'),
-            valueLabel,
-            picker.el,
-            reset,
-          ),
-        ),
-      );
-    });
-    if (board.districts.length < BOARD_LIMITS.maxDistricts)
-      districtPanel.append(
-        h(
-          'button',
-          {
-            class: 'btn small ghost',
-            onclick: () => {
-              snapshot();
-              const i = board.districts.length;
-              const free =
-                DISTRICT_COLORS.find((c) => !board.districts.some((d) => d.color === c)) ??
-                DISTRICT_COLORS[i % DISTRICT_COLORS.length];
-              board.districts.push({
-                name:
-                  DISTRICT_NAMES.find((n) => !board.districts.some((d) => d.name === n)) ??
-                  `District ${i + 1}`,
-                color: free,
-              });
-              district = i;
-              changed();
-            },
-          },
-          '+ Add district',
-        ),
-      );
 
     // Selected square
     const squarePanel = tileInspector;
@@ -1525,34 +1696,19 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
       sq?.t === 'bank'
         ? 'Bank'
         : (PALETTE.flatMap((g) => g.items).find((it) => it.tool === sq?.t)?.label ?? 'Tile');
+    const squareBody = h('div', { class: 'ed-side-body' });
     squarePanel.append(
-      h(
-        'div',
-        { class: 'ed-tile-head' },
-        h(
-          'div',
-          { class: 'ed-tile-title' },
-          h('h2', null, tileName),
-          sq ? h('p', { class: 'ed-tile-position' }, `Column ${sq.x + 1} · Row ${sq.y + 1}`) : null,
-        ),
-        h(
-          'button',
-          {
-            class: 'btn small ghost',
-            onclick: () => {
-              clearSelection();
-              drawInspector();
-              redraw();
-            },
-          },
-          'Close',
-        ),
-      ),
+      sideHead(tileName, sq ? `Column ${sq.x + 1} · Row ${sq.y + 1}` : null, () => {
+        clearSelection();
+        drawInspector();
+        redraw();
+      }),
+      squareBody,
     );
-    if (!sq) squarePanel.append(h('p', { class: 'hint' }, 'Use Select and click a square to edit it.'));
+    if (!sq) squareBody.append(h('p', { class: 'hint' }, 'Use Select and click a square to edit it.'));
     else {
       if (sq.t === 'bank')
-        squarePanel.append(
+        squareBody.append(
           h('p', { class: 'hint' }, 'Every board needs a bank. You can move it, but it cannot be erased.'),
         );
       if (sq.t === 'warp' || sq.t === 'portal') {
@@ -1561,7 +1717,7 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
         const linkedName = linked
           ? `${linked.t === 'bank' ? 'Bank' : type === 'warp' ? 'Warp' : 'Portal'} · Column ${linked.x + 1}, row ${linked.y + 1}`
           : 'Not linked';
-        squarePanel.append(
+        squareBody.append(
           h(
             'div',
             { class: 'ed-link-info' },
@@ -1604,9 +1760,9 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
             sq.toBank = destination.value === 'bank';
             changed();
           };
-          squarePanel.append(field('Destination', destination));
+          squareBody.append(field('Destination', destination));
         }
-        squarePanel.append(
+        squareBody.append(
           h(
             'p',
             { class: 'hint' },
@@ -1645,7 +1801,7 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
           sq.d = Number(dSel.value);
           changed();
         };
-        squarePanel.append(
+        squareBody.append(
           field('District', dSel),
           h(
             'div',
@@ -1658,31 +1814,10 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
       }
     }
 
-    // Problems
-    const problems = h('div');
-    problems.hidden = !settings;
-    inspector.append(problems);
-    const check = validateBoard(board);
-    const props = board.squares.filter((s) => s.t === 'shop').length;
-    problems.append(
-      h('h4', null, check.errors.length ? `Problems (${check.errors.length})` : 'Ready to play'),
-      h(
-        'p',
-        { class: 'hint' },
-        `${board.squares.length} squares, ${props} properties, ${board.districts.length} districts.`,
-      ),
-      ...check.errors.map((e) => h('p', { class: 'ed-err' }, e)),
-      ...check.warnings.map((w) => h('p', { class: 'ed-warn' }, w)),
-      ...(check.errors.length ? [] : [h('p', { class: 'ed-ok' }, 'This board is playable.')]),
-    );
     controls.hidden =
-      !settings &&
-      !showTransportRow &&
-      !(tool === 'shop' && (hasDistrictChoices || districtRow.hasButtons()));
+      !showTransportRow && !(tool === 'shop' && (hasDistrictChoices || districtRow.hasButtons()));
     actionbar.classList.toggle('ed-action-error', !!notice && noticeBad);
-    actionbar.classList.toggle('ed-action-expanded', settings);
     const hasOptions =
-      settings ||
       showTransportRow ||
       (tool === 'shop' && (hasDistrictChoices || districtRow.hasButtons())) ||
       (tool === 'select' && selection.size > 0);
@@ -1728,11 +1863,12 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
     if (!file) return;
     const res = await readBoardFile(file);
     if (!res.board) return say(res.error ?? 'Could not read that file.', true);
-    if (!confirmLeave()) return;
+    if (!(await confirmLeave())) return;
     snapshot();
     board = { ...res.board, cols: BOARD_LIMITS.maxCols, rows: BOARD_LIMITS.maxRows };
     clearSelection();
     savedJSON = '';
+    centerOnBoard();
     changed();
     say(
       res.check?.errors.length
@@ -1750,11 +1886,13 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
     handlers.onPlay(structuredClone(board));
   };
 
-  const confirmLeave = () =>
-    JSON.stringify(board) === savedJSON || confirm('Discard unsaved changes to this board?');
+  /** True when there is nothing unsaved to lose, or the player agrees to lose it. */
+  const confirmLeave = async () =>
+    JSON.stringify(board) === savedJSON ||
+    ask('Discard your changes?', 'This board has changes that are not saved yet.', 'Discard', true);
 
-  const leave = () => {
-    if (!confirmLeave()) return;
+  const leave = async () => {
+    if (!(await confirmLeave())) return;
     destroy();
     handlers.onExit();
   };
@@ -1764,16 +1902,34 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
     clearSelection();
     undo.length = 0;
     savedJSON = saved ? JSON.stringify(board) : '';
+    zoomOut = EDITOR_ZOOM_MIN_OUT;
+    centerOnBoard();
     changed();
   };
 
-  const modal = (title: string, body: HTMLElement) => {
+  /**
+   * A pop-up in the middle of the screen over a dimmed board: a title with Close, then `body`.
+   * Escape, Close or a click outside closes it. Returns the close function.
+   */
+  const modal = (title: string, body: HTMLElement, opts: { wide?: boolean; onClose?: () => void } = {}) => {
     const wrap = h('div', { class: 'modal-wrap ed-modal' });
-    const close = () => wrap.remove();
+    const close = () => {
+      if (!wrap.isConnected) return;
+      wrap.remove();
+      window.removeEventListener('keydown', onEsc, true);
+      opts.onClose?.();
+    };
+    const onEsc = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape' || root.querySelector('.ed-modal:last-of-type') !== wrap) return;
+      // Only this pop-up closes: the builder's own Escape (clear selection) must not run too.
+      e.stopImmediatePropagation();
+      close();
+    };
+    window.addEventListener('keydown', onEsc, true);
     wrap.append(
       h(
         'div',
-        { class: 'modal glass' },
+        { class: `modal glass ${opts.wide ? 'wide' : ''}`, role: 'dialog', 'aria-label': title },
         h(
           'div',
           { class: 'modal-head' },
@@ -1790,60 +1946,102 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
     return close;
   };
 
+  /** Ask a yes/no question in a game-style pop-up. `danger` makes the yes button red. */
+  function ask(title: string, text: string, yes: string, danger = false): Promise<boolean> {
+    return new Promise((resolve) => {
+      let answer = false;
+      const yesBtn = h(
+        'button',
+        {
+          class: `btn ${danger ? 'no' : 'main'}`,
+          onclick: () => {
+            answer = true;
+            close();
+          },
+        },
+        yes,
+      );
+      const close = modal(
+        title,
+        h(
+          'div',
+          { class: 'ed-ask' },
+          h('p', null, text),
+          h(
+            'div',
+            { class: 'btn-row' },
+            h('button', { class: 'btn ghost', onclick: () => close() }, 'Cancel'),
+            yesBtn,
+          ),
+        ),
+        { onClose: () => resolve(answer) },
+      );
+      yesBtn.focus();
+    });
+  }
+
   const editorMenu = () => {
-    const item = (label: string, act: () => void) =>
+    const item = (label: string, hint: string, act: () => void, cls = '') =>
       h(
         'button',
         {
-          class: 'btn',
+          class: `ed-menu-item ${cls}`,
           onclick: () => {
             close();
             act();
           },
         },
-        label,
+        h('b', null, label),
+        h('small', null, hint),
       );
     const close = modal(
       'Board builder',
       h(
         'div',
         { class: 'ed-menu-actions' },
-        item('New board', newBoardDialog),
-        item('My boards', myBoardsDialog),
-        item('Import board', () => {
-          void doImport();
-        }),
-        item('Export board', doExport),
-        item('Back to main menu', leave),
+        item('New board', 'Start from a template or a copy of a built-in board', newBoardDialog),
+        item('My boards', 'Open, export or delete boards saved on this device', myBoardsDialog),
+        item('Import board', 'Open a .aaboard.json file', () => void doImport()),
+        item('Export board', 'Save this board as a file to share', doExport),
+        item('Back to main menu', 'Leave the builder', () => void leave(), 'leave'),
       ),
     );
   };
 
+  /** A board's picture for the lists, trimmed to its tiles and centered in a fixed frame. */
+  const thumbFrame = (b: BoardDef, w: number, hh: number) =>
+    h('span', { class: 'ed-thumb', style: `width:${w}px;height:${hh}px` }, boardThumb(b, w - 8, hh - 8));
+
   const newBoardDialog = () => {
-    const opt = (title: string, text: string, make: () => BoardDef) =>
-      h(
+    const opt = (title: string, text: string, make: () => BoardDef) => {
+      const made = make();
+      return h(
         'button',
         {
-          class: 'pick',
-          onclick: () => {
-            if (!confirmLeave()) return;
+          class: 'ed-card',
+          onclick: async () => {
+            if (!(await confirmLeave())) return;
             close();
             load(make(), false);
           },
         },
+        made.squares.length > 1
+          ? thumbFrame(made, 150, 86)
+          : h('span', { class: 'ed-thumb empty' }, 'Empty grid'),
         h('b', null, title),
         h('small', null, text),
       );
+    };
     const close = modal(
       'New board',
       h(
         'div',
-        { class: 'pick-list' },
-        opt('Starter loop (square)', 'A playable loop around the edge to build on.', () => starterLoop()),
-        opt('Lakeside (hex)', 'A winding hex road around a lake, with a shortcut.', () => hexStarter()),
+        { class: 'ed-cards' },
+        opt('Starter loop', 'A playable square loop to build on.', () => starterLoop()),
+        opt('Lakeside', 'A winding hex road around a lake, with a shortcut.', () => hexStarter()),
         opt('Hex loop', 'A simple loop on a hex grid.', () => hexLoop()),
-        opt('Blank square grid', 'A 32 × 20 square grid with a bank.', () => blankBoard()),
-        opt('Blank hex grid', 'A 32 × 20 hex grid with a bank.', () =>
+        opt('Blank square grid', 'Just the bank on a square grid.', () => blankBoard()),
+        opt('Blank hex grid', 'Just the bank on a hex grid.', () =>
           blankBoard(BOARD_LIMITS.maxCols, BOARD_LIMITS.maxRows, 'hex'),
         ),
         ...BUILT_IN_BOARDS.map((b) =>
@@ -1854,6 +2052,7 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
           })),
         ),
       ),
+      { wide: true },
     );
   };
 
@@ -1867,11 +2066,12 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
           h('p', { class: 'hint' }, 'No saved boards yet. Use Save to keep the board you are editing.'),
         );
       for (const b of boards) {
+        const open = b.id === board.id;
         list.append(
           h(
             'div',
-            { class: 'ed-board-item' },
-            boardThumb(b.board, 120, 70),
+            { class: `ed-board-item ${open ? 'open' : ''}` },
+            thumbFrame(b.board, 112, 64),
             h(
               'div',
               { class: 'ed-board-info' },
@@ -1879,33 +2079,54 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
               h(
                 'small',
                 null,
-                `${b.board.squares.length} squares · saved ${new Date(b.savedAt).toLocaleDateString()}`,
+                `${b.board.squares.length} tiles · saved ${new Date(b.savedAt).toLocaleDateString()}${open ? ' · open now' : ''}`,
               ),
             ),
             h(
-              'button',
-              { class: 'btn small', onclick: () => (confirmLeave() ? (close(), load(b.board, true)) : null) },
-              'Open',
-            ),
-            h('button', { class: 'btn small ghost', onclick: () => exportBoard(b.board) }, 'Export'),
-            h(
-              'button',
-              {
-                class: 'btn small danger',
-                onclick: () => {
-                  if (!confirm(`Delete "${b.board.name}" from My boards?`)) return;
-                  deleteBoard(b.id);
-                  draw();
+              'div',
+              { class: 'ed-board-actions' },
+              h(
+                'button',
+                {
+                  class: 'btn small main',
+                  onclick: async () => {
+                    if (!(await confirmLeave())) return;
+                    close();
+                    load(b.board, true);
+                  },
                 },
-              },
-              'Delete',
+                'Open',
+              ),
+              h('button', { class: 'btn small ghost', onclick: () => exportBoard(b.board) }, 'Export'),
+              h(
+                'button',
+                {
+                  class: 'ed-icon-btn',
+                  'aria-label': `Delete ${b.board.name}`,
+                  title: 'Delete',
+                  onclick: async () => {
+                    if (
+                      !(await ask(
+                        `Delete ${b.board.name}?`,
+                        'It will be removed from My boards on this device.',
+                        'Delete',
+                        true,
+                      ))
+                    )
+                      return;
+                    deleteBoard(b.id);
+                    draw();
+                  },
+                },
+                icon(TRASH),
+              ),
             ),
           ),
         );
       }
     };
     draw();
-    const close = modal('My boards', list);
+    const close = modal('My boards', list, { wide: true });
   };
 
   const onKey = (e: KeyboardEvent) => {
@@ -1914,9 +2135,31 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
       root.querySelector('.ed-modal')
     )
       return;
+    if (e.key === ' ' && !e.repeat) {
+      e.preventDefault();
+      spaceHeld = true;
+      root.classList.add('ed-grab');
+      return;
+    }
+    const arrows: Record<string, [number, number]> = {
+      ArrowLeft: [1, 0],
+      ArrowRight: [-1, 0],
+      ArrowUp: [0, 1],
+      ArrowDown: [0, -1],
+    };
+    if (arrows[e.key]) {
+      e.preventDefault();
+      const [dx, dy] = arrows[e.key];
+      // A smooth glide by a few tiles (the camera eases there).
+      pan.x -= dx * 300;
+      pan.y -= dy * 300;
+      redraw();
+      return;
+    }
     if (e.key === 'Escape') {
       if (choosingLink) choosingLink = false;
       else if (moving) moving = null;
+      else if (settings) settings = false;
       else clearSelection();
       drawInspector();
       redraw();
@@ -1933,6 +2176,12 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
     }
   };
   window.addEventListener('keydown', onKey);
+  const onKeyUp = (e: KeyboardEvent) => {
+    if (e.key !== ' ') return;
+    spaceHeld = false;
+    root.classList.remove('ed-grab');
+  };
+  window.addEventListener('keyup', onKeyUp);
   // Remeasure responsive/font changes without replacing inputs or disturbing their focus.
   const retargetActions = () => {
     if (destroyed) return;
@@ -1949,6 +2198,7 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
     destroyed = true;
     cancelAnimationFrame(zoomFrame);
     window.removeEventListener('keydown', onKey);
+    window.removeEventListener('keyup', onKeyUp);
     ro.disconnect();
     clearTimeout(noticeTimer);
     stopActionMorph();
@@ -1961,6 +2211,7 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
 
   recompute();
   savedJSON = JSON.stringify(board);
+  centerOnBoard();
   drawPalette();
   drawInspector();
   requestAnimationFrame(redraw);

@@ -1,5 +1,6 @@
 /** Small schematic picture of a board, for the board picker and saved-board lists. */
 import type { BoardDef } from '@aa/engine';
+import { boardForPlay } from '../boardstore';
 import { cellCenter, tileShape, worldSize } from '../geometry';
 
 const TYPE_COLOR: Record<string, string> = {
@@ -12,7 +13,9 @@ const TYPE_COLOR: Record<string, string> = {
   change: '#8a94a8',
 };
 
-export function boardThumb(board: BoardDef, maxW = 220, maxH = 130): HTMLCanvasElement {
+export function boardThumb(full: BoardDef, maxW = 220, maxH = 130): HTMLCanvasElement {
+  // Builder boards sit on a large editing grid: picture only the part with tiles.
+  const board = boardForPlay(full);
   const cell = Math.max(
     4,
     Math.min(Math.floor(maxW / (board.cols + 1)), Math.floor(maxH / (board.rows + 1))),

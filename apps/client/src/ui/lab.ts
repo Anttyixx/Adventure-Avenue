@@ -99,37 +99,11 @@ const rnd = (n: number) => Math.floor(Math.random() * n);
  * are easy to find. Update this list with each change.
  */
 const RECENT = new Set([
-  'Board builder: transport colors',
-  'Board builder: link picker',
-  'Board builder: paired transport',
-  'Board builder: 300% zoom',
-  'Board builder: tile options',
-  'Board builder: large tiles',
-  'Board builder: auto district selection',
-  'Board builder: hover highlight',
-  'Board builder: tile sidebar',
-  'Board builder: typing action bar',
-  'Board builder: stable action bar',
-  'Board builder: district colors',
-  'Board builder: district capacity',
-  'Board builder: property tile',
-  'Board builder: four properties',
-  'Board builder: protected bank',
-  'Board builder: district averages',
-  'Board builder: place pencil',
-  'Board builder: tile options',
-  'Board builder: compact action bar',
-  'Board builder: auto connections',
-  'Board builder: place tiles',
-  'Board builder: group selection',
-  'Board builder: board settings',
-  'Board builder: tool toolbar',
-  'Open board editor',
-  'Board builder: clear editing grid',
-  'Board builder: infinite grass',
-  'Board builder: centered zoom',
-  'Board builder: tile palette',
-  'Board builder: action bar',
+  'Board builder',
+  'Board builder: Town',
+  'Board builder: Board settings',
+  'Board builder: Tiles pane',
+  'Board builder: Pan',
   'Game setup',
   'Game setup (friend joined)',
   'Game setup (offline)',
@@ -1575,112 +1549,27 @@ export async function openLab(app: HTMLElement, section?: string) {
         }
         location.reload();
       }),
+      // The board builder opened over the Lab in a few useful states.
       ...(
         [
-          'Board builder: 300% zoom',
-          'Board builder: transport colors',
-          'Board builder: link picker',
-          'Board builder: paired transport',
-          'Board builder: large tiles',
-          'Board builder: auto district selection',
-          'Board builder: hover highlight',
-          'Board builder: tile sidebar',
-          'Board builder: typing action bar',
-          'Board builder: stable action bar',
-          'Board builder: district colors',
-          'Board builder: district capacity',
-          'Board builder: property tile',
-          'Board builder: four properties',
-          'Board builder: protected bank',
-          'Board builder: district averages',
-          'Board builder: place pencil',
-          'Board builder: tile options',
-          'Board builder: compact action bar',
-          'Board builder: auto connections',
-          'Board builder: place tiles',
-          'Board builder: group selection',
-          'Board builder: board settings',
-          'Board builder: tool toolbar',
-          'Board builder: tile palette',
-          'Board builder: action bar',
-          'Board builder: centered zoom',
-          'Board builder: infinite grass',
-          'Board builder: clear editing grid',
+          ['Board builder', null],
+          ['Board builder: Town', null],
+          ['Board builder: Board settings', '.ed-info > button'],
+          ['Board builder: Tiles pane', '.ed-tool-button[aria-label="Place"]'],
+          ['Board builder: Pan', '.ed-tool-button[aria-label="Pan"]'],
         ] as const
-      ).map((label) =>
+      ).map(([label, press]) =>
         btn(label, () => {
           const holder = h('div', { class: 'lab-screen' });
           root.append(holder);
-          const close = openEditor(
-            holder,
-            label.endsWith('group selection') ||
-              label.endsWith('tile options') ||
-              label.endsWith('auto connections') ||
-              label.endsWith('district averages') ||
-              label.endsWith('four properties') ||
-              label.endsWith('district capacity')
-              ? BUILT_IN_BOARDS[0]
-              : null,
-            {
-              onExit: () => holder.remove(),
-              onPlay: () => {
-                holder.remove();
-                hud.tick('Board builder test play pressed.');
-              },
+          const close = openEditor(holder, label === 'Board builder' ? null : BUILT_IN_BOARDS[0], {
+            onExit: () => holder.remove(),
+            onPlay: () => {
+              holder.remove();
+              hud.tick('Board builder test play pressed.');
             },
-          );
-          if (
-            label.endsWith('infinite grass') ||
-            label.endsWith('group selection') ||
-            label.endsWith('tile options') ||
-            label.endsWith('auto connections')
-          ) {
-            for (let i = 0; i < 40; i++)
-              holder
-                .querySelector('.ed-canvas')
-                ?.dispatchEvent(new KeyboardEvent('keydown', { key: '-', bubbles: true }));
-          }
-          if (
-            label.endsWith('action bar') ||
-            label.endsWith('board settings') ||
-            label.endsWith('district averages') ||
-            label.endsWith('four properties')
-          )
-            holder.querySelector<HTMLButtonElement>('.ed-info > button')?.click();
-          if (
-            label.endsWith('transport colors') ||
-            label.endsWith('link picker') ||
-            label.endsWith('paired transport') ||
-            label.endsWith('place tiles') ||
-            label.endsWith('tile palette') ||
-            label.endsWith('tile sidebar') ||
-            label.endsWith('large tiles') ||
-            label.endsWith('auto district selection') ||
-            label.endsWith('place pencil') ||
-            label.endsWith('property tile') ||
-            label.endsWith('district colors') ||
-            label.endsWith('district capacity')
-          )
-            holder.querySelector<HTMLButtonElement>('.ed-tool-button[aria-label="Place"]')?.click();
-          if (
-            label.endsWith('paired transport') ||
-            label.endsWith('link picker') ||
-            label.endsWith('transport colors')
-          )
-            holder.querySelector<HTMLButtonElement>('.ed-tool[aria-label="Warp"]')?.click();
-          if (label.endsWith('hover highlight'))
-            requestAnimationFrame(() => {
-              const canvas = holder.querySelector('.ed-canvas');
-              const rect = canvas?.getBoundingClientRect();
-              if (rect)
-                canvas?.dispatchEvent(
-                  new PointerEvent('pointermove', {
-                    clientX: rect.left + rect.width / 2,
-                    clientY: rect.top + rect.height / 2,
-                    bubbles: true,
-                  }),
-                );
-            });
+          });
+          if (press) holder.querySelector<HTMLButtonElement>(press)?.click();
           holder.append(
             h(
               'button',

@@ -170,7 +170,14 @@ Grass is a separate, repeating background beneath the tiles and scenery. Both th
 normal games fill the entire visible camera area, including outside the board, at every zoom
 and screen size. The pattern is anchored in board coordinates and scales with the tiles;
 there is no finite background border or texture seam where the board layer ends.
-Zoom always keeps the board's center at the center of the full screen. The existing 250% view
+**Panning.** The view can be moved around the grid: drag with the Pan tool (the four-arrow icon
+in the left toolbar), drag with the middle or right mouse button or with Space held (any tool),
+drag with two fingers on touch screens (the spread still zooms), or press the arrow keys to glide
+a few tiles. The view eases there like the zoom does, and it can't wander so far that the grid
+leaves the screen. Opening, importing or starting a board centers the view on its tiles.
+Tapping the zoom chip resets the zoom to 300% and centers the view on the tiles again (the grid's
+middle when it is empty).
+Zoom keeps whatever point is in the middle of the screen in the middle. The existing 250% view
 uses the game's sizing: 1.65 × screen fit (2.2 × on small screens). The 100% whole-board limit
 uses the space left by the HUD with a 3% margin. The builder extends the same geometric curve
 beyond 250% to a new 300% close limit; every scale from 250% down to 100% is unchanged.
@@ -178,15 +185,16 @@ It opens and resets at 300%. Wheel, pinch and - / + still use 5% steps, with for
 300% to 100%. Game zoom is unchanged. Camera scale eases with the game's 0.12 factor, or
 changes immediately with reduced motion. Pinching does not place tiles;
 board picking uses the current camera transform at every zoom. Form typing keeps its normal keys.
-An icon-only toolbar is centered vertically 10px from the left edge: Select, Place and Erase.
+An icon-only toolbar is centered vertically 10px from the left edge: Select, Pan, Place and Erase.
 Hovering or focusing an icon shows its name; the active tool has a gold fill and inset
 outline. Buttons have accessible names and work with keyboard and touch. Erase removes squares.
 Board settings is in the top-left info bar.
 The builder has one Property tile instead of separate Shop and Vacant plot choices. The saved
 board records property locations and districts, not which start vacant. The editor preview and
 board thumbnails always show property tiles, and editing an old board discards its plot hints.
-Place uses a pencil icon. Only Place shows the tile pane on the right. Its Tiles title stays at
-the top while the list scrolls. Tiles appear as art-only buttons in two columns, without individual
+Place uses a pencil icon. Only Place shows the tile pane on the right, styled like the side panels
+(gold top edge, a Tiles title with a one-line hint, small uppercase group names). Its head stays at
+the top while the list scrolls. The chosen tile sits in a gold ring and lifts slightly. Tiles appear as art-only buttons in two columns, without individual
 card backgrounds, borders or captions. The enlarged art fills each column; no tile-name popup or selection checkmark is shown.
 Accessible button names and hints remain available. Selection uses a glow, with scroll position
 and keyboard focus kept after picking a tile.
@@ -215,11 +223,12 @@ gold dashed outlines, and the bottom action bar offers Move and Erase. One selec
 nonmodal tile info panel on the right with the tile name as its heading, a smaller column/row subtitle and a Close button,
 including a labeled district selector and a separate starting-value row for properties. It hides when selection changes to a
 group or movement begins. It displays the resolved starting value without a per-tile value editor.
-Starting values are configured per district in Board settings. Each district has a starting-average
-digit picker and Reset button; unset averages use a default based on the district's mean shortest
+Starting values are configured per district in Board settings. Each district has a compact
+starting-average stepper (minus, value, plus; hold to repeat, in 10G steps) and, once changed, a
+"Use auto" link; unset averages use a default based on the district's mean shortest
 walking distance from the bank (warps count as a step). Default averages scale from 100G for the
 nearest district to 500G for the farthest, rounded to 10G. When all district distances tie, or a district is unreachable, its default is 100G.
-Reset removes the override and follows the current distance-based default again.
+"Use auto" removes the override and follows the current distance-based default again.
 Within a four-property district, two properties start exactly at the average, the closest starts
 30G below it and the farthest 30G above it. Distance ties use row, column, then square index for a
 stable result. Incomplete editing previews keep the average with only their nearest/farthest properties offset,
@@ -238,7 +247,21 @@ their own old cells. Tile properties are kept and adjacent tiles automatically c
 preserves the group's geometry across odd/even rows. The entire group must fit inside the grid;
 out-of-bounds previews have red outlines and cannot be placed. Cancel or Escape abandons the move
 without changing the board. Undo restores the full move, including any replaced tiles.
-Menu holds New board, My boards, Import, Export and Back to main menu.
+Menu holds New board, My boards, Import, Export and Back to main menu, each a row with a one-line
+description (Back to main menu set apart below the others). New board shows every template and
+built-in copy as a card with a picture of the board. My boards lists saved boards with a picture
+trimmed to the tiles, the name, tile count and save date (the board being edited is outlined),
+and Open, Export and a delete icon. Questions (discarding unsaved changes, deleting a district or
+a saved board, switching the grid) use the game's own pop-up with Cancel and a gold (or red, for
+deleting) answer button, not the browser's dialog. Escape closes the top pop-up only.
+
+**Board settings** (the button in the info chip, which turns gold while open) opens a side panel
+on the right, like the tile info panel: a Board section (Square/Hex grid as pill buttons, Made by),
+a Districts section (one card per district: a round color swatch that opens the color picker, the
+name, a property count chip that turns green at 4/4, a delete icon and the starting-average
+stepper; then "+ Add district"), and a Problems / Ready to play section listing what must be
+fixed. The action bar shows "Board settings" with the number of problems left. Close, Escape or
+the Board settings button closes it.
 The bottom action bar uses the game's glass styling and a 740ms shell width/height morph.
 Before the morph, its contents are laid out at the destination width and height; those sizes are
 held independently of the shell, without a max-width clamp, until it finishes. Text never changes
@@ -250,7 +273,7 @@ every screen size, and adapts to placement,
 selection, erasing or board settings. Its width fits the current text and options, up to the
 window margins. With no options it uses the collapsed status line; it expands only for controls
 (such as Move/Erase, Cancel, a placement district picker or board settings). Single-tile details
-are in the right-side panel. Board settings contains layout, author, districts and problems.
+are in the right-side panel.
 Save, export and validation feedback appears in the action bar.
 
 **Built-in boards.** Every built-in board has the bank in the middle of the map, exactly 4
