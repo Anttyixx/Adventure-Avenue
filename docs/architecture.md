@@ -282,7 +282,8 @@ already contain resolved base/value fields and keep them. New-game changes bump 
 `ui/editor-districts.ts` owns the ten default colors/names, `districtChoices` and
 `canAssignProperty`. Choices include unsaved color slots; the first placement lazily appends a
 real district. Empty latent slots never enter validation or saved board data. `ui/editor.ts`
-guards both painting and reassignment before mutation and clears the active choice when full.
+guards both painting and reassignment before mutation. It selects the leftmost available color
+on entering Property and after completion, while respecting manual choices until they fill.
 `ui/district-picker.ts` retains button nodes during inspector rebuilds, captures old positions,
 shrinks completed choices and translates survivors into their centered layout. Undo can cancel
 a departure; hiding/destroying the row cancels stale animations and focus survives selection.
@@ -307,6 +308,7 @@ releases the locks. The game's `Hud.morphAsk` and its stepped reveal remain unch
 
 The palette's fixed Tiles heading sits above `.ed-palette-list`, which scrolls category sections
 with two-column art-only buttons. `PALETTE` groups properties, suits, specials and transport.
-A shared root-level tooltip avoids scroll-container clipping and shows names on hover/focus.
-`drawPalette` preserves list scrolling and the focused tool across rebuilds; changing tools or
-scrolling hides stale tooltips. Accessible names and descriptions do not depend on visible captions.
+`drawPalette` crops the art closer and scales it to the column width, preserving list scrolling
+and the focused tool across rebuilds. Tile-name tooltips and selection corner checks are absent;
+accessible names/descriptions and a selected glow remain. The board hover overlay adds a tint
+and scales its two contrast stroke widths inversely with camera scale to retain 6px/3px screen widths.

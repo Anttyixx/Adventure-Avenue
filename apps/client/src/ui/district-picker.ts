@@ -46,6 +46,7 @@ export function districtPicker(onSelect: (choice: DistrictChoice) => void, onLay
           e.exit = undefined;
           continue;
         }
+        e.button.setAttribute('aria-pressed', 'false');
         if (e.exit && visible && !reduced()) continue;
         if (!visible || reduced()) {
           e.exit?.cancel();

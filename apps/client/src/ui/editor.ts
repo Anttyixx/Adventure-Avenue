@@ -373,18 +373,6 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
   const palette = h('div', { class: 'ed-palette glass', 'aria-label': 'Tile palette' });
   const paletteList = h('div', { class: 'ed-palette-list' });
   palette.append(h('h3', { class: 'ed-palette-title' }, 'Tiles'), paletteList);
-  const tileTooltip = h('div', { class: 'ed-tile-tooltip', role: 'tooltip', hidden: true });
-  const hideTileName = () => {
-    tileTooltip.hidden = true;
-  };
-  const showTileName = (button: HTMLElement, name: string) => {
-    tileTooltip.textContent = name;
-    tileTooltip.hidden = false;
-    const rect = button.getBoundingClientRect();
-    tileTooltip.style.left = `${Math.max(8, rect.left - tileTooltip.offsetWidth - 8)}px`;
-    tileTooltip.style.top = `${Math.max(8, Math.min(window.innerHeight - tileTooltip.offsetHeight - 8, rect.top + (rect.height - tileTooltip.offsetHeight) / 2))}px`;
-  };
-  paletteList.addEventListener('scroll', hideTileName);
   const stage = h('div', { class: 'ed-stage' });
   const canvas = h('canvas', { class: 'ed-canvas' }) as HTMLCanvasElement;
   stage.append(canvas);
@@ -401,7 +389,7 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
   });
   const actionContent = h('div', { class: 'ed-action-content' });
   actionbar.append(actionContent);
-  root.append(stage, info, topbar, palette, toolBar, tileInspector, actionbar, tileTooltip);
+  root.append(stage, info, topbar, palette, toolBar, tileInspector, actionbar);
   let notice = '';
   let noticeBad = false;
   let noticeTimer = 0;
@@ -692,10 +680,18 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
     // Hover and selection
     if (hover && !moving) {
       const c = center(hover);
-      ctx.lineWidth = 4;
-      ctx.strokeStyle = tool === 'erase' ? '#e5484d' : '#ffd166';
+      ctx.save();
       tileShape(ctx, board.layout, c.x, c.y, 46, 14);
+      ctx.fillStyle = tool === 'erase' ? 'rgba(255,138,138,0.2)' : 'rgba(255,209,102,0.2)';
+      ctx.fill();
+      // Screen-sized contrast strokes stay easy to spot on grass and tiles at every zoom.
+      ctx.lineWidth = 6 / scale;
+      ctx.strokeStyle = '#17213a';
       ctx.stroke();
+      ctx.lineWidth = 3 / scale;
+      ctx.strokeStyle = tool === 'erase' ? '#ff8a8a' : '#ffd166';
+      ctx.stroke();
+      ctx.restore();
     }
     for (const i of selection) {
       const c = center(board.squares[i]);
@@ -926,6 +922,10 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
         'aria-label': label,
         'aria-pressed': 'false',
         onclick: () => {
+          if (t === 'place' && placeTool === 'shop') {
+            district = -1;
+            pendingDistrict = null;
+          }
           tool = t === 'place' ? placeTool : t;
           clearSelection();
           settings = false;
@@ -947,7 +947,6 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
     const focused = palette.contains(document.activeElement)
       ? (document.activeElement as HTMLElement).dataset.tool
       : null;
-    hideTileName();
     clear(paletteList);
     for (const g of PALETTE.filter((g) => g.group !== 'Tools')) {
       const section = h('section', { class: 'ed-tile-category', 'aria-label': g.group });
@@ -955,8 +954,8 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
       const row = h('div', { class: 'ed-tools' });
       for (const it of g.items) {
         const example = h('canvas', { class: 'ed-tile-example', 'aria-hidden': 'true' }) as HTMLCanvasElement;
-        example.width = 200;
-        example.height = 180;
+        example.width = 136;
+        example.height = 148;
         const tile = newGame({
           rules: 'standard',
           plots: 'none',
@@ -986,8 +985,8 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
           },
         });
         const ctx = example.getContext('2d')!;
-        ctx.scale(1.4, 1.4);
-        ctx.translate(-29, -38);
+        ctx.scale(1.3, 1.3);
+        ctx.translate(-48, -44);
         paintSquare(ctx, tile, tile.nodes[0]);
         row.append(
           h(
@@ -998,11 +997,11 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
               'aria-description': it.hint,
               'data-tool': it.tool,
               'aria-pressed': String(tool === it.tool),
-              onmouseenter: (e: MouseEvent) => showTileName(e.currentTarget as HTMLElement, it.label),
-              onmouseleave: hideTileName,
-              onfocus: (e: FocusEvent) => showTileName(e.currentTarget as HTMLElement, it.label),
-              onblur: hideTileName,
               onclick: () => {
+                if (it.tool === 'shop' && tool !== 'shop') {
+                  district = -1;
+                  pendingDistrict = null;
+                }
                 tool = it.tool;
                 placeTool = it.tool;
                 clearSelection();
@@ -1058,9 +1057,15 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
     if (district >= 0 && (!board.districts[district] || !canAssignProperty(board, district))) district = -1;
     if (pendingDistrict && !choices.some((d) => d.index == null && d.color === pendingDistrict!.color))
       pendingDistrict = null;
-    const activeChoice = choices.find((d) =>
+    let activeChoice = choices.find((d) =>
       pendingDistrict ? d.index == null && d.color === pendingDistrict.color : d.index === district,
     );
+    if (!activeChoice) {
+      activeChoice = choices.find((d) => d.count < BOARD_LIMITS.districtSize);
+      district = activeChoice?.index ?? -1;
+      pendingDistrict = activeChoice?.index == null ? (activeChoice ?? null) : null;
+      if (tool === 'shop') drawPalette();
+    }
     const hasDistrictChoices = choices.some((d) => d.count < BOARD_LIMITS.districtSize);
     stopActionMorph();
     for (const animation of entranceAnimations) animation.cancel();
@@ -1077,7 +1082,6 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
     clear(actionContent);
     syncTools();
     palette.hidden = !isPlacing() || settings;
-    if (palette.hidden) hideTileName();
     root.classList.toggle('ed-placing', !palette.hidden);
     root.classList.toggle('ed-moving', !!moving);
     settingsButton.setAttribute('aria-pressed', String(settings));

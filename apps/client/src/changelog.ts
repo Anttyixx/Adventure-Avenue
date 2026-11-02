@@ -26,6 +26,23 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: '2026-11-01-builder-clear-placement',
+    date: 'Nov 1, 2026',
+    title: 'Bigger tiles and clearer placement',
+    features: [
+      {
+        tag: 'better',
+        title: 'More tile art, less empty space',
+        text: 'Tiles fill more of the sidebar columns. Tile-name popups and the selected tile’s corner checkmark have been removed.',
+      },
+      {
+        tag: 'better',
+        title: 'Keep building automatically',
+        text: 'Property placement selects the leftmost available district and switches back to the leftmost available color when a district fills. A brighter, contrasting hover outline makes the current board space easier to see at every zoom.',
+      },
+    ],
+  },
+  {
     id: '2026-11-01-builder-tile-sidebar',
     date: 'Nov 1, 2026',
     title: 'A cleaner tile pane',

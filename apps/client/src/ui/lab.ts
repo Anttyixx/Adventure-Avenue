@@ -100,6 +100,9 @@ const rnd = (n: number) => Math.floor(Math.random() * n);
  */
 const RECENT = new Set([
   'Board builder: 300% zoom',
+  'Board builder: large tiles',
+  'Board builder: auto district selection',
+  'Board builder: hover highlight',
   'Board builder: tile sidebar',
   'Board builder: typing action bar',
   'Board builder: stable action bar',
@@ -1571,6 +1574,9 @@ export async function openLab(app: HTMLElement, section?: string) {
       ...(
         [
           'Board builder: 300% zoom',
+          'Board builder: large tiles',
+          'Board builder: auto district selection',
+          'Board builder: hover highlight',
           'Board builder: tile sidebar',
           'Board builder: typing action bar',
           'Board builder: stable action bar',
@@ -1638,12 +1644,27 @@ export async function openLab(app: HTMLElement, section?: string) {
             label.endsWith('place tiles') ||
             label.endsWith('tile palette') ||
             label.endsWith('tile sidebar') ||
+            label.endsWith('large tiles') ||
+            label.endsWith('auto district selection') ||
             label.endsWith('place pencil') ||
             label.endsWith('property tile') ||
             label.endsWith('district colors') ||
             label.endsWith('district capacity')
           )
             holder.querySelector<HTMLButtonElement>('.ed-tool-button[aria-label="Place"]')?.click();
+          if (label.endsWith('hover highlight'))
+            requestAnimationFrame(() => {
+              const canvas = holder.querySelector('.ed-canvas');
+              const rect = canvas?.getBoundingClientRect();
+              if (rect)
+                canvas?.dispatchEvent(
+                  new PointerEvent('pointermove', {
+                    clientX: rect.left + rect.width / 2,
+                    clientY: rect.top + rect.height / 2,
+                    bubbles: true,
+                  }),
+                );
+            });
           holder.append(
             h(
               'button',

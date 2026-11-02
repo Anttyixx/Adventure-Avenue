@@ -164,6 +164,9 @@ when a game or test play starts; they do not affect game rules.
 The editor uses the normal game screen's full-screen board and floating HUD: the board name and
 save status sit in an info chip at top left; the zoom chip, Undo, Save, Test play and Menu sit at top right.
 The board fills the entire canvas behind the HUD, with no space reserved beside or below it.
+The hovered cell has a tinted fill and two contrasting outlines: a dark outer stroke (6 screen
+pixels) and a bright inner stroke (3 screen pixels), gold normally and red while erasing. Their
+screen size stays constant at every zoom.
 Grass is a separate, repeating background beneath the tiles and scenery. Both the builder and
 normal games fill the entire visible camera area, including outside the board, at every zoom
 and screen size. The pattern is anchored in board coordinates and scales with the tiles;
@@ -185,9 +188,9 @@ board records property locations and districts, not which start vacant. The edit
 board thumbnails always show property tiles, and editing an old board discards its plot hints.
 Place uses a pencil icon. Only Place shows the tile pane on the right. Its Tiles title stays at
 the top while the list scrolls. Tiles appear as art-only buttons in two columns, without individual
-card backgrounds, borders or captions. Hovering or keyboard focus shows the tile name in a
-floating tooltip; accessible button names and hints remain available. Selection uses a small
-check and glow, with scroll position and keyboard focus kept after picking a tile.
+card backgrounds, borders or captions. The enlarged art fills each column; no tile-name popup or selection checkmark is shown.
+Accessible button names and hints remain available. Selection uses a glow, with scroll position
+and keyboard focus kept after picking a tile.
 The categories are Properties (Property), Suits (Spade, Heart, Diamond, Club, Change suit),
 Specials (Venture, Roll-on, Take-a-break, Boon, Boom, Stockbroker, Arcade), and Transport
 (Warp, Cannon, Backstreet).
@@ -202,8 +205,10 @@ Painting or reassigning a property cannot take a district past four; repainting 
 same district does not consume capacity. Full districts are disabled in the single-tile district
 selector. When a district reaches four, its color shrinks/fades away over 160ms; the remaining
 colors slide into centered positions over 220ms. Reduced motion removes/recenters immediately.
-Painting pauses until another color is chosen, so continuing a stroke cannot spill into another
-district. Erasing, replacement, reassignment or Undo that frees capacity restores the color.
+Entering Property placement automatically selects the leftmost available district color. Players
+can manually choose another color; when it reaches four, the leftmost available color becomes
+active immediately. Continuous painting can therefore continue into that district without a
+fifth property being added to the completed one. Erasing, replacement, reassignment or Undo that frees capacity restores the color.
 When all ten districts are full, the row has no choices and the action bar collapses to status.
 
 Select clicks one tile or drags a selection rectangle around multiple tiles. Selected tiles have

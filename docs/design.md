@@ -367,9 +367,9 @@ The board is drawn in `board.ts` in its own style: bright and physical, unlike t
   focus. Accessible button names and bottom-bar instructions cover touch use. Only Place shows
   the right-hand tile pane. Keep its Tiles title fixed above the scrolling list. Group the
   two-column tile art into Properties, Suits, Specials and Transport. Tile buttons are transparent,
-  borderless and have no captions or card surfaces. Use a small gold check/glow for selection.
-  Show names in a navy tooltip to the left on hover/focus, outside the scroll clipping area;
-  keep accessible labels, focus outlines and the list's scroll position. The only property option is Property; there are no Shop/Vacant plot
+  borderless and have no captions or card surfaces. Enlarge/crop the art to fill the column width
+  instead of leaving large transparent margins. Use a gold glow for selection, with no corner
+  checkmark or tile-name tooltip. Keep accessible labels, focus outlines and list scrolling. The only property option is Property; there are no Shop/Vacant plot
   choices or per-tile vacancy checkboxes. Preview properties with the game painter and plots disabled. Board settings is a small ghost button in the top-left info bar.
   Select draws a translucent gold drag rectangle and dashed gold tile outlines. Its Move and
   Erase actions live in the bottom bar. While moving, hide the canvas cursor, show only source
@@ -383,6 +383,9 @@ The board is drawn in `board.ts` in its own style: bright and physical, unlike t
   retaining keyboard focus. Full districts shrink to 25% and fade over 160ms; then the remaining
   buttons translate to their newly centered positions over 220ms. Cancel departure when Undo
   restores capacity. Reduced motion removes and lays out immediately.
+- **Builder hover:** tint the hovered cell lightly and trace a 6px dark outer/3px bright inner
+  outline in screen units. Use gold for ordinary tools and red for Erase; keep the strokes
+  consistent across zoom and on square/hex grids.
 - **Builder tile options:** a nonmodal glass panel at the top right, with a title and Close
   button. Show only for one selected tile, never during a group move. Keep it above the bottom
   bar and scroll its body on phones. Show district and a read-only starting
