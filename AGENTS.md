@@ -11,14 +11,14 @@ online (browser to browser), with CPU players filling empty seats.
 
 ## Read first
 
-| File                               | What it gives you                                                                     |
-| ---------------------------------- | ------------------------------------------------------------------------------------- |
-| `AGENTS.md` (this file)            | How to work on the project: rules, workflow, conventions                              |
-| `docs/architecture.md`             | How the pieces work together: engine, client, camera, HUD, online play, saves         |
-| `docs/codemap.md`                  | Where everything lives: every file, its key functions, and a "where is X" index       |
-| `docs/design.md`                   | How UI elements look and are built: colors, type, buttons, pop-ups, motion, board art |
-| `docs/spec.md`                     | The game's rules and interface in full detail (the source of truth for behavior)      |
-| `packages/engine/src/constants.ts` | Every balance number, each with a comment                                             |
+| File                               | What it gives you                                                                |
+| ---------------------------------- | -------------------------------------------------------------------------------- |
+| `AGENTS.md` (this file)            | How to work on the project: rules, workflow, conventions                         |
+| `docs/architecture.md`             | How the pieces work together: engine, client, camera, HUD, online play, saves    |
+| `docs/codemap.md`                  | Where everything lives: every file, its key functions, and a "where is X" index  |
+| `docs/design.md`                   | How to design UI: deciding where things go, and a spec for every element         |
+| `docs/spec.md`                     | The game's rules and interface in full detail (the source of truth for behavior) |
+| `packages/engine/src/constants.ts` | Every balance number, each with a comment                                        |
 
 When the spec and the code disagree, ask the owner which is right; then fix the other one.
 
@@ -41,8 +41,9 @@ When the spec and the code disagree, ask the owner which is right; then fix the 
   1. Add an entry at the top of `apps/client/src/changelog.ts` (shown in "What's new" on the main
      menu): biggest changes as `features`, small ones as `extras`.
   2. Update `docs/spec.md` so it describes the new behavior.
-  3. UI changes: design and build them by `docs/design.md` (tokens, buttons, pop-ups, motion,
-     board art) and go through its checklist. Add a control for any new UI element to the UI Lab (`apps/client/src/ui/lab.ts`),
+  3. UI changes: design and build them by `docs/design.md`: first choose the container and
+     controls with its section 2 ("How to make design decisions"), then follow the element's
+     spec in section 5, and go through its checklist. Add a control for any new UI element to the UI Lab (`apps/client/src/ui/lab.ts`),
      and list the controls touched by the change in `RECENT` at the top of `lab.ts` (they shake
      and glow so the owner can find them).
 - **Engine changes that alter what happens in a game** (rules, decisions, randomness) must bump

@@ -1,489 +1,699 @@
-# Design guide: how UI elements look, feel and are built
-
-This is the visual language of Adventure Avenue: the colors, type, surfaces, buttons, motion and
-board art every element is made from, and recipes for building new ones so they match. Follow
-it for every UI change. Where an element already exists, copy its pattern rather than inventing
-a new one. Where this guide and the code disagree, the code in `style.css` is what players see:
-fix whichever is wrong (and ask the owner if unsure).
-
-Where things live: tokens and all CSS in `apps/client/src/style.css`; elements are built in
-TypeScript with `h()` (`ui/dom.ts`); the board is drawn on a canvas in `board.ts`.
-
-## 1. The look in one paragraph
-
-A bright, cheerful toy town (green grass, cream tiles, pixel-art townsfolk, painted buildings)
-under a layer of **dark navy "glass"** interface panels that float over it. The interface is
-calm, rounded and compact; color comes from the **players** (each owns a color), the
-**districts** (each a vivid hue) and **gold** (money, the main action, winning). Motion is short,
-springy and purposeful: things morph from where they were, pop in from the middle, and glow or
-pulse only when they need attention. Everything stays readable on a landscape phone.
-
-## 2. Principles
-
-1. **The board is the star.** Interface panels are dark, translucent and compact so the colorful
-   board shows through and around them. Don't cover the board with big opaque panels; pop-ups
-   dim it instead of hiding it.
-2. **Color means something.** A player's color always means that player; a district's color
-   always means that district; gold means money or "the thing to press"; green/red mean gain/loss.
-   Never use these colors decoratively for something else.
-3. **Morph, don't swap.** When one element becomes another (Stock market button → market panel,
-   Game log button → game log, status line ↔ options), animate its size from the old to the new
-   instead of hiding one and showing the other.
-4. **One glance.** Numbers are big and bold, labels small and muted. A card or row should be
-   understood without reading every word.
-5. **Attention is earned.** Pulsing, glowing, shaking and bouncing are reserved for "your turn",
-   "press this", "you can win" and "this just changed". Everything else is still.
-6. **Works everywhere.** Desktop and landscape phones (portrait shows a rotate screen), mouse and
-   touch, with reduced motion respected.
-
-## 3. Color
-
-### Tokens (`:root` in `style.css`)
-
-| Token          | Value                       | Use                                                                |
-| -------------- | --------------------------- | ------------------------------------------------------------------ |
-| `--navy`       | `#101a33`                   | Page background behind everything                                  |
-| `--navy-2`     | `#18244a`                   | Slightly raised dark surfaces                                      |
-| `--glass`      | `rgba(16, 26, 51, 0.82)`    | Floating HUD panels (with a blur behind)                           |
-| `--glass-line` | `rgba(255, 255, 255, 0.12)` | 1px borders on glass, ghost buttons, inputs, dividers              |
-| `--text`       | `#eef2ff`                   | Main text on dark                                                  |
-| `--muted`      | `#a9b4d6`                   | Labels, captions, secondary text, section headings                 |
-| `--accent`     | `#ffd166`                   | Gold: highlights, focus outlines, selected tabs, important numbers |
-| `--good`       | `#7cf29a`                   | Money gained, rises, positive deltas                               |
-| `--bad`        | `#ff8a8a`                   | Money lost, falls, negative values (`.neg`)                        |
-| `--radius`     | `14px`                      | Radius of glass panels                                             |
-
-Use the tokens, not new literal colors, for anything on the dark interface. New tokens go in
-`:root` with the others.
-
-### Surfaces on dark (by depth)
-
-| Surface        | Value                                                                              | Where                                                       |
-| -------------- | ---------------------------------------------------------------------------------- | ----------------------------------------------------------- |
-| Glass panel    | `var(--glass)` + `--glass-line` border + `blur(8px)` + `0 8px 28px rgba(0,0,0,.3)` | HUD panels (`.glass`)                                       |
-| Pop-up / modal | `rgba(16, 26, 51, 0.96-0.97)`                                                      | Dialogs, player overview, guide (more opaque for reading)   |
-| Inset box      | `rgba(255, 255, 255, 0.05)` to `0.08`                                              | Fact boxes, tooltip stat boxes, property cards, table cells |
-| Input          | `rgba(255, 255, 255, 0.08)` + `--glass-line` border                                | Text and number fields                                      |
-| Backdrop dim   | `rgba(5, 10, 25, 0.45)`                                                            | Behind modals                                               |
-
-Lighter = closer. Don't put a solid bright fill behind text on the HUD; use an inset box.
-
-### Players
-
-`PLAYER_COLORS` in `packages/engine/src/setup.ts`: red `#e5484d`, blue `#3e7bfa`, green
-`#30a46c`, purple `#a855f7`, orange `#f76b15`. In CSS a player's color is passed as the custom
-property **`--pc`** on the element (`style: '--pc:' + color`), and children use `var(--pc)`:
-
-- a 3-5px edge or top border on that player's card or pop-up (`border-top: 5px solid var(--pc)`);
-- their progress bar fill, their glow (`box-shadow: 0 0 16px 3px var(--pc)`);
-- dots (`.dot`) before their name, chips with their name;
-- on the board: tiles they own are filled with a light tint of their color.
-
-Names in log text are colored by `namesInColor` (`ui/log.ts`); reuse it for text that names
-players.
-
-### Districts
-
-Each district has its own vivid color (set per board in `boards/maps.ts`, e.g. `#ff4d4d`,
-`#2f9bff`, `#2ecc71`, `#ffc21a`, `#9b5cff`, `#13c4b4`, `#ff4fa8`, `#ff8a1f`). Passed as
-**`--dc`**. Shown as a 6px tile border on the board, a small rounded **swatch** (`.swatch`, 12px,
-radius 3px) or dot beside the district name, and a colored top edge on property cards.
-
-### Suits, money and status
-
-- Suits: spade blue `#4c8dff`, heart pink `#ff5fa2`, diamond yellow `#ffc83d`, club green
-  `#35c46a` (`SUIT_COLORS` in `icons.ts`), drawn as smooth vector icons; uncollected suits are
-  grey.
-- Money is gold. Every amount is written `fmt(n)` → "1,200G", and `coins.ts` turns the "G" into a
-  little gold coin (`.gc`) automatically. Don't draw coins by hand in HTML; on the canvas use
-  `fillMoney` / `drawCoin`.
-- Gains `--good`, losses `--bad`, with a sign: "+120G" / "-50G".
-- Ranks: 1st gold gradient, 2nd silver, 3rd bronze (`.rank.r1/.r2/.r3`), white 2px outline.
-
-### Charts
-
-Data colors are fixed per series and validated for color-blind readers: net worth parts are cash
-`#3987e5`, properties `#d95926`, stock `#199e70` (`PARTS` in `ui/overview.ts`). Players in charts
-use their player color. Legends always accompany 2+ series; gaps of 2px separate segments; text
-stays in `--text`/`--muted`, never in the series color.
-
-## 4. Typography
-
-Two fonts from Google Fonts (`index.html`):
-
-| Font                                          | Variable | Use                                                                                                                                 |
-| --------------------------------------------- | -------- | ----------------------------------------------------------------------------------------------------------------------------------- |
-| **Lilita One** (rounded, chunky display)      | `--head` | Buttons, titles, names, big numbers (cash, net worth, prices), banners, badges; on the canvas: name plates, floating money, the die |
-| **Atkinson Hyperlegible** (very legible sans) | `--body` | Everything else: sentences, labels, tables, the log; on the canvas: tile labels (700 weight)                                        |
-
-Lilita One has one weight: never set `font-weight: 700` on it (use `font-weight: 400`). Make
-Lilita text stand out with size and color instead.
-
-**Size scale** (px; most UI text is 11-16):
-
-| Size          | Use                                                                                     |
-| ------------- | --------------------------------------------------------------------------------------- |
-| 10-11         | Tags, pill badges, tiny captions, rank badges                                           |
-| 12            | Section headings (UPPERCASE, `letter-spacing: 0.06em`, `--muted`), table headers, notes |
-| 13            | Secondary text, small buttons (`.btn.small`), hints (`.hint`)                           |
-| 14-15         | Body text in pop-ups, the status line, list rows                                        |
-| 16            | Default button text, action bar questions, pop-up headings                              |
-| 18-24         | Big numbers on cards, sub-titles, `.btn.big` (22)                                       |
-| 26-30         | Banners (26), pop-up titles and hero numbers                                            |
-| clamp(44-100) | Only the main menu logo                                                                 |
-
-Section headings inside pop-ups are small uppercase muted labels (e.g. "NET WORTH BREAKDOWN"),
-not big titles. Numbers that matter are the biggest thing in their box. Long names truncate with
-an ellipsis rather than wrapping a card out of shape. Line height 1.3-1.45 for paragraphs.
-
-## 5. Shape, borders and shadows
-
-**Radius scale:**
-
-| Radius            | Use                                                                      |
-| ----------------- | ------------------------------------------------------------------------ |
-| `999px`           | Pills: chips, tags, banners, status pills, the zoom chip, segmented tabs |
-| `50%`             | Dots, coins, round icon buttons                                          |
-| 3px               | Swatches, progress bars                                                  |
-| 6-8px             | Inset boxes, inputs, table cells, small cards                            |
-| 10px              | Buttons, property cards, list items                                      |
-| 12px              | Player cards, larger cards                                               |
-| 14px (`--radius`) | Glass panels, modals, pop-ups                                            |
-| 16-18px           | Main menu buttons, big menu panels                                       |
-
-**Borders:** 1px `--glass-line` around glass and ghost elements. Color carries meaning through
-thicker single-side borders (3-6px in `--pc` or `--dc`), not full colored outlines. Selected
-items get an inset ring (`box-shadow: inset 0 0 0 2px ...`) so their size doesn't change.
-
-**Shadows:** soft and dark, offset down: `0 8px 28px rgba(0,0,0,.3)` for floating panels,
-`0 8px 24px rgba(0,0,0,.35)` for banners, `0 20px 60px rgba(0,0,0,.5)` for the biggest pop-ups.
-"Physical" buttons on the main menu use a solid colored edge below (`0 6px 0 var(--edge)`) that
-shrinks when pressed. Glows use the element's meaning color (`--pc`, gold) with blur.
-
-## 6. Building blocks
-
-### Buttons (`.btn`)
-
-All buttons: Lilita One 16px, radius 10px, padding `9px 16px`, no border, press feedback
-`translateY(1px) scale(0.98)`, hover a shade lighter, disabled `opacity: 0.4`.
-
-| Variant           | Look                                                         | Use                                                                |
-| ----------------- | ------------------------------------------------------------ | ------------------------------------------------------------------ |
-| `.btn`            | Navy-blue `#2c3a6b`, hover `#3a4b86`                         | Ordinary options                                                   |
-| `.btn.main`       | Gold gradient `#ffd166 → #f5b301`, dark brown text `#3b2a00` | **The** main action; at most one per group; Enter/Space presses it |
-| `.btn.main.nudge` | Main + a small hop every few seconds                         | The action the player is expected to take now (e.g. Roll)          |
-| `.btn.ghost`      | Transparent with a `--glass-line` border                     | Secondary: Cancel, Skip, Not now, Close                            |
-| `.btn.no`         | Red gradient, white text                                     | A strong "no" where saying no matters (turning down a buyout)      |
-| `.btn.danger`     | Dark red `#6b2a3a`                                           | Destructive: Quit game                                             |
-| `.btn.small`      | `6px 10px`, 13px                                             | Toolbars, headers, compact rows                                    |
-| `.btn.big`        | 22px, `12px 28px`                                            | Single hero actions on full screens                                |
-| `.btn.on`         | Filled with `--pc`                                           | Toggled-on state                                                   |
-| `.btn.pic`        | Picture above a short name and a small price                 | Choosing among things with art (buildings)                         |
-
-Order: the main action on the right end of a row (or top of a stack), secondary actions after or
-below it. Labels are short verbs ("Buy", "Upgrade", "Not now"). Every pop-up's close button is a
-text button **"Close"** (`btn small ghost`) in its top-right corner, never a bare ✕.
-
-### Pills, chips and tags
-
-- **Pill** (radius 999px): banners, the zoom chip, status line, "Shops closed"-style tags.
-- **Tag** (`.tag`): 10px text, `1px 6px`, gold text on `rgba(255,209,102,.2)`; bad states use red
-  on a red tint.
-- **Chips** in the log and trades show a player or property: small, rounded, with a color edge
-  (`border-left: 4px solid var(--dc)`) or the player's color.
-- **Segmented tabs** (`.seg` / `.seg-btn`): pill buttons with a `--glass-line` border; the selected
-  one is filled gold with dark text and bold. Used for game setup options and the Guide's tabs.
-
-### Inset boxes, facts and tables
-
-- **Fact boxes** (tooltip `.tt-box`, overview `.pv-fact`): inset box, small muted label, value in
-  bold/Lilita, often in a 2-column grid to stay compact.
-- **Fact strips** in the action bar: `question(text, [[label, value, 'big'?], ...])` from
-  `ui/pick.ts`; use it instead of building ad-hoc rows.
-- **Tables** reuse the stock screen's `.m-grid` classes: separated cells (`border-spacing:
-3px 2px`), district swatch + name on the left, numbers right-aligned in Lilita, a player's
-  column headed by their portrait, rows with nothing dimmed to 0.5 opacity, totals in a plain row
-  at the bottom.
-
-### Progress
-
-Thin (5px) rounded track `rgba(255,255,255,.12)` with a fill in `--pc` (net worth toward the
-goal). No percentages printed on bars; the number sits beside them.
-
-### Icons and art
-
-- **Pixel art** (characters from `sprites.ts`, building art from `props.ts`) is always drawn with
-  `image-rendering: pixelated` at whole-number scales, never smoothed or blurred. Portraits show
-  the whole body (`bodyURL`) or the upper body (`portraitURL`).
-- **Vector icons** (suits, coins, boon/boom, wild card in `icons.ts`) stay smooth and crisp at any
-  size; they are generated as data URLs from canvas drawings, not emoji.
-- Buildings and shops use the painted art with the owner's color applied (grey when unowned),
-  via `propIconURL` / `propertyIconURL`; use those for any picture of a property in the UI.
-- Don't use emoji as icons in the game UI (the "? Guide" and "☰ Menu" toolbar labels are plain
-  text glyphs).
-
-### Inputs
-
-Dark inset fields (`rgba(255,255,255,.08)`, `--glass-line` border, radius 8px). Number entry for
-money and shares uses the **digit picker** (`ui/digits.ts`, up/down arrows per digit, min/max
-buttons), not a slider or free text. Range sliders use `accent-color: var(--accent)`.
-
-## 7. Element recipes
-
-How each kind of element is put together. Copy the nearest existing one.
-
-### HUD panel (glass)
-
-`h('div', { class: 'xxx glass' })` absolutely placed in a screen corner with a 10px margin.
-Compact; content sized to fit. Clickable panels are `role="button"`, `tabindex="0"`, have a
-gold `:focus-visible` outline (`2px solid var(--accent)`, offset 2px), and **morph** into their
-expanded form (see Motion). Panels report the room they cover through `hud.updateInsets()` so
-the camera keeps squares out from under them.
-
-### Action bar prompt
-
-Built with `hud.prompt(text | node, buttons, color)`: a centered pill-ish glass bar at the bottom.
-The question on the left (a player-color dot first, then the text or a `question()` fact strip),
-buttons on the right with the main one gold. Rich content may make it taller (up to 75%), never
-wider than needed. Choices that are squares glow on the board instead of being listed as
-buttons; the bar then only explains what to do ("Tap a glowing square to move there").
-
-### Pop-up (centered dialog)
-
-For anything read or decided in the middle of the screen (Guide, player overview, menu, stock
-screen):
-
-- A layer over the whole screen that dims the board (`rgba(5,10,25,.45)`); clicking the dim
-  area, pressing Escape or "Close" closes it.
-- The box: `rgba(16,26,51,.96)`, `--glass-line` border, radius 14px, padding 16px, big shadow;
-  width `min(460 / 760 / 980px, 100%)` by content; `max-height` within the screen, scrolling
-  inside its body (headers and the Close button stay put).
-- Title in Lilita (`.modal-head h2`) with Close on the right; a player's pop-up has a 5px top
-  border in their color.
-- Opening pops in (scale 0.92 → 1, fade); closing shrinks and fades faster.
-- Use `hud.modal(title, body, { wide, onClose })` for ordinary dialogs.
-- On phones keep at least ~22px between the pop-up and the screen edge.
-
-### Cards (player cards, property cards)
-
-- **Player card** (`.pcard`): glass card, 12px radius, a colored left edge in `--pc`, the
-  character's whole sprite on the left (pixelated, no fade), name in Lilita + level badge + suit
-  icons on top, a progress bar, then cash (bottom-left, with coin) and net worth with rank badge
-  (bottom-right). The active player's card breathes a `--pc` glow (on an `::after` layer so only
-  opacity animates). Changes pop out beside it ("+120G" in green, "-50G" in red, `money-pop`).
-  Reaching the goal makes the net worth and portrait pulse gold.
-- **Property card** (`.pv-card`): small inset card, the district color as a top edge, the
-  building picture, the rent big in Lilita, the value small and muted under it; `role="button"`
-  when clicking it does something.
-
-### Banner
-
-`hud.banner(text, color, ms)`: a pill near the top center, Lilita 26px, glass fill, 3px border in
-the meaning color (player or district color, gold by default). Rises in (`rise`), fades up and
-out. One short sentence: "Rosa's turn", "Round 5", "Bay Market stock up! 12G → 14G".
-
-### Tooltip
-
-Glass box near the pointer that stays on screen, with a 5px top border in the district's color:
-owner pill in their color with portrait, then
-a 2-column grid of stat boxes (label small and muted, value bold). Short plain lines for what a
-square does.
-
-### Status line and log
-
-The status line is the action bar when no options are up: one line, an icon for the kind of
-event, names in their colors, ellipsis when long. "Waiting" shows three dots lighting in turn.
-The log groups lines into one card per turn, newest at the bottom like a chat, with players
-involved shown as chips.
-
-### Tabs
-
-`.seg` row of `.seg-btn` pills at the top of the content; the active one gold. Every tab's page
-keeps the same height (scroll inside) so switching doesn't make the pop-up jump. Remember the last
-tab where it helps (the Guide does).
-
-## 8. Motion
-
-Motion is quick and springy, and always tells the player where something came from.
-
-**Durations:**
-
-| What                                                 | Time                                     |
-| ---------------------------------------------------- | ---------------------------------------- |
-| Hover/press feedback                                 | 0.08-0.15s                               |
-| Fade in a layer, modal entrance                      | 0.2-0.22s                                |
-| Morph between sizes: market panel, game log          | 260-280ms                                |
-| Morph of the action bar (slow and gentle)            | 740ms                                    |
-| New action bar message revealed (typing-style sweep) | 220ms                                    |
-| Pop-up open / close                                  | 220ms / 160ms                            |
-| Banner rise / fade                                   | 0.35s / 0.45s                            |
-| Money pop beside a card                              | 2.2s                                     |
-| Breathing glow, pulses                               | 1.1-2.6s loops                           |
-| Game pacing (walks, coins, pauses)                   | `timing.ts` (`TIMING`), never hard-coded |
-
-**Easing:**
-
-- Morphs and panels: `cubic-bezier(0.2, 0.8, 0.2, 1)` (fast start, gentle settle).
-- Things appearing with a little bounce: `cubic-bezier(0.3, 0.8, 0.4, 1.15)` (action bar) or
-  `cubic-bezier(0.2, 0.9, 0.3, 1.2)` (pop-ups).
-- Closing / leaving: `ease-in`, shorter than opening.
-- Loops: `ease-in-out`.
-
-**Patterns:**
-
-- **Morph:** measure the old size, change the content, measure the new size, then
-  `el.animate([{width, height: old}, {width, height: new}], {duration, easing})` with
-  `overflow: hidden` during it (see `toggleMarket`, `toggleLog`). The action bar
-  (`Hud.morphAsk`) also wraps its content in `.ask-content` laid out at the final size for the
-  whole morph, so text never reflows or jumps while the bar grows or shrinks.
-- **Reveal sweep:** a new action bar message is uncovered left to right in steps (a
-  `clip-path` inset animated with `steps(16)`, `Hud.revealAskText`), like quick typing; the
-  whole text is in place from the start, so nothing moves and buttons work at once.
-- **Pop:** `transform: scale(0.92) → none` with opacity (see `Hud.popOverview`).
-- **Rise:** new content slides up 10px and fades in (`.rise`).
-- **Nudge:** the expected action hops once every ~2.6s (`.nudge`).
-- **Breathe:** a glow layer's opacity cycles (never animate a box-shadow on the element itself;
-  put it on `::after` so the content isn't repainted).
-- **Attention shake:** two quick shakes, then still (UI Lab `RECENT`).
-- Animate `transform` and `opacity` where possible; size morphs are the exception and are short.
-
-**Reduced motion:** every looping or decorative animation gets a
-`@media (prefers-reduced-motion: reduce)` rule turning it off, and JavaScript animations check
-`matchMedia('(prefers-reduced-motion: reduce)')` (canvas code uses `reducedMotion()`) and jump
-straight to the end state.
-
-## 9. The board (canvas)
-
-The board is drawn in `board.ts` in its own style: bright and physical, unlike the dark HUD.
-
-- **World:** green grass (`GRASS #92d268`, a seamless texture) everywhere, trees, flower beds,
-  ponds; roads join neighboring tiles. `paintGrass` fills the visible camera area in world
-  coordinates, so the background scales with tiles and never exposes an edge. Games and the
-  editor draw it separately below transparent board caches (`paintBoard(..., false)`); do not
-  bake grass into those caches, which would introduce texture seams at their boundaries.
-- **Builder tool bar:** a glass panel centered vertically 10px from the left edge. Stack three
-  44px icon buttons (Select, Place, Erase), drawn as simple 24px line SVGs; Place is a pencil. The active tool
-  uses gold with a contrasting inset outline; tool names appear to the right on hover or keyboard
-  focus. Accessible button names and bottom-bar instructions cover touch use. Only Place shows
-  the right-hand tile pane. Keep its Tiles title fixed above the scrolling list. Group the
-  two-column tile art into Properties, Suits, Specials and Transport. Tile buttons are transparent,
-  borderless and have no captions or card surfaces. Enlarge/crop the art to fill the column width
-  instead of leaving large transparent margins. Use a gold glow for selection, with no corner
-  checkmark or tile-name tooltip. Keep accessible labels, focus outlines and list scrolling. The only property option is Property; there are no Shop/Vacant plot
-  choices or per-tile vacancy checkboxes. Preview properties with the game painter and plots disabled. Board settings is a small ghost button in the top-left info bar.
-  Select draws a translucent gold drag rectangle and dashed gold tile outlines. Its Move and
-  Erase actions live in the bottom bar. While moving, hide the canvas cursor, show only source
-  outlines at the old cells and draw the group at its snapped destination with gold outlines
-  (red if outside the grid). Anchor the preview at the selection center. Keep a Cancel action
-  visible; Escape also cancels.
-- **Property district colors:** center a horizontal row on the action bar. Use ten distinct
-  default district colors, 40px rounded-square buttons (34px on landscape phones), 8px/6px gaps,
-  and a white outline plus dark check for selection. Accessible names and hover titles include
-  the district name and property count. Keep the row's button nodes across inspector redraws,
-  retaining keyboard focus. Full districts shrink to 25% and fade over 160ms; then the remaining
-  buttons translate to their newly centered positions over 220ms. Cancel departure when Undo
-  restores capacity. Reduced motion removes and lays out immediately.
-- **Builder hover:** tint the hovered cell lightly and trace a 6px dark outer/3px bright inner
-  outline in screen units. Use gold for ordinary tools and red for Erase; keep the strokes
-  consistent across zoom and on square/hex grids.
-- **Builder tile options:** a nonmodal glass panel at the top right, with the tile name as its title, a muted position subtitle and Close
-  button. Separate the header with a subtle divider; show property district as a labeled field
-  and starting value as a label/value row, with the settings hint below. Show only for one selected tile, never during a group move. Keep it above the bottom
-  bar and scroll its body on phones. Show district and a read-only starting
-  value for properties; the bank explains that it can move but cannot be erased.
-- **District starting values:** each district card in Board settings groups its name/color,
-  Starting average digit picker, Default/Custom hint and Reset button. Use the compact shared
-  digit picker; keep Reset beside it so it remains reachable on landscape phones. Disable Reset
-  while the district already follows its default. Show property counts as n/4, marking incomplete
-  districts in the error color. Hide Erase for any selection containing the bank.
-- **Builder action bar:** center on the full window using a 50% anchor and horizontal translation,
-  independent of the right pane. Size to the text and controls up to window margins. No controls
-  means the compact status style (no minimum prompt height); choices expand it. Keep the existing
-  shell morph, but measure its content at the final width/height and hold both for the whole
-  resize. Its fixed content must have no `max-width: 100%` clamp from the animated shell.
-  Builder text uses the same 220ms, 16-step clip-path reveal as the game, without moving or
-  changing its layout. Newly shown options use a smooth 220ms opacity/4px settle.
-  Release old locks before retargeting; reduced motion uses natural layout immediately.
-- **Builder:** hide decorative scenery (trees, ponds and flower beds) while editing; keep
-  grass, roads and playable tiles. Games and test play show scenery as usual.
-- **Tiles** (86 units on a 100-unit grid): cream `#fdfbf5` (bank `#fff6d6`), rounded (radius 12),
-  a soft shadow offset down-right (`rgba(0,0,0,.18)`, +2/+5). Owned tiles are filled with a tint
-  of the owner's color; property tiles have a 6px border in the district color. Vacant plots are a
-  dashed grey outline with "VACANT".
-- **Tile text:** Atkinson Hyperlegible 700, dark navy `#26314f` (darker `#1b2340` on owner
-  tints), 11-16 units; amounts with the coin via `fillMoney`. Special squares show an icon and a
-  small uppercase label.
-- **Buildings** use the painted art (pixel-ish, colored parts in the owner's color, grey when
-  unowned); shops change design as their value grows.
-- **Characters:** pixel sprites at whole-number scales with a sprite-shaped shadow; a name plate
-  (Lilita, white text on a pill in the player's color with a thin white outline) above the head; the active player is bigger with a bobbing arrow.
-- **Choices:** every other tile dims (`rgba(12,18,36,.45)`); choice tiles get a tint of the
-  chooser's color, a pulsing white outline glowing in that color, white rings spreading out and
-  fading, and bouncing pins. Hovering a destination draws the route.
-- **Focus/greying:** squares that don't matter right now are greyed with `rgba(70,74,84,.72)`
-  (player overview, finding a property).
-- **Effects:** gold ring + sparkles when something is bought or grows (`ring`), coins flying
-  between payer and payee, floating "+120G" (green) / "-50G" (red) in Lilita with a dark outline,
-  rising green arrows / sinking red arrows for stock moves, gates rolling down on closed shops.
-- **Readability at any zoom:** the die, pop-up text and name plates are drawn at screen size.
-
-## 10. Layout habits (light touch)
-
-- HUD hugs the corners with 10px margins; the board stays centered on the whole screen.
-- Content-sized panels (`width: fit-content`, `max-width` caps) rather than fixed widths.
-- Phones are landscape; test 844×390. Common breakpoints: `max-width: 760px`,
-  `max-height: 500px`; give pop-ups more edge room and shrink fonts one step there.
-- Scrolling panels hide their scrollbars but still scroll; scroll inside the panel, never the page.
-- Compact by default: two-column fact grids, tables with tight spacing, numbers aligned right.
-
-## 11. Interaction and accessibility
-
-- Anything clickable that isn't a `<button>` gets `role="button"`, `tabindex="0"`, and handles
-  Enter/Space. Pop-ups are `role="dialog"` with an `aria-label`.
-- Visible focus: `outline: 2px solid var(--accent); outline-offset: 2px` on `:focus-visible`.
-- Escape closes the top pop-up; Enter/Space presses the main button.
-- Hover is a bonus, never required: everything shown on hover must also be reachable by tap
-  (touch screens use `@media (hover: none)` where needed).
-- Color is never the only signal: pair it with text, an icon, a sign (+/-) or position.
-- Text contrast: light text on navy; dark text (`#3b2a00`, `#1b2340`) on gold and light tints.
-
-## 12. Writing on screen
-
-Short, plain and friendly; sentence case; no jargon. Money "1,200G". Tell players what they can
-do ("Tap a glowing square to move there"), name the player ("Rosa is buying stocks..."), and
-explain refusals in the log ("Kai can't afford the 300G circus upgrade.").
-
-## 13. Checklist for a new or changed element
-
-- [ ] Built with `h()`; styles in `style.css` under a commented group, using the tokens.
-- [ ] Surface, radius, border and shadow match its kind (HUD glass / pop-up / inset / card).
-- [ ] Lilita One for titles, buttons and key numbers; Atkinson for the rest; sizes on the scale.
-- [ ] Player color via `--pc`, district color via `--dc`; gold only for money and the main action.
-- [ ] Money via `fmt()`; gains green with "+", losses red with "-".
-- [ ] One gold main button at most; Close is a "Close" ghost button top right.
-- [ ] Opens/expands with the right motion (morph, pop, rise); reduced motion handled.
-- [ ] Pixel art pixelated; no emoji icons.
-- [ ] Keyboard and touch work; focus is visible; Escape closes pop-ups.
-- [ ] Checked on desktop and a landscape phone; nothing cut off or overflowing.
-- [ ] UI Lab control added and listed in `RECENT`.
-
-### Transport tile art and options
-
-Draw Warp as a four-pointed star with a bright center in its pair color. Portal uses a circular
-colored glow with white swirl arcs. Both use the shared five transport colors (purple, cyan,
-orange, pink, green). Use the shared rounded-square color row in the action bar for warp pairs and portal colors,
-both while placing and while editing one selected transport. Full colors shrink/fade and the
-remaining choices recenter, matching property districts. Keep the selected tile’s own color
-available. Tile info retains Destination (Matching portal or Bank) and missing-partner guidance.
-
-Portal route previews show both entry and exit with the same step number: the teleport itself
-costs no movement. Subsequent road tiles continue the count normally.
-
-### Builder transport connection preview
-
-Tile info groups Linked tile, its type/position and Change link above the color options. Show
-Cancel link change and a plain instruction while choosing. Use the normal hover-cell outline
-and a crosshair cursor for board picking. Draw a quadratic arch above the selected source and
-its linked destination: screen-sized 7px navy contrast stroke, 3px gold flowing dashes and a
-gold destination dot. Animate only while a single transport is selected; reduced motion holds
-the dashes still. Keep the preview out of the board cache and cancel its frame on editor exit.
+# Design guide: how Adventure Avenue's interface is designed and built
+
+This guide is how the game's interface is designed: the look, **how to make design decisions**,
+and a spec for **every element** (info chip, toolbar, action bar, side panels, pop-ups, cards,
+board overlays and more), with code examples. The owner reviewed and approved this style; follow
+it for every UI change, by any assistant.
+
+How to use it:
+
+1. Read **§1 The look** and **§2 How to make design decisions** before designing anything.
+2. Find the element you are building in **§5 Screen elements** and follow its spec. If it is new,
+   pick the closest existing element and adapt it; don't invent a new style.
+3. Build it from the **§4 Components** and **§3 Foundations** (tokens, type, spacing).
+4. Go through the **§12 Checklist**, then look at it in a browser on desktop and a landscape
+   phone (844 × 390) before calling it done.
+
+Where things live: CSS (all of it, one file) in `apps/client/src/style.css`, grouped by feature
+with a comment heading each group; elements are built in TypeScript with `h()` from `ui/dom.ts`;
+the board and anything on it is drawn on a canvas in `board.ts`. When this guide and the code
+disagree, the code is what players see: fix whichever is wrong, and ask the owner if unsure. When
+a change sets a new pattern, add it here in the same commit.
+
+---
+
+## 1. The look
+
+A bright, cheerful **toy town** (green grass, cream tiles, pixel-art townsfolk, painted buildings)
+under a layer of **dark navy glass** panels that float over it. The interface is calm, rounded and
+compact. Color comes from meaning: **players** (each owns a color), **districts** (each a vivid
+hue), **gold** (money, the main action, winning, "selected"). Motion is short and springy: things
+grow from where they were, pop in from the middle, and glow or pulse only when they need attention.
+
+The feel to aim for: _a polished mobile board game_. Chunky friendly headings, very readable small
+text, generous but not wasteful spacing, every control obviously tappable, nothing that looks like
+a default browser widget.
+
+---
+
+## 2. How to make design decisions
+
+### 2.1 The process (do these in order)
+
+1. **Name the job.** One sentence: _what does the player need to see or do here, and when?_
+   ("While building, pick a district's starting price." / "Before rolling, choose to sell stock.")
+2. **Pick the container** from the table in §2.2: where on screen does this live? This is the
+   most important choice; most bad designs are the right content in the wrong container.
+3. **Pick the controls** from the table in §2.3: what is the simplest control for this input?
+4. **Set the hierarchy**: what is the one thing the eye should land on first? Make that the
+   biggest (Lilita, larger size or gold); make labels small and muted; push secondary actions
+   to ghost buttons or text links.
+5. **Decide the motion**: how does it appear (morph / pop / rise / slide), and does anything need
+   attention (nudge / glow)? Usually nothing does.
+6. **Write the words** (§10): short, plain, name the action.
+7. **Check it** in the browser at both sizes, with the checklist (§12).
+
+### 2.2 Which container?
+
+| The player needs to...                                                  | Use                                                              | Examples                                                     |
+| ----------------------------------------------------------------------- | ---------------------------------------------------------------- | ------------------------------------------------------------ |
+| Make **this turn's** choice (2-6 options), or read what's happening now | **Action bar** (bottom center)                                   | Buy this shop?, Roll, choose a building, "Rosa is moving..." |
+| Pick a **square** on the board                                          | **Board highlight** (glowing squares) + action bar explaining it | Choose where to move, cannon target, invest in a shop        |
+| Edit **many settings** or a **long list** while still seeing the board  | **Side panel** (right edge, nonmodal)                            | Board settings, the selected tile's options, the Tiles pane  |
+| Read or decide something **big**, with the board out of the way         | **Pop-up** (centered, dims the board)                            | Guide, player overview, menu, stock screen, results          |
+| Answer a **yes/no** that can lose something                             | **Question pop-up** (small pop-up, Cancel + answer)              | Discard changes?, Delete district?, Quit game?               |
+| **Choose one of many things** that have pictures                        | **Card grid** in a pop-up                                        | New board templates                                          |
+| **Manage a list** of saved things                                       | **List rows** in a pop-up                                        | My boards                                                    |
+| Be **told** something happened (no answer needed)                       | **Banner** (top center, fades) or the status line                | "Rosa's turn", "Bay Market stock up!"                        |
+| See **details on demand** about something on the board                  | **Tooltip**                                                      | Hovering/tapping a square                                    |
+| Get to a **screen-wide tool** or info at any time                       | **Toolbar / info chip** (top corners)                            | Zoom, Guide, Menu, game name and goal                        |
+| Pick a **tool** in an editor                                            | **Tool rail** (icon buttons, left edge)                          | Select, Pan, Place, Erase                                    |
+| Pick **one color/category** while doing something else                  | **Color row** inside the action bar                              | District color while placing properties                      |
+
+Rules of thumb:
+
+- **The action bar is for one decision at a time**, never a form. If it needs a scroll bar, a
+  list of more than ~6 buttons, or more than one input, it belongs in a side panel or pop-up.
+  (Example: Board settings used to be crammed into the action bar with a scrolling box; it now
+  lives in a side panel and the action bar just says "Board settings · ready to play".)
+- **Side panel vs pop-up:** if the player benefits from seeing the board change while they edit
+  (prices on tiles updating, a selected tile), use a side panel. If the board is irrelevant or the
+  content is wide (tables, charts, card grids), use a pop-up.
+- **Never use the browser's own dialogs** (`alert`, `confirm`, `prompt`). Use a question pop-up.
+- **Don't stack** pop-ups more than two deep (a question over a pop-up is fine).
+
+### 2.3 Which control?
+
+| Input                                           | Control                                                      |
+| ----------------------------------------------- | ------------------------------------------------------------ |
+| The main thing to do                            | One gold **main button** (`.btn.main`)                       |
+| Other options in the same decision              | Navy **buttons** (`.btn`) or **ghost** buttons for "no/skip" |
+| Destructive yes                                 | Red **no** button (`.btn.no`) inside a question pop-up       |
+| A small action next to content (delete, more)   | **Icon button** (`.ed-icon-btn`, 30 × 30, line icon)         |
+| A quiet secondary action under a value          | **Text link button** (`.ed-link-btn`, gold 11px bold)        |
+| "Add another" at the end of a list              | **Dashed add row** (`.ed-add`)                               |
+| Choose 1 of 2-4 modes                           | **Segmented pills** (`.seg` + `.seg-btn`)                    |
+| A number in a **list** (several per screen)     | **Stepper** (`ui/stepper.ts`: − value +, hold to repeat)     |
+| One **big** amount (shares, investment, target) | **Digit picker** (`ui/digits.ts`)                            |
+| A name                                          | Text input; inside cards use the **inline-edit** style       |
+| A color                                         | Round **swatch** wrapping a hidden `<input type=color>`      |
+| A square on the board                           | **Board highlight** (`board.setChoices`)                     |
+| One of many pictured things                     | **Cards** (picture on top, title, one-line description)      |
+| A category while placing                        | **Color row** of rounded squares                             |
+
+Never use: native-looking range sliders for money, free-typed numbers for money, dropdowns with
+two options (use segmented pills), tiny ✕ glyphs as close buttons.
+
+### 2.4 Hierarchy and density
+
+- **One focal point per container.** In a district card it's the name; in a price row it's the
+  gold value; in a pop-up it's the title then the main button.
+- **Three text levels are enough:** title / value (Lilita, 16-22px, `--text` or gold), body
+  (Atkinson 13-15px, `--text`), label (Atkinson 11-12px, `--muted`).
+- **Section headings are small, not big:** 12px bold uppercase, letter-spacing 0.06em, muted
+  ("BOARD", "DISTRICTS"), with an optional count on the right ("8 of 10").
+- **Group with surfaces, not lines.** Related things share an inset box (`rgba(255,255,255,.05)`,
+  radius 10). Use a 1px `--glass-line` divider only between major sections.
+- **Compact by default.** Put pairs side by side (label left, value right; two-column fact grids).
+  If a list row needs more than two lines on desktop, it's doing too much.
+- **Fill the container.** Lists and menus span the full width of their pop-up; don't leave a
+  dead column. Size pop-ups to their content (a menu is ~400px wide, not 760px).
+
+### 2.5 Things to avoid (real mistakes that were fixed)
+
+| Don't                                                                | Do                                                                     |
+| -------------------------------------------------------------------- | ---------------------------------------------------------------------- |
+| A form crammed into the action bar with its own scroll box           | A side panel; the action bar shows a one-line status                   |
+| A big digit picker (Min/Max buttons, arrows) repeated in a list      | A compact stepper per row                                              |
+| `confirm()` / `alert()`                                              | `ask(title, text, yes, danger)` question pop-up                        |
+| Board thumbnails showing a tiny board in the corner of an empty grid | Thumbnails trimmed to the tiles (`boardThumb` does it) in a framed box |
+| Names wrapping onto three lines in a list row                        | One line with ellipsis, details in a muted line below                  |
+| Each panel styling its own headings differently                      | The shared side-panel head and section head                            |
+| A menu narrower than its pop-up, leaving a blank strip               | Full-width rows; pop-up sized to the content                           |
+| Twenty near-identical UI Lab buttons                                 | A few controls that open meaningful states                             |
+| A link line that only arcs upward when tiles are side by side        | A bend at the middle, at right angles to the line (always an arc)      |
+| Color pickers for things the game can decide (transport pair colors) | Let the game assign; show the result                                   |
+
+---
+
+## 3. Foundations
+
+### 3.1 Color tokens (`:root` in `style.css`)
+
+| Token          | Value                       | Use                                                         |
+| -------------- | --------------------------- | ----------------------------------------------------------- |
+| `--navy`       | `#101a33`                   | Page background behind everything                           |
+| `--navy-2`     | `#18244a`                   | Raised dark surfaces, `<option>` backgrounds                |
+| `--glass`      | `rgba(16, 26, 51, 0.82)`    | Floating HUD panels (with `backdrop-filter: blur(8px)`)     |
+| `--glass-line` | `rgba(255, 255, 255, 0.12)` | 1px borders on glass, ghost buttons, inputs, dividers       |
+| `--text`       | `#eef2ff`                   | Main text on dark                                           |
+| `--muted`      | `#a9b4d6`                   | Labels, captions, section headings, secondary text          |
+| `--accent`     | `#ffd166`                   | Gold: selected, focus outline, important numbers, top edges |
+| `--good`       | `#7cf29a`                   | Gains, rises, "complete" (e.g. a full 4/4 count)            |
+| `--bad`        | `#ff8a8a`                   | Losses, falls, problems, delete hover                       |
+| `--radius`     | `14px`                      | Glass panels                                                |
+| `--head`       | Lilita One                  | Display font                                                |
+| `--body`       | Atkinson Hyperlegible       | Text font                                                   |
+
+Use tokens, not new literal colors, for anything on the dark interface. Meaning colors:
+
+- **Player color** `--pc` (`PLAYER_COLORS`: red `#e5484d`, blue `#3e7bfa`, green `#30a46c`,
+  purple `#a855f7`, orange `#f76b15`): that player's card edge, glow, dots, chips, owned tiles.
+- **District color** `--dc` (set per board, ten defaults in `ui/editor-districts.ts`): district
+  card edge, swatches and dots, tile borders.
+- **Link color** `--lc`: a warp/portal pair's color (`transportColor()`; five colors, gold for
+  bank links, grey `#9aa3b5` for unlinked).
+- **Gold** = money, the main action, selected, focus. **Green/red** = gain/loss, good/problem.
+- **Charts** use fixed color-blind-safe series colors (net worth: cash `#3987e5`, properties
+  `#d95926`, stock `#199e70`), always with a legend; text never in the series color.
+
+Pass a meaning color as a custom property on the element and use `var()` inside:
+
+```ts
+h('div', { class: 'ed-dcard', style: `--dc:${district.color}` }, ...)
+```
+
+```css
+.ed-dcard {
+  border-left: 4px solid var(--dc);
+}
+```
+
+### 3.2 Surfaces (lighter = closer)
+
+| Surface         | Value                                                                       | Where                                         |
+| --------------- | --------------------------------------------------------------------------- | --------------------------------------------- |
+| HUD glass       | `--glass`, 1px `--glass-line`, blur 8px, shadow `0 8px 28px rgba(0,0,0,.3)` | Info chip, toolbar buttons, cards, action bar |
+| Panel / pop-up  | `rgba(16, 26, 51, 0.94-0.97)` (more opaque: for reading)                    | Side panels, pop-ups                          |
+| Inset box       | `rgba(255, 255, 255, 0.05)`; hover `0.07-0.12`                              | Cards in panels, fact boxes, list rows        |
+| Input           | `rgba(255, 255, 255, 0.08)` + `--glass-line` border                         | Text fields, selects                          |
+| Dark well       | `rgba(0, 0, 0, 0.22)` + inset 1px `--glass-line` ring                       | Stepper track                                 |
+| Backdrop        | `rgba(5, 10, 25, 0.45)`                                                     | Behind pop-ups                                |
+| Gold tint       | `rgba(255, 209, 102, 0.16)` + inset 2px gold ring                           | Selected item in a grid/list                  |
+| Good / bad tint | `rgba(124,242,154,.16)` / `rgba(255,138,138,.18)`                           | Count chips, problem rows                     |
+
+### 3.3 Typography
+
+| Font                                  | Use                                                                          |
+| ------------------------------------- | ---------------------------------------------------------------------------- |
+| **Lilita One** (`--head`), weight 400 | Titles, buttons, names, values and money, banners, badges, counts            |
+| **Atkinson Hyperlegible** (`--body`)  | Sentences, labels, hints, tables, inputs, section headings (bold, uppercase) |
+
+Lilita One has one weight: always `font: 400 <size> var(--head)`; never bold it.
+
+| Size  | Use                                                                   |
+| ----- | --------------------------------------------------------------------- |
+| 10-11 | Tags, tiny captions, notes under a value ("Auto, by distance")        |
+| 12    | Section headings (UPPERCASE, 0.06em, muted), field labels, sub-titles |
+| 13    | Hints (`.hint`), small buttons, secondary rows                        |
+| 14-15 | Body text in panels and pop-ups, inputs, the status line              |
+| 16-17 | Buttons, list/menu item titles, card titles, stepper values           |
+| 20-22 | Side panel and pop-up titles, big values                              |
+| 26-30 | Banners, hero numbers                                                 |
+
+Long names: one line, `overflow: hidden; white-space: nowrap; text-overflow: ellipsis`.
+Paragraph line-height 1.35-1.45.
+
+### 3.4 Spacing, radius, shadow
+
+**Spacing scale (px):** 2, 4, 6, 8, 10, 12, 14, 16, 18. Common uses: 6 between buttons in a row,
+8 between cards/list rows, 10-14 panel padding, 12-14 between sections (with a divider), 16-18
+pop-up padding. Screen edge margin for HUD: 10px (phones: still 10, pop-ups ≥ 22px).
+
+**Radius:** 999px pills (tags, chips, segmented pills, zoom chip, steppers, banners) · 50% dots,
+swatches, round buttons · 3px progress bars, tiny swatches · 8px inputs, icon buttons, thumbnails ·
+10px buttons, inset cards, list rows · 12px player cards, picture cards · 14px panels and pop-ups.
+
+**Borders:** 1px `--glass-line` around glass and ghost things. Meaning is shown with a thicker
+**single side**: 4px top edge (gold) on side panels, 4px left edge (`--dc`) on district cards,
+5px top edge (`--pc`) on a player's pop-up, 5px left edge (`--pc`) on player cards. Selection is
+an **inset ring** (`box-shadow: inset 0 0 0 2px var(--accent)`) so size never changes.
+
+**Shadows:** `0 8px 28px rgba(0,0,0,.3)` floating panels · `0 12px 30px rgba(0,0,0,.35)` action
+bar · `0 20px 60px rgba(0,0,0,.5)` big pop-ups. Glows use the meaning color with blur.
+
+---
+
+## 4. Components
+
+Small reusable pieces. Several were first built for the board builder and carry an `ed-` prefix;
+when you need one elsewhere, **move its CSS to a shared group and give it a neutral name** (e.g.
+`.ed-icon-btn` → `.icon-btn`) instead of copying it.
+
+### 4.1 Buttons
+
+All `.btn`: Lilita 16px, radius 10, padding `9px 16px`, press `translateY(1px) scale(.98)`,
+hover one shade lighter, disabled `opacity .4`.
+
+| Class             | Look                                     | Use                                          |
+| ----------------- | ---------------------------------------- | -------------------------------------------- |
+| `.btn`            | Navy `#2c3a6b` (hover `#3a4b86`)         | Ordinary options                             |
+| `.btn.main`       | Gold gradient, dark brown text `#3b2a00` | **The** main action (max one per group)      |
+| `.btn.main.nudge` | + a small hop every ~2.6s                | What the player is expected to do now (Roll) |
+| `.btn.ghost`      | Transparent, 1px `--glass-line`          | Cancel, Skip, Close, secondary               |
+| `.btn.no`         | Red gradient, white text                 | Destructive answer (Delete, Discard)         |
+| `.btn.danger`     | Dark red                                 | Destructive item in a menu (Quit game)       |
+| `.btn.small`      | `6px 10px`, 13px                         | Toolbars, panel heads, rows                  |
+| `.btn.pic`        | Picture over a short name and price      | Choosing pictured things in the action bar   |
+
+Order: main action **last in a row** (right) or **first in a stack**; Cancel/ghost before it.
+Labels are short verbs: "Buy", "Link", "Use auto", "Delete". **Every pop-up and side panel closes
+with a "Close" ghost button in its top-right corner**, never a bare ✕.
+
+### 4.2 Icon button (`.ed-icon-btn`)
+
+30 × 30, radius 8, transparent, `--muted` line icon 18px (stroke 1.8, round caps). Hover: red
+tint + `--bad` for delete (use a neutral hover for non-destructive icons). Always an
+`aria-label` and a `title`.
+
+```ts
+h(
+  'button',
+  { class: 'ed-icon-btn', 'aria-label': `Delete ${d.name}`, title: 'Delete district' },
+  icon(TRASH),
+);
+```
+
+Icons are simple 24 × 24 line paths (`icon(d)` in `ui/editor.ts`); no emoji, no icon fonts.
+
+### 4.3 Text link button (`.ed-link-btn`)
+
+Gold bold 11px text, no box, underline on hover. For a quiet action that belongs to a value
+("Use auto" under a custom price). Hide it (`hidden`) when it doesn't apply rather than disable it.
+
+### 4.4 Dashed add row (`.ed-add`)
+
+Full width, 1px dashed `rgba(255,255,255,.25)`, radius 10, Lilita 15px "+ Add district". Ends a
+list of cards; disappears when the list is full.
+
+### 4.5 Pills, tags and count chips
+
+- **Tag** (`.tag`): 10px, `1px 6px`, gold on gold tint ("Fees +30%"); red on red tint for bad.
+- **Count chip** (`.ed-count`): Lilita 12px, `1px 7px`, pill. Red tint when incomplete
+  ("2/4"), **green tint when complete** ("4/4"). Use for any "n of required" count.
+- **Chips** naming players/properties (log, trades): pill with a color edge or player color.
+
+### 4.6 Segmented pills (`.seg` + `.seg-btn`)
+
+A row of pill buttons with a `--glass-line` border; the chosen one is gold with dark text. Inside
+a panel make them share the width (`flex: 1`). Use for 2-4 exclusive choices (Square / Hex,
+Guide tabs, game setup options). Set `aria-pressed`.
+
+### 4.7 Stepper (`ui/stepper.ts`)
+
+A dark pill well: round − button, the value (Lilita 16px gold, tabular numbers, min 62px), round
+
+- button. Click steps once; **holding repeats**, speeding up; keyboard Enter/Space steps once.
+  Ends are disabled at min/max. `onStart` runs once per press (save an undo step there).
+
+```ts
+const price = stepper({
+  value: 340,
+  min: 80,
+  max: 1970,
+  step: 10,
+  label: `${d.name} starting average`,
+  onStart: snapshot,
+  onChange(v) {
+    d.startingValue = v;
+    redraw();
+  },
+});
+row.append(price.el);
+```
+
+### 4.8 Digit picker (`ui/digits.ts`)
+
+Up/down arrows per digit plus Min/Max. Only for **one big amount on its own** (buying shares,
+investing, the target net worth). Never repeat it in a list.
+
+### 4.9 Inputs
+
+- Standard field: full width, `7px 10px`, radius 8, input surface, 14px; gold 2px focus outline.
+  Label above it: 12px muted (`.ed-field > span`).
+- **Inline-edit** (a name inside a card): looks like plain Lilita 16px text (transparent border and
+  background) until hovered or focused, then shows the input surface.
+- **Color swatch** (`.ed-swatch`): a 22px round dot in the color with an inset white ring; a hidden
+  `<input type=color>` fills it, so clicking the dot opens the picker; focus ring on
+  `:focus-within`.
+- Selects only when there are 3+ options (else segmented pills); style with the input surface.
+
+### 4.10 Inset box, facts and tables
+
+- **Inset box**: `rgba(255,255,255,.05)`, radius 10, padding `10px 12px`. Groups a label + value +
+  its actions (e.g. tile info "Leads to · The bank · Change link · Unlink").
+- **Label/value row**: label 13px muted left, value Lilita 20-22px gold right.
+- **Fact grid**: two columns of inset boxes, label small/muted, value bold.
+- **Action-bar facts**: `question(text, [[label, value, 'big'?]])` from `ui/pick.ts`.
+- **Tables** reuse the stock screen's `.m-grid`: district swatch + name left, numbers right in
+  Lilita, rows with nothing dimmed to 0.5, totals in a plain final row.
+
+### 4.11 Thumbnails (`.ed-thumb` + `boardThumb`)
+
+A fixed frame (radius 8, grass `#7fc25a` fill) with the board picture centered inside.
+`boardThumb()` trims to the tiles, so a board never sits tiny in a corner. Card thumbnails fill the
+card width at a fixed height (86px); list thumbnails are 112 × 64. Empty boards show "Empty grid".
+
+### 4.12 Progress, icons and art
+
+- Progress: 5px track `rgba(255,255,255,.12)`, fill in the meaning color, number beside it.
+- Pixel art (characters, buildings) always `image-rendering: pixelated`, whole-number scales.
+- Vector icons (suits, coins, boon/boom) stay smooth; generated from canvas, never emoji.
+- Property pictures via `propIconURL` / `propertyIconURL` (owner color applied, grey unowned).
+
+---
+
+## 5. Screen elements
+
+Each element: **purpose**, **placement**, **anatomy**, **spec**, **behavior**, then examples.
+
+### 5.1 Info chip (top left) — "info bar"
+
+- **Purpose:** what you're playing/editing, always visible.
+- **Placement:** `top: 10px; left: 10px`; game: under it the Stock market button.
+- **Anatomy (game):** gold Lilita title ("Adventure Avenue") · muted pills: board, round, goal ·
+  Room button online. **(builder):** "Board builder" · inline name input · save status
+  ("Not saved yet" gold, "Saved" green) · "Board settings" small ghost button.
+- **Spec:** `.info-chip.glass`, padding `5px 6px 5px 12px`, gap 6, 12px text, wraps if needed.
+- **Behavior:** buttons in it turn **gold while their thing is open** (`aria-pressed="true"`).
+- Keep it to one line on desktop; put nothing here that changes every second.
+
+### 5.2 Toolbar (top right)
+
+- **Purpose:** screen-wide tools.
+- **Anatomy:** zoom chip (a pill showing "250%"; tap = reset zoom **and recenter**), then small
+  buttons ("? Guide", "☰ Menu"; builder: Undo, Save, gold "Test play", Menu).
+- **Spec:** `.toolbar`, `top/right: 10px`, gap 6, buttons `.btn.small` on glass.
+- **Rule:** at most one gold button here (the thing to do next, e.g. Test play).
+
+### 5.3 Action bar (bottom center)
+
+- **Purpose:** this moment's one decision, or what's happening now.
+- **Placement:** centered on the whole window, `bottom: 16px`, never under the player cards.
+- **Two modes:**
+  - **Status line** (`.status`): one line, an icon for the kind of event, names in their colors,
+    ellipsis when long. "Rosa is buying stocks...", "Board settings · 2 problems to fix".
+  - **Options**: question on the left (player-color dot first, or a `question()` fact strip),
+    buttons on the right with the main one gold. A **color row** (districts) can sit under it.
+- **Spec:** glass, 2px border in `--pc` (the deciding player's color), min height 92px (options),
+  grows up to 75% taller for rich content, width = content (max 920px).
+- **Motion:** morphs size between states (740ms, content laid out at its final size so text never
+  jumps); new text is revealed with a 220ms left-to-right sweep; new controls fade/settle 220ms.
+- **Do:** say what to do when the choice is on the board ("Tap a glowing square to move there").
+- **Don't:** put forms, lists or scrolling areas here (→ side panel / pop-up).
+
+Example (TypeScript):
+
+```ts
+const yes = await hud.prompt(
+  question('Upgrade your circus?', [
+    ['Cost', fmt(300), 'big'],
+    ['Fee when rivals land', '100G → 500G'],
+  ]),
+  [
+    { label: 'Upgrade', value: true, main: true },
+    { label: 'Not now', value: false, secondary: true },
+  ],
+  player.color,
+);
+```
+
+### 5.4 Side panel (right edge) — Board settings, tile info, Tiles pane
+
+- **Purpose:** edit settings or a list while the board stays visible and live.
+- **Placement:** `top: 58px` (below the toolbar), `right: 10px`, width `min(320px, 100% - 96px)`
+  (phones 270px); stops above the action bar; nonmodal (the board still works).
+- **Anatomy:**
+  1. **Head** (`sideHead(title, subtitle, onClose)`): Lilita 21px title, 12px muted subtitle
+     ("Column 17 · Row 15"), "Close" ghost button right; 1px divider under it. Stays put.
+  2. **Body** (`.ed-side-body`): scrolls; padding `10px 14px 14px`.
+  3. **Sections** (`sideSection(title, aside, ...)`): uppercase muted heading + optional count
+     right ("DISTRICTS · 8 of 10"); sections separated by a divider and 12-14px.
+- **Spec:** `.ed-side.glass`, background `rgba(16,26,51,.94)`, **4px gold top edge**, slides in
+  from the right (16px, 220ms).
+- **Behavior:** Escape or Close closes it; the button that opened it is gold while open; keep the
+  body's scroll position across re-renders.
+
+```ts
+panel.append(
+  sideHead('Board settings', null, close),
+  h(
+    'div',
+    { class: 'ed-side-body' },
+    sideSection('Board', null, gridField, madeByField),
+    sideSection('Districts', '8 of 10', hint, ...districtCards, addRow),
+    sideSection('Ready to play', null, summary, okRow),
+  ),
+);
+```
+
+### 5.5 Cards inside panels — e.g. the district card
+
+- **Anatomy:** inset box, radius 10, **4px left edge in the item's color**. Top row: color
+  swatch · inline-edit name (flex 1) · count chip · icon button. Second row: label + muted note
+  on the left, control (stepper) on the right.
+- **Spec:** padding `8px 8px 8px 10px`, 6px between cards.
+- **Example:** `● Brick Row ............ [4/4] 🗑` / `Starting average · Auto, by distance  [− 340G +]`
+  (the 🗑 here stands for the trash line icon; never use the emoji).
+
+### 5.6 Pop-up (centered)
+
+- **Purpose:** read or decide something big; board out of the way.
+- **Anatomy:** backdrop dim over everything; box with head (Lilita 20-28px title + "Close" ghost
+  right, 12px gap below) and body that scrolls inside.
+- **Spec:** `.modal`, background `rgba(16,26,51,.96)`, radius 14, padding `16px 18px 18px`, big
+  shadow. Width by content: menus ~400px, standard 460px, wide 720-760px, extra-wide 980px.
+  A player's pop-up gets a 5px top edge in `--pc`.
+- **Motion:** pops in (scale .92 → 1, 220ms, slight overshoot), closes faster (160ms).
+- **Behavior:** Escape, Close or clicking the backdrop closes it; **Escape only closes the top
+  pop-up** (stop the event so nothing underneath reacts). Use `hud.modal()` in games; the builder
+  has its own `modal()` with the same look.
+
+### 5.7 Question pop-up — `ask()`
+
+- **Purpose:** confirm something that can lose work or change a lot.
+- **Anatomy:** title as the question ("Delete Brick Row?"), one muted sentence saying what happens
+  ("Its 4 properties will be removed from the board."), then **Cancel** (ghost) and the answer
+  button named for the action ("Delete" red `.btn.no` when destructive, else gold "Switch").
+- **Spec:** width ~380px; answer button focused on open; Escape/Cancel = no.
+
+```ts
+if (!(await ask(`Delete ${d.name}?`, 'Its 4 properties will be removed from the board.', 'Delete', true)))
+  return;
+```
+
+### 5.8 Menu pop-up
+
+- **Anatomy:** full-width rows (`.ed-menu-item`), each a Lilita 17px title + a 12px muted line
+  saying what it does ("My boards — Open, export or delete boards saved on this device"). The
+  "leave" item (Back to main menu) is set apart below with an outline instead of a fill.
+- **Spec:** pop-up ~400px; rows padding `10px 14px`, radius 10, inset surface, 6px gap.
+- The in-game menu (`.game-menu .gm-item`) follows the same idea.
+
+### 5.9 Card grid pop-up (choose one of many pictured things)
+
+- **Anatomy:** grid `repeat(auto-fill, minmax(160px, 1fr))`, gap 8; each card: thumbnail (full
+  width, 86px), Lilita 16px title, 12px muted one-line description.
+- **Behavior:** hover lifts 2px and brightens; the whole card is the button.
+- **Example:** New board (Starter loop, Lakeside, Copy of Town...).
+
+### 5.10 List rows pop-up (manage saved things)
+
+- **Anatomy per row:** thumbnail 112 × 64 · name (Lilita 17px, one line, ellipsis) over a muted
+  detail line ("50 tiles · saved 11/2/2026 · open now") · actions right: gold "Open", ghost
+  "Export", trash icon button. The current item has a gold inset ring.
+- **Phones:** drop secondary text buttons (keep Open and the icon).
+
+### 5.11 Tool rail (builder, left edge)
+
+- **Anatomy:** glass column of 44px icon buttons (24px line icons), vertically centered, 10px from
+  the left: Select (arrow), Pan (four arrows), Place (pencil), Erase (eraser).
+- **States:** active = gold fill with an inset light ring; name appears to the right on hover or
+  focus. The action bar always explains the active tool in words.
+
+### 5.12 Tiles pane (builder)
+
+- A side panel (§5.4) titled "Tiles" with the hint "Pick one, then click or drag on the board";
+  groups (PROPERTIES, SUITS, SPECIALS, TRANSPORT) use section headings; tiles are the game's own
+  tile art in a two-column grid. The chosen tile has a **gold tint + inset gold ring** and lifts
+  2px. Shown only while placing.
+
+### 5.13 Color row (inside the action bar)
+
+- Rounded 40px squares (34px phones), gap 8; chosen one has a white outline and a dark check.
+- Use only when the player must pick a category **while working** (district while placing
+  properties). If the game can decide the color itself, don't show a row (warps and portals get
+  their pair color automatically).
+
+### 5.14 Player cards (bottom right)
+
+- Glass card, radius 12, **5px left edge in `--pc`**; whole character sprite left; name (Lilita)
+  - level badge + suits on top; progress bar; cash (coin) bottom-left, rank badge + net worth
+    bottom-right. Active player: breathing `--pc` glow on an `::after` layer. Money changes pop out
+    beside the card ("+120G" green / "-50G" red). Can win: net worth and portrait pulse gold.
+    Clicking opens the player overview.
+
+### 5.15 Player overview (pop-up)
+
+- Extra-wide pop-up (980px) with a 5px `--pc` top edge, three columns (net worth + ring chart +
+  earnings · properties as small cards · shares table), section headings uppercase muted,
+  "Close" top right, scrolls inside. Property cards: district top edge, picture, rent big, value
+  small; click to find it on the board.
+
+### 5.16 Banner
+
+- A pill near the top center: Lilita 26px, glass, 3px border in the meaning color. Rises in, fades
+  up and out. One short line: "Round 5", "Rosa's turn", "Bay Market stock up! 12G → 14G".
+
+### 5.17 Tooltip
+
+- Glass box near the pointer (kept on screen), 220-280px, **5px top edge in the district color**;
+  owner pill (player color + portrait), then a 2-column grid of stat boxes; one plain sentence for
+  what a special square does ("Stop here to jump to the bank.").
+
+### 5.18 Game log and Stock market panel
+
+- Both start as a small glass button and **morph** into their panel (260-280ms). The log groups
+  lines by turn, newest at the bottom, players as chips. The market shows the district × player
+  table and shop cards.
+
+### 5.19 Board overlays (canvas)
+
+- **Choices:** other squares dim; choice squares get a tint of the chooser's color, a pulsing
+  white outline glowing in that color, spreading white rings and bouncing pins.
+- **Highlights / focus:** irrelevant squares grey `rgba(70,74,84,.72)`; the one that matters
+  glows with rings.
+- **Builder hover cell:** light tint + 6px dark outer / 3px bright inner outline in screen pixels
+  (gold; red while erasing).
+- **Builder selection:** dashed gold outlines; marquee is a translucent gold rectangle.
+- **Link line** (selected warp/portal, `drawLink`): a quadratic arc whose bend is at the **middle
+  of the line, at right angles to it** (upper side), bend = 14% of length (16-90 units) — gentle,
+  always visible. Dark 9px outline, 4px line in the link color at 55% opacity, white source ring,
+  3 glowing dots with short tails traveling to the destination (1.5s loop), a ring pulse at the
+  destination on each arrival, solid destination dot with a white ring. Widths are screen pixels
+  at any zoom. Reduced motion: still dots, no pulse.
+
+---
+
+## 6. Motion
+
+| What                                        | Time                        | Easing                                       |
+| ------------------------------------------- | --------------------------- | -------------------------------------------- |
+| Hover / press                               | 80-150ms                    | default                                      |
+| Layer fade, modal entrance                  | 200-220ms                   | ease-out                                     |
+| Side panel slide-in (16px)                  | 220ms                       | `cubic-bezier(0.2, 0.8, 0.2, 1)`             |
+| Pop-up open / close                         | 220ms / 160ms               | `cubic-bezier(0.2, 0.9, 0.3, 1.2)` / ease-in |
+| Market panel / log morph                    | 260-280ms                   | `cubic-bezier(0.2, 0.8, 0.2, 1)`             |
+| Action bar morph                            | 740ms                       | `cubic-bezier(0.2, 0.8, 0.2, 1)`             |
+| New action bar text sweep                   | 220ms                       | `steps(16, end)`                             |
+| Banner rise / fade                          | 350ms / 450ms               | ease-out                                     |
+| Camera pan / zoom easing (builder and game) | per frame, factor 0.12-0.15 | —                                            |
+| Loops (breathe, pulse, link dots)           | 1.1-2.6s                    | ease-in-out / linear                         |
+| Game pacing (walks, coins, pauses)          | `timing.ts`                 | never hard-coded                             |
+
+Patterns: **morph** (measure old size, change content, animate width/height to the new size with
+`overflow: hidden`), **pop** (scale .92 → 1 + fade), **rise** (10px up + fade), **slide** (side
+panels, 16px from the right), **nudge** (the expected button hops every ~2.6s), **breathe** (glow
+on an `::after` layer, opacity only), **reveal sweep** (clip-path left to right).
+
+Rules: animate `transform` and `opacity`; nothing loops unless it needs attention; every
+animation has a `prefers-reduced-motion` path (CSS media query, or `matchMedia(...)` /
+`reducedMotion()` in code) that jumps to the end state.
+
+---
+
+## 7. The board (canvas art)
+
+Bright and physical, unlike the dark HUD:
+
+- **World:** seamless grass (`GRASS #92d268`) everywhere, painted in world coordinates under
+  transparent board caches; trees, ponds and flower beds in games (hidden in the builder).
+- **Tiles** (86 units on a 100 grid): cream `#fdfbf5` (bank `#fff6d6`), radius 12, soft shadow
+  down-right. Owned: tint of the owner's color. Properties: 6px district-color border. Vacant
+  plots: dashed grey outline + "VACANT".
+- **Tile text:** Atkinson 700, navy `#26314f` (`#1b2340` on tints); amounts with the coin
+  (`fillMoney`). Special squares: icon + small uppercase label.
+- **Warps** (four-pointed star) and **portals** (round swirl) in their link color: a pair's color,
+  gold to the bank, grey unlinked.
+- **Characters:** pixel sprites, whole-number scales, sprite-shaped shadow, a name plate (white
+  Lilita on a player-color pill with a white outline); the active one is bigger with a bobbing
+  arrow.
+- **Effects:** gold ring + sparkles (bought, grew), flying coins, floating "+120G"/"-50G" in
+  Lilita with a dark outline, stock arrows, shop gates.
+- Text, rings and lines that must stay readable are drawn at **screen size** (divide widths by
+  the camera scale).
+
+---
+
+## 8. Layout and responsive
+
+- HUD hugs corners with 10px margins; the board fills the screen behind it; the camera keeps
+  important squares out from under panels (`hud.updateInsets()`).
+- Content-sized panels; caps with `min(<px>, 100% - <margin>)`.
+- Phones play **landscape** (test 844 × 390); breakpoints `max-width: 760-900px` and
+  `max-height: 500-560px`: shrink type one step, tighten padding, narrow side panels to 270px,
+  drop secondary buttons that have another way in.
+- Scroll inside panels (hidden scrollbars), never the page.
+
+---
+
+## 9. Interaction and accessibility
+
+- Real `<button>`s for everything clickable; otherwise `role="button"`, `tabindex="0"`,
+  Enter/Space. Pop-ups and side panels `role="dialog"` with `aria-label`.
+- Focus: `outline: 2px solid var(--accent); outline-offset: 2px` on `:focus-visible`.
+- Keys: Escape closes the top layer (question → pop-up → side panel → selection); Enter/Space
+  presses the main button; builder: Space+drag pans, arrows pan, −/+ zoom, Ctrl+Z undo.
+- Hover is a bonus: anything on hover is also reachable by tap/focus.
+- Color is never the only signal: add text, an icon, a sign or a count ("4/4").
+- Contrast: light text on navy; dark text on gold and light tints.
+
+---
+
+## 10. Writing on screen
+
+Short, plain, friendly, sentence case, no jargon. Money "1,200G". Name the action on buttons
+("Delete", not "OK"). Hints say what to do next ("Pick one, then click or drag on the board").
+Status lines say who is doing what ("Rosa is buying stocks..."). Refusals explain how to fix it
+("All five warp colors are in use. Unlink a pair first, or link this one to the bank.").
+Questions are the title; the sentence under it says what will happen.
+
+---
+
+## 11. Worked example: designing a feature
+
+_Request: "Let builders set each district's starting price."_
+
+1. **Job:** while building, adjust up to ten prices and see tiles update.
+2. **Container:** several values + live board → **side panel** (Board settings), not the action
+   bar and not a pop-up.
+3. **Controls:** a number per row in a list → **stepper** (not the digit picker); a way back to the
+   automatic price → **text link** "Use auto", shown only when the price is custom.
+4. **Hierarchy:** district name is the focal point (Lilita, inline-editable); the price is gold;
+   "Auto, by distance" is a muted 11px note; delete is a quiet icon.
+5. **Layout:** a **district card** per district (4px left edge in its color), count chip "4/4"
+   turning green when complete, a dashed "+ Add district" row at the end.
+6. **Motion:** none beyond the panel slide-in; values change instantly; holding the stepper
+   repeats.
+7. **Words:** section "DISTRICTS · 8 of 10"; hint "Each needs exactly 4 properties. In a game the
+   nearest one costs 30G less than the average and the farthest 30G more."
+8. **Check:** desktop and phone; Escape closes; keyboard works on − / +; the action bar shows
+   "Board settings · ready to play".
+
+---
+
+## 12. Checklist for a new or changed element
+
+- [ ] The right **container** (§2.2) and the simplest **controls** (§2.3).
+- [ ] One focal point; labels small and muted; section headings uppercase 12px.
+- [ ] Built with `h()`; CSS in `style.css` under a commented group, using the tokens.
+- [ ] Surface, radius, edge and shadow match its kind (HUD glass / panel / pop-up / inset card).
+- [ ] Lilita for titles, buttons, values; Atkinson for the rest; sizes on the scale.
+- [ ] Meaning colors via `--pc` / `--dc` / `--lc`; gold only for money, main action, selected.
+- [ ] At most one gold button per group; "Close" ghost button top right on panels and pop-ups.
+- [ ] No browser dialogs; questions use `ask()` with an action-named answer button.
+- [ ] Right motion (morph / pop / slide / rise); reduced motion handled.
+- [ ] Keyboard, touch and Escape work; visible focus; names don't wrap out of shape.
+- [ ] Looked at in a browser on desktop and 844 × 390; nothing cut off, no dead space.
+- [ ] UI Lab control added (a meaningful state, not one per tweak) and listed in `RECENT`.
+- [ ] If it introduced a new pattern, this guide is updated in the same commit.
