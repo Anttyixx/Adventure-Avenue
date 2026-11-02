@@ -2321,9 +2321,12 @@ function drawSquare(ctx: CanvasRenderingContext2D, G: GameState, sq: Square) {
 
   // Border: the district's solid color on properties, else the owner's ring or a faint outline.
   if (district) {
+    // The border's outer edge must cover the tile's fill completely: it reaches half a unit past
+    // the fill with the same corner roundness (fill radius 12 = path 9.5 + half the width + 0.5),
+    // so neither the fill's corners nor its soft edge show around it.
     ctx.strokeStyle = district.color;
     ctx.lineWidth = 6;
-    tileShape(ctx, L, c.x, c.y, TILE / 2 - 3, 10);
+    tileShape(ctx, L, c.x, c.y, TILE / 2 - 2.5, 9.5);
     ctx.stroke();
   }
   if (owner) {

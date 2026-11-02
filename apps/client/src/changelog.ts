@@ -46,7 +46,10 @@ export const CHANGELOG: ChangelogEntry[] = [
         text: 'Placed tiles bounce in with a gold ring, and selected tiles glow the way choices do in a game.',
       },
     ],
-    extras: ['Erase works with the bank selected (the bank stays)'],
+    extras: [
+      'Erase works with the bank selected (the bank stays)',
+      'Property tiles no longer show a light rim outside their colored border',
+    ],
   },
   {
     id: '2026-11-02-warps-portals',
