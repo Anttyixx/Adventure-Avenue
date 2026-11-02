@@ -192,7 +192,7 @@ Accessible button names and hints remain available. Selection uses a glow, with 
 and keyboard focus kept after picking a tile.
 The categories are Properties (Property), Suits (Spade, Heart, Diamond, Club, Change suit),
 Specials (Venture, Roll-on, Take-a-break, Boon, Boom, Stockbroker, Arcade), and Transport
-(Warp, Cannon, Backstreet).
+(Warp, Cannon, Portal).
 Choosing a tile keeps Place active; clicking or dragging on the board places it. Returning to
 Place remembers the last chosen tile. The pane is hidden for every other tool and board settings.
 While placing Property tiles, the action bar shows a centered horizontal row of rounded district
