@@ -297,6 +297,8 @@ Its initial/reset view is 300%; cache resolution includes this closer limit.
 `ui/editor.ts` captures the current shell rectangle, releases old locks, renders and measures the
 new natural layout once, then sets `--ed-content-width/height` while the shell animates. The
 morphing content overrides its parent-relative max-width and keeps its own final height, so no
-intermediate shell size can rewrap it. New prompt/options settle with transform and opacity.
+intermediate shell size can rewrap it. New messages use the game's 220ms, 16-step clip-path
+reveal. Unchanged prompt nodes are reused across inspector rebuilds so the reveal never restarts.
+New options settle with transform and opacity.
 Stage resize, font readiness and each district departure retarget this layout safely; completion
 releases the locks. The game's `Hud.morphAsk` and its stepped reveal remain unchanged.

@@ -231,8 +231,8 @@ Menu holds New board, My boards, Import, Export and Back to main menu.
 The bottom action bar uses the game's glass styling and a 740ms shell width/height morph.
 Before the morph, its contents are laid out at the destination width and height; those sizes are
 held independently of the shell, without a max-width clamp, until it finishes. Text never changes
-line wrapping at intermediate widths or snaps into place at the end. New text/options fade and
-settle over 220ms. Interrupted changes, window resizing, font readiness and district removals
+line wrapping at intermediate widths or snaps into place at the end. New text uses the game's 220ms, 16-step clip-path typing reveal without changing its layout;
+new options fade and settle over 220ms. Unchanged messages keep their original reveal timeline. Interrupted changes, window resizing, font readiness and district removals
 retarget the destination after releasing the old fixed layout. Reduced motion uses natural size
 immediately with no entrance animation. It floats at the bottom, centered on the entire window at
 every screen size, and adapts to placement,

@@ -26,6 +26,15 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: '2026-11-01-builder-typing-reveal',
+    date: 'Nov 1, 2026',
+    title: 'Typing text in the board builder',
+    features: [],
+    extras: [
+      'The builder action bar now reveals new messages with the same typing animation as the game, while keeping its smooth layout without wrapping or snapping.',
+    ],
+  },
+  {
     id: '2026-11-01-editor-300-smooth-bar',
     date: 'Nov 1, 2026',
     title: 'Get closer and build smoothly',

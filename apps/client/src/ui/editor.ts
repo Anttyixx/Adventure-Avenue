@@ -392,6 +392,7 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
   let noticeTimer = 0;
   let actionAnimation: Animation | null = null;
   let lastPrompt = '';
+  let promptAnimation: Animation | null = null;
   let lastButtons = '';
   let lastContext = '';
   let entranceAnimations: Animation[] = [];
@@ -441,7 +442,18 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
           ),
         );
     };
-    if (prompt?.textContent !== lastPrompt) enter(prompt);
+    if (reduced || prompt?.textContent !== lastPrompt) {
+      promptAnimation?.cancel();
+      promptAnimation = null;
+      if (prompt && !reduced)
+        promptAnimation = prompt.animate(
+          [
+            { clipPath: 'inset(0 100% 0 0)', opacity: 0.6 },
+            { clipPath: 'inset(0 0% 0 0)', opacity: 1 },
+          ],
+          { duration: 220, easing: 'steps(16, end)' },
+        );
+    }
     if (buttonKey && buttonKey !== lastButtons) enter(buttons);
     if (contextKey === 'settings' && contextKey !== lastContext) enter(context);
     lastPrompt = prompt?.textContent ?? '';
@@ -1016,6 +1028,7 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
   const drawInspector = () => {
     if (destroyed) return;
     const from = actionbar.getBoundingClientRect();
+    const previousPrompt = actionContent.querySelector<HTMLElement>('.prompt-text');
     districtRow.capture();
     const choices = districtChoices(board);
     if (district >= 0 && (!board.districts[district] || !canAssignProperty(board, district))) district = -1;
@@ -1432,6 +1445,10 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
       (tool === 'shop' && (hasDistrictChoices || districtRow.hasButtons())) ||
       (tool === 'select' && selection.size > 0);
     actionbar.classList.toggle('status', !hasOptions);
+    const nextPrompt = actionContent.querySelector<HTMLElement>('.prompt-text');
+    // Keep an unchanged message on its original reveal timeline across inspector updates.
+    if (previousPrompt && nextPrompt && previousPrompt.textContent === nextPrompt.textContent)
+      nextPrompt.replaceWith(previousPrompt);
     morphActions(from);
   };
 
@@ -1692,6 +1709,7 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
     ro.disconnect();
     clearTimeout(noticeTimer);
     stopActionMorph();
+    promptAnimation?.cancel();
     for (const animation of entranceAnimations) animation.cancel();
     districtRow.destroy();
     root.remove();
