@@ -99,6 +99,7 @@ const rnd = (n: number) => Math.floor(Math.random() * n);
  * are easy to find. Update this list with each change.
  */
 const RECENT = new Set([
+  'Board builder: link picker',
   'Board builder: paired transport',
   'Board builder: 300% zoom',
   'Board builder: tile options',
@@ -1576,6 +1577,7 @@ export async function openLab(app: HTMLElement, section?: string) {
       ...(
         [
           'Board builder: 300% zoom',
+          'Board builder: link picker',
           'Board builder: paired transport',
           'Board builder: large tiles',
           'Board builder: auto district selection',
@@ -1644,6 +1646,7 @@ export async function openLab(app: HTMLElement, section?: string) {
           )
             holder.querySelector<HTMLButtonElement>('.ed-info > button')?.click();
           if (
+            label.endsWith('link picker') ||
             label.endsWith('paired transport') ||
             label.endsWith('place tiles') ||
             label.endsWith('tile palette') ||
@@ -1656,7 +1659,7 @@ export async function openLab(app: HTMLElement, section?: string) {
             label.endsWith('district capacity')
           )
             holder.querySelector<HTMLButtonElement>('.ed-tool-button[aria-label="Place"]')?.click();
-          if (label.endsWith('paired transport'))
+          if (label.endsWith('paired transport') || label.endsWith('link picker'))
             holder.querySelector<HTMLButtonElement>('.ed-tool[aria-label="Warp"]')?.click();
           if (label.endsWith('hover highlight'))
             requestAnimationFrame(() => {

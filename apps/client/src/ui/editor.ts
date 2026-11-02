@@ -1,3 +1,4 @@
+import { linkEditorTiles } from './editor-links';
 /**
  * Board editor (#editor): paint squares on a grid, set up districts and shop values, check the
  * board for problems, save it in this browser, export/import board files and test-play it.
@@ -298,12 +299,14 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
   let district = board.districts.length ? 0 : -1;
   let pendingDistrict: DistrictChoice | null = board.districts.length ? null : districtChoices(board)[0];
   let selected: number | null = null;
+  let choosingLink = false;
   let selection = new Set<number>();
   let moving: { anchor: { x: number; y: number }; target: { x: number; y: number } } | null = null;
   let marquee: { start: { x: number; y: number }; end: { x: number; y: number } } | null = null;
   let placeTool: Tool = 'shop';
   const isPlacing = () => tool !== 'select' && tool !== 'erase';
   const clearSelection = () => {
+    choosingLink = false;
     selected = null;
     selection.clear();
     moving = null;
@@ -676,6 +679,45 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
       boardImageKey = imageKey;
     }
     ctx.drawImage(boardImage, 0, 0, w, hh);
+    // Only the selected transport shows its connection, over the cached board.
+    const source = selected == null ? null : board.squares[selected];
+    const linked = source?.link == null ? null : board.squares[source.link];
+    if (
+      !settings &&
+      tool === 'select' &&
+      selection.size === 1 &&
+      !moving &&
+      source &&
+      linked &&
+      (source.t === 'warp' || source.t === 'portal')
+    ) {
+      const a = center(source),
+        b = center(linked);
+      const dx = b.x - a.x,
+        dy = b.y - a.y,
+        distance = Math.hypot(dx, dy);
+      const lift = Math.min(180, Math.max(70, distance * 0.3));
+      const control = { x: (a.x + b.x) / 2, y: Math.min(a.y, b.y) - lift };
+      ctx.save();
+      ctx.beginPath();
+      ctx.moveTo(a.x, a.y);
+      ctx.quadraticCurveTo(control.x, control.y, b.x, b.y);
+      ctx.strokeStyle = '#17213a';
+      ctx.lineWidth = 7 / scale;
+      ctx.stroke();
+      ctx.strokeStyle = '#ffd166';
+      ctx.lineWidth = 3 / scale;
+      ctx.setLineDash([10 / scale, 7 / scale]);
+      ctx.lineDashOffset = reduced ? 0 : (-performance.now() * 0.045) / scale;
+      ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.beginPath();
+      ctx.arc(b.x, b.y, 10 / scale, 0, Math.PI * 2);
+      ctx.fillStyle = '#ffd166';
+      ctx.fill();
+      ctx.restore();
+      if (!reduced && !zoomFrame) zoomFrame = requestAnimationFrame(redraw);
+    }
     // Hover and selection
     if (hover && !moving) {
       const c = center(hover);
@@ -766,6 +808,25 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
     }
     const cell = toCell(e);
     if (!cell) return;
+    if (choosingLink && selected != null) {
+      const target = indexAt(cell.x, cell.y);
+      const copy = structuredClone(board);
+      if (!linkEditorTiles(copy, selected, target)) {
+        say(
+          board.squares[selected].t === 'warp'
+            ? 'Choose another warp tile.'
+            : 'Choose another portal tile or the bank.',
+          true,
+        );
+        return;
+      }
+      snapshot();
+      board = copy;
+      choosingLink = false;
+      notice = '';
+      changed();
+      return;
+    }
     if (tool === 'select') {
       settings = false;
       notice = '';
@@ -1083,6 +1144,7 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
     palette.hidden = !isPlacing() || settings;
     root.classList.toggle('ed-placing', !palette.hidden);
     root.classList.toggle('ed-moving', !!moving);
+    root.classList.toggle('ed-linking', choosingLink);
     settingsButton.setAttribute('aria-pressed', String(settings));
     const label = PALETTE.flatMap((g) => g.items).find((it) => it.tool === tool)?.label;
     actionContent.append(
@@ -1090,6 +1152,7 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
         'div',
         { class: 'prompt-text', role: 'status', 'aria-live': 'polite' },
         notice ||
+          (choosingLink ? 'Click a tile on the board to link it · Escape to cancel' : '') ||
           (settings
             ? 'Board settings'
             : moving
@@ -1115,6 +1178,7 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
                   class: 'btn small main',
                   onclick: () => {
                     const anchor = selectionAnchor(board, selection);
+                    choosingLink = false;
                     moving = { anchor, target: { ...anchor } };
                     notice = '';
                     drawInspector();
@@ -1439,6 +1503,40 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
           sq.channel = c;
           changed();
         };
+        const linked = sq.link == null ? null : board.squares[sq.link];
+        const linkedName = linked
+          ? `${linked.t === 'bank' ? 'Bank' : type === 'warp' ? 'Warp' : 'Portal'} · Column ${linked.x + 1}, row ${linked.y + 1}`
+          : 'Not linked';
+        squarePanel.append(
+          h(
+            'div',
+            { class: 'ed-link-info' },
+            h('span', { class: 'hint' }, 'Linked tile'),
+            h('strong', null, linkedName),
+            h(
+              'button',
+              {
+                class: 'btn small ghost',
+                onclick: () => {
+                  choosingLink = !choosingLink;
+                  notice = '';
+                  drawInspector();
+                  redraw();
+                },
+              },
+              choosingLink ? 'Cancel link change' : 'Change link',
+            ),
+          ),
+          choosingLink
+            ? h(
+                'p',
+                { class: 'hint', role: 'status' },
+                type === 'warp'
+                  ? 'Click another warp on the board. Existing partners will swap.'
+                  : 'Click another portal or the bank. Portal colors will match.',
+              )
+            : '',
+        );
         squarePanel.append(field(type === 'warp' ? 'Pair' : 'Color', colors));
         if (type === 'portal') {
           const destination = h(
@@ -1759,7 +1857,8 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
     )
       return;
     if (e.key === 'Escape') {
-      if (moving) moving = null;
+      if (choosingLink) choosingLink = false;
+      else if (moving) moving = null;
       else clearSelection();
       drawInspector();
       redraw();

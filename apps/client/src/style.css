@@ -6764,3 +6764,20 @@ div.sl-inline label {
     top: 5px;
   }
 }
+
+/* Selected transport destination and board-link picker. */
+.ed-link-info {
+  display: grid;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.ed-link-info strong {
+  font-weight: 700;
+  font-size: 14px;
+}
+.ed-link-info .btn {
+  justify-self: start;
+}
+.editor.ed-linking .ed-canvas {
+  cursor: crosshair;
+}

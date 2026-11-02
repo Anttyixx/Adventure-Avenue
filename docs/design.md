@@ -476,3 +476,12 @@ Destination (Matching portal or Bank). Disable full slots and explain missing pa
 
 Portal route previews show both entry and exit with the same step number: the teleport itself
 costs no movement. Subsequent road tiles continue the count normally.
+
+### Builder transport connection preview
+
+Tile info groups Linked tile, its type/position and Change link above the color options. Show
+Cancel link change and a plain instruction while choosing. Use the normal hover-cell outline
+and a crosshair cursor for board picking. Draw a quadratic arch above the selected source and
+its linked destination: screen-sized 7px navy contrast stroke, 3px gold flowing dashes and a
+gold destination dot. Animate only while a single transport is selected; reduced motion holds
+the dashes still. Keep the preview out of the board cache and cancel its frame on editor exit.

@@ -26,6 +26,18 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: '2026-11-01-board-link-picker',
+    date: 'Nov 1, 2026',
+    title: 'See and change tile links',
+    features: [
+      {
+        tag: 'new',
+        title: 'Choose links on the board',
+        text: 'Selected warps and portals show their linked tile and an animated curved connection. Use Change link, then click a compatible tile or the bank for a portal. Existing pairs swap partners to preserve the limits.',
+      },
+    ],
+  },
+  {
     id: '2026-11-02-portals-on-passing',
     date: 'Nov 2, 2026',
     title: 'Keep moving through portals',

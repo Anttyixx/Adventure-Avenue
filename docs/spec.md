@@ -1249,3 +1249,15 @@ color capacity, mutual warp links and portal destinations. Export/import retains
 bank settings. Legacy backstreets in stored boards/files and local saved matches become portals.
 Built-in warp networks now use fixed pairs; Lagoon’s remaining unpaired endpoint becomes a
 bank-linked portal.
+
+### Selecting and changing transport links
+
+A single selected warp or portal shows its linked tile’s type and column/row in tile info (or
+Not linked). Change link starts a board picker: click another warp for a warp, or another portal
+or the bank for a portal. Clicking an incompatible tile keeps the picker open with guidance.
+Cancel link change or Escape exits without edits. A successful link change is one Undo action.
+When re-pairing occupied slots, previous partners swap into the old color slot, retaining the
+five-pair/two-per-color limits; selected portals and their new portal partners use the same color.
+Only the selected source shows an arched connection to its destination. Gold dashes flow toward
+the destination, with a dark contrast stroke and destination dot. Hide the line for group
+selection, movement, other tools, settings or deselection. Reduced motion uses a static line.
