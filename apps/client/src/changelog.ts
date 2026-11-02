@@ -26,6 +26,18 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: '2026-11-01-transport-color-bar',
+    date: 'Nov 1, 2026',
+    title: 'Transport colors in the action bar',
+    features: [
+      {
+        tag: 'better',
+        title: 'Pick warp and portal colors as you build',
+        text: 'Choose transport colors from rounded squares in the action bar, just like properties. Completed pairs animate away and the next available color is selected automatically. Selected transport tiles also use the action bar for color changes.',
+      },
+    ],
+  },
+  {
     id: '2026-11-01-board-link-picker',
     date: 'Nov 1, 2026',
     title: 'See and change tile links',

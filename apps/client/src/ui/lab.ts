@@ -99,6 +99,7 @@ const rnd = (n: number) => Math.floor(Math.random() * n);
  * are easy to find. Update this list with each change.
  */
 const RECENT = new Set([
+  'Board builder: transport colors',
   'Board builder: link picker',
   'Board builder: paired transport',
   'Board builder: 300% zoom',
@@ -1577,6 +1578,7 @@ export async function openLab(app: HTMLElement, section?: string) {
       ...(
         [
           'Board builder: 300% zoom',
+          'Board builder: transport colors',
           'Board builder: link picker',
           'Board builder: paired transport',
           'Board builder: large tiles',
@@ -1646,6 +1648,7 @@ export async function openLab(app: HTMLElement, section?: string) {
           )
             holder.querySelector<HTMLButtonElement>('.ed-info > button')?.click();
           if (
+            label.endsWith('transport colors') ||
             label.endsWith('link picker') ||
             label.endsWith('paired transport') ||
             label.endsWith('place tiles') ||
@@ -1659,7 +1662,11 @@ export async function openLab(app: HTMLElement, section?: string) {
             label.endsWith('district capacity')
           )
             holder.querySelector<HTMLButtonElement>('.ed-tool-button[aria-label="Place"]')?.click();
-          if (label.endsWith('paired transport') || label.endsWith('link picker'))
+          if (
+            label.endsWith('paired transport') ||
+            label.endsWith('link picker') ||
+            label.endsWith('transport colors')
+          )
             holder.querySelector<HTMLButtonElement>('.ed-tool[aria-label="Warp"]')?.click();
           if (label.endsWith('hover highlight'))
             requestAnimationFrame(() => {

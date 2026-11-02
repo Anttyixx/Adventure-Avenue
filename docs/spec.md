@@ -1231,15 +1231,14 @@ retains the saved-game replacement warning. Joined guests still have locked host
 
 Warps use a four-pointed star and teleport on landing only to their partner, without triggering
 another teleport on arrival. There are at most five pairs (ten warps). Pair slots stay stable
-when moving or deleting tiles. An unmatched warp is invalid for play. The selected tile panel
-lets builders choose a pair, disabling slots already containing two other warps.
+when moving or deleting tiles. An unmatched warp is invalid for play. The action bar lets builders choose a pair while placing or editing a selected warp.
 
 Portals replace backstreets and use a circular swirling portal. Entering a portal during a walk
 teleports immediately, including on the final step. The teleport costs no additional step;
 remaining steps continue from the exit with free direction. Route choices include the teleport
 and all remaining steps. Both entry and exit appear in route previews, but only entry counts
 as a movement step. Five color slots allow at most
-two portals each. In the tile panel choose a color and either Matching portal or Bank as the
+two portals each. Choose a color in the action bar; the tile info panel offers Matching portal or Bank as the
 destination. Matching requires another portal of that color; Bank allows a single portal.
 Arriving at the exit portal does not chain another teleport. A later walking step onto another
 portal can trigger it normally. Every portal must link to a matching portal or the bank to be
@@ -1261,3 +1260,14 @@ five-pair/two-per-color limits; selected portals and their new portal partners u
 Only the selected source shows an arched connection to its destination. Gold dashes flow toward
 the destination, with a dark contrast stroke and destination dot. Hide the line for group
 selection, movement, other tools, settings or deselection. Reduced motion uses a static line.
+
+### Transport action-bar colors
+
+Placing warps or portals shows five rounded color squares centered in the action bar, with the
+same selection, completion and recentering animations as property districts. Each color allows
+two tiles of that transport type. Select the leftmost available color on entering placement,
+retain manual choices until full, then automatically select the leftmost available color. A full
+color disappears; after all five fill, the action bar collapses. Painting cannot exceed a color’s
+capacity. Warp and portal counts are separate. A single selected transport also uses this row
+for changing its color/pair; its current color remains available, other full colors are hidden.
+The tile info panel retains linked-tile details, Change link and portal destination settings.

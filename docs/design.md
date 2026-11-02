@@ -471,8 +471,10 @@ explain refusals in the log ("Kai can't afford the 300G circus upgrade.").
 
 Draw Warp as a four-pointed star with a bright center in its pair color. Portal uses a circular
 colored glow with white swirl arcs. Both use the shared five transport colors (purple, cyan,
-orange, pink, green). The selected tile panel labels warp slots as Pair; portals show Color and
-Destination (Matching portal or Bank). Disable full slots and explain missing partners below.
+orange, pink, green). Use the shared rounded-square color row in the action bar for warp pairs and portal colors,
+both while placing and while editing one selected transport. Full colors shrink/fade and the
+remaining choices recenter, matching property districts. Keep the selected tile’s own color
+available. Tile info retains Destination (Matching portal or Bank) and missing-partner guidance.
 
 Portal route previews show both entry and exit with the same step number: the teleport itself
 costs no movement. Subsequent road tiles continue the count normally.

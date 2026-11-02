@@ -10,6 +10,7 @@ import {
   BOARD_LIMITS,
   connectTransports,
   TRANSPORT_NAMES,
+  TRANSPORT_COLORS,
   K,
   districtStartingValues,
   BUILT_IN_BOARDS,
@@ -303,6 +304,7 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
   let selection = new Set<number>();
   let moving: { anchor: { x: number; y: number }; target: { x: number; y: number } } | null = null;
   let marquee: { start: { x: number; y: number }; end: { x: number; y: number } } | null = null;
+  const transportColor = { warp: 0, portal: 0 };
   let placeTool: Tool = 'shop';
   const isPlacing = () => tool !== 'select' && tool !== 'erase';
   const clearSelection = () => {
@@ -542,6 +544,12 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
     }
     if ((t === 'warp' || t === 'portal') && board.squares.filter((s, j) => s.t === t && j !== i).length >= 10)
       return false;
+    if (
+      (t === 'warp' || t === 'portal') &&
+      board.squares.filter((s, j) => j !== i && s.t === t && s.channel === transportColor[t]).length >= 2
+    )
+      return false;
+    if ((t === 'warp' || t === 'portal') && transportColor[t] < 0) return false;
     const prev = i >= 0 ? board.squares[i] : null;
     const sq: BoardSquareDef =
       t === 'shop'
@@ -551,7 +559,7 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
             t,
             d: district,
           }
-        : { x, y, t };
+        : { x, y, t, ...(t === 'warp' || t === 'portal' ? { channel: transportColor[t] } : {}) };
     if (prev && JSON.stringify(prev) === JSON.stringify(sq)) return false;
     if (t === 'bank') {
       // Only one bank: moving it replaces the old one.
@@ -986,6 +994,8 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
             district = -1;
             pendingDistrict = null;
           }
+          if (t === 'place' && (placeTool === 'warp' || placeTool === 'portal'))
+            transportColor[placeTool] = 0;
           tool = t === 'place' ? placeTool : t;
           clearSelection();
           settings = false;
@@ -1037,6 +1047,7 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
                 x: 0,
                 y: 0,
                 t: it.tool as SquareType,
+                ...(it.tool === 'warp' || it.tool === 'portal' ? { channel: transportColor[it.tool] } : {}),
                 ...(it.tool === 'shop'
                   ? { d: pendingDistrict ? board.districts.length : district, base: 200 }
                   : {}),
@@ -1062,6 +1073,8 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
                   district = -1;
                   pendingDistrict = null;
                 }
+                if ((it.tool === 'warp' || it.tool === 'portal') && tool !== it.tool)
+                  transportColor[it.tool] = 0;
                 tool = it.tool;
                 placeTool = it.tool;
                 clearSelection();
@@ -1108,11 +1121,38 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
     },
   );
 
+  const transportRow = districtPicker(
+    (choice) => {
+      const sq = selected == null ? null : board.squares[selected];
+      if (tool === 'select' && sq && (sq.t === 'warp' || sq.t === 'portal')) {
+        if (board.squares.filter((s) => s !== sq && s.t === sq.t && s.channel === choice.index).length >= 2)
+          return;
+        snapshot();
+        sq.channel = choice.index!;
+        changed();
+      } else if (tool === 'warp' || tool === 'portal') {
+        transportColor[tool] = choice.index!;
+        notice = '';
+        drawPalette();
+        drawInspector();
+        redraw();
+      }
+    },
+    () => {
+      if (!destroyed) {
+        drawInspector();
+        redraw();
+      }
+    },
+    { capacity: 2, noun: 'tiles', label: 'Transport colors', keepSelected: true },
+  );
+
   const drawInspector = () => {
     if (destroyed) return;
     const from = actionbar.getBoundingClientRect();
     const previousPrompt = actionContent.querySelector<HTMLElement>('.prompt-text');
     districtRow.capture();
+    transportRow.capture();
     const choices = districtChoices(board);
     if (district >= 0 && (!board.districts[district] || !canAssignProperty(board, district))) district = -1;
     if (pendingDistrict && !choices.some((d) => d.index == null && d.color === pendingDistrict!.color))
@@ -1127,6 +1167,37 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
       if (tool === 'shop') drawPalette();
     }
     const hasDistrictChoices = choices.some((d) => d.count < BOARD_LIMITS.districtSize);
+    const picked = selected == null ? null : board.squares[selected];
+    const editingTransport =
+      tool === 'select' &&
+      selection.size === 1 &&
+      !moving &&
+      picked &&
+      (picked.t === 'warp' || picked.t === 'portal')
+        ? picked
+        : null;
+    const transportType = tool === 'warp' || tool === 'portal' ? tool : editingTransport?.t;
+    const transportChoices: DistrictChoice[] = TRANSPORT_COLORS.map((color, c) => ({
+      key: String(c),
+      index: c,
+      color,
+      name: `${TRANSPORT_NAMES[c]} ${transportType === 'warp' ? 'pair' : 'portal'}`,
+      count: board.squares.filter((s) => s.t === transportType && s.channel === c).length,
+    }));
+    if (tool === 'warp' || tool === 'portal') {
+      const color = transportColor[tool];
+      if (!transportChoices.some((c) => c.index === color && c.count < 2)) {
+        transportColor[tool] = transportChoices.find((c) => c.count < 2)?.index ?? -1;
+        drawPalette();
+      }
+    }
+    const transportSelected =
+      editingTransport?.channel ?? (tool === 'warp' || tool === 'portal' ? transportColor[tool] : -1);
+    const hasTransportChoices = transportChoices.some(
+      (c) => c.count < 2 || (!!editingTransport && c.index === transportSelected),
+    );
+    const showTransportRow =
+      !settings && !!transportType && (hasTransportChoices || transportRow.hasButtons());
     stopActionMorph();
     for (const animation of entranceAnimations) animation.cancel();
     entranceAnimations = [];
@@ -1296,6 +1367,12 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
     const showDistrictRow = !settings && tool === 'shop' && (hasDistrictChoices || districtRow.hasButtons());
     if (showDistrictRow) inspector.append(districtRow.el);
     districtRow.update(choices, activeChoice?.key ?? null, showDistrictRow);
+    if (showTransportRow) inspector.append(transportRow.el);
+    transportRow.update(
+      transportChoices,
+      transportChoices.find((c) => c.index === transportSelected)?.key ?? null,
+      showTransportRow,
+    );
     inspector.append(districtPanel);
     districtPanel.append(
       h('h4', null, 'Districts'),
@@ -1480,29 +1557,6 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
         );
       if (sq.t === 'warp' || sq.t === 'portal') {
         const type = sq.t;
-        const colors = h(
-          'select',
-          { 'aria-label': type === 'warp' ? 'Warp pair' : 'Portal color' },
-          ...TRANSPORT_NAMES.map((name, c) =>
-            h(
-              'option',
-              {
-                value: String(c),
-                selected: c === sq.channel,
-                disabled:
-                  board.squares.filter((s) => s !== sq && s.t === type && s.channel === c).length >= 2,
-              },
-              `${name}${type === 'warp' ? ' pair' : ''}`,
-            ),
-          ),
-        ) as HTMLSelectElement;
-        colors.onchange = () => {
-          const c = Number(colors.value);
-          if (board.squares.filter((s) => s !== sq && s.t === type && s.channel === c).length >= 2) return;
-          snapshot();
-          sq.channel = c;
-          changed();
-        };
         const linked = sq.link == null ? null : board.squares[sq.link];
         const linkedName = linked
           ? `${linked.t === 'bank' ? 'Bank' : type === 'warp' ? 'Warp' : 'Portal'} · Column ${linked.x + 1}, row ${linked.y + 1}`
@@ -1537,7 +1591,7 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
               )
             : '',
         );
-        squarePanel.append(field(type === 'warp' ? 'Pair' : 'Color', colors));
+
         if (type === 'portal') {
           const destination = h(
             'select',
@@ -1621,11 +1675,15 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
       ...check.warnings.map((w) => h('p', { class: 'ed-warn' }, w)),
       ...(check.errors.length ? [] : [h('p', { class: 'ed-ok' }, 'This board is playable.')]),
     );
-    controls.hidden = !settings && !(tool === 'shop' && (hasDistrictChoices || districtRow.hasButtons()));
+    controls.hidden =
+      !settings &&
+      !showTransportRow &&
+      !(tool === 'shop' && (hasDistrictChoices || districtRow.hasButtons()));
     actionbar.classList.toggle('ed-action-error', !!notice && noticeBad);
     actionbar.classList.toggle('ed-action-expanded', settings);
     const hasOptions =
       settings ||
+      showTransportRow ||
       (tool === 'shop' && (hasDistrictChoices || districtRow.hasButtons())) ||
       (tool === 'select' && selection.size > 0);
     actionbar.classList.toggle('status', !hasOptions);
@@ -1897,6 +1955,7 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
     promptAnimation?.cancel();
     for (const animation of entranceAnimations) animation.cancel();
     districtRow.destroy();
+    transportRow.destroy();
     root.remove();
   }
 

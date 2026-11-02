@@ -6,8 +6,18 @@ import type { DistrictChoice } from './editor-districts';
 type Entry = { button: HTMLButtonElement; exit?: Animation; slide?: Animation };
 
 /** Create an accessible district-color row with completion and recentering animations. */
-export function districtPicker(onSelect: (choice: DistrictChoice) => void, onLayoutChange: () => void) {
-  const el = h('div', { class: 'ed-district-picker', role: 'group', 'aria-label': 'District colors' });
+export function districtPicker(
+  onSelect: (choice: DistrictChoice) => void,
+  onLayoutChange: () => void,
+  options: { capacity?: number; noun?: string; label?: string; keepSelected?: boolean } = {},
+) {
+  const capacity = options.capacity ?? BOARD_LIMITS.districtSize;
+  const noun = options.noun ?? 'properties';
+  const el = h('div', {
+    class: 'ed-district-picker',
+    role: 'group',
+    'aria-label': options.label ?? 'District colors',
+  });
   const entries = new Map<string, Entry>();
   let previous = new Map<string, DOMRect>();
   let focusedKey: string | null = null;
@@ -38,7 +48,9 @@ export function districtPicker(onSelect: (choice: DistrictChoice) => void, onLay
     update(choices: DistrictChoice[], selected: string | null, visible: boolean) {
       el.hidden = !visible;
       const available = new Map(
-        choices.filter((d) => d.count < BOARD_LIMITS.districtSize).map((d) => [d.key, d]),
+        choices
+          .filter((d) => d.count < capacity || (options.keepSelected && d.key === selected))
+          .map((d) => [d.key, d]),
       );
       for (const [key, e] of entries) {
         if (available.has(key)) {
@@ -89,11 +101,8 @@ export function districtPicker(onSelect: (choice: DistrictChoice) => void, onLay
         const button = entry.button;
         button.disabled = false;
         button.style.setProperty('--dc', choice.color);
-        button.title = `${choice.name} · ${choice.count}/${BOARD_LIMITS.districtSize} properties`;
-        button.setAttribute(
-          'aria-label',
-          `${choice.name}, ${choice.count} of ${BOARD_LIMITS.districtSize} properties`,
-        );
+        button.title = `${choice.name} · ${choice.count}/${capacity} ${noun}`;
+        button.setAttribute('aria-label', `${choice.name}, ${choice.count} of ${capacity} ${noun}`);
         button.setAttribute('aria-pressed', String(choice.key === selected));
         button.onclick = () => onSelect(choice);
       }
