@@ -6607,10 +6607,9 @@ div.sl-inline label {
   display: none;
 }
 .ed-tile-head {
-  position: sticky;
-  top: 0;
-  background: var(--navy);
-  padding-bottom: 6px;
+  padding-bottom: 12px;
+  margin-bottom: 12px;
+  border-bottom: 1px solid var(--glass-line);
   z-index: 1;
   display: flex;
   align-items: center;
@@ -6620,6 +6619,29 @@ div.sl-inline label {
 .ed-tile-head h2 {
   margin: 0;
   font: 20px var(--head);
+}
+.ed-tile-title {
+  min-width: 0;
+}
+.ed-tile-position {
+  margin: 4px 0 0;
+  color: var(--muted);
+  font-size: 12px;
+}
+.ed-tile-value {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 0;
+  border-top: 1px solid var(--glass-line);
+}
+.ed-tile-value strong {
+  font: 20px var(--head);
+  color: var(--accent);
+}
+.ed-tile-inspector .ed-tile-note {
+  margin: 0;
 }
 .ed-tile-inspector .ed-field {
   margin: 10px 0;

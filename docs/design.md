@@ -386,8 +386,9 @@ The board is drawn in `board.ts` in its own style: bright and physical, unlike t
 - **Builder hover:** tint the hovered cell lightly and trace a 6px dark outer/3px bright inner
   outline in screen units. Use gold for ordinary tools and red for Erase; keep the strokes
   consistent across zoom and on square/hex grids.
-- **Builder tile options:** a nonmodal glass panel at the top right, with a title and Close
-  button. Show only for one selected tile, never during a group move. Keep it above the bottom
+- **Builder tile options:** a nonmodal glass panel at the top right, with the tile name as its title, a muted position subtitle and Close
+  button. Separate the header with a subtle divider; show property district as a labeled field
+  and starting value as a label/value row, with the settings hint below. Show only for one selected tile, never during a group move. Keep it above the bottom
   bar and scroll its body on phones. Show district and a read-only starting
   value for properties; the bank explains that it can move but cannot be erased.
 - **District starting values:** each district card in Board settings groups its name/color,

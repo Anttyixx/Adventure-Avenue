@@ -100,6 +100,7 @@ const rnd = (n: number) => Math.floor(Math.random() * n);
  */
 const RECENT = new Set([
   'Board builder: 300% zoom',
+  'Board builder: tile options',
   'Board builder: large tiles',
   'Board builder: auto district selection',
   'Board builder: hover highlight',

@@ -26,6 +26,15 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: '2026-11-02-builder-tile-info',
+    date: 'Nov 2, 2026',
+    title: 'Cleaner tile information',
+    features: [],
+    extras: [
+      'Selected tiles show a clear tile-name heading, position, district and starting value with cleaner spacing.',
+    ],
+  },
+  {
     id: '2026-11-01-builder-clear-placement',
     date: 'Nov 1, 2026',
     title: 'Bigger tiles and clearer placement',

@@ -213,8 +213,8 @@ When all ten districts are full, the row has no choices and the action bar colla
 
 Select clicks one tile or drags a selection rectangle around multiple tiles. Selected tiles have
 gold dashed outlines, and the bottom action bar offers Move and Erase. One selected tile opens a
-nonmodal Tile options panel on the right (with a Close button),
-including district for properties. It hides when selection changes to a
+nonmodal tile info panel on the right with the tile name as its heading, a smaller column/row subtitle and a Close button,
+including a labeled district selector and a separate starting-value row for properties. It hides when selection changes to a
 group or movement begins. It displays the resolved starting value without a per-tile value editor.
 Starting values are configured per district in Board settings. Each district has a starting-average
 digit picker and Reset button; unset averages use a default based on the district's mean shortest

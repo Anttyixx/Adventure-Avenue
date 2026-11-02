@@ -1380,11 +1380,21 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
     const squarePanel = tileInspector;
     squarePanel.hidden =
       settings || tool !== 'select' || selected == null || selection.size !== 1 || !!moving;
+    const sq = selected != null ? board.squares[selected] : null;
+    const tileName =
+      sq?.t === 'bank'
+        ? 'Bank'
+        : (PALETTE.flatMap((g) => g.items).find((it) => it.tool === sq?.t)?.label ?? 'Tile');
     squarePanel.append(
       h(
         'div',
         { class: 'ed-tile-head' },
-        h('h2', null, 'Tile options'),
+        h(
+          'div',
+          { class: 'ed-tile-title' },
+          h('h2', null, tileName),
+          sq ? h('p', { class: 'ed-tile-position' }, `Column ${sq.x + 1} · Row ${sq.y + 1}`) : null,
+        ),
         h(
           'button',
           {
@@ -1399,20 +1409,12 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
         ),
       ),
     );
-    const sq = selected != null ? board.squares[selected] : null;
     if (!sq) squarePanel.append(h('p', { class: 'hint' }, 'Use Select and click a square to edit it.'));
     else {
       if (sq.t === 'bank')
         squarePanel.append(
           h('p', { class: 'hint' }, 'Every board needs a bank. You can move it, but it cannot be erased.'),
         );
-      squarePanel.append(
-        h(
-          'p',
-          { class: 'hint' },
-          `Column ${sq.x + 1}, row ${sq.y + 1}: ${PALETTE.flatMap((g) => g.items).find((it) => it.tool === sq.t)?.label ?? sq.t}`,
-        ),
-      );
       if (sq.t === 'shop') {
         const dSel = h(
           'select',
@@ -1439,13 +1441,15 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
           changed();
         };
         squarePanel.append(
+          field('District', dSel),
           h(
-            'p',
-            { class: 'hint' },
-            `Starting value: ${fmt(preview().nodes[selected!].base)}. Set its district's average in Board settings.`,
+            'div',
+            { class: 'ed-tile-value' },
+            h('span', null, 'Starting value'),
+            h('strong', null, fmt(preview().nodes[selected!].base)),
           ),
+          h('p', { class: 'hint ed-tile-note' }, 'Set the district’s average in Board settings.'),
         );
-        squarePanel.append(field('District', dSel));
       }
     }
 
