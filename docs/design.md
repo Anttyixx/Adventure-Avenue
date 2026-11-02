@@ -739,7 +739,8 @@ uses the shorter tile-specific wording where available.
 
 `ui/status-messages.ts` gives new action phases priority over old result timers. A phase change
 clears obsolete events immediately; repeated updates for the same phase preserve short event
-overlays. Show Passing the turn to [name] throughout handoff, Rolling during die animation,
+overlays. Keep the last action during the one-second end-turn pause. Show Passing the turn to [name]
+when the slower camera glide starts, Rolling during die animation,
 Rolled [n] during its one-second hold, then Moving from the first step. Suit/fee overlays last
 one second while walking continues, then resume moving without another idle delay. Same-phase
 bursts use 0.8-second slots, at most six pending events. Full history stays in the log.

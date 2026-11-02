@@ -1317,8 +1317,8 @@ uses the shorter tile-specific wording where available.
 The bar follows actual action phases: turn handoff, rolling, roll result, movement, teleport,
 landing, payment, promotion, stock changes, minigames, auction bids/results, closing/reopening and game over. Starting a
 new phase immediately discards messages queued for the previous phase; text never claims a
-previous action is still happening. Handoffs show Passing the turn to [name] throughout the
-end-turn pause and camera glide. The first turn says [name]’s turn. CPU pre-roll does not insert
+previous action is still happening. The last action stays during the end-turn pause; Passing the turn to [name] appears when the
+camera glide begins. The first turn says [name]’s turn. CPU pre-roll does not insert
 a fleeting deciding message before an automatic roll.
 
 The die result appears as soon as it settles and remains for about one second while the token
@@ -1335,7 +1335,7 @@ before that timer expires, the waiting message never appears. Actual player-choi
 remain immediate and discard stale announcements. Payment summaries announce once; detailed
 log entries remain in history. Accepted trades announce before ownership/payment effects.
 
-At normal speed the end-of-turn pause is 2 seconds, followed by a smooth 1.6-second camera glide
+At normal speed the end-of-turn pause is 1 second, followed by a smooth 1.6-second camera glide
 (previously about 0.6). The existing human/CPU introductory pauses remain 0.7/1.2 seconds, with
 one additional second allowed for the glide on handoffs. The extra handoff does not apply to the
 first turn or repeated turns by the same player. Fast CPU scales gameplay pacing as before;

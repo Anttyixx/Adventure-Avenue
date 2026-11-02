@@ -50,6 +50,15 @@ export const CHANGELOG: ChangelogEntry[] = [
     ],
   },
   {
+    id: '2026-11-02-handoff-start',
+    date: 'Nov 2, 2026',
+    title: 'A shorter turn-end pause',
+    features: [],
+    extras: [
+      'Turn-end pauses are back to one second. Passing-the-turn text starts with the camera glide; the slower camera transition stays.',
+    ],
+  },
+  {
     id: '2026-11-02-action-lifecycle',
     date: 'Nov 2, 2026',
     title: 'Messages follow the action',

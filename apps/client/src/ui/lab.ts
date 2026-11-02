@@ -466,8 +466,13 @@ export async function openLab(app: HTMLElement, section?: string) {
         hud.action('burst-bank', `${cur().name} reached the bank.`, 'move');
         hud.status(`${cur().name} is deciding what to do...`, 'wait', true);
       }),
-      btn('Turn handoff', () => {
-        board.handoffTo((board.followPid + 1) % G.players.length, T.turnCamera);
+      btn('Turn handoff', async () => {
+        const next = G.players[(board.followPid + 1) % G.players.length];
+        hud.cancelPrompt();
+        hud.action('end-turn-demo', 'The previous turn is complete.', 'move');
+        await new Promise((r) => setTimeout(r, T.turnEnd));
+        board.handoffTo(next.id, T.turnCamera);
+        hud.action('handoff-demo', `Passing the turn to ${next.name}...`, 'move');
       }),
       btn('Buy result timing', async () => {
         const copy = cloneState(G);

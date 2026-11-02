@@ -671,11 +671,6 @@ export class HotSeat implements GameIO {
         board.frameIds = null;
         // A beat at the end of the previous turn before the next player starts.
         const handoff = board.activePid >= 0 && board.activePid !== e.pid;
-        hud.action(
-          `handoff:${G.round}:${G.turn}:${e.pid}`,
-          handoff ? `Passing the turn to ${G.players[e.pid].name}...` : `${G.players[e.pid].name}'s turn.`,
-          'move',
-        );
         if (handoff) await this.wait(T.turnEnd);
         this.link?.turnStart(this.seq, G);
         if (this.saving) saveGame(G, this.link?.saveInfo?.());
@@ -686,6 +681,11 @@ export class HotSeat implements GameIO {
         hud.activePid = e.pid;
         this.updateSpeed();
         if (handoff) board.handoffTo(e.pid, T.turnCamera * this.speed);
+        hud.action(
+          `handoff:${G.round}:${G.turn}:${e.pid}`,
+          handoff ? `Passing the turn to ${G.players[e.pid].name}...` : `${G.players[e.pid].name}'s turn.`,
+          'move',
+        );
         this.refresh();
         if (this.localHuman(p.id)) sound.play('turn');
         hud.banner(`${p.name}'s turn`, PLAYER_COLORS[p.color], T.turnBanner);

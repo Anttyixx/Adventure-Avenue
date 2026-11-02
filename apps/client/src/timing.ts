@@ -23,7 +23,7 @@ export const TIMING = {
   actionIdleGrace: 1200,
   actionQueueLimit: 6,
   /** The end of a turn, before the next player's turn starts. */
-  turnEnd: 2000,
+  turnEnd: 1000,
   /** Extra time for a smooth camera handoff between players. */
   turnPanExtra: 1000,
   /** Camera glide: the previous ~0.6 seconds plus one extra second. */
