@@ -1,3 +1,4 @@
+import { TRANSPORT_COLORS } from '@aa/engine';
 /**
  * The HD board: a 1300 x 800 logical canvas with 100-unit squares, scaled to the container
  * and devicePixelRatio. The static board is cached offscreen and redrawn only when the state
@@ -1846,7 +1847,7 @@ const SPECIAL_LABEL: Record<string, string> = {
   roll: 'ROLL ON',
   break: 'BREAK',
   broker: 'STOCKS',
-  back: 'BACKSTREET',
+  portal: 'PORTAL',
   arcade: 'ARCADE',
   cannon: 'CANNON',
   warp: 'WARP',
@@ -2135,20 +2136,6 @@ function specialIcon(ctx: CanvasRenderingContext2D, G: GameState, sq: Square, x:
     case 'boom':
       drawBoonIcon(ctx, sq.t, x, y, sq.t === 'boom' ? 56 : 50);
       break;
-    case 'back':
-      ctx.strokeStyle = '#5b6478';
-      ctx.lineWidth = 5;
-      ctx.beginPath();
-      ctx.moveTo(x - 20, y + 10);
-      ctx.quadraticCurveTo(x, y - 30, x + 18, y - 2);
-      ctx.stroke();
-      ctx.fillStyle = '#5b6478';
-      ctx.beginPath();
-      ctx.moveTo(x + 26, y - 8);
-      ctx.lineTo(x + 20, y + 8);
-      ctx.lineTo(x + 10, y - 4);
-      ctx.fill();
-      break;
     case 'arcade':
       ctx.fillStyle = '#26314f';
       roundRect(ctx, x - 22, y, 44, 16, 6);
@@ -2177,20 +2164,29 @@ function specialIcon(ctx: CanvasRenderingContext2D, G: GameState, sq: Square, x:
       ctx.arc(x - 6, y + 12, 9, 0, Math.PI * 2);
       ctx.fill();
       break;
+    case 'portal':
     case 'warp': {
       // A swirling portal in the color its linked warps share.
-      const col = warpColor(G, sq);
+      const col = TRANSPORT_COLORS[sq.channel ?? -1] ?? warpColor(G, sq);
       const g = ctx.createRadialGradient(x, y, 2, x, y, 24);
       g.addColorStop(0, '#ffffff');
       g.addColorStop(0.45, col);
       g.addColorStop(1, darken(col, 0.55));
       ctx.fillStyle = g;
       ctx.beginPath();
-      ctx.ellipse(x, y, 24, 22, 0, 0, Math.PI * 2);
+      if (sq.t === 'warp') {
+        for (let k = 0; k < 8; k++) {
+          const a = -Math.PI / 2 + (k * Math.PI) / 4;
+          const r = k % 2 === 0 ? 26 : 8;
+          if (k === 0) ctx.moveTo(x + Math.cos(a) * r, y + Math.sin(a) * r);
+          else ctx.lineTo(x + Math.cos(a) * r, y + Math.sin(a) * r);
+        }
+        ctx.closePath();
+      } else ctx.arc(x, y, 24, 0, Math.PI * 2);
       ctx.fill();
       ctx.strokeStyle = 'rgba(255,255,255,0.85)';
       ctx.lineWidth = 2.5;
-      for (let k = 0; k < 3; k++) {
+      for (let k = 0; k < (sq.t === 'portal' ? 3 : 0); k++) {
         ctx.beginPath();
         ctx.arc(x, y, 7 + k * 5, k * 2.1, k * 2.1 + Math.PI * 1.1);
         ctx.stroke();

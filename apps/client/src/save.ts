@@ -38,6 +38,12 @@ export function loadSave(): SaveInfo | null {
     const s = JSON.parse(raw) as SaveInfo;
     if (s?.state?.version !== 1 || s.state.over) return null;
     // Games saved before characters were picked from the townsfolk get different ones each.
+    const legacy = s.state.nodes.filter((n) => (n.t as string) === 'back');
+    for (const n of legacy) {
+      n.t = 'portal';
+      n.channel = 0;
+      n.link = legacy.find((other) => other !== n)?.id ?? -1;
+    }
     const players = s.state.players;
     for (const p of players)
       if (!CHARACTERS.some((c) => c.id === p.ch))

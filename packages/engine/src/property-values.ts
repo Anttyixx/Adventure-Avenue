@@ -13,7 +13,8 @@ export function districtStartingValues(board: BoardDef) {
     neighbors[b].push(a);
   }
   for (const [i, sq] of board.squares.entries())
-    if (sq.t === 'warp' && sq.link != null && neighbors[sq.link]) neighbors[i].push(sq.link);
+    if ((sq.t === 'warp' || sq.t === 'portal') && sq.link != null && neighbors[sq.link])
+      neighbors[i].push(sq.link);
   const queue = board.squares[board.bank] ? [board.bank] : [];
   if (queue.length) distances[board.bank] = 0;
   for (let head = 0; head < queue.length; head++) {

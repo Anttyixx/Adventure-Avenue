@@ -460,21 +460,15 @@ export class Game {
       case 'broker':
         if (G.rules === 'easy') return this.venture(p);
         return this.buyStockFlow(p, 0);
-      case 'back': {
-        const other = G.nodes.find((s) => s.t === 'back' && s.id !== sq.id);
-        if (other) {
-          await this.log(`${p.name} slipped down the backstreet.`, p.id, 'move');
-          await this.warp(p, other.id);
-        }
-        return;
-      }
       case 'cannon':
         return this.cannon(p);
+      case 'portal':
       case 'warp': {
         const to = sq.link ?? -1;
         if (to >= 0 && to !== sq.id && G.nodes[to]) {
           await this.log(`${p.name} warped away.`, p.id, 'move');
           await this.warp(p, to);
+          if (sq.t === 'portal' && G.nodes[to].t === 'bank') await this.bankVisit(p, true);
         }
         return;
       }

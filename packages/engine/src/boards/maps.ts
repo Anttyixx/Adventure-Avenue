@@ -1,3 +1,4 @@
+import { connectTransports } from '../transport';
 import type { BoardDef, BoardLayout, BoardSquareDef, District, SquareType } from '../types';
 import { autoEdges } from './format';
 
@@ -10,7 +11,7 @@ import { autoEdges } from './format';
  *   B  bank            V  venture                   S H D C  spade, heart, diamond, club
  *   X  change of suit  R  roll on                   K  take a break
  *   O  boon            M  boom                      T  stockbroker
- *   A  arcade          N  cannon                    Q  backstreet
+ *   A  arcade          N  cannon                    Q  portal
  *   W  warp (where it leads is listed in the board's `warps`)
  *
  * Which properties start as vacant plots is set when a game starts (the plot setting), so maps
@@ -31,7 +32,7 @@ const GLYPHS: Record<string, SquareType> = {
   T: 'broker',
   A: 'arcade',
   N: 'cannon',
-  Q: 'back',
+  Q: 'portal',
   W: 'warp',
 };
 
@@ -68,11 +69,32 @@ export function fromMap({ id, name, layout, districts, map, warps = [] }: MapBoa
     }),
   );
   const at = (x: number, y: number) => squares.findIndex((q) => q.x === x && q.y === y);
+  // Preserve mutual legacy pairs, then pair remaining transport endpoints.
   for (const [[fx, fy], [tx, ty]] of warps) {
     const from = squares[at(fx, fy)];
     if (!from || from.t !== 'warp') throw new Error(`${name}: no warp at ${fx},${fy}`);
     from.link = at(tx, ty);
   }
+  const paired = new Set<number>();
+  let channel = 0;
+  for (const [i, s] of squares.entries()) {
+    const to = s.link;
+    if (s.t === 'warp' && to != null && squares[to]?.link === i && !paired.has(i)) {
+      s.channel = squares[to].channel = channel++;
+      paired.add(i);
+      paired.add(to);
+    }
+  }
+  const remaining = squares.filter((s, i) => s.t === 'warp' && !paired.has(i));
+  for (let k = 0; k < remaining.length; k++) remaining[k].channel = channel + Math.floor(k / 2);
+  if (remaining.length % 2) {
+    const last = remaining[remaining.length - 1];
+    last.t = 'portal';
+    last.channel = 0;
+    last.toBank = true;
+  }
+  connectTransports({ squares } as BoardDef);
+
   return {
     id,
     name,

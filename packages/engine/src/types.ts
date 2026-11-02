@@ -20,7 +20,7 @@ export type SquareType =
   | 'boon'
   | 'boom'
   | 'broker'
-  | 'back'
+  | 'portal'
   | 'arcade'
   | 'cannon'
   /** Landing here moves the player to the square in `link` (detached areas). */
@@ -57,6 +57,10 @@ export interface Square {
   toll: number;
   /** Warp squares: where landing here takes you (-1 otherwise; missing in older saves). */
   link?: number;
+  /** Transport color/pair slot (0–4). */
+  channel?: number;
+  /** Portals can lead directly to the bank instead of their matching portal. */
+  toBank?: boolean;
 }
 
 /** Which character a player plays as: an id from the client's character list (e.g. "farmer"). */
@@ -200,6 +204,10 @@ export interface BoardSquareDef {
   plot?: boolean;
   /** Warp squares: the index of the square landing here takes you to. */
   link?: number;
+  /** Transport color/pair slot (0–4). */
+  channel?: number;
+  /** Portals can lead directly to the bank instead of their matching portal. */
+  toBank?: boolean;
 }
 
 /**

@@ -7,6 +7,8 @@
  */
 import {
   BOARD_LIMITS,
+  connectTransports,
+  TRANSPORT_NAMES,
   K,
   districtStartingValues,
   BUILT_IN_BOARDS,
@@ -100,7 +102,11 @@ const PALETTE: { group: string; items: { tool: Tool; label: string; hint: string
     items: [
       { tool: 'warp', label: 'Warp', hint: 'Landing here warps you to its partner. Use them in pairs.' },
       { tool: 'cannon', label: 'Cannon', hint: 'Fires you to another player.' },
-      { tool: 'back', label: 'Backstreet', hint: 'Warps to the other backstreet. Use two.' },
+      {
+        tool: 'portal',
+        label: 'Portal',
+        hint: 'Connect to the matching color or the bank. Up to two of each color.',
+      },
     ],
   },
 ];
@@ -488,16 +494,7 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
     for (const sq of board.squares) if (sq.t === 'shop') delete sq.plot;
     board.edges = autoEdges(board.squares, new Set(), board.layout);
     board.bank = board.squares.findIndex((s) => s.t === 'bank');
-    // Warps pair up in reading order: the 1st with the 2nd, the 3rd with the 4th, and so on.
-    const warps = board.squares
-      .map((s, i) => ({ s, i }))
-      .filter(({ s }) => s.t === 'warp')
-      .sort((a, b) => a.s.y - b.s.y || a.s.x - b.s.x);
-    warps.forEach(({ s }) => delete s.link);
-    for (let k = 0; k + 1 < warps.length; k += 2) {
-      warps[k].s.link = warps[k + 1].i;
-      warps[k + 1].s.link = warps[k].i;
-    }
+    connectTransports(board);
   };
   const snapshot = () => {
     undo.push(JSON.stringify(board));
@@ -540,6 +537,8 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
       }
       if (!canAssignProperty(board, district, i)) return false;
     }
+    if ((t === 'warp' || t === 'portal') && board.squares.filter((s, j) => s.t === t && j !== i).length >= 10)
+      return false;
     const prev = i >= 0 ? board.squares[i] : null;
     const sq: BoardSquareDef =
       t === 'shop'
@@ -1415,6 +1414,58 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
         squarePanel.append(
           h('p', { class: 'hint' }, 'Every board needs a bank. You can move it, but it cannot be erased.'),
         );
+      if (sq.t === 'warp' || sq.t === 'portal') {
+        const type = sq.t;
+        const colors = h(
+          'select',
+          { 'aria-label': type === 'warp' ? 'Warp pair' : 'Portal color' },
+          ...TRANSPORT_NAMES.map((name, c) =>
+            h(
+              'option',
+              {
+                value: String(c),
+                selected: c === sq.channel,
+                disabled:
+                  board.squares.filter((s) => s !== sq && s.t === type && s.channel === c).length >= 2,
+              },
+              `${name}${type === 'warp' ? ' pair' : ''}`,
+            ),
+          ),
+        ) as HTMLSelectElement;
+        colors.onchange = () => {
+          const c = Number(colors.value);
+          if (board.squares.filter((s) => s !== sq && s.t === type && s.channel === c).length >= 2) return;
+          snapshot();
+          sq.channel = c;
+          changed();
+        };
+        squarePanel.append(field(type === 'warp' ? 'Pair' : 'Color', colors));
+        if (type === 'portal') {
+          const destination = h(
+            'select',
+            { 'aria-label': 'Portal destination' },
+            h('option', { value: 'pair', selected: !sq.toBank }, 'Matching portal'),
+            h('option', { value: 'bank', selected: !!sq.toBank }, 'Bank'),
+          ) as HTMLSelectElement;
+          destination.onchange = () => {
+            snapshot();
+            sq.toBank = destination.value === 'bank';
+            changed();
+          };
+          squarePanel.append(field('Destination', destination));
+        }
+        squarePanel.append(
+          h(
+            'p',
+            { class: 'hint' },
+            sq.link == null
+              ? 'Place a matching tile to complete this connection.'
+              : sq.toBank
+                ? 'Teleports to the bank.'
+                : 'Teleports only to its matching tile.',
+          ),
+        );
+      }
       if (sq.t === 'shop') {
         const dSel = h(
           'select',

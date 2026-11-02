@@ -4,6 +4,7 @@
  */
 import {
   BUILT_IN_BOARDS,
+  connectTransports,
   boardFromFile,
   boardToFile,
   validateBoard,
@@ -29,7 +30,14 @@ export function listBoards(): SavedBoard[] {
   try {
     const raw = localStorage.getItem(KEY);
     const list = raw ? (JSON.parse(raw) as SavedBoard[]) : [];
-    return Array.isArray(list) ? list.filter((b) => b?.board?.squares) : [];
+    if (!Array.isArray(list)) return [];
+    return list
+      .filter((b) => b?.board?.squares)
+      .map((b) => {
+        for (const sq of b.board.squares) if ((sq.t as string) === 'back') sq.t = 'portal';
+        connectTransports(b.board);
+        return b;
+      });
   } catch {
     return [];
   }

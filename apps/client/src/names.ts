@@ -17,7 +17,7 @@ const SPECIAL: Record<string, string> = {
   boon: 'Boon',
   boom: 'Boom',
   broker: 'Stockbroker',
-  back: 'Backstreet',
+  portal: 'Portal',
   arcade: 'Arcade',
   cannon: 'Cannon',
   warp: 'Warp',
@@ -76,7 +76,7 @@ export function squareInfo(G: GameState, sq: Square): string {
       G.rules === 'easy'
         ? 'Draw a venture card: pick a panel on the venture board.'
         : 'Stockbroker: buy shares in any district.',
-    back: 'Backstreet: slip through to the other backstreet square.',
+    portal: 'Portal: teleport to the matching color or the bank.',
     arcade: 'Play an arcade game for prizes: Lucky Reels, Memory Blocks or Coin Derby.',
     cannon: 'Fire yourself to any other player on the board.',
     warp: 'Land here to warp to the matching warp square (same color), even in another area of the map.',

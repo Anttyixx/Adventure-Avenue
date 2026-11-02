@@ -8,7 +8,7 @@ export const TIMING = {
   step: 420,
   /** Pause after a destination is chosen, before the token starts walking. */
   afterChoice: 500,
-  /** Flying to a square (warps, cannon, balloon, backstreet). */
+  /** Flying to a square (warps, cannon, balloon, portal). */
   warp: 750,
   /** Die tumbling, then how long the result stays before moving. */
   dieRoll: 900,

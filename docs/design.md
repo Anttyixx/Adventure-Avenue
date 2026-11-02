@@ -466,3 +466,10 @@ explain refusals in the log ("Kai can't afford the 300G circus upgrade.").
 - [ ] Keyboard and touch work; focus is visible; Escape closes pop-ups.
 - [ ] Checked on desktop and a landscape phone; nothing cut off or overflowing.
 - [ ] UI Lab control added and listed in `RECENT`.
+
+### Transport tile art and options
+
+Draw Warp as a four-pointed star with a bright center in its pair color. Portal uses a circular
+colored glow with white swirl arcs. Both use the shared five transport colors (purple, cyan,
+orange, pink, green). The selected tile panel labels warp slots as Pair; portals show Color and
+Destination (Matching portal or Bank). Disable full slots and explain missing partners below.

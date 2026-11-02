@@ -26,6 +26,23 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: '2026-11-02-paired-transport',
+    date: 'Nov 2, 2026',
+    title: 'Warps and portals',
+    features: [
+      {
+        tag: 'better',
+        title: 'Paired star warps',
+        text: 'Four-pointed star warps teleport only to their partner. Build up to five pairs and change a tile’s pair in its info panel.',
+      },
+      {
+        tag: 'new',
+        title: 'Colored portals',
+        text: 'Portals replace backstreets. Use up to two of each of five colors, and choose a matching portal or the bank as the destination.',
+      },
+    ],
+  },
+  {
     id: '2026-11-02-builder-tile-info',
     date: 'Nov 2, 2026',
     title: 'Cleaner tile information',

@@ -72,16 +72,16 @@ depends on rendering.
 
 ### Square (`nodes[i]`)
 
-| Field             | Meaning                                                                                                                                                    |
-| ----------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `id`, `x`, `y`    | Index and grid position (12 x 7 grid)                                                                                                                      |
-| `t`               | Type: `shop`, `plot`, `bank`, `venture`, `spade`/`heart`/`diamond`/`club`, `change`, `roll`, `break`, `boon`, `boom`, `broker`, `back`, `arcade`, `cannon` |
-| `nb`              | Neighbor square ids (the graph edges)                                                                                                                      |
-| `d`               | District index 0-6 (shops and plots)                                                                                                                       |
-| `g`               | Group index used for expansion and domination                                                                                                              |
-| `base`, `value`   | Starting value and current value. Plots: value = money spent on the building                                                                               |
-| `owner`           | Player id or -1                                                                                                                                            |
-| `b`, `lv`, `toll` | Plots only: building key, circus tier 0-3, current checkpoint toll                                                                                         |
+| Field             | Meaning                                                                                                                                                              |
+| ----------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `id`, `x`, `y`    | Index and grid position (12 x 7 grid)                                                                                                                                |
+| `t`               | Type: `shop`, `plot`, `bank`, `venture`, `spade`/`heart`/`diamond`/`club`, `change`, `roll`, `break`, `boon`, `boom`, `broker`, `portal`, `arcade`, `cannon`, `warp` |
+| `nb`              | Neighbor square ids (the graph edges)                                                                                                                                |
+| `d`               | District index 0-6 (shops and plots)                                                                                                                                 |
+| `g`               | Group index used for expansion and domination                                                                                                                        |
+| `base`, `value`   | Starting value and current value. Plots: value = money spent on the building                                                                                         |
+| `owner`           | Player id or -1                                                                                                                                                      |
+| `b`, `lv`, `toll` | Plots only: building key, circus tier 0-3, current checkpoint toll                                                                                                   |
 
 ### Player
 
@@ -143,8 +143,7 @@ in the browser, and export/import them as `.aaboard.json` files (format tag
 connections). Squares in neighboring cells always connect automatically; leave an empty cell between tiles
 to keep paths apart. Opening an old board in the builder restores any previously cut connections. A board is playable only if it has exactly one bank, every suit (or a change-of-suit
 square), at least one district, exactly 4 properties in every declared district, a valid starting
-average for each district, backstreets in
-pairs, every warp leading to another warp, and every square reachable from the bank (by road or
+average for each district, at most five mutual warp pairs, at most two portals per color across five colors, valid portal destinations, and every square reachable from the bank (by road or
 warp). Grids range from 4 x 4 to 32 x 20 (up to 320
 squares). Each board uses a square grid (4 neighbors per cell) or a hex grid (pointy-top
 hexagons, odd rows shifted half a cell right, 6 neighbors per cell); the file stores it as
@@ -283,7 +282,7 @@ copied into the editor to remix.
    players), suits picked up on the route, buying chances and rival fees. Venture "move 2 more"
    uses the same picker.
 4. `prev` is reset to -1 (free direction) when a player stops on the bank or is warped (venture
-   zoom, cannon, balloon, backstreet, Home).
+   zoom, cannon, balloon, portal, Home).
 5. Each step records `prev = node; node = next`.
 
 **Pass vs land:**
@@ -559,19 +558,19 @@ commissions, and leader-targeting cards act as catch-up.
 Every non-property square has one landing effect; temporary effects last until the affected
 player's next turn begins.
 
-| Square                 | Landing effect                                                                                        | Interacts with                                                |
-| ---------------------- | ----------------------------------------------------------------------------------------------------- | ------------------------------------------------------------- |
-| Roll-on                | Roll again and keep moving (max chain depth 3)                                                        | Can reach another venture, bank or roll-on                    |
-| Take-a-break           | Your shops and buildings close: rivals pay nothing there                                              | Fees, tolls, dividends and commissions from your squares stop |
-| Boon                   | 20% commission: the bank pays you 20% of every fee anyone else pays                                   | Stacks with nothing; the higher rate wins                     |
-| Boom                   | Same, at 50%                                                                                          | Same as Boon                                                  |
-| Stockbroker            | Buy stock (Standard). Becomes a Venture square in Easy rules                                          | Stock market                                                  |
-| Backstreet (2 squares) | Warp to the other backstreet; the move ends there with no further effect and free direction next turn | Fast route between bottom-left and top-right                  |
-| Warp                   | Landing (not passing) sends you to the warp square it links to; the move ends there                   | Detached areas (islands); linked warps share a color          |
-| Cannon                 | Pick another player and warp to their square. Suits and bank still apply there; nothing else does     | Suits, bank, promotion, win                                   |
-| Arcade                 | Play one random minigame (see Arcade minigames)                                                       | Cash, shop values, wild suit cards, stock                     |
-| Venture                | Venture grid                                                                                          | See Venture cards                                             |
-| Change-of-suit         | Gives the current suit, then rotates                                                                  | Promotion                                                     |
+| Square         | Landing effect                                                                                    | Interacts with                                                |
+| -------------- | ------------------------------------------------------------------------------------------------- | ------------------------------------------------------------- |
+| Roll-on        | Roll again and keep moving (max chain depth 3)                                                    | Can reach another venture, bank or roll-on                    |
+| Take-a-break   | Your shops and buildings close: rivals pay nothing there                                          | Fees, tolls, dividends and commissions from your squares stop |
+| Boon           | 20% commission: the bank pays you 20% of every fee anyone else pays                               | Stacks with nothing; the higher rate wins                     |
+| Boom           | Same, at 50%                                                                                      | Same as Boon                                                  |
+| Stockbroker    | Buy stock (Standard). Becomes a Venture square in Easy rules                                      | Stock market                                                  |
+| Portal         | Teleport to the matching color or the bank; bank arrivals apply a normal bank visit               | Five colors, at most two portals per color                    |
+| Warp           | Landing sends you only to its paired warp; arrival does not teleport again                        | Up to five pairs; four-pointed stars share their pair color   |
+| Cannon         | Pick another player and warp to their square. Suits and bank still apply there; nothing else does | Suits, bank, promotion, win                                   |
+| Arcade         | Play one random minigame (see Arcade minigames)                                                   | Cash, shop values, wild suit cards, stock                     |
+| Venture        | Venture grid                                                                                      | See Venture cards                                             |
+| Change-of-suit | Gives the current suit, then rotates                                                              | Promotion                                                     |
 
 **Turn-start reset:** when a player's turn starts, their `onBreak`, `closed`, `boon` and `boost` are
 cleared. This is what makes "until your next turn" effects expire.
@@ -1101,7 +1100,7 @@ Most systems meet in four shared quantities: cash, shop value, group ownership a
 | Stocks                 | Spent or earned                                                       |                           |                                       | 10+ trades move factor             |                              |                                        |
 | Suits and bank         | Salary                                                                |                           |                                       |                                    | Bank sets free direction     | Promotion                              |
 | Venture cards          | Many                                                                  | Many                      | Forced buyout                         | Many                               | Roll again, zoom, +2 squares | Free suit, wild card, sudden promotion |
-| Special squares        | Boon / Boom commission                                                |                           |                                       |                                    | Roll-on, cannon, backstreets | Cannon collects suits                  |
+| Special squares        | Boon / Boom commission                                                |                           |                                       |                                    | Roll-on, cannon, portals     | Cannon collects suits                  |
 | Arcade                 | Prizes                                                                | Memory Blocks +10% / -5%  |                                       | Via shop value; Reels gives shares |                              | Wild cards                             |
 | Trades and auctions    | Moved between players                                                 |                           | Transfers; expansion for receivers    | Rises if expansion                 |                              |                                        |
 | Breaks and closures    | Stops fees, tolls, dividends and commissions from the owner's squares |                           |                                       |                                    |                              |                                        |
@@ -1227,3 +1226,20 @@ actions, and Invite friends online expands room status and sharing. Native discl
 their open state across setup redraws. Player counts use short labels with a local/online/CPU
 breakdown. The sticky Start footer summarizes map, player count, rules and winning goal, and
 retains the saved-game replacement warning. Joined guests still have locked host settings.
+
+### Paired warps and portals
+
+Warps use a four-pointed star and teleport on landing only to their partner, without triggering
+another teleport on arrival. There are at most five pairs (ten warps). Pair slots stay stable
+when moving or deleting tiles. An unmatched warp is invalid for play. The selected tile panel
+lets builders choose a pair, disabling slots already containing two other warps.
+
+Portals replace backstreets and use a circular swirling portal. Five color slots allow at most
+two portals each. In the tile panel choose a color and either Matching portal or Bank as the
+destination. Matching requires another portal of that color; Bank allows a single portal.
+Arriving at a portal does not chain another teleport. Arriving at the bank applies the normal
+bank visit. Placement blocks an eleventh tile of either transport type; validation also checks
+color capacity, mutual warp links and portal destinations. Export/import retains color and
+bank settings. Legacy backstreets in stored boards/files and local saved matches become portals.
+Built-in warp networks now use fixed pairs; Lagoon’s remaining unpaired endpoint becomes a
+bank-linked portal.

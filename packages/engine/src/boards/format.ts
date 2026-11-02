@@ -1,3 +1,4 @@
+import { connectTransports } from '../transport';
 /**
  * Custom boards: the file format players export and import, the rules a board must follow to
  * be playable, and helpers the board editor uses.
@@ -38,7 +39,7 @@ export const PLACEABLE: SquareType[] = [
   'boon',
   'boom',
   'broker',
-  'back',
+  'portal',
   'arcade',
   'cannon',
   'warp',
@@ -181,14 +182,28 @@ export function validateBoard(def: BoardDef): BoardCheck {
       errors.push(`District "${d.name}" has ${n} properties; it needs exactly ${L.districtSize}.`);
   });
 
-  const backs = sq.filter((s) => s.t === 'back').length;
-  if (backs !== 0 && backs !== 2) errors.push('Backstreets come in pairs: use exactly two (or none).');
-  sq.forEach((s, i) => {
-    if (s.t !== 'warp') return;
-    const to = s.link;
-    if (to == null || !sq[to] || to === i) errors.push(`Warp ${where(s)} does not lead anywhere.`);
-    else if (sq[to].t !== 'warp') errors.push(`Warp ${where(s)} must lead to another warp square.`);
-  });
+  for (const type of ['warp', 'portal'] as const) {
+    const tiles = sq.filter((s) => s.t === type);
+    if (tiles.length > 10) errors.push(`Use at most five ${type} pairs.`);
+    for (let c = 0; c < 5; c++)
+      if (tiles.filter((s) => s.channel === c).length > 2)
+        errors.push(`Only two ${type} tiles can share a color.`);
+    for (const s of tiles) {
+      const i = sq.indexOf(s),
+        target = s.link == null ? null : sq[s.link];
+      if (s.channel != null && (!Number.isInteger(s.channel) || s.channel < 0 || s.channel > 4))
+        errors.push(`Invalid ${type} color at ${where(s)}.`);
+      if (!target || target === s)
+        errors.push(`${type === 'warp' ? 'Warp' : 'Portal'} ${where(s)} does not lead anywhere.`);
+      else if (type === 'warp') {
+        if (target.t !== 'warp' || target.link !== i || (s.channel != null && target.channel !== s.channel))
+          errors.push(`Warp ${where(s)} must lead to its paired warp.`);
+      } else if (
+        s.toBank ? target.t !== 'bank' : target.t !== 'portal' || (s.channel ?? 0) !== (target.channel ?? 0)
+      )
+        errors.push(`Portal ${where(s)} must lead to its matching color or the bank.`);
+    }
+  }
 
   // Connections
   const nb: number[][] = sq.map(() => []);
@@ -205,7 +220,7 @@ export function validateBoard(def: BoardDef): BoardCheck {
   // Warps reach their destination too (detached areas are only reachable this way).
   const reach = nb.map((n) => n.slice());
   sq.forEach((s, i) => {
-    if (s.t === 'warp' && s.link != null && sq[s.link]) reach[i].push(s.link);
+    if ((s.t === 'warp' || s.t === 'portal') && s.link != null && sq[s.link]) reach[i].push(s.link);
   });
   sq.forEach((s, i) => {
     if (nb[i].length === 0 && sq.length > 1) errors.push(`Square ${where(s)} is not connected to anything.`);
@@ -259,7 +274,11 @@ export function boardToFile(def: BoardDef): BoardFile {
         if (s.autoBase) out.autoBase = true;
         if (s.plot) out.plot = true;
       }
-      if (s.t === 'warp' && s.link != null) out.link = s.link;
+      if ((s.t === 'warp' || s.t === 'portal') && s.link != null) out.link = s.link;
+      if (s.t === 'warp' || s.t === 'portal') {
+        if (s.channel != null) out.channel = s.channel;
+        if (s.toBank) out.toBank = true;
+      }
       return out;
     }),
     edges: def.edges.map(([a, b]) => [a, b]),
@@ -291,16 +310,23 @@ export function boardFromFile(data: unknown, id: string): { board?: BoardDef; er
     const q = s as Partial<BoardSquareDef>;
     if (!q || !isNum(q.x) || !isNum(q.y) || typeof q.t !== 'string')
       return { error: 'The board file has a damaged square.' };
-    const out: BoardSquareDef = { x: Math.floor(q.x), y: Math.floor(q.y), t: q.t as SquareType };
+    const out: BoardSquareDef = {
+      x: Math.floor(q.x),
+      y: Math.floor(q.y),
+      t: (q.t === ('back' as string) ? 'portal' : q.t) as SquareType,
+    };
     if (q.t === 'shop') {
       out.d = isNum(q.d) ? Math.floor(q.d) : -1;
       out.base = isNum(q.base) ? Math.round(q.base) : 0;
       if (q.autoBase === true) out.autoBase = true;
       if (q.plot) out.plot = true;
     }
-    if (q.t === 'warp' && isNum(q.link)) out.link = Math.floor(q.link);
+    if ((out.t === 'warp' || out.t === 'portal') && isNum(q.link)) out.link = Math.floor(q.link);
+    if (isNum(q.channel)) out.channel = q.channel;
+    if (q.toBank === true) out.toBank = true;
     squares.push(out);
   }
+  if ((f.squares as { t: string }[]).some((s) => s.t === 'back')) connectTransports({ squares } as BoardDef);
   const edges: [number, number][] = [];
   for (const e of f.edges as unknown[]) {
     if (!Array.isArray(e) || !isNum(e[0]) || !isNum(e[1]))

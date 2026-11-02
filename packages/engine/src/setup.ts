@@ -32,7 +32,9 @@ export function newGame(opts: MatchOptions): GameState {
       b: null,
       lv: 0,
       toll: K.toll0,
-      link: s.t === 'warp' ? (s.link ?? -1) : -1,
+      link: s.t === 'warp' || s.t === 'portal' ? (s.link ?? -1) : -1,
+      channel: s.channel,
+      toBank: s.toBank,
     };
   });
   for (const [a, b] of board.edges) {
