@@ -100,3 +100,85 @@ describe('paired transport', () => {
     expect(p.node).toBe(c.id);
   });
 });
+
+describe('portals during movement', () => {
+  function routeGame() {
+    const { G, game } = makeGame();
+    G.nodes = G.nodes.slice(0, 6);
+    for (const s of G.nodes) {
+      s.t = 'venture';
+      s.nb = [];
+    }
+    const [start, entry, exit, finish, other, bank] = G.nodes;
+    start.nb = [entry.id];
+    entry.nb = [start.id];
+    exit.nb = [finish.id, other.id];
+    finish.nb = [exit.id];
+    other.nb = [exit.id];
+    entry.t = exit.t = 'portal';
+    entry.link = exit.id;
+    exit.link = entry.id;
+    bank.t = 'bank';
+    bank.nb = [finish.id];
+    G.players[0].node = start.id;
+    G.players[0].prev = -1;
+    return { G, game, start, entry, exit, finish, other, bank, p: G.players[0] };
+  }
+  it('offers destinations after the portal with both directions available', () => {
+    const { game, p, entry, exit, finish, other } = routeGame();
+    expect(game.destinations(p, 1)).toEqual([{ node: exit.id, path: [entry.id, exit.id] }]);
+    expect(game.destinations(p, 2).map((r) => r.node)).toEqual([finish.id, other.id].sort((a, b) => a - b));
+  });
+  it('continues walking and reports remaining road steps correctly', async () => {
+    const { game, p, entry, exit, finish } = routeGame();
+    const emit = vi.spyOn(game, 'emit').mockResolvedValue(undefined);
+    const land = vi.spyOn(game, 'land').mockResolvedValue(undefined);
+    await game.move(p, 2);
+    expect(p.node).toBe(finish.id);
+    expect(emit.mock.calls.map((c) => c[0]).filter((e) => e.type === 'step')).toMatchObject([
+      { to: entry.id, left: 1 },
+      { to: finish.id, left: 0 },
+    ]);
+    expect(emit).toHaveBeenCalledWith({ type: 'warp', pid: p.id, to: exit.id });
+    expect(land).toHaveBeenCalledExactlyOnceWith(p, finish);
+  });
+  it('stops at the exit without bouncing when the portal is the final step', async () => {
+    const { game, p, exit } = routeGame();
+    const warp = vi.spyOn(game, 'warp');
+    await game.move(p, 1);
+    expect(p.node).toBe(exit.id);
+    expect(warp).toHaveBeenCalledTimes(1);
+    expect(p.prev).toBe(-1);
+  });
+  it('visits the bank when passing through a bank-linked portal', async () => {
+    const { game, p, entry, bank, finish } = routeGame();
+    entry.link = bank.id;
+    entry.toBank = true;
+    const visit = vi.spyOn(game, 'bankVisit').mockResolvedValue(undefined);
+    vi.spyOn(game, 'land').mockResolvedValue(undefined);
+    await game.move(p, 2);
+    expect(p.node).toBe(finish.id);
+    expect(visit).toHaveBeenCalledExactlyOnceWith(p, false);
+  });
+  it('treats a final-step bank arrival as a landing', async () => {
+    const { game, p, entry, bank } = routeGame();
+    entry.link = bank.id;
+    entry.toBank = true;
+    const visit = vi.spyOn(game, 'bankVisit').mockResolvedValue(undefined);
+    await game.move(p, 1);
+    expect(p.node).toBe(bank.id);
+    expect(visit).toHaveBeenCalledExactlyOnceWith(p, true);
+  });
+  it('does not trigger a warp while passing over it', async () => {
+    const { game, p, entry, exit, start } = routeGame();
+    entry.t = 'warp';
+    exit.t = 'warp';
+    entry.nb = [start.id, exit.id];
+    expect(game.destinations(p, 1)[0].node).toBe(entry.id);
+    expect(game.destinations(p, 2)[0].path).toEqual([entry.id, exit.id]);
+    const warp = vi.spyOn(game, 'warp');
+    vi.spyOn(game, 'land').mockResolvedValue(undefined);
+    await game.move(p, 2);
+    expect(warp).not.toHaveBeenCalled();
+  });
+});

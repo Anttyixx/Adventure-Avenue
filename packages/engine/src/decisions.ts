@@ -6,6 +6,7 @@ import type { BuildingKey } from './types';
 
 export interface Route {
   node: number;
+  /** Visited tiles, including portal arrivals (which cost no extra movement step). */
   path: number[];
 }
 

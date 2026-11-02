@@ -1234,11 +1234,17 @@ another teleport on arrival. There are at most five pairs (ten warps). Pair slot
 when moving or deleting tiles. An unmatched warp is invalid for play. The selected tile panel
 lets builders choose a pair, disabling slots already containing two other warps.
 
-Portals replace backstreets and use a circular swirling portal. Five color slots allow at most
+Portals replace backstreets and use a circular swirling portal. Entering a portal during a walk
+teleports immediately, including on the final step. The teleport costs no additional step;
+remaining steps continue from the exit with free direction. Route choices include the teleport
+and all remaining steps. Both entry and exit appear in route previews, but only entry counts
+as a movement step. Five color slots allow at most
 two portals each. In the tile panel choose a color and either Matching portal or Bank as the
 destination. Matching requires another portal of that color; Bank allows a single portal.
-Arriving at a portal does not chain another teleport. Arriving at the bank applies the normal
-bank visit. Placement blocks an eleventh tile of either transport type; validation also checks
+Arriving at the exit portal does not chain another teleport. A later walking step onto another
+portal can trigger it normally. Every portal must link to a matching portal or the bank to be
+valid for play. Arriving at the bank applies a passing visit if steps remain, or a landing visit
+if no steps remain. Placement blocks an eleventh tile of either transport type; validation also checks
 color capacity, mutual warp links and portal destinations. Export/import retains color and
 bank settings. Legacy backstreets in stored boards/files and local saved matches become portals.
 Built-in warp networks now use fixed pairs; Lagoon’s remaining unpaired endpoint becomes a

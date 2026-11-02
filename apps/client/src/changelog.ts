@@ -26,6 +26,18 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: '2026-11-02-portals-on-passing',
+    date: 'Nov 2, 2026',
+    title: 'Keep moving through portals',
+    features: [
+      {
+        tag: 'rules',
+        title: 'Portals work as you pass',
+        text: 'Step onto a connected portal to teleport immediately, then use your remaining movement from the matching portal or bank. Warps still require landing.',
+      },
+    ],
+  },
+  {
     id: '2026-11-02-paired-transport',
     date: 'Nov 2, 2026',
     title: 'Warps and portals',

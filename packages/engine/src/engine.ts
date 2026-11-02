@@ -278,7 +278,12 @@ export class Game {
       }
       let nbs = G.nodes[node].nb.filter((x) => x !== prev);
       if (!nbs.length) nbs = G.nodes[node].nb;
-      for (const nx of nbs) walk(nx, node, left - 1, [...path, nx]);
+      for (const nx of nbs) {
+        const sq = G.nodes[nx];
+        const target = sq.t === 'portal' ? G.nodes[sq.link ?? -1] : null;
+        if (target && target.id !== nx) walk(target.id, -1, left - 1, [...path, nx, target.id]);
+        else walk(nx, node, left - 1, [...path, nx]);
+      }
     };
     walk(p.node, p.prev, n, []);
     const out: Route[] = [];
@@ -333,18 +338,25 @@ export class Game {
       choice = dests.find((d) => d.node === node) ?? dests[0];
     }
     const path = choice.path;
+    let left = n;
     for (let i = 0; i < path.length; i++) {
       const next = path[i];
       const from = p.node;
       p.prev = p.node;
       p.node = next;
-      await this.emit({ type: 'step', pid: p.id, from, to: next, left: path.length - 1 - i });
-      if (i < path.length - 1) {
-        await this.passSquare(p, G.nodes[next]);
+      left--;
+      await this.emit({ type: 'step', pid: p.id, from, to: next, left });
+      if (i + 1 < path.length && G.nodes[next].t === 'portal' && G.nodes[next].link === path[i + 1]) {
+        await this.warp(p, path[++i]);
+      }
+      if (left > 0) {
+        await this.passSquare(p, G.nodes[p.node]);
         if (G.over) return;
       }
     }
-    await this.land(p, G.nodes[p.node]);
+    // Arrival at a paired portal does not immediately send the player back.
+    if (G.nodes[p.node].t === 'portal') await this.emit({ type: 'land', pid: p.id, sq: p.node });
+    else await this.land(p, G.nodes[p.node]);
   }
 
   async passSquare(p: Player, sq: Square) {

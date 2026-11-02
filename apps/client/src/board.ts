@@ -1281,7 +1281,14 @@ export class BoardView {
       }
       ctx.stroke();
       ctx.setLineDash([]);
+      let step = 0;
+      let portalArrival = false;
       path.forEach((id, i) => {
+        if (portalArrival) portalArrival = false;
+        else {
+          step++;
+          portalArrival = G.nodes[id].t === 'portal' && G.nodes[id].link === path[i + 1];
+        }
         const c = this.center(G.nodes[id]);
         ctx.fillStyle = this.glowColor;
         ctx.beginPath();
@@ -1291,7 +1298,7 @@ export class BoardView {
         ctx.font = '16px "Lilita One", sans-serif';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
-        ctx.fillText(String(i + 1), c.x, c.y + 27);
+        ctx.fillText(String(step), c.x, c.y + 27);
       });
       ctx.restore();
     }

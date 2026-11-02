@@ -105,7 +105,7 @@ const PALETTE: { group: string; items: { tool: Tool; label: string; hint: string
       {
         tool: 'portal',
         label: 'Portal',
-        hint: 'Connect to the matching color or the bank. Up to two of each color.',
+        hint: 'Teleport on passing, then keep moving. Link to a matching portal or the bank.',
       },
     ],
   },
@@ -1461,8 +1461,10 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
             sq.link == null
               ? 'Place a matching tile to complete this connection.'
               : sq.toBank
-                ? 'Teleports to the bank.'
-                : 'Teleports only to its matching tile.',
+                ? 'Teleport to the bank on passing, then keep moving.'
+                : type === 'portal'
+                  ? 'Teleport on passing, then keep moving from the matching portal.'
+                  : 'Land here to teleport to its paired warp.',
           ),
         );
       }
