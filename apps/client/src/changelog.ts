@@ -61,6 +61,7 @@ export const CHANGELOG: ChangelogEntry[] = [
     extras: [
       'Erase works with the bank selected (the bank stays)',
       'Property tiles no longer show a light rim outside their colored border',
+      'Vacant plots’ dashed outline sits neatly inside the border',
     ],
   },
   {

@@ -2290,7 +2290,9 @@ function drawSquare(ctx: CanvasRenderingContext2D, G: GameState, sq: Square) {
       ctx.setLineDash([7, 5]);
       ctx.strokeStyle = '#6b7590';
       ctx.lineWidth = 2.5;
-      tileShape(ctx, L, c.x, c.y, TILE / 2 - 4, 10);
+      // Well inside the district border (whose inner edge is 5.5 in from the tile's edge), so no
+      // dash ever shows along or under it.
+      tileShape(ctx, L, c.x, c.y, TILE / 2 - 10, 7);
       ctx.stroke();
       ctx.restore();
       label(ctx, c.x, ty + 4 + (L === 'hex' ? 11 : 0), 'VACANT', '#4a5470', 14);
