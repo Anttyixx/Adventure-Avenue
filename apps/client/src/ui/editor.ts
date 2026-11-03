@@ -2084,7 +2084,7 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
       h(
         'button',
         {
-          class: `ed-menu-item ${cls}`,
+          class: `pop-menu-item ${cls}`,
           onclick: () => {
             close();
             act();
@@ -2097,7 +2097,7 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
       'Board builder',
       h(
         'div',
-        { class: 'ed-menu-actions' },
+        { class: 'pop-menu' },
         item('New board', 'Start from a template or a copy of a built-in board', newBoardDialog),
         item('My boards', 'Open, export or delete boards saved on this device', myBoardsDialog),
         item('Import board', 'Open a .aaboard.json file', () => void doImport()),

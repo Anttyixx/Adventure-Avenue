@@ -737,7 +737,11 @@ start, so every other system checks one flag (`rules`).
 **Main menu:** the title screen has **Play**, which opens game setup (with a join code for
 friends), and **Join**: a box with a code field whose Join button lights up once all four letters
 are in. **Continue** (resume the saved game; it shows the round, board and players) and **Rejoin
-online game** appear only when there is something to go back to. What's new, Board editor and Credits links sit below them. **Credits** lists everyone whose
+online game** appear only when there is something to go back to. In the top right corner sit
+the **Sound** button and, to its right, **Menu**: a pop-up in the middle of the screen with
+**What's new**, **Board editor** and **Credits**, each a row with a line saying what it is (Close,
+Escape or a click outside closes it). Menu carries a red "New" badge until the latest update has
+been read on this device, and What's new shows a "New" tag in the pop-up. **Credits** lists everyone whose
 work the game uses (art, fonts, libraries; data in `apps/client/src/credits.ts`), one card each with
 what was used, the license and links to their pages.
 

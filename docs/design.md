@@ -485,10 +485,14 @@ if (!(await ask(`Delete ${d.name}?`, 'Its 4 properties will be removed from the 
 
 ### 5.8 Menu pop-up
 
-- **Anatomy:** full-width rows (`.ed-menu-item`), each a Lilita 17px title + a 12px muted line
+- **Anatomy:** full-width rows (`.pop-menu-item`), each a Lilita 17px title + a 12px muted line
   saying what it does ("My boards — Open, export or delete boards saved on this device"). The
   "leave" item (Back to main menu) is set apart below with an outline instead of a fill.
 - **Spec:** pop-up ~400px; rows padding `10px 14px`, radius 10, inset surface, 6px gap.
+- Shared classes: `.pop-menu` (the list) and `.pop-menu-item` (a row) inside a `.modal`; used by
+  the board builder's Menu and the main menu's Menu (What's new, Board editor, Credits). A
+  "New" tag (`.tag`) can follow a row's title; the button that opens the menu carries the red
+  "New" dot instead.
 - The in-game menu (`.game-menu .gm-item`) follows the same idea.
 
 ### 5.9 Card grid pop-up (choose one of many pictured things)

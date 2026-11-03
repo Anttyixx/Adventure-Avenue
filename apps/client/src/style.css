@@ -451,12 +451,6 @@ input[type='range'] {
   color: #fff;
   box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.5);
 }
-.menu-editor {
-  align-self: center;
-  margin-top: 4px;
-  background: rgba(16, 26, 51, 0.55);
-  border-color: rgba(255, 255, 255, 0.35);
-}
 
 /* ------------------------------------------------------------ game setup */
 
@@ -3234,10 +3228,6 @@ input[type='range'] {
 .ed-district-panel .ed-district {
   grid-template-columns: 18px 30px minmax(80px, 1fr) 24px 28px;
 }
-.ed-menu-actions {
-  display: grid;
-  gap: 10px;
-}
 @media (max-width: 900px), (max-height: 560px) {
   .editor {
     --ed-palette-w: 180px;
@@ -3331,12 +3321,29 @@ input[type='range'] {
 .snd-btn.muted .snd-icon {
   color: var(--bad);
 }
-.menu-sound {
+/* Main menu, top right: the Sound button, then Menu (What's new, Board editor, Credits). */
+.menu-top {
   position: absolute;
   top: 14px;
   right: 14px;
   z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.menu-sound {
   background: rgba(16, 26, 51, 0.6);
+}
+.menu-more {
+  position: relative;
+}
+.menu-new-tag {
+  margin-left: 8px;
+  vertical-align: 2px;
+  font: 400 11px var(--head);
+}
+.menu-pop {
+  z-index: 20;
 }
 .setup-sound {
   margin-left: auto;
@@ -4374,15 +4381,6 @@ input[type='range'] {
 }
 
 /* Main menu: small buttons row, What's new */
-.menu-small {
-  display: flex;
-  justify-content: center;
-  gap: 10px;
-  flex-wrap: wrap;
-}
-.whats-new-btn {
-  position: relative;
-}
 .new-dot {
   position: absolute;
   top: -9px;
@@ -6831,7 +6829,7 @@ div.sl-inline label {
 .ed-link-btn:focus-visible,
 .ed-add:focus-visible,
 .ed-card:focus-visible,
-.ed-menu-item:focus-visible {
+.pop-menu-item:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
 }
@@ -6974,12 +6972,12 @@ div.sl-inline label {
 .ed-modal .modal.wide {
   width: min(720px, 100%);
 }
-.ed-menu-actions {
+.pop-menu {
   display: grid;
   gap: 6px;
   width: min(360px, 78vw);
 }
-.ed-menu-item {
+.pop-menu-item {
   display: flex;
   flex-direction: column;
   gap: 2px;
@@ -6992,22 +6990,22 @@ div.sl-inline label {
   cursor: pointer;
   transition: background 0.15s;
 }
-.ed-menu-item:hover {
+.pop-menu-item:hover {
   background: rgba(255, 255, 255, 0.14);
 }
-.ed-menu-item b {
+.pop-menu-item b {
   font: 400 17px var(--head);
 }
-.ed-menu-item small {
+.pop-menu-item small {
   font-size: 12px;
   color: var(--muted);
 }
-.ed-menu-item.leave {
+.pop-menu-item.leave {
   margin-top: 8px;
   background: transparent;
   box-shadow: inset 0 0 0 1px var(--glass-line);
 }
-.ed-menu-item.leave:hover {
+.pop-menu-item.leave:hover {
   background: rgba(255, 255, 255, 0.06);
 }
 .ed-cards {
@@ -7194,10 +7192,14 @@ div.sl-inline label {
   filter: none;
   transform: translateY(-2px);
 }
-.ed-modal .modal:has(.ed-menu-actions) {
+.modal:has(.pop-menu) .modal-head {
+  margin-bottom: 12px;
+}
+.modal:has(.pop-menu) {
+  padding: 16px 18px 18px;
   width: min(400px, 100%);
 }
-.ed-modal .ed-menu-actions {
+.modal .pop-menu {
   width: 100%;
 }
 .ed-info > .btn[aria-pressed='true'] {

@@ -191,19 +191,84 @@ export function mainMenu(
         h('span', { class: 'menu-btn-sub' }, `Code ${guest.code} as ${guest.name} · joined ${ago(guest.at)}`),
       )
     : null;
-  // Release notes, with a "New" badge until the latest update has been read on this device.
-  const whatsNew = h('button', { class: 'btn ghost menu-editor whats-new-btn' }, "What's new");
+  // The Menu button (top right, beside Sound) holds What's new, the board editor and Credits.
+  // It carries a "New" badge until the latest update has been read on this device.
+  const menuBtn = h(
+    'button',
+    { class: 'btn menu-sound menu-more', 'aria-haspopup': 'dialog', 'aria-expanded': 'false' },
+    '☰ Menu',
+  );
   const badge = () => {
-    whatsNew.querySelector('.new-dot')?.remove();
-    if (hasUnseenUpdate()) whatsNew.append(h('span', { class: 'new-dot' }, 'New'));
+    menuBtn.querySelector('.new-dot')?.remove();
+    if (hasUnseenUpdate()) menuBtn.append(h('span', { class: 'new-dot' }, 'New'));
   };
   badge();
-  whatsNew.onclick = () => openWhatsNew(root, badge);
+  menuBtn.onclick = () => openMenu();
+  let closeMenu: (() => void) | null = null;
+  /** The Menu pop-up: a row per destination, each with a line on what it is. */
+  const openMenu = () => {
+    if (closeMenu) return closeMenu();
+    const item = (title: string, hint: string, act: () => void, isNew = false) =>
+      h(
+        'button',
+        {
+          class: 'pop-menu-item',
+          onclick: () => {
+            closeMenu?.();
+            act();
+          },
+        },
+        h('b', null, title, isNew ? h('span', { class: 'tag menu-new-tag' }, 'New') : null),
+        h('small', null, hint),
+      );
+    const wrap = h('div', { class: 'modal-wrap menu-pop' });
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') closeMenu?.();
+    };
+    closeMenu = () => {
+      wrap.remove();
+      window.removeEventListener('keydown', onKey);
+      menuBtn.setAttribute('aria-expanded', 'false');
+      closeMenu = null;
+      menuBtn.focus();
+    };
+    window.addEventListener('keydown', onKey);
+    wrap.onclick = (e) => {
+      if (e.target === wrap) closeMenu?.();
+    };
+    wrap.append(
+      h(
+        'div',
+        { class: 'modal glass', role: 'dialog', 'aria-label': 'Menu' },
+        h(
+          'div',
+          { class: 'modal-head' },
+          h('h2', null, 'Menu'),
+          h('button', { class: 'btn small ghost', onclick: () => closeMenu?.() }, 'Close'),
+        ),
+        h(
+          'div',
+          { class: 'pop-menu' },
+          item(
+            "What's new",
+            'The latest changes to the game',
+            () => openWhatsNew(root, badge),
+            hasUnseenUpdate(),
+          ),
+          item('Board editor', 'Build your own boards and play them', () => handlers.onEditor()),
+          item('Credits', 'Everyone whose art and music the game uses', () => openCredits(root)),
+        ),
+      ),
+    );
+    el.append(wrap);
+    menuBtn.setAttribute('aria-expanded', 'true');
+    wrap.querySelector<HTMLButtonElement>('.pop-menu-item')?.focus();
+  };
   const el = h(
     'div',
     { class: 'menu' },
     scene.el,
-    soundButton('btn menu-sound', 'Sound'),
+    h('div', { class: 'menu-top' }, soundButton('btn menu-sound', 'Sound'), menuBtn),
     h(
       'div',
       { class: 'menu-center' },
@@ -226,13 +291,6 @@ export function mainMenu(
         joinBox,
         cont,
         rejoin,
-        h(
-          'div',
-          { class: 'menu-small' },
-          whatsNew,
-          h('button', { class: 'btn ghost menu-editor', onclick: () => handlers.onEditor() }, 'Board editor'),
-          h('button', { class: 'btn ghost menu-editor', onclick: () => openCredits(root) }, 'Credits'),
-        ),
       ),
     ),
   );
@@ -240,6 +298,7 @@ export function mainMenu(
   if (nameIn) nameIn.focus();
   else if (opts.code || opts.error) codeIn.focus();
   return () => {
+    closeMenu?.();
     closeSoundPopover();
     scene.stop();
     el.remove();

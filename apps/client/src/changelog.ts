@@ -26,6 +26,18 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: '2026-11-03-main-menu',
+    date: 'Nov 3, 2026',
+    title: 'A tidier main menu',
+    features: [
+      {
+        tag: 'better',
+        title: 'Menu button',
+        text: "What's new, the board editor and Credits now live in a Menu button in the top right, next to Sound, so the title screen is just Play and Join.",
+      },
+    ],
+  },
+  {
     id: '2026-11-02-action-lifecycle',
     date: 'Nov 2, 2026',
     title: 'Messages follow the action',
