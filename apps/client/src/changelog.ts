@@ -26,6 +26,18 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: '2026-11-04-play-join',
+    date: 'Nov 4, 2026',
+    title: 'Play and Join in one button',
+    features: [
+      {
+        tag: 'better',
+        title: 'One button to start or join',
+        text: 'The Play button now has a code field on its right. Type a friend’s 4-letter code and it turns into a blue Join button. Continue sits just under it when you have a saved game.',
+      },
+    ],
+  },
+  {
     id: '2026-11-04-log-toolbar',
     date: 'Nov 4, 2026',
     title: 'Game log in the toolbar',

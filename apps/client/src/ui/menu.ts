@@ -1,6 +1,7 @@
 /**
- * Main menu: the title screen with Play (game setup, which also gives friends a join code) and
- * Join (type a host's code), plus Continue / Rejoin when there is a game to go back to.
+ * Main menu: the title screen with one big Play button (game setup, which also gives friends a
+ * join code) whose code field turns it into Join, plus Continue / Rejoin when there is a game to
+ * go back to.
  * `titleScene` is the animated backdrop shared with the setup screens.
  */
 import { PLAYER_COLORS } from '@aa/engine';
@@ -139,7 +140,8 @@ export function mainMenu(
         )
       : null;
 
-  // Join: type the host's code; the button lights up once all four letters are in.
+  // Play and Join share one big button: the code field sits on its right. Once all four letters
+  // are in, Play becomes a blue Join button for that game.
   const codeIn = h('input', {
     class: 'join-code',
     maxlength: '4',
@@ -150,32 +152,52 @@ export function mainMenu(
     value: cleanCode(opts.code ?? ''),
     'aria-label': 'Join code',
   }) as HTMLInputElement;
-  const joinBtn = h(
-    'button',
-    { class: 'btn join-go', 'aria-label': 'Join game' },
-    'Join',
-  ) as HTMLButtonElement;
   const ready = () => cleanCode(codeIn.value).length === 4;
-  const refresh = () => {
-    joinBtn.disabled = !ready();
-    joinBtn.classList.toggle('lit', ready());
-  };
+  const playTitle = h('span', { class: 'menu-btn-title' });
+  const playSub = h('span', { class: 'menu-btn-sub' });
+  const playGo = h('button', { class: 'menu-play-go' }, playTitle, playSub);
+  const play = h(
+    'div',
+    { class: 'menu-btn start menu-play' },
+    playGo,
+    h('label', { class: 'menu-code' }, h('span', { class: 'menu-code-label' }, 'Have a code?'), codeIn),
+  );
   const nameIn =
     opts.askName != null
       ? (h('input', {
           class: 'join-name',
           maxlength: '12',
-          placeholder: 'Your name there',
+          placeholder: 'Your name in that game',
           value: opts.askName,
           'aria-label': 'Your name in that game',
         }) as HTMLInputElement)
       : null;
-  const join = () => {
+  const refresh = () => {
+    const joining = ready();
+    const wasJoining = play.classList.contains('join');
+    play.classList.toggle('join', joining);
+    playTitle.textContent = joining ? 'Join' : 'Play';
+    playSub.textContent = joining
+      ? `Join game ${cleanCode(codeIn.value)}`
+      : 'Set up a game. Friends can join with its code.';
+    // A little pop when it turns into Join (or back), so the change is noticed.
+    if (joining !== wasJoining && play.isConnected && !matchMedia('(prefers-reduced-motion: reduce)').matches)
+      play.animate([{ scale: '1' }, { scale: '1.03' }, { scale: '1' }], {
+        duration: 260,
+        easing: 'ease-out',
+      });
+  };
+  const go = () => {
     if (ready()) handlers.onJoin(cleanCode(codeIn.value), nameIn?.value.trim() || undefined);
+    else handlers.onPlay();
+  };
+  // The whole button acts, except its code field.
+  play.onclick = (e) => {
+    if (!(e.target as HTMLElement).closest('.menu-code')) go();
   };
   // Block bodies: an on-handler that returns false cancels the key, so typing would not work.
   const onEnter = (e: KeyboardEvent) => {
-    if (e.key === 'Enter') join();
+    if (e.key === 'Enter' && ready()) go();
   };
   if (nameIn) nameIn.onkeydown = onEnter;
   codeIn.oninput = () => {
@@ -183,18 +205,17 @@ export function mainMenu(
     refresh();
   };
   codeIn.onkeydown = onEnter;
-  joinBtn.onclick = join;
   refresh();
-  // A slim strip, not a big button: Play is the main way in; joining only needs the code.
-  const joinBox = h(
-    'div',
-    { class: 'menu-join' },
-    h('span', { class: 'menu-join-label' }, 'Join', h('small', null, 'a friend')),
-    nameIn,
-    codeIn,
-    joinBtn,
-    opts.error ? h('p', { class: 'join-error' }, opts.error) : null,
-  );
+  // Only when rejoining a running game needs the player's name there, or joining failed.
+  const joinExtra =
+    nameIn || opts.error
+      ? h(
+          'div',
+          { class: 'menu-join-extra' },
+          nameIn,
+          opts.error ? h('p', { class: 'join-error' }, opts.error) : null,
+        )
+      : null;
   // A guest's last online game, until it ends (the host may have paused it to continue later).
   const guest = loadGuest();
   // A small chip in the top left corner, out of the way of the main actions.
@@ -300,18 +321,7 @@ export function mainMenu(
         h('span', { class: 'l2' }, 'Avenue'),
       ),
       h('p', { class: 'menu-tag' }, 'Buy shops, grow districts, trade stocks and race to the target.'),
-      h(
-        'div',
-        { class: 'menu-buttons' },
-        h(
-          'button',
-          { class: 'menu-btn start', onclick: () => handlers.onPlay() },
-          h('span', { class: 'menu-btn-title' }, 'Play'),
-          h('span', { class: 'menu-btn-sub' }, 'Set up a game. Friends can join with its code.'),
-        ),
-        cont,
-        joinBox,
-      ),
+      h('div', { class: 'menu-buttons' }, play, joinExtra, cont),
     ),
   );
   root.append(el);

@@ -767,6 +767,12 @@ reveal and duplicate-purchase consolidation. UI Lab’s Action lifecycle and Eve
 fallback controls demonstrate the priorities. Turn-camera glides stay 1.6 seconds with reduced
 motion snapping the camera; no other decision delays change.
 
+The main menu's Play button doubles as Join: a field inside the big button (right side, labelled
+"Have a code?") changes the button itself (gold Play → blue Join with a small 1.03 pop) rather than
+adding a second button. The button is a `div.menu-btn` holding a real `<button>` for the label
+area and a `<label>` for the field, since an input can't sit inside a button; clicks on the field
+never press it. Secondary actions under it (Continue) are slimmer rows, never a second big button.
+
 The main menu is a single viewport with no page scrolling or overscroll. Keep top-corner Sound
 and Menu and the version chip reachable. The title always sits above the actions; on short screens
 (phones in landscape) it shrinks and the tagline is hidden. Fit the complete center group to the

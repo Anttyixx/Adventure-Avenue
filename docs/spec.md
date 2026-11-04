@@ -734,13 +734,15 @@ start, so every other system checks one flag (`rules`).
 | Venture deck                          | All 30 cards                                 | 23 cards (no stock cards) |
 | Lucky Reels "three stocks"            | 10 shares                                    | 150G                      |
 
-**Main menu:** the title screen has the title on top and, under it, **Play** (the one big gold
-button), which opens game setup (with a join code for friends). **Continue** (only with a saved
-game) is a slim green row under it showing the round, board and how long ago it was saved, with a
-colored dot per player. **Join** is a slim dark strip: "Join a friend", a short code field and a
-Join button that lights up once all four letters are in (a name field appears under it when
-rejoining a running game needs one). **Rejoin** is a small chip in the top left corner ("Rejoin
-KQZD, as Milo, 5 min ago") while this device has an online game to go back to. In the top right corner sit
+**Main menu:** the title screen has the title on top and, under it, **Play**: the one big gold
+button, which opens game setup (with a join code for friends). A "Have a code?" field sits on its
+right side; typing in it never presses the button. Once all four letters are in, the button turns
+blue and reads **Join** ("Join game KQZD"); pressing it (or Enter in the field) joins that game.
+When rejoining a running game needs the player's name there, or joining failed, a slim strip under
+the button holds the name field and the reason. **Continue** (only with a saved game) is a smaller
+green row under it showing the round, board and how long ago it was saved, with a colored dot per
+player. **Rejoin** is a small chip in the top left corner ("Rejoin KQZD, as Milo, 5 min ago") while
+this device has an online game to go back to. In the top right corner sit
 the **Sound** button and, to its right, **Menu**: a pop-up in the middle of the screen with
 **What's new**, **Board editor** and **Credits**, each a row with a line saying what it is (Close,
 Escape or a click outside closes it). Menu carries a red "New" badge until the latest update has
