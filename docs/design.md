@@ -391,6 +391,10 @@ Each element: **purpose**, **placement**, **anatomy**, **spec**, **behavior**, t
 
 - **Purpose:** this moment's one decision, or what's happening now.
 - **Placement:** centered on the whole window, `bottom: 16px`, never under the player cards.
+  When the window is too narrow for a centered bar to have 520px (`AB_CENTER_MIN` in `hud.ts`)
+  between the cards on both sides, the HUD gets `.ab-left` and the bar sits bottom left
+  (14px from the edge, 8px on phones), using all the room up to the cards. Decide by window size
+  only, never by the bar's content, so the bar does not jump between prompts.
 - **Two modes:**
   - **Status line** (`.status`): one line, an icon for the kind of event, names in their colors,
     ellipsis when long. "Rosa is buying stocks...", "Board settings · 2 problems to fix".

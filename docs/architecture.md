@@ -154,7 +154,8 @@ room, Continue resumes the saved game, and the board editor (`ui/editor.ts`).
 `Hud` owns every HTML overlay on the game screen, by name (see `CLAUDE.md`/`AGENTS.md` naming):
 the info chip and Stock market button (top left), the toolbar (zoom chip, Guide, Menu), the
 action bar (`.prompt-center`: `prompt()` shows a question with buttons and returns a promise of
-the choice; `status()` shows what is happening), the Game log button and log, the player cards
+the choice; `status()` shows what is happening; `updateInsets()` moves it bottom left with
+`.ab-left` when the window is too narrow to center it), the Game log button and log, the player cards
 (bottom right; clicking one opens the player overview from `ui/overview.ts`), tooltips, banners,
 and modals (`modal()` for any centered dialog). It re-renders from the state on `render(G)`.
 

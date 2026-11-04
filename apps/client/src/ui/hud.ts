@@ -58,6 +58,9 @@ export interface HudCallbacks {
   quitQuestion?(): string | null;
 }
 
+/** The narrowest a centered action bar may get before it moves to the bottom left corner. */
+const AB_CENTER_MIN = 520;
+
 export class Hud {
   root: HTMLElement;
   toolbar = h('div', { class: 'toolbar' });
@@ -455,6 +458,11 @@ export class Hud {
     // Center the options between the left edge (or lab panel) and the player cards.
     this.root.style.setProperty('--free-left', `${this.leftInset}px`);
     this.root.style.setProperty('--free-right', `${right}px`);
+    // Narrow windows (phones in landscape): a bar centered on the window would have to stay
+    // clear of the cards on both sides and get squeezed, so it sits bottom left instead and
+    // uses all the room up to the cards. Decided by the window, never by what the bar shows.
+    const centeredRoom = W - 2 * (Math.max(this.leftInset, right) + 14);
+    this.root.classList.toggle('ab-left', !portraitStack && centeredRoom < AB_CENTER_MIN);
   }
 
   // ------------------------------------------------------------ state rendering

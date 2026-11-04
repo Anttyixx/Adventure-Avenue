@@ -38,6 +38,9 @@ export const CHANGELOG: ChangelogEntry[] = [
     id: '2026-11-04-build-picker',
     date: 'Nov 4, 2026',
     title: 'A clearer building picker',
+    extras: [
+      'On phones and other narrow screens, the action bar sits in the bottom left corner so its text and buttons have more room.',
+    ],
     features: [
       {
         tag: 'better',

@@ -99,6 +99,7 @@ const rnd = (n: number) => Math.floor(Math.random() * n);
  * are easy to find. Update this list with each change.
  */
 const RECENT = new Set([
+  'Buy prompt',
   'Main menu (rejoin offer)',
   'Build',
   'Renovate',

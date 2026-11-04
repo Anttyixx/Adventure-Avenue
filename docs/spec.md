@@ -931,7 +931,10 @@ cards marked). Easy rules show Basics and Venture cards. It reopens on the last 
 name, the current round (out of the round limit, if any), the goal (target net worth) and, online,
 a Room button that shows the room code; under it, the Stock market button (Standard rules), which
 morphs into the stock market panel in the top-left corner for anyone to look at (kept up to
-date) and morphs back into the button when closed. Bottom center: the **action bar**. While the game waits on
+date) and morphs back into the button when closed. Bottom center: the **action bar** (on
+narrow windows such as phones in landscape, where a centered bar would have less than 520px
+between the screen edge and the player cards, it sits in the bottom left corner instead and uses
+all the width up to the cards; this depends only on the window, not on what the bar shows). While the game waits on
 nobody here, it is the status line: one line saying what is going on now: what the game is waiting
 on a player to do ("Blue is buying stocks...", "Blue is deciding which space to go to...", see
 `ui/activity.ts`; turn handoffs have their own message, and rolling/walking are active phases) or else the last thing that happened, with the log icon for

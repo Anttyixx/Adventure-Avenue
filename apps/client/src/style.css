@@ -3842,6 +3842,14 @@ input[type='range'] {
 .prompt-center .fact.big b {
   font-size: 15px;
 }
+/* Narrow windows: the bar sits in the bottom left corner instead of the center, so it can use all
+   the room up to the player cards (hud.ts updateInsets toggles .ab-left). */
+.hud.ab-left .prompt-center {
+  left: calc(var(--free-left, 0px) + 14px);
+  right: auto;
+  margin: 0;
+  max-width: min(920px, calc(100% - var(--free-left, 0px) - var(--free-right, 0px) - 28px));
+}
 .hud.upright .prompt-center {
   bottom: var(--cards-h, 6px);
   max-width: calc(100vw - 12px);
@@ -3854,6 +3862,12 @@ input[type='range'] {
     bottom: 8px;
     max-width: calc(100% - 2 * (max(var(--free-left, 0px), var(--free-right, 0px)) + 8px));
     min-width: min(240px, calc(100% - 16px));
+  }
+  .hud.ab-left .prompt-center {
+    left: calc(var(--free-left, 0px) + 8px);
+    max-width: calc(100% - var(--free-left, 0px) - var(--free-right, 0px) - 16px);
+  }
+  .prompt-center {
     flex-direction: column;
     align-items: stretch;
     justify-content: center;
