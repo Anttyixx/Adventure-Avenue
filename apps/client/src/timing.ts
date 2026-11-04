@@ -68,6 +68,10 @@ export const TIMING = {
   ventureFlip: 450,
   cpuResult: 2300,
   memoryReveal: 600,
+  arcadeRoll: 350,
+  arcadeWheel: 2800,
+  arcadeRace: 1800,
+  arcadeResult: 3500,
 
   /** How long a player has to raise in an auction before it counts as a pass. */
   auctionBid: 12000,

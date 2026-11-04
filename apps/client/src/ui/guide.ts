@@ -103,6 +103,10 @@ function basics(G: GameState | null): Node[] {
       'Venture squares (and suit squares) flip a venture card. Roll-on rolls again. Take-a-break closes your shops until your next turn. Boon and Boom pay you a share of the fees others pay. Warps (stop on one) and portals (just step on one, then keep moving) send you to their partner of the same color, or gold ones to the bank. The cannon fires you to another player. The arcade plays a minigame.',
     ),
     ...sec(
+      'The arcade',
+      'Lucky Reels: lock any of five slots and reroll up to three times for the best set. Memory Blocks: remember and pick a prize. Coin Derby: everyone chooses Sprint or Collect coins for three legs. Treasure Split: choose a chest and split it with anyone who picks the same one. Lucky Wheel: optionally bet up to 100G of your cash on a color (2× total return) or group of four numbers (3×). Everyone sees the results together.',
+    ),
+    ...sec(
       'Before rolling',
       `You can ${easy ? '' : 'sell stock, '}propose a trade, auction a property or renovate a building.`,
     ),

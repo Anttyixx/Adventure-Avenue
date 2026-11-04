@@ -41,8 +41,8 @@ export function activity(G: GameState, req: DecisionRequest, rolled?: number): A
       return is('playing Lucky Reels', 'arcade');
     case 'memory':
       return is('playing Memory Blocks', 'arcade');
-    case 'pickRacer':
-      return is('picking a racer in Coin Derby', 'arcade');
+    case 'arcadeChoice':
+      return is(`choosing in ${req.game}`, 'arcade');
     case 'pickSquare':
       switch (req.purpose) {
         case 'balloon':

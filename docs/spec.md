@@ -613,32 +613,28 @@ cleared. This is what makes "until your next turn" effects expire.
 
 ## Arcade minigames
 
-Arcade windows keep instructions and results clearly separated. Lucky Reels highlights the next
-reel and names each Stop button by reel number. Memory Blocks shows a remember/pick/reveal
-status and enables blocks only during the pick. Coin Derby highlights your racer and counts
-down before the race. Buttons stay usable on landscape phones.
+Landing on an arcade chooses one of five games with equal probability. Lucky Reels and Memory
+Blocks are solo games; Coin Derby, Lucky Wheel and Treasure Split include every non-bankrupt
+player. Choices are collected privately in seat order, including online, then revealed together.
+Local hot-seat players pass the device between choices. CPUs make choices for their own seats
+and disconnected guests using the normal online decision path. No real-time input race is required.
 
-**Arcade Lab:** the dev menu's Arcade Lab (`#arcade-lab`, also a UI Lab section) provides replay
-buttons for all three games, fixed reel jackpot/pair/no-match previews, a tour of every memory
-prize, and a close derby finish. It uses sample state and leaves saved games untouched.
+| Game           | Rules                                                                                                                                                                                                 | Rewards                                                                                                                                                                      |
+| -------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Lucky Reels    | Five slots, five equally likely symbols. One initial roll plus up to three rerolls. Toggle locks between rolls; collect early at any time. All locked collects immediately.                           | Best set only, times player level: pair 10G, two pairs 25G, three matching 40G, full house 80G, four matching 120G, five different 150G, five matching 300G.                 |
+| Memory Blocks  | Nine prizes shown for 1.9 seconds, then choose a hidden block.                                                                                                                                        | Existing shop growth/loss, cash and Suit Yourself prizes remain.                                                                                                             |
+| Coin Derby     | Each player races their own character through three legs. Choose Sprint or Collect coins privately each leg. Sprint advances 22–33 points and earns 10G; Collect advances 13–24 points and earns 30G. | Everyone keeps their coins. Highest total distance earns 100G × their level; tied leaders each earn the bonus.                                                               |
+| Lucky Wheel    | One optional bet per player, in 10G steps, limited to 100G and available cash. Twelve equally likely numbers. Odd = red, even = blue. Bet on a color or one group (1–4, 5–8, 9–12).                   | Winning color returns 2× the wager, group returns 3×, including the original stake. Loss costs only the wager. No debt, exact-number bets or level multiplier. Skip is free. |
+| Treasure Split | Two rounds. Each player privately chooses a 60G, 100G or 150G chest.                                                                                                                                  | Each chest is divided equally among its choosers, rounded down. Leftovers stay in the chest.                                                                                 |
 
-Landing on the Arcade picks one of three short games at random; prizes scale with the player's level
-(L) so they stay relevant late in the match.
+The engine owns all randomness, holds and payouts, so choices replay identically online. Invalid
+inputs have safe defaults; non-finite/negative wagers never spend money. Human choices and shared
+reveals are not accelerated by Fast CPU. Prize charts, lock labels, bet returns and per-player
+results explain outcomes. The wheel spins before its winning number/results appear; Derby animates
+each race leg. Results advance after a short reading interval or Continue on each device.
 
-| Game          | How it plays                                                                                                                        | Prizes                                                                                                                                                        |
-| ------------- | ----------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Lucky Reels   | Three reels cycle through 7, coin, wild card and stock every 120 ms. The player stops them one at a time (timing skill)             | Three 7s: 300 x L · three coins: 100 x L · three wilds: a Suit Yourself card · three stocks: 10 shares in a random district (150G in Easy) · any pair: 20 x L |
-| Memory Blocks | A 3 x 3 grid shows its prizes for 1.9 s, then hides them; the player picks one (memory skill)                                       | Two "Shops +10%", two Gold (60 x L), one wild card, two "Shops -5%", two 20G                                                                                  |
-| Coin Derby    | The lander picks one of 5 racers; every other player is assigned one at random. Racers move at random speeds with occasional bursts | Each racer's coins pay its backer 10G each; the winner's backer gets 100 x their level. Everyone can earn something                                           |
-
-**Notes for the rebuild:**
-
-- Outcomes that depend on timing (Reels) or memory (Blocks) need the server to own the random seed
-  and the cycle clock, and to accept the player's stop inputs with timestamps.
-- Coin Derby is the only game that involves all players, so it is a good moment to show everyone's
-  screen the same animation.
-- CPU players stop reels and pick blocks at random.
-- Shop value prizes move stock prices and salary, so the arcade feeds the economy, not just cash.
+The Arcade Lab in the UI Lab launches each real engine game with one human and CPU opponents in
+isolated sample state. It never overwrites the saved match.
 
 ## Trading and auctions
 

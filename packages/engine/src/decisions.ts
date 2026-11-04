@@ -10,7 +10,7 @@ export interface Route {
   path: number[];
 }
 
-export type ReelSymbol = 'seven' | 'coin' | 'wild' | 'stock';
+export type ReelSymbol = 'seven' | 'coin' | 'wild' | 'stock' | 'bell';
 
 export type MemoryPrize = 'shopsUp' | 'gold' | 'wild' | 'shopsDown' | 'small';
 
@@ -58,9 +58,21 @@ export interface DecisionMap {
   buyStock: [{ discount: number; maxSpend: number }, { d: number; n: number } | null];
   sellStock: [{ premium: number }, { d: number; n: number } | null];
   venturePanel: [{ owner: number[] }, number];
-  reels: [{ strips: ReelSymbol[][] }, number[]];
+  reels: [
+    { symbols: ReelSymbol[]; locked: boolean[]; left: number },
+    { locked: boolean[]; collect: boolean },
+  ];
+  arcadeChoice: [
+    {
+      game: 'Coin Derby' | 'Lucky Wheel' | 'Treasure Split';
+      round: number;
+      options: string[];
+      hint: string;
+      maxBet?: number;
+    },
+    { choice: number; stake?: number },
+  ];
   memory: [{ prizes: MemoryPrize[] }, number];
-  pickRacer: [{ count: number }, number];
   pickSquare: [{ purpose: SquarePurpose; options: number[]; optional: boolean }, number | null];
   cannonTarget: [{ options: number[] }, number];
   pickDistrict: [{ purpose: DistrictPurpose; options: number[] }, number];

@@ -9,12 +9,9 @@ import {
   BUILDINGS,
   BUILT_IN_BOARDS,
   CARD_LIST,
-  DERBY_LENGTH,
-  DERBY_RACERS,
   Game,
   K,
   PLAYER_COLORS,
-  REEL_SYMBOLS,
   cloneState,
   cpuIO,
   isShopLike,
@@ -27,9 +24,7 @@ import {
   market,
   type BuildingKey,
   type GameState,
-  type MemoryPrize,
   type Player,
-  type ReelSymbol,
   type TradeOffer,
 } from '@aa/engine';
 import { SHOP_TIERS, SHOP_TIER_NAMES, STAR3_TIERS, STAR3_TIER_NAMES, propertyIconURL } from '../art';
@@ -41,7 +36,9 @@ import { BoardView, ZOOM_STEP } from '../board';
 import { CHARACTERS, shuffledCharacters } from '../sprites';
 import { clear, fmt, h } from './dom';
 import { shortName } from '../names';
-import { DerbyView, MemoryView, ReelsView, VentureView } from './games';
+import { VentureView } from './games';
+import { HotSeat } from '../host';
+import { luckyReels, memoryBlocks, coinDerby, luckyWheel, treasureSplit } from '@aa/engine';
 import { Hud } from './hud';
 import { paymentActivity, paymentLogMatches } from './activity';
 import { clearGuest, loadGuest, saveGuest } from '../save';
@@ -87,11 +84,6 @@ export const LAB_SECTIONS = [
   { id: 'panels', title: 'Log, market & results' },
 ] as const;
 
-const shuffled = <T>(a: T[]) =>
-  a
-    .map((v) => [Math.random(), v] as const)
-    .sort((x, y) => x[0] - y[0])
-    .map((x) => x[1]);
 const rnd = (n: number) => Math.floor(Math.random() * n);
 
 /**
@@ -134,11 +126,8 @@ const RECENT = new Set([
   'Lucky Reels',
   'Memory Blocks',
   'Coin Derby',
-  'Reels: jackpot',
-  'Reels: pair',
-  'Reels: no match',
-  'Memory: every prize',
-  'Derby: photo finish',
+  'Lucky Wheel',
+  'Treasure Split',
   'Player overview',
   'Guide',
   'Venture card guide',
@@ -1056,109 +1045,39 @@ export async function openLab(app: HTMLElement, section?: string) {
     );
   }
 
-  // Arcade Lab: replay each game or inspect a known outcome without changing a save.
+  // Use the real engine and host so the lab exercises the same decisions as a landed arcade.
   {
     const s = addSection(
       'arcade',
       'Arcade Lab',
-      'Play as often as you like. These games use sample players and never change your saved game. Outcome controls preview specific results.',
+      'Play the real games with sample players. Your saved match is untouched.',
     );
-    row(
-      s,
-      btn('Lucky Reels', async () => {
-        const strips = [0, 1, 2].map(() => shuffled(REEL_SYMBOLS.flatMap((x) => [x, x]) as ReelSymbol[]));
-        const view = new ReelsView(hud, strips, cur().name);
-        const stops = await view.play();
-        const res = strips.map((st, i) => st[stops[i] % st.length]);
-        const prize =
-          new Set(res).size === 1 ? 'Three of a kind!' : new Set(res).size === 2 ? 'A pair: 20G' : 'No match';
-        await view.show(res, prize, true, 1);
-        result('Reels', res);
-      }),
-      btn('Memory Blocks', async () => {
-        const prizes = shuffled<MemoryPrize>([
-          'shopsUp',
-          'shopsUp',
-          'gold',
-          'gold',
-          'wild',
-          'shopsDown',
-          'shopsDown',
-          'small',
-          'small',
-        ]);
-        const view = new MemoryView(hud, prizes, cur().name);
-        const i = await view.play();
-        await view.show(i, prizes[i], true, 1);
-        result('Memory', prizes[i]);
-      }),
-      btn('Coin Derby', async () => {
-        const view = new DerbyView(hud, G, cur().name);
-        const pick = await view.pick();
-        const backers = new Array(DERBY_RACERS).fill(-1);
-        backers[pick] = cur().id;
-        const others = shuffled([...Array(DERBY_RACERS).keys()].filter((i) => i !== pick));
-        G.players.filter((q) => q !== cur()).forEach((q, i) => (backers[others[i]] = q.id));
-        const pos = new Array(DERBY_RACERS).fill(0);
-        const coins = new Array(DERBY_RACERS).fill(0);
-        const frames: number[][] = [pos.slice()];
-        while (Math.max(...pos) < DERBY_LENGTH) {
-          for (let i = 0; i < DERBY_RACERS; i++) {
-            pos[i] = Math.min(
-              DERBY_LENGTH,
-              pos[i] + 0.6 + Math.random() * 1.2 + (Math.random() < 0.06 ? 3 : 0),
-            );
-            if (Math.random() < 0.1) coins[i]++;
-          }
-          frames.push(pos.slice());
-        }
-        await view.race(backers, frames, coins, pos.indexOf(Math.max(...pos)), true, 1);
-        result('Derby pick', pick);
-      }),
-    );
-  }
-
-  {
-    const s = sections.get('arcade')!;
-    for (const [label, symbols, prize] of [
-      ['Reels: jackpot', ['seven', 'seven', 'seven'], '300G'],
-      ['Reels: pair', ['coin', 'coin', 'wild'], '20G'],
-      ['Reels: no match', ['coin', 'wild', 'stock'], 'No match'],
-    ] as [string, ReelSymbol[], string][]) {
+    for (const [label, play] of [
+      ['Lucky Reels', luckyReels],
+      ['Memory Blocks', memoryBlocks],
+      ['Coin Derby', coinDerby],
+      ['Lucky Wheel', luckyWheel],
+      ['Treasure Split', treasureSplit],
+    ] as const)
       row(
         s,
         btn(label, async () => {
-          const view = new ReelsView(
-            hud,
-            symbols.map((symbol) => new Array<ReelSymbol>(8).fill(symbol)),
-            cur().name,
-          );
-          await view.show(symbols, prize, true, 1);
+          const sample = cloneState(G);
+          sample.players.forEach((p) => {
+            p.cpu = p.id !== cur().id;
+            p.bankrupt = false;
+          });
+          const mount = h('div', { class: 'arcade-lab-game' });
+          document.body.append(mount);
+          const host = new HotSeat(mount, sample, () => mount.remove(), false);
+          try {
+            await play(host.game, sample.players[cur().id]);
+          } finally {
+            host.destroy();
+            mount.remove();
+          }
         }),
       );
-    }
-    row(
-      s,
-      btn('Memory: every prize', async () => {
-        for (const prize of ['shopsUp', 'gold', 'wild', 'shopsDown', 'small'] as MemoryPrize[]) {
-          const view = new MemoryView(hud, new Array<MemoryPrize>(9).fill(prize), cur().name);
-          const picked = await view.play();
-          await view.show(picked, prize, true, 1);
-        }
-      }),
-      btn('Derby: photo finish', async () => {
-        const view = new DerbyView(hud, G, cur().name);
-        const picked = await view.pick();
-        const backers = new Array<number>(DERBY_RACERS).fill(-1);
-        backers[picked] = cur().id;
-        const frames = Array.from({ length: 101 }, (_, f) =>
-          Array.from({ length: DERBY_RACERS }, (_, i) =>
-            Math.min(DERBY_LENGTH, f * (i === picked ? 1 : 0.99)),
-          ),
-        );
-        await view.race(backers, frames, [1, 2, 3, 4, 5], picked, true, 1);
-      }),
-    );
   }
 
   // Property designs

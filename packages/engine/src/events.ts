@@ -34,11 +34,13 @@ export type GameEvent =
   | { type: 'reels'; pid: number; result: ReelSymbol[]; prize: string }
   | { type: 'memory'; pid: number; prizes: MemoryPrize[]; picked: number; prize: string }
   | {
-      type: 'derby';
-      backers: number[];
-      frames: number[][];
-      coins: number[];
-      winner: number;
+      type: 'arcadeRound';
+      title: string;
+      detail: string;
+      game: 'Coin Derby' | 'Lucky Wheel' | 'Treasure Split';
+      rows: { pid: number; text: string; amount?: number; score?: number; previous?: number }[];
+      wheel?: number;
+      final: boolean;
     }
   | {
       type: 'auctionStart';

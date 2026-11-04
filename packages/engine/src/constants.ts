@@ -121,9 +121,19 @@ export const K = {
   rollChainMax: 3,
 
   // Arcade prizes (L = player level)
-  reels: { sevens: 300, coins: 100, pair: 20, stockShares: 10, stockEasyCash: 150 },
+  reels: { rerolls: 3, prizes: [0, 10, 25, 40, 80, 120, 150, 300] },
   memory: { gold: 60, small: 20, shopsUp: 0.1, shopsDown: 0.05 },
-  derby: { perCoin: 10, winner: 100 },
+  derby: {
+    rounds: 3,
+    sprint: 22,
+    collect: 13,
+    variation: 12,
+    sprintCoins: 10,
+    collectCoins: 30,
+    winner: 100,
+  },
+  wheel: { maxBet: 100, step: 10, spaces: 12 },
+  treasure: { rounds: 2, chests: [60, 100, 150] },
 
   // CPU
   cpu: {

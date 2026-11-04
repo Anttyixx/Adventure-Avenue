@@ -26,6 +26,24 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: '2026-11-04-arcade-party',
+    date: 'Nov 4, 2026',
+    title: 'More ways to play at the arcade',
+    features: [
+      {
+        tag: 'better',
+        title: 'Five-slot Lucky Reels',
+        text: 'Build a winning set with five slots, locks and three rerolls. Collect early or chase the jackpot.',
+      },
+      {
+        tag: 'new',
+        title: 'Everyone joins in',
+        text: 'Race in Coin Derby, share chests in Treasure Split, or bet up to 100G on Lucky Wheel. All five arcade games can appear when you land on an arcade.',
+      },
+    ],
+    extras: ['Try every game in the Arcade Lab. Memory Blocks remains in the rotation.'],
+  },
+  {
     id: '2026-11-04-venture-size',
     date: 'Nov 4, 2026',
     title: 'Bigger venture board',

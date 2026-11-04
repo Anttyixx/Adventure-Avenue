@@ -314,14 +314,20 @@ function decide(G: GameState, req: DecisionRequest): unknown {
     case 'venturePanel':
       return venturePick(G, p.id, req.owner);
 
-    case 'reels':
-      return [0, 1, 2].map(() => randInt(G, 8));
+    case 'reels': {
+      const best = req.symbols.reduce((a, b) =>
+        req.symbols.filter((s) => s === a).length >= req.symbols.filter((s) => s === b).length ? a : b,
+      );
+      return {
+        collect: new Set(req.symbols).size === 1 || new Set(req.symbols).size === 5,
+        locked: req.symbols.map((s) => s === best),
+      };
+    }
+    case 'arcadeChoice':
+      return { choice: randInt(G, req.options.length), stake: Math.min(20, req.maxBet ?? 0) };
 
     case 'memory':
       return randInt(G, 9);
-
-    case 'pickRacer':
-      return randInt(G, req.count);
 
     case 'cannonTarget':
       return pick(G, req.options);

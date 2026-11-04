@@ -239,3 +239,5 @@ online), `guest`, `guest-in-game` (rejoin info), `boards` (custom boards), `stoc
 
 `apps/client/src/ui/status-messages.ts`: action-phase transitions, bounded in-phase event queue, short reading slots,
 debounced fallback and immediate decision interruption; tested with fake timers.
+
+Arcade party presentation: `apps/client/src/ui/arcade.ts` (`ArcadeView`) handles five-slot holds, private party choices, wheel bets, race segments and shared results. Engine scoring and games live in `packages/engine/src/arcade.ts`.

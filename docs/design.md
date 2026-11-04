@@ -779,3 +779,16 @@ and Menu and the version chip reachable. The title always sits above the actions
 (phones in landscape) it shrinks and the tagline is hidden. Fit the complete center group to the
 available height when necessary, including Continue and the optional join-name field. Menu pop-ups
 and their content retain their own scrolling behavior.
+
+### Arcade stages
+
+Arcade games use a wide centered pop-up, with the game and current chooser in the heading,
+a one-sentence instruction, a Solo game / Everyone plays label, a play area and an action row.
+Five Lucky Reels slots are equal-width buttons; gold borders plus “Locked” text mark held slots.
+A compact expandable prize chart accompanies the current best set and remaining rerolls.
+Party choices use large illustrated buttons, with one selected gold option; choices remain private
+until the engine reveals the round. Wheel stakes use a single minus/value/plus stepper with a
+plain-language total return and possible loss. Skip is a secondary action.
+Shared result rows have player portraits, names, player-color left edges and signed winnings.
+Race movement and wheel rotation respect reduced motion; results have Continue plus automatic
+advance. On short landscape screens tighten spacing and art, and scroll inside the pop-up only.

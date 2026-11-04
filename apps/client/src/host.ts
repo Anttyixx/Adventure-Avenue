@@ -23,7 +23,8 @@ import { clearSave, saveGame } from './save';
 import { SUIT_CHARS } from './icons';
 import { FAST_CPU_SPEED, TIMING as T } from './timing';
 import { fmt, h } from './ui/dom';
-import { DerbyView, MemoryView, ReelsView, VentureView } from './ui/games';
+import { MemoryView, VentureView } from './ui/games';
+import { ArcadeView } from './ui/arcade';
 import { Hud, type PromptButton } from './ui/hud';
 import { buildPrompt, districtStockModal, stockModal } from './ui/modals';
 import { guideModal } from './ui/guide';
@@ -66,9 +67,8 @@ export class HotSeat implements GameIO {
   holder = -1;
   private movementRoll: { pid: number; value: number } | null = null;
   venture: VentureView | null = null;
-  reels: ReelsView | null = null;
+  arcade: ArcadeView | null = null;
   memory: MemoryView | null = null;
-  derby: DerbyView | null = null;
   /** Square values as last shown, to animate how much each one changed. */
   values = new Map<number, number>();
   /** Each square's owner as last shown, so a purchase is claimed on the board as it is paid for. */
@@ -151,6 +151,7 @@ export class HotSeat implements GameIO {
   }
 
   destroy() {
+    this.arcade?.close();
     this.dead = true;
     closeSoundPopover();
     window.removeEventListener('keydown', this.onKey);
@@ -399,6 +400,12 @@ export class HotSeat implements GameIO {
 
   /** A choice for a player on this device. */
   private async askHuman(req: DecisionRequest) {
+    // Online rooms may also have several people sharing this device. Keep party choices private.
+    if (this.link && req.kind === 'arcadeChoice' && this.humans > 1 && this.holder !== req.pid) {
+      this.arcade?.close();
+      await this.hud.passDevice(this.G.players[req.pid]);
+      this.holder = req.pid;
+    }
     this.waitOn(req);
     return this.human(req);
   }
@@ -417,19 +424,19 @@ export class HotSeat implements GameIO {
         this.venture.watch(p.name);
         break;
       case 'reels':
-        this.reels?.m.close();
-        this.reels = new ReelsView(this.hud, req.strips, p.name);
-        this.reels.watch(p.name);
+      case 'arcadeChoice':
+        this.arcade?.close();
+        this.arcade = new ArcadeView(
+          this.hud,
+          req.kind === 'reels' ? 'Lucky Reels' : req.game,
+          req.kind === 'reels' ? 'Solo game · Five slots, three rerolls' : req.hint,
+        );
+        this.arcade.watch(p.name);
         break;
       case 'memory':
         this.memory?.m.close();
         this.memory = new MemoryView(this.hud, req.prizes, p.name);
         this.memory.watch(p.name);
-        break;
-      case 'pickRacer':
-        this.derby?.m.close();
-        this.derby = new DerbyView(this.hud, G, p.name);
-        this.derby.watch(p.name);
         break;
     }
   }
@@ -459,11 +466,11 @@ export class HotSeat implements GameIO {
         if ((ans as { act: string }).act !== 'roll') await this.wait(T.cpuPreRoll);
         break;
       case 'venturePanel':
-      case 'pickRacer':
+      case 'arcadeChoice':
         await this.wait(T.cpuDecision);
         break;
       case 'reels':
-        // Let the reels spin a moment before the result.
+        // Give the CPU a brief beat to choose its held slots.
         await this.wait(T.cpuPath);
         break;
       case 'memory':
@@ -583,16 +590,22 @@ export class HotSeat implements GameIO {
         return this.venture.pick();
 
       case 'reels':
-        this.reels = new ReelsView(hud, req.strips, p.name);
-        return this.reels.play();
+        this.arcade?.close();
+        this.arcade = new ArcadeView(
+          hud,
+          `Lucky Reels · ${p.name}`,
+          'Solo game · Five slots, three rerolls. Keep your best set.',
+        );
+        return this.arcade.reels(req, p.level);
+
+      case 'arcadeChoice':
+        this.arcade?.close();
+        this.arcade = new ArcadeView(hud, `${req.game} · ${p.name}`, req.hint);
+        return this.arcade.choice(req);
 
       case 'memory':
         this.memory = new MemoryView(hud, req.prizes, p.name);
         return this.memory.play();
-
-      case 'pickRacer':
-        this.derby = new DerbyView(hud, G, p.name);
-        return this.derby.pick();
 
       case 'pickSquare': {
         const text = {
@@ -870,10 +883,20 @@ export class HotSeat implements GameIO {
       }
       case 'reels': {
         const p = G.players[e.pid];
-        hud.action('reels', `${p.name} is playing Lucky Reels...`, 'arcade');
-        const view = this.reels ?? new ReelsView(hud, [e.result, e.result, e.result], p.name);
-        this.reels = null;
-        await view.show(e.result, e.prize, this.localHuman(p.id), this.speed);
+        hud.action('reels', `${p.name} finished Lucky Reels.`, 'arcade');
+        this.arcade?.close();
+        this.arcade = new ArcadeView(hud, `Lucky Reels · ${p.name}`, 'Your final set');
+        await this.arcade.reelsResult(e.result, e.prize);
+        this.arcade = null;
+        this.refresh();
+        break;
+      }
+      case 'arcadeRound': {
+        hud.action('arcade', e.title, 'arcade');
+        this.arcade?.close();
+        this.arcade = new ArcadeView(hud, e.title, 'Everyone plays');
+        await this.arcade.result(e, G);
+        this.arcade = null;
         this.refresh();
         break;
       }
@@ -884,15 +907,6 @@ export class HotSeat implements GameIO {
         this.memory = null;
         if (!this.localHuman(p.id)) await view.hide(this.speed);
         await view.show(e.picked, e.prize, this.localHuman(p.id), this.speed);
-        this.refresh();
-        break;
-      }
-      case 'derby': {
-        const lander = G.players[this.game.current.id];
-        hud.action('derby', 'Coin Derby is racing...', 'arcade');
-        const view = this.derby ?? new DerbyView(hud, G, lander.name);
-        this.derby = null;
-        await view.race(e.backers, e.frames, e.coins, e.winner, this.localHuman(lander.id), this.speed);
         this.refresh();
         break;
       }

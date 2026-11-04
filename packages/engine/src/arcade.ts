@@ -1,76 +1,73 @@
-/**
- * Arcade minigames. The engine owns every random outcome (reel strips, block layout, the race);
- * the player's only input is when to stop, which block to pick, or which racer to back.
- */
+/** Arcade outcomes are seeded engine decisions; every player sees the same reveals. */
 import { K } from './constants';
-import type { MemoryPrize, ReelSymbol } from './decisions';
+import type { MemoryPrize, ReelSymbol, DecisionRequest } from './decisions';
 import type { Game } from './engine';
-import { rand, randInt, shuffle } from './rng';
+import { randInt, shuffle } from './rng';
 import { ownedShops } from './rules';
 import type { Player } from './types';
 
-export const REEL_SYMBOLS: ReelSymbol[] = ['seven', 'coin', 'wild', 'stock'];
-export const REEL_LENGTH = 8;
-export const REEL_TICK_MS = 120;
+export const REEL_SYMBOLS: ReelSymbol[] = ['seven', 'coin', 'wild', 'stock', 'bell'];
 export const MEMORY_SHOW_MS = 1900;
-export const DERBY_RACERS = 5;
-export const DERBY_LENGTH = 100;
+export const REEL_PRIZES = [
+  'No set',
+  'One pair',
+  'Two pairs',
+  'Three matching',
+  'Full house',
+  'Four matching',
+  'Five different',
+  'Five matching',
+];
+
+/** Highest set only, with cash prizes scaled to the player's level. */
+export function reelPrize(symbols: ReelSymbol[], level = 1) {
+  const counts = REEL_SYMBOLS.map((s) => symbols.filter((x) => x === s).length).sort((a, b) => b - a);
+  const rank =
+    counts[0] === 5
+      ? 7
+      : counts[0] === 1
+        ? 6
+        : counts[0] === 4
+          ? 5
+          : counts[0] === 3 && counts[1] === 2
+            ? 4
+            : counts[0] === 3
+              ? 3
+              : counts[0] === 2 && counts[1] === 2
+                ? 2
+                : counts[0] === 2
+                  ? 1
+                  : 0;
+  return { name: REEL_PRIZES[rank], amount: K.reels.prizes[rank] * level };
+}
 
 export async function playArcade(g: Game, p: Player) {
-  const which = randInt(g.G, 3);
+  const games = [luckyReels, memoryBlocks, coinDerby, luckyWheel, treasureSplit];
+  const play = games[randInt(g.G, games.length)];
   await g.log(`${p.name} visits the arcade.`, p.id, 'arcade');
-  if (which === 0) return luckyReels(g, p);
-  if (which === 1) return memoryBlocks(g, p);
-  return coinDerby(g, p);
+  return play(g, p);
 }
 
 export async function luckyReels(g: Game, p: Player) {
-  const G = g.G;
-  const strips = [0, 1, 2].map(() =>
-    shuffle(
-      G,
-      REEL_SYMBOLS.flatMap((s) => [s, s]),
-    ),
-  );
-  const stops = await g.ask({ kind: 'reels', pid: p.id, strips });
-  const result = strips.map((strip, i) => {
-    const n =
-      Array.isArray(stops) && Number.isFinite(stops[i]) ? Math.floor(stops[i]) : randInt(G, REEL_LENGTH);
-    return strip[((n % REEL_LENGTH) + REEL_LENGTH) % REEL_LENGTH];
-  });
-  const L = p.level;
-  let prize = 'No match';
-  if (result.every((s) => s === result[0])) {
-    switch (result[0]) {
-      case 'seven':
-        prize = `${K.reels.sevens * L}G`;
-        await g.pay(null, p, K.reels.sevens * L, 'Lucky Reels');
-        break;
-      case 'coin':
-        prize = `${K.reels.coins * L}G`;
-        await g.pay(null, p, K.reels.coins * L, 'Lucky Reels');
-        break;
-      case 'wild':
-        prize = 'A Suit Yourself card';
-        p.wild++;
-        break;
-      case 'stock':
-        if (G.rules === 'standard') {
-          const d = randInt(G, G.districts.length);
-          p.shares[d] += K.reels.stockShares;
-          prize = `${K.reels.stockShares} ${G.districts[d].name} shares`;
-        } else {
-          prize = `${K.reels.stockEasyCash}G`;
-          await g.pay(null, p, K.reels.stockEasyCash, 'Lucky Reels');
-        }
-        break;
-    }
-  } else if (new Set(result).size === 2) {
-    prize = `${K.reels.pair * L}G`;
-    await g.pay(null, p, K.reels.pair * L, 'Lucky Reels');
+  let symbols = Array.from({ length: 5 }, () => REEL_SYMBOLS[randInt(g.G, REEL_SYMBOLS.length)]);
+  let locked = new Array<boolean>(5).fill(false);
+  for (let left = K.reels.rerolls; left > 0; left--) {
+    const answer = await g.ask({
+      kind: 'reels',
+      pid: p.id,
+      symbols: symbols.slice(),
+      locked: locked.slice(),
+      left,
+    });
+    if (!answer || answer.collect) break;
+    locked = symbols.map((_, i) => answer.locked?.[i] === true);
+    if (locked.every(Boolean)) break;
+    symbols = symbols.map((s, i) => (locked[i] ? s : REEL_SYMBOLS[randInt(g.G, REEL_SYMBOLS.length)]));
   }
-  await g.emit({ type: 'reels', pid: p.id, result, prize });
-  await g.log(`Lucky Reels: ${p.name} won ${prize}.`, p.id, 'arcade');
+  const prize = reelPrize(symbols, p.level);
+  await g.emit({ type: 'reels', pid: p.id, result: symbols, prize: `${prize.name} · ${prize.amount}G` });
+  if (prize.amount) await g.pay(null, p, prize.amount, 'Lucky Reels');
+  await g.log(`Lucky Reels: ${p.name} won ${prize.amount}G (${prize.name}).`, p.id, 'arcade');
 }
 
 export async function memoryBlocks(g: Game, p: Player) {
@@ -115,49 +112,142 @@ export async function memoryBlocks(g: Game, p: Player) {
   await g.log(`Memory Blocks: ${p.name} won ${text}.`, p.id, 'arcade');
 }
 
-export async function coinDerby(g: Game, p: Player) {
-  const G = g.G;
-  let pick = await g.ask({ kind: 'pickRacer', pid: p.id, count: DERBY_RACERS });
-  if (!(pick >= 0 && pick < DERBY_RACERS)) pick = 0;
-  const backers = new Array(DERBY_RACERS).fill(-1);
-  backers[pick] = p.id;
-  const free = shuffle(
-    G,
-    [...Array(DERBY_RACERS).keys()].filter((i) => i !== pick),
-  );
-  for (const q of G.players) {
-    if (q === p || q.bankrupt) continue;
-    const r = free.shift();
-    if (r != null) backers[r] = q.id;
+/** Collect choices privately in seat order, then reveal together. Never reveal earlier answers. */
+async function choices(g: Game, payload: Omit<DecisionRequest<'arcadeChoice'>, 'kind' | 'pid'>) {
+  const answers: { player: Player; choice: number; stake: number }[] = [];
+  for (const player of g.G.players.filter((p) => !p.bankrupt)) {
+    const maxBet = payload.maxBet == null ? undefined : Math.min(payload.maxBet, Math.max(0, player.cash));
+    const answer = await g.ask({ kind: 'arcadeChoice', pid: player.id, ...payload, maxBet });
+    const choice =
+      Number.isInteger(answer?.choice) && answer.choice >= 0 && answer.choice < payload.options.length
+        ? answer.choice
+        : 0;
+    const stake =
+      maxBet != null && Number.isFinite(answer?.stake)
+        ? Math.floor(Math.max(0, Math.min(maxBet, answer.stake!)) / K.wheel.step) * K.wheel.step
+        : 0;
+    answers.push({ player, choice, stake });
   }
-  // Simulate the race: random speeds with occasional bursts; coins are picked up on the way.
-  const pos = new Array(DERBY_RACERS).fill(0);
-  const coins = new Array(DERBY_RACERS).fill(0);
-  const frames: number[][] = [pos.slice()];
-  let winner = -1;
-  while (winner < 0 && frames.length < 400) {
-    for (let i = 0; i < DERBY_RACERS; i++) {
-      let v = 0.6 + rand(G) * 1.2;
-      if (rand(G) < 0.06) v += 3;
-      pos[i] = Math.min(DERBY_LENGTH, pos[i] + v);
-      if (rand(G) < 0.1) coins[i]++;
+  return answers;
+}
+
+export async function coinDerby(g: Game, _p: Player) {
+  const players = g.G.players.filter((p) => !p.bankrupt);
+  const scores = g.G.players.map(() => 0),
+    coins = scores.slice();
+  for (let round = 1; round <= K.derby.rounds; round++) {
+    const picks = await choices(g, {
+      game: 'Coin Derby',
+      round,
+      options: ['Sprint', 'Collect coins'],
+      hint: 'Sprint for the finish or take 30G in coins. Three legs; first place earns a bonus.',
+    });
+    const previous = scores.slice();
+    for (const { player: p, choice } of picks) {
+      scores[p.id] += (choice === 0 ? K.derby.sprint : K.derby.collect) + randInt(g.G, K.derby.variation);
+      coins[p.id] += choice === 0 ? K.derby.sprintCoins : K.derby.collectCoins;
     }
-    frames.push(pos.map((x) => Math.round(x * 10) / 10));
-    const done = pos.map((x, i) => [x, i]).filter(([x]) => x >= DERBY_LENGTH);
-    if (done.length) winner = done[randInt(G, done.length)][1];
+    const final = round === K.derby.rounds;
+    const best = Math.max(...players.map((p) => scores[p.id]));
+    const rows = picks.map(({ player: p, choice }) => ({
+      pid: p.id,
+      score: scores[p.id],
+      previous: previous[p.id],
+      text: final
+        ? scores[p.id] === best
+          ? 'First place!'
+          : 'Finished'
+        : choice === 0
+          ? 'Sprint'
+          : 'Collected coins',
+      amount: coins[p.id] + (final && scores[p.id] === best ? K.derby.winner * p.level : 0),
+    }));
+    await g.emit({
+      type: 'arcadeRound',
+      game: 'Coin Derby',
+      title: final ? 'Coin Derby · Finish!' : `Coin Derby · Leg ${round}`,
+      detail: final
+        ? 'Everyone keeps their coins. Tied leaders each earn the first-place bonus.'
+        : 'Pick your strategy again for the next leg.',
+      rows,
+      final,
+    });
+    if (final)
+      for (const row of rows) {
+        await g.pay(null, g.G.players[row.pid], row.amount, 'Coin Derby');
+        await g.log(`${g.G.players[row.pid].name} won ${row.amount}G in Coin Derby.`, row.pid, 'arcade');
+      }
   }
-  if (winner < 0) winner = pos.indexOf(Math.max(...pos));
-  await g.emit({ type: 'derby', backers, frames, coins, winner });
-  for (let i = 0; i < DERBY_RACERS; i++) {
-    const q = backers[i] >= 0 ? G.players[backers[i]] : null;
-    if (!q) continue;
-    let amount = coins[i] * K.derby.perCoin;
-    if (i === winner) amount += K.derby.winner * q.level;
-    if (amount > 0) {
-      await g.pay(null, q, amount, 'Coin Derby');
-      await g.log(`${q.name} won ${amount}G in the Coin Derby.`, q.id, 'arcade');
+}
+
+export function wheelWins(choice: number, number: number) {
+  return choice < 2 ? (number - 1) % 2 === choice : Math.floor((number - 1) / 4) === choice - 2;
+}
+
+export async function luckyWheel(g: Game, _p: Player) {
+  const picks = await choices(g, {
+    game: 'Lucky Wheel',
+    round: 1,
+    options: [
+      'Red · 2× return',
+      'Blue · 2× return',
+      '1–4 · 3× return',
+      '5–8 · 3× return',
+      '9–12 · 3× return',
+    ],
+    hint: 'Bet up to 100G, or skip. Returns include your wager. Odd numbers are red; even numbers blue.',
+    maxBet: K.wheel.maxBet,
+  });
+  const wheel = randInt(g.G, K.wheel.spaces) + 1;
+  const rows = picks.map(({ player: p, choice, stake }) => {
+    const won = wheelWins(choice, wheel);
+    return {
+      pid: p.id,
+      text: stake ? `${won ? 'Won' : 'Lost'} · ${stake}G bet` : 'Skipped',
+      amount: stake ? (won ? stake * (choice < 2 ? 1 : 2) : -stake) : 0,
+    };
+  });
+  await g.emit({
+    type: 'arcadeRound',
+    game: 'Lucky Wheel',
+    title: 'Lucky Wheel',
+    detail: `${wheel} · ${wheel % 2 ? 'Red' : 'Blue'} — net winnings shown below`,
+    wheel,
+    rows,
+    final: true,
+  });
+  for (const row of rows) {
+    const p = g.G.players[row.pid];
+    if (row.amount > 0) await g.pay(null, p, row.amount, 'Lucky Wheel');
+    if (row.amount < 0) await g.pay(p, null, -row.amount, 'Lucky Wheel');
+    await g.log(`${p.name}: ${row.amount >= 0 ? '+' : ''}${row.amount}G in Lucky Wheel.`, p.id, 'arcade');
+  }
+}
+
+export async function treasureSplit(g: Game, _p: Player) {
+  for (let round = 1; round <= K.treasure.rounds; round++) {
+    const picks = await choices(g, {
+      game: 'Treasure Split',
+      round,
+      options: K.treasure.chests.map((n, i) => `Chest ${i + 1} · ${n}G`),
+      hint: 'Pick a chest. Everyone choosing it splits its coins. Two rounds.',
+    });
+    const rows = picks.map(({ player: p, choice }) => ({
+      pid: p.id,
+      text: `Chest ${choice + 1} · shared by ${picks.filter((a) => a.choice === choice).length}`,
+      amount: Math.floor(K.treasure.chests[choice] / picks.filter((a) => a.choice === choice).length),
+    }));
+    await g.emit({
+      type: 'arcadeRound',
+      game: 'Treasure Split',
+      title: `Treasure Split · Round ${round}`,
+      detail: 'Choices revealed! Each chest is divided equally; leftover coins stay in the chest.',
+      rows,
+      final: round === K.treasure.rounds,
+    });
+    for (const row of rows) {
+      await g.pay(null, g.G.players[row.pid], row.amount, 'Treasure Split');
+      await g.log(`${g.G.players[row.pid].name} found ${row.amount}G in Treasure Split.`, row.pid, 'arcade');
     }
   }
-  const wq = backers[winner] >= 0 ? G.players[backers[winner]] : null;
-  await g.log(`Coin Derby: racer ${winner + 1} won${wq ? ` for ${wq.name}` : ''}!`, wq?.id, 'arcade');
 }

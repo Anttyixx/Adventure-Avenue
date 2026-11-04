@@ -341,3 +341,12 @@ Portal traversal in `Game.destinations` inserts entry and exit into the route pa
 only one road step. `Game.move` emits a step for entry and a warp for the exit, tracks remaining
 steps separately from path length, and resumes walking with free direction. Arrival at the exit
 does not retrigger a portal; bank passing/landing behavior follows remaining steps.
+
+### Arcade decisions and reveals
+
+`arcade.ts` owns the five-game rotation, set scoring, bets and seeded race/wheel outcomes.
+`reels` requests one lock/reroll decision at a time; `arcadeChoice` collects each active player's
+private choice in sequence through the normal host/guest decision protocol. `arcadeRound` reveals
+all choices after collection. The client `ui/arcade.ts` renders those decisions and reveals;
+`ui/games.ts` retains venture and Memory Blocks. No client animation determines a payout.
+The UI Lab launches the actual engine games through an isolated, non-saving HotSeat.
