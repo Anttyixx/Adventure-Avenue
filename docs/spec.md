@@ -1342,3 +1342,9 @@ first turn or repeated turns by the same player. Fast CPU scales gameplay pacing
 reduced motion snaps the camera. Purchase/construction/buyout/renovation pre-payment pauses
 are 0.5 seconds. Suit tiles skip the usual one-second landing pause and have no pickup pause;
 visual effects still play immediately. Other decision delays stay unchanged.
+
+The main menu is a single viewport with no page scrolling or overscroll. Keep top-corner Sound
+and Menu and the version chip reachable. On short landscape screens, place the title/tagline
+beside the action column with compact spacing. Fit the complete center group to the available
+height when necessary, including Continue, Rejoin and optional join-name fields. Menu pop-ups
+and their content retain their own scrolling behavior.

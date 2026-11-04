@@ -297,7 +297,21 @@ export function mainMenu(
   root.append(el);
   if (nameIn) nameIn.focus();
   else if (opts.code || opts.error) codeIn.focus();
+  // Keep every menu action visible, including Continue/Rejoin, without a scrolling title page.
+  const center = el.querySelector<HTMLElement>('.menu-center')!;
+  const fit = () => {
+    if (!el.isConnected) return;
+    const available = Math.max(1, el.clientHeight - 84);
+    center.style.setProperty('--menu-fit', String(Math.min(1, available / center.offsetHeight)));
+  };
+  const resize = new ResizeObserver(fit);
+  resize.observe(el);
+  resize.observe(center);
+  fit();
+  document.fonts.ready.then(fit);
+
   return () => {
+    resize.disconnect();
     closeMenu?.();
     closeSoundPopover();
     scene.stop();

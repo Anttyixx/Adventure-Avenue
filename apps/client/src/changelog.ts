@@ -26,6 +26,15 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: '2026-11-04-fixed-title-screen',
+    date: 'Nov 4, 2026',
+    title: 'A single-page main menu',
+    features: [],
+    extras: [
+      'The main menu fits the screen without scrolling, including Continue and Rejoin. Landscape phones place the title beside the menu actions.',
+    ],
+  },
+  {
     id: '2026-11-04-build-picker',
     date: 'Nov 4, 2026',
     title: 'A clearer building picker',

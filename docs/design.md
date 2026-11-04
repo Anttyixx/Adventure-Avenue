@@ -752,3 +752,9 @@ in-phase overlay, and `hud.status` for fallback activity. Preserve the existing 
 reveal and duplicate-purchase consolidation. UI Lab’s Action lifecycle and Event burst → quiet
 fallback controls demonstrate the priorities. Turn-camera glides stay 1.6 seconds with reduced
 motion snapping the camera; no other decision delays change.
+
+The main menu is a single viewport with no page scrolling or overscroll. Keep top-corner Sound
+and Menu and the version chip reachable. On short landscape screens, place the title/tagline
+beside the action column with compact spacing. Fit the complete center group to the available
+height when necessary, including Continue, Rejoin and optional join-name fields. Menu pop-ups
+and their content retain their own scrolling behavior.
