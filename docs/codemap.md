@@ -174,7 +174,7 @@ One file, grouped by feature with a comment heading each group. Class prefixes t
 | `.game-menu`, `.gm-`                                                     | In-game menu                                                   |
 | `.prompt-center`, `.prompt-text`, `.btn-row`                             | Action bar                                                     |
 | `.pcard`, `.pc-`, `.cards`                                               | Player cards                                                   |
-| `.log-btn`, `.log-dock`, `.log-`                                         | Game log                                                       |
+| `.log-toggle`, `.log-panel`, `.sb-log`, `.log-`                          | Game log button (toolbar) and log panel                        |
 | `.pv-`                                                                   | Player overview                                                |
 | `.guide`, `.guide-`, `.rules`                                            | Guide pop-up                                                   |
 | `.modal`, `.modal-`                                                      | Dialogs                                                        |

@@ -66,22 +66,19 @@ export class Hud {
   toolbar = h('div', { class: 'toolbar' });
   /** Current zoom; tapping it zooms back in on the player. */
   zoomChip = h('button', { class: 'zoom-chip', title: 'Zoom: scroll, pinch or - / +. Tap to reset.' });
-  /** The Game log button above the player cards; tapping it morphs it into the game log. */
-  logButton = h('div', {
-    class: 'log-btn glass',
-    role: 'button',
-    tabindex: '0',
-    'aria-expanded': 'false',
-  });
-  logWrap = h('div', { class: 'lb-wrap' }, this.logButton);
-  private logLabel = h('div', { class: 'lb-label' }, 'Game log');
+  /** The Game log button in the toolbar (between the zoom chip and Guide); it opens the log panel. */
+  logBtn = h(
+    'button',
+    { class: 'btn small log-toggle', 'aria-haspopup': 'dialog', 'aria-expanded': 'false' },
+    'Game log',
+  );
+  /** The game log: a panel in the top right, under the toolbar and above the player cards. */
+  logPanel = h('div', { class: 'log-panel glass', role: 'dialog', 'aria-label': 'Game log', hidden: true });
   private messages = new StatusMessages(() => this.showStatus());
   private get waiting() {
     return this.messages.waiting;
   }
   private shownStatus: { text: string; kind?: IconKind } | null = null;
-  /** The Game log button's place while folded (it is hidden while the log is open). */
-  private lineRect = { top: 0, left: 0, right: 0, width: 0, height: 0 };
   /** How many log lines the open log last showed, so new ones can fade in. */
   private logSeen = -1;
   /** The action bar morphing between sizes (status line, options). */
@@ -110,7 +107,7 @@ export class Hud {
   private overviewAnim: Animation | null = null;
   /** A property from the overview is being shown on the board. */
   private finding = false;
-  /** The game log inside the status line, shown while it is expanded. */
+  /** The game log's contents (title, Close and the list), inside the log panel. */
   logBox = h('div', { class: 'sb-log' });
   logOpen = false;
   /**
@@ -122,8 +119,6 @@ export class Hud {
   private chipGoal = h('span', { class: 'gc-tag' });
   private chipRound = h('span', { class: 'gc-tag' });
   roomBtn = h('button', { class: 'btn small ghost gc-room', hidden: true }, 'Room');
-  /** Holds the status line just above the player cards, as wide as them. */
-  logDock = h('div', { class: 'log-dock' });
   tooltip = h('div', { class: 'tooltip glass' });
   modalLayer = h('div', { class: 'modal-layer' });
   bannerLayer = h('div', { class: 'banner-layer' });
@@ -150,8 +145,7 @@ export class Hud {
     cb: HudCallbacks,
   ) {
     this.root = h('div', { class: 'hud' });
-    this.logButton.append(this.logBox, this.logLabel);
-    this.logDock.append(this.logWrap);
+    this.logPanel.append(this.logBox);
     this.cardsWrap.append(this.cards);
     this.infoChip.append(
       h('span', { class: 'gc-title' }, 'Adventure Avenue'),
@@ -160,22 +154,13 @@ export class Hud {
       this.chipGoal,
       this.roomBtn,
     );
-    // While it is the log, only its Close button folds it back.
-    this.logButton.onclick = () => {
-      if (!this.logOpen) this.toggleLog(true);
-    };
-    this.logButton.onkeydown = (e) => {
-      if (e.target === this.logButton && (e.key === 'Enter' || e.key === ' ')) {
-        e.preventDefault();
-        this.toggleLog();
-      }
-    };
+    this.logBtn.onclick = () => this.toggleLog();
     this.root.append(
       this.toolbar,
       h('div', { class: 'top-left' }, this.infoChip, this.marketBox),
       this.ask,
       this.cardsWrap,
-      this.logDock,
+      this.logPanel,
       this.overviewLayer,
       this.tooltip,
       this.modalLayer,
@@ -201,7 +186,7 @@ export class Hud {
       }
     };
     this.guideBtn.onclick = () => this.cb.onGuide();
-    this.toolbar.append(this.zoomChip, this.guideBtn, this.menuBtn);
+    this.toolbar.append(this.zoomChip, this.logBtn, this.guideBtn, this.menuBtn);
     this.buildMenu();
     window.addEventListener('keydown', this.onKey);
     board.onHover = (id, x, y) => this.showTooltip(id, x, y);
@@ -408,6 +393,10 @@ export class Hud {
       this.toggleMenu(false);
       return;
     }
+    if (e.key === 'Escape' && this.logOpen && !this.modalLayer.childElementCount && this.overviewPid < 0) {
+      this.toggleLog(false);
+      return;
+    }
     if (e.key === 'Escape' && this.overviewPid >= 0 && !this.modalLayer.childElementCount) {
       this.closeOverview();
       return;
@@ -433,17 +422,12 @@ export class Hud {
     // Where the action bar sits once shown (layout box, so the slide animation does not count).
     const a = this.ask;
     const ask = a.classList.contains('show') ? { top: a.offsetTop, height: a.offsetHeight } : null;
-    // The status line (and the log it opens into) sits on the player cards, as wide as them.
+    // The log panel sits between the toolbar and the player cards, as wide as the cards.
     const cards = this.cardsWrap.getBoundingClientRect();
     this.root.style.setProperty('--cards-w', `${cards.width}px`);
     this.root.style.setProperty('--dock-b', `${H - cards.top + 6}px`);
-    // Only the folded status line counts, so opening the log never moves anything.
-    if (!this.logOpen) {
-      const r = this.logButton.getBoundingClientRect();
-      this.lineRect = { top: r.top, left: r.left, right: r.right, width: r.width, height: r.height };
-    }
-    const lineTop = this.lineRect.height ? this.lineRect.top : cards.top;
-    // Upright phones: the options sit above the cards and the status line.
+    const lineTop = cards.top;
+    // Upright phones: the options sit above the cards.
     if (portraitStack) this.root.style.setProperty('--cards-h', `${H - lineTop + 6}px`);
     const tools = this.toolbar.getBoundingClientRect();
     if (!this.marketOpen) this.topLeftBottom = this.infoChip.parentElement!.getBoundingClientRect().bottom;
@@ -971,28 +955,25 @@ export class Hud {
     anim.oncancel = end;
   }
 
-  /** Expand the Game log button into the game log, or fold it back, morphing between the sizes. */
+  /** Open or close the game log panel (top right, under the toolbar); it pops in from its button. */
   toggleLog(open = !this.logOpen) {
     if (open === this.logOpen) return;
-    const box = this.logButton;
-    // Layout sizes, so the hover zoom does not count.
-    const from = { width: box.offsetWidth, height: box.offsetHeight };
     this.logOpen = open;
-    this.logWrap.classList.toggle('open', open);
-    box.setAttribute('aria-expanded', String(open));
+    this.logPanel.hidden = !open;
+    this.logBtn.classList.toggle('on', open);
+    this.logBtn.setAttribute('aria-expanded', String(open));
     this.logSeen = -1;
     this.renderLog(true);
-    this.updateInsets();
-    const to = { width: box.offsetWidth, height: box.offsetHeight };
-    if (from.width && to.width && !matchMedia('(prefers-reduced-motion: reduce)').matches) {
-      box.animate(
+    if (open && !matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      this.logPanel.animate(
         [
-          { width: `${from.width}px`, height: `${from.height}px` },
-          { width: `${to.width}px`, height: `${to.height}px` },
+          { opacity: 0, transform: 'translateY(-8px) scale(0.96)' },
+          { opacity: 1, transform: 'none' },
         ],
-        { duration: 260, easing: 'cubic-bezier(0.2, 0.8, 0.2, 1)' },
+        { duration: 200, easing: 'cubic-bezier(0.2, 0.8, 0.2, 1)' },
       );
     }
+    if (!open) this.logBtn.focus({ preventScroll: true });
   }
 
   private renderLog(toBottom = false) {

@@ -872,86 +872,56 @@ input[type='range'] {
   padding: 3px 10px;
   font-size: 12px;
 }
-/* The status line sits on the player cards, right-aligned and at most as wide as them; the log
-   it opens into is exactly as wide. */
-.log-dock {
+/* The game log: a panel in the top right, under the toolbar and above the player cards, as wide
+   as the cards. The Game log button in the toolbar opens and closes it. */
+.log-panel {
   position: absolute;
+  top: var(--top-free, 50px);
   right: 10px;
-  bottom: var(--dock-b, 200px);
+  z-index: 5;
   width: var(--cards-w, 300px);
-  /* The open log fits between the toolbar and the cards. */
-  max-height: calc(100vh - var(--dock-b, 200px) - var(--top-free, 50px));
+  min-width: 240px;
+  box-sizing: border-box;
+  max-height: calc(100% - var(--dock-b, 200px) - var(--top-free, 50px) - 4px);
   display: flex;
   flex-direction: column;
-  align-items: flex-end;
-  pointer-events: none;
-}
-.log-dock > * {
-  pointer-events: auto;
-}
-.hud.upright .log-dock {
-  right: 6px;
-}
-.lb-wrap {
-  align-self: flex-end;
-  max-width: 100%;
-}
-.log-btn {
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-end;
-  max-width: 100%;
-  overflow: hidden;
-  cursor: pointer;
-  user-select: none;
-  -webkit-user-select: none;
-  transition: background 0.15s;
-}
-.lb-wrap:not(.open) .log-btn:hover {
-  background: rgba(30, 44, 82, 0.92);
-}
-.log-btn:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 2px;
-}
-.lb-wrap.open {
-  align-self: stretch;
-  min-height: 0;
-  display: flex;
-  flex-direction: column;
-}
-.lb-wrap.open .log-btn {
-  width: 100%;
-  min-height: 0;
-  cursor: default;
+  transform-origin: top right;
   user-select: text;
   -webkit-user-select: text;
 }
-.lb-label {
-  padding: 6px 14px;
-  font-size: 13px;
-  font-weight: 700;
-  color: var(--text);
-  white-space: nowrap;
-}
-.lb-wrap.open .lb-label {
+.log-panel[hidden] {
   display: none;
+}
+.hud.upright .log-panel {
+  right: 6px;
+  left: 6px;
+  width: auto;
+}
+/* Phones in landscape: the gap above the cards is too short for a readable log, so the open
+   panel runs down over the cards (Close or the Game log button puts it away). */
+@media (max-height: 500px) {
+  .log-panel {
+    max-height: calc(100% - var(--top-free, 50px) - 10px);
+  }
+  .sb-log .log-list {
+    max-height: none;
+  }
+}
+.toolbar .log-toggle.on {
+  background: var(--accent);
+  color: #3b2a00;
 }
 .pname {
   font-weight: 700;
 }
-/* The game log the Game log button turns into. */
+/* The game log's contents inside the log panel: title row with Close, then the list. */
 .sb-log {
-  display: none;
-}
-.lb-wrap.open .sb-log {
   flex: 1 1 auto;
   display: flex;
   flex-direction: column;
   gap: 6px;
   padding: 10px 10px 8px;
   min-height: 0;
-  animation: sb-log-in 0.3s ease-out;
 }
 @keyframes sb-log-in {
   from {
@@ -959,8 +929,9 @@ input[type='range'] {
   }
 }
 .sb-log .log-list {
+  flex: 1 1 auto;
   min-height: 0;
-  max-height: min(40.6vh, 377px);
+  max-height: 420px;
   overflow-y: auto;
 }
 .sb-log .drawer-head h3 {

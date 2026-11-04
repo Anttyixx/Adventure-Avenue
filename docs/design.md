@@ -384,7 +384,8 @@ Each element: **purpose**, **placement**, **anatomy**, **spec**, **behavior**, t
 - **Purpose:** screen-wide tools.
 - **Anatomy:** zoom chip (a pill showing "250%"; tap = reset zoom **and recenter**), then small
   buttons ("? Guide", "☰ Menu"; builder: Undo, Save, gold "Test play", Menu).
-- **Spec:** `.toolbar`, `top/right: 10px`, gap 6, buttons `.btn.small` on glass.
+- **Spec:** `.toolbar`, `top/right: 10px`, gap 6, buttons `.btn.small` on glass. Order: zoom
+  chip, Game log, Guide, Menu.
 - **Rule:** at most one gold button here (the thing to do next, e.g. Test play).
 
 ### 5.3 Action bar (bottom center)
@@ -583,9 +584,14 @@ if (!(await ask(`Delete ${d.name}?`, 'Its 4 properties will be removed from the 
 
 ### 5.18 Game log and Stock market panel
 
-- Both start as a small glass button and **morph** into their panel (260-280ms). The log groups
-  lines by turn, newest at the bottom, players as chips. The market shows the district × player
-  table and shop cards.
+- **Game log:** a toolbar button (`.log-toggle`, between the zoom chip and Guide, gold `.on`
+  while open) opens a glass panel (`.log-panel`) top right: `top: var(--top-free)` (just under the
+  toolbar), `right: 10px`, as wide as the player cards (`--cards-w`, min 240px), max height down to
+  the top of the cards (`--dock-b`); on phones (`max-height: 500px`) it may run over the cards. It
+  pops in (200ms, fade + 8px drop + scale .96 from the top right); Close, the button or Escape
+  closes it. The log groups lines by turn, newest at the bottom, players as chips.
+- **Stock market:** starts as a small glass button and **morphs** into its panel (260-280ms); it
+  shows the district × player table and shop cards.
 
 ### 5.19 Board overlays (canvas)
 

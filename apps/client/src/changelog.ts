@@ -26,6 +26,18 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: '2026-11-04-log-toolbar',
+    date: 'Nov 4, 2026',
+    title: 'Game log in the toolbar',
+    features: [
+      {
+        tag: 'better',
+        title: 'Game log button moved',
+        text: 'The Game log button now sits in the top right toolbar, between the zoom and Guide. It opens the log as a panel just under the toolbar, above the player cards.',
+      },
+    ],
+  },
+  {
     id: '2026-11-04-menu-compact',
     date: 'Nov 4, 2026',
     title: 'A neater title screen',

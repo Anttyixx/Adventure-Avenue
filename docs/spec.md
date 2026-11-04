@@ -961,12 +961,13 @@ the text reveal. Reparenting during resizing never restarts the reveal; repeated
 retain fractional pixels to avoid a small text shift at the end of a resize. Rapid updates start from the
 bar's visible size, and changes to screen size or player-card space retarget the resize. Reduced
 motion skips the size animation. The UI Lab's “Action bar resize test” exercises short, long and
-interrupted prompts. Above the player
-cards, right-aligned: the **Game log button**; tapping it morphs it into the game log (turn by
-turn, newest at the bottom, scrollable back to the start of the game), exactly as wide as the
-cards and fitting between the toolbar and the cards. The current turn's card ends with a waiting
-line while the game waits, and the action that answers it fades in in its place. Only the log's
-Close button folds it back. Bottom right: the player cards stacked vertically in turn order (online, each device
+interrupted prompts. In the toolbar, between the
+zoom chip and Guide: the **Game log** button (gold while the log is open). It opens the game log
+(turn by turn, newest at the bottom, scrollable back to the start of the game) as a glass panel in
+the top right, just under the toolbar and above the player cards, as wide as the cards; it pops in
+from the top right. On short phone screens the open panel may run down over the player cards so
+enough lines show. The current turn's card ends with a waiting
+line while the game waits, and the action that answers it fades in in its place. The log's Close button, the Game log button again or Escape closes it. Bottom right: the player cards stacked vertically in turn order (online, each device
 turns the order round so its own player's card is at the bottom; turns still go top to bottom) (net worth, cash, level,
 suits and progress bar); they are always shown. Player cards show the character's whole sprite
 (trimmed to its drawn pixels, no fade).
