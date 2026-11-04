@@ -418,11 +418,6 @@ input[type='range'] {
   background: linear-gradient(#ffe08f, #f5b301);
   color: #3b2a00;
 }
-.menu-btn.continue {
-  --edge: #1d4d38;
-  background: linear-gradient(#3fa874, #2d7a55);
-  color: #fff;
-}
 .menu-btn:disabled {
   cursor: default;
   --edge: #5a6684;
@@ -438,21 +433,6 @@ input[type='range'] {
   font-size: 14px;
   font-weight: 700;
   opacity: 0.85;
-}
-.menu-chips {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 5px;
-  margin-top: 6px;
-}
-.menu-chip {
-  font-size: 12px;
-  font-weight: 700;
-  padding: 2px 9px;
-  border-radius: 999px;
-  background: var(--pc);
-  color: #fff;
-  box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.5);
 }
 
 /* ------------------------------------------------------------ game setup */
@@ -4672,89 +4652,6 @@ input[type='range'] {
 .bp-side .btn-row {
   flex-wrap: wrap;
 }
-/* Join on the main menu: a box (not a button) with the code field and its Join button. */
-.menu-btn.join {
-  --edge: #24407a;
-  background: linear-gradient(#5b8cff, #3a64d8);
-  color: #fff;
-  cursor: default;
-}
-.menu-btn.join:hover,
-.menu-btn.join:active {
-  filter: none;
-  transform: none;
-  box-shadow:
-    0 6px 0 var(--edge),
-    0 14px 26px rgba(16, 26, 51, 0.3);
-}
-.join-row {
-  display: flex;
-  gap: 8px;
-  width: 100%;
-  margin-top: 8px;
-}
-.join-code {
-  flex: 1;
-  min-width: 0;
-  padding: 6px 12px;
-  border: 2px solid rgba(255, 255, 255, 0.55);
-  border-radius: 12px;
-  background: rgba(10, 20, 50, 0.35);
-  color: #fff;
-  font: 400 28px var(--head);
-  letter-spacing: 10px;
-  text-align: center;
-  text-transform: uppercase;
-}
-.join-code::placeholder {
-  color: rgba(255, 255, 255, 0.4);
-}
-.join-code:focus {
-  outline: none;
-  border-color: #fff;
-}
-.join-name {
-  width: 100%;
-  margin-top: 8px;
-  padding: 8px 12px;
-  border: 2px solid rgba(255, 255, 255, 0.55);
-  border-radius: 12px;
-  background: rgba(10, 20, 50, 0.35);
-  color: #fff;
-  font: 700 16px var(--body);
-}
-.join-name::placeholder {
-  color: rgba(255, 255, 255, 0.5);
-}
-.btn.join-go {
-  flex: none;
-  min-width: 96px;
-  font: 400 20px var(--head);
-  border-radius: 12px;
-  background: rgba(255, 255, 255, 0.18);
-  color: rgba(255, 255, 255, 0.55);
-  border: 2px solid rgba(255, 255, 255, 0.3);
-  transition:
-    background 0.2s,
-    color 0.2s,
-    box-shadow 0.2s;
-}
-/* All four letters in: the button lights up. */
-.btn.join-go.lit {
-  background: linear-gradient(#ffe08f, #f5b301);
-  color: #3b2a00;
-  border-color: #fff3c4;
-  box-shadow:
-    0 0 0 3px rgba(255, 224, 143, 0.45),
-    0 0 18px rgba(255, 209, 102, 0.8);
-  cursor: pointer;
-}
-.menu-btn.join .join-error {
-  margin: 6px 0 0;
-  color: #ffd1d1;
-  font-size: 13px;
-  font-weight: 700;
-}
 
 /* Game setup: the join code while it is being fetched or unavailable, joined seats, locked view */
 .room-code.pending,
@@ -4815,11 +4712,6 @@ input[type='range'] {
   text-align: center;
 }
 
-.menu-btn.rejoin {
-  --edge: #6b3a8a;
-  background: linear-gradient(#b36be0, #8a45bf);
-  color: #fff;
-}
 .zoom-chip {
   align-self: center;
   min-width: 52px;
@@ -7565,55 +7457,246 @@ div.sl-inline label {
   }
 }
 
-/* The title screen is one viewport; short landscape layouts put the title beside the actions. */
-@media (max-height: 560px) and (min-width: 600px) {
+/* ------------------------------------------------------------ main menu: Continue, Join, Rejoin */
+
+/* Continue: a slim green row under Play (the save's round, board and players' colors). */
+.menu-row {
+  --edge: #1d4d38;
+  width: 100%;
+  border: 0;
+  border-radius: 14px;
+  padding: 9px 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  text-align: left;
+  cursor: pointer;
+  background: linear-gradient(#3fa874, #2d7a55);
+  color: #fff;
+  box-shadow:
+    0 4px 0 var(--edge),
+    0 10px 20px rgba(16, 26, 51, 0.25);
+  transition:
+    transform 0.1s,
+    box-shadow 0.1s,
+    filter 0.15s;
+}
+.menu-row:hover {
+  filter: brightness(1.06);
+  transform: translateY(-2px);
+}
+.menu-row:active {
+  transform: translateY(3px);
+  box-shadow:
+    0 1px 0 var(--edge),
+    0 4px 10px rgba(16, 26, 51, 0.25);
+}
+.menu-row-text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+.menu-row-title {
+  font: 400 21px var(--head);
+  line-height: 1.1;
+}
+.menu-row-sub {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-size: 12px;
+  font-weight: 700;
+  opacity: 0.85;
+}
+.menu-dots {
+  flex: none;
+  display: flex;
+}
+.menu-dot {
+  width: 16px;
+  height: 16px;
+  margin-left: -4px;
+  border-radius: 50%;
+  background: var(--pc);
+  box-shadow: 0 0 0 2px #2d7a55;
+}
+
+/* Join: a slim dark strip with the code field and its Join button; it lights up at 4 letters. */
+.menu-join {
+  width: 100%;
+  box-sizing: border-box;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 7px 7px 16px;
+  border-radius: 14px;
+  background: rgba(16, 26, 51, 0.85);
+  backdrop-filter: blur(8px);
+  box-shadow: 0 10px 20px rgba(16, 26, 51, 0.25);
+  color: #fff;
+}
+.menu-join-label {
+  flex: 1;
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  font: 400 21px var(--head);
+  white-space: nowrap;
+}
+.menu-join-label small {
+  font: 700 12px var(--body);
+  color: var(--muted);
+}
+.join-code {
+  flex: none;
+  width: 122px;
+  box-sizing: border-box;
+  padding: 4px 8px 4px 14px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+  font: 400 20px var(--head);
+  letter-spacing: 7px;
+  text-align: center;
+  text-transform: uppercase;
+}
+.join-code::placeholder {
+  color: rgba(255, 255, 255, 0.35);
+}
+.join-code:focus,
+.join-name:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+.join-name {
+  flex: 1 1 100%;
+  order: 1;
+  box-sizing: border-box;
+  padding: 6px 10px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+  font: 700 14px var(--body);
+}
+.join-name::placeholder {
+  color: rgba(255, 255, 255, 0.45);
+}
+.btn.join-go {
+  flex: none;
+  min-width: 72px;
+  padding: 8px 14px;
+  font: 400 17px var(--head);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.12);
+  color: rgba(255, 255, 255, 0.5);
+  border: 0;
+  transition:
+    background 0.2s,
+    color 0.2s,
+    box-shadow 0.2s;
+}
+/* All four letters in: the button lights up. */
+.btn.join-go.lit {
+  background: linear-gradient(#ffe08f, #f5b301);
+  color: #3b2a00;
+  box-shadow: 0 0 14px rgba(255, 209, 102, 0.7);
+  cursor: pointer;
+}
+.menu-join .join-error {
+  flex: 1 1 100%;
+  order: 2;
+  margin: 0;
+  color: #ffb3b3;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+/* Rejoin: a small chip in the top left corner while this device has an online game to go back to. */
+.menu-rejoin {
+  position: absolute;
+  top: 14px;
+  left: 14px;
+  z-index: 2;
+  max-width: calc(100% - 250px);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 14px 5px 6px;
+  border: 0;
+  border-radius: 999px;
+  background: rgba(16, 26, 51, 0.6);
+  backdrop-filter: blur(8px);
+  color: #fff;
+  text-align: left;
+  cursor: pointer;
+  box-shadow: inset 0 0 0 2px #b36be0;
+  transition:
+    transform 0.12s,
+    background 0.15s;
+}
+.menu-rejoin:hover {
+  background: rgba(16, 26, 51, 0.75);
+  transform: translateY(-2px);
+}
+.menu-rejoin-icon {
+  flex: none;
+  width: 26px;
+  height: 26px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: linear-gradient(#b36be0, #8a45bf);
+  font: 700 16px var(--body);
+}
+.menu-rejoin-text {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  line-height: 1.15;
+}
+.menu-rejoin-text b {
+  font: 400 14px var(--head);
+}
+.menu-rejoin-text small {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--muted);
+}
+
+/* Short screens (phones in landscape): the title stays on top, smaller, without the tagline. */
+@media (max-height: 560px) {
   .menu-center {
-    width: min(900px, 100%);
-    display: grid;
-    grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
-    gap: 10px 24px;
+    top: calc(50% + 14px);
+    gap: 6px;
   }
-  .menu-logo {
-    grid-column: 1;
-    grid-row: 1;
-    align-self: end;
+  .menu-logo .l1 {
+    font-size: clamp(30px, 9vh, 56px);
+  }
+  .menu-logo .l2 {
+    font-size: clamp(38px, 12vh, 72px);
   }
   .menu-tag {
-    grid-column: 1;
-    grid-row: 2;
-    align-self: start;
-    margin: 0;
-    font-size: 13px;
+    display: none;
   }
   .menu-buttons {
-    grid-column: 2;
-    grid-row: 1 / span 2;
+    margin-top: 6px;
     gap: 9px;
   }
   .menu-btn {
-    padding: 8px 14px;
-    border-radius: 12px;
+    padding: 8px 16px;
+    border-radius: 14px;
   }
   .menu-btn-title {
-    font-size: 23px;
+    font-size: 24px;
   }
   .menu-btn-sub {
     font-size: 12px;
-  }
-  .menu .join-row {
-    margin-top: 4px;
-  }
-  .menu .join-code {
-    font-size: 22px;
-    padding: 4px 8px;
-  }
-  .menu .join-name {
-    margin-top: 4px;
-    padding: 5px 8px;
-    font-size: 13px;
-  }
-  .menu-chips {
-    flex-wrap: nowrap;
-    overflow: hidden;
   }
 }

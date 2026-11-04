@@ -109,22 +109,31 @@ export function mainMenu(
   const scene = titleScene();
   const s = save?.state;
   // Only when there is a game to go back to.
+  // Only when there is a game to go back to: a slim row under Play (round, board, players' colors).
   const cont =
     save && s
       ? h(
           'button',
-          { class: 'menu-btn continue', onclick: () => handlers.onContinue(save) },
-          h('span', { class: 'menu-btn-title' }, 'Continue'),
+          {
+            class: 'menu-row continue',
+            onclick: () => handlers.onContinue(save),
+            'aria-label': `Continue: ${s.players.map((p) => p.name).join(', ')}`,
+          },
           h(
             'span',
-            { class: 'menu-btn-sub' },
-            `${save.online ? `Online game · code ${save.online.code} · ` : ''}Round ${s.round}${s.boardName ? ` · ${s.boardName}` : ''} · saved ${ago(save.savedAt)}`,
+            { class: 'menu-row-text' },
+            h('span', { class: 'menu-row-title' }, 'Continue'),
+            h(
+              'span',
+              { class: 'menu-row-sub' },
+              `${save.online ? `Online · ${save.online.code} · ` : ''}Round ${s.round}${s.boardName ? ` · ${s.boardName}` : ''} · ${ago(save.savedAt)}`,
+            ),
           ),
           h(
             'span',
-            { class: 'menu-chips' },
+            { class: 'menu-dots', 'aria-hidden': 'true' },
             ...s.players.map((p) =>
-              h('span', { class: 'menu-chip', style: `--pc:${PLAYER_COLORS[p.color]}` }, p.name),
+              h('span', { class: 'menu-dot', title: p.name, style: `--pc:${PLAYER_COLORS[p.color]}` }),
             ),
           ),
         )
@@ -141,7 +150,11 @@ export function mainMenu(
     value: cleanCode(opts.code ?? ''),
     'aria-label': 'Join code',
   }) as HTMLInputElement;
-  const joinBtn = h('button', { class: 'btn join-go' }, 'Join') as HTMLButtonElement;
+  const joinBtn = h(
+    'button',
+    { class: 'btn join-go', 'aria-label': 'Join game' },
+    'Join',
+  ) as HTMLButtonElement;
   const ready = () => cleanCode(codeIn.value).length === 4;
   const refresh = () => {
     joinBtn.disabled = !ready();
@@ -152,7 +165,7 @@ export function mainMenu(
       ? (h('input', {
           class: 'join-name',
           maxlength: '12',
-          placeholder: 'Your name in that game',
+          placeholder: 'Your name there',
           value: opts.askName,
           'aria-label': 'Your name in that game',
         }) as HTMLInputElement)
@@ -172,23 +185,30 @@ export function mainMenu(
   codeIn.onkeydown = onEnter;
   joinBtn.onclick = join;
   refresh();
+  // A slim strip, not a big button: Play is the main way in; joining only needs the code.
   const joinBox = h(
     'div',
-    { class: 'menu-btn join' },
-    h('span', { class: 'menu-btn-title' }, 'Join'),
-    h('span', { class: 'menu-btn-sub' }, "Type the code on the host's screen"),
+    { class: 'menu-join' },
+    h('span', { class: 'menu-join-label' }, 'Join', h('small', null, 'a friend')),
     nameIn,
-    h('div', { class: 'join-row' }, codeIn, joinBtn),
+    codeIn,
+    joinBtn,
     opts.error ? h('p', { class: 'join-error' }, opts.error) : null,
   );
   // A guest's last online game, until it ends (the host may have paused it to continue later).
   const guest = loadGuest();
+  // A small chip in the top left corner, out of the way of the main actions.
   const rejoin = guest
     ? h(
         'button',
-        { class: 'menu-btn rejoin', onclick: () => handlers.onRejoin(guest) },
-        h('span', { class: 'menu-btn-title' }, 'Rejoin online game'),
-        h('span', { class: 'menu-btn-sub' }, `Code ${guest.code} as ${guest.name} · joined ${ago(guest.at)}`),
+        { class: 'menu-rejoin', onclick: () => handlers.onRejoin(guest) },
+        h('span', { class: 'menu-rejoin-icon', 'aria-hidden': 'true' }, '↻'),
+        h(
+          'span',
+          { class: 'menu-rejoin-text' },
+          h('b', null, `Rejoin ${guest.code}`),
+          h('small', null, `as ${guest.name} · ${ago(guest.at)}`),
+        ),
       )
     : null;
   // The Menu button (top right, beside Sound) holds What's new, the board editor and Credits.
@@ -268,6 +288,7 @@ export function mainMenu(
     'div',
     { class: 'menu' },
     scene.el,
+    rejoin,
     h('div', { class: 'menu-top' }, soundButton('btn menu-sound', 'Sound'), menuBtn),
     h(
       'div',
@@ -288,16 +309,15 @@ export function mainMenu(
           h('span', { class: 'menu-btn-title' }, 'Play'),
           h('span', { class: 'menu-btn-sub' }, 'Set up a game. Friends can join with its code.'),
         ),
-        joinBox,
         cont,
-        rejoin,
+        joinBox,
       ),
     ),
   );
   root.append(el);
   if (nameIn) nameIn.focus();
   else if (opts.code || opts.error) codeIn.focus();
-  // Keep every menu action visible, including Continue/Rejoin, without a scrolling title page.
+  // Keep every menu action visible, including Continue and the join name box, without a scrolling title page.
   const center = el.querySelector<HTMLElement>('.menu-center')!;
   const fit = () => {
     if (!el.isConnected) return;

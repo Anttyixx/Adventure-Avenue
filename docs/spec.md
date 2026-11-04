@@ -734,10 +734,13 @@ start, so every other system checks one flag (`rules`).
 | Venture deck                          | All 30 cards                                 | 23 cards (no stock cards) |
 | Lucky Reels "three stocks"            | 10 shares                                    | 150G                      |
 
-**Main menu:** the title screen has **Play**, which opens game setup (with a join code for
-friends), and **Join**: a box with a code field whose Join button lights up once all four letters
-are in. **Continue** (resume the saved game; it shows the round, board and players) and **Rejoin
-online game** appear only when there is something to go back to. In the top right corner sit
+**Main menu:** the title screen has the title on top and, under it, **Play** (the one big gold
+button), which opens game setup (with a join code for friends). **Continue** (only with a saved
+game) is a slim green row under it showing the round, board and how long ago it was saved, with a
+colored dot per player. **Join** is a slim dark strip: "Join a friend", a short code field and a
+Join button that lights up once all four letters are in (a name field appears under it when
+rejoining a running game needs one). **Rejoin** is a small chip in the top left corner ("Rejoin
+KQZD, as Milo, 5 min ago") while this device has an online game to go back to. In the top right corner sit
 the **Sound** button and, to its right, **Menu**: a pop-up in the middle of the screen with
 **What's new**, **Board editor** and **Credits**, each a row with a line saying what it is (Close,
 Escape or a click outside closes it). Menu carries a red "New" badge until the latest update has
@@ -1347,7 +1350,7 @@ are 0.5 seconds. Suit tiles skip the usual one-second landing pause and have no 
 visual effects still play immediately. Other decision delays stay unchanged.
 
 The main menu is a single viewport with no page scrolling or overscroll. Keep top-corner Sound
-and Menu and the version chip reachable. On short landscape screens, place the title/tagline
-beside the action column with compact spacing. Fit the complete center group to the available
-height when necessary, including Continue, Rejoin and optional join-name fields. Menu pop-ups
+and Menu and the version chip reachable. The title always sits above the actions; on short screens
+(phones in landscape) it shrinks and the tagline is hidden. Fit the complete center group to the
+available height when necessary, including Continue and the optional join-name field. Menu pop-ups
 and their content retain their own scrolling behavior.

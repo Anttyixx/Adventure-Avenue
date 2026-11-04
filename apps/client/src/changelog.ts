@@ -26,6 +26,18 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: '2026-11-04-menu-compact',
+    date: 'Nov 4, 2026',
+    title: 'A neater title screen',
+    features: [
+      {
+        tag: 'better',
+        title: 'Main menu layout',
+        text: 'The title always sits on top, so it no longer overlaps the buttons on small screens. Play stays the big button; Continue and Join are now slim rows, and Rejoin is a small chip in the top left corner.',
+      },
+    ],
+  },
+  {
     id: '2026-11-04-fixed-title-screen',
     date: 'Nov 4, 2026',
     title: 'A single-page main menu',

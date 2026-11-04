@@ -99,6 +99,7 @@ const rnd = (n: number) => Math.floor(Math.random() * n);
  * are easy to find. Update this list with each change.
  */
 const RECENT = new Set([
+  'Main menu (save + rejoin)',
   'Buy prompt',
   'Main menu (rejoin offer)',
   'Build',
@@ -1400,6 +1401,7 @@ export async function openLab(app: HTMLElement, section?: string) {
       btn('Main menu (saved game)', () => menu(true)),
       btn('Main menu (no save)', () => menu(false)),
       btn('Main menu (rejoin offer)', () => menu(false, true)),
+      btn('Main menu (save + rejoin)', () => menu(true, true)),
       btn("What's new", () => openWhatsNew(document.body)),
       btn('Credits', () => openCredits(document.body)),
       btn('Character picker', async () => {
