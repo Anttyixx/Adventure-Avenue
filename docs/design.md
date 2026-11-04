@@ -394,7 +394,9 @@ Each element: **purpose**, **placement**, **anatomy**, **spec**, **behavior**, t
   When the window is too narrow for a centered bar to have 520px (`AB_CENTER_MIN` in `hud.ts`)
   between the cards on both sides, the HUD gets `.ab-left` and the bar sits bottom left
   (14px from the edge, 8px on phones), using all the room up to the cards. Decide by window size
-  only, never by the bar's content, so the bar does not jump between prompts.
+  only, never by the bar's content, so the bar does not jump between prompts. Safety net: if a
+  centered bar still overflows (or squeezes its question into a sliver), it moves bottom left and
+  stays there until the window width changes.
 - **Two modes:**
   - **Status line** (`.status`): one line, an icon for the kind of event, names in their colors,
     ellipsis when long. "Rosa is buying stocks...", "Board settings · 2 problems to fix".

@@ -36,6 +36,9 @@ export const CHANGELOG: ChangelogEntry[] = [
         text: 'The title always sits on top, so it no longer overlaps the buttons on small screens. Play stays the big button; Continue and Join are now slim rows, and Rejoin is a small chip in the top left corner.',
       },
     ],
+    extras: [
+      'Fixed the action bar sometimes squeezing its buttons under the player cards on tablets: when they would not fit centered, it now moves to the bottom left.',
+    ],
   },
   {
     id: '2026-11-04-fixed-title-screen',

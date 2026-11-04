@@ -91,6 +91,8 @@ export class Hud {
   private resize: ResizeObserver;
   private askChanges: MutationObserver;
   private askFrame = 0;
+  /** Window width at which a centered action bar overflowed, so it stays bottom left at this size. */
+  private abLeftAt = 0;
   /** Round, target and rules, shown at the top of the game menu. */
   gameInfo = h('div', { class: 'gm-info' });
   /** The current player's options, centered near the bottom of the board. */
@@ -424,8 +426,9 @@ export class Hud {
 
   /** Tell the board which parts of the screen the overlays cover. */
   updateInsets() {
-    const W = window.innerWidth;
-    const H = window.innerHeight;
+    // The layout viewport (iPad Safari's innerWidth can lag behind it after a resize).
+    const W = document.documentElement.clientWidth || window.innerWidth;
+    const H = document.documentElement.clientHeight || window.innerHeight;
     const portraitStack = this.root.classList.contains('upright');
     // Where the action bar sits once shown (layout box, so the slide animation does not count).
     const a = this.ask;
@@ -462,7 +465,8 @@ export class Hud {
     // clear of the cards on both sides and get squeezed, so it sits bottom left instead and
     // uses all the room up to the cards. Decided by the window, never by what the bar shows.
     const centeredRoom = W - 2 * (Math.max(this.leftInset, right) + 14);
-    this.root.classList.toggle('ab-left', !portraitStack && centeredRoom < AB_CENTER_MIN);
+    const narrow = centeredRoom < AB_CENTER_MIN || this.abLeftAt === W;
+    this.root.classList.toggle('ab-left', !portraitStack && narrow);
   }
 
   // ------------------------------------------------------------ state rendering
@@ -907,10 +911,27 @@ export class Hud {
     return size;
   }
 
+  /** The question text squeezed into a sliver beside the buttons (cut off rather than wrapped). */
+  private askTextSqueezed() {
+    const t = this.ask.querySelector<HTMLElement>('.prompt-text');
+    return !!t && t.clientWidth < 140 && t.scrollWidth > t.clientWidth + 2;
+  }
+
   /** Measure once, then resize the shell without repeatedly rewrapping its text. */
   private morphAsk(from: { w: number; h: number } | null) {
     const a = this.ask;
     this.updateInsets();
+    // Safety net: if a centered bar still can't fit its options (a measurement taken mid-animation,
+    // an odd browser), move it bottom left for this window size instead of letting buttons spill.
+    if (
+      a.classList.contains('show') &&
+      !this.root.classList.contains('ab-left') &&
+      !this.root.classList.contains('upright') &&
+      (a.scrollWidth > a.clientWidth + 2 || this.askTextSqueezed())
+    ) {
+      this.abLeftAt = document.documentElement.clientWidth || window.innerWidth;
+      this.updateInsets();
+    }
     if (!from || !a.classList.contains('show') || matchMedia('(prefers-reduced-motion: reduce)').matches)
       return;
     const rect = a.getBoundingClientRect();
