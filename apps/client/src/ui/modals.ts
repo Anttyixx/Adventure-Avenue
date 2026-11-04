@@ -435,32 +435,42 @@ export function buildPrompt(
         : 'You can’t afford it right now.';
   let picked: BuildingKey | null = null;
 
-  const info = h('div', { class: 'bp-info', 'aria-live': 'polite' });
+  // The bar's own text and buttons never change while choosing, so the bar never resizes:
+  // a building's details show in a tip floating above its card instead.
+  const info = h(
+    'div',
+    { class: 'bp-info' },
+    h('div', { class: 'bp-title' }, text),
+    h('p', { class: 'bp-hint' }, `Tap a building to see what it does, then ${verb}.`),
+  );
+  const tip = h('div', { class: 'bp-tip glass', role: 'status', 'aria-live': 'polite' });
   const go = h('button', { class: 'btn main', disabled: true }, verb) as HTMLButtonElement;
   const skip = h('button', { class: 'btn ghost', onclick: () => hud.resolvePrompt(null) }, 'Skip');
-  /** Show a building's details (or the hint when none is picked or previewed). */
+  /** Show a building's details above its card, or hide the tip. */
   const describe = (b: BuildingKey | null) => {
-    clear(info);
-    if (!b) {
-      info.append(
-        h('div', { class: 'bp-title' }, text),
-        h('p', { class: 'bp-hint' }, 'Pick a building to see what it does.'),
-      );
-      return;
-    }
+    clear(tip);
+    tip.classList.toggle('show', !!b);
+    if (!b) return;
     const def = BUILDINGS.find((x) => x.b === b)!;
     const why = blocked(b);
     const over = !why && cost(b) > p.cash;
-    info.append(
-      h('div', { class: 'bp-title rise' }, def.name, h('span', { class: 'bp-cost' }, fmt(cost(b)))),
-      h('p', { class: 'rise' }, h('em', null, 'Rivals: '), BUILDING_INFO[b].rival),
-      h('p', { class: 'rise' }, h('em', null, 'You: '), BUILDING_INFO[b].owner),
+    tip.append(
+      h('div', { class: 'bp-tip-title' }, def.name, h('span', { class: 'bp-cost' }, fmt(cost(b)))),
+      h('p', null, h('em', null, 'Rivals: '), BUILDING_INFO[b].rival),
+      h('p', null, h('em', null, 'You: '), BUILDING_INFO[b].owner),
     );
-    if (why) info.append(h('p', { class: 'bp-note bad rise' }, why));
+    if (why) tip.append(h('p', { class: 'bp-note bad' }, why));
     else if (over)
-      info.append(h('p', { class: 'bp-note rise' }, 'More than your cash: sell at the end of your turn.'));
+      tip.append(h('p', { class: 'bp-note' }, 'More than your cash: sell at the end of your turn.'));
+    // Centered over the card, kept inside the picker's width.
+    const card = cards[BUILDINGS.findIndex((x) => x.b === b)];
+    const box = tip.parentElement;
+    if (!box) return;
+    const half = tip.offsetWidth / 2;
+    const mid = card.offsetLeft + card.offsetWidth / 2;
+    tip.style.left = `${Math.max(half, Math.min(box.clientWidth - half, mid))}px`;
   };
-  const cards = BUILDINGS.map((def) => {
+  const cards: HTMLButtonElement[] = BUILDINGS.map((def) => {
     const key = (def.b === 'star3' ? 'star0' : def.b === 'circus' ? 'circus0' : def.b) as PropKey;
     const card = h(
       'button',
@@ -481,18 +491,18 @@ export function buildPrompt(
       picked = def.b;
       for (const c of cards) c.setAttribute('aria-pressed', String(c === card));
       go.disabled = !!blocked(def.b);
-      go.textContent = blocked(def.b) ? verb : `${verb} ${def.name}`;
+      go.setAttribute('aria-label', blocked(def.b) ? verb : `${verb} ${def.name}`);
       describe(def.b);
     };
     return card;
   });
   go.onclick = () => picked && !blocked(picked) && hud.resolvePrompt(picked);
-  describe(null);
   return hud.prompt<BuildingKey | null>(
     h(
       'div',
       { class: 'bp', style: `--pc:${color}` },
       info,
+      tip,
       h('div', { class: 'bp-cards', role: 'group', 'aria-label': 'Buildings' }, ...cards),
       h('div', { class: 'bp-actions' }, go, skip),
     ),

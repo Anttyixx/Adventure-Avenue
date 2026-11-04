@@ -7408,6 +7408,47 @@ div.sl-inline label {
 .bp-actions .btn {
   white-space: nowrap;
 }
+/* A building's details float above its card, so the bar itself never changes size. */
+.bp {
+  position: relative;
+}
+.bp-tip {
+  position: absolute;
+  bottom: calc(100% + 14px);
+  left: 50%;
+  z-index: 3;
+  width: 250px;
+  box-sizing: border-box;
+  padding: 9px 12px 10px;
+  border-top: 5px solid var(--pc);
+  border-radius: 12px;
+  font-size: 12px;
+  line-height: 1.3;
+  pointer-events: none;
+  opacity: 0;
+  transform: translate(-50%, 6px);
+  transition:
+    opacity 0.12s,
+    transform 0.12s;
+}
+.bp-tip.show {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
+.bp-tip p {
+  margin: 2px 0 0;
+}
+.bp-tip em {
+  font-style: normal;
+  color: var(--muted);
+}
+.bp-tip-title {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  font: 400 16px var(--head);
+}
 /* The picker is taller than a one-line question: let the bar and its text area fit it. */
 .prompt-center:has(.bp) {
   max-height: none;

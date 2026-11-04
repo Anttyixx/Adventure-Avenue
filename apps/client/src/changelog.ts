@@ -38,6 +38,7 @@ export const CHANGELOG: ChangelogEntry[] = [
     ],
     extras: [
       'Fixed the action bar sometimes squeezing its buttons under the player cards on tablets: when they would not fit centered, it now moves to the bottom left.',
+      'The building picker no longer resizes the action bar on every tap: a building’s details now show in a tip just above its card.',
     ],
   },
   {

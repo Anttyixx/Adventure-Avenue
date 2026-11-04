@@ -410,9 +410,11 @@ Each element: **purpose**, **placement**, **anatomy**, **spec**, **behavior**, t
 - **Don't:** put forms, lists or scrolling areas here (→ side panel / pop-up).
 - **Picker variant** (`.bp`, building on a vacant plot / renovating, `buildPrompt` in
   `ui/modals.ts`): when the choice is one of several pictured things and each needs explaining,
-  use a grid: details area top left (Lilita name + gold price, then muted "Rivals:"/"You:" lines,
-  or the question and a muted hint when nothing is picked), the action stack top right (gold
-  "Build X" disabled until a pick, ghost Skip), and a row of same-size cards below (inset surface,
+  use a grid: the question and a muted hint top left (they never change while choosing, so the bar
+  keeps one size), the action stack top right (gold "Build" disabled until a pick, ghost Skip;
+  labels stay fixed too). The hovered or selected card's details float in a glass tip above that
+  card (`.bp-tip`: 250px, 5px top edge in the player color, Lilita name + gold price, then muted
+  "Rivals:"/"You:" lines, kept inside the picker's width), and a row of same-size cards below (inset surface,
   radius 10, picture 40px, Lilita name 11px, gold price; selected = gold tint + 2px inset gold
   ring + lifted; unavailable = greyscale picture and muted text, still selectable to read why).
   Choosing is two steps (select, then the main button or a second tap on the card) so one stray
