@@ -402,6 +402,16 @@ Each element: **purpose**, **placement**, **anatomy**, **spec**, **behavior**, t
   jumps); new text is revealed with a 220ms left-to-right sweep; new controls fade/settle 220ms.
 - **Do:** say what to do when the choice is on the board ("Tap a glowing square to move there").
 - **Don't:** put forms, lists or scrolling areas here (→ side panel / pop-up).
+- **Picker variant** (`.bp`, building on a vacant plot / renovating, `buildPrompt` in
+  `ui/modals.ts`): when the choice is one of several pictured things and each needs explaining,
+  use a grid: details area top left (Lilita name + gold price, then muted "Rivals:"/"You:" lines,
+  or the question and a muted hint when nothing is picked), the action stack top right (gold
+  "Build X" disabled until a pick, ghost Skip), and a row of same-size cards below (inset surface,
+  radius 10, picture 40px, Lilita name 11px, gold price; selected = gold tint + 2px inset gold
+  ring + lifted; unavailable = greyscale picture and muted text, still selectable to read why).
+  Choosing is two steps (select, then the main button or a second tap on the card) so one stray
+  tap never commits money. Phones: cards become picture + price only, buttons sit in a row beside
+  the details. The bar lifts its height cap for it (`.prompt-center:has(.bp)`).
 
 Example (TypeScript):
 

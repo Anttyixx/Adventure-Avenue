@@ -869,8 +869,13 @@ sideways when there are many).
 The question sits on the left, the buttons on the right. Questions stay short ("Buy this Bay
 Market shop?", "Buy out Milo's Bay Market shop at 5x?") and the numbers that go with them (price,
 cash after, your cash, value, high bid...) show as chips under the question, most important first. It slides up when a question is asked and back down once it
-is answered, and is hidden otherwise. Building and renovating show a picture button per building
-(name below; what it does on hover), with the question and cost chips on one line above. Trades
+is answered, and is hidden otherwise. Building and renovating use a building picker in the bar: a row of seven
+same-size cards (picture, name, price) under a details area, with Build (gold) and Skip on the
+right. Hovering or tapping a card shows its name, cost and what it does for rivals and for you;
+tapping selects it and the main button becomes "Build Circus" (or "Renovate ..."). Building takes
+that button or a second tap on the selected card, so one stray tap never builds. Buildings you
+can't build are greyed out and say why (all 3 already built, or can't afford). Phones show the
+cards as picture and price only, with the details and buttons above them. Trades
 use the bar too (see Trades). Choices with more to them (stock amounts, investing, auctions,
 arcade games) open their own windows.
 

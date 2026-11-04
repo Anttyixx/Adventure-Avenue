@@ -26,6 +26,18 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: '2026-11-04-build-picker',
+    date: 'Nov 4, 2026',
+    title: 'A clearer building picker',
+    features: [
+      {
+        tag: 'better',
+        title: 'Building on a vacant plot',
+        text: 'The action bar now shows every building as a same-size card. Tap one to read what it does for rivals and for you, then press Build (or tap it again). Buildings you can’t build are greyed out and say why. Works the same when renovating, and fits on phones.',
+      },
+    ],
+  },
+  {
     id: '2026-11-03-main-menu',
     date: 'Nov 3, 2026',
     title: 'A tidier main menu',

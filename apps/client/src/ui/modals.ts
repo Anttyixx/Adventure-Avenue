@@ -26,7 +26,6 @@ import { clear, fmt, h } from './dom';
 import { digitPicker } from './digits';
 import type { Hud } from './hud';
 import { marketView } from './market';
-import { question } from './pick';
 import { propIconURL, type PropKey } from '../props';
 
 // ------------------------------------------------------------------ stocks
@@ -410,9 +409,12 @@ export function investAmountModal(hud: Hud, G: GameState, sqId: number, lim: num
 // ------------------------------------------------------------------ build / renovate
 
 /**
- * Pick a building, in the action bar: a picture button per building with its name and price
- * under it (what it does on hover). Buildings the player cannot choose are greyed out. `extra`
- * is added to every cost (renovating). Cash is on the player's card, so it is not repeated here.
+ * Pick a building, in the action bar: the details of the chosen building on the left (what a
+ * rival pays and what the owner gets, or why it can't be built), a row of same-size building
+ * cards (picture, name, price) in the middle, and Build / Skip on the right. Tapping a card
+ * selects it (hovering or focusing one previews it); tapping the selected card again, or Build,
+ * builds it. On phones the details and buttons sit above the cards. `extra` is added to every
+ * cost (renovating). Cash is on the player's card, so it is not repeated here.
  */
 export function buildPrompt(
   hud: Hud,
@@ -422,30 +424,79 @@ export function buildPrompt(
   extra = 0,
 ): Promise<BuildingKey | null> {
   const color = PLAYER_COLORS[p.color];
+  const verb = extra ? 'Renovate' : 'Build';
   const cost = (b: BuildingKey) => BUILDINGS.find((x) => x.b === b)!.cost + extra;
+  /** Why a building can't be chosen, or null when it can. */
+  const blocked = (b: BuildingKey) =>
+    options.some((o) => o.b === b)
+      ? null
+      : !buildingAvailable(hud.G, b)
+        ? `All ${K.buildingLimit} are already built.`
+        : 'You can’t afford it right now.';
+  let picked: BuildingKey | null = null;
+
+  const info = h('div', { class: 'bp-info', 'aria-live': 'polite' });
+  const go = h('button', { class: 'btn main', disabled: true }, verb) as HTMLButtonElement;
+  const skip = h('button', { class: 'btn ghost', onclick: () => hud.resolvePrompt(null) }, 'Skip');
+  /** Show a building's details (or the hint when none is picked or previewed). */
+  const describe = (b: BuildingKey | null) => {
+    clear(info);
+    if (!b) {
+      info.append(
+        h('div', { class: 'bp-title' }, text),
+        h('p', { class: 'bp-hint' }, 'Pick a building to see what it does.'),
+      );
+      return;
+    }
+    const def = BUILDINGS.find((x) => x.b === b)!;
+    const why = blocked(b);
+    const over = !why && cost(b) > p.cash;
+    info.append(
+      h('div', { class: 'bp-title rise' }, def.name, h('span', { class: 'bp-cost' }, fmt(cost(b)))),
+      h('p', { class: 'rise' }, h('em', null, 'Rivals: '), BUILDING_INFO[b].rival),
+      h('p', { class: 'rise' }, h('em', null, 'You: '), BUILDING_INFO[b].owner),
+    );
+    if (why) info.append(h('p', { class: 'bp-note bad rise' }, why));
+    else if (over)
+      info.append(h('p', { class: 'bp-note rise' }, 'More than your cash: sell at the end of your turn.'));
+  };
+  const cards = BUILDINGS.map((def) => {
+    const key = (def.b === 'star3' ? 'star0' : def.b === 'circus' ? 'circus0' : def.b) as PropKey;
+    const card = h(
+      'button',
+      {
+        class: `bp-card ${blocked(def.b) ? 'off' : ''}`,
+        'aria-label': `${def.name}, ${fmt(cost(def.b))}`,
+        'aria-pressed': 'false',
+      },
+      h('img', { src: propIconURL(key, color), alt: '' }),
+      h('span', { class: 'bp-name' }, def.name),
+      h('span', { class: 'bp-price' }, fmt(cost(def.b))),
+    ) as HTMLButtonElement;
+    card.onmouseenter = card.onfocus = () => describe(def.b);
+    card.onmouseleave = card.onblur = () => describe(picked);
+    card.onclick = () => {
+      // A second tap on the chosen building builds it.
+      if (picked === def.b && !blocked(def.b)) return hud.resolvePrompt(def.b);
+      picked = def.b;
+      for (const c of cards) c.setAttribute('aria-pressed', String(c === card));
+      go.disabled = !!blocked(def.b);
+      go.textContent = blocked(def.b) ? verb : `${verb} ${def.name}`;
+      describe(def.b);
+    };
+    return card;
+  });
+  go.onclick = () => picked && !blocked(picked) && hud.resolvePrompt(picked);
+  describe(null);
   return hud.prompt<BuildingKey | null>(
-    question(text, []),
-    [
-      ...BUILDINGS.map((b) => {
-        const opt = options.find((o) => o.b === b.b);
-        const key = (b.b === 'star3' ? 'star0' : b.b === 'circus' ? 'circus0' : b.b) as PropKey;
-        return {
-          label: b.name,
-          value: b.b as BuildingKey | null,
-          icon: propIconURL(key, color),
-          disabled: !opt,
-          note: fmt(cost(b.b)),
-          title: `${b.name} (${fmt(cost(b.b))})${
-            !buildingAvailable(hud.G, b.b)
-              ? ` - all ${K.buildingLimit} are already built`
-              : cost(b.b) > p.cash
-                ? ' - more than your cash: sell at the end of your turn'
-                : ''
-          }\nRival lands: ${BUILDING_INFO[b.b].rival}\nYou land: ${BUILDING_INFO[b.b].owner}`,
-        };
-      }),
-      { label: 'Skip', value: null, secondary: true },
-    ],
+    h(
+      'div',
+      { class: 'bp', style: `--pc:${color}` },
+      info,
+      h('div', { class: 'bp-cards', role: 'group', 'aria-label': 'Buildings' }, ...cards),
+      h('div', { class: 'bp-actions' }, go, skip),
+    ),
+    [],
     p.color,
   );
 }

@@ -7372,3 +7372,178 @@ div.sl-inline label {
     display: none;
   }
 }
+
+/* Building on a vacant plot (and renovating), in the action bar: the chosen building's details
+   with Build / Skip beside them on top, a row of same-size building cards below. Phones show the
+   cards as picture + price only (the details name the chosen one). */
+.bp {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas:
+    'info actions'
+    'cards cards';
+  align-items: center;
+  gap: 8px 16px;
+  width: 100%;
+  min-width: min(560px, 100%);
+  padding: 8px 0 6px;
+}
+.bp-info {
+  grid-area: info;
+  min-width: 0;
+  min-height: 52px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 1px;
+  font-size: 12px;
+  line-height: 1.3;
+}
+.bp-info p {
+  margin: 0;
+  color: var(--text);
+}
+.bp-info em {
+  font-style: normal;
+  color: var(--muted);
+}
+.bp-title {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin-bottom: 1px;
+  font: 400 17px var(--head);
+  line-height: 1.15;
+}
+.bp-cost {
+  font-size: 15px;
+  color: var(--accent);
+}
+.bp-hint {
+  color: var(--muted) !important;
+}
+.bp-note {
+  font-weight: 700;
+  color: var(--accent) !important;
+}
+.bp-note.bad {
+  color: var(--bad) !important;
+}
+.bp-cards {
+  grid-area: cards;
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 6px;
+}
+.bp-card {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 6px 3px 5px;
+  border: 0;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.07);
+  color: var(--text);
+  cursor: pointer;
+  transition:
+    background 0.15s,
+    transform 0.12s,
+    box-shadow 0.15s;
+}
+.bp-card:hover {
+  background: rgba(255, 255, 255, 0.13);
+  transform: translateY(-2px);
+}
+.bp-card:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+.bp-card[aria-pressed='true'] {
+  background: rgba(255, 209, 102, 0.16);
+  box-shadow: inset 0 0 0 2px var(--accent);
+  transform: translateY(-2px);
+}
+.bp-card img {
+  height: 40px;
+  width: 100%;
+  object-fit: contain;
+}
+.bp-name {
+  max-width: 100%;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font: 400 11px var(--head);
+}
+.bp-price {
+  font: 400 12px var(--head);
+  color: var(--accent);
+}
+.bp-card.off img {
+  filter: grayscale(1);
+  opacity: 0.45;
+}
+.bp-card.off .bp-name,
+.bp-card.off .bp-price {
+  color: var(--muted);
+}
+.bp-actions {
+  grid-area: actions;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 6px;
+}
+.bp-actions .btn {
+  white-space: nowrap;
+}
+/* The picker is taller than a one-line question: let the bar and its text area fit it. */
+.prompt-center:has(.bp) {
+  max-height: none;
+}
+.prompt-center .prompt-text:has(> .bp) {
+  max-height: none;
+  overflow: visible;
+}
+@media (max-height: 500px), (max-width: 760px) {
+  .bp {
+    gap: 6px 10px;
+    padding: 4px 0;
+  }
+  .bp-info {
+    min-height: 0;
+    font-size: 10px;
+    line-height: 1.25;
+  }
+  .bp-title {
+    font-size: 14px;
+    margin: 0;
+  }
+  .bp-cost {
+    font-size: 12px;
+  }
+  .bp-actions {
+    flex-direction: row;
+  }
+  .bp-actions .btn {
+    padding: 6px 10px;
+    font-size: 13px;
+  }
+  .bp-cards {
+    gap: 4px;
+  }
+  .bp-card {
+    padding: 3px 2px;
+  }
+  .bp-card img {
+    height: 26px;
+  }
+  .bp-name {
+    display: none;
+  }
+  .bp-price {
+    font-size: 10px;
+  }
+}
