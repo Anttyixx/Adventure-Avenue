@@ -2086,7 +2086,14 @@ input[type='range'] {
   z-index: 4;
 }
 .venture-board {
-  --venture-size: min(360px, calc(100vw - 64px), max(112px, calc(100dvh - 250px)));
+  /* Grows with the screen on monitors (up to 600px) without reaching the player cards; short
+     phone screens keep their fit. */
+  --venture-size: min(
+    clamp(360px, 62dvh, 600px),
+    max(360px, calc(100vw - 720px)),
+    calc(100vw - 64px),
+    max(112px, calc(100dvh - 250px))
+  );
   padding: 16px;
   background: rgba(16, 26, 51, 0.96);
   pointer-events: auto;
@@ -2094,12 +2101,13 @@ input[type='range'] {
 }
 .venture-board .vgrid {
   width: var(--venture-size);
+  gap: clamp(4px, calc(var(--venture-size) / 90), 7px);
   aspect-ratio: 1;
   grid-template-rows: repeat(8, minmax(0, 1fr));
 }
 .venture-board .panel {
   height: 100%;
-  border-radius: min(5px, 18%);
+  border-radius: clamp(3px, calc(var(--venture-size) / 70), 8px);
 }
 .venture-description {
   white-space: normal;
@@ -6142,7 +6150,7 @@ div.sl-inline label {
 .venture-board .panel {
   color: #fff;
   font-family: var(--head);
-  font-size: clamp(10px, calc(var(--venture-size) / 20), 18px);
+  font-size: clamp(10px, calc(var(--venture-size) / 20), 24px);
   line-height: 1;
   text-shadow: 0 1px 2px #000;
 }

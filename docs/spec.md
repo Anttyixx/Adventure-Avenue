@@ -551,7 +551,9 @@ economy, so its numbers set match length (see Balance constants).
 
 Landing on a Venture square, or stopping exactly on a suit square, opens the 8 x 8 venture grid; the
 player flips one face-down panel and resolves its card. The board container stays centered and
-stationary, with rounded square tiles and no header or OK button in its container. It does not
+stationary, with rounded square tiles and no header or OK button in its container. It grows with the
+screen: up to 600px wide on monitors (about 62% of the window height, never reaching the player
+cards), while short phone screens keep a smaller board that fits above the action bar. It does not
 dim the background or block interaction with the action bar. After a flip, the action bar shows
 the card's title, description and OK button. A line bonus appears in the action bar first;
 dismissing it shows the card with its own OK button. The board remains visible until the card

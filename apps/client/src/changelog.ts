@@ -26,6 +26,15 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: '2026-11-04-venture-size',
+    date: 'Nov 4, 2026',
+    title: 'Bigger venture board',
+    features: [],
+    extras: [
+      'The venture board and its tiles are bigger on monitors and large screens; phones keep the same size.',
+    ],
+  },
+  {
     id: '2026-11-04-play-join',
     date: 'Nov 4, 2026',
     title: 'Play and Join in one button',
