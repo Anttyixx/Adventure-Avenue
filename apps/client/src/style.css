@@ -3812,7 +3812,6 @@ input[type='range'] {
     --ab-h: 78px;
     bottom: 8px;
     max-width: calc(100% - 2 * (max(var(--free-left, 0px), var(--free-right, 0px)) + 8px));
-    min-width: min(240px, calc(100% - 16px));
   }
   .hud.ab-left .prompt-center {
     left: calc(var(--free-left, 0px) + 8px);

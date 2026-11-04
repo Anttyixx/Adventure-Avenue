@@ -404,7 +404,8 @@ Each element: **purpose**, **placement**, **anatomy**, **spec**, **behavior**, t
   - **Options**: question on the left (player-color dot first, or a `question()` fact strip),
     buttons on the right with the main one gold.
 - **Spec:** glass, 2px border in `--pc` (the deciding player's color), min height 92px (options),
-  grows up to 75% taller for rich content, width = content (max 920px).
+  grows up to 75% taller for rich content, width = content (max 920px; no minimum width, so a
+  short message gets a short bar on every screen size).
 - **Motion:** morphs size between states (740ms, content laid out at its final size so text never
   jumps); new text is revealed with a 220ms left-to-right sweep; new controls fade/settle 220ms.
 - **Do:** say what to do when the choice is on the board ("Tap a glowing square to move there").

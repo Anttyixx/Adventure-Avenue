@@ -36,7 +36,10 @@ export const CHANGELOG: ChangelogEntry[] = [
         text: 'The Play button now has a code field on its right. Type a friend’s 4-letter code and it turns into a blue Join button. Continue sits just under it when you have a saved game.',
       },
     ],
-    extras: ['Continue is now a smaller, narrower button centered under Play.'],
+    extras: [
+      'Continue is now a smaller, narrower button centered under Play.',
+      'On phones the action bar now shrinks to fit short messages instead of keeping a fixed minimum width.',
+    ],
   },
   {
     id: '2026-11-04-log-toolbar',
