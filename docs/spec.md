@@ -740,7 +740,7 @@ right side; typing in it never presses the button. Once all four letters are in,
 blue and reads **Join** ("Join game KQZD"); pressing it (or Enter in the field) joins that game.
 When rejoining a running game needs the player's name there, or joining failed, a slim strip under
 the button holds the name field and the reason. **Continue** (only with a saved game) is a smaller
-green row under it showing the round, board and how long ago it was saved, with a colored dot per
+green row centered under it (narrower and shorter than Play) showing the round, board and how long ago it was saved, with a colored dot per
 player. **Rejoin** is a small chip in the top left corner ("Rejoin KQZD, as Milo, 5 min ago") while
 this device has an online game to go back to. In the top right corner sit
 the **Sound** button and, to its right, **Menu**: a pop-up in the middle of the screen with

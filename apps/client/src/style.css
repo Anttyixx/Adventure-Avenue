@@ -7474,10 +7474,12 @@ div.sl-inline label {
 /* Continue: a slim green row under Play (the save's round, board and players' colors). */
 .menu-row {
   --edge: #1d4d38;
-  width: 100%;
+  /* Narrower and shorter than Play, centered under it: a secondary way in. */
+  width: min(360px, 78%);
+  align-self: center;
   border: 0;
-  border-radius: 14px;
-  padding: 9px 16px;
+  border-radius: 12px;
+  padding: 6px 14px;
   display: flex;
   align-items: center;
   gap: 12px;
@@ -7510,14 +7512,14 @@ div.sl-inline label {
   flex-direction: column;
 }
 .menu-row-title {
-  font: 400 21px var(--head);
+  font: 400 18px var(--head);
   line-height: 1.1;
 }
 .menu-row-sub {
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 700;
   opacity: 0.85;
 }
@@ -7526,8 +7528,8 @@ div.sl-inline label {
   display: flex;
 }
 .menu-dot {
-  width: 16px;
-  height: 16px;
+  width: 13px;
+  height: 13px;
   margin-left: -4px;
   border-radius: 50%;
   background: var(--pc);
