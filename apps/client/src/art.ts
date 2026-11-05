@@ -112,7 +112,7 @@ export function badge(ctx: Ctx, x: number, y: number, color: string, initial: st
 export function drawShop(ctx: Ctx, x: number, y: number, tier: number, main: string, initial?: string) {
   // The painted shop images, once loaded; the vector art below until then.
   if (drawProp(ctx, `shop${tier as 0 | 1 | 2 | 3 | 4}`, main, x, y - 2, 60, 50)) {
-    if (initial) badge(ctx, x + 24, y + 14, main, initial);
+    if (initial) badge(ctx, x + 22, y + 14, main, initial);
     return;
   }
   const line = darken(main.startsWith('#') ? main : '#888888', 0.55);
@@ -182,7 +182,7 @@ export function drawShop(ctx: Ctx, x: number, y: number, tier: number, main: str
 /** Draw a 3-Star Shop centered on (x, y) in one of its three designs. */
 export function drawStar3(ctx: Ctx, x: number, y: number, tier: number, main: string, initial?: string) {
   if (drawProp(ctx, `star${tier as 0 | 1 | 2}`, main, x, y - 2, 66, 50)) {
-    if (initial) badge(ctx, x + 24, y + 14, main, initial);
+    if (initial) badge(ctx, x + 22, y + 14, main, initial);
     return;
   }
   const line = darken(main.startsWith('#') ? main : '#888888', 0.55);

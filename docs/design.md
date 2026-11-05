@@ -588,7 +588,8 @@ if (!(await ask(`Delete ${d.name}?`, 'Its 4 properties will be removed from the 
 - Every tile uses the same two spots (`drawSquare` in `board.ts`): pictures stand on one base line
   (property and building art is bottom-aligned at `artY + 23`; symbols for special squares are
   centered at `iconY`) and the price, fee or name is centered on one text line (`textY`). The
-  owner's initial badge sits in the same spot on every property (`x + 24, y + 14` from the art).
+  owner's initial badge sits in the same spot on every property (`x + 22, y + 14` from the art).
+  Everything keeps at least 5px clear of the border's inner edge (art at most ~59 x 45, text 15px).
   Squares with no name (suits, Boon, Boom) center their symbol on the tile.
 
 ### 5.18 Game log and Stock market panel

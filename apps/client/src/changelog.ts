@@ -43,7 +43,7 @@ export const CHANGELOG: ChangelogEntry[] = [
       {
         tag: 'better',
         title: 'Tidier board tiles',
-        text: 'Pictures and prices sit in the same place on every tile, so the board looks cleaner.',
+        text: 'Pictures and prices sit in the same place on every tile, with a little room around them inside the border, so the board looks cleaner.',
       },
     ],
     extras: [

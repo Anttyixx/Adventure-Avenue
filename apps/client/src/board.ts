@@ -1949,8 +1949,8 @@ function buildingIcon(
   // The painted building images (the circus by its level), once loaded; vector art until then.
   const key = (b === 'circus' ? `circus${Math.min(3, level)}` : b) as PropKey;
   // Bottom-aligned on the same line as shops (y + 23), with the owner's badge in the same spot.
-  if (drawProp(ctx, key, main, x, y + 0, 72, 46)) {
-    if (initial) badge(ctx, x + 24, y + 14, main, initial);
+  if (drawProp(ctx, key, main, x, y + 0, 64, 46)) {
+    if (initial) badge(ctx, x + 22, y + 14, main, initial);
     return;
   }
   ctx.save();
@@ -2026,7 +2026,7 @@ function specialIcon(ctx: CanvasRenderingContext2D, G: GameState, sq: Square, x:
   switch (sq.t) {
     case 'bank':
       // The painted bank (it has no player color); the gold coin until the images load.
-      if (drawProp(ctx, 'bank', '#9aa3b8', x, y - 5, 78, 54)) break;
+      if (drawProp(ctx, 'bank', '#9aa3b8', x, y - 3, 72, 50)) break;
       ctx.fillStyle = '#c98a12';
       ctx.beginPath();
       ctx.arc(x, y, 26, 0, Math.PI * 2);
@@ -2297,11 +2297,12 @@ function drawSquare(ctx: CanvasRenderingContext2D, G: GameState, sq: Square) {
   // Every tile uses the same two spots, so the board reads evenly: pictures stand on one base
   // line (property art is bottom-aligned there; symbols are centered just above it), and the
   // price, fee or name sits on one text line under it.
-  const artY = iy - 5;
-  const iconY = iy - 4;
-  const textY = ty + 30;
+  // Both keep at least 5px clear of the border's inner edge (37.5 from the center).
+  const artY = iy - 8;
+  const iconY = iy - 7;
+  const textY = ty + 27;
   /** The fee (owned) or price as plain text; dark on an owner's color so it stays readable. */
-  const amount = (text: string) => label(ctx, c.x, textY, text, owner ? '#1b2340' : '#26314f', 16);
+  const amount = (text: string) => label(ctx, c.x, textY, text, owner ? '#1b2340' : '#26314f', 15);
 
   // Shadow + tile
   ctx.fillStyle = 'rgba(0,0,0,0.18)';
