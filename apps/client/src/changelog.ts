@@ -49,6 +49,7 @@ export const CHANGELOG: ChangelogEntry[] = [
       'Player pages: net worth beside the name, a goal bar that shows how far along on hover, and the next promotion pay',
       "A player's properties are a list: the building on the left, its details on the right",
       'Closing the Info pop-up no longer flickers',
+      'The main menu title and Play button sit higher on the screen',
       'Player pages are shorter; a long property list scrolls inside its column',
       'The View board chip works with the Info pop-up too, and glows to catch your eye',
       'Info pages pop out and in; every player page has the same size and more breathing room',

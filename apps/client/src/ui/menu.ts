@@ -332,7 +332,12 @@ export function mainMenu(
   const fit = () => {
     if (!el.isConnected) return;
     const available = Math.max(1, el.clientHeight - 84);
-    center.style.setProperty('--menu-fit', String(Math.min(1, available / center.offsetHeight)));
+    // It sits above the middle: also keep its top edge clear of the Sound and Menu buttons.
+    const above = Math.max(1, (parseFloat(getComputedStyle(center).top) - 56) * 2);
+    center.style.setProperty(
+      '--menu-fit',
+      String(Math.min(1, available / center.offsetHeight, above / center.offsetHeight)),
+    );
   };
   const resize = new ResizeObserver(fit);
   resize.observe(el);

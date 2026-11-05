@@ -334,7 +334,8 @@ input[type='range'] {
 .menu-center {
   position: absolute;
   left: 50%;
-  top: calc(50% + 8px);
+  /* A little above the middle, so the title and Play sit higher over the street. */
+  top: calc(50% - 7vh);
   transform: translate(-50%, -50%) scale(var(--menu-fit, 1));
   padding: 12px 16px;
   width: min(520px, 100%);
@@ -8031,7 +8032,7 @@ div.sl-inline label {
 /* Short screens (phones in landscape): the title stays on top, smaller, without the tagline. */
 @media (max-height: 560px) {
   .menu-center {
-    top: calc(50% + 14px);
+    top: calc(50% - 3vh);
     gap: 6px;
   }
   .menu-logo .l1 {
