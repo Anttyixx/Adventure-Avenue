@@ -811,7 +811,10 @@ dim the board (`.stock-layer > .modal.stock-pop`, only the pop-up catches clicks
 it, and `stockPopup` slides it left only as far as needed to clear the player cards), and the decision is in the action bar (`.stock-bar`):
 the summary card (`.m-card`, compact), the digit picker, then `.tb-btns` with the gold Buy/Sell
 (or the district button) over a ghost Skip/Cancel. Changing district in the pop-up redraws the bar
-in place (no new prompt, so the bar doesn't morph). The summary card has two groups split by an `hr.m-divider` (market price + shares held; price per share + cash). The toolbar's **View board** chip (`.view-chip`, `hud.offerViewBoard(el)`) hides the pop-up
+in place (no new prompt, so the bar doesn't morph). The summary card has two groups split by an `hr.m-divider` (market price + shares held; price per share + cash). The toolbar's **View board** chip (`.view-chip`, `hud.offerViewBoard(el)`; it morphs into
+"Back": width eases over 260ms while the word cross-fades, colors transition) hides the pop-up with
+the pop-up closing motion (sink 14px, shrink to 0.97, fade, 180ms; showing again plays the 220ms
+opening motion) and the action bar morphs to its new content (`hud.morphChange`)
 (`hud.setPeek`, `board.overviewHold` for an auto whole-board view); the stock bar then swaps to a
 short note with a gold "Back to stocks". The deal chip is `.m-corner` (absolute, top right of the card); the price per share
 is an `.m-line.m-pay` row in gold (a deal strikes the market price through and glows the

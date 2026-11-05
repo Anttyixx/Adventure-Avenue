@@ -33,7 +33,7 @@ export const CHANGELOG: ChangelogEntry[] = [
       {
         tag: 'new',
         title: 'View the board from any pop-up',
-        text: 'While the stock market, the venture board or an arcade game is up, a View board chip pops in next to the zoom. Tap it to hide the pop-up and see the whole board; tap Back to return.',
+        text: 'While the stock market, the venture board or an arcade game is up, a View board chip pops in next to the zoom. Tap it to hide the pop-up and see the whole board; tap Back to return. The chip, the action bar and the pop-up all animate smoothly as they change.',
       },
       {
         tag: 'better',

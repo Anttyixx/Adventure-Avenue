@@ -1231,9 +1231,15 @@ export class Hud {
     this.viewChip.classList.add('pop-in');
     return () => {
       if (this.peekTarget !== target) return;
-      if (this.peeking) this.setPeek(false);
+      // The pop-up is closing anyway: just put the camera and the chip back (no animations).
+      if (this.peeking) {
+        this.peeking = false;
+        this.board.overviewHold = false;
+      }
       this.peekTarget = null;
       this.viewChip.hidden = true;
+      this.viewChip.classList.remove('on');
+      this.viewChip.textContent = 'View board';
     };
   }
 
@@ -1242,12 +1248,77 @@ export class Hud {
     const t = this.peekTarget;
     if (!t || on === this.peeking) return;
     this.peeking = on;
-    t.el.hidden = on;
     this.board.overviewHold = on;
-    this.viewChip.classList.toggle('on', on);
-    this.viewChip.textContent = on ? 'Back' : 'View board';
-    this.viewChip.title = on ? 'Bring the pop-up back' : 'Hide the pop-up and look at the board';
-    t.onChange?.(on);
+    this.popAnim(t.el, on);
+    this.morphViewChip(on);
+    // The action bar (e.g. the stock deal turning into "Looking at the board") morphs between
+    // its old and new size rather than jumping.
+    this.morphChange(() => t.onChange?.(on));
+  }
+
+  /**
+   * Hide a pop-up with the pop-ups' closing motion (sinking and fading out), or show it again
+   * with their opening motion (rising and fading in).
+   */
+  private popAnim(layer: HTMLElement, hide: boolean) {
+    const box = layer.firstElementChild as HTMLElement | null;
+    const still = matchMedia('(prefers-reduced-motion: reduce)').matches;
+    layer.getAnimations({ subtree: true }).forEach((a) => a.cancel());
+    const away = { transform: 'translateY(14px) scale(0.97)', opacity: 0 };
+    const here = { transform: 'none', opacity: 1 };
+    if (!hide) {
+      layer.hidden = false;
+      if (box && !still) box.animate([away, here], { duration: 220, easing: 'ease-out' });
+      return;
+    }
+    if (!box || still) {
+      layer.hidden = true;
+      return;
+    }
+    const anim = box.animate([here, away], { duration: 180, easing: 'ease-in', fill: 'forwards' });
+    anim.onfinish = () => {
+      if (!this.peeking) return;
+      layer.hidden = true;
+      anim.cancel();
+    };
+  }
+
+  /** The View board chip morphs into Back (and back): its width eases while the words cross-fade. */
+  private morphViewChip(on: boolean) {
+    const chip = this.viewChip;
+    const from = chip.getBoundingClientRect().width;
+    chip.getAnimations().forEach((a) => a.cancel());
+    chip.classList.toggle('on', on);
+    const label = h('span', null, on ? 'Back' : 'View board');
+    chip.replaceChildren(label);
+    chip.title = on ? 'Bring the pop-up back' : 'Hide the pop-up and look at the board';
+    if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    const to = chip.getBoundingClientRect().width;
+    chip.animate([{ width: `${from}px` }, { width: `${to}px` }], {
+      duration: 260,
+      easing: 'cubic-bezier(0.2, 0.8, 0.2, 1)',
+    });
+    label.animate(
+      [
+        { opacity: 0, transform: 'scale(0.85)' },
+        { opacity: 1, transform: 'none' },
+      ],
+      {
+        duration: 220,
+        delay: 60,
+        easing: 'ease-out',
+        fill: 'backwards',
+      },
+    );
+  }
+
+  /** Make a change inside the action bar and morph the bar from its old size to the new one. */
+  morphChange(change: () => void) {
+    const from = this.askSize();
+    change();
+    this.morphAsk(from);
+    // Our own change is handled: don't let the change watcher restart the morph.
+    this.askChanges.takeRecords();
   }
 
   modal(title: string, body: Node, opts: { wide?: boolean | 'xl'; onClose?: () => void } = {}) {

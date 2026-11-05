@@ -4913,6 +4913,11 @@ input[type='range'] {
    is hidden ("Back"). */
 .view-chip {
   align-self: center;
+  overflow: hidden;
+  transition:
+    background-color 0.26s,
+    border-color 0.26s,
+    color 0.26s;
   padding: 3px 10px;
   border-radius: 999px;
   border: 2px solid var(--glass-line);

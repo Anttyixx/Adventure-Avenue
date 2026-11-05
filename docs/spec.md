@@ -524,8 +524,9 @@ district in the table or on the mini map plays the click sound.
 **View board chip:** whenever a pop-up is on screen (the stock market, the venture board, an
 arcade game), a **View board** chip pops in at the top right, just left of the zoom chip. Tapping
 it hides the pop-up and the camera shows the whole board (auto zoom, so the player can still
-zoom); the chip turns gold and says **Back**, and tapping it again brings the pop-up back as it
-was. While the stock market is hidden the action bar says "Looking at the board" with a gold
+zoom); the pop-up plays its closing animation as it goes, the action bar morphs to its new
+content, and the chip morphs (its width easing, the words cross-fading) into a gold **Back**, and tapping it again brings the pop-up back as it
+was, with its opening animation. While the stock market is hidden the action bar says "Looking at the board" with a gold
 **Back to stocks** button too. The chip goes away when the pop-up closes. The bar has the same padding on all
 four sides (12px; 8px on phones). The venture cards that pick a
 district (Gift shares, Bull and Bear market) work the same, with one button naming the district.
