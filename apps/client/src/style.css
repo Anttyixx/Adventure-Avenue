@@ -1482,10 +1482,6 @@ input[type='range'] {
   padding: 6px 8px;
 }
 /* The note under the table wraps to the table's width instead of widening the screen. */
-.modal.xl .m-foot {
-  width: 0;
-  min-width: 100%;
-}
 .modal.xl .m-shops-row > .m-shops {
   flex: 0 1 auto;
 }
@@ -1604,6 +1600,43 @@ input[type='range'] {
   margin-left: 8px;
   color: var(--muted);
   font-size: 14px;
+}
+/* Buying at a discount / selling at a premium: the market price per share crossed out, and the
+   player's own price glowing gold beside it. */
+.m-deal-row {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--muted);
+}
+.m-deal-row .m-deal-tag {
+  margin: 0;
+  vertical-align: 0;
+}
+.m-deal-row .m-was {
+  margin: 0;
+}
+.m-deal-price {
+  font: 400 17px var(--head);
+  color: var(--good);
+  animation: deal-glow 1.1s ease-in-out infinite alternate;
+}
+@keyframes deal-glow {
+  from {
+    text-shadow: 0 0 0 transparent;
+  }
+  to {
+    text-shadow:
+      0 0 8px rgba(124, 242, 154, 0.9),
+      0 0 2px #fff;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .m-deal-price {
+    animation: none;
+    text-shadow: 0 0 6px rgba(124, 242, 154, 0.7);
+  }
 }
 .m-line.deal b {
   color: var(--good);
@@ -2085,11 +2118,6 @@ input[type='range'] {
   font-weight: 700;
   color: #4a5470;
 }
-.m-foot {
-  margin: 0;
-  font-size: 12px;
-  color: var(--muted);
-}
 .m-action {
   margin-top: 8px;
   padding-top: 8px;
@@ -2177,6 +2205,17 @@ input[type='range'] {
 .stock-pop .market {
   margin-top: 6px;
 }
+/* The same padding on all four sides between the action bar's border and the stock controls. */
+.prompt-center:has(.stock-bar) {
+  padding: 12px;
+  min-height: 0;
+}
+.prompt-center:has(.stock-bar) .btn-row:empty {
+  display: none;
+}
+.stock-bar .digits {
+  margin: 0;
+}
 .stock-bar {
   display: flex;
   align-items: center;
@@ -2212,6 +2251,9 @@ input[type='range'] {
   }
   .stock-pop .modal-head h2 {
     font-size: 16px;
+  }
+  .prompt-center:has(.stock-bar) {
+    padding: 8px;
   }
   .stock-bar {
     gap: 6px;
@@ -2253,8 +2295,7 @@ input[type='range'] {
     display: none;
   }
   .stock-pop .m-map,
-  .stock-pop .m-shops,
-  .stock-pop .m-foot {
+  .stock-pop .m-shops {
     display: none;
   }
   .stock-pop .modal-head {
@@ -5486,31 +5527,20 @@ button.tb-chip:hover {
   z-index: 8;
 }
 
-/* Dynamic stocks: a district's volatility and sell-off state, in the stock market's note. */
-.m-mood,
-.m-shaken {
+/* A district shaken by a sell-off: a small red falling-chart icon after its name in the stock
+   table. Every name keeps the icon's space, so names line up whether or not it shows. */
+.m-shake {
   display: inline-block;
-  padding: 1px 8px;
-  border-radius: 999px;
-  font-size: 11px;
-  font-weight: 700;
-  white-space: nowrap;
+  width: 14px;
+  height: 14px;
+  margin-left: 5px;
+  vertical-align: -2px;
+  color: #ff7b7b;
 }
-.m-mood.calm {
-  background: rgba(76, 201, 240, 0.18);
-  color: #8fdcf5;
-}
-.m-mood.normal {
-  background: rgba(255, 255, 255, 0.1);
-  color: var(--muted);
-}
-.m-mood.wild {
-  background: rgba(255, 138, 76, 0.2);
-  color: #ffb185;
-}
-.m-shaken {
-  background: rgba(255, 107, 107, 0.18);
-  color: #ff9a9a;
+.m-shake svg {
+  display: block;
+  width: 100%;
+  height: 100%;
 }
 
 /* ------------------------------------------------------------ stocks lab (dev tool) */

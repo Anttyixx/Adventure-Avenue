@@ -809,8 +809,13 @@ dim the board (`.stock-layer > .modal.stock-pop`, only the pop-up catches clicks
 the toolbar, player cards and action bar), and the decision is in the action bar (`.stock-bar`):
 the summary card (`.m-card`, compact), the digit picker, then `.tb-btns` with the gold Buy/Sell
 (or the district button) over a ghost Skip/Cancel. Changing district in the pop-up redraws the bar
-in place (no new prompt, so the bar doesn't morph). Phones: the pop-up keeps only the district
-table, the digit faces shrink to 32x34 and the "shares you hold" line (`.m-line.held`) is hidden.
+in place (no new prompt, so the bar doesn't morph). The bar's padding is the same on all four
+sides (12px, phones 8px; no min height). The card's heading names only the action and district
+("Buy Brick Row shares"). A discount or premium is a `.m-deal-row`: the green deal tag, the market
+price per share struck through, and the player's price in green Lilita with a pulsing glow
+(`.m-deal-price`, still under reduced motion). Shaken districts get `.m-shake.on` (a red
+falling-chart icon) after their name in the table; every name has the empty 14px slot. Phones: the pop-up keeps only the district
+table (6 rows at a time, shifting by one to follow the selection), the digit faces shrink to 32x34 and the "shares you hold" line (`.m-line.held`) is hidden.
 
 ### UI Lab tabs
 

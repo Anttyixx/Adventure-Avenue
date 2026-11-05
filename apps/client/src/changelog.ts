@@ -26,6 +26,27 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: '2026-11-07-stock-bar-polish',
+    date: 'Nov 7, 2026',
+    title: 'Stock screen polish',
+    features: [
+      {
+        tag: 'better',
+        title: 'Clearer deals',
+        text: 'At a discount or a premium, the normal price per share is crossed out with your price glowing beside it. The heading just says which shares you are buying or selling.',
+      },
+      {
+        tag: 'new',
+        title: 'Shaken districts',
+        text: 'A district hit by a sell-off shows a small red falling-chart icon next to its name. The note under the table is gone.',
+      },
+    ],
+    extras: [
+      'Phones show 6 districts at a time; the list shifts as you move through them',
+      'Even spacing inside the stock action bar',
+    ],
+  },
+  {
     id: '2026-11-07-stocks-zoom-venture',
     date: 'Nov 7, 2026',
     title: 'A new stock screen, clearer zoom and smoother venture cards',

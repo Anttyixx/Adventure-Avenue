@@ -62,14 +62,17 @@ export async function stockModal(
   p: Player,
   mode: 'buy' | 'sell',
   rate = 0,
+  /** The district to start on (default: the first, or the first with shares to sell). */
+  start?: number,
 ): Promise<{ d: number; n: number } | null> {
   let d =
-    mode === 'sell'
+    start ??
+    (mode === 'sell'
       ? Math.max(
           0,
           p.shares.findIndex((n) => n > 0),
         )
-      : 0;
+      : 0);
   let n = 0;
   const bar = h('div', { class: 'stock-bar' });
   const go = h(
@@ -92,32 +95,24 @@ export async function stockModal(
     const cashAfter = p.cash + (mode === 'buy' ? -total : total);
     const now = stockPrice(G, d);
     const after = priceAfter();
-    // At a discount (buying) or a premium (selling): what the player saves or gains on the market price.
-    const normal = mode === 'buy' ? n * now : Math.floor(n * now);
     clear(sum);
     sum.append(
-      h(
-        'div',
-        { class: 'm-total' },
-        `${mode === 'buy' ? 'Buy' : 'Sell'} ${n} ${G.districts[d].name} share${n === 1 ? '' : 's'} for `,
-        h('b', null, fmt(total)),
-        rate
-          ? h(
-              'span',
-              { class: 'm-deal-tag' },
-              mode === 'buy'
-                ? `${rate * 100}% off · you save ${fmt(Math.abs(total - normal))}`
-                : `${rate * 100}% above · +${fmt(Math.abs(total - normal))}`,
-            )
-          : null,
-      ),
+      h('div', { class: 'm-total' }, `${mode === 'buy' ? 'Buy' : 'Sell'} ${G.districts[d].name} shares`),
+      // At a discount (buying) or a premium (selling): the market price crossed out and the
+      // player's own price per share glowing beside it.
       ...(rate
         ? [
-            mLine(
-              mode === 'buy' ? 'Your price per share' : 'You get per share',
-              fmt(now),
-              priceFmt(unit()),
-              'deal',
+            h(
+              'div',
+              { class: 'm-deal-row' },
+              h(
+                'span',
+                { class: 'm-deal-tag' },
+                mode === 'buy' ? `${rate * 100}% off` : `${rate * 100}% above`,
+              ),
+              h('span', null, 'Per share'),
+              h('s', { class: 'm-was' }, fmt(now)),
+              h('b', { class: 'm-deal-price' }, priceFmt(unit())),
             ),
           ]
         : []),

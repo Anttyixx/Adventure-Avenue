@@ -6,20 +6,19 @@
  *   player's holdings (the selected district's row is highlighted);
  * - bottom: one card per square in the selected district with its shop value, the fee a
  *   rival pays there, and how much more can be invested (max. capital).
- * Used by the market drawer and the buy/sell stock dialogs.
+ * Used by the market drawer and the buy/sell stock pop-up. A district a sell-off has shaken shows
+ * a small icon after its name (volatility itself is never shown to players).
  */
 import {
   BUILDINGS,
   K,
   PLAYER_COLORS,
-  confidence,
   dynamicStocks,
   market,
   investRoom,
   isShopLike,
   squareFee,
   stockPrice,
-  volMood,
   type GameState,
   type Square,
 } from '@aa/engine';
@@ -31,6 +30,9 @@ import { clear, fmt, h } from './dom';
 /** Unowned squares use neutral greys so they never look like a player's color. */
 const UNOWNED = '#d5dae6';
 const UNOWNED_ICON = '#9aa3b8';
+
+/** How many districts the table shows at once on short screens. */
+const MAX_ROWS_SHORT = 6;
 
 /** Remember the last district viewed so the drawer keeps it when it refreshes mid-turn. */
 let lastSelected = 0;
@@ -48,12 +50,13 @@ export function marketView(
   const mapWrap = h('div', { class: 'm-map' });
   const grid = h('div', { class: 'm-grid-wrap' });
   const shops = h('div', { class: 'm-shops' });
-  const foot = h('p', { class: 'm-foot' });
-  // The footer sits under the holdings table, beside the map, instead of on a row of its own.
   top.append(
     slots.underMap ? h('div', { class: 'm-left' }, mapWrap, slots.underMap) : mapWrap,
-    h('div', { class: 'm-right' }, grid, foot),
+    h('div', { class: 'm-right' }, grid),
   );
+  // Short (phone) screens show 6 districts at a time; the list shifts by one when the selection
+  // moves past either end.
+  let first = 0;
   root.append(slots.besideShops ? h('div', { class: 'm-shops-row' }, shops, slots.besideShops) : shops);
   root.prepend(top);
 
@@ -68,45 +71,13 @@ export function marketView(
     clear(mapWrap);
     mapWrap.append(miniMap(G, sel, select));
     clear(grid);
-    grid.append(holdingsGrid(G, sel, select));
+    const shown = matchMedia('(max-height: 500px)').matches ? MAX_ROWS_SHORT : G.districts.length;
+    if (sel < first) first = sel;
+    if (sel >= first + shown) first = sel - shown + 1;
+    first = Math.max(0, Math.min(first, G.districts.length - shown));
+    grid.append(holdingsGrid(G, sel, select, first, shown));
     clear(shops);
     shops.append(shopStrip(G, sel));
-    const total = G.players.reduce((s, p) => s + p.shares[sel], 0);
-    const unowned = G.nodes.filter((s) => s.d === sel && s.owner < 0).length;
-    clear(foot);
-    foot.append(
-      `${G.districts[sel].name}: ${unowned} unowned square${unowned === 1 ? '' : 's'}, ${total} shares held. ` +
-        `Every fee paid here pays each other shareholder fee x shares / ${K.divDivisor}.`,
-    );
-    // Dynamic stocks: how much shares move this district, and whether a sell-off shook it.
-    if (dynamicStocks(G)) {
-      const m = market(G);
-      const v = m.vol[sel];
-      const mood = volMood(v);
-      foot.append(
-        ' ',
-        h(
-          'span',
-          {
-            class: `m-mood ${mood}`,
-            title: `Volatility ${v.toFixed(2)}: how strongly buying and selling moves the price`,
-          },
-          mood === 'calm' ? 'Calm' : mood === 'wild' ? 'Wild' : 'Normal',
-        ),
-      );
-      if (m.cut[sel] > 0.001)
-        foot.append(
-          ' ',
-          h(
-            'span',
-            {
-              class: 'm-shaken',
-              title: 'A sell-off cut the price; buying shares or investing here repairs it',
-            },
-            `📉 Shaken -${Math.round((1 - confidence(G, sel)) * 100)}%: ${Math.ceil(m.cut[sel] / K.repairPerShare)} shares to recover`,
-          ),
-        );
-    }
   };
 
   // Up/down arrow keys move between districts while the screen is open.
@@ -252,7 +223,27 @@ function miniMap(G: GameState, d: number, select: (d: number) => void): HTMLElem
 
 // ------------------------------------------------------------------ district x player grid
 
-function holdingsGrid(G: GameState, sel: number, select: (d: number) => void): HTMLElement {
+/** A small falling-chart icon for a district a sell-off has shaken (its price is cut until repaired). */
+function shakenIcon(G: GameState, d: number): HTMLElement {
+  const el = h('span', { class: 'm-shake' });
+  if (!dynamicStocks(G)) return el;
+  const cut = market(G).cut[d];
+  if (cut <= 0.001) return el;
+  el.classList.add('on');
+  el.title = `Shaken: a sell-off cut this price. Buying ${Math.ceil(cut / K.repairPerShare)} shares or investing in its shops repairs it.`;
+  el.innerHTML =
+    '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2 3l4.5 5 3-3L14 10.5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/><path d="M10 11.5h4.5V7" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+  el.setAttribute('aria-label', 'Shaken');
+  return el;
+}
+
+function holdingsGrid(
+  G: GameState,
+  sel: number,
+  select: (d: number) => void,
+  first = 0,
+  shown = G.districts.length,
+): HTMLElement {
   const players = G.players;
   const head = h(
     'tr',
@@ -274,12 +265,17 @@ function holdingsGrid(G: GameState, sel: number, select: (d: number) => void): H
   const rows = G.districts.map((dist, d) =>
     h(
       'tr',
-      { class: d === sel ? 'sel' : '', onclick: () => select(d) },
+      {
+        class: d === sel ? 'sel' : '',
+        hidden: d < first || d >= first + shown,
+        onclick: () => select(d),
+      },
       h(
         'td',
         { class: 'm-dname' },
         h('span', { class: 'swatch', style: `background:${dist.color}` }),
         dist.name,
+        shakenIcon(G, d),
       ),
       h('td', { class: 'm-price' }, fmt(stockPrice(G, d))),
       ...players.map((p) =>

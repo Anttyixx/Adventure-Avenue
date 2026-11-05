@@ -472,8 +472,8 @@ boost_d = 1 + 0.00075 x held_d x vol_d
   every 100 shares add 7.5% at volatility 1 (+0.75 for a 10G stock), with no cap. Trades never
   touch the factor.
 - `vol_d` is the district's volatility, rolled evenly at game start between 1 and 2, so a district's
-  slope runs from +0.75 to +1.5 per 100 shares (10G stock). The market panel tags the bottom third
-  of the range Calm, the middle Normal and the top third Wild (`volMood`).
+  slope runs from +0.75 to +1.5 per 100 shares (10G stock). Players are never shown a district's
+  volatility (the Stocks lab dev tool still labels it Calm, Normal or Wild, `volMood`).
 - A trade pays the average of the price before and after it (sells use the same), so buying 99
   shares at once costs the same as buying them in steps.
 - **Sell-off:** when 75+ shares of a district are sold in one turn (by anyone, in any number of
@@ -483,7 +483,9 @@ boost_d = 1 + 0.00075 x held_d x vol_d
   paid before the dent lands (the average of the price before and after their shares left). Every
   share bought there repairs 0.1% (100 shares = 10%), and every 100G invested in its shops repairs
   1% (`G.market.cut`). Saves from before this rule count each old dent as 5%.
-- The market panel tags each district's mood and shows "Shaken -X%: N shares to recover".
+- A shaken district (a sell-off cut its price) shows a small red falling-chart icon right after its
+  name in the stock table; its tooltip says how many shares bought (or how much invested) repair
+  it. Every district name keeps the icon's space, so names line up either way.
 
 | Action   | Where / when                                                                               | Classic                     | Dynamic                        |
 | -------- | ------------------------------------------------------------------------------------------ | --------------------------- | ------------------------------ |
@@ -508,11 +510,16 @@ venture cards.
 
 **Stock screen (buy and sell):** like the venture board, the stock market opens in a pop-up in the
 middle of the screen (over the board, which stays visible around it) and the choice sits in the
-action bar: a summary card (the cost, the share price, the player's cash and their shares now and
-after), the share counter and Buy/Sell with Skip (or Cancel). The venture cards that pick a
+action bar: a summary card, the share counter and Buy/Sell with Skip (or Cancel). The card's
+heading just says "Buy Brick Row shares" (or Sell); under it three lines: the market price, the
+player's cash and their shares, each now and after. At a discount (10% off) or premium (20% above)
+a row under the heading shows the deal tag, the market price per share crossed out and the
+player's own price per share in green with a soft pulsing glow. The bar has the same padding on all
+four sides (12px; 8px on phones). The venture cards that pick a
 district (Gift shares, Bull and Bear market) work the same, with one button naming the district.
 Picking a district on the map or in the table updates the bar. On short (phone) screens the
-pop-up keeps only the district table, the counter is smaller and the "shares you hold" line is
+pop-up keeps only the district table, showing 6 districts at a time: moving the selection past the
+bottom (or top) shifts the list by one. The counter is smaller and the "shares you hold" line is
 left out. The pop-up's panels:
 
 - **Mini map** of the whole board. Squares in that district are filled with the district color. An
@@ -522,7 +529,7 @@ left out. The pop-up's panels:
 - **Holdings table:** one row per player with squares owned in the district, shares held, the value
   of those shares at the current price, and a bar showing their share of all stock held there.
   Players with nothing there are dimmed.
-- **Footer note** with the number of unowned squares, total shares held, and the dividend rule.
+- No note under the table (the stock market panel has none either).
 
 ## Suits, bank and promotion
 

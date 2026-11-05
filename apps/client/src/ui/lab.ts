@@ -108,24 +108,15 @@ const rnd = (n: number) => Math.floor(Math.random() * n);
  * are easy to find. Update this list with each change.
  */
 const RECENT = new Set([
-  'Venture grid (play)',
-  'Venture (CPU view)',
-  'Line of 5 bonus',
-  'Full row bonus',
-  'shopClose',
-  'shopOpen',
-  'Shops closing',
-  'Shops reopening',
-  'Zoom modes',
-  'Path choice (watching)',
-  'No shops to invest in',
   'Buy stock',
-  'Sell stock',
   'Buy stock (10% off)',
+  'Buy stock (shaken district)',
+  'Sell stock',
   'Sell stock (20% above)',
   'Gift shares (venture card)',
   'Bull market (venture card)',
   'Bear market (venture card)',
+  'Stock market',
 ]);
 
 /** Which board the lab plays on: Town (square) or Twin Lakes (hex), remembered per browser. */
@@ -970,6 +961,11 @@ export async function openLab(app: HTMLElement, section?: string) {
     row(
       s,
       btn('Buy stock', async () => result('Buy stock', await stockModal(hud, G, cur(), 'buy'))),
+      btn('Buy stock (shaken district)', async () => {
+        // A sell-off cut the second district's price: its name gets the shaken icon.
+        market(G).cut[1] = 0.06;
+        result('Buy stock', await stockModal(hud, G, cur(), 'buy', 0, 1));
+      }),
       btn('Buy stock (10% off)', async () =>
         result('Buy stock', await stockModal(hud, G, cur(), 'buy', 0.1)),
       ),
