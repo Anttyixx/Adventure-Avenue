@@ -827,13 +827,14 @@ input[type='range'] {
   display: grid;
   place-items: center;
   box-sizing: border-box;
-  width: 18px;
-  height: 18px;
+  width: 14px;
+  height: 14px;
   border: 1.5px solid currentColor;
   border-radius: 50%;
   background: none;
   color: #fff;
-  font: 400 12px var(--head);
+  font: 400 9px var(--head);
+  line-height: 1;
 }
 .info-btn.on {
   background: var(--accent);
