@@ -64,12 +64,37 @@ function stockPopup(hud: Hud, title: string, content: Node) {
   watch.observe(box);
   window.addEventListener('resize', place);
   return {
+    /**
+     * Hide the pop-up to look at the board (the camera shows the whole board, as an auto zoom
+     * the player can still zoom), or bring it back.
+     */
+    peek: (on: boolean) => {
+      layer.hidden = on;
+      hud.board.overviewHold = on;
+      if (!on) place();
+    },
     close: () => {
       watch.disconnect();
       window.removeEventListener('resize', place);
+      hud.board.overviewHold = false;
       layer.remove();
     },
   };
+}
+
+/**
+ * The action bar while the stock pop-up is hidden: a short note and a button back to it.
+ */
+function boardPeekBar(back: () => void) {
+  return [
+    h(
+      'div',
+      { class: 'm-sum m-card stock-peek' },
+      h('div', { class: 'm-total' }, 'Looking at the board'),
+      h('div', { class: 'hint' }, 'The stock market is hidden. Come back to it to finish.'),
+    ),
+    h('div', { class: 'tb-btns' }, h('button', { class: 'btn main', onclick: back }, 'Back to stocks')),
+  ];
 }
 
 /**
@@ -118,18 +143,18 @@ export async function stockModal(
     clear(sum);
     sum.append(
       h('div', { class: 'm-total' }, `${mode === 'buy' ? 'Buy' : 'Sell'} ${G.districts[d].name} shares`),
-      // At a discount (buying) or a premium (selling): the market price crossed out and the
-      // player's own price per share glowing beside it.
+      // At a discount (buying) or a premium (selling): a chip in the card's top right corner, and
+      // the market price per share crossed out with the player's own price glowing beside it.
       ...(rate
         ? [
             h(
+              'span',
+              { class: 'm-deal-tag m-corner' },
+              mode === 'buy' ? `${rate * 100}% off` : `${rate * 100}% above`,
+            ),
+            h(
               'div',
               { class: 'm-deal-row' },
-              h(
-                'span',
-                { class: 'm-deal-tag' },
-                mode === 'buy' ? `${rate * 100}% off` : `${rate * 100}% above`,
-              ),
               h('span', null, 'Per share'),
               h('s', { class: 'm-was' }, fmt(now)),
               h('b', { class: 'm-deal-price' }, priceFmt(unit())),
@@ -137,26 +162,38 @@ export async function stockModal(
           ]
         : []),
       mLine('Market price', fmt(now), fmt(after), after > now ? 'up' : after < now ? 'down' : ''),
+      mTotal(mode === 'buy' ? 'Purchase price' : 'Sell price', fmt(total)),
       mLine('Your cash', fmt(p.cash), fmt(cashAfter), cashAfter < 0 ? 'down' : ''),
       mLine('Shares you hold', String(p.shares[d]), String(p.shares[d] + (mode === 'buy' ? n : -n)), 'held'),
     );
     go.disabled = n <= 0;
   };
+  let peeking = false;
+  const peek = (on: boolean) => {
+    peeking = on;
+    pop.peek(on);
+    draw();
+  };
   const draw = () => {
+    clear(bar);
+    if (peeking) {
+      bar.append(...boardPeekBar(() => peek(false)));
+      return;
+    }
     const max = Math.max(0, maxN());
     n = Math.min(n || Math.min(10, max), max);
-    // Arrows above and below each digit set the number of shares (no slider: easier on phones).
+    // Arrows above and below each digit set the number of shares (no slider: easier on phones),
+    // with Max right beside them.
     const picker = digitPicker({
       max,
       value: n,
-      suffix: 'shares',
+      minButton: false,
       onChange: (v) => {
         n = v;
         update();
       },
     });
     update();
-    clear(bar);
     bar.append(
       sum,
       picker.el,
@@ -164,6 +201,7 @@ export async function stockModal(
         'div',
         { class: 'tb-btns' },
         go,
+        h('button', { class: 'btn ghost', onclick: () => peek(true) }, 'View board'),
         h(
           'button',
           { class: 'btn ghost', onclick: () => hud.resolvePrompt(null) },
@@ -198,6 +236,18 @@ export async function stockModal(
   } finally {
     pop.close();
   }
+}
+
+/** A row of a deal summary with a single amount (what the trade costs or pays). */
+function mTotal(label: string, amount: string) {
+  return h(
+    'div',
+    { class: 'm-line m-pay' },
+    h('span', null, label),
+    h('span', null),
+    h('span', null),
+    h('b', null, amount),
+  );
 }
 
 /** A "label: now → after" row of a deal summary. */
@@ -243,8 +293,18 @@ export async function districtStockModal(
     G.factor[d] = f;
     return after;
   };
+  let peeking = false;
+  const peek = (on: boolean) => {
+    peeking = on;
+    pop.peek(on);
+    draw();
+  };
   const draw = () => {
     clear(bar);
+    if (peeking) {
+      bar.append(...boardPeekBar(() => peek(false)));
+      return;
+    }
     const now = stockPrice(G, d);
     const after = priceAfter();
     const name = G.districts[d].name;
@@ -262,11 +322,13 @@ export async function districtStockModal(
         free ? h('span', { class: 'm-deal-tag' }, `worth ${fmt(GIFT_SHARES * now)}`) : null,
       ),
       free
-        ? mLine('Shares you hold', String(p.shares[d]), String(p.shares[d] + GIFT_SHARES), 'up')
+        ? mLine('Market price', fmt(now), fmt(now))
         : mLine('Price per share', fmt(now), fmt(after), after > now ? 'up' : after < now ? 'down' : ''),
-      free
-        ? mLine('Your shares are worth', fmt(p.shares[d] * now), fmt((p.shares[d] + GIFT_SHARES) * now), 'up')
-        : mLine('Your shares are worth', fmt(p.shares[d] * now), fmt(p.shares[d] * after)),
+      ...(free ? [mTotal('Purchase price', 'Free')] : []),
+      ...(free
+        ? [mLine('Shares you hold', String(p.shares[d]), String(p.shares[d] + GIFT_SHARES), 'up')]
+        : []),
+      ...(free ? [] : [mLine('Your shares are worth', fmt(p.shares[d] * now), fmt(p.shares[d] * after))]),
       h('div', { class: 'hint' }, 'Pick a district on the map or in the list.'),
     );
     bar.append(
@@ -279,6 +341,7 @@ export async function districtStockModal(
           { class: 'btn main', onclick: () => hud.resolvePrompt(d) },
           free ? `Take ${GIFT_SHARES} ${name} shares` : `Pick ${name}`,
         ),
+        h('button', { class: 'btn ghost', onclick: () => peek(true) }, 'View board'),
       ),
     );
   };

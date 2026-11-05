@@ -810,7 +810,11 @@ dim the board (`.stock-layer > .modal.stock-pop`, only the pop-up catches clicks
 it, and `stockPopup` slides it left only as far as needed to clear the player cards), and the decision is in the action bar (`.stock-bar`):
 the summary card (`.m-card`, compact), the digit picker, then `.tb-btns` with the gold Buy/Sell
 (or the district button) over a ghost Skip/Cancel. Changing district in the pop-up redraws the bar
-in place (no new prompt, so the bar doesn't morph). The bar's padding is the same on all four
+in place (no new prompt, so the bar doesn't morph). A ghost **View board** button hides the pop-up (`stockPopup().peek`,
+`board.overviewHold` for an auto whole-board view) and swaps the bar to a short note with a gold
+"Back to stocks". The deal chip is `.m-corner` (absolute, top right of the card); the total is an
+`.m-line.m-pay` row in gold. The digit picker runs with `minButton: false` and no suffix, Max
+beside it with even padding. The bar's padding is the same on all four
 sides (12px, phones 8px; no min height). The card's heading names only the action and district
 ("Buy Brick Row shares"). A discount or premium is a `.m-deal-row`: the green deal tag, the market
 price per share struck through, and the player's price in green Lilita with a pulsing glow

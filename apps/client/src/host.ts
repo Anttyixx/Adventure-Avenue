@@ -884,7 +884,9 @@ export class HotSeat implements GameIO {
             }
         // An investment's coins fly into the shop being invested in, not to the bank.
         const to = e.sq != null ? board.center(G.nodes[e.sq]) : this.playerPos(e.to);
-        sound.play(e.to >= 0 && (e.from < 0 || !G.players[e.to].cpu) ? 'coin' : 'pay');
+        if (e.reason === 'Stock') sound.play('stockBuy');
+        else if (e.reason === 'Stock sale') sound.play('stockSell');
+        else sound.play(e.to >= 0 && (e.from < 0 || !G.players[e.to].cpu) ? 'coin' : 'pay');
         board.coins(from, to, Math.ceil(e.amount / 50));
         if (e.to >= 0) board.floatText(to.x, to.y, `+${fmt(e.amount)}`, '#7cf29a');
         if (e.from >= 0) board.floatText(from.x, from.y + 22, `-${fmt(e.amount)}`, '#ff8a8a');

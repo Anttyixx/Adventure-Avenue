@@ -26,6 +26,24 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: '2026-11-08-stock-sounds-view-board',
+    date: 'Nov 8, 2026',
+    title: 'Stock sounds and a peek at the board',
+    features: [
+      {
+        tag: 'new',
+        title: 'View the board while trading stock',
+        text: 'A View board button hides the stock market so you can look at the whole board; Back to stocks brings it back.',
+      },
+      {
+        tag: 'better',
+        title: 'Tidier stock bar',
+        text: 'A new purchase (or sell) price line shows what the deal costs; deals show their chip in the corner; the counter is smaller with Max right beside it.',
+      },
+    ],
+    extras: ['New sounds for buying and selling stock', 'A slightly wider Price column'],
+  },
+  {
     id: '2026-11-07-stock-bar-polish',
     date: 'Nov 7, 2026',
     title: 'Stock screen polish',

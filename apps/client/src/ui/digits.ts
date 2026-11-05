@@ -1,7 +1,7 @@
 /**
  * Number picker with an up and a down arrow on each digit (used for share counts, investment
  * amounts and the target net worth). Each arrow turns its digit 0-9 and wraps; the result is
- * kept between `min` (default 0) and `max`. Quick buttons set the minimum or the maximum.
+ * kept between `min` (default 0) and `max`. Quick buttons set the minimum (optional) or the maximum.
  */
 import { h } from './dom';
 
@@ -20,6 +20,8 @@ export function digitPicker(opts: {
   unit?: number;
   /** Text after the number, e.g. "shares". */
   suffix?: string;
+  /** Show the button that sets the minimum (default true). */
+  minButton?: boolean;
   /** Show the value only (every button disabled). */
   readOnly?: boolean;
   onChange(v: number): void;
@@ -79,7 +81,9 @@ export function digitPicker(opts: {
   const el = h(
     'div',
     { class: 'digits' },
-    h('button', { class: 'btn small ghost', onclick: () => set(minSteps) }, minSteps ? 'Min' : '0'),
+    opts.minButton === false
+      ? null
+      : h('button', { class: 'btn small ghost', onclick: () => set(minSteps) }, minSteps ? 'Min' : '0'),
     h('span', { class: 'dg-row' }, ...cols),
     opts.suffix ? h('span', { class: 'dg-suffix' }, opts.suffix) : null,
     h('button', { class: 'btn small ghost', onclick: () => set(maxSteps) }, 'Max'),

@@ -1939,8 +1939,8 @@ input[type='range'] {
 .m-grid .m-price-h,
 .m-grid .m-price {
   width: 1%;
-  padding-left: 6px;
-  padding-right: 6px;
+  padding-left: 10px;
+  padding-right: 10px;
 }
 .m-grid .m-ph,
 .m-grid .m-cell {
@@ -2213,6 +2213,9 @@ input[type='range'] {
   padding: 170px 12px;
   pointer-events: none;
 }
+.hud > .stock-layer[hidden] {
+  display: none;
+}
 .stock-pop {
   pointer-events: auto;
   box-sizing: border-box;
@@ -2239,6 +2242,35 @@ input[type='range'] {
   align-items: center;
   gap: 12px;
   min-width: 0;
+}
+/* The deal chip (10% off, 20% above) sits in the summary card's top right corner. */
+.stock-bar .m-card {
+  position: relative;
+}
+.stock-bar .m-corner {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  margin: 0;
+  font-size: 12px;
+}
+/* What the trade costs or pays: one amount, in gold. */
+.stock-bar .m-card:has(.m-corner) .m-total {
+  padding-right: 84px;
+}
+.m-line.m-pay b {
+  color: var(--accent);
+}
+/* Max sits right beside the counter, with the same padding all round its word. */
+.stock-bar .digits {
+  gap: 8px;
+}
+.stock-bar .digits > .btn {
+  padding: 8px;
+  line-height: 1;
+}
+.stock-peek {
+  min-width: 220px;
 }
 .stock-bar .m-card {
   margin: 0;
@@ -2307,7 +2339,7 @@ input[type='range'] {
     height: 20px;
   }
   .stock-bar .digits > .btn {
-    padding: 4px 8px;
+    padding: 6px;
   }
   .stock-bar .m-line.held {
     display: none;

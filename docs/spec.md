@@ -511,10 +511,18 @@ venture cards.
 **Stock screen (buy and sell):** like the venture board, the stock market opens in a pop-up in the
 middle of the screen (over the board, which stays visible around it) and the choice sits in the
 action bar: a summary card, the share counter and Buy/Sell with Skip (or Cancel). The card's
-heading just says "Buy Brick Row shares" (or Sell); under it three lines: the market price, the
-player's cash and their shares, each now and after. At a discount (10% off) or premium (20% above)
-a row under the heading shows the deal tag, the market price per share crossed out and the
-player's own price per share in green with a soft pulsing glow. The bar has the same padding on all
+heading just says "Buy Brick Row shares" (or Sell); under it: the market price (now and after),
+the **purchase price** (or **sell price**: what the whole trade costs or pays, in gold), the
+player's cash and their shares (now and after). At a discount (10% off) or premium (20% above) a
+green chip in the card's top right corner names the deal, and a row under the heading shows the
+market price per share crossed out and the player's own price per share in green with a soft
+pulsing glow. The share counter has no 0 button and no "shares" label; Max sits right beside it.
+Gift shares shows the market price, "Purchase price: Free" and the shares held.
+
+**View board:** the bar also has a View board button (on the district venture cards too). It hides
+the pop-up, the camera shows the whole board (auto zoom, so the player can still zoom), and the bar
+says "Looking at the board" with a gold **Back to stocks** button that brings the pop-up back as
+it was. The bar has the same padding on all
 four sides (12px; 8px on phones). The venture cards that pick a
 district (Gift shares, Bull and Bear market) work the same, with one button naming the district.
 Picking a district on the map or in the table updates the bar. The pop-up puts the mini map (drawn
@@ -1130,7 +1138,7 @@ ring/silent switch does not mute the game; the in-game Mute switch still does.
   sparse tune to think by (Memory Blocks), a galloping race theme (Coin Derby), a game-show tune
   (Lucky Wheel) and a sea shanty (Treasure Split). The board music comes back when they close. The music stops for the winning fanfare at the end of a game.
 - **Effects:** a domination fanfare, venture line and full-row jingles, button clicks, dice roll, each step, landing, gaining and paying money, buying a
-  shop, buying out a rival's property (a brass stab, a rising run and a cash-register ring), a shop's value going up, collecting a suit, promotion, venture cards, a card flipping over (a paper swish and a click), slot reels ticking as they spin and clunking as each stops, warps, the start of a
+  shop, buying stock (ticker blips climbing to a bright ding), selling stock (blips stepping down to a cash-drawer chunk and coin shimmer), buying out a rival's property (a brass stab, a rising run and a cash-register ring), a shop's value going up, collecting a suit, promotion, venture cards, a card flipping over (a paper swish and a click), slot reels ticking as they spin and clunking as each stops, warps, the start of a
   human player's turn, a new round, bankruptcy and the win fanfare.
 - **Settings:** a speaker button on the main menu and game setup (and the Sound section of the in-game menu) has Music and
   Effects volume sliders and a Mute switch. Settings are saved per device. Audio pauses while the

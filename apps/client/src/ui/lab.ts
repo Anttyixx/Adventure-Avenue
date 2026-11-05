@@ -116,6 +116,8 @@ const RECENT = new Set([
   'Gift shares (venture card)',
   'Bull market (venture card)',
   'Bear market (venture card)',
+  'stockBuy',
+  'stockSell',
 ]);
 
 /** Which board the lab plays on: Town (square) or Twin Lakes (hex), remembered per browser. */
