@@ -104,7 +104,7 @@ function basics(G: GameState | null): Node[] {
     ),
     ...sec(
       'The arcade',
-      'Lucky Reels: lock any of five slots and reroll up to three times for the best set. Memory Blocks: remember and pick a prize. Coin Derby: everyone chooses Sprint or Collect coins for three legs. Treasure Split: choose a chest and split it with anyone who picks the same one. Lucky Wheel: optionally bet up to 100G of your cash on a color (2× total return) or group of four numbers (3×). Everyone sees the results together.',
+      'Landing on the arcade plays one of five games. Lucky Reels: keep the slots you like and reroll up to twice for the best set of five. Memory Blocks: remember where the prizes are, then pick a card. Coin Derby: everyone races down a 15-space track; each leg, sprint (3-5 spaces) or grab 30G (1-3 spaces), and whoever is furthest after three legs wins a bonus. Lucky Wheel: everyone may bet up to 100G on a color (wins 1× the bet) or a group of four numbers (wins 2×). Treasure Split: everyone picks a chest; anyone who picks the same chest shares it. In the party games choices stay secret until everyone has picked.',
     ),
     ...sec(
       'Before rolling',

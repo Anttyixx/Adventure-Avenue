@@ -1,335 +1,856 @@
-/** Shared arcade presentation: private choices, public reveals, no outcome randomness in the UI. */
+/**
+ * The arcade games on screen. Like the venture board, each game is a board in the middle of the
+ * screen (`ArcadeStage`) and the action bar carries its instructions, choices and results. The
+ * engine decides every outcome; this file only shows them.
+ *
+ * One stage lasts a whole game: Lucky Reels keeps the same slots between rolls, the party games
+ * keep their board between rounds, and the stage closes after the last result.
+ */
 import {
   K,
+  MEMORY_SHOW_MS,
   PLAYER_COLORS,
   REEL_PRIZES,
+  WHEEL_BETS,
   reelPrize,
+  reelSetSlots,
+  wheelWins,
   type DecisionRequest,
   type GameEvent,
   type GameState,
+  type MemoryPrize,
+  type Player,
   type ReelSymbol,
 } from '@aa/engine';
-import { h, fmt } from './dom';
-import type { Hud } from './hud';
+import { coinIconURL, starIconURL, suitIconURL, wildIconURL } from '../icons';
+import { propertyIconURL } from '../art';
 import { portraitURL } from '../sprites';
 import { TIMING as T } from '../timing';
+import { clear, fmt, h } from './dom';
+import type { Hud } from './hud';
 
-const SYMBOL: Record<ReelSymbol, string> = { seven: '7', coin: '●', wild: '★', stock: '◆', bell: '♣' };
-const NAME: Record<ReelSymbol, string> = {
+export type ArcadeGame = 'Lucky Reels' | 'Memory Blocks' | 'Coin Derby' | 'Lucky Wheel' | 'Treasure Split';
+type Round = Extract<GameEvent, { type: 'arcadeRound' }>;
+
+const reduced = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
+const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
+
+/** What each game is about, in one line, under its name. */
+const ABOUT: Record<ArcadeGame, string> = {
+  'Lucky Reels': 'Make the best set of five',
+  'Memory Blocks': 'Remember the prizes, then pick a card',
+  'Coin Derby': 'Everyone races',
+  'Lucky Wheel': 'Everyone may bet',
+  'Treasure Split': 'Everyone picks a chest',
+};
+
+// ------------------------------------------------------------------ symbol art
+
+const SYMBOL_NAME: Record<ReelSymbol, string> = {
   seven: 'Seven',
   coin: 'Coin',
   wild: 'Star',
   stock: 'Diamond',
   bell: 'Clover',
 };
-const reduced = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-export class ArcadeView {
-  m: ReturnType<Hud['modal']>;
-  body = h('div', { class: 'arcade-body' });
+function symbolArt(s: ReelSymbol): HTMLElement {
+  if (s === 'seven') return h('span', { class: 'sym-seven', 'aria-hidden': 'true' }, '7');
+  const src =
+    s === 'coin'
+      ? coinIconURL()
+      : s === 'wild'
+        ? starIconURL()
+        : s === 'stock'
+          ? suitIconURL(2, true)
+          : suitIconURL(3, true);
+  return h('img', { src, alt: '', draggable: 'false' });
+}
+
+/** A memory card's face: a picture and a short label. */
+function prizeFace(prize: MemoryPrize, level: number): HTMLElement[] {
+  const shop = (color: string) => h('img', { src: propertyIconURL('shop', 1, color), alt: '' });
+  switch (prize) {
+    case 'shopsUp':
+      return [shop('#35c46a'), h('b', { class: 'good' }, 'Shops +10%')];
+    case 'shopsDown':
+      return [shop('#e5484d'), h('b', { class: 'bad' }, 'Shops -5%')];
+    case 'gold':
+      return [h('img', { src: coinIconURL(), alt: '' }), h('b', null, fmt(K.memory.gold * level))];
+    case 'small':
+      return [h('img', { src: coinIconURL(), alt: '', class: 'small' }), h('b', null, fmt(K.memory.small))];
+    case 'wild':
+      return [h('img', { src: wildIconURL(), alt: '' }), h('b', { class: 'wild' }, 'Wild card')];
+  }
+}
+
+const PRIZE_NAME: Record<MemoryPrize, string> = {
+  shopsUp: 'Your shops +10%',
+  shopsDown: 'Your shops -5%',
+  gold: 'Gold',
+  small: 'A little gold',
+  wild: 'A wild card',
+};
+
+// ------------------------------------------------------------------ the stage
+
+export class ArcadeStage {
+  private layer: HTMLElement;
+  private box: HTMLElement;
+  private sub = h('span', { class: 'as-sub' });
+  /** Party games: everyone's portrait, ticked once they have chosen. */
+  private who = h('div', { class: 'as-who' });
+  private body = h('div', { class: 'as-body' });
   private abort = new AbortController();
+  private closed = false;
 
-  constructor(hud: Hud, title: string, subtitle: string) {
-    this.m = hud.modal(
-      title,
-      h('div', { class: 'minigame arcade-party' }, h('p', { class: 'hint' }, subtitle), this.body),
-      { wide: true },
+  constructor(
+    private hud: Hud,
+    readonly game: ArcadeGame,
+    private G: GameState,
+  ) {
+    const slug = game.toLowerCase().replace(/ /g, '-');
+    this.sub.textContent = ABOUT[game];
+    this.box = h(
+      'div',
+      { class: `arcade-stage glass as-${slug}`, role: 'region', 'aria-label': game },
+      h(
+        'div',
+        { class: 'as-head' },
+        h('div', { class: 'as-name' }, h('span', { class: 'as-title' }, game), this.sub),
+        this.who,
+      ),
+      this.body,
     );
-    this.m.el.classList.add('arcade-modal');
-    this.m.el.setAttribute('role', 'dialog');
-    this.m.el.setAttribute('aria-label', title);
+    this.layer = h('div', { class: 'arcade-layer' }, this.box);
+    hud.root.append(this.layer);
   }
 
   close() {
+    if (this.closed) return;
+    this.closed = true;
     this.abort.abort();
-    this.m.close();
+    this.layer.remove();
   }
 
-  private async animate(el: HTMLElement, frames: Keyframe[], duration: number) {
-    if (this.abort.signal.aborted) return;
-    if (reduced()) {
-      Object.assign(el.style, frames[frames.length - 1]);
-      return;
-    }
-    const animation = el.animate(frames, {
-      duration,
-      easing: 'cubic-bezier(.15,.65,.2,1)',
-      fill: 'forwards',
-    });
-    const cancel = () => animation.cancel();
-    this.abort.signal.addEventListener('abort', cancel, { once: true });
-    await animation.finished.catch(() => {});
-    this.abort.signal.removeEventListener('abort', cancel);
+  /** Run an animation (skipped with reduced motion, cut short when the stage closes). */
+  private async anim(el: Element, frames: Keyframe[], opts: KeyframeAnimationOptions) {
+    if (this.closed) return;
+    if (reduced()) return;
+    const a = el.animate(frames, { easing: 'cubic-bezier(.2,.8,.2,1)', ...opts });
+    const stop = () => a.cancel();
+    this.abort.signal.addEventListener('abort', stop, { once: true });
+    await a.finished.catch(() => {});
+    this.abort.signal.removeEventListener('abort', stop);
   }
 
-  watch(name: string) {
-    this.body.append(
+  private wait(ms: number) {
+    return this.closed || reduced() ? Promise.resolve() : sleep(ms);
+  }
+
+  // -------------------------------------------------------------- action bar
+
+  /**
+   * Put a question in the action bar: a title, an optional line under it, and the controls on
+   * the right. Controls answer with `hud.resolvePrompt(value)`.
+   */
+  private bar<T>(pid: number, title: string, hint: string, controls: Node[], extra?: Node) {
+    const node = h(
+      'div',
+      { class: 'aa' },
       h(
         'div',
-        { class: 'arcade-wait', role: 'status' },
-        `${name} is choosing…`,
-        h('p', { class: 'hint' }, 'Choices stay private until everyone is ready.'),
+        { class: 'aa-text' },
+        h('div', { class: 'aa-title rise' }, title),
+        hint ? h('div', { class: 'aa-hint rise' }, hint) : null,
+        extra ?? null,
       ),
+      h('div', { class: 'aa-actions' }, ...controls),
     );
+    return this.hud.prompt<T>(node, [], this.G.players[pid].color);
   }
 
-  reels(req: DecisionRequest<'reels'>, level: number) {
-    const locked = req.locked.slice();
-    const current = reelPrize(req.symbols, level);
-    const slots = h('div', { class: 'arcade-slots' });
-    const actions = h('div', { class: 'btn-row' });
-    this.body.append(
-      h('div', { class: 'arcade-score', role: 'status' }, `${current.name} · ${fmt(current.amount)}`),
-      h(
-        'p',
-        { class: 'hint' },
-        `${req.left} reroll${req.left === 1 ? '' : 's'} left. Tap a slot to lock or unlock it.`,
-      ),
-      slots,
+  /**
+   * A result in the action bar with Continue. It also moves on by itself: after a short read for
+   * CPU-only games (faster with Fast CPU), a longer one when people here are playing.
+   */
+  private async result(pid: number, title: string, hint: string, waitMs: number) {
+    const next = h(
+      'button',
+      { class: 'btn main', onclick: () => this.hud.resolvePrompt(undefined) },
+      'Continue',
     );
-    const chart = h('details', { class: 'arcade-chart' }, h('summary', null, 'Prize chart'));
-    REEL_PRIZES.slice(1).forEach((name, i) =>
-      chart.append(h('div', null, name, h('strong', null, fmt(K.reels.prizes[i + 1] * level)))),
-    );
-    this.body.append(chart, actions);
-    return new Promise<{ locked: boolean[]; collect: boolean }>((resolve) => {
-      const finish = (collect: boolean) => {
-        this.close();
-        resolve({ locked, collect });
-      };
-      const roll = h('button', { class: 'btn main', onclick: () => finish(false) }, 'Reroll');
-      req.symbols.forEach((symbol, i) => {
-        const label = h('span', { class: 'arcade-lock' });
-        const button = h(
-          'button',
+    const timer = window.setTimeout(() => this.hud.resolvePrompt(undefined), waitMs);
+    try {
+      await this.bar<void>(pid, title, hint, [next]);
+    } finally {
+      clearTimeout(timer);
+    }
+  }
+
+  private btn(label: string, cls: string, onclick: () => void, disabled = false) {
+    const b = h('button', { class: `btn ${cls}`, onclick }, label) as HTMLButtonElement;
+    b.disabled = disabled;
+    return b;
+  }
+
+  // -------------------------------------------------------------- who has chosen (party games)
+
+  /** Show everyone in the game, with `pid` thinking and those before them done. */
+  private markChoosing(order: number[], pid: number) {
+    clear(this.who);
+    const at = order.indexOf(pid);
+    order.forEach((id, i) => {
+      const p = this.G.players[id];
+      const state = i < at ? 'done' : i === at ? 'now' : 'wait';
+      this.who.append(
+        h(
+          'span',
           {
-            class: 'arcade-slot',
-            onclick: () => {
-              locked[i] = !locked[i];
-              paint();
-            },
+            class: `as-chip ${state}`,
+            style: `--pc:${PLAYER_COLORS[p.color]}`,
+            title: `${p.name}: ${state === 'done' ? 'ready' : state === 'now' ? 'choosing' : 'waiting'}`,
           },
-          h('span', { class: `arcade-symbol symbol-${symbol}`, 'aria-hidden': 'true' }, SYMBOL[symbol]),
-          label,
-        );
-        const paint = () => {
-          button.classList.toggle('locked', locked[i]);
-          button.setAttribute('aria-pressed', String(locked[i]));
-          button.setAttribute(
-            'aria-label',
-            `Slot ${i + 1}: ${NAME[symbol]}, ${locked[i] ? 'locked' : 'unlocked'}`,
-          );
-          label.textContent = locked[i] ? 'Locked' : 'Tap to lock';
-          roll.disabled = locked.every(Boolean);
-        };
-        paint();
-        slots.append(button);
-        if (!req.locked[i])
-          void this.animate(
-            button,
+          h('img', { src: portraitURL(p.ch), alt: '' }),
+          state === 'done' ? h('i', { 'aria-hidden': 'true' }, '✓') : null,
+        ),
+      );
+    });
+  }
+
+  private clearWho() {
+    clear(this.who);
+  }
+
+  /** Party games: everyone playing, in the order they choose (the player who landed first). */
+  private order: number[] = [];
+
+  // ================================================================== Lucky Reels
+
+  private slots: HTMLButtonElement[] = [];
+  private shown: (ReelSymbol | null)[] = [null, null, null, null, null];
+  private chart: HTMLElement | null = null;
+
+  private reelsBoard(level: number) {
+    if (this.slots.length) return;
+    const row = h('div', { class: 'reel-row' });
+    for (let i = 0; i < 5; i++) {
+      const b = h(
+        'button',
+        { class: 'reel-slot', disabled: true },
+        h('span', { class: 'reel-face' }),
+        h('span', { class: 'reel-tag' }, 'Keep'),
+      ) as HTMLButtonElement;
+      this.slots.push(b);
+      row.append(b);
+    }
+    // Best set first, so the prize ladder reads top-down.
+    this.chart = h('div', { class: 'reel-chart', 'aria-label': 'Prizes' });
+    for (let r = REEL_PRIZES.length - 1; r >= 1; r--)
+      this.chart.append(
+        h(
+          'div',
+          { 'data-rank': String(r) },
+          h('span', null, REEL_PRIZES[r]),
+          h('b', null, fmt(K.reels.prizes[r] * level)),
+        ),
+      );
+    this.body.append(row, this.chart);
+  }
+
+  /** Show a roll: new symbols spin into the slots that were not kept. */
+  private async showRoll(symbols: ReelSymbol[], kept: boolean[]) {
+    const spins: Promise<void>[] = [];
+    symbols.forEach((s, i) => {
+      const b = this.slots[i];
+      const face = b.querySelector('.reel-face')!;
+      const changed = this.shown[i] !== s || !kept[i];
+      this.shown[i] = s;
+      b.setAttribute('aria-label', `Slot ${i + 1}: ${SYMBOL_NAME[s]}`);
+      if (!changed && face.childElementCount) return;
+      clear(face);
+      face.append(symbolArt(s));
+      if (!kept[i])
+        spins.push(
+          this.anim(
+            face,
             [
-              { transform: 'translateY(-12px)', opacity: 0.25 },
+              { transform: 'translateY(-120%)', filter: 'blur(3px)', opacity: 0.2 },
+              { transform: 'translateY(12%)', filter: 'blur(0)', opacity: 1, offset: 0.75 },
               { transform: 'translateY(0)', opacity: 1 },
             ],
-            T.arcadeRoll,
-          );
-      });
-      actions.append(roll, h('button', { class: 'btn', onclick: () => finish(true) }, 'Collect prize'));
+            { duration: T.arcadeRoll + i * 110 },
+          ),
+        );
+    });
+    await Promise.all(spins);
+  }
+
+  private markRank(rank: number) {
+    this.chart?.querySelectorAll('[data-rank]').forEach((el) => {
+      el.classList.toggle('on', Number((el as HTMLElement).dataset.rank) === rank);
     });
   }
 
-  choice(req: DecisionRequest<'arcadeChoice'>) {
-    const grid = h('div', { class: 'arcade-options' });
-    const actions = h('div', { class: 'btn-row' });
-    let choice = 0;
-    let stake = Math.min(20, Math.floor((req.maxBet ?? 0) / K.wheel.step) * K.wheel.step);
-    const payout = h('div', { class: 'hint', role: 'status' });
-    this.body.append(
-      h(
-        'div',
-        { class: 'tag' },
-        req.game === 'Lucky Wheel' ? 'Everyone may bet' : `Everyone plays · Round ${req.round}`,
-      ),
-      grid,
+  /**
+   * One roll of Lucky Reels. With `play`, the player taps slots to keep them, then rerolls or
+   * takes the prize from the action bar; otherwise the roll is just shown.
+   */
+  async reels(req: DecisionRequest<'reels'>, p: Player, play: boolean) {
+    this.reelsBoard(p.level);
+    const locked = req.locked.slice();
+    this.slots.forEach((b, i) => {
+      b.classList.toggle('kept', locked[i]);
+      b.classList.remove('win', 'lose');
+    });
+    await this.showRoll(req.symbols, req.locked);
+    const prize = reelPrize(req.symbols, p.level);
+    this.markRank(prize.rank);
+    if (!play) return { locked, collect: false };
+    const reroll = this.btn('Reroll', 'main', () => this.hud.resolvePrompt({ locked, collect: false }));
+    const take = this.btn(prize.amount ? `Take ${fmt(prize.amount)}` : 'Stop', 'ghost', () =>
+      this.hud.resolvePrompt({ locked, collect: true }),
     );
-    const buttons: HTMLButtonElement[] = [];
     const paint = () => {
-      buttons.forEach((button, i) => {
-        button.classList.toggle('main', choice === i);
-        button.setAttribute('aria-pressed', String(choice === i));
+      this.slots.forEach((b, i) => {
+        b.classList.toggle('kept', locked[i]);
+        b.setAttribute('aria-pressed', String(locked[i]));
       });
-      payout.textContent = `Bet ${fmt(stake)} · Win returns ${fmt(stake * (choice < 2 ? 2 : 3))} · Lose ${fmt(stake)}`;
+      reroll.disabled = locked.every(Boolean);
+      reroll.textContent = locked.some(Boolean) ? `Reroll ${locked.filter((x) => !x).length}` : 'Reroll all';
     };
-    req.options.forEach((label, i) => {
-      const button = h(
+    this.slots.forEach((b, i) => {
+      b.disabled = false;
+      b.onclick = () => {
+        locked[i] = !locked[i];
+        paint();
+      };
+    });
+    paint();
+    const answer = await this.bar<{ locked: boolean[]; collect: boolean }>(
+      p.id,
+      prize.amount ? `${prize.name} · ${fmt(prize.amount)}` : 'No set yet',
+      `${req.left} reroll${req.left === 1 ? '' : 's'} left. Tap the slots you want to keep, then reroll.`,
+      [reroll, take],
+    );
+    this.slots.forEach((b) => {
+      b.disabled = true;
+      b.onclick = null;
+    });
+    return answer;
+  }
+
+  /** The final set: the slots that score light up and the prize shows in the action bar. */
+  async reelsResult(symbols: ReelSymbol[], p: Player, waitMs: number) {
+    this.reelsBoard(p.level);
+    await this.showRoll(
+      symbols,
+      this.slots.map((b) => b.classList.contains('kept')),
+    );
+    const prize = reelPrize(symbols, p.level);
+    const set = reelSetSlots(symbols);
+    this.slots.forEach((b, i) => {
+      b.classList.remove('kept');
+      b.classList.toggle('win', set[i]);
+      b.classList.toggle('lose', !set[i]);
+    });
+    this.markRank(prize.rank);
+    await Promise.all(
+      this.slots
+        .filter((_, i) => set[i])
+        .map((b, i) =>
+          this.anim(b, [{ transform: 'scale(1)' }, { transform: 'scale(1.12)' }, { transform: 'scale(1)' }], {
+            duration: 420,
+            delay: i * 70,
+          }),
+        ),
+    );
+    await this.result(
+      p.id,
+      prize.amount ? `${p.name} got ${prize.name}! +${fmt(prize.amount)}` : `${p.name} got no set this time.`,
+      prize.amount ? 'Prizes grow with your level.' : '',
+      waitMs,
+    );
+  }
+
+  // ================================================================== Memory Blocks
+
+  private cards: HTMLButtonElement[] = [];
+  private ready: Promise<void> = Promise.resolve();
+
+  /** Deal the nine cards face up, let everyone look, then turn them face down. */
+  memoryStart(prizes: MemoryPrize[], level: number, speed: number) {
+    if (this.cards.length) return this.ready;
+    const grid = h('div', { class: 'mem-grid' });
+    prizes.forEach((prize, i) => {
+      const card = h(
         'button',
         {
-          class: 'btn arcade-option',
-          onclick: () => {
-            choice = i;
-            paint();
-          },
+          class: `mem-card up ${prize}`,
+          disabled: true,
+          'aria-label': `Card ${i + 1}: ${PRIZE_NAME[prize]}`,
         },
         h(
           'span',
-          { class: 'arcade-option-art', 'aria-hidden': 'true' },
-          req.game === 'Treasure Split'
-            ? '▣'
-            : req.game === 'Coin Derby'
-              ? i
-                ? '●'
-                : '➜'
-              : i < 2
-                ? '●'
-                : '▦',
+          { class: 'mem-inner' },
+          h('span', { class: 'mem-back', 'aria-hidden': 'true' }, h('span', null, '?')),
+          h('span', { class: 'mem-front', 'aria-hidden': 'true' }, ...prizeFace(prize, level)),
         ),
-        label,
-      );
-      if (req.game === 'Lucky Wheel' && i < 2)
-        button.style.setProperty('--option-color', i ? '#3e7bfa' : '#e5484d');
-      buttons.push(button);
-      grid.append(button);
+      ) as HTMLButtonElement;
+      this.cards.push(card);
+      grid.append(card);
     });
-    if (req.maxBet != null) {
-      const value = h('strong', null, fmt(stake));
-      const minus = h(
-        'button',
-        { class: 'btn', 'aria-label': 'Decrease bet', onclick: () => change(-K.wheel.step) },
-        '−',
-      );
-      const plus = h(
-        'button',
-        { class: 'btn', 'aria-label': 'Increase bet', onclick: () => change(K.wheel.step) },
-        '+',
-      );
-      const change = (amount: number) => {
-        stake = Math.max(0, Math.min(Math.floor(req.maxBet! / K.wheel.step) * K.wheel.step, stake + amount));
-        value.textContent = fmt(stake);
-        minus.disabled = stake === 0;
-        plus.disabled = stake + K.wheel.step > req.maxBet!;
-        paint();
-      };
-      change(0);
-      this.body.append(
-        h('div', { class: 'arcade-bet' }, h('span', null, 'Your bet'), minus, value, plus),
-        payout,
-      );
-    }
-    paint();
-    this.body.append(actions);
-    return new Promise<{ choice: number; stake: number }>((resolve) => {
-      const finish = (skip: boolean) => {
-        this.close();
-        resolve({ choice, stake: skip ? 0 : stake });
-      };
-      actions.append(
-        h(
-          'button',
-          { class: 'btn main', onclick: () => finish(false) },
-          req.maxBet == null ? 'Lock choice' : 'Place bet',
+    this.body.append(grid);
+    this.ready = (async () => {
+      await Promise.all(
+        this.cards.map((c, i) =>
+          this.anim(
+            c,
+            [
+              { transform: 'scale(.6)', opacity: 0 },
+              { transform: 'none', opacity: 1 },
+            ],
+            {
+              duration: 260,
+              delay: i * 40,
+            },
+          ),
         ),
       );
-      if (req.maxBet != null)
-        actions.append(h('button', { class: 'btn', onclick: () => finish(true) }, 'Skip'));
-    });
+      await sleep(MEMORY_SHOW_MS * Math.max(0.6, speed));
+      for (const [i, c] of this.cards.entries()) {
+        c.classList.remove('up');
+        c.setAttribute('aria-label', `Card ${i + 1}`);
+        if (!reduced()) await sleep(45);
+      }
+      await this.wait(450);
+    })();
+    return this.ready;
   }
 
-  async reelsResult(symbols: ReelSymbol[], prize: string) {
+  /** The player taps a face-down card. */
+  async memoryPick(p: Player): Promise<number> {
+    await this.ready;
+    const grid = this.body.querySelector('.mem-grid')!;
+    grid.classList.add('picking');
+    this.cards.forEach((c, i) => {
+      c.disabled = false;
+      c.onclick = () => this.hud.resolvePrompt(i);
+    });
+    const i = await this.bar<number>(p.id, 'Pick a card', 'Which card hid the best prize?', []);
+    grid.classList.remove('picking');
+    this.cards.forEach((c) => {
+      c.disabled = true;
+      c.onclick = null;
+    });
+    return i;
+  }
+
+  /** Flip the chosen card, then the rest, and say what was won. */
+  async memoryReveal(picked: number, kind: MemoryPrize, prize: string, p: Player, waitMs: number) {
+    await this.ready;
+    const card = this.cards[picked];
+    card.classList.add('picked', 'up');
+    await this.wait(650);
+    await this.anim(
+      card,
+      [{ transform: 'scale(1)' }, { transform: 'scale(1.1)' }, { transform: 'scale(1)' }],
+      {
+        duration: 360,
+      },
+    );
+    for (const c of this.cards)
+      if (c !== card) {
+        c.classList.add('up', 'other');
+        if (!reduced()) await sleep(60);
+      }
+    const said: Record<MemoryPrize, [string, string]> = {
+      shopsUp: [`${p.name}'s shops are worth 10% more!`, 'Their fees and stock prices go up too.'],
+      shopsDown: [`${p.name}'s shops lost 5% of their value.`, 'Their fees and stock prices go down too.'],
+      gold: [`${p.name} won ${prize}!`, ''],
+      small: [`${p.name} won ${prize}.`, ''],
+      wild: [`${p.name} got a wild card!`, 'It counts as any suit you are missing.'],
+    };
+    await this.result(p.id, said[kind][0], said[kind][1], waitMs);
+  }
+
+  // ================================================================== party games: shared
+
+  /** Someone is making their private choice: show the board and who is still choosing. */
+  choosing(req: DecisionRequest<'arcadeChoice'>) {
+    this.order = req.order;
+    this.sub.textContent =
+      req.game === 'Coin Derby'
+        ? `Leg ${req.round} of ${K.derby.legs}`
+        : req.game === 'Treasure Split'
+          ? `Round ${req.round} of ${K.treasure.rounds}`
+          : ABOUT[req.game];
+    if (req.game === 'Coin Derby') this.derbyBoard();
+    if (req.game === 'Lucky Wheel') this.wheelBoard();
+    if (req.game === 'Treasure Split') this.chestBoard(req.round);
+    this.markChoosing(req.order, req.pid);
+  }
+
+  /** This player's private choice. */
+  async choose(req: DecisionRequest<'arcadeChoice'>, p: Player): Promise<{ choice: number; stake?: number }> {
+    if (req.game === 'Coin Derby') return this.derbyChoose(req, p);
+    if (req.game === 'Lucky Wheel') return this.wheelChoose(req, p);
+    return this.chestChoose(req, p);
+  }
+
+  /** Reveal a round of a party game on the board, then its result in the action bar. */
+  async round(e: Round, waitMs: number) {
+    this.clearWho();
+    const lead = e.rows[0]?.pid ?? 0;
+    if (e.game === 'Coin Derby') await this.derbyReveal(e);
+    if (e.game === 'Lucky Wheel') await this.wheelReveal(e);
+    if (e.game === 'Treasure Split') await this.chestReveal(e);
+    const names = (ids: number[]) => ids.map((id) => this.G.players[id].name).join(' & ');
+    let title = e.title;
+    if (e.game === 'Coin Derby') {
+      const best = Math.max(...e.rows.map((r) => r.score ?? 0));
+      const top = e.rows.filter((r) => r.score === best).map((r) => r.pid);
+      title = e.final
+        ? `${names(top)} win${top.length > 1 ? '' : 's'} the derby!`
+        : `${names(top)} lead${top.length > 1 ? '' : 's'} after leg ${e.title.match(/Leg (\d)/)?.[1] ?? ''}`;
+    } else if (e.game === 'Lucky Wheel' && e.wheel) {
+      title = `The wheel stopped on ${e.wheel} · ${e.wheel % 2 ? 'Red' : 'Blue'}`;
+    } else if (e.game === 'Treasure Split') {
+      const most = Math.max(...e.rows.map((r) => r.amount ?? 0));
+      const top = e.rows.filter((r) => r.amount === most).map((r) => r.pid);
+      title = `${names(top)} got the most: ${fmt(most)}${top.length > 1 ? ' each' : ''}`;
+    }
+    await this.result(this.order[0] ?? lead, title, e.detail, waitMs);
+  }
+
+  // ================================================================== Coin Derby
+
+  private lanes = new Map<
+    number,
+    { runner: HTMLElement; coins: HTMLElement; badge: HTMLElement; lane: HTMLElement }
+  >();
+  private coinsShown = new Map<number, number>();
+
+  private derbyBoard() {
+    if (this.lanes.size) return;
+    const track = K.derby.track;
+    const wrap = h('div', {
+      class: 'derby',
+      style: `--spaces:${track};--cells:repeat(${track + 1}, var(--cell))`,
+    });
+    // Space numbers along the top, the finish flag at the end.
+    const ruler = h('div', { class: 'derby-ruler', 'aria-hidden': 'true' }, h('span'));
+    for (let i = 0; i <= track; i++)
+      ruler.append(h('span', null, i === track ? 'Finish' : i && i % 5 === 0 ? String(i) : ''));
+    wrap.append(ruler);
+    for (const id of this.order) {
+      const p = this.G.players[id];
+      const runner = h('span', { class: 'derby-runner' }, h('img', { src: portraitURL(p.ch), alt: p.name }));
+      const badge = h('span', { class: 'derby-badge' });
+      const coins = h('span', { class: 'derby-coins', title: 'Coins grabbed' }, fmt(0));
+      const cells = h('div', { class: 'derby-cells' });
+      for (let i = 0; i <= track; i++) cells.append(h('span', { class: i === track ? 'finish' : '' }));
+      const lane = h(
+        'div',
+        { class: 'derby-lane', style: `--pc:${PLAYER_COLORS[p.color]}` },
+        h('span', { class: 'derby-name' }, p.name),
+        h('div', { class: 'derby-track' }, cells, runner, badge),
+        coins,
+      );
+      this.lanes.set(id, { runner, coins, badge, lane });
+      this.placeRunner(id, 0);
+      wrap.append(lane);
+    }
+    this.body.append(wrap);
+  }
+
+  /** Put a runner on space `n` (0 = the start line). */
+  private placeRunner(pid: number, n: number) {
+    const l = this.lanes.get(pid);
+    if (l) l.runner.style.setProperty('--at', String(n));
+  }
+
+  private async derbyChoose(req: DecisionRequest<'arcadeChoice'>, p: Player) {
+    const D = K.derby;
+    const sprint = this.btn(`Sprint · ${D.sprint[0]}-${D.sprint[1]} spaces`, '', () =>
+      this.hud.resolvePrompt({ choice: 0 }),
+    );
+    const grab = this.btn(`Grab ${fmt(D.grabCoins)} · ${D.grab[0]}-${D.grab[1]} spaces`, '', () =>
+      this.hud.resolvePrompt({ choice: 1 }),
+    );
+    return this.bar<{ choice: number }>(
+      p.id,
+      `${p.name}: sprint or grab coins?`,
+      `Leg ${req.round} of ${D.legs}. Whoever is furthest after leg ${D.legs} wins ${fmt(D.winner * p.level)}.`,
+      [sprint, grab],
+    );
+  }
+
+  private async derbyReveal(e: Round) {
+    this.derbyBoard();
+    const hops: Promise<void>[] = [];
+    for (const row of e.rows) {
+      const l = this.lanes.get(row.pid);
+      if (!l) continue;
+      const from = row.previous ?? 0;
+      const to = row.score ?? from;
+      const grabbed = row.choice === 1;
+      l.badge.textContent = grabbed ? `+${fmt(K.derby.grabCoins)}` : `+${to - from}`;
+      // Near the finish the badge sits left of the runner so it never covers the coins.
+      const left = to >= K.derby.track - 3 ? ' left' : '';
+      l.badge.className = `derby-badge show ${grabbed ? 'coin' : 'run'}${left}`;
+      l.badge.style.setProperty('--at', String(to));
+      hops.push(
+        (async () => {
+          // Hop one space at a time.
+          for (let n = from + 1; n <= to; n++) {
+            this.placeRunner(row.pid, n);
+            await this.anim(l.runner, [{ translate: '0 0' }, { translate: '0 -9px' }, { translate: '0 0' }], {
+              duration: 210,
+            });
+          }
+          this.placeRunner(row.pid, to);
+          const coins = (this.coinsShown.get(row.pid) ?? 0) + (grabbed ? K.derby.grabCoins : 0);
+          this.coinsShown.set(row.pid, coins);
+          l.coins.textContent = fmt(coins);
+          if (grabbed)
+            await this.anim(l.coins, [{ scale: '1' }, { scale: '1.3' }, { scale: '1' }], { duration: 320 });
+        })(),
+      );
+    }
+    await Promise.all(hops);
+    if (e.final) {
+      const best = Math.max(...e.rows.map((r) => r.score ?? 0));
+      for (const row of e.rows) {
+        const l = this.lanes.get(row.pid);
+        if (!l) continue;
+        const won = row.score === best;
+        l.lane.classList.toggle('won', won);
+        l.coins.textContent = `+${fmt(row.amount ?? 0)}`;
+        l.badge.className = 'derby-badge';
+      }
+    }
+    await this.wait(400);
+  }
+
+  // ================================================================== Lucky Wheel
+
+  private disc: HTMLElement | null = null;
+  private zones: HTMLButtonElement[] = [];
+
+  private wheelBoard() {
+    if (this.disc) return;
+    const disc = h('div', { class: 'wheel-disc' });
+    for (let n = 1; n <= K.wheel.spaces; n++)
+      disc.append(h('span', { class: 'wheel-num', style: `--i:${n - 1}` }, String(n)));
+    this.disc = disc;
+    const zones = h('div', { class: 'wheel-zones' });
+    WHEEL_BETS.forEach((name, i) => {
+      const nums = Array.from({ length: K.wheel.spaces }, (_, k) => k + 1).filter((n) => wheelWins(i, n));
+      const z = h(
+        'button',
+        { class: `wheel-zone z${i}`, disabled: true },
+        h('b', null, name),
+        h('span', { class: 'wz-pays' }, i < 2 ? 'wins 1× your bet' : 'wins 2× your bet'),
+        h('span', { class: 'wz-nums' }, ...nums.map((n) => h('i', { class: n % 2 ? 'r' : 'b' }, String(n)))),
+        h('span', { class: 'wz-chips' }),
+      ) as HTMLButtonElement;
+      this.zones.push(z);
+      zones.append(z);
+    });
     this.body.append(
       h(
         'div',
-        { class: 'arcade-slots' },
-        ...symbols.map((s) =>
-          h(
-            'div',
-            { class: 'arcade-slot locked' },
-            h('span', { class: `arcade-symbol symbol-${s}` }, SYMBOL[s]),
-          ),
-        ),
+        { class: 'wheel' },
+        h('div', { class: 'wheel-wrap' }, h('span', { class: 'wheel-pointer', 'aria-hidden': 'true' }), disc),
+        zones,
       ),
-      h('div', { class: 'arcade-score', role: 'status' }, prize),
     );
-    await this.finish();
   }
 
-  async result(e: Extract<GameEvent, { type: 'arcadeRound' }>, G: GameState) {
-    const results = h('div', { class: 'arcade-results', 'aria-live': 'polite' });
-    if (e.wheel != null) {
-      this.body.classList.add('arcade-wheel-body');
-      const disc = h('div', { class: 'arcade-wheel', 'aria-label': 'Wheel spinning' });
-      for (let i = 1; i <= 12; i++) disc.append(h('span', { style: `--n:${i - 1}` }, String(i)));
+  private async wheelChoose(req: DecisionRequest<'arcadeChoice'>, p: Player) {
+    const step = K.wheel.step;
+    const max = Math.floor((req.maxBet ?? 0) / step) * step;
+    let pick = -1;
+    let stake = Math.min(20, max);
+    const value = h('b', { class: 'aa-stake-value' });
+    const minus = this.btn('−', 'small', () => change(-step));
+    const plus = this.btn('+', 'small', () => change(step));
+    minus.setAttribute('aria-label', 'Bet less');
+    plus.setAttribute('aria-label', 'Bet more');
+    const go = this.btn('Bet', 'main', () => this.hud.resolvePrompt({ choice: pick, stake }), true);
+    const skip = this.btn('Skip', 'ghost', () => this.hud.resolvePrompt({ choice: 0, stake: 0 }));
+    const paint = () => {
+      value.textContent = fmt(stake);
+      minus.disabled = stake <= step;
+      plus.disabled = stake + step > max;
+      go.disabled = pick < 0 || stake <= 0;
+      go.textContent = pick < 0 ? 'Pick a bet' : `Bet ${fmt(stake)} on ${WHEEL_BETS[pick]}`;
+      this.zones.forEach((z, i) => z.setAttribute('aria-pressed', String(i === pick)));
+    };
+    const change = (d: number) => {
+      stake = Math.max(step, Math.min(max, stake + d));
+      paint();
+    };
+    this.zones.forEach((z, i) => {
+      z.disabled = max <= 0;
+      z.onclick = () => {
+        pick = i;
+        paint();
+      };
+    });
+    paint();
+    const stepper = h('div', { class: 'aa-stake' }, minus, value, plus);
+    const answer = await this.bar<{ choice: number; stake: number }>(
+      p.id,
+      max > 0 ? `${p.name}: place a bet?` : `${p.name} has no cash to bet`,
+      max > 0 ? `Tap a color or a group on the board. Up to ${fmt(max)}.` : 'You can watch this spin.',
+      max > 0 ? [stepper, go, skip] : [skip],
+    );
+    this.zones.forEach((z) => {
+      z.disabled = true;
+      z.onclick = null;
+      z.removeAttribute('aria-pressed');
+    });
+    return answer;
+  }
+
+  private async wheelReveal(e: Round) {
+    this.wheelBoard();
+    const n = e.wheel ?? 1;
+    // Segment n is centered at (n - 1) * 30 + 15 degrees; turn it under the pointer at the top.
+    const seg = 360 / K.wheel.spaces;
+    const end = 360 * 4 - ((n - 1) * seg + seg / 2);
+    this.disc!.style.setProperty('--turn', `${end}deg`);
+    await this.anim(this.disc!, [{ rotate: '0deg' }, { rotate: `${end}deg` }], {
+      duration: T.arcadeWheel,
+      easing: 'cubic-bezier(.1,.7,.15,1)',
+    });
+    this.disc!.querySelectorAll('.wheel-num').forEach((el, i) => el.classList.toggle('hit', i + 1 === n));
+    this.zones.forEach((z, i) => z.classList.toggle('hit', wheelWins(i, n)));
+    // Each bet appears on its zone with what it won or lost.
+    for (const row of e.rows) {
+      if (row.choice == null || row.choice < 0) continue;
+      const p = this.G.players[row.pid];
+      const amt = row.amount ?? 0;
+      this.zones[row.choice].querySelector('.wz-chips')!.append(
+        h(
+          'span',
+          {
+            class: `wz-chip ${amt >= 0 ? 'up' : 'down'}`,
+            style: `--pc:${PLAYER_COLORS[p.color]}`,
+            title: p.name,
+          },
+          h('img', { src: portraitURL(p.ch), alt: p.name }),
+          `${amt >= 0 ? '+' : ''}${fmt(amt)}`,
+        ),
+      );
+    }
+    const skipped = e.rows.filter((r) => r.choice == null || r.choice < 0);
+    if (skipped.length)
       this.body.append(
         h(
           'div',
-          { class: 'arcade-wheel-wrap' },
-          h('span', { class: 'arcade-pointer', 'aria-hidden': 'true' }, '▼'),
-          disc,
+          { class: 'wheel-skips' },
+          `Skipped: ${skipped.map((r) => this.G.players[r.pid].name).join(', ')}`,
         ),
       );
-      await this.animate(
-        disc,
-        [{ transform: 'rotate(0deg)' }, { transform: `rotate(${1440 - (e.wheel - 1) * 30}deg)` }],
-        T.arcadeWheel,
-      );
-      disc.setAttribute('aria-label', `Winning number ${e.wheel}`);
-    }
-    this.body.append(results);
-    const races: Promise<void>[] = [];
-    const max = Math.max(1, ...e.rows.map((row) => row.score ?? 0));
-    for (const row of e.rows) {
-      const p = G.players[row.pid];
-      const info = h(
-        'div',
-        { class: 'arcade-result-row', style: `--pc:${PLAYER_COLORS[p.color]}` },
-        h('img', { src: portraitURL(p.ch), alt: '', class: 'portrait' }),
-        h('div', null, h('strong', null, p.name), h('div', { class: 'hint' }, row.text)),
-        h(
-          'strong',
-          { class: row.amount != null && row.amount < 0 ? 'arcade-loss' : 'arcade-gain' },
-          row.amount == null ? '' : `${row.amount >= 0 ? '+' : ''}${fmt(row.amount)}`,
-        ),
-      );
-      if (row.score != null) {
-        const runner = h(
-          'span',
-          { class: 'arcade-runner' },
-          h('img', { src: portraitURL(p.ch), alt: p.name }),
-        );
-        const track = h('div', { class: 'arcade-race-track' }, runner);
-        const end = (row.score / max) * 90;
-        runner.style.left = `${end}%`;
-        info.classList.add('arcade-race-row');
-        info.insertBefore(track, info.lastElementChild);
-        info.classList.add('racing');
-        races.push(
-          this.animate(
-            runner,
-            [{ left: `${((row.previous ?? 0) / max) * 90}%` }, { left: `${end}%` }],
-            T.arcadeRace,
-          ),
-        );
-      }
-      results.append(info);
-    }
-    await Promise.all(races);
-    results.querySelectorAll('.racing').forEach((row) => row.classList.remove('racing'));
-    this.body.append(h('p', { class: 'hint', role: 'status' }, e.detail));
-    await this.finish();
+    await this.wait(500);
   }
 
-  private async finish() {
-    if (this.abort.signal.aborted) return;
-    await new Promise<void>((resolve) => {
-      const timer = setTimeout(resolve, T.arcadeResult);
-      const done = () => {
-        clearTimeout(timer);
-        resolve();
-      };
-      this.abort.signal.addEventListener('abort', done, { once: true });
-      this.body.append(
-        h('div', { class: 'btn-row' }, h('button', { class: 'btn', onclick: done }, 'Continue')),
-      );
+  // ================================================================== Treasure Split
+
+  private chests: HTMLButtonElement[] = [];
+
+  private chestBoard(round: number) {
+    if (this.chests.length && this.body.querySelector(`.chests[data-round="${round}"]`)) return;
+    clear(this.body);
+    this.chests = [];
+    const row = h('div', { class: 'chests', 'data-round': String(round) });
+    K.treasure.chests.forEach((amount, i) => {
+      const c = h(
+        'button',
+        { class: `chest c${i}`, disabled: true, 'aria-label': `${fmt(amount)} chest` },
+        h(
+          'span',
+          { class: 'chest-box', 'aria-hidden': 'true' },
+          h('span', { class: 'chest-lid' }),
+          h('span', { class: 'chest-lock' }),
+        ),
+        h('b', null, fmt(amount)),
+        h('span', { class: 'chest-who' }),
+        h('span', { class: 'chest-split' }),
+      ) as HTMLButtonElement;
+      this.chests.push(c);
+      row.append(c);
     });
-    this.close();
+    this.body.append(row);
+  }
+
+  private async chestChoose(req: DecisionRequest<'arcadeChoice'>, p: Player) {
+    let pick = -1;
+    const go = this.btn('Pick a chest', 'main', () => this.hud.resolvePrompt({ choice: pick }), true);
+    this.chests.forEach((c, i) => {
+      c.disabled = false;
+      c.onclick = () => {
+        pick = i;
+        this.chests.forEach((x, k) => x.setAttribute('aria-pressed', String(k === i)));
+        go.disabled = false;
+        go.textContent = `Take the ${fmt(K.treasure.chests[i])} chest`;
+      };
+    });
+    const answer = await this.bar<{ choice: number }>(
+      p.id,
+      `${p.name}: pick a chest`,
+      `Round ${req.round} of ${K.treasure.rounds}. Anyone who picks the same chest shares it equally.`,
+      [go],
+    );
+    this.chests.forEach((c) => {
+      c.disabled = true;
+      c.onclick = null;
+      c.removeAttribute('aria-pressed');
+    });
+    return answer;
+  }
+
+  private async chestReveal(e: Round) {
+    const round = Number(e.title.match(/Round (\d)/)?.[1] ?? 1);
+    this.chestBoard(round);
+    for (const [i, c] of this.chests.entries()) {
+      const takers = e.rows.filter((r) => r.choice === i);
+      const who = c.querySelector('.chest-who')!;
+      const split = c.querySelector('.chest-split')!;
+      clear(who);
+      for (const r of takers) {
+        const p = this.G.players[r.pid];
+        who.append(
+          h('img', {
+            src: portraitURL(p.ch),
+            alt: p.name,
+            title: p.name,
+            style: `--pc:${PLAYER_COLORS[p.color]}`,
+          }),
+        );
+      }
+      split.textContent = takers.length
+        ? takers.length === 1
+          ? `All ${fmt(takers[0].amount ?? 0)}`
+          : `${fmt(takers[0].amount ?? 0)} each`
+        : 'Nobody';
+      c.classList.add('open');
+      c.classList.toggle('empty', !takers.length);
+      await this.anim(c.querySelector('.chest-lid')!, [{ rotate: 'x 0deg' }, { rotate: 'x 70deg' }], {
+        duration: 420,
+      });
+      await this.anim(
+        who,
+        [
+          { opacity: 0, translate: '0 8px' },
+          { opacity: 1, translate: '0 0' },
+        ],
+        { duration: 260 },
+      );
+    }
+    await this.wait(400);
   }
 }

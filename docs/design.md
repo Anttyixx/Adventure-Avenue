@@ -780,15 +780,25 @@ and Menu and the version chip reachable. The title always sits above the actions
 available height when necessary, including Continue and the optional join-name field. Menu pop-ups
 and their content retain their own scrolling behavior.
 
-### Arcade stages
+### Arcade games (board + action bar)
 
-Arcade games use a wide centered pop-up, with the game and current chooser in the heading,
-a one-sentence instruction, a Solo game / Everyone plays label, a play area and an action row.
-Five Lucky Reels slots are equal-width buttons; gold borders plus “Locked” text mark held slots.
-A compact expandable prize chart accompanies the current best set and remaining rerolls.
-Party choices use large illustrated buttons, with one selected gold option; choices remain private
-until the engine reveals the round. Wheel stakes use a single minus/value/plus stepper with a
-plain-language total return and possible loss. Skip is a secondary action.
-Shared result rows have player portraits, names, player-color left edges and signed winnings.
-Race movement and wheel rotation respect reduced motion; results have Continue plus automatic
-advance. On short landscape screens tighten spacing and art, and scroll inside the pop-up only.
+Arcade games follow the venture board: a glass board centered on the screen
+(`.arcade-layer > .arcade-stage`, kept clear of the toolbar, the action bar and, on phones, the
+player cards) and the action bar for words and buttons. Never a pop-up.
+
+- **Board head:** the game name in Lilita gold, a muted one-line subtitle ("Leg 1 of 3", "Everyone
+  may bet"), and for party games a row of portraits: faded = waiting, gold ring + bob = choosing,
+  green tick = ready.
+- **Action bar (`.aa`):** a Lilita title saying what to do or what happened ("Rosa: pick a chest",
+  "Rosa leads after leg 2"), one muted hint line with the numbers that matter, and the controls on
+  the right (stacked under the text on phones). One gold button; equal options (Sprint / Grab
+  coins) are plain buttons; Skip/Take are ghost. Results end with a gold Continue that also moves on
+  by itself.
+- **Picking on the board:** things you choose (slots, cards, bets, chests) are tappable on the
+  board with the build picker's selected look (gold tint + 2px inset ring + lift); the action bar's
+  gold button then names the choice ("Bet 20G on Red", "Take the 150G chest").
+- **Art:** smooth icons (`coinIconURL`, `starIconURL`, suit icons, wild card), cream "paper" faces
+  for slots and cards, player portraits for people. No text-symbol stand-ins.
+- **Motion:** slot faces spin in (blurred drop, staggered); memory cards flip with 3D `rotateY`
+  and `backface-visibility: hidden`; derby runners hop one space at a time; the wheel spins about
+  four turns and eases out; chest lids swing open. All respect reduced motion.

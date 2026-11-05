@@ -23,8 +23,8 @@ import { clearSave, saveGame } from './save';
 import { SUIT_CHARS } from './icons';
 import { FAST_CPU_SPEED, TIMING as T } from './timing';
 import { fmt, h } from './ui/dom';
-import { MemoryView, VentureView } from './ui/games';
-import { ArcadeView } from './ui/arcade';
+import { VentureView } from './ui/games';
+import { ArcadeStage, type ArcadeGame } from './ui/arcade';
 import { Hud, type PromptButton } from './ui/hud';
 import { buildPrompt, districtStockModal, stockModal } from './ui/modals';
 import { guideModal } from './ui/guide';
@@ -67,8 +67,8 @@ export class HotSeat implements GameIO {
   holder = -1;
   private movementRoll: { pid: number; value: number } | null = null;
   venture: VentureView | null = null;
-  arcade: ArcadeView | null = null;
-  memory: MemoryView | null = null;
+  /** The arcade game being played (its board stays up from the first choice to the last result). */
+  arcade: ArcadeStage | null = null;
   /** Square values as last shown, to animate how much each one changed. */
   values = new Map<number, number>();
   /** Each square's owner as last shown, so a purchase is claimed on the board as it is paid for. */
@@ -402,12 +402,33 @@ export class HotSeat implements GameIO {
   private async askHuman(req: DecisionRequest) {
     // Online rooms may also have several people sharing this device. Keep party choices private.
     if (this.link && req.kind === 'arcadeChoice' && this.humans > 1 && this.holder !== req.pid) {
-      this.arcade?.close();
       await this.hud.passDevice(this.G.players[req.pid]);
       this.holder = req.pid;
     }
     this.waitOn(req);
     return this.human(req);
+  }
+
+  /** The board for an arcade game, opening it (and closing any other) the first time. */
+  private stage(game: ArcadeGame): ArcadeStage {
+    if (this.arcade?.game !== game) {
+      this.arcade?.close();
+      this.arcade = new ArcadeStage(this.hud, game, this.G);
+    }
+    return this.arcade;
+  }
+
+  private endArcade() {
+    this.arcade?.close();
+    this.arcade = null;
+  }
+
+  /**
+   * How long an arcade result stays up before moving on by itself (Continue skips it): longer
+   * when someone on this device played, and sped up by Fast CPU when only CPUs did.
+   */
+  private readMs(human: boolean) {
+    return human ? T.arcadeResult * 2 : T.arcadeResult * this.speed;
   }
 
   /**
@@ -424,19 +445,15 @@ export class HotSeat implements GameIO {
         this.venture.watch(p.name);
         break;
       case 'reels':
+        void this.stage('Lucky Reels').reels(req, p, false);
+        break;
       case 'arcadeChoice':
-        this.arcade?.close();
-        this.arcade = new ArcadeView(
-          this.hud,
-          req.kind === 'reels' ? 'Lucky Reels' : req.game,
-          req.kind === 'reels' ? 'Solo game · Five slots, three rerolls' : req.hint,
-        );
-        this.arcade.watch(p.name);
+        this.stage(req.game).choosing(req);
+        // Name who is choosing right away (a plain wait only shows after a quiet moment).
+        this.hud.action(`arcade-choice:${req.round}:${p.id}`, `${p.name} is choosing…`, 'arcade');
         break;
       case 'memory':
-        this.memory?.m.close();
-        this.memory = new MemoryView(this.hud, req.prizes, p.name);
-        this.memory.watch(p.name);
+        void this.stage('Memory Blocks').memoryStart(req.prizes, p.level, this.speed);
         break;
     }
   }
@@ -590,22 +607,19 @@ export class HotSeat implements GameIO {
         return this.venture.pick();
 
       case 'reels':
-        this.arcade?.close();
-        this.arcade = new ArcadeView(
-          hud,
-          `Lucky Reels · ${p.name}`,
-          'Solo game · Five slots, three rerolls. Keep your best set.',
-        );
-        return this.arcade.reels(req, p.level);
+        return this.stage('Lucky Reels').reels(req, p, true);
 
-      case 'arcadeChoice':
-        this.arcade?.close();
-        this.arcade = new ArcadeView(hud, `${req.game} · ${p.name}`, req.hint);
-        return this.arcade.choice(req);
+      case 'arcadeChoice': {
+        const stage = this.stage(req.game);
+        stage.choosing(req);
+        return stage.choose(req, p);
+      }
 
-      case 'memory':
-        this.memory = new MemoryView(hud, req.prizes, p.name);
-        return this.memory.play();
+      case 'memory': {
+        const stage = this.stage('Memory Blocks');
+        void stage.memoryStart(req.prizes, p.level, 1);
+        return stage.memoryPick(p);
+      }
 
       case 'pickSquare': {
         const text = {
@@ -884,29 +898,32 @@ export class HotSeat implements GameIO {
       case 'reels': {
         const p = G.players[e.pid];
         hud.action('reels', `${p.name} finished Lucky Reels.`, 'arcade');
-        this.arcade?.close();
-        this.arcade = new ArcadeView(hud, `Lucky Reels · ${p.name}`, 'Your final set');
-        await this.arcade.reelsResult(e.result, e.prize);
-        this.arcade = null;
+        await this.stage('Lucky Reels').reelsResult(e.result, p, this.readMs(this.localHuman(p.id)));
+        this.endArcade();
         this.refresh();
         break;
       }
       case 'arcadeRound': {
-        hud.action('arcade', e.title, 'arcade');
-        this.arcade?.close();
-        this.arcade = new ArcadeView(hud, e.title, 'Everyone plays');
-        await this.arcade.result(e, G);
-        this.arcade = null;
+        hud.action(`arcade:${e.title}`, e.title, 'arcade');
+        const anyone = G.players.some((p) => !p.bankrupt && this.localHuman(p.id));
+        await this.stage(e.game).round(e, this.readMs(anyone));
+        if (e.final) this.endArcade();
         this.refresh();
         break;
       }
       case 'memory': {
         const p = G.players[e.pid];
-        hud.action('memory', `${p.name} is revealing Memory Blocks...`, 'arcade');
-        const view = this.memory ?? new MemoryView(hud, e.prizes, p.name);
-        this.memory = null;
-        if (!this.localHuman(p.id)) await view.hide(this.speed);
-        await view.show(e.picked, e.prize, this.localHuman(p.id), this.speed);
+        hud.action('memory', `${p.name} picked a card in Memory Blocks.`, 'arcade');
+        const stage = this.stage('Memory Blocks');
+        void stage.memoryStart(e.prizes, p.level, this.speed);
+        await stage.memoryReveal(
+          e.picked,
+          e.prizes[e.picked],
+          e.prize,
+          p,
+          this.readMs(this.localHuman(p.id)),
+        );
+        this.endArcade();
         this.refresh();
         break;
       }

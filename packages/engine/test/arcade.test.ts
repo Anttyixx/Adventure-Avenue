@@ -7,6 +7,7 @@ import {
   reelPrize,
   wheelWins,
   playArcade,
+  reelSetSlots,
 } from '../src/arcade';
 import { K } from '../src/constants';
 import { makeGame } from './helpers';
@@ -14,24 +15,29 @@ import type { ReelSymbol } from '../src/decisions';
 
 describe('five-slot Lucky Reels', () => {
   it.each([
-    [['coin', 'coin', 'wild', 'stock', 'bell'], 'One pair', 10],
-    [['coin', 'coin', 'wild', 'wild', 'bell'], 'Two pairs', 25],
-    [['coin', 'coin', 'coin', 'stock', 'bell'], 'Three matching', 40],
-    [['coin', 'coin', 'coin', 'wild', 'wild'], 'Full house', 80],
-    [['coin', 'coin', 'coin', 'coin', 'bell'], 'Four matching', 120],
-    [['coin', 'seven', 'wild', 'stock', 'bell'], 'Five different', 150],
-    [['coin', 'coin', 'coin', 'coin', 'coin'], 'Five matching', 300],
+    [['coin', 'coin', 'wild', 'stock', 'bell'], 'One pair', 5],
+    [['coin', 'coin', 'wild', 'wild', 'bell'], 'Two pairs', 10],
+    [['coin', 'coin', 'coin', 'stock', 'bell'], 'Three matching', 20],
+    [['coin', 'seven', 'wild', 'stock', 'bell'], 'Five different', 40],
+    [['coin', 'coin', 'coin', 'wild', 'wild'], 'Full house', 40],
+    [['coin', 'coin', 'coin', 'coin', 'bell'], 'Four matching', 60],
+    [['coin', 'coin', 'coin', 'coin', 'coin'], 'Five matching', 150],
   ])('scores %j as %s', (symbols, name, amount) => {
-    expect(reelPrize(symbols as ReelSymbol[], 2)).toEqual({ name, amount: Number(amount) * 2 });
+    const prize = reelPrize(symbols as ReelSymbol[], 2);
+    expect({ name: prize.name, amount: prize.amount }).toEqual({ name, amount: Number(amount) * 2 });
   });
-  it('allows three rerolls, keeps locked slots, and pays only the final set', async () => {
+  it('marks the slots that make the set', () => {
+    expect(reelSetSlots(['coin', 'coin', 'wild', 'wild', 'bell'])).toEqual([true, true, true, true, false]);
+    expect(reelSetSlots(['coin', 'seven', 'wild', 'stock', 'bell'])).toEqual([true, true, true, true, true]);
+  });
+  it('allows two rerolls, keeps locked slots, and pays only the final set', async () => {
     const { G, game, asked, events } = makeGame('standard', (r) =>
       r.kind === 'reels' ? { locked: [true, false, false, false, false], collect: false } : undefined,
     );
     const cash = G.players[0].cash;
     await luckyReels(game, G.players[0]);
     const requests = asked.filter((r) => r.kind === 'reels');
-    expect(requests.map((r) => r.left)).toEqual([3, 2, 1]);
+    expect(requests.map((r) => r.left)).toEqual([2, 1]);
     expect(new Set(requests.map((r) => r.symbols[0])).size).toBe(1);
     const result = events.find((e) => e.type === 'reels')!;
     if (result.type !== 'reels') throw Error('missing result');
@@ -62,6 +68,35 @@ describe('all-player arcade games', () => {
     expect(rounds[2].rows.every((r) => r.amount! >= 90)).toBe(true);
     expect(G.players[3].cash).toBe(cash[3]);
     for (const row of rounds[2].rows) expect(G.players[row.pid].cash - cash[row.pid]).toBe(row.amount);
+  });
+  it('moves derby racers whole spaces: sprint 3-5, grab coins 1-3 (+30G), never past the finish', async () => {
+    const { G, game, events } = makeGame('standard', (r) =>
+      r.kind === 'arcadeChoice' ? { choice: r.pid % 2 } : undefined,
+    );
+    await coinDerby(game, G.players[0]);
+    const legs = events.filter((e) => e.type === 'arcadeRound');
+    for (const leg of legs)
+      for (const row of leg.rows) {
+        const moved = row.score! - row.previous!;
+        const [lo, hi] = row.pid % 2 ? K.derby.grab : K.derby.sprint;
+        expect(moved).toBeGreaterThanOrEqual(lo);
+        expect(moved).toBeLessThanOrEqual(hi);
+        expect(row.score!).toBeLessThanOrEqual(K.derby.track);
+      }
+    const final = legs[legs.length - 1].rows;
+    const best = Math.max(...final.map((r) => r.score!));
+    for (const row of final) {
+      const coins = row.pid % 2 ? K.derby.grabCoins * K.derby.legs : 0;
+      const bonus = row.score === best ? K.derby.winner * G.players[row.pid].level : 0;
+      expect(row.amount).toBe(coins + bonus);
+    }
+  });
+  it('asks the player who landed first', async () => {
+    const { G, game, asked } = makeGame('standard', (r) =>
+      r.kind === 'arcadeChoice' ? { choice: 0 } : undefined,
+    );
+    await treasureSplit(game, G.players[2]);
+    expect(asked.slice(0, 4).map((r) => r.pid)).toEqual([2, 3, 0, 1]);
   });
   it('splits each chest equally without minting rounding leftovers', async () => {
     const { G, game, asked, events } = makeGame('standard', (r) =>
@@ -94,7 +129,7 @@ describe('all-player arcade games', () => {
     if (reveal.type !== 'arcadeRound') throw Error('missing result');
     for (const row of reveal.rows) expect(G.players[row.pid].cash - before[row.pid]).toBe(row.amount);
     expect(G.players[0].cash).toBeGreaterThanOrEqual(0);
-    expect(reveal.rows[0].text).toContain('30G bet');
+    expect(reveal.rows[0].text).toContain('bet 30G');
     expect(Math.abs(G.players[1].cash - before[1])).toBeLessThanOrEqual(200);
     expect(G.players[2].cash).toBe(before[2]);
     expect(G.players[3].cash).toBe(-5);

@@ -121,15 +121,18 @@ export const K = {
   rollChainMax: 3,
 
   // Arcade prizes (L = player level)
-  reels: { rerolls: 3, prizes: [0, 10, 25, 40, 80, 120, 150, 300] },
+  // Lucky Reels: rerolls after the first roll, and the prize per set (x level) in REEL_PRIZES order:
+  // no set, pair, two pairs, three matching, five different, full house, four matching, five matching.
+  reels: { rerolls: 2, prizes: [0, 5, 10, 20, 40, 40, 60, 150] },
   memory: { gold: 60, small: 20, shopsUp: 0.1, shopsDown: 0.05 },
+  // Coin Derby: a race down a track of spaces over a few legs. Each leg every racer either sprints
+  // (moves further) or grabs coins (moves less, earns coins). Furthest after the last leg wins.
   derby: {
-    rounds: 3,
-    sprint: 22,
-    collect: 13,
-    variation: 12,
-    sprintCoins: 10,
-    collectCoins: 30,
+    legs: 3,
+    track: 15,
+    sprint: [3, 5],
+    grab: [1, 3],
+    grabCoins: 30,
     winner: 100,
   },
   wheel: { maxBet: 100, step: 10, spaces: 12 },

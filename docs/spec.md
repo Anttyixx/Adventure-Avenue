@@ -615,23 +615,31 @@ cleared. This is what makes "until your next turn" effects expire.
 
 Landing on an arcade chooses one of five games with equal probability. Lucky Reels and Memory
 Blocks are solo games; Coin Derby, Lucky Wheel and Treasure Split include every non-bankrupt
-player. Choices are collected privately in seat order, including online, then revealed together.
-Local hot-seat players pass the device between choices. CPUs make choices for their own seats
-and disconnected guests using the normal online decision path. No real-time input race is required.
+player. Party choices are made privately one player at a time, starting with the player who
+landed and going round in turn order (online too), then revealed together. Hot-seat players pass
+the device between choices. CPUs choose for their own seats and for disconnected guests.
 
-| Game           | Rules                                                                                                                                                                                                 | Rewards                                                                                                                                                                      |
-| -------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Lucky Reels    | Five slots, five equally likely symbols. One initial roll plus up to three rerolls. Toggle locks between rolls; collect early at any time. All locked collects immediately.                           | Best set only, times player level: pair 10G, two pairs 25G, three matching 40G, full house 80G, four matching 120G, five different 150G, five matching 300G.                 |
-| Memory Blocks  | Nine prizes shown for 1.9 seconds, then choose a hidden block.                                                                                                                                        | Existing shop growth/loss, cash and Suit Yourself prizes remain.                                                                                                             |
-| Coin Derby     | Each player races their own character through three legs. Choose Sprint or Collect coins privately each leg. Sprint advances 22–33 points and earns 10G; Collect advances 13–24 points and earns 30G. | Everyone keeps their coins. Highest total distance earns 100G × their level; tied leaders each earn the bonus.                                                               |
-| Lucky Wheel    | One optional bet per player, in 10G steps, limited to 100G and available cash. Twelve equally likely numbers. Odd = red, even = blue. Bet on a color or one group (1–4, 5–8, 9–12).                   | Winning color returns 2× the wager, group returns 3×, including the original stake. Loss costs only the wager. No debt, exact-number bets or level multiplier. Skip is free. |
-| Treasure Split | Two rounds. Each player privately chooses a 60G, 100G or 150G chest.                                                                                                                                  | Each chest is divided equally among its choosers, rounded down. Leftovers stay in the chest.                                                                                 |
+| Game           | How it plays                                                                                                                                                                                                         | Prizes                                                                                                                                                          |
+| -------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Lucky Reels    | Five slots, five equally likely symbols (7, coin, star, diamond, clover). One roll plus up to two rerolls. Tap slots to keep them between rolls; take the prize early at any time. Keeping all five takes the prize. | Best set only, times the player's level: pair 5G, two pairs 10G, three matching 20G, five different 40G, full house 40G, four matching 60G, five matching 150G. |
+| Memory Blocks  | Nine cards are dealt face up for 1.9 seconds, flip face down, and the player picks one.                                                                                                                              | Two "Shops +10%", two Gold (60G x level), one wild card, two "Shops -5%", two 20G.                                                                              |
+| Coin Derby     | Everyone races down a 15-space track over three legs. Each leg, every racer secretly picks Sprint (move 3-5 spaces) or Grab coins (move 1-3 spaces and take 30G). Racers stop at the finish flag.                    | Everyone keeps the coins they grabbed. The racer furthest along after leg 3 wins 100G x their level (tied leaders each win it).                                 |
+| Lucky Wheel    | One optional bet per player, in 10G steps, up to 100G and their cash. Twelve equally likely numbers; odd are red, even are blue. Bet on a color or a group of four (1-4, 5-8, 9-12), or skip.                        | A winning color bet wins 1x the bet; a winning group bet wins 2x. A losing bet loses the bet. No debt, no level multiplier.                                     |
+| Treasure Split | Two rounds. Each player secretly picks the 60G, 100G or 150G chest.                                                                                                                                                  | Each chest is shared equally by everyone who picked it (rounded down).                                                                                          |
 
-The engine owns all randomness, holds and payouts, so choices replay identically online. Invalid
-inputs have safe defaults; non-finite/negative wagers never spend money. Human choices and shared
-reveals are not accelerated by Fast CPU. Prize charts, lock labels, bet returns and per-player
-results explain outcomes. The wheel spins before its winning number/results appear; Derby animates
-each race leg. Results advance after a short reading interval or Continue on each device.
+**On screen:** like the venture board, each game sits on a board in the middle of the screen and
+the action bar carries its instructions, choices and results; the board stays up from the first
+choice to the last result (Lucky Reels keeps its slots between rolls). The party games show a row
+of everyone's portraits that ticks off who has chosen. Lucky Reels shows the prize ladder with the
+current set highlighted; at the end only the slots in the set light up. Memory Blocks cards deal in,
+flip face up, then flip face down (nothing on a face shows through), and after the pick the chosen
+card flips first, then the rest. Coin Derby shows a lane per racer counted in spaces (start line to
+finish flag), runners hop space by space with a "+4" or "+30G" badge, and coins add up at the end of
+each lane. Lucky Wheel shows the wheel beside the bet board (tap a bet, set the amount in the action
+bar); after the spin the winning bets light up and each bet shows its player and what it won or
+lost. Treasure Split shows three chests (bigger chests hold more); after the reveal they open with
+the choosers' portraits and the share each gets. Results move on by themselves (sooner with Fast
+CPU when only CPUs played) or with Continue.
 
 The Arcade Lab in the UI Lab launches each real engine game with one human and CPU opponents in
 isolated sample state. It never overwrites the saved match.

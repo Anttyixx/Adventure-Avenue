@@ -38,7 +38,18 @@ export type GameEvent =
       title: string;
       detail: string;
       game: 'Coin Derby' | 'Lucky Wheel' | 'Treasure Split';
-      rows: { pid: number; text: string; amount?: number; score?: number; previous?: number }[];
+      /**
+       * One row per player: `choice` is the option they picked (-1: skipped a bet), `score` and
+       * `previous` are Coin Derby spaces after and before this leg, `amount` the coins won.
+       */
+      rows: {
+        pid: number;
+        text: string;
+        amount?: number;
+        score?: number;
+        previous?: number;
+        choice?: number;
+      }[];
       wheel?: number;
       final: boolean;
     }

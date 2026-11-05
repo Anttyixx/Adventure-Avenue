@@ -66,7 +66,7 @@ When the spec and the code disagree, ask the owner which is right; then fix the 
   must choose (see `decisions.ts`), `emit(event)` after every state change (see `events.ts`).
   Add a new choice by adding it to `DecisionMap`, answering it in the CPU (`cpu.ts`), in the
   client (`host.ts` `human()`), and in `ui/activity.ts` (the "X is ..." status text).
-- **Arcade games:** `arcade.ts` owns five-slot reel rolls, party-game choices and payouts. `ui/arcade.ts` presents them; all randomness stays in the engine. Party choices use sequential `arcadeChoice` decisions and a shared `arcadeRound` reveal, so hot-seat and online share the same flow.
+- **Arcade games:** `arcade.ts` owns five-slot reel rolls, party-game choices and payouts. `ui/arcade.ts` (`ArcadeStage`) shows them like the venture board: a board in the middle of the screen with prompts and results in the action bar; all randomness stays in the engine. Party choices use sequential `arcadeChoice` decisions and a shared `arcadeRound` reveal, so hot-seat and online share the same flow.
 - **Venture card numbers** in `packages/engine/src/cards.ts` are permanent reference numbers.
   Keep existing numbers when reordering cards; give new cards unused numbers. The Guide reads
   the same card data, and numbers are shown only on flipped panels.

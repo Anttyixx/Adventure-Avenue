@@ -109,6 +109,32 @@ export function wildIconURL(): string {
   return wildCache;
 }
 
+let coinCache = '';
+
+/** The gold coin (same look as `drawCoin`) as an image URL for HTML. */
+export function coinIconURL(): string {
+  if (!coinCache) {
+    coinCache = svgURL(
+      '<defs><radialGradient id="c" cx=".35" cy=".3" r=".75"><stop offset="0" stop-color="#fff2a8"/><stop offset=".55" stop-color="#ffd23f"/><stop offset="1" stop-color="#d99a0b"/></radialGradient></defs>' +
+        '<circle cx="12" cy="12" r="10" fill="url(#c)" stroke="#b07a06" stroke-width="1.6"/>' +
+        '<text x="12" y="16.4" text-anchor="middle" font-family="Lilita One, sans-serif" font-size="12" fill="#9a6a0a">G</text>',
+    );
+  }
+  return coinCache;
+}
+
+let starCache = '';
+
+/** A five-point gold star (Lucky Reels). */
+export function starIconURL(): string {
+  if (!starCache) {
+    starCache = svgURL(
+      '<path d="M12 1.8l3 6.4 7 .9-5.1 4.8 1.3 6.9L12 17.4l-6.2 3.4 1.3-6.9L2 9.1l7-.9z" fill="#ffd166" stroke="#c98a12" stroke-width="1.2" stroke-linejoin="round"/>',
+    );
+  }
+  return starCache;
+}
+
 /** A smooth gold coin with a rim and a "G", centered on (x, y). */
 export function drawCoin(ctx: CanvasRenderingContext2D, x: number, y: number, r: number) {
   ctx.save();

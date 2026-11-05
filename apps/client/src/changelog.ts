@@ -26,6 +26,34 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: '2026-11-05-arcade-boards',
+    date: 'Nov 5, 2026',
+    title: 'Arcade games, redone',
+    features: [
+      {
+        tag: 'better',
+        title: 'Arcade games on the board',
+        text: 'Like the venture board, each arcade game now sits in the middle of the screen with its instructions, choices and results in the action bar, instead of a pop-up. Party games show who has picked so far.',
+      },
+      {
+        tag: 'new',
+        title: 'Memory Blocks with flip cards',
+        text: 'Cards deal in, flip face up so you can memorize them, then flip face down. Nothing peeks through any more: the coin cards used to show their coins.',
+      },
+      {
+        tag: 'rules',
+        title: 'A clearer Coin Derby',
+        text: 'Race down a 15-space track. Each leg, sprint 3-5 spaces or grab 30G and move 1-3. Whoever is furthest after three legs wins a bonus, and everyone keeps their coins.',
+      },
+    ],
+    extras: [
+      'Lucky Reels: two rerolls and smaller prizes, a prize ladder that lights your set, and only the winning slots glow at the end.',
+      'Lucky Wheel: tap a bet on the board; winning bets light up with each player’s result.',
+      'Treasure Split: chests open to show who picked them and each share.',
+      'Arcade results move on faster with Fast CPU when only CPUs played.',
+    ],
+  },
+  {
     id: '2026-11-04-arcade-party',
     date: 'Nov 4, 2026',
     title: 'More ways to play at the arcade',

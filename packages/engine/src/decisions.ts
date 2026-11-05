@@ -66,6 +66,8 @@ export interface DecisionMap {
     {
       game: 'Coin Derby' | 'Lucky Wheel' | 'Treasure Split';
       round: number;
+      /** Everyone choosing this round, in the order they choose (the player who landed first). */
+      order: number[];
       options: string[];
       hint: string;
       maxBet?: number;

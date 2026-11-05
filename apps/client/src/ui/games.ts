@@ -1,60 +1,13 @@
 /**
- * Venture panels and Memory Blocks: collect a choice, then reveal the engine result.
- * The other arcade games use ArcadeView in arcade.ts.
+ * The venture board: collect a choice, then reveal the engine result. The arcade games are in
+ * arcade.ts.
  */
-import { CARDS, PLAYER_COLORS, MEMORY_SHOW_MS, type GameState, type MemoryPrize } from '@aa/engine';
+import { CARDS, PLAYER_COLORS, type GameState } from '@aa/engine';
 import { TIMING as T } from '../timing';
 import { fmt, h } from './dom';
 import type { Hud } from './hud';
 
 const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
-
-function okButton(label = 'OK'): { el: HTMLButtonElement; done: Promise<void> } {
-  let res!: () => void;
-  const done = new Promise<void>((r) => (res = r));
-  const el = h('button', { class: 'btn main', onclick: () => res() }, label);
-  setTimeout(() => el.focus(), 30);
-  return { el, done };
-}
-
-/**
- * Wait for OK from the player who played, or for everyone else a short delay, which their
- * Close button cuts short.
- */
-async function confirm(row: HTMLElement, human: boolean, speed: number) {
-  if (!human) {
-    await new Promise<void>((resolve) => {
-      const t = setTimeout(resolve, T.cpuResult * speed);
-      row.append(
-        h(
-          'button',
-          {
-            class: 'btn',
-            onclick: () => {
-              clearTimeout(t);
-              resolve();
-            },
-          },
-          'Close',
-        ),
-      );
-    });
-    return;
-  }
-  {
-    const ok = okButton();
-    row.append(ok.el);
-    const key = (e: KeyboardEvent) => {
-      if (e.key === 'Enter' || e.key === ' ') {
-        e.preventDefault();
-        ok.el.click();
-      }
-    };
-    window.addEventListener('keydown', key);
-    await ok.done;
-    window.removeEventListener('keydown', key);
-  }
-}
 
 // ------------------------------------------------------------------ venture grid
 
@@ -166,95 +119,6 @@ export class VentureView {
     }
     const card = CARDS[this.G.vg.cards[panel]];
     await show(card ? `#${card.number} · ${title}` : title, text);
-    this.m.close();
-  }
-}
-
-// ------------------------------------------------------------------ Memory Blocks
-
-const PRIZE_TEXT: Record<MemoryPrize, string> = {
-  shopsUp: 'Shops +10%',
-  gold: 'Gold',
-  wild: 'Wild card',
-  shopsDown: 'Shops -5%',
-  small: '20G',
-};
-
-export class MemoryView {
-  m: ReturnType<Hud['modal']>;
-  grid = h('div', { class: 'mgrid' });
-  row = h('div', { class: 'btn-row' });
-  result = h('div', { class: 'g-result', 'aria-live': 'polite', role: 'status' });
-  blocks: HTMLButtonElement[] = [];
-
-  constructor(hud: Hud, prizes: MemoryPrize[], name: string) {
-    this.m = hud.modal(
-      `Memory Blocks · ${name}`,
-      h(
-        'div',
-        { class: 'minigame' },
-        h('p', { class: 'hint' }, 'Remember where the prizes are, then pick one.'),
-        this.grid,
-        this.result,
-        this.row,
-      ),
-    );
-    this.m.el.classList.add('arcade-modal', 'memory-modal');
-    prizes.forEach((p, i) => {
-      const b = h('button', { class: `block show ${p}` }, PRIZE_TEXT[p]) as HTMLButtonElement;
-      b.disabled = true;
-      b.setAttribute('aria-label', `Block ${i + 1}: ${PRIZE_TEXT[p]}`);
-      this.blocks.push(b);
-      this.grid.append(b);
-    });
-  }
-
-  /** Spectators: show the prizes, then hide them, while the player picks. */
-  watch(name: string) {
-    this.result.textContent = `${name} is playing...`;
-    void this.hide(1);
-  }
-
-  async hide(speed: number) {
-    await wait(MEMORY_SHOW_MS * Math.max(0.6, speed));
-    this.blocks.forEach((b, i) => {
-      b.classList.remove('show');
-      b.setAttribute('aria-label', `Block ${i + 1}`);
-    });
-  }
-
-  async play(): Promise<number> {
-    this.result.textContent = 'Remember the prizes…';
-    await this.hide(1);
-    this.result.textContent = 'Pick one block!';
-    return new Promise((resolve) => {
-      this.grid.classList.add('picking');
-      this.blocks.forEach((b, i) => {
-        b.disabled = false;
-        b.setAttribute('aria-label', `Pick block ${i + 1}`);
-        b.onclick = () => {
-          this.grid.classList.remove('picking');
-          this.blocks.forEach((x) => {
-            x.onclick = null;
-            x.disabled = true;
-          });
-          this.result.textContent = 'Revealing your prize…';
-          resolve(i);
-        };
-      });
-    });
-  }
-
-  async show(picked: number, prize: string, human: boolean, speed: number) {
-    this.blocks[picked].classList.add('show', 'picked', 'pop');
-    await wait(T.memoryReveal * speed);
-    this.blocks.forEach((b) => {
-      b.classList.add('show');
-      b.setAttribute('aria-label', b.textContent ?? 'Prize');
-    });
-    this.result.textContent = prize;
-    this.result.classList.add('pop');
-    await confirm(this.row, human, speed);
     this.m.close();
   }
 }

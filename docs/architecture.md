@@ -345,8 +345,11 @@ does not retrigger a portal; bank passing/landing behavior follows remaining ste
 ### Arcade decisions and reveals
 
 `arcade.ts` owns the five-game rotation, set scoring, bets and seeded race/wheel outcomes.
-`reels` requests one lock/reroll decision at a time; `arcadeChoice` collects each active player's
-private choice in sequence through the normal host/guest decision protocol. `arcadeRound` reveals
-all choices after collection. The client `ui/arcade.ts` renders those decisions and reveals;
-`ui/games.ts` retains venture and Memory Blocks. No client animation determines a payout.
+`reels` asks one keep/reroll decision at a time; `arcadeChoice` collects each player's private
+choice in turn order starting with the player who landed (the request carries that `order`)
+through the normal host/guest decision protocol, and `arcadeRound` reveals everyone's choices
+together (`rows[].choice`, derby `score`/`previous` in spaces). On the client, `ui/arcade.ts`
+`ArcadeStage` is one board per game, opened by `HotSeat.stage(game)` on the first request (as a
+spectator in `spectate`, or to choose in `human`) and closed after the final result
+(`endArcade`); the action bar carries its prompts. No client animation decides anything.
 The UI Lab launches the actual engine games through an isolated, non-saving HotSeat.
