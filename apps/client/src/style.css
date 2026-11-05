@@ -793,53 +793,51 @@ input[type='range'] {
 .top-left > * {
   pointer-events: auto;
 }
-/* The Stock market button under the info chip; it morphs into the market panel. */
-.market-box {
+/* The info chip and the Info button side by side. */
+.top-row {
   display: flex;
-  flex-direction: column;
+  align-items: center;
+  gap: 6px;
   max-width: 100%;
-  overflow: hidden;
+}
+/* The Info button (right of the info chip): opens the info pop-up; gold while it is open. */
+.info-btn {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px 5px 6px;
+  border: 1px solid var(--glass-line);
+  border-radius: 999px;
+  color: var(--text);
+  font: 700 13px var(--body);
   cursor: pointer;
-  user-select: none;
-  -webkit-user-select: none;
-  transition: background 0.15s;
+  transition:
+    background-color 0.2s,
+    color 0.2s,
+    border-color 0.2s;
 }
-.market-box[hidden] {
-  display: none;
+.info-btn:hover {
+  border-color: var(--accent);
 }
-.market-box:not(.open):hover {
-  background: rgba(30, 44, 82, 0.92);
+.info-btn .info-i {
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: #3b2a00;
+  font: 400 14px var(--head);
 }
-.market-box:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 2px;
+.info-btn.on {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #3b2a00;
 }
-.mb-label {
-  padding: 6px 14px;
-  font-size: 13px;
-  font-weight: 700;
-  white-space: nowrap;
-}
-.mb-body {
-  display: none;
-}
-.market-box.open {
-  width: min(760px, calc(100vw - 20px - var(--free-left, 0px)));
-  max-height: calc(100vh - 80px);
-  cursor: default;
-  user-select: text;
-  -webkit-user-select: text;
-}
-.market-box.open .mb-label {
-  display: none;
-}
-.market-box.open .mb-body {
-  display: block;
-  flex: 1 1 auto;
-  min-height: 0;
-  overflow: auto;
-  padding: 12px;
-  animation: sb-log-in 0.3s ease-out;
+.info-btn.on .info-i {
+  background: #3b2a00;
+  color: var(--accent);
 }
 .info-chip {
   min-width: 0;
@@ -5901,33 +5899,9 @@ div.sl-inline label {
   }
 }
 
-/* ------------------------------------------------------------ player overview */
+/* ------------------------------------------------------------ player page (info pop-up) */
 
-/* The player overview: a pop-up in the middle of the screen with everything about one player. */
-.pv-layer {
-  position: absolute;
-  inset: 0;
-  z-index: 30;
-  display: grid;
-  place-items: center;
-  padding: 16px;
-  background: rgba(6, 10, 22, 0.3);
-}
-.pv-layer[hidden] {
-  display: none;
-}
-.pview {
-  width: min(980px, 100%);
-  max-height: min(86vh, 720px);
-  box-sizing: border-box;
-  display: flex;
-  overflow: hidden;
-  background: rgba(16, 26, 51, 0.97);
-  border: 1px solid var(--glass-line);
-  border-top: 5px solid var(--pc);
-  border-radius: 16px;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
-}
+/* A player's page in the info pop-up: everything about one player, in scrolling columns. */
 .pv-inner {
   position: relative;
   flex: 1;
@@ -6170,7 +6144,7 @@ div.sl-inline label {
   color: var(--muted);
   text-align: right;
 }
-.pview .neg {
+.info-pop .neg {
   color: #ff9a9a;
 }
 /* Net worth over the game. */
@@ -6308,9 +6282,6 @@ div.sl-inline label {
 }
 /* Phones: more room between the pop-up and the screen edges. */
 @media (max-width: 760px) {
-  .pv-layer {
-    padding: 28px 22px;
-  }
   .pv-head {
     padding-right: 66px;
   }
@@ -9110,5 +9081,267 @@ div.sl-inline label {
 @media (max-width: 900px), (max-height: 500px) {
   .setup .seats {
     grid-template-columns: repeat(auto-fill, minmax(118px, 1fr));
+  }
+}
+
+/* ------------------------------------------------------------ info pop-up */
+
+/* Centered over the board like the stock market (only the pop-up catches clicks); while it is
+   open it covers any other pop-up, and its own bar stands in for the action bar. */
+.hud > .info-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  display: grid;
+  place-items: center;
+  box-sizing: border-box;
+  padding: max(100px, calc(var(--top-free, 50px) + 4px)) 12px;
+  pointer-events: none;
+}
+.hud > .info-layer[hidden],
+.hud > .info-bar[hidden] {
+  display: none;
+}
+.hud.info-open > .stock-layer,
+.hud.info-open > .venture-layer,
+.hud.info-open > .arcade-layer,
+.hud.info-open > .prompt-center:not(.info-bar) {
+  visibility: hidden;
+}
+.info-pop {
+  pointer-events: auto;
+  box-sizing: border-box;
+  width: min(1000px, calc(100vw - var(--free-right, 0px) - 40px));
+  max-width: none;
+  max-height: min(100%, 680px);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border-top: 5px solid var(--pc, var(--accent));
+}
+.info-pop .modal-head {
+  flex: none;
+  margin-bottom: 8px;
+}
+.info-scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+  overscroll-behavior: contain;
+}
+.info-pop .market {
+  margin-top: 0;
+}
+.info-pop > .pv-inner {
+  min-height: 0;
+}
+/* The Game page: how to win and the game's facts beside the standings. */
+.info-game {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  align-items: flex-start;
+}
+.info-col {
+  flex: 1 1 260px;
+}
+.info-col.wide {
+  flex: 1.4 1 340px;
+}
+.info-goal {
+  margin: 0 0 4px;
+  font-size: 15px;
+}
+.info-goal b {
+  font-family: var(--head);
+  font-weight: 400;
+  color: var(--accent);
+}
+.info-standings {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.info-row {
+  display: grid;
+  grid-template-columns: auto 36px minmax(0, 1fr) minmax(120px, 0.9fr);
+  align-items: center;
+  gap: 10px;
+  padding: 6px 10px;
+  border: 1px solid var(--glass-line);
+  border-left: 4px solid var(--pc);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.info-row:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+.info-row.out {
+  opacity: 0.5;
+}
+.info-face {
+  width: 36px;
+  height: 36px;
+  image-rendering: pixelated;
+}
+.info-who {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.info-who b {
+  font-family: var(--head);
+  font-weight: 400;
+  font-size: 16px;
+}
+.info-sub {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.info-sub .suits img {
+  width: 14px;
+  height: 14px;
+}
+.info-sub .suits:not(.ready) img {
+  opacity: 0.9;
+}
+.info-nw {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.info-nw-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+}
+.info-nw-top b {
+  font-family: var(--head);
+  font-weight: 400;
+  font-size: 16px;
+}
+.info-nw-top em {
+  font-style: normal;
+  font-size: 12px;
+  color: var(--muted);
+}
+.info-nw .bar-fill {
+  background: var(--pc);
+}
+
+/* The info pop-up's action bar: page tabs (Game, Stocks, then a button per player) and Close. */
+.prompt-center.info-bar {
+  flex-direction: row;
+  align-items: center;
+  gap: 10px;
+  padding: 10px;
+  min-height: 0;
+}
+.info-tabs {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+.ib-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 14px;
+  border: 1px solid var(--glass-line);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--text);
+  font: 700 14px var(--body);
+  cursor: pointer;
+  white-space: nowrap;
+  transition:
+    background-color 0.2s,
+    color 0.2s,
+    border-color 0.2s;
+}
+.ib-tab:hover {
+  border-color: var(--accent);
+}
+.ib-tab.on {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #3b2a00;
+}
+.ib-player {
+  padding: 3px 12px 3px 4px;
+  border-color: var(--pc);
+}
+.ib-player img {
+  width: 26px;
+  height: 26px;
+  image-rendering: pixelated;
+}
+.ib-player.on {
+  background: var(--pc);
+  border-color: var(--pc);
+  color: #fff;
+}
+.ib-sep {
+  width: 1px;
+  align-self: stretch;
+  margin: 2px 2px;
+  background: var(--glass-line);
+}
+.prompt-center.info-bar .ib-close {
+  padding: 6px 14px;
+  font-size: 14px;
+}
+@media (max-height: 500px), (max-width: 760px) {
+  .hud > .info-layer {
+    padding: calc(var(--top-free, 40px) + 2px) 8px 66px;
+  }
+  .info-pop {
+    padding: 8px 10px;
+    width: calc(100vw - var(--free-right, 0px) - 20px);
+  }
+  .info-pop .modal-head h2 {
+    font-size: 16px;
+  }
+  .prompt-center.info-bar {
+    padding: 6px;
+    gap: 6px;
+  }
+  .ib-tab {
+    padding: 5px 10px;
+    font-size: 12px;
+  }
+  /* Players by portrait only. */
+  .ib-player {
+    padding: 2px;
+  }
+  .ib-player .ib-name {
+    display: none;
+  }
+  .ib-player img {
+    width: 24px;
+    height: 24px;
+  }
+  .info-row {
+    grid-template-columns: auto 28px minmax(0, 1fr) minmax(90px, 0.9fr);
+    gap: 6px;
+    padding: 4px 8px;
+  }
+  .info-face {
+    width: 28px;
+    height: 28px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .info-btn,
+  .ib-tab {
+    transition: none;
   }
 }

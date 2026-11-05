@@ -1,6 +1,6 @@
 /**
- * The player overview: everything about one player, in a pop-up in the middle of the screen
- * when their player card is clicked (the pop-up itself is managed by `Hud.openOverview`). Net
+ * A player's page in the info pop-up (`ui/info.ts`): everything about one player, shown when
+ * their player card is clicked or their button is picked in the action bar. Net
  * worth and how it splits between cash, properties and stock, the money earned, the properties
  * by district (click one to find it on the board), the shares held and, once the game is over,
  * net worth over the game.
@@ -39,7 +39,8 @@ const PARTS = [
 ] as const;
 
 export interface OverviewHooks {
-  onClose(): void;
+  /** Shows a Close button in the corner (the info pop-up has its own in the action bar). */
+  onClose?(): void;
   /** Find a property on the board (it was clicked). */
   onFind(id: number): void;
 }
@@ -364,12 +365,14 @@ export function playerOverview(G: GameState, p: Player, hooks: OverviewHooks): H
   return h(
     'div',
     { class: 'pv-inner' },
-    h('button', { class: 'btn small ghost pv-close', onclick: () => hooks.onClose() }, 'Close'),
+    hooks.onClose
+      ? h('button', { class: 'btn small ghost pv-close', onclick: () => hooks.onClose!() }, 'Close')
+      : null,
     root,
   );
 }
 
-function section(title: string, aside: string | null, ...body: Node[]): HTMLElement {
+export function section(title: string, aside: string | null, ...body: Node[]): HTMLElement {
   return h(
     'section',
     { class: 'pv-sec' },
@@ -481,7 +484,7 @@ function trend(values: number[], goal: number, color: string): HTMLElement {
   );
 }
 
-function ordinal(n: number) {
+export function ordinal(n: number) {
   const s = ['th', 'st', 'nd', 'rd'];
   const v = n % 100;
   return n + (s[(v - 20) % 10] || s[v] || s[0]);

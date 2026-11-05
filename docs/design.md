@@ -60,8 +60,8 @@ a default browser widget.
 | Make **this turn's** choice (2-6 options), or read what's happening now | **Action bar** (bottom center)                                                       | Buy this shop?, Roll, choose a building, "Rosa is moving..." |
 | Pick a **square** on the board                                          | **Board highlight** (glowing squares) + action bar explaining it                     | Choose where to move, cannon target, invest in a shop        |
 | Edit **many settings** or a **long list** while still seeing the board  | **Side panel** (right edge, nonmodal)                                                | Board settings, the selected tile's options, the Tiles pane  |
-| Read or decide something **big**, with the board out of the way         | **Pop-up** (centered, dims the board)                                                | Guide, player overview, menu, results                        |
-| Make a choice that needs **a big view to choose from**                  | **Pop-up + action bar**: the view in a non-dimming pop-up, the choice in the bar     | Stock screen, venture board, arcade games                    |
+| Read or decide something **big**, with the board out of the way         | **Pop-up** (centered, dims the board)                                                | Guide, menu, results                                         |
+| Make a choice that needs **a big view to choose from**                  | **Pop-up + action bar**: the view in a non-dimming pop-up, the choice in the bar     | Stock screen, venture board, arcade games, info pop-up       |
 | Answer a **yes/no** that can lose something                             | **Question pop-up** (small pop-up, Cancel + answer)                                  | Discard changes?, Delete district?, Quit game?               |
 | **Choose one of many things** that have pictures                        | **Card grid** in a pop-up                                                            | New board templates                                          |
 | **Manage a list** of saved things                                       | **List rows** in a pop-up                                                            | My boards                                                    |
@@ -372,7 +372,7 @@ Each element: **purpose**, **placement**, **anatomy**, **spec**, **behavior**, t
 ### 5.1 Info chip (top left) — "info bar"
 
 - **Purpose:** what you're playing/editing, always visible.
-- **Placement:** `top: 10px; left: 10px`; game: under it the Stock market button.
+- **Placement:** `top: 10px; left: 10px`; game: the Info button sits right beside it (`.top-row`).
 - **Anatomy (game):** gold Lilita title ("Adventure Avenue") · muted pills: board, round, goal ·
   Room button online. **(builder):** "Board builder" · inline name input · save status
   ("Not saved yet" gold, "Saved" green) · "Board settings" small ghost button.
@@ -567,14 +567,25 @@ if (!(await ask(`Delete ${d.name}?`, 'Its 4 properties will be removed from the 
   - level badge + suits on top; progress bar; cash (coin) bottom-left, rank badge + net worth
     bottom-right. Active player: breathing `--pc` glow on an `::after` layer. Money changes pop out
     beside the card ("+120G" green / "-50G" red). Can win: net worth and portrait pulse gold.
-    Clicking opens the player overview.
+    Clicking opens that player's page in the info pop-up.
 
-### 5.15 Player overview (pop-up)
+### 5.15 Info pop-up (pop-up + action bar)
 
-- Extra-wide pop-up (980px) with a 5px `--pc` top edge, three columns (net worth + ring chart +
-  earnings · properties as small cards · shares table), section headings uppercase muted,
-  "Close" top right, scrolls inside. Property cards: district top edge, picture, rent big, value
-  small; click to find it on the board.
+- **Info button** (`.info-btn`): a glass pill right of the info chip, a round gold "i" and "Info";
+  gold (`.on`) while the pop-up is open.
+- **Pop-up** (`.info-layer > .modal.info-pop`): up to 1,000px wide, sized to its page (max 680px
+  tall, scrolling inside), 5px top edge (gold; the player's `--pc` on a player page), centered and
+  kept clear of the player cards (`keepClearOfCards`); non-dimming, only the box catches clicks;
+  opening/closing motion as for the stock market; page changes ease its size (240ms).
+- **Action bar:** a stand-in `.prompt-center.info-bar` over the real bar (`.hud.info-open` hides
+  the real one and any stock/venture/arcade layer): pill tabs (`.ib-tab`, gold when on) Game,
+  Stocks, a divider, one per player (`.ib-player`: portrait + name, border and fill in `--pc`;
+  portrait only on phones), then a ghost Close. It grows out of the real bar's size on opening.
+- **Pages:** Game (how to win, facts grid, standings rows `.info-row` with place badge, portrait,
+  name/level/suits, net worth + `--pc` bar, cash); Stocks (`marketView(..., { split: true })`);
+  a player (`playerOverview`: three columns, net worth + ring chart + earnings · properties as
+  small cards · shares table; property cards: district top edge, picture, rent big, value small;
+  click to find it on the board).
 
 ### 5.16 Banner
 
@@ -605,7 +616,7 @@ if (!(await ask(`Delete ${d.name}?`, 'Its 4 properties will be removed from the 
   (never on the host). The empty spot is a dashed card with a gold round **+ Add bot** button and
   a small ghost **+ Player on this device** button. The join code sits right under the seats.
 
-### 5.18 Game log and Stock market panel
+### 5.18 Game log
 
 - **Game log:** a toolbar button (`.log-toggle`, between the zoom chip and Guide, gold `.on`
   while open) opens a glass panel (`.log-panel`) top right: `top: var(--top-free)` (just under the
@@ -613,8 +624,6 @@ if (!(await ask(`Delete ${d.name}?`, 'Its 4 properties will be removed from the 
   the top of the cards (`--dock-b`); on phones (`max-height: 500px`) it may run over the cards. It
   pops in (200ms, fade + 8px drop + scale .96 from the top right); Close, the button or Escape
   closes it. The log groups lines by turn, newest at the bottom, players as chips.
-- **Stock market:** starts as a small glass button and **morphs** into its panel (260-280ms); it
-  shows the district × player table and shop cards.
 
 ### 5.19 Board overlays (canvas)
 

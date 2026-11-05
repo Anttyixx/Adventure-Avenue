@@ -26,6 +26,24 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: '2026-11-08-info-popup',
+    date: 'Nov 8, 2026',
+    title: 'One Info pop-up for the game, stocks and players',
+    features: [
+      {
+        tag: 'new',
+        title: 'Info button',
+        text: 'A new Info button next to the info chip opens one pop-up with everything to look up. Pick a page in the action bar: Game (how to win, the game so far and the standings), Stocks (the stock market) or any player.',
+      },
+      {
+        tag: 'better',
+        title: 'Player cards open the player page',
+        text: 'Tapping a player card opens their page in the same pop-up. It replaces the old Stock market button and the separate player pop-up.',
+      },
+    ],
+    extras: ['The View board chip works with the Info pop-up too'],
+  },
+  {
     id: '2026-11-08-stock-sounds-view-board',
     date: 'Nov 8, 2026',
     title: 'Stock sounds and a peek at the board',

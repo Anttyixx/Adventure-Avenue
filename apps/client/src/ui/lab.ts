@@ -108,7 +108,14 @@ const rnd = (n: number) => Math.floor(Math.random() * n);
  * Controls for UI elements that were just added or changed: they shake once and glow so they
  * are easy to find. Update this list with each change.
  */
-const RECENT = new Set(['Gift shares (venture card)']);
+const RECENT = new Set([
+  'Info: game page',
+  'Info: stocks page',
+  'Info: player page',
+  'Stocks: classic',
+  'Stocks: dynamic',
+  'Shaken district',
+]);
 
 /** Which board the lab plays on: Town (square) or Twin Lakes (hex), remembered per browser. */
 const LAB_BOARD_KEY = 'aa-lab-board';
@@ -398,7 +405,7 @@ export async function openLab(app: HTMLElement, section?: string) {
         cur().level++;
         refresh();
       }),
-      btn('Player overview', () => hud.openOverview(cur().id)),
+      btn('Info: player page', () => hud.toggleInfo(cur().id)),
       btn('Swap characters', () => {
         // Every player moves on to the next character, to see each one on the player cards.
         for (const p of G.players) {
@@ -1573,23 +1580,21 @@ export async function openLab(app: HTMLElement, section?: string) {
         view.bid(bidders[0], high, yes);
         await view.end(yes ? bidders[0] : bidders.at(-1)!, yes ? high : high - 20, 3000);
       }),
-      btn('Stock market', () => hud.toggleMarket(true)),
+      btn('Info: game page', () => hud.toggleInfo('game')),
+      btn('Info: stocks page', () => hud.toggleInfo('stocks')),
       btn('Stocks: classic', () => {
         G.stocks = 'classic';
-        hud.toggleMarket(true);
-        hud.renderMarket();
+        hud.toggleInfo('stocks');
       }),
       btn('Stocks: dynamic', () => {
         G.stocks = 'dynamic';
-        hud.toggleMarket(true);
-        hud.renderMarket();
+        hud.toggleInfo('stocks');
       }),
       btn('Shaken district', () => {
         G.stocks = 'dynamic';
         const m = market(G);
         m.cut[0] = Math.min(1 - K.confMin, m.cut[0] + 0.18);
-        hud.toggleMarket(true);
-        hud.renderMarket();
+        hud.toggleInfo('stocks');
       }),
       btn('Stocks lab', () => {
         location.hash = '#stocks-lab';

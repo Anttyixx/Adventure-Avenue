@@ -2,7 +2,7 @@ import { StatusMessages } from './status-messages';
 /**
  * Dark-glass overlays floating over the board: info chip, toolbar (zoom chip, Guide, Menu),
  * action bar (the status line when no options are up), Game log button (expands into the log),
- * player cards and the player overview pop-up, stock market panel, menu pop-up, tooltip, modals
+ * player cards, the info pop-up (game, stocks and players), menu pop-up, tooltip, modals
  * and banners. HotSeat (host.ts) drives it; `prompt()` is how most human decisions are asked.
  */
 import {
@@ -27,8 +27,7 @@ import { boonIconURL, suitIconURL, wildIconURL } from '../icons';
 import { bodyURL, portraitURL } from '../sprites';
 import { clear, fmt, h } from './dom';
 import { kindIcon, logView, namesInColor, type IconKind } from './log';
-import { marketView } from './market';
-import { playerOverview } from './overview';
+import { InfoPopup, type InfoPage } from './info';
 
 export interface PromptButton<T> {
   label: string;
@@ -79,7 +78,11 @@ export class Hud {
    * tapping it again brings the pop-up back.
    */
   viewChip = h('button', { class: 'view-chip', hidden: true }, 'View board');
-  private peekTarget: { el: HTMLElement; onChange?: (peeking: boolean) => void } | null = null;
+  /** Pop-ups offering the chip, newest last (the info pop-up can open over the stock market). */
+  private peekTargets: { el: HTMLElement; onChange?: (peeking: boolean) => void }[] = [];
+  private get peekTarget() {
+    return this.peekTargets.at(-1) ?? null;
+  }
   /** True while the player has hidden a pop-up to look at the board. */
   peeking = false;
   /** The Game log button in the toolbar (between the zoom chip and Guide); it opens the log panel. */
@@ -113,15 +116,24 @@ export class Hud {
   cardsWrap = h('div', { class: 'cards-wrap' });
   cards = h('div', { class: 'cards' });
   /**
-   * The player overview: a pop-up in the middle of the screen with everything about one player
-   * (click their player card to open it).
+   * The Info button, right of the info chip: it opens the info pop-up (the game, the stock market
+   * and each player), with the page picked in the action bar.
    */
-  overview = h('div', { class: 'pview', role: 'dialog', 'aria-modal': 'true' });
-  /** Dims the screen behind the overview pop-up; a click on it closes the pop-up. */
-  overviewLayer = h('div', { class: 'pv-layer', hidden: true });
-  overviewPid = -1;
-  private overviewAnim: Animation | null = null;
-  /** A property from the overview is being shown on the board. */
+  infoBtn = h(
+    'button',
+    {
+      class: 'info-btn glass',
+      'aria-haspopup': 'dialog',
+      'aria-expanded': 'false',
+      title: 'Game, stock and player info',
+    },
+    h('span', { class: 'info-i', 'aria-hidden': 'true' }, 'i'),
+    'Info',
+  );
+  /** The info pop-up's page while it is open ('game', 'stocks' or a player's id), else null. */
+  infoPage: InfoPage | null = null;
+  private info: InfoPopup;
+  /** A property from a player's info page is being shown on the board. */
   private finding = false;
   /** The game log's contents (title, Close and the list), inside the log panel. */
   logBox = h('div', { class: 'sb-log' });
@@ -173,20 +185,17 @@ export class Hud {
     this.logBtn.onclick = () => this.toggleLog();
     this.root.append(
       this.toolbar,
-      h('div', { class: 'top-left' }, this.infoChip, this.marketBox),
+      h('div', { class: 'top-left' }, h('div', { class: 'top-row' }, this.infoChip, this.infoBtn)),
       this.ask,
       this.cardsWrap,
       this.logPanel,
-      this.overviewLayer,
       this.tooltip,
       this.modalLayer,
       this.bannerLayer,
     );
     parent.append(this.root);
-    this.overviewLayer.append(this.overview);
-    this.overviewLayer.onclick = (e) => {
-      if (e.target === this.overviewLayer) this.closeOverview();
-    };
+    this.info = new InfoPopup(this);
+    this.infoBtn.onclick = () => this.toggleInfo(this.infoPage == null ? 'game' : null);
 
     this.cb = cb;
     this.fastBtn.onclick = cb.onToggleFast;
@@ -198,14 +207,6 @@ export class Hud {
       this.zoomChip.title = ZOOM_TITLES[mode];
     };
     this.menuBtn.onclick = () => this.toggleMenu();
-    this.marketBox.append(this.marketLabel, this.marketBody);
-    this.marketBox.onclick = () => this.toggleMarket(true);
-    this.marketBox.onkeydown = (e) => {
-      if (e.target === this.marketBox && (e.key === 'Enter' || e.key === ' ')) {
-        e.preventDefault();
-        this.toggleMarket(true);
-      }
-    };
     this.guideBtn.onclick = () => this.cb.onGuide();
     this.viewChip.onclick = () => this.setPeek(!this.peeking);
     this.toolbar.append(this.viewChip, this.zoomChip, this.logBtn, this.guideBtn, this.menuBtn);
@@ -260,22 +261,6 @@ export class Hud {
   private menuModal: { close(): void } | null = null;
   /** Shown in the menu while it has paused the game (games on this device). */
   private pausedNote = h('div', { class: 'gm-paused', hidden: true }, 'Game paused');
-  /**
-   * The Stock market button under the info chip (Standard rules only): tapping it morphs it into
-   * the stock market panel in the top-left corner, and Close morphs it back.
-   */
-  marketBox = h('div', {
-    class: 'market-box glass',
-    role: 'button',
-    tabindex: '0',
-    'aria-expanded': 'false',
-  });
-  private marketLabel = h('div', { class: 'mb-label' }, 'Stock market');
-  private marketBody = h('div', { class: 'mb-body' });
-  marketOpen = false;
-  /** The top-left corner's bottom edge with the market folded (opening it never moves the board). */
-  private topLeftBottom = 0;
-
   /** The menu behind the Menu button: rules, settings and quit. */
   private buildMenu() {
     const item = (label: string, onclick: () => void, cls = '') =>
@@ -326,57 +311,6 @@ export class Hud {
     this.pausedNote.hidden = !(this.cb.onPause?.(open) ?? false) || !open;
   }
 
-  // ------------------------------------------------------------ stock market
-
-  /** Morph the Stock market button into the market panel (top left), or back. */
-  toggleMarket(open = !this.marketOpen) {
-    if (open === this.marketOpen || (open && !this.G)) return;
-    const box = this.marketBox;
-    const from = { width: box.offsetWidth, height: box.offsetHeight };
-    this.marketOpen = open;
-    box.classList.toggle('open', open);
-    box.setAttribute('aria-expanded', String(open));
-    this.renderMarket();
-    const to = { width: box.offsetWidth, height: box.offsetHeight };
-    if (from.width && to.width && !matchMedia('(prefers-reduced-motion: reduce)').matches) {
-      box.animate(
-        [
-          { width: `${from.width}px`, height: `${from.height}px` },
-          { width: `${to.width}px`, height: `${to.height}px` },
-        ],
-        { duration: 280, easing: 'cubic-bezier(0.2, 0.8, 0.2, 1)' },
-      );
-    }
-  }
-
-  /** Fill the open market panel (kept up to date as the game goes on). */
-  renderMarket() {
-    const keep = this.marketBody.scrollTop;
-    clear(this.marketBody);
-    if (!this.marketOpen) return;
-    this.marketBody.append(
-      h(
-        'div',
-        { class: 'drawer-head' },
-        h('h3', null, 'Stock market'),
-        h(
-          'button',
-          {
-            class: 'btn small ghost',
-            onclick: (e: MouseEvent) => {
-              // Keep the click from reaching the box, which would open it again.
-              e.stopPropagation();
-              this.toggleMarket(false);
-            },
-          },
-          'Close',
-        ),
-      ),
-      marketView(this.G, null),
-    );
-    this.marketBody.scrollTop = keep;
-  }
-
   /** Ask before quitting, in a dialog over the menu. */
   confirmQuit() {
     const question = this.cb.quitQuestion?.() ?? 'Quit to the main menu?';
@@ -415,12 +349,12 @@ export class Hud {
       this.toggleMenu(false);
       return;
     }
-    if (e.key === 'Escape' && this.logOpen && !this.modalLayer.childElementCount && this.overviewPid < 0) {
+    if (e.key === 'Escape' && this.logOpen && !this.modalLayer.childElementCount && this.infoPage == null) {
       this.toggleLog(false);
       return;
     }
-    if (e.key === 'Escape' && this.overviewPid >= 0 && !this.modalLayer.childElementCount) {
-      this.closeOverview();
+    if (e.key === 'Escape' && this.infoPage != null && !this.modalLayer.childElementCount) {
+      this.toggleInfo(null);
       return;
     }
     if (tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA') return;
@@ -452,14 +386,14 @@ export class Hud {
     // Upright phones: the options sit above the cards.
     if (portraitStack) this.root.style.setProperty('--cards-h', `${H - lineTop + 6}px`);
     const tools = this.toolbar.getBoundingClientRect();
-    if (!this.marketOpen) this.topLeftBottom = this.infoChip.parentElement!.getBoundingClientRect().bottom;
+    const topLeftBottom = this.infoChip.getBoundingClientRect().bottom;
     this.root.style.setProperty('--top-free', `${tools.bottom + 6}px`);
     let right = 0;
     if (!portraitStack && cards.width) right = Math.min(W * 0.4, W - cards.left + 8);
     const top = Math.min(ask ? ask.top : Infinity, portraitStack ? lineTop : Infinity);
     const bottom = H - top + 4;
     this.board.insets = {
-      top: Math.max(tools.bottom, this.topLeftBottom) + 6,
+      top: Math.max(tools.bottom, topLeftBottom) + 6,
       right,
       bottom: Math.max(0, bottom),
       left: this.leftInset,
@@ -488,7 +422,6 @@ export class Hud {
       h('span', null, `Target ${fmt(G.target)}`),
       h('span', null, G.rules === 'standard' ? 'Standard' : 'Easy'),
     );
-    this.marketBox.hidden = G.rules !== 'standard';
     this.chipBoard.textContent = G.boardName ?? 'Town';
     clear(this.chipRound);
     this.chipRound.append(
@@ -498,9 +431,8 @@ export class Hud {
     clear(this.chipGoal);
     this.chipGoal.append('Goal ', h('b', null, fmt(G.target)));
     this.renderCards();
-    if (this.marketOpen) this.renderMarket();
     if (this.logOpen) this.renderLog();
-    if (this.overviewPid >= 0) this.renderOverview();
+    if (this.infoPage != null) this.info.render();
   }
 
   renderCards() {
@@ -524,12 +456,12 @@ export class Hud {
       if (!el) {
         const pid = p.id;
         el = h('div', { class: 'pcard', role: 'button', tabindex: '0' });
-        el.onclick = () => this.openOverview(pid);
+        el.onclick = () => this.toggleInfo(this.infoPage === pid ? null : pid);
         el.onkeydown = (e) => {
           if (e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) {
             e.preventDefault();
             e.stopPropagation();
-            this.openOverview(pid);
+            this.toggleInfo(this.infoPage === pid ? null : pid);
           }
         };
         this.cardEls.set(p.id, el);
@@ -649,62 +581,38 @@ export class Hud {
     this.shown.set(p.id, { nw, cash: p.cash });
   }
 
-  // ------------------------------------------------------------ player overview
+  // ------------------------------------------------------------ info pop-up
 
-  /** Pop up a player's overview in the middle of the screen (or close it if it is theirs). */
-  openOverview(pid: number) {
+  /**
+   * Open the info pop-up on a page ('game', 'stocks' or a player's id), switch it to that page,
+   * or close it (null). While a player's page is up, everyone else's properties are greyed out on
+   * the board.
+   */
+  toggleInfo(page: InfoPage | null) {
     if (!this.G) return;
-    if (this.overviewPid === pid) {
-      this.closeOverview();
+    if (page === 'stocks' && this.G.rules !== 'standard') page = 'game';
+    const was = this.infoPage;
+    this.infoPage = page;
+    this.infoBtn.classList.toggle('on', page != null);
+    this.infoBtn.setAttribute('aria-expanded', String(page != null));
+    this.board.focusOwner = typeof page === 'number' ? page : -1;
+    if (page == null) {
+      if (was != null) this.info.close();
       return;
     }
-    const fresh = this.overviewPid < 0 || this.overviewLayer.hidden || !!this.overviewAnim;
-    this.overviewPid = pid;
-    this.overviewLayer.hidden = false;
-    this.renderOverview();
-    const body = this.overview.querySelector<HTMLElement>('.pv-body');
-    if (body) body.scrollTop = 0;
-    // Everyone else's properties are greyed out on the board while it is open.
-    this.board.focusOwner = pid;
-    if (fresh) this.popOverview(true);
-  }
-
-  closeOverview() {
-    if (this.overviewPid < 0) return;
-    this.overviewPid = -1;
-    this.board.focusOwner = -1;
-    this.popOverview(false);
-  }
-
-  private renderOverview() {
-    const p = this.G.players[this.overviewPid];
-    if (!p) return;
-    // The columns scroll inside the pop-up (the close button stays put).
-    const scroller = () => this.overview.querySelector<HTMLElement>('.pv-body');
-    const keep = scroller()?.scrollTop ?? 0;
-    clear(this.overview);
-    this.overview.style.setProperty('--pc', PLAYER_COLORS[p.color]);
-    this.overview.setAttribute('aria-label', `${p.name}: overview`);
-    this.overview.append(
-      playerOverview(this.G, p, {
-        onClose: () => this.closeOverview(),
-        onFind: (id) => void this.findOnBoard(id),
-      }),
-    );
-    const body = scroller();
-    if (body) body.scrollTop = keep;
+    if (was == null) this.info.open();
+    else this.info.render(true);
   }
 
   /**
-   * A property clicked in the overview: the pop-up steps aside, the board zooms out with every
-   * other tile greyed and that property glowing, and after a few seconds the board zooms back
-   * and the pop-up returns.
+   * A property clicked on a player's page: the pop-up steps aside, the board zooms out with every
+   * other tile greyed and that property glowing, and after a few seconds the pop-up returns.
    */
-  private async findOnBoard(id: number) {
-    if (this.finding || this.overviewPid < 0) return;
+  async findOnBoard(id: number) {
+    if (this.finding || typeof this.infoPage !== 'number') return;
     this.finding = true;
-    const pid = this.overviewPid;
-    this.popOverview(false);
+    const pid = this.infoPage;
+    this.info.stepAside(true);
     this.board.spot = id;
     this.board.spotColor = PLAYER_COLORS[this.G.players[pid].color];
     this.board.peekWhole = true;
@@ -712,42 +620,7 @@ export class Hud {
     this.board.peekWhole = false;
     this.board.spot = -1;
     this.finding = false;
-    // Back to the overview unless it was closed meanwhile.
-    if (this.overviewPid === pid) {
-      this.overviewLayer.hidden = false;
-      this.renderOverview();
-      this.popOverview(true);
-    }
-  }
-
-  /** The pop-up grows in from the middle of the screen and shrinks away when closed. */
-  private popOverview(open: boolean) {
-    const layer = this.overviewLayer;
-    const done = () => {
-      if (open) return;
-      layer.hidden = true;
-      clear(this.overview);
-    };
-    this.overviewAnim?.cancel();
-    if (matchMedia('(prefers-reduced-motion: reduce)').matches) {
-      done();
-      return;
-    }
-    const shown = { transform: 'none', opacity: 1 };
-    const small = { transform: 'scale(0.92)', opacity: 0 };
-    const anim = this.overview.animate(open ? [small, shown] : [shown, small], {
-      duration: open ? 220 : 160,
-      easing: open ? 'cubic-bezier(0.2, 0.9, 0.3, 1.2)' : 'ease-in',
-    });
-    layer.animate([{ opacity: open ? 0 : 1 }, { opacity: open ? 1 : 0 }], { duration: open ? 220 : 160 });
-    this.overviewAnim = anim;
-    anim.onfinish = () => {
-      if (this.overviewAnim === anim) this.overviewAnim = null;
-      done();
-    };
-    anim.oncancel = () => {
-      if (this.overviewAnim === anim) this.overviewAnim = null;
-    };
+    this.info.stepAside(false);
   }
 
   /** "+120G" / "-50G" floating out beside a player's card. */
@@ -1224,22 +1097,25 @@ export class Hud {
   offerViewBoard(el: HTMLElement, onChange?: (peeking: boolean) => void): () => void {
     if (this.peeking) this.setPeek(false);
     const target = { el, onChange };
-    this.peekTarget = target;
-    this.viewChip.hidden = false;
-    this.viewChip.classList.remove('pop-in');
-    void this.viewChip.offsetWidth;
-    this.viewChip.classList.add('pop-in');
+    this.peekTargets.push(target);
+    if (this.viewChip.hidden) {
+      this.viewChip.hidden = false;
+      this.viewChip.classList.remove('pop-in');
+      void this.viewChip.offsetWidth;
+      this.viewChip.classList.add('pop-in');
+    }
     return () => {
-      if (this.peekTarget !== target) return;
+      const i = this.peekTargets.indexOf(target);
+      if (i < 0) return;
       // The pop-up is closing anyway: just put the camera and the chip back (no animations).
-      if (this.peeking) {
+      if (this.peeking && i === this.peekTargets.length - 1) {
         this.peeking = false;
         this.board.overviewHold = false;
+        this.viewChip.classList.remove('on');
+        this.viewChip.textContent = 'View board';
       }
-      this.peekTarget = null;
-      this.viewChip.hidden = true;
-      this.viewChip.classList.remove('on');
-      this.viewChip.textContent = 'View board';
+      this.peekTargets.splice(i, 1);
+      if (!this.peekTargets.length) this.viewChip.hidden = true;
     };
   }
 

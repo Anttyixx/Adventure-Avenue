@@ -40,6 +40,30 @@ const priceFmt = (v: number) => `${(Math.round(v * 10) / 10).toLocaleString('en-
 /** Space kept between the stock pop-up and the player cards. */
 const CARD_GAP = 28;
 
+/**
+ * Keep a centered pop-up clear of the player cards: it stays in the middle of the screen, and
+ * when that would run under the cards it slides left just far enough to leave a gap. Rechecked
+ * when its size or the window changes. Returns the function that stops it.
+ */
+export function keepClearOfCards(hud: Hud, box: HTMLElement): () => void {
+  const place = () => {
+    if (!box.isConnected || !box.offsetWidth) return;
+    box.style.translate = '';
+    const r = box.getBoundingClientRect();
+    const freeRight = parseFloat(getComputedStyle(hud.root).getPropertyValue('--free-right')) || 0;
+    const limit = window.innerWidth - freeRight - CARD_GAP;
+    const shift = r.right > limit ? Math.max(12 - r.left, limit - r.right) : 0;
+    if (shift) box.style.translate = `${Math.round(shift)}px 0`;
+  };
+  const watch = new ResizeObserver(place);
+  watch.observe(box);
+  window.addEventListener('resize', place);
+  return () => {
+    watch.disconnect();
+    window.removeEventListener('resize', place);
+  };
+}
+
 function stockPopup(hud: Hud, title: string, content: Node) {
   const box = h(
     'div',
@@ -49,33 +73,16 @@ function stockPopup(hud: Hud, title: string, content: Node) {
   );
   const layer = h('div', { class: 'stock-layer' }, box);
   hud.root.append(layer);
-  // Centered on the screen; when that would run under the player cards, it slides left just far
-  // enough to clear them. Rechecked when its size (another district's shops) or the window changes.
-  const place = () => {
-    box.style.transform = '';
-    const r = box.getBoundingClientRect();
-    const freeRight = parseFloat(getComputedStyle(hud.root).getPropertyValue('--free-right')) || 0;
-    // Keep a clear gap between the pop-up and the player cards.
-    const limit = window.innerWidth - freeRight - CARD_GAP;
-    const shift = r.right > limit ? Math.max(12 - r.left, limit - r.right) : 0;
-    if (shift) box.style.transform = `translateX(${Math.round(shift)}px)`;
-  };
-  const watch = new ResizeObserver(place);
-  watch.observe(box);
+  const unplace = keepClearOfCards(hud, box);
   let release = () => {};
-  window.addEventListener('resize', place);
   return {
     /** Offer the toolbar's View board chip for this pop-up; `onPeek` hears it hide and return. */
     offer: (onPeek: (on: boolean) => void) => {
-      release = hud.offerViewBoard(layer, (on) => {
-        if (!on) place();
-        onPeek(on);
-      });
+      release = hud.offerViewBoard(layer, onPeek);
     },
     close: () => {
       release();
-      watch.disconnect();
-      window.removeEventListener('resize', place);
+      unplace();
       layer.remove();
     },
   };

@@ -550,7 +550,7 @@ left out. The pop-up's panels:
 - **Holdings table:** one row per player with squares owned in the district, shares held, the value
   of those shares at the current price, and a bar showing their share of all stock held there.
   Players with nothing there are dimmed.
-- No note under the table (the stock market panel has none either).
+- No note under the table (the info pop-up's Stocks page has none either).
 
 ## Suits, bank and promotion
 
@@ -919,7 +919,7 @@ with no frame or background and only the bottom fifth fading out (never over a h
 before the name so it never covers the character.
 
 **Motion.** Tokens tween between squares (260 ms, eased, with a hop) and step through walk frames
-every 120 ms (idle frames every 260 ms). The active player has a bobbing pixel arrow; after a roll the die shrinks to sit beside their head and flips to the new number of steps left on each step (each flip along a different axis from the last: sideways, up and over, or a diagonal), popping away when they arrive. Each character has a name plate just above their head. When a human on this device rolls, the camera zooms out to frame them and every square the roll could take them to (and the routes there) in the space the HUD leaves free (the stock market panel may cover it), until they start walking. Pixel coins fly from
+every 120 ms (idle frames every 260 ms). The active player has a bobbing pixel arrow; after a roll the die shrinks to sit beside their head and flips to the new number of steps left on each step (each flip along a different axis from the last: sideways, up and over, or a diagonal), popping away when they arrive. Each character has a name plate just above their head. When a human on this device rolls, the camera zooms out to frame them and every square the roll could take them to (and the routes there) in the space the HUD leaves free (the info pop-up may cover it), until they start walking. Pixel coins fly from
 payer to payee; floating text shows money changes.
 
 **Action bar.** The current player's options (and most yes/no questions: buying a shop, a buyout,
@@ -995,9 +995,8 @@ pays, with the Lucky Reels prize list), and Venture cards (all 30 fixed numbers,
 effects, with Standard-only cards marked). Each topic is a card with an icon, a title and a few
 short points. Easy rules show Basics, Arcade games and Venture cards. It reopens on the last tab read. Top left: the **info chip**, with the game's name, the board
 name, the current round (out of the round limit, if any), the goal (target net worth) and, online,
-a Room button that shows the room code; under it, the Stock market button (Standard rules), which
-morphs into the stock market panel in the top-left corner for anyone to look at (kept up to
-date) and morphs back into the button when closed. Bottom center: the **action bar** (on
+a Room button that shows the room code; right of it, the **Info** button (a round gold "i" and
+the word Info; gold while open), which opens the **info pop-up** (see below). Bottom center: the **action bar** (on
 narrow windows such as phones in landscape, where a centered bar would have less than 520px
 between the screen edge and the player cards, it sits in the bottom left corner instead and uses
 all the width up to the cards; this depends only on the window, not on what the bar shows; as a safety net, a centered bar
@@ -1034,22 +1033,39 @@ turns the order round so its own player's card is at the bottom; turns still go 
 suits and progress bar); they are always shown. Player cards show the character's whole sprite
 (trimmed to its drawn pixels, no fade).
 
-**Player overview** (`ui/overview.ts`). Clicking (or Enter on) a player card pops up that
-player's overview in the middle of the screen (up to 980px wide, scrolling when taller than the
-screen allows) over a light backdrop; the board and the action bar stay as they are, and every
-property the player does not own is greyed out on the board while it is open. Its columns (stacked
-on narrow screens, with more room from the screen edges on phones): (1) the whole sprite, name,
-level, rank, suits and status tags, net worth with the goal bar and how much is left, the **net
-worth breakdown** (an unfilled ring split into Cash, Properties and Stock, the hovered or biggest
-part's share in its middle, with a legend of values and shares), **earnings** in two columns (fees
-earned and paid, salary, dividends, commission, next promotion's pay) and, once the game is over,
-**net worth over the game** (a line per round with the goal dashed; hover for each round's value); (2) **properties** as little
-cards under their district's name, each with its picture, its rent (the fee a rival pays, struck
-through while closed) and its value; clicking a card finds it: the pop-up steps aside, the board zooms out to the whole map
-with every other tile greyed out and white rings spreading from that property for 3 seconds, then
-the board zooms back and the pop-up returns; (3) **shares** (the stock screen's table for this player: each district's name, price, the shares
-they hold and their value, districts with none dimmed, totals at the bottom). The Close button in the top right corner (it stays put while the
-content scrolls), Escape, a click outside it or clicking the card again closes it. It updates live as the game goes on.
+**Info pop-up** (`ui/info.ts`). The Info button (or a player card) opens one pop-up for
+everything a player may want to look up, in the middle of the screen like the stock market (up to
+1,000px wide, kept clear of the player cards, sized to its page and scrolling inside when taller
+than the screen allows; it does not dim the board). The page is picked in the **action bar**: while
+the pop-up is open, a stand-in bar covers the real one with tabs for **Game**, **Stocks** (Standard
+rules only), a button per player (portrait and name; portraits only on phones) and **Close**.
+Anything the game shows in the real bar meanwhile (a status, or a choice waiting for this player)
+is there again when the pop-up closes. The pop-up opens and closes with the pop-up motion (rise
+and fade in; sink and fade out), the stand-in bar grows out of the real one, and switching pages
+eases the pop-up to its new size. The toolbar's View board chip works for it too, and it covers
+any stock market, venture board or arcade game that is up while open. Escape, Close or the Info
+button again closes it; clicking a player card opens that player's page (clicking it again
+closes the pop-up). It updates live as the game goes on.
+
+- **Game:** how to win (the goal, back to the bank, the round limit if any) and who leads; this
+  game's facts (board, rules, stock system, round, whose turn, properties owned, venture panels
+  flipped); and the **standings**: a row per player by place (place badge, portrait, name, level,
+  suits, net worth with a bar toward the goal, cash); tapping a row opens that player's page.
+- **Stocks:** the stock market view (mini map, shop cards, district table), as on the buy/sell
+  screen; picking a district plays the click sound.
+- **A player** (`ui/overview.ts`): every property the player does not own is greyed out on the
+  board while it is open, and the page has a 5px top edge in their color. Its columns (stacked
+  on narrow screens, with more room from the screen edges on phones): (1) the whole sprite, name,
+  level, rank, suits and status tags, net worth with the goal bar and how much is left, the **net
+  worth breakdown** (an unfilled ring split into Cash, Properties and Stock, the hovered or biggest
+  part's share in its middle, with a legend of values and shares), **earnings** in two columns (fees
+  earned and paid, salary, dividends, commission, next promotion's pay) and, once the game is over,
+  **net worth over the game** (a line per round with the goal dashed; hover for each round's value); (2) **properties** as little
+  cards under their district's name, each with its picture, its rent (the fee a rival pays, struck
+  through while closed) and its value; clicking a card finds it: the pop-up steps aside, the board zooms out to the whole map
+  with every other tile greyed out and white rings spreading from that property for 3 seconds, then
+  the board zooms back and the pop-up returns; (3) **shares** (the stock screen's table for this player: each district's name, price, the shares
+  they hold and their value, districts with none dimmed, totals at the bottom).
 
 **Turn moments.** Before the roll, sliding arrows on the board point from the player's square to
 each square their first step can reach; they stay up until the player takes that first step. A token that stops part-way through a walk (a pop-up or a
@@ -1093,7 +1109,7 @@ When the game is done with an auto or locked view, the camera goes back to free 
 **Automatic zoom.** Two kinds:
 
 - _Shows_ play for a few seconds and go back by themselves: shops closing, a stock
-  price move, finding a property from the player overview, the winner's dance. They play on every
+  price move, finding a property from a player's info page, the winner's dance. They play on every
   screen, and the zoom is locked (wheel, pinch, keys and the chip do nothing) until they end.
 - _Views that wait on the player_: the squares a roll can reach, a choice on the board, a trade.
   They play only on the screen of the player deciding. While another player (a CPU or someone on
