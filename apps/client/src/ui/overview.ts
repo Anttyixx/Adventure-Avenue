@@ -382,7 +382,7 @@ export function section(title: string, aside: string | null, ...body: Node[]): H
 }
 
 /** A little card for one property: its picture, its rent (the fee a rival pays) and its value. */
-function propertyCard(G: GameState, s: Square, color: string, hooks: OverviewHooks): HTMLElement {
+export function propertyCard(G: GameState, s: Square, color: string, hooks: OverviewHooks): HTMLElement {
   const building = s.b ? BUILDINGS.find((b) => b.b === s.b) : null;
   let src = '';
   let kind = building?.name ?? 'Vacant plot';

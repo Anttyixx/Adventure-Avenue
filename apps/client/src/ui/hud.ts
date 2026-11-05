@@ -130,7 +130,7 @@ export class Hud {
     h('span', { class: 'info-i', 'aria-hidden': 'true' }, 'i'),
     'Info',
   );
-  /** The info pop-up's page while it is open ('game', 'stocks' or a player's id), else null. */
+  /** The info pop-up's page while it is open ('game', 'stocks', 'props' or a player's id), else null. */
   infoPage: InfoPage | null = null;
   private info: InfoPopup;
   /** A property from a player's info page is being shown on the board. */
@@ -576,7 +576,7 @@ export class Hud {
   // ------------------------------------------------------------ info pop-up
 
   /**
-   * Open the info pop-up on a page ('game', 'stocks' or a player's id), switch it to that page,
+   * Open the info pop-up on a page ('game', 'stocks', 'props' or a player's id), switch it to that page,
    * or close it (null). While a player's page is up, everyone else's properties are greyed out on
    * the board.
    */
@@ -597,16 +597,16 @@ export class Hud {
   }
 
   /**
-   * A property clicked on a player's page: the pop-up steps aside, the board zooms out with every
+   * A property clicked on a player's page or the Properties page: the pop-up steps aside, the board zooms out with every
    * other tile greyed and that property glowing, and after a few seconds the pop-up returns.
    */
   async findOnBoard(id: number) {
-    if (this.finding || typeof this.infoPage !== 'number') return;
+    if (this.finding || this.infoPage == null) return;
     this.finding = true;
-    const pid = this.infoPage;
+    const owner = this.G.players[this.G.nodes[id].owner];
     this.info.stepAside(true);
     this.board.spot = id;
-    this.board.spotColor = PLAYER_COLORS[this.G.players[pid].color];
+    this.board.spotColor = owner ? PLAYER_COLORS[owner.color] : '#ffffff';
     this.board.peekWhole = true;
     await new Promise((r) => setTimeout(r, FIND_MS));
     this.board.peekWhole = false;

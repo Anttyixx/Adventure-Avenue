@@ -575,15 +575,16 @@ if (!(await ask(`Delete ${d.name}?`, 'Its 4 properties will be removed from the 
 - **Info button** (`.info-btn`): a pill at the end of the info chip, a round gold "i" and "Info";
   gold (`.on`) while the pop-up is open.
 - **Pop-up** (`.info-layer > .modal.info-pop`): one width (up to 1,000px). Game and Stocks take
-  the height they need (max 640px); player pages (`.player`) all share one fixed height (640px;
-  phones fill the free area) so flipping between players never resizes it; page changes ease the
+  the height they need (max 640px); player pages (`.player`) all share one fixed height (500px;
+  phones fill the free area; with three columns the properties list `.pv-props` scrolls inside
+  its column, scroll bar hidden) so flipping between players never resizes it; page changes ease the
   height (320ms); pages scroll inside. 5px top
   edge (gold; the player's `--pc` on a player page, fading between). Ghost **Back** button in the
   top right (`.info-close`). Centered and kept clear of the player cards (`keepClearOfCards`);
   non-dimming, only the box catches clicks; opening/closing motion as for the stock market. Page
   changes pop: the old page's parts (`popParts`: head, sections, map, shop cards, table) shrink
-  to 0.82 and fade (150ms, 18ms apart), the box morphs its height (260ms), then the new parts pop
-  in (0.82 → 1.03 → 1, 280ms, 30ms apart). Player pages: columns 26px apart (rows 18px),
+  to 0.82 and fade (143ms, 17ms apart), the box morphs its height (247ms), then the new parts pop
+  in (0.82 → 1.03 → 1, 266ms, 28.5ms apart). Player pages: columns 26px apart (rows 18px),
   sections 16px apart, the first column at least 300px; a container query keeps the top-right
   heading (or the name, single column) 70px clear of Back.
 - **Action bar:** a stand-in `.prompt-center.info-bar` over the real bar (`.hud.info-open` hides
@@ -592,7 +593,9 @@ if (!(await ask(`Delete ${d.name}?`, 'Its 4 properties will be removed from the 
   portrait only on phones). It morphs out of the real bar's size on opening (300ms, tabs fade in
   after 120ms) and back into it on closing (tabs fade out first).
 - **Pages:** Game (how to win, facts grid, standings rows `.info-row` with place badge, portrait,
-  name/level/suits, net worth + `--pc` bar, cash); Stocks (`marketView(..., { split: true })`);
+  name/level/suits, net worth + `--pc` bar, cash); Properties (property cards `.pv-card.owned-by`
+  grouped by district, owner portrait badge top left and a `--pc` bottom edge; a count · value
+  line per player); Stocks (`marketView(..., { split: true })`);
   a player (`playerOverview`: three columns, net worth + ring chart + earnings · properties as
   small cards · shares table; property cards: district top edge, picture, rent big, value small;
   click to find it on the board).

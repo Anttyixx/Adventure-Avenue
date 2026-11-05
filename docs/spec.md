@@ -1037,11 +1037,13 @@ suits and progress bar); they are always shown. Player cards show the character'
 **Info pop-up** (`ui/info.ts`). The Info button (or a player card) opens one pop-up for
 everything a player may want to look up, in the middle of the screen like the stock market (up to
 1,000px wide, kept clear of the player cards; the Game and Stocks pages take the height they
-need, while every player page shares one fixed height (640px; the whole free area on phones), so
+need, while every player page shares one fixed height (500px, enough for its columns; the whole free
+area on phones; when three columns fit side by side a long property list scrolls inside its own
+column, with no scroll bar), so
 flipping between players never makes it jump; pages scroll inside when they need more room; it does not dim the board). **Back** sits in its top
 right corner. The page is picked in the **action bar**: while
 the pop-up is open, a stand-in bar covers the real one with tabs for **Game**, **Stocks** (Standard
-rules only) and a button per player (portrait and name; portraits only on phones).
+rules only), **Properties** and a button per player (portrait and name; portraits only on phones).
 Anything the game shows in the real bar meanwhile (a status, or a choice waiting for this player)
 is there again when the pop-up closes. The pop-up opens and closes with the pop-up motion (rise
 and fade in; sink and fade out); the stand-in bar morphs out of the real bar's size with its tabs
@@ -1059,6 +1061,11 @@ closes the pop-up). It updates live as the game goes on.
   game's facts (board, rules, stock system, round, whose turn, properties owned, venture panels
   flipped); and the **standings**: a row per player by place (place badge, portrait, name, level,
   suits, net worth with a bar toward the goal, cash); tapping a row opens that player's page.
+- **Properties:** every owned property, district by district (rows in Easy rules), with how many
+  of the district's squares are owned; each card shows the property's art in its owner's color,
+  a small portrait of the owner, its rent and value, and a bottom edge in the owner's color (tap
+  one to find it on the board, like on a player page). Beside it, a line per player with how many
+  properties they own and their total value.
 - **Stocks:** the stock market view (mini map, shop cards, district table), as on the buy/sell
   screen; picking a district plays the click sound.
 - **A player** (`ui/overview.ts`): every property the player does not own is greyed out on the

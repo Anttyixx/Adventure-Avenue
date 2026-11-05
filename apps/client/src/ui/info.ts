@@ -14,10 +14,10 @@ import { clear, fmt, h } from './dom';
 import type { Hud } from './hud';
 import { marketView } from './market';
 import { keepClearOfCards } from './modals';
-import { ordinal, playerOverview, section } from './overview';
+import { ordinal, playerOverview, propertyCard, section } from './overview';
 
 /** What the info pop-up shows: the game, the stock market, or a player (their id). */
-export type InfoPage = 'game' | 'stocks' | number;
+export type InfoPage = 'game' | 'stocks' | 'props' | number;
 
 const STILL = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
 /** The pop-ups' opening and closing motion (as for the stock market and View board). */
@@ -175,8 +175,8 @@ export class InfoPopup {
       const parts = popParts(old);
       parts.forEach((el, i) =>
         el.animate([HERE, { opacity: 0, transform: 'scale(0.82)' }], {
-          duration: 150,
-          delay: Math.min(i, 8) * 18,
+          duration: 143,
+          delay: Math.min(i, 8) * 17,
           easing: 'ease-in',
           fill: 'forwards',
         }),
@@ -193,7 +193,7 @@ export class InfoPopup {
           const ease = 'cubic-bezier(0.2, 0.8, 0.2, 1)';
           if (Math.abs(to - from) > 1)
             this.box.animate([{ height: `${from}px` }, { height: `${to}px` }], {
-              duration: 260,
+              duration: 247,
               easing: ease,
             });
           // ...and the new page's parts pop in, one after another.
@@ -204,7 +204,7 @@ export class InfoPopup {
                 { opacity: 1, transform: 'scale(1.03)', offset: 0.7 },
                 HERE,
               ],
-              { duration: 280, delay: 160 + Math.min(i, 10) * 30, easing: 'ease-out', fill: 'backwards' },
+              { duration: 266, delay: 152 + Math.min(i, 10) * 28.5, easing: 'ease-out', fill: 'backwards' },
             ),
           );
         },
@@ -233,11 +233,26 @@ export class InfoPopup {
     this.box.style.setProperty('--pc', p ? PLAYER_COLORS[p.color] : 'var(--accent)');
     this.box.setAttribute(
       'aria-label',
-      p ? `${p.name}: info` : page === 'stocks' ? 'Stock market' : 'Game info',
+      p
+        ? `${p.name}: info`
+        : page === 'stocks'
+          ? 'Stock market'
+          : page === 'props'
+            ? 'Properties'
+            : 'Game info',
     );
     const el = h('div', { class: 'info-page' });
     if (p) {
       el.append(playerOverview(G, p, { onFind: (id) => void this.hud.findOnBoard(id) }));
+    } else if (page === 'props') {
+      el.append(
+        h('div', { class: 'modal-head' }, h('h2', null, 'Properties')),
+        h(
+          'div',
+          { class: 'info-scroll' },
+          propertiesPage(G, (id) => void this.hud.findOnBoard(id)),
+        ),
+      );
     } else if (page === 'stocks') {
       el.append(
         h('div', { class: 'modal-head' }, h('h2', null, 'Stock market')),
@@ -263,6 +278,7 @@ export class InfoPopup {
     const pages: InfoPage[] = [
       'game',
       ...(G.rules === 'standard' ? ['stocks' as const] : []),
+      'props',
       ...G.players.map((p) => p.id),
     ];
     if (tabs.length === pages.length) {
@@ -290,6 +306,7 @@ export class InfoPopup {
         { class: 'info-tabs', role: 'tablist', 'aria-label': 'Info pages' },
         tab('game', 'Game'),
         G.rules === 'standard' ? tab('stocks', 'Stocks') : null,
+        tab('props', 'Properties'),
         h('span', { class: 'ib-sep', 'aria-hidden': 'true' }),
         ...G.players.map((p) => {
           const b = tab(
@@ -415,6 +432,87 @@ function standingRow(G: GameState, p: Player, place: number, onclick: () => void
       { class: 'info-nw' },
       h('span', { class: 'info-nw-top' }, h('b', null, fmt(nw)), h('em', null, `cash ${fmt(p.cash)}`)),
       h('span', { class: 'bar-track' }, h('span', { class: 'bar-fill', style: `width:${pct}%` })),
+    ),
+  );
+}
+
+/**
+ * The Properties page: every owned property, district by district (rows in Easy rules), each as
+ * a card in its owner's color with their portrait; then a line per player with how many they own
+ * and what they are worth. Tap a card to find it on the board.
+ */
+function propertiesPage(G: GameState, onFind: (id: number) => void): HTMLElement {
+  const standard = G.rules === 'standard';
+  const owned = G.nodes.filter((s) => s.d >= 0 && s.owner >= 0);
+  const groups = new Map<number, typeof owned>();
+  for (const s of owned) {
+    const key = standard ? s.d : s.g;
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key)!.push(s);
+  }
+  const box = h('div', { class: 'pv-props info-props' });
+  for (const [key, squares] of [...groups.entries()].sort((a, b) => a[0] - b[0])) {
+    const dist = standard ? G.districts[key] : null;
+    const total = G.nodes.filter((s) => (standard ? s.d === key : s.g === key)).length;
+    box.append(
+      h(
+        'div',
+        { class: 'pv-pgroup', style: `--dc:${dist?.color ?? '#8a94a8'}` },
+        h(
+          'div',
+          { class: 'pv-group' },
+          h('i', { class: 'pv-dot' }),
+          h('span', null, dist?.name ?? 'Row'),
+          h('em', null, `${squares.length} of ${total} owned`),
+        ),
+        h(
+          'div',
+          { class: 'pv-cards' },
+          ...squares.map((s) => {
+            const owner = G.players[s.owner];
+            const color = PLAYER_COLORS[owner.color];
+            const card = propertyCard(G, s, color, { onFind });
+            card.classList.add('owned-by');
+            card.style.setProperty('--pc', color);
+            card.prepend(
+              h('img', {
+                class: 'pv-card-owner',
+                src: portraitURL(owner.ch),
+                alt: owner.name,
+                title: owner.name,
+              }),
+            );
+            return card;
+          }),
+        ),
+      ),
+    );
+  }
+  const who = G.players.map((p) => {
+    const mine = owned.filter((s) => s.owner === p.id);
+    return h(
+      'div',
+      { class: 'pv-fact info-owner', style: `--pc:${PLAYER_COLORS[p.color]}` },
+      h('span', null, h('img', { src: portraitURL(p.ch), alt: '' }), p.name),
+      h('b', null, `${mine.length} · ${fmt(mine.reduce((sum, s) => sum + s.value, 0))}`),
+    );
+  });
+  return h(
+    'div',
+    { class: 'info-game' },
+    h(
+      'div',
+      { class: 'pv-col info-col wide' },
+      section(
+        'Owned properties',
+        `${owned.length} of ${G.nodes.filter((s) => s.d >= 0).length}`,
+        owned.length ? box : h('p', { class: 'pv-empty' }, 'Nobody owns a property yet.'),
+      ),
+    ),
+    h(
+      'div',
+      { class: 'pv-col info-col' },
+      section('By player', 'Count · value', h('div', { class: 'pv-facts one' }, ...who)),
     ),
   );
 }

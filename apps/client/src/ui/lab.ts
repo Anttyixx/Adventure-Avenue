@@ -108,13 +108,7 @@ const rnd = (n: number) => Math.floor(Math.random() * n);
  * Controls for UI elements that were just added or changed: they shake once and glow so they
  * are easy to find. Update this list with each change.
  */
-const RECENT = new Set([
-  'Info: game page',
-  'Info: stocks page',
-  'Info: player page',
-  'Gift shares (venture card)',
-  'Buy stock',
-]);
+const RECENT = new Set(['Info: properties page', 'Info: player page', 'Info: game page']);
 
 /** Which board the lab plays on: Town (square) or Twin Lakes (hex), remembered per browser. */
 const LAB_BOARD_KEY = 'aa-lab-board';
@@ -1581,6 +1575,7 @@ export async function openLab(app: HTMLElement, section?: string) {
       }),
       btn('Info: game page', () => hud.toggleInfo('game')),
       btn('Info: stocks page', () => hud.toggleInfo('stocks')),
+      btn('Info: properties page', () => hud.toggleInfo('props')),
       btn('Stocks: classic', () => {
         G.stocks = 'classic';
         hud.toggleInfo('stocks');

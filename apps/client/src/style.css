@@ -5990,11 +5990,39 @@ div.sl-inline label {
    shares heading with three columns, the properties heading with two, the player's name with one. */
 .info-pop .pv-body {
   container-type: inline-size;
+  /* Columns in a row share its height (so the properties list can fill its column). */
+  align-items: stretch;
 }
 @container (max-width: 901px) {
   .pv-col-c > .pv-sec:first-child .pv-sec-head {
     margin-right: 70px;
   }
+}
+/* Three columns side by side: the pop-up keeps its height and a long list of properties scrolls
+   inside its own column (the other columns set the height; the list takes what is left). */
+@container (min-width: 902px) {
+  .info-pop .pv-col-c {
+    min-height: 0;
+  }
+  .info-pop .pv-col-c > .pv-sec {
+    flex: 1 1 auto;
+    min-height: 0;
+  }
+  .info-pop .pv-col-c .pv-props {
+    flex: 1 1 0;
+    height: 0;
+    min-height: 0;
+    overflow-y: auto;
+    align-content: flex-start;
+    overscroll-behavior: contain;
+  }
+}
+/* No scroll bar on the owned properties (they still scroll). */
+.pv-props {
+  scrollbar-width: none;
+}
+.pv-props::-webkit-scrollbar {
+  display: none;
 }
 @container (max-width: 605px) {
   .pv-col-c > .pv-sec:first-child .pv-sec-head {
@@ -9199,7 +9227,7 @@ div.sl-inline label {
   margin-top: 0;
 }
 .info-pop.player {
-  height: min(100%, 640px);
+  height: min(100%, 500px);
 }
 .info-page {
   flex: 1 1 auto;
@@ -9444,4 +9472,42 @@ div.sl-inline label {
   .ib-tab {
     transition: none;
   }
+}
+
+/* Properties page (info pop-up): every owned property by district, each card with a small
+   portrait of its owner and a bottom edge in their color; a count and value per player beside. */
+.pv-card.owned-by {
+  position: relative;
+  border-bottom: 3px solid var(--pc);
+}
+.pv-card .pv-card-owner {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--pc);
+  image-rendering: pixelated;
+}
+.info-props {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 18px;
+}
+.pv-facts.one {
+  grid-template-columns: 1fr;
+}
+.info-owner {
+  border-left: 3px solid var(--pc);
+}
+.info-owner span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.info-owner img {
+  width: 20px;
+  height: 20px;
+  image-rendering: pixelated;
 }

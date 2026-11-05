@@ -42,6 +42,8 @@ export const CHANGELOG: ChangelogEntry[] = [
       },
     ],
     extras: [
+      'A Properties page shows every owned property by district, with its owner',
+      'Player pages are shorter; a long property list scrolls inside its column',
       'The View board chip works with the Info pop-up too, and glows to catch your eye',
       'Info pages pop out and in; every player page has the same size and more breathing room',
       'The info chip is shorter: the board and round moved to the Game page',
