@@ -1079,9 +1079,10 @@ closes the pop-up). It updates live as the game goes on.
   Properties and Stock, the hovered or biggest part's share in its middle, with a legend of values
   and shares) and, once the game is over,
   **net worth over the game** (a line per round with the goal dashed; hover for each round's value;
-  the fees, salary, dividends and commission totals are on the end-of-game results screen); (2) **properties** (no total beside the heading) as little
-  cards under their district's name, each with its picture, its rent (the fee a rival pays, struck
-  through while closed) and its value; clicking a card finds it: the pop-up steps aside, the board zooms out to the whole map
+  the fees, salary, dividends and commission totals are on the end-of-game results screen); (2) **properties** (no total beside the heading) as one list going down, by district: each row
+  has the building's picture on the left and, on the right of it, what it is (the shop's look or
+  the building), its district (a dot in the district's color, which also runs down the row's left
+  edge), its rent (the fee a rival pays, struck through while closed) and its value; clicking a card finds it: the pop-up steps aside, the board zooms out to the whole map
   with every other tile greyed out and white rings spreading from that property for 3 seconds, then
   the board zooms back and the pop-up returns; (3) **shares** (the stock screen's table for this player: each district's name, price, the shares
   they hold and their value, districts with none dimmed, totals at the bottom).

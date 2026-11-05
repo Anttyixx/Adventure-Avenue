@@ -602,8 +602,10 @@ if (!(await ask(`Delete ${d.name}?`, 'Its 4 properties will be removed from the 
   a player (`playerOverview`: three columns. First: the head (sprite, name + CPU tag,
   level/rank/suits, net worth in Lilita 26px at the right), an 8px goal bar (`.pv-goal`;
   hover/focus pops a `.pv-tip` with the percentage and what is left), a muted "Next promotion
-  pays" line, then the ring chart. Second: properties as small cards (district top edge, picture,
-  rent big, value small; click to find it on the board). Third: the shares table, starting 16px
+  pays" line, then the ring chart. Second: properties as a one-column list (`.pv-row`: 4px
+  district left edge, 40px building art on the left, then the kind in bold over the district with
+  its dot, and "Rent" (gold Lilita) over "Value" on the right; hover nudges it 2px; click to find
+  it on the board). Third: the shares table, starting 16px
   lower so its heading sits beside Back).
 
 ### 5.16 Banner

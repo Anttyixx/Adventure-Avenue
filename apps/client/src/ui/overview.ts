@@ -235,31 +235,14 @@ export function playerOverview(G: GameState, p: Player, hooks: OverviewHooks): H
   );
 
   // ---------------------------------------------------------------- properties
-  const byDistrict = new Map<number, Square[]>();
-  for (const s of owned) {
-    const key = standard ? s.d : s.g;
-    if (!byDistrict.has(key)) byDistrict.set(key, []);
-    byDistrict.get(key)!.push(s);
-  }
-  const groups = [...byDistrict.entries()].sort((a, b) => a[0] - b[0]);
-  const propBox = h('div', { class: 'pv-props' });
-  for (const [key, squares] of groups) {
-    const dist = standard ? G.districts[key] : null;
-    const head = h(
-      'div',
-      { class: 'pv-group' },
-      h('i', { class: 'pv-dot' }),
-      h('span', null, dist?.name ?? 'Row'),
-    );
-    propBox.append(
-      h(
-        'div',
-        { class: 'pv-pgroup', style: `--dc:${dist?.color ?? '#8a94a8'}` },
-        head,
-        h('div', { class: 'pv-cards' }, ...squares.map((s) => propertyCard(G, s, color, hooks))),
-      ),
-    );
-  }
+  // One list going down, by district: each row has the building on the left and its name, rent
+  // and value on the right.
+  const sorted = [...owned].sort((a, b) => (standard ? a.d - b.d : a.g - b.g) || a.id - b.id);
+  const propBox = h(
+    'div',
+    { class: 'pv-props pv-list' },
+    ...sorted.map((s) => propertyRow(G, s, color, hooks)),
+  );
   colC.append(
     section('Properties', null, owned.length ? propBox : h('p', { class: 'pv-empty' }, 'No properties yet.')),
   );
@@ -353,7 +336,8 @@ export function section(title: string, aside: string | null, ...body: Node[]): H
 }
 
 /** A little card for one property: its picture, its rent (the fee a rival pays) and its value. */
-export function propertyCard(G: GameState, s: Square, color: string, hooks: OverviewHooks): HTMLElement {
+/** What a property card or row shows: its art (in `color`), kind, rent and value. */
+function propertyInfo(G: GameState, s: Square, color: string) {
   const building = s.b ? BUILDINGS.find((b) => b.b === s.b) : null;
   let src = '';
   let kind = building?.name ?? 'Vacant plot';
@@ -366,32 +350,81 @@ export function propertyCard(G: GameState, s: Square, color: string, hooks: Over
     // Other buildings: the same art as the build choice (a circus by its tier).
     src = propIconURL((s.b === 'circus' ? `circus${Math.min(3, s.lv)}` : s.b) as PropKey, color);
   }
-  const owner = G.players[s.owner];
-  const closed = isClosed(owner);
+  const closed = isClosed(G.players[s.owner]);
   const rent = s.b === 'tax' ? '10%' : s.b === 'agency' ? '-' : fmt(squareFee(G, s));
   const capped = isShopLike(s) ? maxValue(G, s) : 0;
   const name = s.t === 'shop' ? `${shortName(G, s)} (${s.base}G)` : shortName(G, s);
-  const card = h(
-    'div',
-    {
-      class: `pv-card ${closed ? 'closed' : ''}`,
-      tabindex: '0',
-      role: 'button',
-      title: `${name}: ${kind}. Rent ${rent}${closed ? ' (closed now)' : ''}, value ${fmt(s.value)}${capped ? `, up to ${fmt(capped)}` : ''}. Click to find it on the board.`,
-    },
-    src ? h('img', { src, alt: '' }) : h('span', { class: 'pv-card-none' }, '·'),
-    h('span', { class: 'pv-card-rent' }, rent),
-    h('span', { class: 'pv-card-val' }, fmt(s.value)),
-  );
-  card.onclick = () => hooks.onFind(s.id);
-  card.onkeydown = (e) => {
+  const title = `${name}: ${kind}. Rent ${rent}${closed ? ' (closed now)' : ''}, value ${fmt(s.value)}${capped ? `, up to ${fmt(capped)}` : ''}. Click to find it on the board.`;
+  return { src, kind, closed, rent, name, title };
+}
+
+/** Clicking (or Enter/Space on) a property finds it on the board. */
+function findable(el: HTMLElement, id: number, hooks: OverviewHooks) {
+  el.onclick = () => hooks.onFind(id);
+  el.onkeydown = (e) => {
     if (e.key === 'Enter' || e.key === ' ') {
       e.preventDefault();
       e.stopPropagation();
-      hooks.onFind(s.id);
+      hooks.onFind(id);
     }
   };
-  return card;
+  return el;
+}
+
+/** A little card for one property: its picture, its rent (the fee a rival pays) and its value. */
+export function propertyCard(G: GameState, s: Square, color: string, hooks: OverviewHooks): HTMLElement {
+  const info = propertyInfo(G, s, color);
+  const card = h(
+    'div',
+    { class: `pv-card ${info.closed ? 'closed' : ''}`, tabindex: '0', role: 'button', title: info.title },
+    info.src ? h('img', { src: info.src, alt: '' }) : h('span', { class: 'pv-card-none' }, '·'),
+    h('span', { class: 'pv-card-rent' }, info.rent),
+    h('span', { class: 'pv-card-val' }, fmt(s.value)),
+  );
+  return findable(card, s.id, hooks);
+}
+
+/**
+ * A property as a row of the player page's list: the building on the left; what it is, its
+ * district (with its color), its rent and its value on the right.
+ */
+function propertyRow(G: GameState, s: Square, color: string, hooks: OverviewHooks): HTMLElement {
+  const info = propertyInfo(G, s, color);
+  const dist = G.rules === 'standard' ? G.districts[s.d] : null;
+  const row = h(
+    'div',
+    {
+      class: `pv-row ${info.closed ? 'closed' : ''}`,
+      tabindex: '0',
+      role: 'button',
+      title: info.title,
+      style: `--dc:${dist?.color ?? '#8a94a8'}`,
+    },
+    h(
+      'span',
+      { class: 'pv-row-art' },
+      info.src ? h('img', { src: info.src, alt: '' }) : h('span', { class: 'pv-card-none' }, '·'),
+    ),
+    h(
+      'span',
+      { class: 'pv-row-info' },
+      // What it is (the shop's look, or the building), then its district.
+      h('span', { class: 'pv-row-name' }, info.kind),
+      h('span', { class: 'pv-row-kind' }, h('i', { class: 'pv-dot' }), dist?.name ?? 'Row'),
+    ),
+    h(
+      'span',
+      { class: 'pv-row-nums' },
+      h(
+        'span',
+        { class: 'pv-row-rent', title: 'Rent: the fee a rival pays here' },
+        h('small', null, 'Rent '),
+        info.rent,
+      ),
+      h('span', { class: 'pv-row-val' }, 'Value ', fmt(s.value)),
+    ),
+  );
+  return findable(row, s.id, hooks);
 }
 
 /** Net worth after each round as a line, with the goal dashed; hover for the exact value. */
