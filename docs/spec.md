@@ -1073,11 +1073,12 @@ closes the pop-up). It updates live as the game goes on.
 - **A player** (`ui/overview.ts`): every property the player does not own is greyed out on the
   board while it is open, and the page has a 5px top edge in their color. Its columns (stacked
   on narrow screens, with more room from the screen edges on phones): (1) the whole sprite, name,
-  level, rank, suits and status tags, net worth with the goal bar and how much is left, the **net
-  worth breakdown** (an unfilled ring split into Cash, Properties and Stock, the hovered or biggest
-  part's share in its middle, with a legend of values and shares), **earnings** in two columns (fees
-  earned and paid, salary, dividends, commission, next promotion's pay) and, once the game is over,
-  **net worth over the game** (a line per round with the goal dashed; hover for each round's value); (2) **properties** as little
+  level, rank, suits and status tags, net worth with the goal bar and how much is left, what the
+  **next promotion pays**, the **net worth breakdown** (an unfilled ring split into Cash,
+  Properties and Stock, the hovered or biggest part's share in its middle, with a legend of values
+  and shares) and, once the game is over,
+  **net worth over the game** (a line per round with the goal dashed; hover for each round's value;
+  the fees, salary, dividends and commission totals are on the end-of-game results screen); (2) **properties** as little
   cards under their district's name, each with its picture, its rent (the fee a rival pays, struck
   through while closed) and its value; clicking a card finds it: the pop-up steps aside, the board zooms out to the whole map
   with every other tile greyed out and white rings spreading from that property for 3 seconds, then
