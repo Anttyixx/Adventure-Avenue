@@ -22,6 +22,7 @@ import { suitIconURL, wildIconURL } from '../icons';
 import { clear, fmt, h } from './dom';
 import type { Hud } from './hud';
 import { marketView } from './market';
+import { shortName } from '../names';
 import { keepClearOfCards } from './modals';
 import { ordinal, playerOverview, propertyCard, section } from './overview';
 
@@ -75,6 +76,7 @@ export class InfoPopup {
 
   close() {
     const hud = this.hud;
+    this.backFromBoard(true);
     this.release();
     this.unplace();
     const reopened = () => hud.infoPage != null;
@@ -149,26 +151,87 @@ export class InfoPopup {
     };
   }
 
+  /** The property being shown on the board from the pop-up, or -1. */
+  private finding = -1;
+  /** On the Properties page: the player whose properties are picked out, or -1. */
+  private pickedOwner = -1;
+
   /**
-   * A property is being found on the board: the pop-up and its bar step aside (closing motion),
-   * then come back.
+   * A property clicked in the pop-up: the pop-up steps aside, the board shows the whole map (an
+   * auto zoom: zooming in centers on that property) with every other tile greyed and that property
+   * glowing, and the action bar morphs into a note with a Back button that brings the pop-up back.
    */
-  stepAside(away: boolean) {
-    if (this.hud.infoPage == null) return;
-    for (const el of [this.layer, this.bar]) {
-      if (STILL() || !away) el.hidden = away;
-      const target = el === this.layer ? this.box : el;
-      if (STILL()) continue;
-      if (away)
-        target.animate([HERE, AWAY], { duration: 180, easing: 'ease-in', fill: 'forwards' }).onfinish = (
-          e,
-        ) => {
-          el.hidden = true;
-          (e.target as Animation).cancel();
-        };
-      else target.animate([AWAY, HERE], { duration: 220, easing: 'ease-out' });
-    }
-    if (!away) this.render();
+  showOnBoard(id: number) {
+    const hud = this.hud;
+    if (this.finding >= 0 || hud.infoPage == null) return;
+    const G = hud.G;
+    const sq = G.nodes[id];
+    const owner = G.players[sq.owner];
+    this.finding = id;
+    hud.board.spot = id;
+    hud.board.spotColor = owner ? PLAYER_COLORS[owner.color] : '#ffffff';
+    hud.board.focusSquare = id;
+    hud.board.overviewHold = true;
+    if (STILL()) this.layer.hidden = true;
+    else
+      this.box.animate([HERE, AWAY], { duration: 180, easing: 'ease-in', fill: 'forwards' }).onfinish = (
+        e,
+      ) => {
+        if (this.finding >= 0) this.layer.hidden = true;
+        (e.target as Animation).cancel();
+      };
+    this.swapBar(() =>
+      this.bar.append(
+        h(
+          'div',
+          { class: 'ib-note' },
+          h('b', null, shortName(G, sq)),
+          h('span', null, owner ? `Owned by ${owner.name}` : 'For sale'),
+        ),
+        h('button', { class: 'btn main ib-back', onclick: () => this.backFromBoard() }, 'Back to info'),
+      ),
+    );
+  }
+
+  /** Back from the board to the pop-up, which pops back in with its page tabs. */
+  backFromBoard(quiet = false) {
+    if (this.finding < 0) return;
+    const hud = this.hud;
+    this.finding = -1;
+    hud.board.spot = -1;
+    hud.board.focusSquare = -1;
+    hud.board.overviewHold = false;
+    if (quiet) return;
+    this.layer.hidden = false;
+    if (!STILL()) this.box.animate([AWAY, HERE], { duration: 220, easing: 'ease-out' });
+    this.swapBar(() => this.drawBar(hud.G, hud.infoPage ?? 'game'));
+    this.render();
+  }
+
+  /** Change what the stand-in action bar shows, morphing it from its old size to the new one. */
+  private swapBar(fill: () => void) {
+    const bar = this.bar;
+    const from = bar.getBoundingClientRect();
+    bar.getAnimations({ subtree: true }).forEach((a) => a.cancel());
+    clear(bar);
+    fill();
+    if (STILL()) return;
+    const to = bar.getBoundingClientRect();
+    bar.classList.add('morphing');
+    bar.animate(
+      [
+        { width: `${from.width}px`, height: `${from.height}px` },
+        { width: `${to.width}px`, height: `${to.height}px` },
+      ],
+      { duration: 260, easing: 'cubic-bezier(0.2, 0.8, 0.2, 1)' },
+    ).onfinish = () => bar.classList.remove('morphing');
+    for (const k of bar.children)
+      k.animate([{ opacity: 0, transform: 'translateY(4px)' }, HERE], {
+        duration: 200,
+        delay: 100,
+        easing: 'ease-out',
+        fill: 'backwards',
+      });
   }
 
   /** Bumped on each page change, so a change started earlier stands down. */
@@ -185,8 +248,10 @@ export class InfoPopup {
     const page = this.hud.infoPage;
     const G = this.hud.G;
     if (page == null || !G) return;
+    // Another page picked (e.g. a player card) while a property is on the board: back first.
+    if (changed && this.finding >= 0) this.backFromBoard();
     const old = this.pageEl;
-    this.drawBar(G, page);
+    if (this.finding < 0) this.drawBar(G, page);
     if (!this.back.isConnected) this.box.append(this.back);
     const was = this.drawn;
     this.drawn = page;
@@ -264,15 +329,22 @@ export class InfoPopup {
     );
     const el = h('div', { class: 'info-page' });
     if (p) {
-      el.append(playerOverview(G, p, { onFind: (id) => void this.hud.findOnBoard(id) }));
+      el.append(playerOverview(G, p, { onFind: (id) => this.showOnBoard(id) }));
     } else if (page === 'props') {
+      // The player chips stay pinned at the top; the properties scroll under a soft fade.
+      const { owners, list } = propertiesPage(
+        G,
+        (id) => this.showOnBoard(id),
+        this.pickedOwner,
+        (pid) => {
+          this.pickedOwner = this.pickedOwner === pid ? -1 : pid;
+          this.render();
+        },
+      );
       el.append(
         h('div', { class: 'modal-head' }, h('h2', null, 'Properties')),
-        h(
-          'div',
-          { class: 'info-scroll' },
-          propertiesPage(G, (id) => void this.hud.findOnBoard(id)),
-        ),
+        owners,
+        h('div', { class: 'info-scroll info-fade' }, list),
       );
     } else if (page === 'stocks') {
       el.append(
@@ -482,7 +554,12 @@ function standingCard(G: GameState, p: Player, place: number, onclick: () => voi
  * a card in its owner's color with their portrait, under a chip per player with how many they own
  * and what they are worth. Tap a card to find it on the board.
  */
-function propertiesPage(G: GameState, onFind: (id: number) => void): HTMLElement {
+function propertiesPage(
+  G: GameState,
+  onFind: (id: number) => void,
+  picked: number,
+  onPick: (pid: number) => void,
+): { owners: HTMLElement; list: HTMLElement } {
   const standard = G.rules === 'standard';
   const owned = G.nodes.filter((s) => s.d >= 0 && s.owner >= 0);
   // Every property of each district (owned or not), two districts to a row.
@@ -520,6 +597,8 @@ function propertiesPage(G: GameState, onFind: (id: number) => void): HTMLElement
               return card;
             }
             card.classList.add('owned-by');
+            // A player picked in the chips: their properties glow, everyone else's fade.
+            if (picked >= 0) card.classList.add(owner.id === picked ? 'picked' : 'faded');
             card.style.setProperty('--pc', color);
             card.prepend(
               h('img', {
@@ -535,26 +614,41 @@ function propertiesPage(G: GameState, onFind: (id: number) => void): HTMLElement
       ),
     );
   }
-  // Each player's count and value as a chip across the top, then the properties under them.
-  const who = G.players.map((p) => {
-    const mine = owned.filter((s) => s.owner === p.id);
-    return h(
-      'div',
-      { class: 'info-owner', style: `--pc:${PLAYER_COLORS[p.color]}` },
-      h('img', { src: portraitURL(p.ch), alt: '' }),
-      h('span', { class: 'info-owner-name' }, p.name),
-      h('b', null, `${mine.length}`),
-      h('span', { class: 'info-owner-val' }, fmt(mine.reduce((sum, s) => sum + s.value, 0))),
-    );
-  });
-  return h(
+  // A chip per player (tap to pick out their properties): how many they own and what they are worth.
+  const owners = h(
     'div',
-    { class: 'info-props-page' },
-    h('div', { class: 'info-owners' }, ...who),
-    section(
-      'Properties',
-      `${owned.length} of ${G.nodes.filter((s) => s.d >= 0).length} owned`,
-      owned.length ? box : h('p', { class: 'pv-empty' }, 'Nobody owns a property yet.'),
-    ),
+    { class: 'info-owners', role: 'group', 'aria-label': 'Pick a player to highlight their properties' },
+    ...G.players.map((p) => {
+      const mine = owned.filter((s) => s.owner === p.id);
+      return h(
+        'button',
+        {
+          class: `info-owner ${picked === p.id ? 'on' : ''}`,
+          style: `--pc:${PLAYER_COLORS[p.color]}`,
+          'aria-pressed': String(picked === p.id),
+          title: picked === p.id ? 'Show everyone again' : `Highlight ${p.name}'s properties`,
+          onclick: () => onPick(p.id),
+        },
+        h('img', { src: portraitURL(p.ch), alt: '' }),
+        h(
+          'span',
+          { class: 'info-owner-text' },
+          h('span', { class: 'info-owner-name' }, p.name),
+          h(
+            'span',
+            { class: 'info-owner-sub' },
+            h('b', null, String(mine.length)),
+            ` ${mine.length === 1 ? 'property' : 'properties'} · worth `,
+            h('b', null, fmt(mine.reduce((sum, s) => sum + s.value, 0))),
+          ),
+        ),
+      );
+    }),
   );
+  const list = section(
+    'Properties',
+    `${owned.length} of ${G.nodes.filter((s) => s.d >= 0).length} owned`,
+    box,
+  );
+  return { owners, list };
 }

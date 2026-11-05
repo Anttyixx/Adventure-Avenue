@@ -9459,17 +9459,30 @@ div.sl-inline label {
     padding: 5px 10px;
     font-size: 12px;
   }
-  .info-owner {
-    padding: 3px 10px 3px 5px;
+  /* Phones: all the chips on one row, sharing the width. */
+  .info-pop .info-owners {
+    flex-wrap: nowrap;
+    gap: 6px;
+  }
+  .info-pop .info-owner {
+    flex: 1 1 0;
+    min-width: 0;
+    padding: 3px 6px 3px 4px;
     gap: 5px;
-    font-size: 12px;
   }
-  .info-owner img {
-    width: 20px;
-    height: 20px;
+  .info-pop .info-owner-text {
+    min-width: 0;
   }
-  .info-owner b {
-    font-size: 15px;
+  .info-pop .info-owner img {
+    width: 22px;
+    height: 22px;
+  }
+  .info-pop .info-owner-name {
+    font-size: 13px;
+  }
+  .info-pop .info-owner-sub {
+    font-size: 10px;
+    line-height: 1.2;
   }
   /* Players by portrait only. */
   .ib-player {
@@ -9493,39 +9506,98 @@ div.sl-inline label {
 /* Properties page (info pop-up): a chip per player across the top (portrait, name, how many
    properties, their value), then every owned property by district as bigger cards, each with a
    small portrait of its owner and a bottom edge in their color. */
-.info-props-page {
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-}
 .info-owners {
+  flex: none;
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
+  margin-bottom: 6px;
 }
+/* A player's chip: tap it to pick out their properties (gold glow while picked). */
 .info-owner {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
+  min-width: 170px;
   padding: 6px 14px 6px 8px;
   border: 2px solid var(--pc);
   border-radius: 12px;
   background: color-mix(in srgb, var(--pc) 16%, transparent);
-  font-size: 14px;
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    background 0.2s,
+    box-shadow 0.2s,
+    opacity 0.2s;
+}
+.info-owner:hover {
+  background: color-mix(in srgb, var(--pc) 28%, transparent);
+}
+.info-owner.on {
+  background: color-mix(in srgb, var(--pc) 45%, transparent);
+  box-shadow:
+    0 0 0 2px #fff,
+    0 0 14px color-mix(in srgb, var(--pc) 80%, transparent);
+}
+.info-owners:has(.on) .info-owner:not(.on) {
+  opacity: 0.55;
 }
 .info-owner img {
-  width: 26px;
-  height: 26px;
+  width: 32px;
+  height: 32px;
   image-rendering: pixelated;
 }
+.info-owner-text {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
 .info-owner-name {
-  font-weight: 700;
+  font: 400 16px var(--head);
 }
-.info-owner b {
-  font: 400 18px var(--head);
-}
-.info-owner-val {
+.info-owner-sub {
+  font-size: 12px;
   color: var(--muted);
+}
+.info-owner-sub b {
+  color: var(--text);
+}
+/* What scrolls under the pinned chips fades out at the top edge instead of being cut off. */
+.info-scroll.info-fade {
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 20px);
+  mask-image: linear-gradient(to bottom, transparent 0, #000 20px);
+  padding-top: 14px;
+}
+/* A picked player's properties glow in their color; everyone else's fade back. */
+.info-props .pv-card.picked {
+  box-shadow:
+    0 0 0 2px var(--pc),
+    0 0 14px color-mix(in srgb, var(--pc) 70%, transparent);
+}
+.info-props .pv-card.faded,
+.info-props:has(.picked) .pv-card.unowned {
+  opacity: 0.3;
+}
+/* The info bar while a property is shown on the board: what it is, and Back to info. */
+.ib-note {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+  white-space: nowrap;
+}
+.ib-note b {
+  font: 400 16px var(--head);
+}
+.ib-note span {
+  font-size: 12px;
+  color: var(--muted);
+}
+.prompt-center.info-bar .ib-back {
+  padding: 7px 16px;
+  font-size: 14px;
 }
 /* Two districts to a row, each with its four properties side by side (eight columns); narrow
    pop-ups fall back to one district a row. */

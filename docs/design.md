@@ -595,9 +595,14 @@ if (!(await ask(`Delete ${d.name}?`, 'Its 4 properties will be removed from the 
   after 120ms) and back into it on closing (tabs fade out first; then the real bar shows underneath while the
   stand-in fades out over it, and the pop-up stays hidden once its closing motion ends, so nothing
   blinks).
+- **Finding a property** (`InfoPopup.showOnBoard`): the box sinks away, `board.overviewHold` +
+  `board.focusSquare` (auto zoom; zooming recenters on the square) + `board.spot`, and the bar
+  morphs (`swapBar`, 260ms) into `.ib-note` (name, owner) and a gold "Back to info"; no timer.
 - **Pages:** Game (how to win and a facts grid at 14-17px; standings as `.pcard.info-pcard`
   cards, the game screen's player card markup, in a ~320px column); Properties (rounded player
-  chips `.info-owner` on top, 2px `--pc` border and tint; then a grid of two districts per row,
+  chips `.info-owner` pinned above the scroll area (`.info-fade` masks the top 20px), 2px `--pc`
+  border and tint, name in Lilita over "N properties · worth X"; tap to pick: `.on` glows white +
+  `--pc`, other chips fade, cards `.picked` glow and `.faded` drop to 30%; then a grid of two districts per row,
   four cards each (`.info-props`, eight columns, one district a row below 640px): 64px art,
   owned cards `.pv-card.owned-by` with a 26px owner portrait badge top left and a `--pc` bottom
   edge, unowned cards `.unowned` dimmed to 55% with "For sale" or a dashed VACANT box);

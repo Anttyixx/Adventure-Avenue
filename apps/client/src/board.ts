@@ -143,6 +143,8 @@ export class BoardView {
   focusOwner = -1;
   /** While set, the camera shows the whole board (finding a property from the player overview). */
   peekWhole = false;
+  /** A property shown from the info pop-up: zooming centers on it (with `overviewHold`). */
+  focusSquare = -1;
   /** A square found from the player overview: every other tile is greyed out and it glows. */
   spot = -1;
   spotColor = '#fff';
@@ -883,6 +885,13 @@ export class BoardView {
       this.autoZ = null;
     }
     if (this.autoZ != null && !this.showHold && !this.peekWhole) this.camTarget.z = this.autoZ;
+    // A property found from the info pop-up: the whole board, and once the player zooms, the
+    // view centers on that property.
+    if (this.focusSquare >= 0 && this.overviewHold && this.autoZ != null && this.G) {
+      const c = this.center(this.G.nodes[this.focusSquare]);
+      this.camTarget.x = c.x;
+      this.camTarget.y = c.y;
+    }
     if (this.lookAt) this.camTarget = { ...this.lookAt };
     if (this.handoff) {
       const t = reducedMotion()

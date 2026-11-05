@@ -1062,14 +1062,16 @@ closes the pop-up). It updates live as the game goes on.
   flipped), in slightly larger text; and the **standings** in a narrow column: a card per player
   by place, built like the player cards on the game screen (sprite, level, name, suits, the bar
   toward the goal, cash, place and net worth); tapping one opens that player's page.
-- **Properties:** a rounded chip per player across the top (portrait, name, how many properties
-  they own and their total value, bordered in their color), then every property of the board
-  (owned or not), two districts to a row with each district's four properties side by side (eight
-  columns; one district a row on narrow screens), with how many of each district's squares are
-  owned. Owned cards show the property's art in its owner's color, a large portrait of the owner
-  in the corner, its rent and value, and a bottom edge in the owner's color; unowned ones are
-  dimmed, in grey, and say "For sale" with their price (a vacant plot shows a dashed VACANT box and
-  "Plot"). Tap any card to find it on the board.
+- **Properties:** a rounded chip per player pinned at the top (it never scrolls away; what scrolls
+  under it fades out at its edge): portrait, name and "6 properties · worth 2,610G", bordered in
+  their color (all on one row on phones). Tapping a chip picks that player: their properties glow
+  in their color and everything else fades back (tap again for everyone). Under the chips, every
+  property of the board (owned or not), two districts to a row with each district's four
+  properties side by side (eight columns; one district a row on narrow screens), with how many of
+  each district's squares are owned. Owned cards show the property's art in its owner's color, a
+  large portrait of the owner in the corner, its rent and value, and a bottom edge in the owner's
+  color; unowned ones are dimmed, in grey, and say "For sale" with their price (a vacant plot
+  shows a dashed VACANT box and "Plot"). Tap any card to find it on the board.
 - **Stocks:** the stock market view (mini map, shop cards, district table), as on the buy/sell
   screen; picking a district plays the click sound.
 - **A player** (`ui/overview.ts`): every property the player does not own is greyed out on the
@@ -1084,9 +1086,11 @@ closes the pop-up). It updates live as the game goes on.
   the fees, salary, dividends and commission totals are on the end-of-game results screen); (2) **properties** (no total beside the heading) as one list going down, by district: each row
   has the building's picture on the left and, on the right of it, what it is (the shop's look or
   the building), its district (a dot in the district's color, which also runs down the row's left
-  edge), its rent (the fee a rival pays, struck through while closed) and its value; clicking a card finds it: the pop-up steps aside, the board zooms out to the whole map
-  with every other tile greyed out and white rings spreading from that property for 3 seconds, then
-  the board zooms back and the pop-up returns; (3) **shares** (the stock screen's table for this player: each district's name, price, the shares
+  edge), its rent (the fee a rival pays, struck through while closed) and its value; clicking a row finds it (from any info page): the pop-up steps aside, the board shows the
+  whole map (auto zoom; when the player zooms, the view centers on that property) with every other
+  tile greyed out and white rings spreading from it, and the action bar morphs into the property's
+  name, its owner and a gold **Back to info** button, which brings the pop-up back (picking
+  another page or closing the pop-up also ends it); (3) **shares** (the stock screen's table for this player: each district's name, price, the shares
   they hold and their value, districts with none dimmed, totals at the bottom).
 
 **Turn moments.** Before the roll, sliding arrows on the board point from the player's square to

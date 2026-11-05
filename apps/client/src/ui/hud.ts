@@ -133,8 +133,6 @@ export class Hud {
   /** The info pop-up's page while it is open ('game', 'stocks', 'props' or a player's id), else null. */
   infoPage: InfoPage | null = null;
   private info: InfoPopup;
-  /** A property from a player's info page is being shown on the board. */
-  private finding = false;
   /** The game log's contents (title, Close and the list), inside the log panel. */
   logBox = h('div', { class: 'sb-log' });
   logOpen = false;
@@ -596,23 +594,9 @@ export class Hud {
     else this.info.render(true);
   }
 
-  /**
-   * A property clicked on a player's page or the Properties page: the pop-up steps aside, the board zooms out with every
-   * other tile greyed and that property glowing, and after a few seconds the pop-up returns.
-   */
-  async findOnBoard(id: number) {
-    if (this.finding || this.infoPage == null) return;
-    this.finding = true;
-    const owner = this.G.players[this.G.nodes[id].owner];
-    this.info.stepAside(true);
-    this.board.spot = id;
-    this.board.spotColor = owner ? PLAYER_COLORS[owner.color] : '#ffffff';
-    this.board.peekWhole = true;
-    await new Promise((r) => setTimeout(r, FIND_MS));
-    this.board.peekWhole = false;
-    this.board.spot = -1;
-    this.finding = false;
-    this.info.stepAside(false);
+  /** A property clicked in the info pop-up: show it on the board (see `InfoPopup.showOnBoard`). */
+  findOnBoard(id: number) {
+    this.info.showOnBoard(id);
   }
 
   /** "+120G" / "-50G" floating out beside a player's card. */
@@ -1245,8 +1229,6 @@ export class Hud {
 }
 
 /** A number with thousands separators and no coin (the cards put the coin or rank in front). */
-/** How long a property found from the player overview is shown on the board. */
-const FIND_MS = 3000;
 const plain = (n: number) => Math.round(n).toLocaleString('en-US');
 
 function countUp(el: HTMLElement, from: number, to: number, f = fmt) {
