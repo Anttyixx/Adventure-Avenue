@@ -9149,11 +9149,11 @@ div.sl-inline label {
   pointer-events: auto;
   box-sizing: border-box;
   padding: var(--pad-y) var(--pad-x);
-  /* One size for every page, so switching pages never makes it jump. */
+  /* One width for every page. The Game and Stocks pages take the height they need; every
+     player page shares one fixed height, so flipping between players never makes it jump. */
   width: min(1000px, calc(100vw - var(--free-right, 0px) - 40px));
   max-width: none;
-  height: min(100%, 640px);
-  max-height: 100%;
+  max-height: min(100%, 640px);
   transition: border-top-color 0.3s;
   display: flex;
   flex-direction: column;
@@ -9172,6 +9172,9 @@ div.sl-inline label {
 }
 .info-pop .market {
   margin-top: 0;
+}
+.info-pop.player {
+  height: min(100%, 640px);
 }
 .info-page {
   flex: 1 1 auto;
@@ -9375,6 +9378,9 @@ div.sl-inline label {
     --pad-y: 8px;
     --pad-x: 10px;
     width: calc(100vw - var(--free-right, 0px) - 20px);
+    max-height: 100%;
+  }
+  .info-pop.player {
     height: 100%;
   }
   .info-close {

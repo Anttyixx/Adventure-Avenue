@@ -1036,16 +1036,17 @@ suits and progress bar); they are always shown. Player cards show the character'
 
 **Info pop-up** (`ui/info.ts`). The Info button (or a player card) opens one pop-up for
 everything a player may want to look up, in the middle of the screen like the stock market (up to
-1,000px wide and 640px tall, kept clear of the player cards; every page uses that same size, and
-scrolls inside when it needs more room; it does not dim the board). **Back** sits in its top
+1,000px wide, kept clear of the player cards; the Game and Stocks pages take the height they
+need, while every player page shares one fixed height (640px; the whole free area on phones), so
+flipping between players never makes it jump; pages scroll inside when they need more room; it does not dim the board). **Back** sits in its top
 right corner. The page is picked in the **action bar**: while
 the pop-up is open, a stand-in bar covers the real one with tabs for **Game**, **Stocks** (Standard
 rules only) and a button per player (portrait and name; portraits only on phones).
 Anything the game shows in the real bar meanwhile (a status, or a choice waiting for this player)
 is there again when the pop-up closes. The pop-up opens and closes with the pop-up motion (rise
 and fade in; sink and fade out); the stand-in bar morphs out of the real bar's size with its tabs
-fading in, and on closing morphs back to it before handing over. Switching pages slides the old
-page out and the new one in, toward the side of the tab picked, and the top edge's color fades to
+fading in, and on closing morphs back to it before handing over. Switching pages eases the pop-up to
+the new page's height while the old page slides out and the new one slides in, toward the side of the tab picked, and the top edge's color fades to
 the new page's. The toolbar's View board chip works for it too, and it covers
 any stock market, venture board or arcade game that is up while open. Escape, Back or the Info
 button again closes it; clicking a player card opens that player's page (clicking it again

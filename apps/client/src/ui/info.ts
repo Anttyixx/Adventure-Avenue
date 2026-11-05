@@ -153,7 +153,7 @@ export class InfoPopup {
   /**
    * Draw the current page and the action bar's page tabs (kept up to date as the game goes).
    * `changed`: the player picked another page: the old page slides out and the new one slides in
-   * (toward the side of the tab picked), inside a pop-up that keeps one size for every page.
+   * (toward the side of the tab picked) while the pop-up eases to the new page's height.
    */
   render(changed = false) {
     const page = this.hud.infoPage;
@@ -163,6 +163,8 @@ export class InfoPopup {
     const scroller = (el: HTMLElement | null) => el?.querySelector<HTMLElement>('.info-scroll, .pv-body');
     const keep = changed || this.drawn !== page ? 0 : (scroller(old)?.scrollTop ?? 0);
     const p = typeof page === 'number' ? G.players[page] : null;
+    // The Game and Stocks pages take the height they need; player pages share one fixed size.
+    const from = changed && old ? this.box.getBoundingClientRect().height : 0;
     this.box.classList.toggle('player', !!p);
     this.box.style.setProperty('--pc', p ? PLAYER_COLORS[p.color] : 'var(--accent)');
     this.box.setAttribute(
@@ -202,6 +204,13 @@ export class InfoPopup {
         fill: 'forwards',
       }).onfinish = () => old.remove();
       this.box.append(el);
+      // The pop-up eases to the new page's height (player pages all share one).
+      const to = this.box.getBoundingClientRect().height;
+      if (Math.abs(to - from) > 1)
+        this.box.animate([{ height: `${from}px` }, { height: `${to}px` }], {
+          duration: 320,
+          easing: 'cubic-bezier(0.2, 0.8, 0.2, 1)',
+        });
       el.animate([{ opacity: 0, transform: `translateX(${28 * dir}px)` }, HERE], {
         duration: 300,
         delay: 80,

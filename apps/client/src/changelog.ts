@@ -43,7 +43,7 @@ export const CHANGELOG: ChangelogEntry[] = [
     ],
     extras: [
       'The View board chip works with the Info pop-up too, and glows to catch your eye',
-      'Info pages slide in and out and the pop-up keeps one size',
+      'Info pages slide in and out; every player page has the same size',
       'The info chip is shorter: the board and round moved to the Game page',
     ],
   },

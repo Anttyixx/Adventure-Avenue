@@ -574,8 +574,10 @@ if (!(await ask(`Delete ${d.name}?`, 'Its 4 properties will be removed from the 
 
 - **Info button** (`.info-btn`): a pill at the end of the info chip, a round gold "i" and "Info";
   gold (`.on`) while the pop-up is open.
-- **Pop-up** (`.info-layer > .modal.info-pop`): one fixed size for every page (up to 1,000 x
-  640px; phones fill the free area), so page changes never resize it; pages scroll inside. 5px top
+- **Pop-up** (`.info-layer > .modal.info-pop`): one width (up to 1,000px). Game and Stocks take
+  the height they need (max 640px); player pages (`.player`) all share one fixed height (640px;
+  phones fill the free area) so flipping between players never resizes it; page changes ease the
+  height (320ms); pages scroll inside. 5px top
   edge (gold; the player's `--pc` on a player page, fading between). Ghost **Back** button in the
   top right (`.info-close`). Centered and kept clear of the player cards (`keepClearOfCards`);
   non-dimming, only the box catches clicks; opening/closing motion as for the stock market. Page
