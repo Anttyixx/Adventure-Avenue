@@ -599,9 +599,12 @@ if (!(await ask(`Delete ${d.name}?`, 'Its 4 properties will be removed from the 
   chips `.info-owner` on top, 2px `--pc` border and tint; then 84px property cards
   `.pv-card.owned-by` grouped by district, owner portrait badge top left and a `--pc` bottom edge);
   Stocks (`marketView(..., { split: true })`);
-  a player (`playerOverview`: three columns, net worth + ring chart + earnings · properties as
-  small cards · shares table; property cards: district top edge, picture, rent big, value small;
-  click to find it on the board).
+  a player (`playerOverview`: three columns. First: the head (sprite, name + CPU tag,
+  level/rank/suits, net worth in Lilita 26px at the right), an 8px goal bar (`.pv-goal`;
+  hover/focus pops a `.pv-tip` with the percentage and what is left), a muted "Next promotion
+  pays" line, then the ring chart. Second: properties as small cards (district top edge, picture,
+  rent big, value small; click to find it on the board). Third: the shares table, starting 16px
+  lower so its heading sits beside Back).
 
 ### 5.16 Banner
 
