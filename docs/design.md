@@ -636,14 +636,21 @@ if (!(await ask(`Delete ${d.name}?`, 'Its 4 properties will be removed from the 
   Everything keeps at least 5px clear of the border's inner edge (art at most ~59 x 45, text 15px).
   Squares with no name (suits, Boon, Boom) center their symbol on the tile.
 
-### 5.17c Game setup seats
+### 5.17c Game setup
 
-- Players come first, across the top: up to 5 seat cards in a row (`.setup .seat-card`): the
+- **Layout** (`.setup.su`): a fixed top bar `.su-top` (ghost "‹ Back", the title in Lilita 34px,
+  the join code chip `.su-code` (dashed gold pill: "Code", the code in Lilita gold, "Copy link"),
+  the main menu's Sound button), a scrolling middle `.su-scroll` (scroll bar hidden) holding the
+  board panel and the settings panel (max 880px, centered), and a fixed bottom container
+  `.su-dock` (rounded glass, players + summary + Start). Board tools are `.su-chip` pills in the
+  Map panel's top right. Settings are a grid (`.su-rules`): rule set, round limit, stocks; then
+  goal and vacant plots (two columns on narrow/short screens).
+- Players sit in the bottom container: up to 5 seat cards in a row (`.setup .seat-card`, smaller here): the
   character trimmed to its pixels (`charButton(look, 'body', ...)`) standing centered on a soft
   spot in the seat's color, the name (an input for players on this device), a muted tag
   ("You · host", "On this device", "Joined online", "Bot") and a × remove button in the top right
   (never on the host). The empty spot is a dashed card with a gold round **+ Add bot** button and
-  a small ghost **+ Player on this device** button. The join code sits right under the seats.
+  a small ghost **+ Player on this device** button.
 
 ### 5.18 Game log
 

@@ -804,24 +804,34 @@ been read on this device, and What's new shows a "New" tag in the pop-up. **Cred
 work the game uses (art, fonts, libraries; data in `apps/client/src/credits.ts`), one card each with
 what was used, the license and links to their pages.
 
-**Game setup options** (Start game sits in a bar pinned to the bottom of the screen):
+**Game setup options.** The screen has three bands over the title scene. A **top bar** that never
+scrolls: **Back** (to the main menu), the "New game" title, the join code chip and **Sound** (the
+same button as on the main menu). A **bottom container** that never scrolls (a rounded glass
+panel, no full-width backdrop): the players on the left and, on the right, the summary (board,
+players, rules, goal) and **Start game**. Between them, centered: the board selector, then the
+game settings. On bigger screens (1180 x 820 and up) everything fits without scrolling; on
+smaller ones the middle scrolls, with no scroll bar.
 
 - **Board:** a carousel of the built-in boards followed by the player's saved boards. Arrows,
   swiping, the arrow keys or the dots move through it, and it loops from the last board back to
-  the first. Import board file and Board editor sit under it.
-- **Players** (shown first, across the top): the host is always seated ("You · host"). Each seat
+  the first. **Import board** and **Board editor** (Edit this board for a saved one) are small
+  chips in the panel's top right corner.
+- **Players** (in the bottom container, smaller cards, with a Shuffle characters chip): the host is always seated ("You · host"). Each seat
   is a card with the character standing on a spot in the seat's color (centered, tap to change it
   for players on this device), the name and what kind of player it is. An empty spot (until there
   are 5 players) has **Add bot** and a smaller **+ Player on this device** button; bots and extra
   players on this device have a remove button (×), joined friends can be removed too. A game needs
   at least 2 players (Start is disabled with a note until then).
-- **Join code:** setup opens a room straight away and always shows its code (with Copy/Share
-  invite). A friend who joins takes a free seat; when all 5 seats are full they replace the last
+- **Join code:** setup opens a room straight away and always shows its code as a chip in the top
+  bar (tap it to copy or share the invite; "Getting a code..." while opening, "Offline · Try again"
+  without a connection). A friend who joins takes a free seat; when all 5 seats are full they replace the last
   bot (a full game with no bots turns them away). Starting with nobody joined plays on this device (the room
   closes); with friends joined it is an online game. Without a connection there is no code and
   the game is played on this device.
 - **Target net worth:** 5,000G by default; arrows on each digit set any amount in 1,000G steps from
-  1,000G to 90,000G (like the share picker), with Min and Max buttons.
+  1,000G to 90,000G (like the share picker); no Min or Max buttons.
+- **Game settings** are all shown at once, in two rows: Rule set, Round limit and Stocks, then
+  Winning goal and Vacant plots, each with a one-line hint.
 - **Round limit:** none (default), 15, 20 or 30.
 - **Characters:** each seat starts with a different random character and a name. Tapping a human
   seat's character opens the character picker (all nine characters; ones other humans have are
@@ -1180,7 +1190,8 @@ on the first tap or key press (phones only count a finished tap, so the client l
 page asks for the "playback" audio session (or plays a silent looping clip on older iOS) so the
 ring/silent switch does not mute the game; the in-game Mute switch still does.
 
-- **Music:** looping chiptune tracks: a relaxed one for the main menu, setup and board editor, a
+- **Music:** looping chiptune tracks: a relaxed one for the main menu and board editor, a light,
+  eager "getting ready" one for game setup and the online lobbies (joining, continuing a game), a
   bouncier one during games (a faster, urgent one once someone can win), a curious, twinkly one
   while the venture board is up, and one per arcade game: a casino jingle (Lucky Reels), a calm,
   sparse tune to think by (Memory Blocks), a galloping race theme (Coin Derby), a game-show tune
@@ -1397,14 +1408,11 @@ rebuild.
 
 ### Game setup layout
 
-The Play setup groups choices as 1 · Choose a map, 2 · Players, and 3 · Game settings.
-Desktop and wide landscape screens place the map beside player seats, with settings below;
-narrow screens stack them in that order. Rule set and winning goal are always visible.
-More settings expands round limit, vacant plots and stocks; Board tools expands import/editor
-actions, and Invite friends online expands room status and sharing. Native disclosures remember
-their open state across setup redraws. Player counts use short labels with a local/online/CPU
-breakdown. The sticky Start footer summarizes map, player count, rules and winning goal, and
-retains the saved-game replacement warning. Joined guests still have locked host settings.
+See "Game setup options": a fixed top bar (Back, title, join code chip, Sound), the board selector
+and then the game settings in the middle (scrolling only on small screens, no scroll bar), and a
+fixed bottom container with the players and Start. Joined guests see the same screen with the
+host's board and settings locked, the players in the bottom container, their name box and
+"Waiting for the host to start...".
 
 ### Warps and portals
 

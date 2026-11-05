@@ -9777,3 +9777,405 @@ div.sl-inline label {
     transition: none;
   }
 }
+
+/* ------------------------------------------------------------ game setup (top bar, panels, dock) */
+
+/* Three bands over the title scene: the top bar (Back, title, join code, Sound) and the bottom
+   container (players and Start) stay put; the board and settings between them scroll on small
+   screens, with no scroll bar. */
+.setup.su {
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+.su-top {
+  position: relative;
+  z-index: 2;
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: min(1120px, 100%);
+  box-sizing: border-box;
+  margin: 0 auto;
+  padding: 10px 20px 6px;
+}
+.su-top h2 {
+  margin: 0;
+  font: 400 34px var(--head);
+  color: #fff;
+  text-shadow: 0 3px 0 rgba(16, 26, 51, 0.45);
+  white-space: nowrap;
+}
+.su-top-gap {
+  flex: 1;
+}
+.su-back {
+  background: rgba(16, 26, 51, 0.6);
+  color: #fff;
+}
+.su-scroll {
+  position: relative;
+  z-index: 1;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: none;
+}
+.su-scroll::-webkit-scrollbar {
+  display: none;
+}
+.su-main {
+  width: min(880px, 100%);
+  box-sizing: border-box;
+  margin: 0 auto;
+  padding: 4px 16px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.su-main .setup-panel {
+  padding: 12px 18px;
+  gap: 8px;
+}
+.su .car-thumb {
+  width: auto;
+  min-height: 0;
+  max-height: none;
+  padding: 8px;
+}
+.su .car-thumb .thumb {
+  width: auto !important;
+  max-width: 100%;
+  max-height: min(150px, 15vh);
+}
+.su .car-slide {
+  gap: 6px;
+}
+.su .car-dot {
+  width: 20px;
+  height: 20px;
+  border-width: 6px;
+}
+/* The winning goal's digit picker, a size smaller here. */
+.su-rule .dg-face {
+  width: 34px;
+  height: 40px;
+  font-size: 24px;
+}
+.su-rule .dg-arrow {
+  width: 34px;
+  height: 20px;
+}
+/* Small pill buttons: the board tools in the Map panel's top right, Shuffle in the dock. */
+.su-chips {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 6px;
+}
+.su-chip {
+  padding: 5px 12px;
+  border: 1px solid var(--glass-line);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.07);
+  color: var(--text);
+  font: 700 12px var(--body);
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    border-color 0.15s,
+    background 0.15s;
+}
+.su-chip:hover {
+  border-color: var(--accent);
+  background: rgba(255, 255, 255, 0.12);
+}
+/* Game settings: every option shown at once, in two rows: rule set, round limit and stocks;
+   then the winning goal and vacant plots. */
+.su-rules {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-areas:
+    'rules round stocks'
+    'goal plots plots';
+  gap: 12px 22px;
+}
+.su-r-rules {
+  grid-area: rules;
+}
+.su-r-round {
+  grid-area: round;
+}
+.su-r-stocks {
+  grid-area: stocks;
+}
+.su-r-goal {
+  grid-area: goal;
+}
+.su-r-plots {
+  grid-area: plots;
+}
+.su-rule {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+.su-rule .opt-label {
+  margin-bottom: 2px;
+}
+.su-rule .hint {
+  font-size: 12px;
+  line-height: 1.35;
+}
+.su-rule .digits {
+  justify-content: flex-start;
+  margin: 0;
+}
+/* The join code chip in the top bar: tap to share or copy the invite. */
+.su-code {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 12px;
+  border: 2px dashed rgba(255, 209, 102, 0.75);
+  border-radius: 999px;
+  background: rgba(16, 26, 51, 0.8);
+  color: var(--text);
+  font: 700 12px var(--body);
+  white-space: nowrap;
+  cursor: pointer;
+}
+span.su-code {
+  cursor: default;
+}
+.su-code small {
+  color: var(--muted);
+  font-size: 11px;
+}
+.su-code b {
+  font: 400 20px var(--head);
+  letter-spacing: 3px;
+  color: var(--accent);
+  user-select: all;
+}
+.su-code-act {
+  color: var(--accent);
+  font-size: 11px;
+}
+.su-code.pending,
+.su-code.failed {
+  color: var(--muted);
+}
+.su-code .spinner {
+  width: 12px;
+  height: 12px;
+}
+/* The bottom container: the players (smaller seat cards) and the Start button. */
+.su-dock {
+  position: relative;
+  z-index: 2;
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  width: min(1120px, calc(100% - 24px));
+  box-sizing: border-box;
+  margin: 0 auto 10px;
+  padding: 8px 14px;
+  border-radius: 16px;
+  background: rgba(16, 26, 51, 0.94);
+}
+.su-players {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.su-players-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.su-players-head h3 {
+  margin: 0;
+  font: 400 17px var(--head);
+  color: #fff;
+}
+.su .seats {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 8px;
+}
+.su .seat-card {
+  padding: 6px 6px 5px;
+  gap: 3px;
+}
+.su .seat-stage .char-btn {
+  width: 38px;
+  height: 50px;
+}
+.su .seat-stage::after {
+  width: 46px;
+  height: 11px;
+}
+.su .seat-card .name {
+  font-size: 13px;
+  padding: 3px 6px;
+}
+.su .seat-card .name.cpu {
+  padding: 3px 0;
+}
+.su .seat-card .seat-tag {
+  font-size: 10px;
+}
+.su .seat-card .seat-kick {
+  top: 4px;
+  right: 4px;
+}
+.su .seat-plus {
+  width: 34px;
+  height: 34px;
+  font-size: 24px;
+  box-shadow: 0 3px 0 #b07c00;
+}
+.su .seat-add {
+  padding: 2px 8px;
+}
+.su .seat-add b {
+  font-size: 13px;
+}
+.su .seat-card.add .btn.small {
+  padding: 3px 8px;
+  font-size: 11px;
+}
+.su-start {
+  flex: none;
+  width: 240px;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
+}
+.su-start .setup-summary {
+  margin: 0;
+}
+.su-start .hint.warn {
+  color: var(--accent);
+  font-weight: 700;
+}
+.su-start .btn.big {
+  width: 100%;
+  min-width: 0;
+}
+.su .lobby-seats {
+  flex-direction: row;
+  flex-wrap: wrap;
+}
+.su .lobby-seat {
+  flex: 1 1 150px;
+  min-width: 0;
+}
+.su-myname input {
+  width: 100%;
+  box-sizing: border-box;
+}
+@media (max-width: 760px), (max-height: 500px) {
+  .su-rules {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-areas:
+      'rules round'
+      'goal stocks'
+      'plots plots';
+  }
+}
+/* Phones (landscape): a slimmer top bar and dock, so the middle has room to scroll. */
+@media (max-height: 500px) {
+  .su-top {
+    padding: 6px 10px 4px;
+    gap: 8px;
+  }
+  .su-top h2 {
+    font-size: 22px;
+  }
+  .su-code b {
+    font-size: 16px;
+  }
+  .su-main {
+    padding: 2px 8px 8px;
+    gap: 8px;
+  }
+  .su-main .setup-panel {
+    padding: 10px 12px;
+    gap: 8px;
+  }
+  .su .car-thumb .thumb {
+    max-height: 96px;
+  }
+  .su-rules {
+    gap: 8px 14px;
+  }
+  .su-dock {
+    width: calc(100% - 12px);
+    margin-bottom: 6px;
+    padding: 6px 8px;
+    gap: 8px;
+  }
+  .su-players-head h3 {
+    font-size: 13px;
+  }
+  .su .seats {
+    gap: 5px;
+  }
+  .su .seat-card {
+    padding: 4px 4px 4px;
+    gap: 2px;
+  }
+  .su .seat-stage .char-btn {
+    width: 30px;
+    height: 40px;
+  }
+  .su .seat-stage::after {
+    width: 32px;
+    height: 8px;
+  }
+  .su .seat-card .name {
+    font-size: 11px;
+    padding: 2px 4px;
+  }
+  .su .seat-card .seat-tag,
+  .su .seat-card.add .btn.small {
+    display: none;
+  }
+  .su .seat-plus {
+    width: 26px;
+    height: 26px;
+    font-size: 20px;
+  }
+  .su-start {
+    width: 150px;
+    gap: 4px;
+  }
+  .su-start .setup-summary small,
+  .su-start .setup-summary span {
+    display: none;
+  }
+  .su-start .btn.big {
+    padding: 8px 10px;
+    font-size: 17px;
+  }
+  .su-players-head .hint {
+    display: none;
+  }
+  .su .lobby-seat {
+    flex-basis: 110px;
+    padding: 4px 6px;
+    gap: 6px;
+  }
+  .su .lobby-seat small {
+    display: none;
+  }
+}

@@ -26,6 +26,24 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: '2026-11-08-setup-layout',
+    date: 'Nov 8, 2026',
+    title: 'A new game setup screen',
+    features: [
+      {
+        tag: 'better',
+        title: 'Game setup, rearranged',
+        text: 'Back, the title, the join code and Sound stay at the top; the players and Start game stay at the bottom. The board picker sits in the middle with every game setting under it, and on most screens it all fits without scrolling.',
+      },
+      {
+        tag: 'new',
+        title: 'Setup music',
+        text: 'Game setup and the online lobbies have their own upbeat "getting ready" tune.',
+      },
+    ],
+    extras: ['Board tools are chips on the board picker', 'The winning goal has no Min/Max buttons'],
+  },
+  {
     id: '2026-11-08-info-popup',
     date: 'Nov 8, 2026',
     title: 'One Info pop-up for the game, stocks and players',

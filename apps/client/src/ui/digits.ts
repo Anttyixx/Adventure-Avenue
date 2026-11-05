@@ -22,6 +22,8 @@ export function digitPicker(opts: {
   suffix?: string;
   /** Show the button that sets the minimum (default true). */
   minButton?: boolean;
+  /** Show the button that sets the maximum (default true). */
+  maxButton?: boolean;
   /** Show the value only (every button disabled). */
   readOnly?: boolean;
   onChange(v: number): void;
@@ -86,7 +88,9 @@ export function digitPicker(opts: {
       : h('button', { class: 'btn small ghost', onclick: () => set(minSteps) }, minSteps ? 'Min' : '0'),
     h('span', { class: 'dg-row' }, ...cols),
     opts.suffix ? h('span', { class: 'dg-suffix' }, opts.suffix) : null,
-    h('button', { class: 'btn small ghost', onclick: () => set(maxSteps) }, 'Max'),
+    opts.maxButton === false
+      ? null
+      : h('button', { class: 'btn small ghost', onclick: () => set(maxSteps) }, 'Max'),
   );
   if (opts.readOnly) {
     el.classList.add('read-only');

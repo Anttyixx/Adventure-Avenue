@@ -34,7 +34,8 @@ export function keepName(n: string) {
 
 /** Shared frame: the title scene, a header with Back, and a card. */
 function frame(title: string, onBack: () => void, ...body: HTMLElement[]) {
-  sound.music('menu');
+  // Lobbies (joining, continuing an online game) share the game setup's music.
+  sound.music('setup');
   const scene = titleScene(false);
   const el = h(
     'div',

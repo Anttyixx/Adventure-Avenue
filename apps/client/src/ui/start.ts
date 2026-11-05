@@ -155,22 +155,6 @@ function seg<T>(
   );
 }
 
-/** Optional setup tools keep their open state when changing a setting redraws the screen. */
-function setupDetails(label: string, ...children: Node[]): HTMLElement {
-  const key = `adventure-avenue-setup-${label}`;
-  const details = h(
-    'details',
-    {
-      class: 'setup-details',
-      open: readJSON(key, false),
-      ontoggle: () => writeJSON(key, details.open),
-    },
-    h('summary', null, label),
-    h('div', { class: 'setup-details-body' }, ...children),
-  );
-  return details;
-}
-
 /**
  * The rules panel: target net worth (arrows on each digit, in 1,000G steps), round limit, rule
  * set and vacant plots. Without `edit` everything is shown but locked.
@@ -182,19 +166,22 @@ function rulesPanel(st: RuleSettings, edit?: (patch: Partial<RuleSettings>) => v
     unit: K.targetStep,
     value: st.target,
     suffix: 'G',
+    minButton: false,
+    maxButton: false,
     readOnly: !edit,
     onChange: (v) => edit?.({ target: cleanTarget(v) }),
   });
+  const standard = st.rules === 'standard';
   return h(
     'section',
     { class: 'setup-panel glass rules-panel' },
     h('h3', null, 'Game settings'),
     h(
       'div',
-      { class: 'setup-rule-basics' },
+      { class: 'su-rules' },
       h(
         'div',
-        { class: 'setup-rule-choice' },
+        { class: 'su-rule su-r-rules' },
         seg(
           'Rule set',
           ['standard', 'easy'] as RuleSet[],
@@ -205,24 +192,21 @@ function rulesPanel(st: RuleSettings, edit?: (patch: Partial<RuleSettings>) => v
         h(
           'p',
           { class: 'hint' },
-          st.rules === 'standard'
-            ? 'Standard: districts, vacant plots and the stock market.'
-            : 'Easy: rows of connected shops, no plots and no stock market.',
+          standard
+            ? 'Districts, vacant plots and the stock market.'
+            : 'Rows of connected shops, no plots or stocks.',
         ),
       ),
       h(
         'div',
-        { class: 'opt target-opt' },
+        { class: 'su-rule opt target-opt su-r-goal' },
         h('div', { class: 'opt-label' }, 'Winning goal'),
         target.el,
-        h('p', { class: 'hint' }, 'Reach this net worth, then return to the bank.'),
+        h('p', { class: 'hint' }, 'Reach it, then return to the bank.'),
       ),
-    ),
-    setupDetails(
-      'More settings',
       h(
         'div',
-        { class: 'setup-advanced-grid' },
+        { class: 'su-rule su-r-round' },
         seg(
           'Round limit',
           K.roundCapOptions as unknown as number[],
@@ -230,43 +214,47 @@ function rulesPanel(st: RuleSettings, edit?: (patch: Partial<RuleSettings>) => v
           (v) => (v ? String(v) : 'None'),
           edit && ((v) => edit({ roundCap: v })),
         ),
-        st.rules === 'standard'
-          ? seg(
+      ),
+      standard
+        ? h(
+            'div',
+            { class: 'su-rule su-r-plots' },
+            seg(
               'Vacant plots',
               ['none', 'few', 'some', 'lot', 'all'] as PlotSetting[],
               st.plots,
               (v) => PLOT_LABEL[v],
               edit && ((v) => edit({ plots: v })),
-            )
-          : null,
-        st.rules === 'standard'
-          ? h(
+            ),
+            h(
               'p',
               { class: 'hint' },
               st.plots === 'all'
-                ? 'Every property starts as a vacant plot, and any building can be built any number of times.'
-                : `Each district starts with ${K.plotsPerDistrict[st.plots]} random vacant plot${K.plotsPerDistrict[st.plots] === 1 ? '' : 's'} out of 4 properties. Each building can be built at most ${K.buildingLimit} times.`,
-            )
-          : null,
-        st.rules === 'standard'
-          ? seg(
+                ? 'Every property starts as a vacant plot.'
+                : `${K.plotsPerDistrict[st.plots]} of each district's 4 properties start as plots.`,
+            ),
+          )
+        : null,
+      standard
+        ? h(
+            'div',
+            { class: 'su-rule su-r-stocks' },
+            seg(
               'Stocks',
               ['dynamic', 'classic'] as StockSystem[],
               st.stocks,
               (v) => (v === 'dynamic' ? 'Dynamic' : 'Classic'),
               edit && ((v) => edit({ stocks: v })),
-            )
-          : null,
-        st.rules === 'standard'
-          ? h(
+            ),
+            h(
               'p',
               { class: 'hint' },
               st.stocks === 'dynamic'
-                ? `Dynamic: buying shares lifts prices. Selling ${K.sellOff}+ in a turn shakes the district.`
-                : 'Classic: buying or selling 10+ shares at once moves the price 10%.',
-            )
-          : null,
-      ),
+                ? `Buying lifts prices; selling ${K.sellOff}+ shakes a district.`
+                : 'Trading 10+ shares at once moves the price 10%.',
+            ),
+          )
+        : null,
     ),
   );
 }
@@ -299,15 +287,23 @@ function boardStage(board: BoardDef, mine: boolean, slide = ''): HTMLElement {
   );
 }
 
-/** The screen around the panels: the title scene, a header with Back, and the panels. */
+/**
+ * The screen around the panels: the title scene; a top bar (Back, the title, the join code chip,
+ * Sound) and a bottom container (the players and Start) that stay put; and between them the
+ * panels, which scroll on small screens (no scroll bar).
+ */
 function setupFrame() {
-  sound.music('menu');
+  sound.music('setup');
   const scene = titleScene(false);
-  const wrap = h('div', { class: 'setup-wrap' });
-  const el = h('div', { class: 'setup' }, scene.el, wrap);
+  const top = h('header', { class: 'su-top' });
+  const wrap = h('div', { class: 'su-main' });
+  const dock = h('footer', { class: 'su-dock glass' });
+  const el = h('div', { class: 'setup su' }, scene.el, top, h('div', { class: 'su-scroll' }, wrap), dock);
   return {
     el,
+    top,
     wrap,
+    dock,
     close: () => {
       closeSoundPopover();
       scene.stop();
@@ -316,13 +312,15 @@ function setupFrame() {
   };
 }
 
-function setupHead(back: string, onBack: () => void, title: string) {
-  return h(
-    'header',
-    { class: 'setup-head' },
-    h('button', { class: 'btn ghost small back', onclick: onBack }, back),
+/** The top bar: Back, the title, the join code chip (if any) and Sound (as on the main menu). */
+function setupHead(top: HTMLElement, onBack: () => void, title: string, code: Node | null) {
+  clear(top);
+  top.append(
+    h('button', { class: 'btn small su-back', onclick: onBack }, '‹ Back'),
     h('h2', null, title),
-    soundButton('btn small ghost setup-sound'),
+    h('span', { class: 'su-top-gap' }),
+    code ?? '',
+    soundButton('btn menu-sound', 'Sound'),
   );
 }
 
@@ -496,7 +494,7 @@ export function setupScreen(
       list.findIndex((b) => b.board.id === boardId),
     );
     const { board, mine } = list[index];
-    const importBtn = h('button', { class: 'btn small ghost' }, 'Import board file');
+    const importBtn = h('button', { class: 'su-chip' }, 'Import board');
     importBtn.onclick = async () => {
       const file = await pickBoardFile();
       if (!file) return;
@@ -525,7 +523,28 @@ export function setupScreen(
     return h(
       'section',
       { class: 'setup-panel glass board-panel' },
-      h('h3', null, 'Map'),
+      // The board tools sit as chips in the panel's top right corner.
+      h(
+        'div',
+        { class: 'panel-head' },
+        h('h3', null, 'Map'),
+        h(
+          'div',
+          { class: 'su-chips' },
+          importBtn,
+          h(
+            'button',
+            {
+              class: 'su-chip',
+              onclick: () => {
+                leaveRoom();
+                handlers.onEditor(mine ? board : null);
+              },
+            },
+            mine ? 'Edit this board' : 'Board editor',
+          ),
+        ),
+      ),
       h(
         'div',
         { class: 'carousel' },
@@ -551,25 +570,6 @@ export function setupScreen(
           }),
         ),
       ),
-      setupDetails(
-        'Board tools',
-        h(
-          'div',
-          { class: 'btn-row center board-tools' },
-          importBtn,
-          h(
-            'button',
-            {
-              class: 'btn small ghost',
-              onclick: () => {
-                leaveRoom();
-                handlers.onEditor(mine ? board : null);
-              },
-            },
-            mine ? 'Edit this board' : 'Board editor',
-          ),
-        ),
-      ),
       notice ? h('p', { class: 'hint board-notice' }, notice) : null,
     );
   };
@@ -591,33 +591,38 @@ export function setupScreen(
     }
   };
 
-  /** The join code box at the top of the Players panel. */
-  const joinBox = () => {
+  /**
+   * The join code as a chip in the top bar (it never scrolls away): tap it to share or copy the
+   * invite. While opening it says so; with no connection it offers to try again.
+   */
+  const codeChip = () => {
     if (roomState === 'none') return null;
     if (roomState === 'opening')
-      return h(
-        'div',
-        { class: 'room-code pending' },
-        h('small', null, 'Join code'),
-        h('span', { class: 'spinner' }),
-        h('small', null, 'Getting a code...'),
-      );
+      return h('span', { class: 'su-code pending' }, h('span', { class: 'spinner' }), 'Getting a code...');
     if (roomState === 'failed' || !room)
       return h(
-        'div',
-        { class: 'room-code failed' },
-        h('small', null, 'No join code (no connection?). You can still play on this device.'),
-        h('button', { class: 'btn small', onclick: () => (connect(), draw()) }, 'Try again'),
+        'button',
+        {
+          class: 'su-code failed',
+          title: 'No join code (no connection?). You can still play on this device.',
+          onclick: () => (connect(), draw()),
+        },
+        'Offline · Try again',
       );
     return h(
-      'div',
-      { class: 'room-code' },
-      h('small', null, 'Join code'),
+      'button',
+      {
+        class: 'su-code',
+        title:
+          "Friends join with this code: they take a free seat, or a bot's if the game is full. Tap to share the invite.",
+        onclick: share,
+      },
+      h('small', null, 'Code'),
       h('b', null, room.code),
       h(
-        'button',
-        { class: 'btn small', onclick: share },
-        copied ? 'Copied!' : 'ontouchstart' in window ? 'Share invite' : 'Copy invite link',
+        'span',
+        { class: 'su-code-act' },
+        copied ? 'Copied!' : 'ontouchstart' in window ? 'Share' : 'Copy link',
       ),
     );
   };
@@ -732,34 +737,16 @@ export function setupScreen(
       ),
     );
 
-  /** The join code, always in view: friends can join any time before the game starts. */
-  const invite = () => {
-    const j = joined();
-    return h(
-      'div',
-      { class: 'setup-invite' },
-      joinBox(),
-      roomState === 'open'
-        ? h(
-            'p',
-            { class: 'hint' },
-            j
-              ? `${j} friend${j > 1 ? 's' : ''} joined: this will be an online game.`
-              : "Friends who join take a free seat, or a bot's if the game is full.",
-          )
-        : null,
-    );
-  };
-
+  /** The players, in the bottom container: a seat card each, the empty spot, and Shuffle. */
   const playersPanel = () =>
     h(
       'section',
-      { class: 'setup-panel glass players-panel' },
+      { class: 'su-players' },
       h(
         'div',
-        { class: 'panel-head' },
+        { class: 'su-players-head' },
         h('h3', null, `Players · ${total()} of ${MAX_PLAYERS}`),
-        h('button', { class: 'btn ghost small', onclick: () => (shuffle(), draw()) }, 'Shuffle characters'),
+        h('button', { class: 'su-chip', onclick: () => (shuffle(), draw()) }, 'Shuffle characters'),
       ),
       h(
         'div',
@@ -767,10 +754,6 @@ export function setupScreen(
         ...Array.from({ length: total() }, (_, i) => seatCard(i)),
         room4() ? addCard() : null,
       ),
-      total() < 2
-        ? h('p', { class: 'hint warn' }, 'Add a bot or a friend: a game needs at least 2 players.')
-        : null,
-      roomState !== 'none' ? invite() : null,
     );
 
   const leaveRoom = () => {
@@ -815,29 +798,30 @@ export function setupScreen(
       leaveRoom();
       handlers.onStart({ ...base, seats }, false);
     };
+    setupHead(
+      frame.top,
+      () => {
+        if (online && !window.confirm('Close the game? Friends who joined will be sent back.')) return;
+        leaveRoom();
+        handlers.onBack();
+      },
+      'New game',
+      codeChip(),
+    );
     wrap.append(
-      setupHead(
-        '‹ Menu',
-        () => {
-          if (online && !window.confirm('Close the game? Friends who joined will be sent back.')) return;
-          leaveRoom();
-          handlers.onBack();
-        },
-        'New game',
-      ),
+      boardPanel(),
+      rulesPanel(st, (patch) => {
+        Object.assign(st, patch);
+        draw();
+      }),
+    );
+    const j = joined();
+    clear(frame.dock);
+    frame.dock.append(
+      playersPanel(),
       h(
         'div',
-        { class: 'setup-grid' },
-        playersPanel(),
-        boardPanel(),
-        rulesPanel(st, (patch) => {
-          Object.assign(st, patch);
-          draw();
-        }),
-      ),
-      h(
-        'footer',
-        { class: 'setup-foot' },
+        { class: 'su-start' },
         h(
           'div',
           { class: 'setup-summary' },
@@ -847,6 +831,8 @@ export function setupScreen(
             null,
             `${total()} players · ${st.rules === 'standard' ? 'Standard' : 'Easy'} · ${fmt(st.target)} goal`,
           ),
+          j ? h('small', { class: 'hint' }, `${j} friend${j > 1 ? 's' : ''} joined: an online game.`) : null,
+          total() < 2 ? h('small', { class: 'hint warn' }, 'A game needs at least 2 players.') : null,
           loadSave() ? h('small', { class: 'hint' }, 'Starting replaces the game in progress.') : null,
         ),
         start,
@@ -908,57 +894,66 @@ export function guestSetup(root: HTMLElement, room: GuestSetupRoom, handlers: Gu
     const board = lobby ? (lobby.board ?? BUILT_IN.find((b) => b.name === lobby.boardName)) : undefined;
     const me = lobby?.seats[room.seat];
     if (me && document.activeElement !== nameIn) nameIn.value = me.name;
+    setupHead(
+      frame.top,
+      () => {
+        room.leave();
+        handlers.onBack();
+      },
+      'Joined game',
+      h(
+        'span',
+        { class: 'su-code', title: 'The code of the game you joined' },
+        h('small', null, 'Code'),
+        h('b', null, room.code),
+      ),
+    );
     frame.wrap.append(
-      setupHead(
-        '‹ Leave',
-        () => {
-          room.leave();
-          handlers.onBack();
-        },
-        'Joined game',
+      h(
+        'section',
+        { class: 'setup-panel glass board-panel' },
+        h(
+          'div',
+          { class: 'panel-head' },
+          h('h3', null, 'Map'),
+          h('span', { class: 'hint' }, 'The host picks the board and the rules.'),
+        ),
+        board
+          ? h('div', { class: 'carousel locked' }, boardStage(board, false))
+          : h('p', { class: 'hint' }, lobby ? lobby.boardName : 'Loading...'),
+      ),
+      lobby
+        ? rulesPanel({
+            rules: lobby.rules,
+            target: lobby.target,
+            roundCap: lobby.roundCap,
+            plots: lobby.plots ?? 'few',
+            stocks: lobby.stocks ?? 'dynamic',
+          })
+        : h('section', { class: 'setup-panel glass rules-panel' }, h('h3', null, 'Game settings')),
+    );
+    clear(frame.dock);
+    frame.dock.append(
+      h(
+        'section',
+        { class: 'su-players' },
+        h(
+          'div',
+          { class: 'su-players-head' },
+          h('h3', null, 'Players'),
+          h('span', { class: 'hint' }, 'Tap your picture to pick a different character.'),
+        ),
+        lobby
+          ? lobbySeats(lobby, room.seat, undefined, (i) => pick(lobby, i))
+          : h('p', { class: 'hint' }, 'Connected. Waiting for the lobby...'),
       ),
       h(
         'div',
-        { class: 'setup-grid' },
-        h(
-          'section',
-          { class: 'setup-panel glass board-panel' },
-          h('h3', null, 'Map'),
-          board
-            ? h('div', { class: 'carousel locked' }, boardStage(board, false))
-            : h('p', { class: 'hint' }, lobby ? lobby.boardName : 'Loading...'),
-          h('p', { class: 'hint center' }, 'The host picks the board and the rules.'),
-        ),
-        lobby
-          ? rulesPanel({
-              rules: lobby.rules,
-              target: lobby.target,
-              roundCap: lobby.roundCap,
-              plots: lobby.plots ?? 'few',
-              stocks: lobby.stocks ?? 'dynamic',
-            })
-          : h('section', { class: 'setup-panel glass rules-panel' }, h('h3', null, 'Rules')),
-        h(
-          'section',
-          { class: 'setup-panel glass players-panel' },
-          h('div', { class: 'panel-head' }, h('h3', null, 'Players')),
-          h('div', { class: 'room-code small' }, h('small', null, 'Join code'), h('b', null, room.code)),
-          me ? h('label', { class: 'opt' }, h('div', { class: 'opt-label' }, 'Your name'), nameIn) : null,
-          lobby
-            ? lobbySeats(lobby, room.seat, undefined, (i) => pick(lobby, i))
-            : h('p', { class: 'hint' }, 'Connected. Waiting for the lobby...'),
-          h('p', { class: 'hint' }, 'Tap your picture to pick a different character.'),
-        ),
-      ),
-      h(
-        'footer',
-        { class: 'setup-foot' },
-        h(
-          'p',
-          { class: 'waiting' },
-          h('span', { class: 'spinner' }),
-          'Waiting for the host to start the game...',
-        ),
+        { class: 'su-start' },
+        me
+          ? h('label', { class: 'opt su-myname' }, h('div', { class: 'opt-label' }, 'Your name'), nameIn)
+          : null,
+        h('p', { class: 'waiting' }, h('span', { class: 'spinner' }), 'Waiting for the host to start...'),
       ),
     );
   };

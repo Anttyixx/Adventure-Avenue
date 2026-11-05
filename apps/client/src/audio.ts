@@ -70,9 +70,10 @@ export const SFX_NAMES: Sfx[] = [
 ];
 
 export type Track =
-  'menu' | 'game' | 'urgent' | 'venture' | 'reels' | 'memory' | 'derby' | 'wheel' | 'treasure';
+  'menu' | 'setup' | 'game' | 'urgent' | 'venture' | 'reels' | 'memory' | 'derby' | 'wheel' | 'treasure';
 export const TRACK_NAMES: Record<Track, string> = {
   menu: 'Main Street (menu)',
+  setup: 'Getting Ready (game setup)',
   game: 'Avenue Stroll (game)',
   urgent: 'Final Stretch (someone can win)',
   venture: 'Fortune Cards (venture board)',
@@ -158,6 +159,41 @@ const SONGS: Record<Track, Song> = {
       'C2 . . C2 G2 . E2 .',
     ],
     drums: ['k . h . s . h .'],
+  },
+  // Game setup and lobbies: a light, eager "getting ready" tune, a step up from the menu's.
+  setup: {
+    bpm: 108,
+    chords: [
+      ['D3', 'F#3', 'A3'],
+      ['B2', 'D3', 'F#3'],
+      ['G3', 'B3', 'D4'],
+      ['A3', 'C#4', 'E4'],
+      ['D3', 'F#3', 'A3'],
+      ['F#3', 'A3', 'C#4'],
+      ['G3', 'B3', 'D4'],
+      ['A3', 'C#4', 'E4'],
+    ],
+    lead: [
+      'F#5 . A5 . D6 - A5 .',
+      'B5 - A5 . F#5 . D5 .',
+      'G5 . B5 . D6 . B5 G5',
+      'A5 - - . E5 . C#5 .',
+      'D5 . F#5 . A5 . D6 .',
+      'C#6 - A5 . F#5 . C#6 .',
+      'B5 . D6 . G5 . B5 .',
+      'A5 - E5 - C#5 - . .',
+    ],
+    bass: [
+      'D2 . D3 . A2 . D3 .',
+      'B1 . B2 . F#2 . B2 .',
+      'G2 . G2 . D3 . G2 .',
+      'A2 . A2 . E2 . A2 .',
+      'D2 . D3 . A2 . D3 .',
+      'F#2 . F#2 . C#3 . F#2 .',
+      'G2 . G2 . D3 . B2 .',
+      'A2 . A2 . E2 . C#3 .',
+    ],
+    drums: ['k . h . s . h h', 'k . h k s . h .'],
   },
   // Bouncy town theme for the board.
   game: {
