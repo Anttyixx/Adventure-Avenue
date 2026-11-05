@@ -387,7 +387,8 @@ Each element: **purpose**, **placement**, **anatomy**, **spec**, **behavior**, t
   shows the zoom mode: grey `#8a93a8` free, blue `#4c9bff` auto, red `#e5484d` locked, via
   `data-mode`), then small
   buttons ("? Guide", "☰ Menu"; builder: Undo, Save, gold "Test play", Menu).
-- **Spec:** `.toolbar`, `top/right: 10px`, gap 6, buttons `.btn.small` on glass. Order: zoom
+- **Spec:** `.toolbar`, `top/right: 10px`, gap 6, buttons `.btn.small` on glass. Order: View
+  board chip (only while a pop-up is up; pops in, gold "Back" while the pop-up is hidden), zoom
   chip, Game log, Guide, Menu.
 - **Rule:** at most one gold button here (the thing to do next, e.g. Test play).
 
@@ -810,9 +811,9 @@ dim the board (`.stock-layer > .modal.stock-pop`, only the pop-up catches clicks
 it, and `stockPopup` slides it left only as far as needed to clear the player cards), and the decision is in the action bar (`.stock-bar`):
 the summary card (`.m-card`, compact), the digit picker, then `.tb-btns` with the gold Buy/Sell
 (or the district button) over a ghost Skip/Cancel. Changing district in the pop-up redraws the bar
-in place (no new prompt, so the bar doesn't morph). The summary card has two groups split by an `hr.m-divider` (market price + shares held; price per share + cash). A ghost **View board** button, alone in `.stock-side` behind a left divider (never mixed with Buy/Skip), hides the pop-up (`stockPopup().peek`,
-`board.overviewHold` for an auto whole-board view) and swaps the bar to a short note with a gold
-"Back to stocks". The deal chip is `.m-corner` (absolute, top right of the card); the price per share
+in place (no new prompt, so the bar doesn't morph). The summary card has two groups split by an `hr.m-divider` (market price + shares held; price per share + cash). The toolbar's **View board** chip (`.view-chip`, `hud.offerViewBoard(el)`) hides the pop-up
+(`hud.setPeek`, `board.overviewHold` for an auto whole-board view); the stock bar then swaps to a
+short note with a gold "Back to stocks". The deal chip is `.m-corner` (absolute, top right of the card); the price per share
 is an `.m-line.m-pay` row in gold (a deal strikes the market price through and glows the
 player's price green). The digit picker runs with `minButton: false` and no suffix, Max
 beside it with even padding. The bar's padding is the same on all four

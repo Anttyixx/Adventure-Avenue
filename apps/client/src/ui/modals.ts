@@ -62,21 +62,20 @@ function stockPopup(hud: Hud, title: string, content: Node) {
   };
   const watch = new ResizeObserver(place);
   watch.observe(box);
+  let release = () => {};
   window.addEventListener('resize', place);
   return {
-    /**
-     * Hide the pop-up to look at the board (the camera shows the whole board, as an auto zoom
-     * the player can still zoom), or bring it back.
-     */
-    peek: (on: boolean) => {
-      layer.hidden = on;
-      hud.board.overviewHold = on;
-      if (!on) place();
+    /** Offer the toolbar's View board chip for this pop-up; `onPeek` hears it hide and return. */
+    offer: (onPeek: (on: boolean) => void) => {
+      release = hud.offerViewBoard(layer, (on) => {
+        if (!on) place();
+        onPeek(on);
+      });
     },
     close: () => {
+      release();
       watch.disconnect();
       window.removeEventListener('resize', place);
-      hud.board.overviewHold = false;
       layer.remove();
     },
   };
@@ -85,7 +84,7 @@ function stockPopup(hud: Hud, title: string, content: Node) {
 /**
  * The action bar while the stock pop-up is hidden: a short note and a button back to it.
  */
-function boardPeekBar(back: () => void) {
+function boardPeekBar(hud: Hud) {
   return [
     h(
       'div',
@@ -93,7 +92,11 @@ function boardPeekBar(back: () => void) {
       h('div', { class: 'm-total' }, 'Looking at the board'),
       h('div', { class: 'hint' }, 'The stock market is hidden. Come back to it to finish.'),
     ),
-    h('div', { class: 'tb-btns' }, h('button', { class: 'btn main', onclick: back }, 'Back to stocks')),
+    h(
+      'div',
+      { class: 'tb-btns' },
+      h('button', { class: 'btn main', onclick: () => hud.setPeek(false) }, 'Back to stocks'),
+    ),
   ];
 }
 
@@ -165,15 +168,10 @@ export async function stockModal(
     go.disabled = n <= 0;
   };
   let peeking = false;
-  const peek = (on: boolean) => {
-    peeking = on;
-    pop.peek(on);
-    draw();
-  };
   const draw = () => {
     clear(bar);
     if (peeking) {
-      bar.append(...boardPeekBar(() => peek(false)));
+      bar.append(...boardPeekBar(hud));
       return;
     }
     const max = Math.max(0, maxN());
@@ -203,7 +201,6 @@ export async function stockModal(
           mode === 'buy' ? 'Skip' : 'Cancel',
         ),
       ),
-      viewBoardButton(() => peek(true)),
     );
   };
   const pop = stockPopup(
@@ -226,17 +223,16 @@ export async function stockModal(
       { split: true },
     ),
   );
+  pop.offer((on) => {
+    peeking = on;
+    draw();
+  });
   draw();
   try {
     return await hud.prompt<{ d: number; n: number } | null>(bar, [], p.color);
   } finally {
     pop.close();
   }
-}
-
-/** View board, kept apart from the trade's own buttons behind a thin divider. */
-function viewBoardButton(onclick: () => void) {
-  return h('div', { class: 'stock-side' }, h('button', { class: 'btn ghost', onclick }, 'View board'));
 }
 
 /**
@@ -298,15 +294,10 @@ export async function districtStockModal(
     return after;
   };
   let peeking = false;
-  const peek = (on: boolean) => {
-    peeking = on;
-    pop.peek(on);
-    draw();
-  };
   const draw = () => {
     clear(bar);
     if (peeking) {
-      bar.append(...boardPeekBar(() => peek(false)));
+      bar.append(...boardPeekBar(hud));
       return;
     }
     const now = stockPrice(G, d);
@@ -346,7 +337,6 @@ export async function districtStockModal(
           free ? `Take ${GIFT_SHARES} ${name} shares` : `Pick ${name}`,
         ),
       ),
-      viewBoardButton(() => peek(true)),
     );
   };
   const pop = stockPopup(
@@ -362,6 +352,10 @@ export async function districtStockModal(
       { split: true },
     ),
   );
+  pop.offer((on) => {
+    peeking = on;
+    draw();
+  });
   draw();
   try {
     return await hud.prompt<number>(bar, [], p.color);

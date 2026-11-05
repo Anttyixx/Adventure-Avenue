@@ -126,12 +126,17 @@ export class ArcadeStage {
     );
     this.layer = h('div', { class: 'arcade-layer' }, this.box);
     hud.root.append(this.layer);
+    // The toolbar's View board chip can hide the game to look at the board.
+    this.releaseView = hud.offerViewBoard(this.layer);
   }
+
+  private releaseView: () => void;
 
   close() {
     if (this.closed) return;
     this.closed = true;
     this.abort.abort();
+    this.releaseView();
     this.layer.remove();
   }
 

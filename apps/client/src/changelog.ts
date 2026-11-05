@@ -32,13 +32,13 @@ export const CHANGELOG: ChangelogEntry[] = [
     features: [
       {
         tag: 'new',
-        title: 'View the board while trading stock',
-        text: 'A View board button hides the stock market so you can look at the whole board; Back to stocks brings it back.',
+        title: 'View the board from any pop-up',
+        text: 'While the stock market, the venture board or an arcade game is up, a View board chip pops in next to the zoom. Tap it to hide the pop-up and see the whole board; tap Back to return.',
       },
       {
         tag: 'better',
         title: 'Tidier stock bar',
-        text: 'The summary is split in two: the market (price and your shares) on top, and what you pay (price per share and your cash) below. Deals cross out the market price and show their chip in the corner; View board sits apart from Buy and Skip; the counter is smaller with Max right beside it.',
+        text: 'The summary is split in two: the market (price and your shares) on top, and what you pay (price per share and your cash) below. Deals cross out the market price and show their chip in the corner; the counter is smaller with Max right beside it.',
       },
     ],
     extras: [

@@ -28,7 +28,16 @@ export class VentureView {
     const box = h('div', { class: 'venture-board glass' }, this.grid);
     const layer = h('div', { class: 'venture-layer' }, box);
     hud.root.append(layer);
-    this.m = { el: box, body: this.grid, close: () => layer.remove() };
+    // The toolbar's View board chip can hide the venture board to look at the game board.
+    const release = hud.offerViewBoard(layer);
+    this.m = {
+      el: box,
+      body: this.grid,
+      close: () => {
+        release();
+        layer.remove();
+      },
+    };
     for (let i = 0; i < 64; i++) {
       const b = h('button', { class: 'panel', 'aria-label': `Venture tile ${i + 1}` });
       b.onclick = () => {

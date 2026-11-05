@@ -110,13 +110,11 @@ const rnd = (n: number) => Math.floor(Math.random() * n);
  */
 const RECENT = new Set([
   'Buy stock',
-  'Buy stock (10% off)',
-  'Sell stock',
   'Sell stock (20% above)',
   'Gift shares (venture card)',
-  'Stock market',
-  'stockBuy',
-  'stockSell',
+  'Venture grid (play)',
+  'Venture (CPU view)',
+  'Lucky Reels',
 ]);
 
 /** Which board the lab plays on: Town (square) or Twin Lakes (hex), remembered per browser. */

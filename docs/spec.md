@@ -521,11 +521,12 @@ player's own price in green with a soft pulsing glow. The share counter has no 0
 beside it. Gift shares shows the market price and the shares held, then "Price per share: Free". Picking a
 district in the table or on the mini map plays the click sound.
 
-**View board:** the bar also has a View board button (on the district venture cards too), set
-apart from Buy/Sell and Skip on the right of the bar behind a thin divider. It hides
-the pop-up, the camera shows the whole board (auto zoom, so the player can still zoom), and the bar
-says "Looking at the board" with a gold **Back to stocks** button that brings the pop-up back as
-it was. The bar has the same padding on all
+**View board chip:** whenever a pop-up is on screen (the stock market, the venture board, an
+arcade game), a **View board** chip pops in at the top right, just left of the zoom chip. Tapping
+it hides the pop-up and the camera shows the whole board (auto zoom, so the player can still
+zoom); the chip turns gold and says **Back**, and tapping it again brings the pop-up back as it
+was. While the stock market is hidden the action bar says "Looking at the board" with a gold
+**Back to stocks** button too. The chip goes away when the pop-up closes. The bar has the same padding on all
 four sides (12px; 8px on phones). The venture cards that pick a
 district (Gift shares, Bull and Bear market) work the same, with one button naming the district.
 Picking a district on the map or in the table updates the bar. The pop-up puts the mini map (drawn

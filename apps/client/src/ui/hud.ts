@@ -73,6 +73,15 @@ export class Hud {
   toolbar = h('div', { class: 'toolbar' });
   /** Current zoom; tapping it zooms back in on the player. */
   zoomChip = h('button', { class: 'zoom-chip', title: 'Zoom: scroll, pinch or - / +. Tap to reset.' });
+  /**
+   * The View board chip: pops in left of the zoom chip while a pop-up (the stock market, the
+   * venture board, an arcade game) is up. Tapping it hides the pop-up and shows the whole board;
+   * tapping it again brings the pop-up back.
+   */
+  viewChip = h('button', { class: 'view-chip', hidden: true }, 'View board');
+  private peekTarget: { el: HTMLElement; onChange?: (peeking: boolean) => void } | null = null;
+  /** True while the player has hidden a pop-up to look at the board. */
+  peeking = false;
   /** The Game log button in the toolbar (between the zoom chip and Guide); it opens the log panel. */
   logBtn = h(
     'button',
@@ -198,7 +207,8 @@ export class Hud {
       }
     };
     this.guideBtn.onclick = () => this.cb.onGuide();
-    this.toolbar.append(this.zoomChip, this.logBtn, this.guideBtn, this.menuBtn);
+    this.viewChip.onclick = () => this.setPeek(!this.peeking);
+    this.toolbar.append(this.viewChip, this.zoomChip, this.logBtn, this.guideBtn, this.menuBtn);
     this.buildMenu();
     window.addEventListener('keydown', this.onKey);
     board.onHover = (id, x, y) => this.showTooltip(id, x, y);
@@ -1206,6 +1216,39 @@ export class Hud {
   }
 
   // ------------------------------------------------------------ modals and banners
+
+  /**
+   * Offer the View board chip while the pop-up `el` is on screen. `onChange` hears when the player
+   * hides or brings it back. Returns the function to call when the pop-up closes.
+   */
+  offerViewBoard(el: HTMLElement, onChange?: (peeking: boolean) => void): () => void {
+    if (this.peeking) this.setPeek(false);
+    const target = { el, onChange };
+    this.peekTarget = target;
+    this.viewChip.hidden = false;
+    this.viewChip.classList.remove('pop-in');
+    void this.viewChip.offsetWidth;
+    this.viewChip.classList.add('pop-in');
+    return () => {
+      if (this.peekTarget !== target) return;
+      if (this.peeking) this.setPeek(false);
+      this.peekTarget = null;
+      this.viewChip.hidden = true;
+    };
+  }
+
+  /** Hide the offered pop-up to look at the whole board (an auto zoom), or bring it back. */
+  setPeek(on: boolean) {
+    const t = this.peekTarget;
+    if (!t || on === this.peeking) return;
+    this.peeking = on;
+    t.el.hidden = on;
+    this.board.overviewHold = on;
+    this.viewChip.classList.toggle('on', on);
+    this.viewChip.textContent = on ? 'Back' : 'View board';
+    this.viewChip.title = on ? 'Bring the pop-up back' : 'Hide the pop-up and look at the board';
+    t.onChange?.(on);
+  }
 
   modal(title: string, body: Node, opts: { wide?: boolean | 'xl'; onClose?: () => void } = {}) {
     const box = h('div', {
