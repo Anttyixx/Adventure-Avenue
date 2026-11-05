@@ -43,7 +43,8 @@ export const CHANGELOG: ChangelogEntry[] = [
     ],
     extras: [
       'A Properties page shows every owned property by district, with a chip per player on top',
-      'The Game page standings look like the player cards; player pages show the next promotion under net worth',
+      'The Game page standings look like the player cards',
+      'Player pages: net worth beside the name, a goal bar that shows how far along on hover, and the next promotion pay',
       'Closing the Info pop-up no longer flickers',
       'Player pages are shorter; a long property list scrolls inside its column',
       'The View board chip works with the Info pop-up too, and glows to catch your eye',

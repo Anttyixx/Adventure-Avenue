@@ -108,38 +108,37 @@ export function playerOverview(G: GameState, p: Player, hooks: OverviewHooks): H
         ),
         tags.length ? h('div', { class: 'pv-tags' }, ...tags) : null,
       ),
+      // Net worth, big, on the right of the name and level.
+      h('b', { class: 'pv-head-nw', title: 'Net worth' }, fmt(nw)),
     ),
   );
 
-  // ---------------------------------------------------------------- net worth and goal
+  // ---------------------------------------------------------------- progress toward the goal
+  // The bar toward the goal; hovering (or tapping) it shows how far along they are.
   const pct = Math.max(0, Math.min(100, (nw / G.target) * 100));
   const need = G.target - nw;
+  const tip = p.bankrupt
+    ? 'Out of the game.'
+    : need <= 0
+      ? `Reached the ${fmt(G.target)} goal: back to the bank to win!`
+      : `${Math.round(pct)}% of the ${fmt(G.target)} goal, ${fmt(need)} to go.`;
   colA.append(
     h(
       'div',
       { class: 'pv-nw' },
-      h('div', { class: 'pv-nw-row' }, h('span', null, 'Net worth'), h('b', null, fmt(nw))),
       h(
         'div',
-        { class: 'bar-track', title: `${Math.round(pct)}% of the ${fmt(G.target)} goal` },
-        h('div', { class: 'bar-fill', style: `width:${pct}%` }),
-      ),
-      h(
-        'div',
-        { class: 'pv-note' },
-        p.bankrupt
-          ? 'Out of the game.'
-          : need <= 0
-            ? `Reached the ${fmt(G.target)} goal: back to the bank to win!`
-            : `${Math.round(pct)}% of the ${fmt(G.target)} goal, ${fmt(need)} to go.`,
+        { class: 'pv-goal', tabindex: '0', 'aria-label': tip },
+        h('div', { class: 'bar-track' }, h('div', { class: 'bar-fill', style: `width:${pct}%` })),
+        h('span', { class: 'pv-tip', role: 'tooltip' }, tip),
       ),
       // What the next promotion pays (fees, salary and other totals are on the end-of-game screen).
       p.bankrupt
         ? null
         : h(
             'div',
-            { class: 'pv-fact pv-promo', title: 'Collect all four suits, then reach the bank' },
-            h('span', null, `Next promotion (Lv ${p.level + 1}) pays`),
+            { class: 'pv-promo', title: 'Collect all four suits, then reach the bank' },
+            'Next promotion pays ',
             h('b', null, fmt(salary(G, { ...p, level: p.level + 1 }))),
           ),
     ),
@@ -262,11 +261,7 @@ export function playerOverview(G: GameState, p: Player, hooks: OverviewHooks): H
     );
   }
   colC.append(
-    section(
-      'Properties',
-      owned.length ? `${owned.length} · ${fmt(props)}` : null,
-      owned.length ? propBox : h('p', { class: 'pv-empty' }, 'No properties yet.'),
-    ),
+    section('Properties', null, owned.length ? propBox : h('p', { class: 'pv-empty' }, 'No properties yet.')),
   );
 
   // ---------------------------------------------------------------- stock

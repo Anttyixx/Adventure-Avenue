@@ -6001,6 +6001,10 @@ div.sl-inline label {
 /* Three columns side by side: the pop-up keeps its height and a long list of properties scrolls
    inside its own column (the other columns set the height; the list takes what is left). */
 @container (min-width: 902px) {
+  /* The shares column starts a little lower, its heading beside Back. */
+  .info-pop .pv-col-b > .pv-sec:first-child {
+    margin-top: 16px;
+  }
   .info-pop .pv-col-c {
     min-height: 0;
   }
@@ -6037,8 +6041,56 @@ div.sl-inline label {
   display: flex;
   align-items: flex-end;
   gap: 10px;
-  padding-bottom: 8px;
-  border-bottom: 1px solid var(--glass-line);
+}
+/* Net worth, big, at the right of the head (lined up with the level row). */
+.pv-head-nw {
+  flex: none;
+  margin-left: auto;
+  font: 400 26px var(--head);
+  line-height: 1;
+}
+/* The bar toward the goal; its percentage and what is left pop up on hover or focus. */
+.pv-goal {
+  position: relative;
+  padding: 4px 0;
+  outline: none;
+  cursor: help;
+}
+.pv-goal .bar-track {
+  height: 8px;
+}
+.pv-tip {
+  position: absolute;
+  left: 50%;
+  bottom: calc(100% + 4px);
+  z-index: 4;
+  translate: -50% 4px;
+  padding: 5px 10px;
+  border: 1px solid var(--glass-line);
+  border-radius: 8px;
+  background: var(--navy);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.4);
+  font-size: 12px;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition:
+    opacity 0.15s,
+    translate 0.15s;
+}
+.pv-goal:hover .pv-tip,
+.pv-goal:focus-visible .pv-tip {
+  opacity: 1;
+  translate: -50% 0;
+}
+/* What the next promotion pays: a quiet line under the bar. */
+.pv-promo {
+  margin-top: 2px;
+  font-size: 13px;
+  color: var(--muted);
+}
+.pv-promo b {
+  color: var(--text);
 }
 .pv-sprite {
   image-rendering: pixelated;
@@ -9503,8 +9555,4 @@ div.sl-inline label {
   border-radius: 50%;
   background: var(--pc);
   image-rendering: pixelated;
-}
-/* What the next promotion pays, under the net worth on a player page. */
-.pv-promo {
-  margin-top: 8px;
 }
