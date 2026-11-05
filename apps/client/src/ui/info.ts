@@ -150,21 +150,85 @@ export class InfoPopup {
     if (!away) this.render();
   }
 
+  /** Bumped on each page change, so a change started earlier stands down. */
+  private swapToken = 0;
+  /** A page change is running (live refreshes wait; the change draws the latest state anyway). */
+  private swapping = false;
+
   /**
    * Draw the current page and the action bar's page tabs (kept up to date as the game goes).
-   * `changed`: the player picked another page: the old page slides out and the new one slides in
-   * (toward the side of the tab picked) while the pop-up eases to the new page's height.
+   * `changed`: the player picked another page: the old page's parts pop out (shrinking away),
+   * the pop-up morphs to the new page's height, then the new page's parts pop in one by one.
    */
   render(changed = false) {
     const page = this.hud.infoPage;
     const G = this.hud.G;
     if (page == null || !G) return;
     const old = this.pageEl;
+    this.drawBar(G, page);
+    if (!this.back.isConnected) this.box.append(this.back);
+    const was = this.drawn;
+    this.drawn = page;
+    if (changed && old && was != null && was !== page && !STILL()) {
+      const token = ++this.swapToken;
+      this.swapping = true;
+      const parts = popParts(old);
+      parts.forEach((el, i) =>
+        el.animate([HERE, { opacity: 0, transform: 'scale(0.82)' }], {
+          duration: 150,
+          delay: Math.min(i, 8) * 18,
+          easing: 'ease-in',
+          fill: 'forwards',
+        }),
+      );
+      setTimeout(
+        () => {
+          if (token !== this.swapToken || this.hud.infoPage == null) return;
+          this.swapping = false;
+          const from = this.box.getBoundingClientRect().height;
+          const fresh = this.paint(this.hud.infoPage);
+          old.replaceWith(fresh);
+          // The pop-up morphs to the new page's height (player pages all share one)...
+          const to = this.box.getBoundingClientRect().height;
+          const ease = 'cubic-bezier(0.2, 0.8, 0.2, 1)';
+          if (Math.abs(to - from) > 1)
+            this.box.animate([{ height: `${from}px` }, { height: `${to}px` }], {
+              duration: 260,
+              easing: ease,
+            });
+          // ...and the new page's parts pop in, one after another.
+          popParts(fresh).forEach((el, i) =>
+            el.animate(
+              [
+                { opacity: 0, transform: 'scale(0.82)' },
+                { opacity: 1, transform: 'scale(1.03)', offset: 0.7 },
+                HERE,
+              ],
+              { duration: 280, delay: 160 + Math.min(i, 10) * 30, easing: 'ease-out', fill: 'backwards' },
+            ),
+          );
+        },
+        150 + Math.min(parts.length - 1, 8) * 18,
+      );
+      return;
+    }
+    if (this.swapping && !changed) return;
+    this.swapToken++;
+    this.swapping = false;
+    // A live refresh (or opening): swap in place and keep the scroll position.
     const scroller = (el: HTMLElement | null) => el?.querySelector<HTMLElement>('.info-scroll, .pv-body');
-    const keep = changed || this.drawn !== page ? 0 : (scroller(old)?.scrollTop ?? 0);
+    const keep = changed || was !== page ? 0 : (scroller(old)?.scrollTop ?? 0);
+    const el = this.paint(page);
+    if (old) old.replaceWith(el);
+    else this.box.append(el);
+    const body = scroller(el);
+    if (body) body.scrollTop = keep;
+  }
+
+  /** Build a page (and set the pop-up's player color and label for it). */
+  private paint(page: InfoPage): HTMLElement {
+    const G = this.hud.G;
     const p = typeof page === 'number' ? G.players[page] : null;
-    // The Game and Stocks pages take the height they need; player pages share one fixed size.
-    const from = changed && old ? this.box.getBoundingClientRect().height : 0;
     this.box.classList.toggle('player', !!p);
     this.box.style.setProperty('--pc', p ? PLAYER_COLORS[p.color] : 'var(--accent)');
     this.box.setAttribute(
@@ -189,42 +253,8 @@ export class InfoPopup {
         ),
       );
     }
-    if (!this.back.isConnected) this.box.append(this.back);
-    const was = this.drawn;
     this.pageEl = el;
-    this.drawn = page;
-    this.drawBar(G, page);
-    if (changed && old && was != null && was !== page && !STILL()) {
-      // Slide: the old page out, the new page in, toward the side of the tab picked.
-      const dir = order(page) > order(was) ? 1 : -1;
-      old.classList.add('leaving');
-      old.animate([HERE, { opacity: 0, transform: `translateX(${-28 * dir}px)` }], {
-        duration: 200,
-        easing: 'ease-in',
-        fill: 'forwards',
-      }).onfinish = () => old.remove();
-      this.box.append(el);
-      // The pop-up eases to the new page's height (player pages all share one).
-      const to = this.box.getBoundingClientRect().height;
-      if (Math.abs(to - from) > 1)
-        this.box.animate([{ height: `${from}px` }, { height: `${to}px` }], {
-          duration: 320,
-          easing: 'cubic-bezier(0.2, 0.8, 0.2, 1)',
-        });
-      el.animate([{ opacity: 0, transform: `translateX(${28 * dir}px)` }, HERE], {
-        duration: 300,
-        delay: 80,
-        easing: 'cubic-bezier(0.2, 0.8, 0.2, 1)',
-        fill: 'backwards',
-      });
-    } else {
-      // A live refresh (or opening): swap in place and keep the scroll position.
-      this.box.querySelectorAll('.info-page.leaving').forEach((x) => x.remove());
-      if (old) old.replaceWith(el);
-      else this.box.append(el);
-      const body = scroller(el);
-      if (body) body.scrollTop = keep;
-    }
+    return el;
   }
 
   /** The action bar: Game, Stocks, then a button per player (the tabs only change state). */
@@ -277,9 +307,14 @@ export class InfoPopup {
   }
 }
 
-/** Where a page sits among the tabs (Game, Stocks, then the players), to slide the right way. */
-function order(page: InfoPage) {
-  return page === 'game' ? 0 : page === 'stocks' ? 1 : 2 + page;
+/** The parts of a page that pop out and in on a page change (outermost ones only). */
+function popParts(page: HTMLElement): HTMLElement[] {
+  const all = [
+    ...page.querySelectorAll<HTMLElement>(
+      '.modal-head, .pv-head, .pv-nw, .pv-sec, .m-map, .m-shops, .m-grid-wrap',
+    ),
+  ];
+  return all.filter((el) => !all.some((o) => o !== el && o.contains(el)));
 }
 
 /**

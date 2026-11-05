@@ -581,8 +581,11 @@ if (!(await ask(`Delete ${d.name}?`, 'Its 4 properties will be removed from the 
   edge (gold; the player's `--pc` on a player page, fading between). Ghost **Back** button in the
   top right (`.info-close`). Centered and kept clear of the player cards (`keepClearOfCards`);
   non-dimming, only the box catches clicks; opening/closing motion as for the stock market. Page
-  changes slide: the old `.info-page` leaves 28px toward the far side and fades (200ms), the new
-  one comes in from the near side (300ms, 80ms later).
+  changes pop: the old page's parts (`popParts`: head, sections, map, shop cards, table) shrink
+  to 0.82 and fade (150ms, 18ms apart), the box morphs its height (260ms), then the new parts pop
+  in (0.82 → 1.03 → 1, 280ms, 30ms apart). Player pages: columns 26px apart (rows 18px),
+  sections 16px apart, the first column at least 300px; a container query keeps the top-right
+  heading (or the name, single column) 70px clear of Back.
 - **Action bar:** a stand-in `.prompt-center.info-bar` over the real bar (`.hud.info-open` hides
   the real one and any stock/venture/arcade layer): pill tabs (`.ib-tab`, gold when on) Game,
   Stocks, a divider, one per player (`.ib-player`: portrait + name, border and fill in `--pc`;

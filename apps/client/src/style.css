@@ -5964,24 +5964,45 @@ div.sl-inline label {
   display: flex;
   flex-wrap: wrap;
   align-items: flex-start;
-  gap: 16px;
+  gap: 18px 26px;
   padding: 14px 16px 16px;
 }
 /* Three columns side by side (stacked on narrow screens). */
 .pv-col {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 16px;
   min-width: 0;
 }
+/* Wide enough for the net worth ring and its legend, so nothing runs into the next column. */
 .pv-col-a {
-  flex: 1 1 260px;
+  flex: 1 1 300px;
+  min-width: min(300px, 100%);
 }
 .pv-col-b {
-  flex: 1 1 290px;
+  flex: 1 1 270px;
+  min-width: min(300px, 100%);
 }
 .pv-col-c {
-  flex: 2 1 300px;
+  flex: 2 1 280px;
+}
+/* Keep whatever sits in the top right corner clear of the info pop-up's Back button: the
+   shares heading with three columns, the properties heading with two, the player's name with one. */
+.info-pop .pv-body {
+  container-type: inline-size;
+}
+@container (max-width: 901px) {
+  .pv-col-c > .pv-sec:first-child .pv-sec-head {
+    margin-right: 70px;
+  }
+}
+@container (max-width: 605px) {
+  .pv-col-c > .pv-sec:first-child .pv-sec-head {
+    margin-right: 0;
+  }
+  .pv-head {
+    padding-right: 70px;
+  }
 }
 
 .pv-head {
@@ -6076,12 +6097,16 @@ div.sl-inline label {
 .pv-sec {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 8px;
+  min-width: 0;
 }
+/* The heading and its total wrap rather than push out of a narrow column. */
 .pv-sec-head {
   display: flex;
+  flex-wrap: wrap;
   justify-content: space-between;
   align-items: baseline;
+  column-gap: 10px;
 }
 .pv-sec-head h4 {
   margin: 0;
@@ -9186,12 +9211,7 @@ div.sl-inline label {
   flex: 1 1 auto;
   min-height: 0;
 }
-/* The page sliding out while the next one slides in, laid over the same spot. */
-.info-page.leaving {
-  position: absolute;
-  inset: var(--pad-y) var(--pad-x);
-  pointer-events: none;
-}
+
 .info-pop .modal-head {
   padding-right: 80px;
 }

@@ -1045,9 +1045,12 @@ rules only) and a button per player (portrait and name; portraits only on phones
 Anything the game shows in the real bar meanwhile (a status, or a choice waiting for this player)
 is there again when the pop-up closes. The pop-up opens and closes with the pop-up motion (rise
 and fade in; sink and fade out); the stand-in bar morphs out of the real bar's size with its tabs
-fading in, and on closing morphs back to it before handing over. Switching pages eases the pop-up to
-the new page's height while the old page slides out and the new one slides in, toward the side of the tab picked, and the top edge's color fades to
-the new page's. The toolbar's View board chip works for it too, and it covers
+fading in, and on closing morphs back to it before handing over. Switching pages pops the old page's parts out (each
+section shrinks and fades, one after another), then the pop-up morphs to the new page's height,
+then the new page's parts pop in one by one (growing from 82% with a slight overshoot); the top
+edge's color fades to the new page's. On a player page the columns keep at least 26px between
+them and sections 16px apart, and whatever sits in the top right corner (the shares or
+properties heading, or the player's name on narrow screens) stays clear of Back. The toolbar's View board chip works for it too, and it covers
 any stock market, venture board or arcade game that is up while open. Escape, Back or the Info
 button again closes it; clicking a player card opens that player's page (clicking it again
 closes the pop-up). It updates live as the game goes on.
