@@ -523,7 +523,8 @@ held, then "Price per share: Free". Picking a
 district in the table or on the mini map plays the click sound.
 
 **View board chip:** whenever a pop-up is on screen (the stock market, the venture board, an
-arcade game), a **View board** chip pops in at the top right, just left of the zoom chip. Tapping
+arcade game, the info pop-up), a **View board** chip pops in at the top right, just left of the
+zoom chip, and pulses with a gold glow to catch the eye (a steady glow with reduced motion). Tapping
 it hides the pop-up and the camera shows the whole board (auto zoom, so the player can still
 zoom); the pop-up plays its closing animation as it goes, the action bar morphs to its new
 content, and the chip morphs (its width easing, the words cross-fading) into a gold **Back**, and tapping it again brings the pop-up back as it
@@ -993,10 +994,10 @@ plots (a card per building with its art, price, what a rival and the owner get, 
 upgrade prices), Arcade games (a card per game: Solo or Everyone plays, how it plays and what it
 pays, with the Lucky Reels prize list), and Venture cards (all 30 fixed numbers, titles and
 effects, with Standard-only cards marked). Each topic is a card with an icon, a title and a few
-short points. Easy rules show Basics, Arcade games and Venture cards. It reopens on the last tab read. Top left: the **info chip**, with the game's name, the board
-name, the current round (out of the round limit, if any), the goal (target net worth) and, online,
-a Room button that shows the room code; right of it, the **Info** button (a round gold "i" and
-the word Info; gold while open), which opens the **info pop-up** (see below). Bottom center: the **action bar** (on
+short points. Easy rules show Basics, Arcade games and Venture cards. It reopens on the last tab read. Top left: the **info chip**, with the game's name, the goal (target net worth), online a Room
+button that shows the room code, and at its end the **Info** button (a round gold "i" and the
+word Info; gold while open), which opens the **info pop-up** (see below). The board name and the
+round are on the info pop-up's Game page instead. Bottom center: the **action bar** (on
 narrow windows such as phones in landscape, where a centered bar would have less than 520px
 between the screen edge and the player cards, it sits in the bottom left corner instead and uses
 all the width up to the cards; this depends only on the window, not on what the bar shows; as a safety net, a centered bar
@@ -1035,15 +1036,18 @@ suits and progress bar); they are always shown. Player cards show the character'
 
 **Info pop-up** (`ui/info.ts`). The Info button (or a player card) opens one pop-up for
 everything a player may want to look up, in the middle of the screen like the stock market (up to
-1,000px wide, kept clear of the player cards, sized to its page and scrolling inside when taller
-than the screen allows; it does not dim the board). The page is picked in the **action bar**: while
+1,000px wide and 640px tall, kept clear of the player cards; every page uses that same size, and
+scrolls inside when it needs more room; it does not dim the board). **Back** sits in its top
+right corner. The page is picked in the **action bar**: while
 the pop-up is open, a stand-in bar covers the real one with tabs for **Game**, **Stocks** (Standard
-rules only), a button per player (portrait and name; portraits only on phones) and **Close**.
+rules only) and a button per player (portrait and name; portraits only on phones).
 Anything the game shows in the real bar meanwhile (a status, or a choice waiting for this player)
 is there again when the pop-up closes. The pop-up opens and closes with the pop-up motion (rise
-and fade in; sink and fade out), the stand-in bar grows out of the real one, and switching pages
-eases the pop-up to its new size. The toolbar's View board chip works for it too, and it covers
-any stock market, venture board or arcade game that is up while open. Escape, Close or the Info
+and fade in; sink and fade out); the stand-in bar morphs out of the real bar's size with its tabs
+fading in, and on closing morphs back to it before handing over. Switching pages slides the old
+page out and the new one in, toward the side of the tab picked, and the top edge's color fades to
+the new page's. The toolbar's View board chip works for it too, and it covers
+any stock market, venture board or arcade game that is up while open. Escape, Back or the Info
 button again closes it; clicking a player card opens that player's page (clicking it again
 closes the pop-up). It updates live as the game goes on.
 

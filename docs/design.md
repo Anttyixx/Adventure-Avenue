@@ -372,9 +372,10 @@ Each element: **purpose**, **placement**, **anatomy**, **spec**, **behavior**, t
 ### 5.1 Info chip (top left) — "info bar"
 
 - **Purpose:** what you're playing/editing, always visible.
-- **Placement:** `top: 10px; left: 10px`; game: the Info button sits right beside it (`.top-row`).
-- **Anatomy (game):** gold Lilita title ("Adventure Avenue") · muted pills: board, round, goal ·
-  Room button online. **(builder):** "Board builder" · inline name input · save status
+- **Placement:** `top: 10px; left: 10px` (`.top-row`; the UI Lab puts its build chip `.lab-ver` to
+  its left).
+- **Anatomy (game):** gold Lilita title ("Adventure Avenue") · a muted goal pill · Room button
+  online · the Info button at its end. **(builder):** "Board builder" · inline name input · save status
   ("Not saved yet" gold, "Saved" green) · "Board settings" small ghost button.
 - **Spec:** `.info-chip.glass`, padding `5px 6px 5px 12px`, gap 6, 12px text, wraps if needed.
 - **Behavior:** buttons in it turn **gold while their thing is open** (`aria-pressed="true"`).
@@ -571,16 +572,20 @@ if (!(await ask(`Delete ${d.name}?`, 'Its 4 properties will be removed from the 
 
 ### 5.15 Info pop-up (pop-up + action bar)
 
-- **Info button** (`.info-btn`): a glass pill right of the info chip, a round gold "i" and "Info";
+- **Info button** (`.info-btn`): a pill at the end of the info chip, a round gold "i" and "Info";
   gold (`.on`) while the pop-up is open.
-- **Pop-up** (`.info-layer > .modal.info-pop`): up to 1,000px wide, sized to its page (max 680px
-  tall, scrolling inside), 5px top edge (gold; the player's `--pc` on a player page), centered and
-  kept clear of the player cards (`keepClearOfCards`); non-dimming, only the box catches clicks;
-  opening/closing motion as for the stock market; page changes ease its size (240ms).
+- **Pop-up** (`.info-layer > .modal.info-pop`): one fixed size for every page (up to 1,000 x
+  640px; phones fill the free area), so page changes never resize it; pages scroll inside. 5px top
+  edge (gold; the player's `--pc` on a player page, fading between). Ghost **Back** button in the
+  top right (`.info-close`). Centered and kept clear of the player cards (`keepClearOfCards`);
+  non-dimming, only the box catches clicks; opening/closing motion as for the stock market. Page
+  changes slide: the old `.info-page` leaves 28px toward the far side and fades (200ms), the new
+  one comes in from the near side (300ms, 80ms later).
 - **Action bar:** a stand-in `.prompt-center.info-bar` over the real bar (`.hud.info-open` hides
   the real one and any stock/venture/arcade layer): pill tabs (`.ib-tab`, gold when on) Game,
   Stocks, a divider, one per player (`.ib-player`: portrait + name, border and fill in `--pc`;
-  portrait only on phones), then a ghost Close. It grows out of the real bar's size on opening.
+  portrait only on phones). It morphs out of the real bar's size on opening (300ms, tabs fade in
+  after 120ms) and back into it on closing (tabs fade out first).
 - **Pages:** Game (how to win, facts grid, standings rows `.info-row` with place badge, portrait,
   name/level/suits, net worth + `--pc` bar, cash); Stocks (`marketView(..., { split: true })`);
   a player (`playerOverview`: three columns, net worth + ring chart + earnings · properties as
@@ -820,7 +825,8 @@ dim the board (`.stock-layer > .modal.stock-pop`, only the pop-up catches clicks
 it, and `stockPopup` slides it left only as far as needed to clear the player cards), and the decision is in the action bar (`.stock-bar`):
 the summary card (`.m-card`, compact), the digit picker, then `.tb-btns` with the gold Buy/Sell
 (or the district button) over a ghost Skip/Cancel. Changing district in the pop-up redraws the bar
-in place (no new prompt, so the bar doesn't morph). The summary card has two groups split by an `hr.m-divider` (market price + shares held; price per share + cash). The toolbar's **View board** chip (`.view-chip`, `hud.offerViewBoard(el)`; it morphs into
+in place (no new prompt, so the bar doesn't morph). The summary card has two groups split by an `hr.m-divider` (market price + shares held; price per share + cash). The toolbar's **View board** chip (`.view-chip`, `hud.offerViewBoard(el)`; while on offer it
+pulses (scale 1.06) with a gold glow every 1.6s; it morphs into
 "Back": width eases over 260ms while the word cross-fades, colors transition) hides the pop-up with
 the pop-up closing motion (sink 14px, shrink to 0.97, fade, 180ms; showing again plays the 220ms
 opening motion) and the action bar morphs to its new content (`hud.morphChange`)

@@ -34,14 +34,20 @@ export class InfoPopup {
   /** The page drawn last, so a page change scrolls back to the top but a refresh keeps its place. */
   private drawn: InfoPage | null = null;
 
+  /** Back, in the pop-up's top right corner: closes the pop-up. */
+  private back = h('button', { class: 'btn small ghost info-close', title: 'Close the info pop-up' }, 'Back');
+  /** The page now shown (its content swaps with a slide when the page changes). */
+  private pageEl: HTMLElement | null = null;
+
   constructor(private hud: Hud) {
+    this.back.onclick = () => hud.toggleInfo(null);
     this.layer.append(this.box);
     hud.root.append(this.layer, this.bar);
   }
 
   open() {
     const hud = this.hud;
-    // Measure the real action bar before it is covered, so the stand-in grows out of it.
+    // Measure the real action bar before it is covered, so the stand-in morphs out of it.
     const ask = hud.ask.classList.contains('show') ? hud.ask.getBoundingClientRect() : null;
     hud.root.classList.add('info-open');
     this.layer.hidden = false;
@@ -51,17 +57,8 @@ export class InfoPopup {
     this.unplace = keepClearOfCards(hud, this.box);
     this.release = hud.offerViewBoard(this.layer);
     if (STILL()) return;
-    this.box.animate([AWAY, HERE], { duration: 220, easing: 'ease-out' });
-    const to = this.bar.getBoundingClientRect();
-    this.bar.animate(
-      ask
-        ? [
-            { width: `${ask.width}px`, height: `${ask.height}px`, opacity: 0.4 },
-            { width: `${to.width}px`, height: `${to.height}px`, opacity: 1 },
-          ]
-        : [{ transform: 'translateY(12px)', opacity: 0 }, HERE],
-      { duration: 260, easing: 'cubic-bezier(0.2, 0.8, 0.2, 1)' },
-    );
+    this.box.animate([AWAY, HERE], { duration: 240, easing: 'cubic-bezier(0.2, 0.8, 0.2, 1)' });
+    this.morphBar(ask, null);
   }
 
   close() {
@@ -75,19 +72,60 @@ export class InfoPopup {
       this.bar.hidden = true;
       clear(this.box);
       clear(this.bar);
+      this.pageEl = null;
       hud.root.classList.remove('info-open');
+      // The real action bar's content fades back in where the stand-in ended.
+      if (!STILL())
+        hud.ask.animate([{ opacity: 0.35 }, { opacity: 1 }], { duration: 160, easing: 'ease-out' });
     };
     if (STILL()) return done();
-    hud.root.classList.remove('info-open');
-    this.box.animate([HERE, AWAY], { duration: 180, easing: 'ease-in', fill: 'forwards' }).onfinish = (e) => {
+    this.box.animate([HERE, AWAY], { duration: 200, easing: 'ease-in', fill: 'forwards' }).onfinish = (e) =>
       (e.target as Animation).cancel();
-      done();
+    // The stand-in bar morphs back to the real bar's size, then hands over to it.
+    const ask = hud.ask.classList.contains('show') ? hud.ask.getBoundingClientRect() : null;
+    this.morphBar(null, ask, done);
+  }
+
+  /**
+   * Morph the stand-in action bar between the real bar's size and its own: its size eases while
+   * its tabs fade in (opening) or out (closing). Without a real bar it rises in or sinks away.
+   */
+  private morphBar(from: DOMRect | null, to: DOMRect | null, after?: () => void) {
+    const bar = this.bar;
+    const own = bar.getBoundingClientRect();
+    const size = (r: DOMRect) => ({ width: `${r.width}px`, height: `${r.height}px` });
+    const ease = 'cubic-bezier(0.2, 0.8, 0.2, 1)';
+    bar.classList.add('morphing');
+    const kids = [...bar.children] as HTMLElement[];
+    let anim: Animation;
+    if (after) {
+      anim = to
+        ? bar.animate([size(own), size(to)], { duration: 240, easing: ease, fill: 'forwards' })
+        : bar.animate([HERE, { transform: 'translateY(12px)', opacity: 0 }], {
+            duration: 200,
+            easing: 'ease-in',
+            fill: 'forwards',
+          });
+      for (const k of kids) k.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 120, fill: 'forwards' });
+    } else {
+      anim = from
+        ? bar.animate([size(from), size(own)], { duration: 300, easing: ease })
+        : bar.animate([{ transform: 'translateY(12px)', opacity: 0 }, HERE], { duration: 260, easing: ease });
+      for (const k of kids)
+        k.animate([{ opacity: 0, transform: 'translateY(4px)' }, HERE], {
+          duration: 200,
+          delay: 120,
+          easing: 'ease-out',
+          fill: 'backwards',
+        });
+    }
+    anim.onfinish = () => {
+      bar.classList.remove('morphing');
+      if (after) {
+        bar.getAnimations({ subtree: true }).forEach((a) => a.cancel());
+        after();
+      }
     };
-    this.bar.animate([HERE, { transform: 'translateY(12px)', opacity: 0 }], {
-      duration: 180,
-      easing: 'ease-in',
-      fill: 'forwards',
-    }).onfinish = (e) => (e.target as Animation).cancel();
   }
 
   /**
@@ -112,15 +150,18 @@ export class InfoPopup {
     if (!away) this.render();
   }
 
-  /** Draw the current page and the action bar's page picker (kept up to date as the game goes). */
+  /**
+   * Draw the current page and the action bar's page tabs (kept up to date as the game goes).
+   * `changed`: the player picked another page: the old page slides out and the new one slides in
+   * (toward the side of the tab picked), inside a pop-up that keeps one size for every page.
+   */
   render(changed = false) {
     const page = this.hud.infoPage;
     const G = this.hud.G;
     if (page == null || !G) return;
-    const scroller = () => this.box.querySelector<HTMLElement>('.info-scroll, .pv-body');
-    const keep = changed || this.drawn !== page ? 0 : (scroller()?.scrollTop ?? 0);
-    const from = changed ? this.box.getBoundingClientRect() : null;
-    clear(this.box);
+    const old = this.pageEl;
+    const scroller = (el: HTMLElement | null) => el?.querySelector<HTMLElement>('.info-scroll, .pv-body');
+    const keep = changed || this.drawn !== page ? 0 : (scroller(old)?.scrollTop ?? 0);
     const p = typeof page === 'number' ? G.players[page] : null;
     this.box.classList.toggle('player', !!p);
     this.box.style.setProperty('--pc', p ? PLAYER_COLORS[p.color] : 'var(--accent)');
@@ -128,15 +169,16 @@ export class InfoPopup {
       'aria-label',
       p ? `${p.name}: info` : page === 'stocks' ? 'Stock market' : 'Game info',
     );
+    const el = h('div', { class: 'info-page' });
     if (p) {
-      this.box.append(playerOverview(G, p, { onFind: (id) => void this.hud.findOnBoard(id) }));
+      el.append(playerOverview(G, p, { onFind: (id) => void this.hud.findOnBoard(id) }));
     } else if (page === 'stocks') {
-      this.box.append(
+      el.append(
         h('div', { class: 'modal-head' }, h('h2', null, 'Stock market')),
         h('div', { class: 'info-scroll' }, marketView(G, null, undefined, { split: true })),
       );
     } else {
-      this.box.append(
+      el.append(
         h('div', { class: 'modal-head' }, h('h2', null, 'Game info')),
         h(
           'div',
@@ -145,26 +187,52 @@ export class InfoPopup {
         ),
       );
     }
-    const body = scroller();
-    if (body) body.scrollTop = keep;
+    if (!this.back.isConnected) this.box.append(this.back);
+    const was = this.drawn;
+    this.pageEl = el;
     this.drawn = page;
     this.drawBar(G, page);
-    // Switching pages: the pop-up eases from its old size to the new one.
-    if (from && !STILL()) {
-      const to = this.box.getBoundingClientRect();
-      if (Math.abs(to.width - from.width) > 1 || Math.abs(to.height - from.height) > 1)
-        this.box.animate(
-          [
-            { width: `${from.width}px`, height: `${from.height}px` },
-            { width: `${to.width}px`, height: `${to.height}px` },
-          ],
-          { duration: 240, easing: 'cubic-bezier(0.2, 0.8, 0.2, 1)' },
-        );
+    if (changed && old && was != null && was !== page && !STILL()) {
+      // Slide: the old page out, the new page in, toward the side of the tab picked.
+      const dir = order(page) > order(was) ? 1 : -1;
+      old.classList.add('leaving');
+      old.animate([HERE, { opacity: 0, transform: `translateX(${-28 * dir}px)` }], {
+        duration: 200,
+        easing: 'ease-in',
+        fill: 'forwards',
+      }).onfinish = () => old.remove();
+      this.box.append(el);
+      el.animate([{ opacity: 0, transform: `translateX(${28 * dir}px)` }, HERE], {
+        duration: 300,
+        delay: 80,
+        easing: 'cubic-bezier(0.2, 0.8, 0.2, 1)',
+        fill: 'backwards',
+      });
+    } else {
+      // A live refresh (or opening): swap in place and keep the scroll position.
+      this.box.querySelectorAll('.info-page.leaving').forEach((x) => x.remove());
+      if (old) old.replaceWith(el);
+      else this.box.append(el);
+      const body = scroller(el);
+      if (body) body.scrollTop = keep;
     }
   }
 
-  /** The action bar: Game, Stocks, then a button per player, and Close. */
+  /** The action bar: Game, Stocks, then a button per player (the tabs only change state). */
   private drawBar(G: GameState, page: InfoPage) {
+    const tabs = [...this.bar.querySelectorAll<HTMLElement>('.ib-tab')];
+    const pages: InfoPage[] = [
+      'game',
+      ...(G.rules === 'standard' ? ['stocks' as const] : []),
+      ...G.players.map((p) => p.id),
+    ];
+    if (tabs.length === pages.length) {
+      tabs.forEach((t, i) => {
+        t.classList.toggle('on', pages[i] === page);
+        t.setAttribute('aria-selected', String(pages[i] === page));
+      });
+      return;
+    }
     const tab = (target: InfoPage, ...label: (Node | string)[]) =>
       h(
         'button',
@@ -196,9 +264,13 @@ export class InfoPopup {
           return b;
         }),
       ),
-      h('button', { class: 'btn ghost ib-close', onclick: () => this.hud.toggleInfo(null) }, 'Close'),
     );
   }
+}
+
+/** Where a page sits among the tabs (Game, Stocks, then the players), to slide the right way. */
+function order(page: InfoPage) {
+  return page === 'game' ? 0 : page === 'stocks' ? 1 : 2 + page;
 }
 
 /**

@@ -112,9 +112,8 @@ const RECENT = new Set([
   'Info: game page',
   'Info: stocks page',
   'Info: player page',
-  'Stocks: classic',
-  'Stocks: dynamic',
-  'Shaken district',
+  'Gift shares (venture card)',
+  'Buy stock',
 ]);
 
 /** Which board the lab plays on: Town (square) or Twin Lakes (hex), remembered per browser. */
@@ -199,11 +198,11 @@ export async function openLab(app: HTMLElement, section?: string) {
   });
   board.zoomOut = 1;
   hud.setFastLabel(false);
-  // The info chip names the build being tested, like the main menu's version chip.
-  hud.infoChip.append(
+  // The build being tested, in its own chip left of the info chip.
+  hud.infoChip.before(
     h(
       'span',
-      { class: 'gc-tag', title: `Build ${BUILD.sha} from ${BUILD.branch}` },
+      { class: 'lab-ver glass', title: `Build ${BUILD.sha} from ${BUILD.branch}` },
       `${VERSION_LABEL} ${BUILD.branch} ${BUILD.sha}`,
     ),
   );

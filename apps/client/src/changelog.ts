@@ -41,7 +41,11 @@ export const CHANGELOG: ChangelogEntry[] = [
         text: 'Tapping a player card opens their page in the same pop-up. It replaces the old Stock market button and the separate player pop-up.',
       },
     ],
-    extras: ['The View board chip works with the Info pop-up too'],
+    extras: [
+      'The View board chip works with the Info pop-up too, and glows to catch your eye',
+      'Info pages slide in and out and the pop-up keeps one size',
+      'The info chip is shorter: the board and round moved to the Game page',
+    ],
   },
   {
     id: '2026-11-08-stock-sounds-view-board',

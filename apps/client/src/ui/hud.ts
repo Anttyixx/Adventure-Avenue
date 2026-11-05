@@ -143,9 +143,7 @@ export class Hud {
    * room code button.
    */
   infoChip = h('div', { class: 'info-chip glass' });
-  private chipBoard = h('span', { class: 'gc-tag' });
   private chipGoal = h('span', { class: 'gc-tag' });
-  private chipRound = h('span', { class: 'gc-tag' });
   roomBtn = h('button', { class: 'btn small ghost gc-room', hidden: true }, 'Room');
   tooltip = h('div', { class: 'tooltip glass' });
   modalLayer = h('div', { class: 'modal-layer' });
@@ -175,17 +173,17 @@ export class Hud {
     this.root = h('div', { class: 'hud' });
     this.logPanel.append(this.logBox);
     this.cardsWrap.append(this.cards);
+    // The info chip: the game's name, the goal, the Room button online and the Info button.
     this.infoChip.append(
       h('span', { class: 'gc-title' }, 'Adventure Avenue'),
-      this.chipBoard,
-      this.chipRound,
       this.chipGoal,
       this.roomBtn,
+      this.infoBtn,
     );
     this.logBtn.onclick = () => this.toggleLog();
     this.root.append(
       this.toolbar,
-      h('div', { class: 'top-left' }, h('div', { class: 'top-row' }, this.infoChip, this.infoBtn)),
+      h('div', { class: 'top-left' }, h('div', { class: 'top-row' }, this.infoChip)),
       this.ask,
       this.cardsWrap,
       this.logPanel,
@@ -421,12 +419,6 @@ export class Hud {
       h('span', null, roundText),
       h('span', null, `Target ${fmt(G.target)}`),
       h('span', null, G.rules === 'standard' ? 'Standard' : 'Easy'),
-    );
-    this.chipBoard.textContent = G.boardName ?? 'Town';
-    clear(this.chipRound);
-    this.chipRound.append(
-      'Round ',
-      h('b', null, G.roundCap ? `${Math.min(G.round, G.roundCap)} / ${G.roundCap}` : String(G.round)),
     );
     clear(this.chipGoal);
     this.chipGoal.append('Goal ', h('b', null, fmt(G.target)));
