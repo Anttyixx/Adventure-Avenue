@@ -810,7 +810,7 @@ dim the board (`.stock-layer > .modal.stock-pop`, only the pop-up catches clicks
 it, and `stockPopup` slides it left only as far as needed to clear the player cards), and the decision is in the action bar (`.stock-bar`):
 the summary card (`.m-card`, compact), the digit picker, then `.tb-btns` with the gold Buy/Sell
 (or the district button) over a ghost Skip/Cancel. Changing district in the pop-up redraws the bar
-in place (no new prompt, so the bar doesn't morph). A ghost **View board** button hides the pop-up (`stockPopup().peek`,
+in place (no new prompt, so the bar doesn't morph). The summary card has two groups split by an `hr.m-divider` (market price + shares held; price per share + cash). A ghost **View board** button, alone in `.stock-side` behind a left divider (never mixed with Buy/Skip), hides the pop-up (`stockPopup().peek`,
 `board.overviewHold` for an auto whole-board view) and swaps the bar to a short note with a gold
 "Back to stocks". The deal chip is `.m-corner` (absolute, top right of the card); the price per share
 is an `.m-line.m-pay` row in gold (a deal strikes the market price through and glows the

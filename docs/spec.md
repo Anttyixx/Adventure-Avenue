@@ -511,16 +511,18 @@ venture cards.
 **Stock screen (buy and sell):** like the venture board, the stock market opens in a pop-up in the
 middle of the screen (over the board, which stays visible around it) and the choice sits in the
 action bar: a summary card, the share counter and Buy/Sell with Skip (or Cancel). The card's
-heading just says "Buy Brick Row shares" (or Sell); under it: the market price (now and after),
-the **price per share** (what each share trades at in this deal: the average of the price before
-and after, in gold), the player's cash and their shares (now and after). At a discount (10% off)
-or premium (20% above) a green chip in the card's top right corner names the deal, and the price
-per share row shows the market's price crossed out with the player's own price in green with a
-soft pulsing glow. The share counter has no 0 button and no "shares" label; Max sits right
-beside it. Gift shares shows the market price, "Price per share: Free" and the shares held. Picking a
+heading just says "Buy Brick Row shares" (or Sell); under it two groups split by a thin line. The
+market group: the market price and the player's shares, each now and after. The payment group:
+the **price per share** (what the player pays or gets for each share: the market price with any
+discount or premium, in gold; it stays the same while they change the count) and their cash now
+and after. At a discount (10% off) or premium (20% above) a green chip in the card's top right
+corner names the deal, and the price per share row shows the market's price crossed out with the
+player's own price in green with a soft pulsing glow. The share counter has no 0 button and no "shares" label; Max sits right
+beside it. Gift shares shows the market price and the shares held, then "Price per share: Free". Picking a
 district in the table or on the mini map plays the click sound.
 
-**View board:** the bar also has a View board button (on the district venture cards too). It hides
+**View board:** the bar also has a View board button (on the district venture cards too), set
+apart from Buy/Sell and Skip on the right of the bar behind a thin divider. It hides
 the pop-up, the camera shows the whole board (auto zoom, so the player can still zoom), and the bar
 says "Looking at the board" with a gold **Back to stocks** button that brings the pop-up back as
 it was. The bar has the same padding on all

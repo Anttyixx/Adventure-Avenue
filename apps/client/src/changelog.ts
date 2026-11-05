@@ -38,7 +38,7 @@ export const CHANGELOG: ChangelogEntry[] = [
       {
         tag: 'better',
         title: 'Tidier stock bar',
-        text: 'A price per share line shows what each share costs you (a deal crosses out the market price); deals show their chip in the corner; the counter is smaller with Max right beside it.',
+        text: 'The summary is split in two: the market (price and your shares) on top, and what you pay (price per share and your cash) below. Deals cross out the market price and show their chip in the corner; View board sits apart from Buy and Skip; the counter is smaller with Max right beside it.',
       },
     ],
     extras: [

@@ -153,12 +153,14 @@ export async function stockModal(
             ),
           ]
         : []),
+      // The market: its price and the player's shares, now and after this trade.
       mLine('Market price', fmt(now), fmt(after), after > now ? 'up' : after < now ? 'down' : ''),
-      // What each share costs (or fetches) in this trade: the average of the price before and
-      // after it. A deal crosses out the market's price and shows the player's own, glowing.
-      perShare(n > 0 ? value / n : now, n > 0 ? total / n : unit(), !!rate),
-      mLine('Your cash', fmt(p.cash), fmt(cashAfter), cashAfter < 0 ? 'down' : ''),
       mLine('Shares you hold', String(p.shares[d]), String(p.shares[d] + (mode === 'buy' ? n : -n)), 'held'),
+      h('hr', { class: 'm-divider' }),
+      // What the player pays or gets: the price per share (fixed while they change the count; a
+      // deal crosses out the market's price and glows their own) and their cash.
+      perShare(now, unit(), !!rate),
+      mLine('Your cash', fmt(p.cash), fmt(cashAfter), cashAfter < 0 ? 'down' : ''),
     );
     go.disabled = n <= 0;
   };
@@ -195,13 +197,13 @@ export async function stockModal(
         'div',
         { class: 'tb-btns' },
         go,
-        h('button', { class: 'btn ghost', onclick: () => peek(true) }, 'View board'),
         h(
           'button',
           { class: 'btn ghost', onclick: () => hud.resolvePrompt(null) },
           mode === 'buy' ? 'Skip' : 'Cancel',
         ),
       ),
+      viewBoardButton(() => peek(true)),
     );
   };
   const pop = stockPopup(
@@ -232,8 +234,13 @@ export async function stockModal(
   }
 }
 
+/** View board, kept apart from the trade's own buttons behind a thin divider. */
+function viewBoardButton(onclick: () => void) {
+  return h('div', { class: 'stock-side' }, h('button', { class: 'btn ghost', onclick }, 'View board'));
+}
+
 /**
- * The "Price per share" row: the price each share trades at. With a discount or premium the
+ * The "Price per share" row: what the player pays (or gets) for each share. With a discount or premium the
  * market's price is crossed out and the player's own price glows beside it.
  */
 function perShare(market: number, mine: number | string, deal: boolean) {
@@ -318,14 +325,14 @@ export async function districtStockModal(
         h('b', null, free ? 'free' : '20%'),
         free ? h('span', { class: 'm-deal-tag' }, `worth ${fmt(GIFT_SHARES * now)}`) : null,
       ),
-      free
-        ? mLine('Market price', fmt(now), fmt(now))
-        : mLine('Price per share', fmt(now), fmt(after), after > now ? 'up' : after < now ? 'down' : ''),
-      ...(free ? [perShare(now, 'Free', false)] : []),
+      mLine('Market price', fmt(now), fmt(after), after > now ? 'up' : after < now ? 'down' : ''),
       ...(free
-        ? [mLine('Shares you hold', String(p.shares[d]), String(p.shares[d] + GIFT_SHARES), 'up')]
-        : []),
-      ...(free ? [] : [mLine('Your shares are worth', fmt(p.shares[d] * now), fmt(p.shares[d] * after))]),
+        ? [
+            mLine('Shares you hold', String(p.shares[d]), String(p.shares[d] + GIFT_SHARES), 'up'),
+            h('hr', { class: 'm-divider' }),
+            perShare(now, 'Free', false),
+          ]
+        : [mLine('Your shares are worth', fmt(p.shares[d] * now), fmt(p.shares[d] * after))]),
       h('div', { class: 'hint' }, 'Pick a district on the map or in the list.'),
     );
     bar.append(
@@ -338,8 +345,8 @@ export async function districtStockModal(
           { class: 'btn main', onclick: () => hud.resolvePrompt(d) },
           free ? `Take ${GIFT_SHARES} ${name} shares` : `Pick ${name}`,
         ),
-        h('button', { class: 'btn ghost', onclick: () => peek(true) }, 'View board'),
       ),
+      viewBoardButton(() => peek(true)),
     );
   };
   const pop = stockPopup(
