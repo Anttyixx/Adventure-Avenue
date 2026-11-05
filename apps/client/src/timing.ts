@@ -13,6 +13,8 @@ export const TIMING = {
   /** Die tumbling, then how long the result stays before moving. */
   dieRoll: 900,
   dieHold: 1000,
+  /** The die shrinking beside the player after a roll, before they start walking. */
+  dieShrink: 420,
   /** Pause after landing so players see where the token stopped. */
   land: 1000,
   /** Everyone gets reading time before the bar can return to low-priority activity. */
@@ -56,7 +58,7 @@ export const TIMING = {
   closeStagger: 160,
   closeHold: 1000,
   /** The winner dancing under confetti before the results. */
-  victory: 3600,
+  victory: 6500,
   gameOver: 900,
 
   /** CPU "thinking" beats: showing the route it picked, before rolling, before other choices. */
@@ -69,7 +71,7 @@ export const TIMING = {
   /** Between tiles of a bonus line flipping over one after another. */
   ventureLineStep: 140,
   /** How long the card stays up for the player who drew it before the board closes by itself. */
-  ventureResult: 6000,
+  ventureResult: 10000,
   cpuResult: 2300,
   memoryReveal: 600,
   arcadeRoll: 350,

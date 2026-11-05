@@ -123,7 +123,7 @@ export const K = {
   // Arcade prizes (L = player level)
   // Lucky Reels: rerolls after the first roll, and the prize per set (x level) in REEL_PRIZES order:
   // no set, pair, two pairs, three matching, five different, full house, four matching, five matching.
-  reels: { rerolls: 2, prizes: [0, 5, 10, 20, 40, 40, 60, 150] },
+  reels: { rerolls: 2, prizes: [0, 10, 15, 30, 50, 50, 80, 200] },
   memory: { gold: 60, small: 20, shopsUp: 0.1, shopsDown: 0.05 },
   // Coin Derby: a race down a track of spaces over a few legs. Each leg every racer either sprints
   // (moves further) or grabs coins (moves less, earns coins). Furthest after the last leg wins.

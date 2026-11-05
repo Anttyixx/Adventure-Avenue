@@ -1,8 +1,8 @@
 /**
- * Game setup (opened from Play on the main menu): a looping carousel of boards, the rules,
- * player count, characters (each player picks a different one) and names. It also opens a
- * room with a join code: friends who join take CPU seats and the game is played online; if
- * nobody joins it is a game on this device. Players who join see the same screen with every
+ * Game setup (opened from Play on the main menu): the players (the host is always in; add
+ * bots or more players on this device), a looping carousel of boards and the rules. It also
+ * opens a room with a join code: friends who join take a free seat, or a bot's when the game is
+ * full, and the game is played online; if nobody joins it is a game on this device. Players who join see the same screen with every
  * setting shown but locked (`guestSetup`).
  */
 import {
@@ -188,7 +188,7 @@ function rulesPanel(st: RuleSettings, edit?: (patch: Partial<RuleSettings>) => v
   return h(
     'section',
     { class: 'setup-panel glass rules-panel' },
-    h('h3', null, '3 · Game settings'),
+    h('h3', null, 'Game settings'),
     h(
       'div',
       { class: 'setup-rule-basics' },
@@ -338,6 +338,7 @@ export function setupScreen(
   const saved = readJSON(OPTS_KEY, {
     humans: 1,
     total: 4,
+    bots: undefined as number | undefined,
     target: K.defaultTarget as number,
     roundCap: 0,
     plots: 'few' as PlotSetting,
@@ -345,10 +346,9 @@ export function setupScreen(
     rules: 'standard' as RuleSet,
     boardId: 'town',
   });
-  let humans = saved.humans;
-  /** Players in the match: the humans on this device, then friends who joined, then CPUs. */
-  let total = Math.max(2, Math.min(MAX_PLAYERS, saved.total ?? 4));
-  humans = Math.max(1, Math.min(humans, total));
+  /** Players on this device (the host first), then friends who joined, then bots. */
+  let humans = Math.max(1, Math.min(saved.humans ?? 1, MAX_PLAYERS));
+  let bots = Math.max(0, Math.min(saved.bots ?? (saved.total ?? 4) - humans, MAX_PLAYERS - humans));
   const st: RuleSettings = {
     target: cleanTarget(saved.target),
     roundCap: saved.roundCap,
@@ -425,10 +425,15 @@ export function setupScreen(
       name: nameOf(i),
       look: looks[i],
     }));
-    const seatKey = JSON.stringify([total, locals]);
+    const first = humans + joined();
+    const botSeats: LocalSeat[] = Array.from({ length: bots }, (_, k) => ({
+      name: suggested[first + k],
+      look: cpuLook(first + k),
+    }));
+    const seatKey = JSON.stringify([locals, botSeats]);
     if (seatKey !== sentSeats) {
       sentSeats = seatKey;
-      room.configure(total, locals);
+      room.configure(locals, botSeats);
     }
     const board = getBoard(boardId) ?? BUILT_IN[0];
     const settingsKey = JSON.stringify([board.id, st]);
@@ -520,7 +525,7 @@ export function setupScreen(
     return h(
       'section',
       { class: 'setup-panel glass board-panel' },
-      h('h3', null, '1 · Choose a map'),
+      h('h3', null, 'Map'),
       h(
         'div',
         { class: 'carousel' },
@@ -617,9 +622,35 @@ export function setupScreen(
     );
   };
 
-  /** One seat: this device's humans have a name box and a character button. */
+  /** Everyone in the game, in seat order. */
+  const total = () => humans + joined() + bots;
+  const room4 = () => total() < MAX_PLAYERS;
+
+  /** One seat card: the character standing on a spot, a name, what kind of player, and remove. */
   const seatCard = (i: number) => {
     const color = PLAYER_COLORS[i];
+    const card = (
+      kind: string,
+      look: CharId,
+      pick: (() => void) | null,
+      name: Node,
+      tag: string,
+      remove?: { label: string; act: () => void },
+    ) =>
+      h(
+        'div',
+        { class: `seat-card ${kind}`, style: `--pc:${color}` },
+        h('div', { class: 'seat-stage' }, charButton(look, 'body', pick)),
+        name,
+        h('span', { class: 'seat-tag' }, tag),
+        remove
+          ? h(
+              'button',
+              { class: 'seat-kick', title: remove.label, 'aria-label': remove.label, onclick: remove.act },
+              '×',
+            )
+          : null,
+      );
     if (i < humans) {
       const input = h('input', {
         class: 'name',
@@ -632,103 +663,115 @@ export function setupScreen(
           sync();
         },
       }) as HTMLInputElement;
-      return h(
-        'div',
-        { class: 'seat-card', style: `--pc:${color}` },
-        charButton(looks[i], '', () => void choose(i)),
+      return card(
+        'human',
+        looks[i],
+        () => void choose(i),
         input,
-        h('span', { class: 'seat-tag' }, i === 0 ? 'You' : `P${i + 1}`),
+        i === 0 ? 'You · host' : 'On this device',
+        i === 0
+          ? undefined
+          : {
+              label: 'Remove this player',
+              act: () => {
+                // The players after them move up a seat, keeping their names and characters.
+                typed.splice(i, 1);
+                looks.push(looks.splice(i, 1)[0]);
+                humans--;
+                draw();
+              },
+            },
       );
     }
     const seat = lobbySeatsNow()[i];
-    if (seat?.kind === 'remote') {
-      return h(
-        'div',
-        { class: 'seat-card joined', style: `--pc:${color}` },
-        charButton(seat.look ?? looks[i], '', null),
+    if (seat?.kind === 'remote')
+      return card(
+        'joined',
+        seat.look ?? looks[i],
+        null,
         h('span', { class: 'name' }, seat.name),
-        h('span', { class: 'seat-tag' }, seat.online ? 'Joined' : 'Away'),
-        h(
-          'button',
-          {
-            class: 'seat-kick',
-            title: `Remove ${seat.name}`,
-            'aria-label': `Remove ${seat.name}`,
-            onclick: () => room?.kick(i),
-          },
-          '×',
-        ),
+        seat.online ? 'Joined online' : 'Away',
+        { label: `Remove ${seat.name}`, act: () => room?.kick(i) },
       );
-    }
+    return card('bot', cpuLook(i), null, h('span', { class: 'name cpu' }, suggested[i]), 'Bot', {
+      label: 'Remove this bot',
+      act: () => {
+        bots--;
+        draw();
+      },
+    });
+  };
+
+  /** The empty spots: add a bot, or (smaller) a player on this device. */
+  const addCard = () =>
+    h(
+      'div',
+      { class: 'seat-card add' },
+      h(
+        'button',
+        {
+          class: 'seat-add',
+          onclick: () => {
+            bots++;
+            draw();
+          },
+        },
+        h('span', { class: 'seat-plus', 'aria-hidden': 'true' }, '+'),
+        h('b', null, 'Add bot'),
+      ),
+      h(
+        'button',
+        {
+          class: 'btn small ghost',
+          onclick: () => {
+            humans++;
+            draw();
+          },
+        },
+        '+ Player on this device',
+      ),
+    );
+
+  /** The join code, always in view: friends can join any time before the game starts. */
+  const invite = () => {
+    const j = joined();
     return h(
       'div',
-      { class: 'seat-card', style: `--pc:${color}` },
-      charButton(cpuLook(i), '', null),
-      h('span', { class: 'name cpu' }, suggested[i]),
-      h('span', { class: 'seat-tag', title: room ? 'A friend who joins takes this seat' : '' }, 'CPU'),
+      { class: 'setup-invite' },
+      joinBox(),
+      roomState === 'open'
+        ? h(
+            'p',
+            { class: 'hint' },
+            j
+              ? `${j} friend${j > 1 ? 's' : ''} joined: this will be an online game.`
+              : "Friends who join take a free seat, or a bot's if the game is full.",
+          )
+        : null,
     );
   };
 
-  const playersPanel = () => {
-    const j = joined();
-    return h(
+  const playersPanel = () =>
+    h(
       'section',
       { class: 'setup-panel glass players-panel' },
       h(
         'div',
         { class: 'panel-head' },
-        h('h3', null, '2 · Players'),
+        h('h3', null, `Players · ${total()} of ${MAX_PLAYERS}`),
         h('button', { class: 'btn ghost small', onclick: () => (shuffle(), draw()) }, 'Shuffle characters'),
       ),
-      seg(
-        'Total players',
-        Array.from({ length: MAX_PLAYERS - 1 }, (_, i) => i + 2),
-        total,
-        (v) => String(v),
-        (v) => {
-          total = v;
-          humans = Math.min(humans, v - joined());
-          draw();
-        },
-        // Never fewer seats than the people already in them.
-        (v) => v < humans + j,
-      ),
-      seg(
-        'Playing on this device',
-        Array.from({ length: total }, (_, i) => i + 1),
-        humans,
-        (v) => String(v),
-        (v) => {
-          humans = v;
-          draw();
-        },
-        (v) => v > total - j,
-      ),
       h(
-        'p',
-        { class: 'hint' },
-        `${humans} on this device · ${j} online · ${total - humans - j} CPU${total - humans - j === 1 ? '' : 's'}`,
+        'div',
+        { class: 'seats' },
+        ...Array.from({ length: total() }, (_, i) => seatCard(i)),
+        room4() ? addCard() : null,
       ),
-      h('div', { class: 'seats' }, ...Array.from({ length: total }, (_, i) => seatCard(i))),
-      roomState !== 'none'
-        ? setupDetails(
-            'Invite friends online',
-            h(
-              'div',
-              { class: 'setup-invite' },
-              joinBox(),
-              h(
-                'p',
-                { class: 'hint' },
-                j
-                  ? `${j} friend${j > 1 ? 's' : ''} joined. This will be an online game.`
-                  : 'Share the code or invite link. Friends who join take a CPU seat.',
-              ),
-            ),
-          )
+      total() < 2
+        ? h('p', { class: 'hint warn' }, 'Add a bot or a friend: a game needs at least 2 players.')
         : null,
+      roomState !== 'none' ? invite() : null,
     );
-  };
 
   const leaveRoom = () => {
     closed = true;
@@ -739,19 +782,23 @@ export function setupScreen(
 
   const draw = () => {
     clear(wrap);
-    // Joining fills seats: make room for everyone already here.
-    total = Math.max(total, humans + joined());
+    // Someone joined a full game: they took a bot's seat (checked again once the room has the
+    // latest seats).
+    const fit = () => (bots = Math.max(0, Math.min(bots, MAX_PLAYERS - humans - joined())));
+    fit();
+    sync();
+    fit();
     sync();
     const board = getBoard(boardId) ?? BUILT_IN[0];
     const online = joined() > 0;
     const start = h(
       'button',
-      { class: 'btn main big', disabled: !playable(board) },
+      { class: 'btn main big', disabled: !playable(board) || total() < 2 },
       online ? 'Start online game' : 'Start game',
     );
     start.onclick = () => {
       writeJSON(NAMES_KEY, typed);
-      writeJSON(OPTS_KEY, { humans, total, boardId, ...st });
+      writeJSON(OPTS_KEY, { humans, bots, total: total(), boardId, ...st });
       const base = { ...st, board };
       if (room && online) {
         const seats = room.seatConfigs((i) => ({ name: suggested[i], ch: cpuLook(i) }));
@@ -760,7 +807,7 @@ export function setupScreen(
         handlers.onStart({ ...base, seats }, true);
         return;
       }
-      const seats = Array.from({ length: total }, (_, i) => ({
+      const seats = Array.from({ length: total() }, (_, i) => ({
         name: i < humans ? nameOf(i) : suggested[i],
         cpu: i >= humans,
         ch: i < humans ? looks[i] : cpuLook(i),
@@ -778,16 +825,15 @@ export function setupScreen(
         },
         'New game',
       ),
-      h('p', { class: 'setup-intro' }, 'Choose a map, pick your players, and make it your game.'),
       h(
         'div',
         { class: 'setup-grid' },
+        playersPanel(),
         boardPanel(),
         rulesPanel(st, (patch) => {
           Object.assign(st, patch);
           draw();
         }),
-        playersPanel(),
       ),
       h(
         'footer',
@@ -799,7 +845,7 @@ export function setupScreen(
           h(
             'span',
             null,
-            `${total} players · ${st.rules === 'standard' ? 'Standard' : 'Easy'} · ${fmt(st.target)} goal`,
+            `${total()} players · ${st.rules === 'standard' ? 'Standard' : 'Easy'} · ${fmt(st.target)} goal`,
           ),
           loadSave() ? h('small', { class: 'hint' }, 'Starting replaces the game in progress.') : null,
         ),
@@ -877,7 +923,7 @@ export function guestSetup(root: HTMLElement, room: GuestSetupRoom, handlers: Gu
         h(
           'section',
           { class: 'setup-panel glass board-panel' },
-          h('h3', null, '1 · Choose a map'),
+          h('h3', null, 'Map'),
           board
             ? h('div', { class: 'carousel locked' }, boardStage(board, false))
             : h('p', { class: 'hint' }, lobby ? lobby.boardName : 'Loading...'),

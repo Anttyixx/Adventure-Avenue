@@ -73,7 +73,24 @@ export class VentureView {
     return new Promise((r) => (this.resolvePick = r));
   }
 
-  /** Flip the panel, light up any bonus lines through it and show the card. */
+  /** The card's title and text for the action bar. */
+  private cardBody(panel: number, title: string, text: string) {
+    const card = CARDS[this.G.vg.cards[panel]];
+    return h(
+      'div',
+      { class: 'rich-body venture-result', 'aria-live': 'polite' },
+      h('div', { class: 'rich-title' }, card ? `#${card.number} · ${title}` : title),
+      h('div', { class: 'venture-description' }, text),
+    );
+  }
+  private shown: { panel: number; title: string; text: string } | null = null;
+  private watching = false;
+
+  /**
+   * Flip the panel and light up any bonus lines through it. The card then shows in the action
+   * bar: for people watching straight away (it stays until the player who drew it closes the
+   * board); the player who drew it gets it with an OK button from `read`.
+   */
   async reveal(
     panel: number,
     title: string,
@@ -120,41 +137,67 @@ export class VentureView {
         sound.play('flip');
         await wait(T.ventureLineStep * speed);
       }
-      await wait(250 * speed);
+      // The bonus bursts up from the tile just placed (a full row of 8 gets the big fanfare).
+      const full = lines.some((l) => l.length >= 8);
+      sound.play(full ? 'fullRow' : 'lineBonus');
+      this.bonusBurst(
+        b,
+        `${full ? 'Full row' : lines.length > 1 ? `${lines.length} lines` : `Line of ${lines[0].length}`}! +${fmt(bonus)}`,
+        full,
+      );
+      await wait(700 * speed);
     }
     this.panels.forEach((tile) => (tile.disabled = true));
-    const show = async (heading: string, message: string) => {
-      const body = h(
-        'div',
-        { class: 'rich-body venture-result', 'aria-live': 'polite' },
-        h('div', { class: 'rich-title' }, heading),
-        h('div', { class: 'venture-description' }, message),
-      );
-      // The player who drew it can press OK; everyone moves on by themselves after a few seconds
-      // (people watching have nothing to press).
-      const done = this.hud.prompt(
-        body,
-        human ? [{ label: 'OK', value: undefined, main: true }] : [],
-        this.G.players[this.pid].color,
-      );
-      const timer = window.setTimeout(
-        () => this.hud.resolvePrompt(undefined),
-        human ? T.ventureResult : T.cpuResult * speed,
-      );
-      try {
-        await done;
-      } finally {
-        clearTimeout(timer);
-      }
-    };
-    if (bonus) {
-      await show(
-        'Line bonus!',
-        `${lines.length > 1 ? `${lines.length} lines` : `Line of ${lines[0].length}`}! +${fmt(bonus)}`,
-      );
+    this.shown = { panel, title, text };
+    if (!human) {
+      // Watching: the card stays up (no button) until the player who drew it closes the board.
+      this.watching = true;
+      void this.hud.prompt(this.cardBody(panel, title, text), [], this.G.players[this.pid].color);
     }
-    const card = CARDS[this.G.vg.cards[panel]];
-    await show(card ? `#${card.number} · ${title}` : title, text);
+  }
+
+  /** A "+50G" burst rising from a venture tile, with a ring of sparkles. */
+  private bonusBurst(tile: HTMLElement, text: string, big: boolean) {
+    const box = this.m.el;
+    const r = tile.getBoundingClientRect();
+    const b = box.getBoundingClientRect();
+    const fx = h(
+      'div',
+      {
+        class: `vg-bonus ${big ? 'big' : ''}`,
+        style: `left:${r.left - b.left + r.width / 2}px;top:${r.top - b.top + r.height / 2}px`,
+      },
+      h('span', { class: 'vg-ring' }),
+      h('b', null, text),
+    );
+    box.append(fx);
+    setTimeout(() => fx.remove(), 2200);
+  }
+
+  /**
+   * The player who drew the card reads it and closes the board with OK, or it closes by itself
+   * after a while.
+   */
+  async read() {
+    const s = this.shown;
+    if (!s) return;
+    const done = this.hud.prompt(
+      this.cardBody(s.panel, s.title, s.text),
+      [{ label: 'OK', value: undefined, main: true }],
+      this.G.players[this.pid].color,
+    );
+    const timer = window.setTimeout(() => this.hud.resolvePrompt(undefined), T.ventureResult);
+    try {
+      await done;
+    } finally {
+      clearTimeout(timer);
+    }
+  }
+
+  /** The player who drew the card closed the board: take it down here too. */
+  close() {
+    if (this.watching) this.hud.resolvePrompt(undefined);
+    this.watching = false;
     this.m.close();
   }
 }

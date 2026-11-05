@@ -91,6 +91,19 @@ const rnd = (n: number) => Math.floor(Math.random() * n);
  * are easy to find. Update this list with each change.
  */
 const RECENT = new Set([
+  'Game setup',
+  'Game setup (friend joined)',
+  'Game setup (offline)',
+  'dominate',
+  'win',
+  'Music: Fortune Cards (venture board)',
+  'Build',
+  'Game log',
+  'Full row bonus',
+  'Line of 5 bonus',
+  'Venture (CPU view)',
+  'lineBonus',
+  'fullRow',
   'Shops reopening',
   'Music: Fortune Cards (venture board)',
   'Music: Jackpot Jingle (Lucky Reels)',
@@ -1023,6 +1036,8 @@ export async function openLab(app: HTMLElement, section?: string) {
         const card = CARD_LIST[rnd(CARD_LIST.length)];
         G.vg.cards[panel] = card.id;
         await view.reveal(panel, card.title, card.text, ...labLines(G.vg.owner, panel, p.id), true, 1);
+        await view.read();
+        view.close();
         result('Venture panel', panel);
       }),
       btn('Venture (CPU view)', async () => {
@@ -1034,6 +1049,9 @@ export async function openLab(app: HTMLElement, section?: string) {
         const card = CARD_LIST[rnd(CARD_LIST.length)];
         G.vg.cards[panel] = card.id;
         await view.reveal(panel, card.title, card.text, ...labLines(G.vg.owner, panel, p.id), false, 1);
+        // Watching: the board stays up until the player who drew the card closes it.
+        await new Promise((r) => setTimeout(r, 4000));
+        view.close();
       }),
       btn('Line of 5 bonus', async () => {
         const p = cur();
@@ -1052,6 +1070,28 @@ export async function openLab(app: HTMLElement, section?: string) {
           true,
           1,
         );
+        await view.read();
+        view.close();
+      }),
+      btn('Full row bonus', async () => {
+        const p = cur();
+        const y = rnd(8);
+        for (let x = 0; x < 8; x++) G.vg.owner[y * 8 + x] = p.id;
+        const panel = y * 8 + 3;
+        G.vg.owner[panel] = -1;
+        const view = new VentureView(hud, G, p.id);
+        G.vg.owner[panel] = p.id;
+        G.vg.cards[panel] = 'bank50';
+        await view.reveal(
+          panel,
+          'Bank bonus',
+          'Roll the die: the bank pays you 50G times the roll.',
+          ...labLines(G.vg.owner, panel, p.id),
+          true,
+          1,
+        );
+        await view.read();
+        view.close();
       }),
     );
   }
@@ -1259,7 +1299,7 @@ export async function openLab(app: HTMLElement, section?: string) {
             return seats.filter((x) => x.kind === 'remote').length;
           },
           lobby: () => ({ boardName: '', rules: 'standard', target: 0, roundCap: 0, seats }),
-          configure(total: number, locals: LocalSeat[]) {
+          configure(locals: LocalSeat[], bots: LocalSeat[]) {
             seats = [
               ...locals.map((l, i) => ({
                 kind: i ? ('local' as const) : ('host' as const),
@@ -1267,14 +1307,14 @@ export async function openLab(app: HTMLElement, section?: string) {
                 online: true,
               })),
               ...remotes,
-            ];
-            while (seats.length < total) seats.push({ kind: 'open', name: '', look: null, online: false });
+              ...bots.map((b) => ({ kind: 'cpu' as const, ...b, online: true })),
+            ].slice(0, 5);
             listeners.forEach((f) => f());
           },
           setSettings: () => {},
           kick(i: number) {
             remotes.splice(remotes.indexOf(seats[i]), 1);
-            seats[i] = { kind: 'open', name: '', look: null, online: false };
+            seats = seats.filter((_, k) => k !== i);
             listeners.forEach((f) => f());
           },
           onChange(f: () => void) {

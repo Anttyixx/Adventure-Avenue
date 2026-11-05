@@ -54,6 +54,8 @@ export async function playArcade(g: Game, p: Player) {
 export async function luckyReels(g: Game, p: Player) {
   let symbols = Array.from({ length: 5 }, () => REEL_SYMBOLS[randInt(g.G, REEL_SYMBOLS.length)]);
   let locked = new Array<boolean>(5).fill(false);
+  // Slots rolled since the player last saw them (only the last reroll, if the reels ran out).
+  let rolled = new Array<boolean>(5).fill(false);
   for (let left = K.reels.rerolls; left > 0; left--) {
     const answer = await g.ask({
       kind: 'reels',
@@ -62,13 +64,21 @@ export async function luckyReels(g: Game, p: Player) {
       locked: locked.slice(),
       left,
     });
+    rolled = rolled.map(() => false);
     if (!answer || answer.collect) break;
     locked = symbols.map((_, i) => answer.locked?.[i] === true);
     if (locked.every(Boolean)) break;
     symbols = symbols.map((s, i) => (locked[i] ? s : REEL_SYMBOLS[randInt(g.G, REEL_SYMBOLS.length)]));
+    rolled = locked.map((l) => !l);
   }
   const prize = reelPrize(symbols, p.level);
-  await g.emit({ type: 'reels', pid: p.id, result: symbols, prize: `${prize.name} · ${prize.amount}G` });
+  await g.emit({
+    type: 'reels',
+    pid: p.id,
+    result: symbols,
+    rolled,
+    prize: `${prize.name} · ${prize.amount}G`,
+  });
   if (prize.amount) await g.pay(null, p, prize.amount, 'Lucky Reels');
   await g.log(`Lucky Reels: ${p.name} won ${prize.amount}G (${prize.name}).`, p.id, 'arcade');
 }
@@ -88,30 +98,34 @@ export async function memoryBlocks(g: Game, p: Player) {
   let picked = await g.ask({ kind: 'memory', pid: p.id, prizes });
   if (!(picked >= 0 && picked < 9)) picked = 0;
   const L = p.level;
-  let text = '';
-  switch (prizes[picked]) {
+  const prize = prizes[picked];
+  const text = {
+    shopsUp: 'Your shops +10%',
+    gold: `${K.memory.gold * L}G`,
+    wild: 'A Suit Yourself card',
+    shopsDown: 'Your shops -5%',
+    small: `${K.memory.small}G`,
+  }[prize];
+  // The reveal comes first; the prize takes effect once the game is closed, so its coins or
+  // value changes play out on the board.
+  await g.emit({ type: 'memory', pid: p.id, prizes, picked, prize: text });
+  switch (prize) {
     case 'shopsUp':
-      text = 'Your shops +10%';
       await g.scaleShops(ownedShops(g.G, p.id), 1 + K.memory.shopsUp);
       break;
     case 'gold':
-      text = `${K.memory.gold * L}G`;
       await g.pay(null, p, K.memory.gold * L, 'Memory Blocks');
       break;
     case 'wild':
-      text = 'A Suit Yourself card';
       p.wild++;
       break;
     case 'shopsDown':
-      text = 'Your shops -5%';
       await g.scaleShops(ownedShops(g.G, p.id), 1 - K.memory.shopsDown);
       break;
     case 'small':
-      text = `${K.memory.small}G`;
       await g.pay(null, p, K.memory.small, 'Memory Blocks');
       break;
   }
-  await g.emit({ type: 'memory', pid: p.id, prizes, picked, prize: text });
   await g.log(`Memory Blocks: ${p.name} won ${text}.`, p.id, 'arcade');
 }
 

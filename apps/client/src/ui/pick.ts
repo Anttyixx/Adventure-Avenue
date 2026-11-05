@@ -445,6 +445,52 @@ export async function tradeOnBoard(
 }
 
 /**
+ * Someone else is deciding on a trade: everyone else sees the terms on the table (what each side
+ * gives, labelled on the board) without any buttons, and who is deciding. Returns a function that
+ * takes it down once they have answered.
+ */
+export function watchTradeOnBoard(ctx: PickCtx, o: TradeOffer): () => void {
+  const { G, hud, board } = ctx;
+  const a = G.players[o.from];
+  const b = G.players[o.to];
+  const row = (who: Player, ids: number[], cash: number) =>
+    h(
+      'div',
+      { class: 'tb-row', style: `--pc:${PLAYER_COLORS[who.color]}` },
+      h('div', { class: 'tb-head' }, h('span', { class: 'tb-who' }, `${who.name} gives`)),
+      h(
+        'div',
+        { class: 'tb-chips' },
+        ...ids.map((id) => tradeChip(G, id)),
+        cash ? h('span', { class: 'tb-chip cash' }, fmt(cash)) : null,
+        !ids.length && !cash ? h('span', { class: 'tb-hint' }, 'Nothing') : null,
+      ),
+    );
+  const body = h(
+    'div',
+    { class: 'trade-bar watching' },
+    h('div', { class: 'tb-rows' }, row(a, o.give, o.cashGive), row(b, o.get, o.cashGet)),
+    h('div', { class: 'tb-waiting' }, `${b.name} is deciding…`),
+  );
+  const labels = new Map<number, string>();
+  for (const id of o.give) labels.set(id, `${a.name} gives`);
+  for (const id of o.get) labels.set(id, `${b.name} gives`);
+  board.setChoices([...o.give, ...o.get], PLAYER_COLORS[a.color], () => {}, undefined, {
+    labels,
+    pins: false,
+    fit: false,
+  });
+  let open = true;
+  void hud.prompt(body, [], b.color);
+  return () => {
+    if (!open) return;
+    open = false;
+    hud.resolvePrompt(null);
+    board.clearChoices();
+  };
+}
+
+/**
  * Answer an offer in the action bar: what each side gives, with the properties labelled on the
  * zoomed-out board. Accept, decline, or send back different terms.
  */

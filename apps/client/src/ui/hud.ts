@@ -1011,6 +1011,13 @@ export class Hud {
       list,
     );
     list.scrollTop = toBottom || atBottom ? list.scrollHeight : keep;
+    // New lines settle after this (coin icons swap in, fonts finish), which can leave the newest
+    // line half hidden: stick to the bottom again once they have.
+    if (toBottom || atBottom) {
+      const stick = () => (list.scrollTop = list.scrollHeight);
+      requestAnimationFrame(stick);
+      setTimeout(stick, 120);
+    }
   }
 
   // ------------------------------------------------------------ tooltip

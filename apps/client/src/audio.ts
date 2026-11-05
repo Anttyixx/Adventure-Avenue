@@ -21,6 +21,9 @@ export type Sfx =
   | 'promote'
   | 'venture'
   | 'flip'
+  | 'lineBonus'
+  | 'dominate'
+  | 'fullRow'
   | 'reelTick'
   | 'reelStop'
   | 'turn'
@@ -45,6 +48,9 @@ export const SFX_NAMES: Sfx[] = [
   'promote',
   'venture',
   'flip',
+  'lineBonus',
+  'dominate',
+  'fullRow',
   'reelTick',
   'reelStop',
   'turn',
@@ -239,44 +245,44 @@ const SONGS: Record<Track, Song> = {
     ],
     drums: ['k h s h k k s h', 'k h s h k s s s'],
   },
-  // Curious, twinkly theme while the venture board is up.
+  // Venture board: an upbeat, sparkly "what will I get?" theme.
   venture: {
-    bpm: 104,
+    bpm: 138,
     chords: [
-      ['D3', 'F3', 'A3'],
-      ['C3', 'E3', 'G3'],
-      ['Bb2', 'D3', 'F3'],
-      ['A2', 'C#3', 'E3'],
-      ['D3', 'F3', 'A3'],
-      ['G2', 'Bb2', 'D3'],
-      ['E3', 'G3', 'Bb3'],
-      ['A2', 'C#3', 'E3'],
+      ['G3', 'B3', 'D4'],
+      ['E3', 'G3', 'B3'],
+      ['C4', 'E4', 'G4'],
+      ['D4', 'F#4', 'A4'],
+      ['G3', 'B3', 'D4'],
+      ['B3', 'D#4', 'F#4'],
+      ['C4', 'E4', 'G4'],
+      ['D4', 'F#4', 'A4'],
     ],
     lead: [
-      'D5 F5 A5 F5 D6 - A5 .',
-      'C5 E5 G5 E5 C6 - G5 .',
-      'Bb4 D5 F5 D5 Bb5 - F5 .',
-      'A4 C#5 E5 A5 - . E5 .',
-      'D5 F5 A5 D6 F6 - D6 .',
-      'G5 - Bb5 - D6 - Bb5 .',
-      'E5 G5 Bb5 G5 E6 - D6 C#6',
-      'A5 - - - . . . .',
+      'D5 G5 B5 D6 B5 G5 B5 D6',
+      'E5 . G5 B5 . G5 E5 .',
+      'E5 G5 C6 E6 - C6 G5 .',
+      'F#5 . A5 . D6 - C6 B5',
+      'B5 . D6 . G6 - D6 .',
+      'B5 D#6 F#6 - D#6 . B5 .',
+      'C6 . E6 . G6 . E6 C6',
+      'D6 - A5 - F#5 - D6 .',
     ],
     bass: [
-      'D2 . . . A2 . . .',
-      'C2 . . . G2 . . .',
-      'Bb1 . . . F2 . . .',
-      'A1 . . . E2 . . .',
-      'D2 . . . A2 . . .',
-      'G1 . . . D2 . . .',
-      'E2 . . . Bb2 . . .',
-      'A1 . . . E2 . C#2 .',
+      'G2 G2 . G2 D3 . G2 .',
+      'E2 E2 . E2 B2 . E2 .',
+      'C3 C3 . C3 G2 . C3 .',
+      'D3 D3 . D3 A2 . F#2 .',
+      'G2 G2 . G2 D3 . G2 .',
+      'B2 B2 . B2 F#2 . B2 .',
+      'C3 C3 . C3 G2 . E2 .',
+      'D3 D3 . D3 A2 . D2 .',
     ],
-    drums: ['k . . h . . h .', 'k . . h s . h .'],
+    drums: ['k h s h k k s h', 'k h s h k h s s'],
   },
   // Lucky Reels: a bouncy casino jingle.
   reels: {
-    bpm: 132,
+    bpm: 144,
     chords: [
       ['F3', 'A3', 'C4'],
       ['D3', 'F3', 'A3'],
@@ -307,7 +313,7 @@ const SONGS: Record<Track, Song> = {
       'G2 . D3 . G2 . D3 .',
       'C2 . G2 . C3 . G2 .',
     ],
-    drums: ['k . h s k . h s', 'k . h s k h s s'],
+    drums: ['k h s h k h s h', 'k h s h k k s s'],
   },
   // Memory Blocks: calm and sparse, to think by.
   memory: {
@@ -381,7 +387,7 @@ const SONGS: Record<Track, Song> = {
   },
   // Lucky Wheel: a showy game-show tune.
   wheel: {
-    bpm: 120,
+    bpm: 134,
     chords: [
       ['Bb3', 'D4', 'F4'],
       ['G3', 'Bb3', 'D4'],
@@ -412,11 +418,11 @@ const SONGS: Record<Track, Song> = {
       'C2 . G2 . C2 . G2 .',
       'F2 . C3 . F2 . A2 .',
     ],
-    drums: ['k . h . s . h h', 'k . h k s . h s'],
+    drums: ['k h s h k h s h', 'k h s k k h s s'],
   },
   // Treasure Split: a swaying sea shanty.
   treasure: {
-    bpm: 112,
+    bpm: 126,
     chords: [
       ['D3', 'F3', 'A3'],
       ['D3', 'F3', 'A3'],
@@ -447,7 +453,7 @@ const SONGS: Record<Track, Song> = {
       'C2 . . G2 . . C2 .',
       'A1 . . E2 . . A1 .',
     ],
-    drums: ['k . . s . . h .', 'k . . s . h s .'],
+    drums: ['k . h s . h k .', 'k . h s . h s s'],
   },
 };
 
@@ -764,6 +770,34 @@ class AudioEngine {
         this.tone(bus, 'triangle', freq('A5'), t + 0.1, 0.08, 0.16, { to: freq('E6') });
         this.tone(bus, 'square', 1800, t + 0.15, 0.03, 0.05, { cutoff: 3500 });
         break;
+      case 'lineBonus':
+        // A venture line: a quick rising arpeggio with a coin ring on top.
+        this.notes(['C5', 'E5', 'G5', 'C6'], t, 0.07, 'square', 0.1, 0.12);
+        this.tone(bus, 'sine', freq('E6'), t + 0.3, 0.5, 0.14);
+        this.tone(bus, 'sine', freq('B6'), t + 0.36, 0.45, 0.08);
+        break;
+      case 'dominate':
+        // A whole district: a brassy rising chord stack, then a held major chord with a shimmer.
+        this.notes(['C4', 'G4', 'C5', 'E5', 'G5'], t, 0.09, 'sawtooth', 0.07, 0.2);
+        for (const [n, v] of [
+          ['C4', 0.2],
+          ['E4', 0.16],
+          ['G4', 0.16],
+          ['C5', 0.12],
+        ] as const)
+          this.tone(bus, 'square', freq(n), t + 0.5, 0.9, v * 0.5, { cutoff: 2400 });
+        this.tone(bus, 'triangle', freq('C3'), t + 0.5, 1, 0.3);
+        this.tone(bus, 'sine', freq('C7'), t + 0.55, 0.7, 0.05, { vibrato: 8 });
+        this.hiss(bus, t + 0.5, 0.8, 0.08, 7000, 2);
+        break;
+      case 'fullRow':
+        // A full row of 8: a bright little fanfare.
+        this.notes(['G4', 'C5', 'E5', 'G5', 'C6', 'E6'], t, 0.06, 'square', 0.11, 0.11);
+        this.tone(bus, 'square', freq('G6'), t + 0.4, 0.6, 0.1, { cutoff: 4000, vibrato: 6 });
+        this.tone(bus, 'triangle', freq('C4'), t + 0.4, 0.6, 0.25);
+        this.tone(bus, 'triangle', freq('E4'), t + 0.4, 0.6, 0.18);
+        this.hiss(bus, t + 0.4, 0.5, 0.1, 7000, 2);
+        break;
       case 'reelTick':
         // Slot reels whirring past: a short, light tick.
         this.tone(bus, 'square', 1250, t, 0.025, 0.045, { cutoff: 2600 });
@@ -794,11 +828,63 @@ class AudioEngine {
           }),
         );
         break;
-      case 'win':
-        this.notes(['G4', 'C5', 'E5', 'G5', 'E5', 'G5'], t, 0.12, 'square', 0.13, 0.14);
-        this.tone(bus, 'square', freq('C6'), t + 0.72, 1.2, 0.15, { cutoff: 4000, vibrato: 5 });
-        for (const n of ['C4', 'E4', 'G4']) this.tone(bus, 'triangle', freq(n), t + 0.72, 1.2, 0.16);
+      case 'win': {
+        // A grand victory fanfare (about 5 s): a drum roll swell, two trumpet phrases over
+        // marching chords, a big final chord with sparkling runs, and a long ring-out.
+        const bar = 0.48;
+        // Drum roll building up.
+        for (let i = 0; i < 16; i++) this.hiss(bus, t + i * 0.055, 0.06, 0.05 + i * 0.012, 1800, 0.9);
+        this.tone(bus, 'sine', 140, t + 0.88, 0.25, 0.5, { to: 50 });
+        const s = t + 0.9;
+        // Phrase 1 and 2: trumpet calls.
+        const lead: [string, number, number][] = [
+          ['G4', 0, 0.5],
+          ['C5', 0.5, 0.5],
+          ['E5', 1, 0.5],
+          ['G5', 1.5, 1],
+          ['E5', 2.5, 0.5],
+          ['G5', 3, 1],
+          ['A5', 4, 0.5],
+          ['F5', 4.5, 0.5],
+          ['A5', 5, 0.5],
+          ['C6', 5.5, 1.5],
+        ];
+        for (const [n, at, len] of lead)
+          this.tone(bus, 'square', freq(n), s + at * bar * 0.5, len * bar * 0.5 * 0.95, 0.12, {
+            cutoff: 3800,
+            vibrato: len > 0.9 ? 5 : 0,
+          });
+        // Marching chords and bass under the calls.
+        const chords: [string[], number][] = [
+          [['C4', 'E4', 'G4'], 0],
+          [['C4', 'E4', 'G4'], 1],
+          [['F3', 'A3', 'C4'], 2],
+          [['G3', 'B3', 'D4'], 3],
+        ];
+        for (const [ns, at] of chords)
+          for (const n of ns) this.tone(bus, 'triangle', freq(n), s + at * bar, bar * 0.9, 0.1);
+        for (let i = 0; i < 8; i++) {
+          this.tone(bus, 'sine', 150, s + i * bar * 0.5, 0.14, 0.4, { to: 50 });
+          if (i % 2) this.hiss(bus, s + i * bar * 0.5, 0.1, 0.16, 1800, 0.8);
+        }
+        // The big finish: a held C major chord with a sparkling run on top and a cymbal.
+        const f = s + 4 * bar;
+        for (const [n, v] of [
+          ['C3', 0.3],
+          ['C4', 0.18],
+          ['E4', 0.15],
+          ['G4', 0.15],
+          ['C5', 0.12],
+        ] as const)
+          this.tone(bus, n === 'C3' ? 'triangle' : 'square', freq(n), f, 2.4, v * (n === 'C3' ? 1 : 0.6), {
+            cutoff: 3000,
+          });
+        this.tone(bus, 'square', freq('E6'), f, 2.2, 0.1, { cutoff: 4200, vibrato: 6 });
+        this.notes(['C6', 'E6', 'G6', 'C7', 'G6', 'E6', 'G6', 'C7'], f + 0.1, 0.08, 'sine', 0.06, 0.2);
+        this.hiss(bus, f, 2.2, 0.16, 7000, 1.5);
+        this.tone(bus, 'sine', 120, f, 0.4, 0.6, { to: 40 });
         break;
+      }
       case 'deny':
         this.tone(bus, 'square', 220, t, 0.12, 0.12, { cutoff: 1200 });
         this.tone(bus, 'square', 196, t + 0.12, 0.18, 0.12, { cutoff: 1200 });

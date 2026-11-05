@@ -26,6 +26,44 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: '2026-11-06-setup-venture-domination',
+    date: 'Nov 6, 2026',
+    title: 'New game setup, dominations and a grand finale',
+    features: [
+      {
+        tag: 'better',
+        title: 'Redesigned game setup',
+        text: 'You start in the game; add bots with one tap (up to 5 players). Friends who join take a free seat, or replace a bot when the game is full. Characters stand centered on their own spot.',
+      },
+      {
+        tag: 'new',
+        title: 'Dominations',
+        text: 'Owning a whole district now gets its own moment: the camera shows it, a banner and fanfare play and the shops sparkle, once the purchase or trade is done.',
+      },
+      {
+        tag: 'better',
+        title: 'Venture cards, your pace',
+        text: 'Read your card and press OK when done (it closes by itself after 10 seconds); everyone else sees it until then. Line bonuses burst up from your tile, with a fanfare for a full row.',
+      },
+      {
+        tag: 'new',
+        title: 'A grand finale',
+        text: 'Winning now plays a longer victory fanfare with fireworks and confetti.',
+      },
+    ],
+    extras: [
+      'Other players can watch the terms while two players negotiate a trade; the log keeps just one line for how it ended.',
+      'District stock moves play straight away, even mid-walk; investing shows the shop rising first.',
+      'After a roll, the die shrinks beside you before you start walking.',
+      'Zoomed all the way out, the board sits in the middle of the window, clear of the menus.',
+      'Lucky Reels pays a bit more, and kept slots stay still while the others spin.',
+      'Memory Blocks prizes take effect after the game closes, on the board.',
+      'Build and Skip sit side by side in the build bar.',
+      'Peppier venture board music and livelier arcade tunes.',
+      'The game log no longer cuts off its newest line.',
+    ],
+  },
+  {
     id: '2026-11-05-arcade-music',
     date: 'Nov 5, 2026',
     title: 'A tune for every game',

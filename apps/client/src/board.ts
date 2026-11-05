@@ -562,7 +562,11 @@ export class BoardView {
     });
   }
 
-  async rollDie(value: number, onResult?: () => void, resultHold: number = T.dieHold) {
+  /**
+   * Roll the die on screen. With `shrinkFirst` it also waits for the die to shrink beside the
+   * player before returning, so walking starts after it (not while it is still shrinking).
+   */
+  async rollDie(value: number, onResult?: () => void, resultHold: number = T.dieHold, shrinkFirst = false) {
     const roll = reducedMotion() ? 250 : T.dieRoll;
     const die = {
       value,
@@ -579,6 +583,7 @@ export class BoardView {
     if (resultHold > 0) await this.wait(resultHold);
     // Then it shrinks to sit beside the player and counts the steps down.
     if (this.die?.value === value) this.die = { ...this.die, phase: 'small', t0: performance.now() };
+    if (shrinkFirst) await this.wait(T.dieShrink);
   }
 
   // ------------------------------------------------------------ choices
@@ -809,12 +814,15 @@ export class BoardView {
   }
 
   /**
-   * The whole board fitted into the screen area the HUD leaves free (between the toolbar, the
-   * player cards, the status line and the action bar), so no square hides under them.
+   * The whole board fitted around the middle of the window, clear of the HUD: the same margin on
+   * both sides (the bigger of left/right, and of top/bottom), so a board centered on the window
+   * never runs under the toolbar, the player cards or the action bar.
    */
   freeFit() {
     const { top, right, bottom, left } = this.insets;
-    return { z: fitZoom(this.w - left - right, this.h - top - bottom, this.ww, this.wh) };
+    const sx = Math.max(left, right);
+    const sy = Math.max(top, bottom);
+    return { z: fitZoom(this.w - 2 * sx, this.h - 2 * sy, this.ww, this.wh) };
   }
 
   /**
@@ -843,13 +851,12 @@ export class BoardView {
       fz = Math.min(z, v.z);
     }
     // Zoomed out, the camera gradually lets go of the player and eases to the board's center,
-    // shifted so the board sits in the middle of the free area (straight there for overviews).
+    // which sits in the middle of the window (straight there for overviews).
     const overview =
       this.followPid < 0 || !!this.G?.over || this.overviewHold || this.showHold || this.peekWhole;
     const t = overview ? 1 : Math.min(1, Math.max(0, (out - ZOOM_BLEND) / (ZOOM_BLEND_END - ZOOM_BLEND)));
     const b = t * t * (3 - 2 * t);
-    const { top, right, bottom, left } = this.insets;
-    const mid = { x: this.ww / 2 - (left - right) / 2 / fz, y: this.wh / 2 - (top - bottom) / 2 / fz };
+    const mid = { x: this.ww / 2, y: this.wh / 2 };
     const c = { x: follow.x + (mid.x - follow.x) * b, y: follow.y + (mid.y - follow.y) * b };
     this.camTarget = { x: c.x, y: c.y, z: fz };
     if (this.frameIds?.length) this.camTarget = this.frameSquares(this.frameIds);

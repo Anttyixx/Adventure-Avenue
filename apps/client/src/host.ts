@@ -7,6 +7,7 @@ import {
   SUITS,
   netWorth,
   stockPrice,
+  dominated,
   K,
   PLAYER_COLORS,
   cpuDecide,
@@ -31,10 +32,11 @@ import { guideModal } from './ui/guide';
 import { showResults } from './ui/results';
 import { investOnBoard } from './ui/invest';
 import { AuctionView } from './ui/auction';
-import { confettiRain } from './ui/confetti';
+import { confettiRain, fireworks } from './ui/confetti';
 import { activity, paymentActivity, paymentLogMatches, PRE_ROLL_STEPS } from './ui/activity';
 import {
   answerTradeOnBoard,
+  watchTradeOnBoard,
   auctionOnBoard,
   buyoutPrompt,
   cannonOnBoard,
@@ -84,6 +86,8 @@ export class HotSeat implements GameIO {
   private owners = new Map<number, number>();
   /** Each district's stock price as last shown, to announce rises. */
   private prices: number[] = [];
+  /** Districts each player dominates ("pid:group"), as last shown; null until first checked. */
+  private doms: Set<string> | null = null;
   /** The live auction window while an auction runs. */
   auction: AuctionView | null = null;
   /** True while a token is between squares of a walk (passing, not landing). */
@@ -442,6 +446,13 @@ export class HotSeat implements GameIO {
     return this.arcade;
   }
 
+  /** The player who drew the venture card closed it: the board goes away for everyone. */
+  private endVenture() {
+    this.venture?.close();
+    this.venture = null;
+    this.setScene(null);
+  }
+
   private endArcade() {
     this.arcade?.close();
     this.arcade = null;
@@ -481,8 +492,16 @@ export class HotSeat implements GameIO {
       case 'memory':
         void this.stage('Memory Blocks').memoryStart(req.prizes, p.level, this.speed);
         break;
+      case 'answerTrade':
+        // Everyone else can see the terms being considered.
+        this.tradeWatch?.();
+        this.tradeWatch = watchTradeOnBoard(this.pick, req.offer);
+        break;
     }
   }
+
+  /** Takes down the trade terms shown to everyone not deciding. */
+  private tradeWatch: (() => void) | null = null;
 
   /** Give CPU choices a beat so players can follow along. */
   private async showCpu(req: DecisionRequest, ans: unknown) {
@@ -517,6 +536,16 @@ export class HotSeat implements GameIO {
         await this.wait(T.cpuPath);
         break;
       case 'memory':
+        break;
+      case 'answerTrade':
+        await this.wait(T.cpuDecision);
+        this.tradeWatch?.();
+        this.tradeWatch = null;
+        break;
+      case 'ventureRead':
+        // A CPU takes a moment to read its card; a player elsewhere has already closed theirs.
+        if (p.cpu) await this.wait(T.cpuResult);
+        this.endVenture();
         break;
       default:
         await this.wait(T.cpuDecision);
@@ -632,6 +661,11 @@ export class HotSeat implements GameIO {
         this.venture = new VentureView(hud, G, p.id);
         this.setScene('venture');
         return this.venture.pick();
+
+      case 'ventureRead':
+        await this.venture?.read();
+        this.endVenture();
+        return true;
 
       case 'reels':
         return this.stage('Lucky Reels').reels(req, p, true);
@@ -765,6 +799,9 @@ export class HotSeat implements GameIO {
           e.value,
           () => hud.action('roll-result', `${mover.name} rolled a ${e.value}.`, 'move'),
           routePreviewHolds ? 0 : T.dieHold,
+          // One way to go: the die shrinks first, then the player walks. With a choice of where
+          // to go, the choice comes straight up as before.
+          routes.length <= 1,
         );
         // Once the die has landed, zoom out to show the player and every square the roll could
         // take them to: only on the screen of the human who rolled (they pick where to go).
@@ -915,18 +952,23 @@ export class HotSeat implements GameIO {
       case 'venture': {
         const p = G.players[e.pid];
         hud.action('venture', `${p.name} drew ${e.title}.`, 'card');
+        // The board stays up until the player who drew the card closes it (`ventureRead`).
         const view = this.venture ?? new VentureView(hud, G, e.pid);
-        this.venture = null;
+        this.venture = view;
         this.setScene('venture');
         await view.reveal(e.panel, e.title, e.text, e.lines, e.bonus, this.localHuman(p.id), this.speed);
-        this.setScene(null);
         this.refresh();
         break;
       }
       case 'reels': {
         const p = G.players[e.pid];
         hud.action('reels', `${p.name} finished Lucky Reels.`, 'arcade');
-        await this.stage('Lucky Reels').reelsResult(e.result, p, this.readMs(this.localHuman(p.id)));
+        await this.stage('Lucky Reels').reelsResult(
+          e.result,
+          e.rolled ?? e.result.map(() => false),
+          p,
+          this.readMs(this.localHuman(p.id)),
+        );
         this.endArcade();
         this.refresh();
         break;
@@ -1035,6 +1077,7 @@ export class HotSeat implements GameIO {
           await this.wait(T.stockZoom);
           board.dance(winner.id, T.victory);
           confettiRain(hud.root, T.victory + 600);
+          fireworks(hud.root, T.victory - 800);
           hud.banner(`${winner.name} wins!`, PLAYER_COLORS[winner.color], T.victory);
           await this.wait(T.victory);
           board.lookAt = null;
@@ -1057,7 +1100,7 @@ export class HotSeat implements GameIO {
           this.summarizedPayments = this.summarizedPayments.filter((p) => !payments.includes(p));
           break;
         }
-        if (e.text.includes('made a trade.') || (e.text.includes(' declined ') && e.text.includes('trade.')))
+        if (e.text.endsWith("'s trade.") && (e.text.includes(' accepted ') || e.text.includes(' declined ')))
           hud.action('trade', e.text, e.kind);
         else hud.tick(e.text, e.kind, T.actionResult, this.passing);
         break;
@@ -1066,8 +1109,54 @@ export class HotSeat implements GameIO {
         hud.tick(e.text, 'alert');
         break;
     }
-    // Mid-walk price changes are announced once the token stops.
-    if (!this.passing && e.type !== 'step' && e.type !== 'gameOver') await this.announceStockMoves();
+    // A district's stock moving is shown as soon as it happens, even mid-walk (the walk waits for
+    // it). An investment shows the shop's own value rising first: its 'value' event comes next.
+    const investing = e.type === 'money' && e.reason === 'Investment';
+    if (!investing && e.type !== 'gameOver') await this.announceStockMoves();
+    // A new domination is celebrated once the action that made it is over (a trade or purchase
+    // ends with its log line), never halfway through it.
+    if (e.type === 'log' || e.type === 'trade' || e.type === 'auctionEnd') await this.announceDominations();
+  }
+
+  /**
+   * Someone now owns every property in a district: the camera frames it, a banner and a fanfare
+   * play, and gold rings with sparkles burst from each of its squares.
+   */
+  private async announceDominations() {
+    const G = this.G;
+    if (G.over) return;
+    const now = new Set<string>();
+    G.groups.forEach((grp, g) => {
+      const owner = G.nodes[grp[0]]?.owner ?? -1;
+      if (owner >= 0 && dominated(G, owner, g)) now.add(`${owner}:${g}`);
+    });
+    const before = this.doms;
+    this.doms = now;
+    if (!before) return;
+    for (const key of now) {
+      if (before.has(key)) continue;
+      const [pid, g] = key.split(':').map(Number);
+      const p = G.players[pid];
+      const ids = G.groups[g];
+      const sq = G.nodes[ids[0]];
+      const dist = sq.d >= 0 ? G.districts[sq.d] : null;
+      const where = dist ? `${dist.name}` : 'a district';
+      this.hud.action(
+        `dominate:${key}`,
+        `${p.name} dominates ${where}! Fees and values there jump up.`,
+        'property',
+      );
+      this.board.lookAt = this.board.frameSquares(ids);
+      await this.wait(T.stockZoom);
+      sound.play('dominate');
+      this.hud.banner(`${p.name} dominates ${where}!`, dist?.color ?? PLAYER_COLORS[p.color], T.stockRise);
+      for (const [i, id] of ids.entries()) setTimeout(() => this.board.ring(id, '#ffd166', true), i * 120);
+      this.board.stockFx(ids, T.stockRise, true);
+      await this.wait(T.stockRise);
+      this.board.lookAt = null;
+      await this.wait(T.stockZoom);
+      if (this.dead) return;
+    }
   }
 
   /**

@@ -4,7 +4,7 @@
  * players pick the same one. Once the game starts characters are fixed.
  */
 import type { CharId } from '@aa/engine';
-import { CHARACTERS, characterURL, portraitURL } from '../sprites';
+import { CHARACTERS, characterURL, portraitURL, bodyURL } from '../sprites';
 import { h } from './dom';
 
 export interface PickOptions {
@@ -90,7 +90,12 @@ export function charButton(
   label = 'Change character',
 ): HTMLElement {
   const small = cls.split(' ').includes('small');
-  const img = h('img', { src: small ? portraitURL(ch, 4) : characterURL(ch, 2), alt: '' });
+  // 'body': the character trimmed to its drawn pixels, so it fills (and centers in) its spot.
+  const body = cls.split(' ').includes('body');
+  const img = h('img', {
+    src: small ? portraitURL(ch, 4) : body ? bodyURL(ch, 4) : characterURL(ch, 2),
+    alt: '',
+  });
   if (!onPick) return h('span', { class: `char-btn ${cls} fixed` }, img);
   return h(
     'button',

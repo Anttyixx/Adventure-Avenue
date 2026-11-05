@@ -37,6 +37,8 @@ export function activity(G: GameState, req: DecisionRequest, rolled?: number): A
       return is('selling stocks', 'stock');
     case 'venturePanel':
       return is('picking a venture card', 'card');
+    case 'ventureRead':
+      return is('reading their venture card', 'card');
     case 'reels':
       return is('playing Lucky Reels', 'arcade');
     case 'memory':
@@ -63,7 +65,7 @@ export function activity(G: GameState, req: DecisionRequest, rolled?: number): A
         'stock',
       );
     case 'answerTrade':
-      return is('considering a trade offer', 'property');
+      return is(`deciding on ${G.players[req.offer.from].name}'s trade offer`, 'property');
     case 'bid':
       return is('deciding whether to bid', 'money');
     case 'debt':

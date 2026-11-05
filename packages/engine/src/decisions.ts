@@ -58,6 +58,8 @@ export interface DecisionMap {
   buyStock: [{ discount: number; maxSpend: number }, { d: number; n: number } | null];
   sellStock: [{ premium: number }, { d: number; n: number } | null];
   venturePanel: [{ owner: number[] }, number];
+  /** The card is up: the player who drew it closes the venture board when done reading. */
+  ventureRead: [{ card: string }, unknown];
   reels: [
     { symbols: ReelSymbol[]; locked: boolean[]; left: number },
     { locked: boolean[]; collect: boolean },

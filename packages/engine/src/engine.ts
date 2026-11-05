@@ -814,6 +814,8 @@ export class Game {
       );
       await this.pay(null, p, bonus, 'Line bonus');
     }
+    // Everyone keeps the card up until the player who drew it has read it and closes it.
+    await this.ask({ kind: 'ventureRead', pid: p.id, card: card.id });
     await card.run(this, p);
   }
 
@@ -924,12 +926,8 @@ export class Game {
         cashGet: Math.floor(counter.cashGet || 0),
       };
       if (!this.validTrade(next)) break;
-      await this.log(
-        `${G.players[next.from].name} sent back different terms to ${G.players[next.to].name}.`,
-        next.from,
-        'property',
-        [next.to],
-      );
+      // Back-and-forth terms are not logged; the log shows who is deciding while it happens
+      // and one line for how the trade ended.
       offer = next;
     }
     const a = G.players[offer.from];
@@ -943,7 +941,7 @@ export class Game {
         [a, b, offer.cashGive],
         [b, a, offer.cashGet],
       ]);
-      await this.log(`${a.name} and ${b.name} made a trade.`, a.id, 'property', [b.id]);
+      await this.log(`${b.name} accepted ${a.name}'s trade.`, a.id, 'property', [b.id]);
       for (const id of [...offer.give, ...offer.get]) {
         groups.add(G.nodes[id].g);
         await this.emit({ type: 'owner', sq: id, owner: G.nodes[id].owner });

@@ -555,12 +555,14 @@ stationary, with rounded square tiles and no header or OK button in its containe
 screen: up to 600px wide on monitors (about 62% of the window height, never reaching the player
 cards), while short phone screens keep a smaller board that fits above the action bar. It does not
 dim the background or block interaction with the action bar. After a flip, the action bar shows
-the card's title, description and OK button. The picked tile flips with a card-flip sound. If it
-makes a bonus line, the line's tiles flip over again one after another, starting next to the
-picked tile and spreading along the line, each with the flip sound. A line bonus appears in the
-action bar first; dismissing it shows the card with its own OK button. The board remains visible
-until the card is dismissed, or closes by itself after 6 seconds. People watching (CPU turns,
-other devices) see no button: the result closes by itself after a few seconds.
+the card's title and description. The picked tile flips with a card-flip sound. If it makes a
+bonus line, the line's tiles flip over again one after another, starting next to the picked tile
+and spreading along the line, each with the flip sound; then a gold "Line of 5! +50G" burst rises
+from the picked tile with a jingle (a full row of 8 says "Full row!" with a bigger fanfare). There
+is no separate bonus prompt. The player who drew the card gets an OK button and closes the board
+when they have read it (or it closes by itself after 10 seconds); everyone else sees the card
+without a button and the board stays up until then (the engine waits on a `ventureRead`
+decision, so online players stay in step). A CPU closes its card after a short reading pause.
 On short screens the board shrinks to leave space for the action bar.
 
 - **Card numbers:** each card has a permanent number (1–30), shared across Standard and Easy.
@@ -622,13 +624,13 @@ player. Party choices are made privately one player at a time, starting with the
 landed and going round in turn order (online too), then revealed together. Hot-seat players pass
 the device between choices. CPUs choose for their own seats and for disconnected guests.
 
-| Game           | How it plays                                                                                                                                                                                                         | Prizes                                                                                                                                                          |
-| -------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Lucky Reels    | Five slots, five equally likely symbols (7, coin, star, diamond, clover). One roll plus up to two rerolls. Tap slots to keep them between rolls; take the prize early at any time. Keeping all five takes the prize. | Best set only, times the player's level: pair 5G, two pairs 10G, three matching 20G, five different 40G, full house 40G, four matching 60G, five matching 150G. |
-| Memory Blocks  | Nine cards are dealt face up for 1.9 seconds, flip face down, and the player picks one.                                                                                                                              | Two "Shops +10%", two Gold (60G x level), one wild card, two "Shops -5%", two 20G.                                                                              |
-| Coin Derby     | Everyone races down a 15-space track over three legs. Each leg, every racer secretly picks Sprint (move 3-5 spaces) or Grab coins (move 1-3 spaces and take 30G). Racers stop at the finish flag.                    | Everyone keeps the coins they grabbed. The racer furthest along after leg 3 wins 100G x their level (tied leaders each win it).                                 |
-| Lucky Wheel    | One optional bet per player, in 10G steps, up to 100G and their cash. Twelve equally likely numbers; odd are red, even are blue. Bet on a color or a group of four (1-4, 5-8, 9-12), or skip.                        | A winning color bet wins 1x the bet; a winning group bet wins 2x. A losing bet loses the bet. No debt, no level multiplier.                                     |
-| Treasure Split | Two rounds. Each player secretly picks the 60G, 100G or 150G chest. Coins found are tallied each round and all handed out after the last round.                                                                      | Each chest is shared equally by everyone who picked it (rounded down).                                                                                          |
+| Game           | How it plays                                                                                                                                                                                                                                | Prizes                                                                                                                                                           |
+| -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Lucky Reels    | Five slots, five equally likely symbols (7, coin, star, diamond, clover). One roll plus up to two rerolls. Tap slots to keep them between rolls (only the others spin); take the prize early at any time. Keeping all five takes the prize. | Best set only, times the player's level: pair 10G, two pairs 15G, three matching 30G, five different 50G, full house 50G, four matching 80G, five matching 200G. |
+| Memory Blocks  | Nine cards are dealt face up for 1.9 seconds, flip face down, and the player picks one. The prize takes effect after the game closes, so its coins or shop value changes play on the board.                                                 | Two "Shops +10%", two Gold (60G x level), one wild card, two "Shops -5%", two 20G.                                                                               |
+| Coin Derby     | Everyone races down a 15-space track over three legs. Each leg, every racer secretly picks Sprint (move 3-5 spaces) or Grab coins (move 1-3 spaces and take 30G). Racers stop at the finish flag.                                           | Everyone keeps the coins they grabbed. The racer furthest along after leg 3 wins 100G x their level (tied leaders each win it).                                  |
+| Lucky Wheel    | One optional bet per player, in 10G steps, up to 100G and their cash. Twelve equally likely numbers; odd are red, even are blue. Bet on a color or a group of four (1-4, 5-8, 9-12), or skip.                                               | A winning color bet wins 1x the bet; a winning group bet wins 2x. A losing bet loses the bet. No debt, no level multiplier.                                      |
+| Treasure Split | Two rounds. Each player secretly picks the 60G, 100G or 150G chest. Coins found are tallied each round and all handed out after the last round.                                                                                             | Each chest is shared equally by everyone who picked it (rounded down).                                                                                           |
 
 **On screen:** like the venture board, each game sits on a board in the middle of the screen and
 the action bar carries its instructions, choices and results; the board stays up from the first
@@ -664,6 +666,10 @@ these are the main tools for completing districts.
    squares marked ("You get" / "You give"), and accepts,
    declines, or sends back different terms (a counter-offer edited the same way). Up to 3
    counter-offers go back and forth; then the last receiver can only accept or decline.
+   Everyone else sees the terms being considered (both sides' properties and cash in the action
+   bar, the properties labelled on the board, and who is deciding) without buttons. The log does
+   not list each counter-offer: while it goes on it shows who is deciding, and it ends with one
+   line, "Milo accepted Rosa's trade." or "Milo declined Rosa's trade."
 4. On accept, ownership and cash swap atomically, then expansion runs for both players in every
    group that changed hands.
 
@@ -764,11 +770,15 @@ what was used, the license and links to their pages.
 - **Board:** a carousel of the built-in boards followed by the player's saved boards. Arrows,
   swiping, the arrow keys or the dots move through it, and it loops from the last board back to
   the first. Import board file and Board editor sit under it.
-- **Players in the game:** 2 to 5 (default 4); never fewer than the people already seated.
-- **Humans on this device:** 1 up to the number of players; then friends who joined, and the
-  remaining seats are CPUs.
-- **Join code:** setup opens a room straight away and shows its code (with Copy/Share invite).
-  Friends who join take CPU seats. Starting with nobody joined plays on this device (the room
+- **Players** (shown first, across the top): the host is always seated ("You · host"). Each seat
+  is a card with the character standing on a spot in the seat's color (centered, tap to change it
+  for players on this device), the name and what kind of player it is. An empty spot (until there
+  are 5 players) has **Add bot** and a smaller **+ Player on this device** button; bots and extra
+  players on this device have a remove button (×), joined friends can be removed too. A game needs
+  at least 2 players (Start is disabled with a note until then).
+- **Join code:** setup opens a room straight away and always shows its code (with Copy/Share
+  invite). A friend who joins takes a free seat; when all 5 seats are full they replace the last
+  bot (a full game with no bots turns them away). Starting with nobody joined plays on this device (the room
   closes); with friends joined it is an online game. Without a connection there is no code and
   the game is played on this device.
 - **Target net worth:** 5,000G by default; arrows on each digit set any amount in 1,000G steps from
@@ -1004,12 +1014,19 @@ content scrolls), Escape, a click outside it or clicking the card again closes i
 
 **Turn moments.** Before the roll, sliding arrows on the board point from the player's square to
 each square their first step can reach; they stay up until the player takes that first step. A token that stops part-way through a walk (a pop-up or a
-choice on the way) stands still until it walks on. Whenever a district's stock price moves, for any reason
+choice on the way) stands still until it walks on. After a roll with only one way to go, the die
+first shrinks to sit beside the player, then they start walking (with a choice of where to go, the
+choice comes up straight away). Whenever a district's stock price moves, for any reason
 (investments, stock deals, venture cards, value changes), the camera frames that district's
-squares, a banner like the turn banner gives the old and new price, and arrows rise from the
+squares right away (mid-walk too: the walk pauses for it; an investment first shows the shop's own
+value rising), a banner like the turn banner gives the old and new price, and arrows rise from the
 squares (green, going up) or sink over them (red, going down). Property choices (e.g. selling
-to pay a debt) are framed in the space the HUD leaves free, so none sit under the action bar. When the game is won, the camera closes in on
-the winner, who dances under confetti falling across the screen, before the results appear.
+to pay a debt) are framed in the space the HUD leaves free, so none sit under the action bar. When a player comes to own a whole district
+(a domination), once the action that caused it is over (a purchase, trade, auction...) the camera
+frames the district, a banner says "Rosa dominates Downtown!", gold rings with sparkles burst from
+each of its squares and a brassy fanfare plays. When the game is won, the camera closes in on the
+winner, who dances under falling confetti and bursting fireworks to a grand (about 5 second)
+victory fanfare, before the results appear.
 
 **Camera.** The camera always follows the active player, centered on screen and zoomed in (about
 1.65x the fit-to-screen zoom, more on small screens), eased smoothly as they move; it keeps the
@@ -1017,7 +1034,8 @@ player in the middle of the screen even at the board edge (grass continues past 
 the start of the top-right toolbar shows the zoom: 250% fully in on the player, about 135% for the whole board, 100%
 fully out (`ZOOM_MAX_OUT`), in 5% steps per wheel notch or key press (`ZOOM_STEP`); tapping it zooms back in);
 from 250% to 200% the player stays centered, between 200% and 150% the camera moves from the player to the board's center (`ZOOM_BLEND`),
-and from 150% down to 100% the board stays centered with room to spare (`ZOOM_OUT_EXTRA`: 25% further out than fitting the screen). While a choice is open the
+and from 150% down to 100% the board stays centered on the window (with the same margin on
+both sides, so it never runs under the toolbar, player cards or action bar) with room to spare (`ZOOM_OUT_EXTRA`: 25% further out than fitting the screen). While a choice is open the
 camera keeps the player centered and zooms out just enough to frame every glowing square around
 them (if they are too spread out for that, it frames them all instead; never closer than the
 player's own zoom). The game-over view shows the whole board.
@@ -1073,7 +1091,7 @@ ring/silent switch does not mute the game; the in-game Mute switch still does.
   while the venture board is up, and one per arcade game: a casino jingle (Lucky Reels), a calm,
   sparse tune to think by (Memory Blocks), a galloping race theme (Coin Derby), a game-show tune
   (Lucky Wheel) and a sea shanty (Treasure Split). The board music comes back when they close. The music stops for the winning fanfare at the end of a game.
-- **Effects:** button clicks, dice roll, each step, landing, gaining and paying money, buying a
+- **Effects:** a domination fanfare, venture line and full-row jingles, button clicks, dice roll, each step, landing, gaining and paying money, buying a
   shop, buying out a rival's property (a brass stab, a rising run and a cash-register ring), a shop's value going up, collecting a suit, promotion, venture cards, a card flipping over (a paper swish and a click), slot reels ticking as they spin and clunking as each stops, warps, the start of a
   human player's turn, a new round, bankruptcy and the win fanfare.
 - **Settings:** a speaker button on the main menu and game setup (and the Sound section of the in-game menu) has Music and
@@ -1111,11 +1129,11 @@ authority. Code: `apps/client/src/net/` (protocol, PeerJS wrapper, host and gues
 
 **Rooms:** Play on the main menu opens game setup and a room with a 4-letter join code (letters
 without I/L/O). Friends type the code in Join on the main menu, or open an invite link
-(`?join=CODE`, which fills in the code). A joiner takes the first CPU seat (after the host's own
-players), with their last name on this device (or a random one) and a random character nobody
+(`?join=CODE`, which fills in the code). A joiner takes a free seat after the people already in (before the bots), or the
+last bot's seat when all 5 are full, with their last name on this device (or a random one) and a random character nobody
 has; the host can remove them. Joined players see the host's setup with every setting shown but
 locked, and can change only their own name and character (the host refuses a character someone
-has). Seats left open become CPUs on start, with characters no player has. A running game takes a
+has). Bots keep the characters shown for them, swapped for a free one if a player took it. A running game takes a
 player back only under their player's name: a device that isn't recognised is asked for it in
 the Join box.
 

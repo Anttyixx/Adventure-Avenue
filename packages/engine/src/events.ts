@@ -31,7 +31,8 @@ export type GameEvent =
       lines: number[][];
       bonus: number;
     }
-  | { type: 'reels'; pid: number; result: ReelSymbol[]; prize: string }
+  /** Lucky Reels' final set; `rolled` marks the slots rerolled since the last choice. */
+  | { type: 'reels'; pid: number; result: ReelSymbol[]; rolled: boolean[]; prize: string }
   | { type: 'memory'; pid: number; prizes: MemoryPrize[]; picked: number; prize: string }
   | {
       type: 'arcadeRound';

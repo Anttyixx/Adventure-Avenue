@@ -384,11 +384,12 @@ export class ArcadeStage {
   }
 
   /** The final set: the slots that score light up and the prize shows in the action bar. */
-  async reelsResult(symbols: ReelSymbol[], p: Player, waitMs: number) {
+  async reelsResult(symbols: ReelSymbol[], rolled: boolean[], p: Player, waitMs: number) {
     this.reelsBoard(p.level);
+    // Only the slots that were just rerolled spin; kept ones stay still.
     await this.showRoll(
       symbols,
-      this.slots.map((b) => b.classList.contains('kept')),
+      rolled.map((r) => !r),
     );
     const prize = reelPrize(symbols, p.level);
     const set = reelSetSlots(symbols);

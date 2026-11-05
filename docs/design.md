@@ -413,7 +413,7 @@ Each element: **purpose**, **placement**, **anatomy**, **spec**, **behavior**, t
 - **Picker variant** (`.bp`, building on a vacant plot / renovating, `buildPrompt` in
   `ui/modals.ts`): when the choice is one of several pictured things and each needs explaining,
   use a grid: the question and a muted hint top left (they never change while choosing, so the bar
-  keeps one size), the action stack top right (gold "Build" disabled until a pick, ghost Skip;
+  keeps one size), the buttons side by side top right (gold "Build" disabled until a pick, ghost Skip;
   labels stay fixed too). The hovered or selected card's details float in a glass tip above that
   card (`.bp-tip`: 250px, 5px top edge in the player color, Lilita name + gold price, then muted
   "Rivals:"/"You:" lines, kept inside the picker's width), and a row of same-size cards below (inset surface,
@@ -591,6 +591,15 @@ if (!(await ask(`Delete ${d.name}?`, 'Its 4 properties will be removed from the 
   owner's initial badge sits in the same spot on every property (`x + 22, y + 14` from the art).
   Everything keeps at least 5px clear of the border's inner edge (art at most ~59 x 45, text 15px).
   Squares with no name (suits, Boon, Boom) center their symbol on the tile.
+
+### 5.17c Game setup seats
+
+- Players come first, across the top: up to 5 seat cards in a row (`.setup .seat-card`): the
+  character trimmed to its pixels (`charButton(look, 'body', ...)`) standing centered on a soft
+  spot in the seat's color, the name (an input for players on this device), a muted tag
+  ("You · host", "On this device", "Joined online", "Bot") and a × remove button in the top right
+  (never on the host). The empty spot is a dashed card with a gold round **+ Add bot** button and
+  a small ghost **+ Player on this device** button. The join code sits right under the seats.
 
 ### 5.18 Game log and Stock market panel
 

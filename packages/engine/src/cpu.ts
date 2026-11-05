@@ -311,6 +311,8 @@ function decide(G: GameState, req: DecisionRequest): unknown {
       return best >= 0 ? { d: best, n: p.shares[best] } : null;
     }
 
+    case 'ventureRead':
+      return true;
     case 'venturePanel':
       return venturePick(G, p.id, req.owner);
 

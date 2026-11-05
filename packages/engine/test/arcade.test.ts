@@ -15,13 +15,13 @@ import type { ReelSymbol } from '../src/decisions';
 
 describe('five-slot Lucky Reels', () => {
   it.each([
-    [['coin', 'coin', 'wild', 'stock', 'bell'], 'One pair', 5],
-    [['coin', 'coin', 'wild', 'wild', 'bell'], 'Two pairs', 10],
-    [['coin', 'coin', 'coin', 'stock', 'bell'], 'Three matching', 20],
-    [['coin', 'seven', 'wild', 'stock', 'bell'], 'Five different', 40],
-    [['coin', 'coin', 'coin', 'wild', 'wild'], 'Full house', 40],
-    [['coin', 'coin', 'coin', 'coin', 'bell'], 'Four matching', 60],
-    [['coin', 'coin', 'coin', 'coin', 'coin'], 'Five matching', 150],
+    [['coin', 'coin', 'wild', 'stock', 'bell'], 'One pair', 10],
+    [['coin', 'coin', 'wild', 'wild', 'bell'], 'Two pairs', 15],
+    [['coin', 'coin', 'coin', 'stock', 'bell'], 'Three matching', 30],
+    [['coin', 'seven', 'wild', 'stock', 'bell'], 'Five different', 50],
+    [['coin', 'coin', 'coin', 'wild', 'wild'], 'Full house', 50],
+    [['coin', 'coin', 'coin', 'coin', 'bell'], 'Four matching', 80],
+    [['coin', 'coin', 'coin', 'coin', 'coin'], 'Five matching', 200],
   ])('scores %j as %s', (symbols, name, amount) => {
     const prize = reelPrize(symbols as ReelSymbol[], 2);
     expect({ name: prize.name, amount: prize.amount }).toEqual({ name, amount: Number(amount) * 2 });

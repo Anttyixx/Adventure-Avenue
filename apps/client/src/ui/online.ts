@@ -83,7 +83,7 @@ export function lobbySeats(
         : s.kind === 'host'
           ? 'Host'
           : s.kind === 'cpu'
-            ? 'CPU'
+            ? 'Bot · a friend who joins can take this seat'
             : s.kind === 'local'
               ? `On the host's device · a friend can join as "${s.name}"`
               : s.online

@@ -143,7 +143,7 @@ npm run sim -- 500   # CPU-only balance simulation (average match length, etc.)
 - **Browser automation:** Playwright works against `npm run preview`. Dev builds expose the
   running game as `window.__aaGame` (the `HotSeat`: `.G` state, `.board`, `.hud`, `.game`), so a
   script can set up a situation directly. Game options can be preset with
-  `localStorage['adventure-avenue-options']` (e.g. `{"humans":1,"fill":true,"target":4000}`) and
+  `localStorage['adventure-avenue-options']` (e.g. `{"humans":1,"bots":3,"target":4000}`) and
   `localStorage['adventure-avenue-fast'] = '1'` speeds up CPU turns. Start a game from the main
   menu with `.menu-btn.start`, then the "Start game" button.
 
