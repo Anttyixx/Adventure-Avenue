@@ -807,7 +807,7 @@ input[type='range'] {
   align-items: center;
   gap: 5px;
   margin-left: 2px;
-  padding: 2px 10px 2px 3px;
+  padding: 2px 10px 2px 5px;
   background: rgba(255, 255, 255, 0.06);
   border: 1px solid var(--glass-line);
   border-radius: 999px;
@@ -822,15 +822,18 @@ input[type='range'] {
 .info-btn:hover {
   border-color: var(--accent);
 }
+/* The "i": a white outlined circle (dark on the gold button while open). */
 .info-btn .info-i {
   display: grid;
   place-items: center;
+  box-sizing: border-box;
   width: 18px;
   height: 18px;
+  border: 1.5px solid currentColor;
   border-radius: 50%;
-  background: var(--accent);
-  color: #3b2a00;
-  font: 400 14px var(--head);
+  background: none;
+  color: #fff;
+  font: 400 12px var(--head);
 }
 .info-btn.on {
   background: var(--accent);
@@ -838,8 +841,7 @@ input[type='range'] {
   color: #3b2a00;
 }
 .info-btn.on .info-i {
-  background: #3b2a00;
-  color: var(--accent);
+  color: #3b2a00;
 }
 .info-chip {
   min-width: 0;

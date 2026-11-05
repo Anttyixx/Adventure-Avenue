@@ -572,7 +572,7 @@ if (!(await ask(`Delete ${d.name}?`, 'Its 4 properties will be removed from the 
 
 ### 5.15 Info pop-up (pop-up + action bar)
 
-- **Info button** (`.info-btn`): a pill at the end of the info chip, a round gold "i" and "Info";
+- **Info button** (`.info-btn`): a pill at the end of the info chip, an "i" in a white outlined circle and "Info";
   gold (`.on`) while the pop-up is open.
 - **Pop-up** (`.info-layer > .modal.info-pop`): one width (up to 1,000px). Game and Stocks take
   the height they need (max 640px); player pages (`.player`) all share one fixed height (400px;

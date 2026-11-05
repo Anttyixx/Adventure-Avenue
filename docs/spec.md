@@ -995,8 +995,8 @@ upgrade prices), Arcade games (a card per game: Solo or Everyone plays, how it p
 pays, with the Lucky Reels prize list), and Venture cards (all 30 fixed numbers, titles and
 effects, with Standard-only cards marked). Each topic is a card with an icon, a title and a few
 short points. Easy rules show Basics, Arcade games and Venture cards. It reopens on the last tab read. Top left: the **info chip**, with the game's name, the goal (target net worth), online a Room
-button that shows the room code, and at its end the **Info** button (a round gold "i" and the
-word Info; gold while open), which opens the **info pop-up** (see below). The board name and the
+button that shows the room code, and at its end the **Info** button (an "i" in a white outlined circle
+and the word Info; gold while open), which opens the **info pop-up** (see below). The board name and the
 round are on the info pop-up's Game page instead. Bottom center: the **action bar** (on
 narrow windows such as phones in landscape, where a centered bar would have less than 520px
 between the screen edge and the player cards, it sits in the bottom left corner instead and uses
