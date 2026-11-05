@@ -91,6 +91,10 @@ const rnd = (n: number) => Math.floor(Math.random() * n);
  * are easy to find. Update this list with each change.
  */
 const RECENT = new Set([
+  'Shops reopening',
+  'Music: Fortune Cards (venture board)',
+  'Music: Arcade Rush (arcade games)',
+  'flip',
   'Venture grid (play)',
   'Game log',
   'Main menu (save + rejoin)',
@@ -859,7 +863,8 @@ export async function openLab(app: HTMLElement, section?: string) {
         const p = cur();
         p.closed = true;
         refresh();
-        await board.openShops(G.nodes.filter((n) => n.owner === p.id).map((n) => n.id));
+        board.openShops(G.nodes.filter((n) => n.owner === p.id).map((n) => n.id));
+        await new Promise((r) => setTimeout(r, 1500));
         p.closed = false;
         p.onBreak = false;
         refresh();

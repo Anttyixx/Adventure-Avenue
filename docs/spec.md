@@ -555,9 +555,12 @@ stationary, with rounded square tiles and no header or OK button in its containe
 screen: up to 600px wide on monitors (about 62% of the window height, never reaching the player
 cards), while short phone screens keep a smaller board that fits above the action bar. It does not
 dim the background or block interaction with the action bar. After a flip, the action bar shows
-the card's title, description and OK button. A line bonus appears in the action bar first;
-dismissing it shows the card with its own OK button. The board remains visible until the card
-is dismissed. Spectators and CPU turns use the same sequence with timed dismissal or Close.
+the card's title, description and OK button. The picked tile flips with a card-flip sound. If it
+makes a bonus line, the line's tiles flip over again one after another, starting next to the
+picked tile and spreading along the line, each with the flip sound. A line bonus appears in the
+action bar first; dismissing it shows the card with its own OK button. The board remains visible
+until the card is dismissed, or closes by itself after 6 seconds. People watching (CPU turns,
+other devices) see no button: the result closes by itself after a few seconds.
 On short screens the board shrinks to leave space for the action bar.
 
 - **Card numbers:** each card has a permanent number (1–30), shared across Standard and Easy.
@@ -910,8 +913,8 @@ spreading out from them and fading, so the eye goes straight to them; everything
 even venture cards; the engine emits `closed`), the camera pulls back to the whole board, each of
 their shops' gates rolls down in turn, then the camera returns to the player's zoom. The gates stay
 down (inside each tile's border, with a small CLOSED sign) until the owner's next turn starts; the
-engine then emits `opened` and the same overview plays with the gates rolling back up (timings
-`close*` in `timing.ts`).
+engine then emits `opened` and the gates roll back up one after another in the background: the
+camera does not move and play carries straight on (timings `close*` in `timing.ts`).
 
 **Pacing.** Most events get about a second to themselves (landing, money, ownership and value
 changes, suits), and a turn ends with a one-second pause before the next player's turn. When the
@@ -938,8 +941,10 @@ of the screen with a tab per topic: Basics (the goal, shops, buyouts, suits and 
 squares, before rolling, debt, controls), Stocks (buying and selling, dividends, what sets the
 price, demand and volatility, sell-offs; the classic rules for classic-stock games) and Vacant
 plots (a card per building with its art, price, what a rival and the owner get, and the circus
-upgrade prices), and Venture cards (all 30 fixed numbers, titles and effects, with Standard-only
-cards marked). Easy rules show Basics and Venture cards. It reopens on the last tab read. Top left: the **info chip**, with the game's name, the board
+upgrade prices), Arcade games (a card per game: Solo or Everyone plays, how it plays and what it
+pays, with the Lucky Reels prize list), and Venture cards (all 30 fixed numbers, titles and
+effects, with Standard-only cards marked). Each topic is a card with an icon, a title and a few
+short points. Easy rules show Basics, Arcade games and Venture cards. It reopens on the last tab read. Top left: the **info chip**, with the game's name, the board
 name, the current round (out of the round limit, if any), the goal (target net worth) and, online,
 a Room button that shows the room code; under it, the Stock market button (Standard rules), which
 morphs into the stock market panel in the top-left corner for anyone to look at (kept up to
@@ -1019,7 +1024,7 @@ player's own zoom). The game-over view shows the whole board.
 
 **Automatic zoom.** Two kinds:
 
-- _Shows_ play for a few seconds and go back by themselves: shops closing or reopening, a stock
+- _Shows_ play for a few seconds and go back by themselves: shops closing, a stock
   price move, finding a property from the player overview, the winner's dance. They play on every
   screen, and the zoom is locked (wheel, pinch, keys and the chip do nothing) until they end.
 - _Views that wait on the player_: the squares a roll can reach, a choice on the board, a trade.
@@ -1063,10 +1068,12 @@ on the first tap or key press (phones only count a finished tap, so the client l
 page asks for the "playback" audio session (or plays a silent looping clip on older iOS) so the
 ring/silent switch does not mute the game; the in-game Mute switch still does.
 
-- **Music:** two looping chiptune tracks: a relaxed one for the main menu, setup and board editor,
-  and a bouncier one during games. The music stops for the winning fanfare at the end of a game.
+- **Music:** looping chiptune tracks: a relaxed one for the main menu, setup and board editor, a
+  bouncier one during games (a faster, urgent one once someone can win), a curious, twinkly one
+  while the venture board is up and a quick, bright one during arcade games (the board music comes
+  back when they close). The music stops for the winning fanfare at the end of a game.
 - **Effects:** button clicks, dice roll, each step, landing, gaining and paying money, buying a
-  shop, buying out a rival's property (a brass stab, a rising run and a cash-register ring), a shop's value going up, collecting a suit, promotion, venture cards, warps, the start of a
+  shop, buying out a rival's property (a brass stab, a rising run and a cash-register ring), a shop's value going up, collecting a suit, promotion, venture cards, a card flipping over (a paper swish and a click), warps, the start of a
   human player's turn, a new round, bankruptcy and the win fanfare.
 - **Settings:** a speaker button on the main menu and game setup (and the Sound section of the in-game menu) has Music and
   Effects volume sliders and a Mute switch. Settings are saved per device. Audio pauses while the

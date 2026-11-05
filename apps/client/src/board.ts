@@ -378,11 +378,14 @@ export class BoardView {
   }
 
   /**
-   * Shops reopening at the start of their owner's turn: the same as closing, with the gates
-   * rolling back up.
+   * Shops reopening at the start of their owner's turn: the gates roll back up one after another
+   * in the background. The camera stays put and the game carries on meanwhile.
    */
-  async openShops(sqs: number[]) {
-    await this.moveGates(sqs, true);
+  openShops(sqs: number[]) {
+    const t0 = performance.now();
+    sqs.forEach((id, i) =>
+      this.gates.set(id, { start: t0 + i * T.closeStagger * this.speed, opening: true }),
+    );
   }
 
   private async moveGates(sqs: number[], opening: boolean) {
@@ -1077,7 +1080,13 @@ export class BoardView {
     for (const sq of G.nodes) {
       const closed = sq.owner >= 0 && isClosed(G.players[sq.owner]);
       const g = this.gates.get(sq.id);
-      if (g?.opening && !closed) this.gates.delete(sq.id);
+      // A reopening gate rolls up by itself (the shop is already open in the game).
+      if (g?.opening) {
+        const k = motion ? (now - g.start) / (T.closeShutter * this.speed) : 1;
+        if (k >= 1) this.gates.delete(sq.id);
+        else this.drawGate(ctx, sq, Math.min(1, 1 - k));
+        continue;
+      }
       if (!closed) continue;
       // How far down the gate is: moving while animated, otherwise all the way down.
       let down = 1;
@@ -1939,8 +1948,9 @@ function buildingIcon(
 ) {
   // The painted building images (the circus by its level), once loaded; vector art until then.
   const key = (b === 'circus' ? `circus${Math.min(3, level)}` : b) as PropKey;
-  if (drawProp(ctx, key, main, x, y - 9, 72, 46)) {
-    if (initial) badge(ctx, x + 26, y + 8, main, initial);
+  // Bottom-aligned on the same line as shops (y + 23), with the owner's badge in the same spot.
+  if (drawProp(ctx, key, main, x, y + 0, 72, 46)) {
+    if (initial) badge(ctx, x + 24, y + 14, main, initial);
     return;
   }
   ctx.save();
@@ -2016,7 +2026,7 @@ function specialIcon(ctx: CanvasRenderingContext2D, G: GameState, sq: Square, x:
   switch (sq.t) {
     case 'bank':
       // The painted bank (it has no player color); the gold coin until the images load.
-      if (drawProp(ctx, 'bank', '#9aa3b8', x, y - 4, 78, 54)) break;
+      if (drawProp(ctx, 'bank', '#9aa3b8', x, y - 5, 78, 54)) break;
       ctx.fillStyle = '#c98a12';
       ctx.beginPath();
       ctx.arc(x, y, 26, 0, Math.PI * 2);
@@ -2284,8 +2294,14 @@ function drawSquare(ctx: CanvasRenderingContext2D, G: GameState, sq: Square) {
   // middle of the tile (using some of the room under the top point).
   const iy = c.y + (L === 'hex' ? -10 : 0);
   const ty = c.y + (L === 'hex' ? -11 : 0);
+  // Every tile uses the same two spots, so the board reads evenly: pictures stand on one base
+  // line (property art is bottom-aligned there; symbols are centered just above it), and the
+  // price, fee or name sits on one text line under it.
+  const artY = iy - 5;
+  const iconY = iy - 4;
+  const textY = ty + 30;
   /** The fee (owned) or price as plain text; dark on an owner's color so it stays readable. */
-  const amount = (text: string, y: number) => label(ctx, c.x, y, text, owner ? '#1b2340' : '#26314f', 16);
+  const amount = (text: string) => label(ctx, c.x, textY, text, owner ? '#1b2340' : '#26314f', 16);
 
   // Shadow + tile
   ctx.fillStyle = 'rgba(0,0,0,0.18)';
@@ -2300,8 +2316,8 @@ function drawSquare(ctx: CanvasRenderingContext2D, G: GameState, sq: Square) {
     // The design grows with the shop's value; owned shops use the owner's color, unowned ones
     // stay plain grey so they never look like a player's.
     const tier = tierFor(sq.value, SHOP_TIERS);
-    drawShop(ctx, c.x, iy - 4, tier, owner ? ownerColor : '#8a94a8', owner?.name[0]?.toUpperCase());
-    amount(owner ? `${squareFee(G, sq)}G` : `${sq.value}G`, ty + 28);
+    drawShop(ctx, c.x, artY, tier, owner ? ownerColor : '#8a94a8', owner?.name[0]?.toUpperCase());
+    amount(owner ? `${squareFee(G, sq)}G` : `${sq.value}G`);
   } else if (sq.t === 'plot') {
     if (!sq.b) {
       ctx.save();
@@ -2317,26 +2333,26 @@ function drawSquare(ctx: CanvasRenderingContext2D, G: GameState, sq: Square) {
     } else if (sq.b === 'star3') {
       // The 3-Star Shop has its own designs that grow with its value.
       const tier = tierFor(sq.value, STAR3_TIERS);
-      drawStar3(ctx, c.x, iy - 2, tier, owner ? ownerColor : '#8a94a8', owner?.name[0]?.toUpperCase());
-      if (owner) amount(`${squareFee(G, sq)}G`, ty + 30);
+      drawStar3(ctx, c.x, artY, tier, owner ? ownerColor : '#8a94a8', owner?.name[0]?.toUpperCase());
+      if (owner) amount(`${squareFee(G, sq)}G`);
     } else {
       buildingIcon(
         ctx,
         sq.b,
         c.x,
-        iy - 4,
+        artY,
         owner ? ownerColor : '#8a94a8',
         owner?.name[0]?.toUpperCase() ?? '',
         sq.lv,
       );
       const fee = sq.b === 'tax' ? '10%' : sq.b === 'agency' ? 'Break' : `${squareFee(G, sq)}G`;
-      if (owner) amount(fee, ty + 32);
+      if (owner) amount(fee);
     }
   } else {
     const t = sq.t === 'broker' && G.rules === 'easy' ? 'VENTURE' : (SPECIAL_LABEL[sq.t] ?? '');
     // Squares without a label (suits, Boon, Boom) center their symbol on the tile.
-    specialIcon(ctx, G, sq, c.x, t ? iy - 6 : c.y);
-    if (t) label(ctx, c.x, ty + 30, t, '#4a5470', t.length > 8 ? 9 : 11);
+    specialIcon(ctx, G, sq, c.x, t ? iconY : c.y);
+    if (t) label(ctx, c.x, textY, t, '#4a5470', t.length > 8 ? 9 : 11);
   }
 
   // Border: the district's solid color on properties, else the owner's ring or a faint outline.

@@ -26,6 +26,34 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: '2026-11-05-music-guide-tiles',
+    date: 'Nov 5, 2026',
+    title: 'Music, a card-style Guide and tidier tiles',
+    features: [
+      {
+        tag: 'new',
+        title: 'Venture and arcade music',
+        text: 'The venture board and the arcade games each have their own tune, and turning over a venture card makes a card-flip sound. Bonus lines now flip tile by tile from the card you picked.',
+      },
+      {
+        tag: 'better',
+        title: 'Guide with cards and an Arcade tab',
+        text: 'Every Guide topic is now a card with an icon and short points, and a new Arcade games tab explains all five games and their prizes.',
+      },
+      {
+        tag: 'better',
+        title: 'Tidier board tiles',
+        text: 'Pictures and prices sit in the same place on every tile, so the board looks cleaner.',
+      },
+    ],
+    extras: [
+      'Shops reopen in the background: no zooming out and no waiting.',
+      'People watching a venture card no longer get a Close button; the card closes by itself after a few seconds (also for the player who drew it).',
+      'Lucky Reels slots are square.',
+      'Coin Derby shows each player walking down their lane on bigger spaces.',
+    ],
+  },
+  {
     id: '2026-11-05-arcade-boards',
     date: 'Nov 5, 2026',
     title: 'Arcade games, redone',

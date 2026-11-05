@@ -1701,6 +1701,90 @@ input[type='range'] {
 .guide-page > h4:first-child {
   margin-top: 0;
 }
+/* Each topic is a card: icon + title, then a few short points. */
+.guide-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(270px, 1fr));
+  gap: 10px;
+}
+.guide-sec {
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--glass-line);
+}
+.gs-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+.gs-head img {
+  width: 26px;
+  height: 26px;
+  object-fit: contain;
+  image-rendering: pixelated;
+}
+.rules .guide-sec h4 {
+  margin: 0;
+  font-size: 17px;
+}
+.rules .guide-sec p {
+  font-size: 13px;
+  line-height: 1.4;
+}
+.gs-list {
+  margin: 0;
+  padding-left: 18px;
+  font-size: 13px;
+  line-height: 1.4;
+}
+.gs-list li + li {
+  margin-top: 3px;
+}
+.gs-list li::marker {
+  color: var(--accent);
+}
+.gs-tag {
+  display: inline-block;
+  margin-bottom: 6px;
+  padding: 1px 9px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 700;
+}
+.gs-tag.all {
+  background: rgba(53, 196, 106, 0.18);
+  color: var(--good);
+}
+.gs-prizes {
+  display: grid;
+  gap: 2px;
+  margin-top: 6px;
+  font-size: 12px;
+}
+.gs-prizes > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 2px 8px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.05);
+}
+.gs-prizes b {
+  color: var(--accent);
+  font-weight: 700;
+}
+.rules .guide-intro {
+  margin: 0 0 10px;
+  color: var(--muted);
+  font-size: 13px;
+}
+.rules .guide-grid + .guide-intro {
+  margin: 10px 0 0;
+}
 .guide-plots {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
@@ -7708,7 +7792,7 @@ div.sl-inline label {
 }
 .reel-slot {
   position: relative;
-  height: 96px;
+  aspect-ratio: 1;
   padding: 0;
   border: 0;
   border-radius: 12px;
@@ -7909,7 +7993,7 @@ div.sl-inline label {
 
 /* Coin Derby: a lane per racer, counted in spaces from the start line to the finish flag. */
 .derby {
-  --cell: 22px;
+  --cell: 30px;
   display: grid;
   gap: 6px;
 }
@@ -7933,6 +8017,11 @@ div.sl-inline label {
   margin-right: 8px;
   text-align: right;
 }
+.derby-name,
+.derby-coins {
+  align-self: end;
+  margin-bottom: 1px;
+}
 .derby-name {
   overflow: hidden;
   white-space: nowrap;
@@ -7942,11 +8031,15 @@ div.sl-inline label {
 }
 .derby-track {
   position: relative;
-  height: 34px;
+  height: 62px;
 }
+/* The lane's path: a row of paving stones the racer walks along. */
 .derby-cells {
   position: absolute;
-  inset: 8px 0;
+  left: 0;
+  right: 0;
+  bottom: 2px;
+  height: 14px;
   display: grid;
   grid-template-columns: var(--cells);
 }
@@ -7967,21 +8060,17 @@ div.sl-inline label {
 .derby-runner {
   position: absolute;
   z-index: 2;
-  top: 0;
+  bottom: 6px;
   left: calc(var(--at, 0) * var(--cell) + var(--cell) / 2);
-  width: 30px;
-  height: 30px;
-  margin-left: -15px;
-  border-radius: 50%;
-  background: var(--pc);
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
-  display: grid;
-  place-items: center;
-  transition: left 0.2s ease-out;
+  width: 40px;
+  height: 60px;
+  margin-left: -20px;
+  filter: drop-shadow(0 2px 1px rgba(0, 0, 0, 0.45));
+  transition: left 0.26s linear;
 }
-.derby-runner img {
-  width: 24px;
-  height: 24px;
+.derby-runner canvas {
+  width: 100%;
+  height: 100%;
   image-rendering: pixelated;
 }
 .derby-badge {
@@ -7989,7 +8078,7 @@ div.sl-inline label {
   top: 50%;
   translate: 0 -50%;
   z-index: 1;
-  left: calc(var(--at, 0) * var(--cell) + var(--cell) / 2 + 17px);
+  left: calc(var(--at, 0) * var(--cell) + var(--cell) / 2 + 14px);
   padding: 0 6px;
   border-radius: 999px;
   font: 400 11px var(--head);
@@ -8001,7 +8090,7 @@ div.sl-inline label {
   animation: pop 0.3s;
 }
 .derby-badge.left {
-  left: calc(var(--at, 0) * var(--cell) + var(--cell) / 2 - 17px);
+  left: calc(var(--at, 0) * var(--cell) + var(--cell) / 2 - 14px);
   translate: -100% -50%;
 }
 .derby-badge.run {
@@ -8396,7 +8485,7 @@ div.sl-inline label {
     gap: 5px;
   }
   .reel-slot {
-    height: 60px;
+    border-radius: 9px;
   }
   .reel-face img {
     width: 32px;
@@ -8433,8 +8522,8 @@ div.sl-inline label {
     font-size: 11px;
   }
   .derby {
-    --cell: 15px;
-    gap: 2px;
+    --cell: 18px;
+    gap: 0;
   }
   .derby-ruler,
   .derby-lane {
@@ -8450,19 +8539,16 @@ div.sl-inline label {
     font-size: 11px;
   }
   .derby-track {
-    height: 26px;
+    height: 42px;
   }
   .derby-cells {
-    inset: 6px 0;
+    height: 10px;
   }
   .derby-runner {
-    width: 22px;
-    height: 22px;
-    margin-left: -11px;
-  }
-  .derby-runner img {
-    width: 18px;
-    height: 18px;
+    bottom: 4px;
+    width: 26px;
+    height: 39px;
+    margin-left: -13px;
   }
   .derby-coins {
     font-size: 12px;

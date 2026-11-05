@@ -66,6 +66,10 @@ export const TIMING = {
 
   /** Venture card flip, and how long CPU results stay on screen before closing. */
   ventureFlip: 450,
+  /** Between tiles of a bonus line flipping over one after another. */
+  ventureLineStep: 140,
+  /** How long the card stays up for the player who drew it before the board closes by itself. */
+  ventureResult: 6000,
   cpuResult: 2300,
   memoryReveal: 600,
   arcadeRoll: 350,

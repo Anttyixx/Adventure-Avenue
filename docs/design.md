@@ -583,6 +583,14 @@ if (!(await ask(`Delete ${d.name}?`, 'Its 4 properties will be removed from the 
   owner pill (player color + portrait), then a 2-column grid of stat boxes; one plain sentence for
   what a special square does ("Stop here to jump to the bank.").
 
+### 5.17b Board tiles (canvas)
+
+- Every tile uses the same two spots (`drawSquare` in `board.ts`): pictures stand on one base line
+  (property and building art is bottom-aligned at `artY + 23`; symbols for special squares are
+  centered at `iconY`) and the price, fee or name is centered on one text line (`textY`). The
+  owner's initial badge sits in the same spot on every property (`x + 24, y + 14` from the art).
+  Squares with no name (suits, Boon, Boom) center their symbol on the tile.
+
 ### 5.18 Game log and Stock market panel
 
 - **Game log:** a toolbar button (`.log-toggle`, between the zoom chip and Guide, gold `.on`
@@ -799,6 +807,8 @@ player cards) and the action bar for words and buttons. Never a pop-up.
   gold button then names the choice ("Bet 20G on Red", "Take the 150G chest").
 - **Art:** smooth icons (`coinIconURL`, `starIconURL`, suit icons, wild card), cream "paper" faces
   for slots and cards, player portraits for people. No text-symbol stand-ins.
+- **Sound:** the venture board and arcade games have their own music (`HotSeat.setScene`); a card
+  flipping plays `flip`.
 - **Motion:** slot faces spin in (blurred drop, staggered); memory cards flip with 3D `rotateY`
-  and `backface-visibility: hidden`; derby runners hop one space at a time; the wheel spins about
+  and `backface-visibility: hidden`; derby runners are the players' walking sprites (no circle), stepping one space at a time down a paved lane; the wheel spins about
   four turns and eases out; chest lids swing open. All respect reduced motion.

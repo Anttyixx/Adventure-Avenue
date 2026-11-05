@@ -20,6 +20,7 @@ export type Sfx =
   | 'suit'
   | 'promote'
   | 'venture'
+  | 'flip'
   | 'turn'
   | 'round'
   | 'warp'
@@ -41,6 +42,7 @@ export const SFX_NAMES: Sfx[] = [
   'suit',
   'promote',
   'venture',
+  'flip',
   'turn',
   'round',
   'warp',
@@ -49,11 +51,13 @@ export const SFX_NAMES: Sfx[] = [
   'deny',
 ];
 
-export type Track = 'menu' | 'game' | 'urgent';
+export type Track = 'menu' | 'game' | 'urgent' | 'venture' | 'arcade';
 export const TRACK_NAMES: Record<Track, string> = {
   menu: 'Main Street (menu)',
   game: 'Avenue Stroll (game)',
   urgent: 'Final Stretch (someone can win)',
+  venture: 'Fortune Cards (venture board)',
+  arcade: 'Arcade Rush (arcade games)',
 };
 
 interface AudioPrefs {
@@ -225,6 +229,76 @@ const SONGS: Record<Track, Song> = {
       'E2 E2 . E2 B2 . G#2 .',
     ],
     drums: ['k h s h k k s h', 'k h s h k s s s'],
+  },
+  // Curious, twinkly theme while the venture board is up.
+  venture: {
+    bpm: 104,
+    chords: [
+      ['D3', 'F3', 'A3'],
+      ['C3', 'E3', 'G3'],
+      ['Bb2', 'D3', 'F3'],
+      ['A2', 'C#3', 'E3'],
+      ['D3', 'F3', 'A3'],
+      ['G2', 'Bb2', 'D3'],
+      ['E3', 'G3', 'Bb3'],
+      ['A2', 'C#3', 'E3'],
+    ],
+    lead: [
+      'D5 F5 A5 F5 D6 - A5 .',
+      'C5 E5 G5 E5 C6 - G5 .',
+      'Bb4 D5 F5 D5 Bb5 - F5 .',
+      'A4 C#5 E5 A5 - . E5 .',
+      'D5 F5 A5 D6 F6 - D6 .',
+      'G5 - Bb5 - D6 - Bb5 .',
+      'E5 G5 Bb5 G5 E6 - D6 C#6',
+      'A5 - - - . . . .',
+    ],
+    bass: [
+      'D2 . . . A2 . . .',
+      'C2 . . . G2 . . .',
+      'Bb1 . . . F2 . . .',
+      'A1 . . . E2 . . .',
+      'D2 . . . A2 . . .',
+      'G1 . . . D2 . . .',
+      'E2 . . . Bb2 . . .',
+      'A1 . . . E2 . C#2 .',
+    ],
+    drums: ['k . . h . . h .', 'k . . h s . h .'],
+  },
+  // Quick, bright chiptune for the arcade games.
+  arcade: {
+    bpm: 138,
+    chords: [
+      ['C4', 'E4', 'G4'],
+      ['C4', 'E4', 'G4'],
+      ['Ab3', 'C4', 'Eb4'],
+      ['Bb3', 'D4', 'F4'],
+      ['C4', 'E4', 'G4'],
+      ['A3', 'C4', 'E4'],
+      ['F3', 'A3', 'C4'],
+      ['G3', 'B3', 'D4'],
+    ],
+    lead: [
+      'C5 E5 G5 C6 G5 E5 C5 E5',
+      'G5 . G5 A5 G5 . E5 .',
+      'Ab5 . Eb5 . C5 . Eb5 Ab5',
+      'Bb5 - F5 . D5 . F5 .',
+      'C6 G5 E5 G5 C6 . E6 .',
+      'A5 E5 C5 E5 A5 . C6 .',
+      'F5 A5 C6 A5 F5 . A5 .',
+      'G5 - B5 - D6 - . .',
+    ],
+    bass: [
+      'C3 C3 . C3 G2 . C3 .',
+      'C3 C3 . C3 G2 . E2 .',
+      'Ab2 Ab2 . Ab2 Eb2 . Ab2 .',
+      'Bb2 Bb2 . Bb2 F2 . D3 .',
+      'C3 C3 . C3 G2 . C3 .',
+      'A2 A2 . A2 E2 . A2 .',
+      'F2 F2 . F2 C3 . F2 .',
+      'G2 G2 . G2 D3 . B2 .',
+    ],
+    drums: ['k h s h k h s h', 'k h s h k k s s'],
   },
 };
 
@@ -534,6 +608,12 @@ class AudioEngine {
             0.09,
           );
         this.hiss(bus, t, 0.5, 0.08, 6000, 2);
+        break;
+      case 'flip':
+        // A card turning over: a quick paper swish and a soft click as it lands.
+        this.hiss(bus, t, 0.16, 0.22, 1400, 1.2, 5200);
+        this.tone(bus, 'triangle', freq('A5'), t + 0.1, 0.08, 0.16, { to: freq('E6') });
+        this.tone(bus, 'square', 1800, t + 0.15, 0.03, 0.05, { cutoff: 3500 });
         break;
       case 'turn':
         this.tone(bus, 'sine', freq('G5'), t, 0.25, 0.2);

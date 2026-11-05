@@ -6,6 +6,7 @@ import { CARDS, PLAYER_COLORS, type GameState } from '@aa/engine';
 import { TIMING as T } from '../timing';
 import { fmt, h } from './dom';
 import type { Hud } from './hud';
+import { sound } from '../audio';
 
 const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
@@ -85,9 +86,42 @@ export class VentureView {
     this.paint(this.G.vg.owner);
     const b = this.panels[panel];
     b.classList.add('flip');
+    sound.play('flip');
     await wait(T.ventureFlip * speed);
-    for (const l of lines) for (const i of l) this.panels[i].classList.add('in-line');
+    sound.play('venture');
     this.grid.classList.remove('picking');
+    // A bonus line flips over again tile by tile, starting next to the tile just picked and
+    // spreading out along the line (both ways at once when the pick is in the middle).
+    if (lines.length) {
+      b.classList.add('in-line');
+      const at = (i: number) => [Math.floor(i / 8), i % 8];
+      const [r0, c0] = at(panel);
+      const steps = new Map<number, number[]>();
+      for (const i of new Set(lines.flat())) {
+        if (i === panel) continue;
+        const [r, c] = at(i);
+        const d = Math.max(Math.abs(r - r0), Math.abs(c - c0));
+        steps.set(d, [...(steps.get(d) ?? []), i]);
+      }
+      for (const d of [...steps.keys()].sort((x, y) => x - y)) {
+        for (const i of steps.get(d)!) {
+          const tile = this.panels[i];
+          tile.classList.add('in-line');
+          if (!matchMedia('(prefers-reduced-motion: reduce)').matches)
+            tile.animate(
+              [
+                { transform: 'rotateY(0) scale(1)' },
+                { transform: 'rotateY(90deg) scale(1.15)' },
+                { transform: 'rotateY(0) scale(1)' },
+              ],
+              { duration: 360, easing: 'ease-out' },
+            );
+        }
+        sound.play('flip');
+        await wait(T.ventureLineStep * speed);
+      }
+      await wait(250 * speed);
+    }
     this.panels.forEach((tile) => (tile.disabled = true));
     const show = async (heading: string, message: string) => {
       const body = h(
@@ -96,15 +130,17 @@ export class VentureView {
         h('div', { class: 'rich-title' }, heading),
         h('div', { class: 'venture-description' }, message),
       );
+      // The player who drew it can press OK; everyone moves on by themselves after a few seconds
+      // (people watching have nothing to press).
       const done = this.hud.prompt(
         body,
-        [{ label: human ? 'OK' : 'Close', value: undefined, main: true }],
+        human ? [{ label: 'OK', value: undefined, main: true }] : [],
         this.G.players[this.pid].color,
       );
-      // Observers can dismiss early, or let the result advance automatically.
-      const timer = human
-        ? undefined
-        : window.setTimeout(() => this.hud.resolvePrompt(undefined), T.cpuResult * speed);
+      const timer = window.setTimeout(
+        () => this.hud.resolvePrompt(undefined),
+        human ? T.ventureResult : T.cpuResult * speed,
+      );
       try {
         await done;
       } finally {

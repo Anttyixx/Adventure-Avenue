@@ -24,7 +24,7 @@ import {
 } from '@aa/engine';
 import { coinIconURL, starIconURL, suitIconURL, wildIconURL } from '../icons';
 import { propertyIconURL } from '../art';
-import { portraitURL } from '../sprites';
+import { FRAME_H, FRAME_W, Facing, drawCharacter, portraitURL } from '../sprites';
 import { TIMING as T } from '../timing';
 import { clear, fmt, h } from './dom';
 import type { Hud } from './hud';
@@ -527,7 +527,14 @@ export class ArcadeStage {
 
   private lanes = new Map<
     number,
-    { runner: HTMLElement; coins: HTMLElement; badge: HTMLElement; lane: HTMLElement }
+    {
+      runner: HTMLElement;
+      coins: HTMLElement;
+      badge: HTMLElement;
+      lane: HTMLElement;
+      /** Draw the racer standing, or one frame of walking. */
+      draw: (walking: boolean, frame: number) => void;
+    }
   >();
   private coinsShown = new Map<number, number>();
 
@@ -545,7 +552,20 @@ export class ArcadeStage {
     wrap.append(ruler);
     for (const id of this.order) {
       const p = this.G.players[id];
-      const runner = h('span', { class: 'derby-runner' }, h('img', { src: portraitURL(p.ch), alt: p.name }));
+      // The racer's own sprite, facing the finish; it walks while it moves.
+      const cv = h('canvas', {
+        width: FRAME_W * 2,
+        height: FRAME_H * 2,
+        'aria-label': p.name,
+      }) as HTMLCanvasElement;
+      const ctx = cv.getContext('2d')!;
+      ctx.imageSmoothingEnabled = false;
+      const draw = (walking: boolean, frame: number) => {
+        ctx.clearRect(0, 0, cv.width, cv.height);
+        drawCharacter(ctx, p.ch, walking, Facing.Right, frame, FRAME_W, FRAME_H * 2, 2);
+      };
+      draw(false, 0);
+      const runner = h('span', { class: 'derby-runner' }, cv);
       const badge = h('span', { class: 'derby-badge' });
       const coins = h('span', { class: 'derby-coins', title: 'Coins grabbed' }, fmt(0));
       const cells = h('div', { class: 'derby-cells' });
@@ -557,7 +577,7 @@ export class ArcadeStage {
         h('div', { class: 'derby-track' }, cells, runner, badge),
         coins,
       );
-      this.lanes.set(id, { runner, coins, badge, lane });
+      this.lanes.set(id, { runner, coins, badge, lane, draw });
       this.placeRunner(id, 0);
       wrap.append(lane);
     }
@@ -602,13 +622,16 @@ export class ArcadeStage {
       l.badge.style.setProperty('--at', String(to));
       hops.push(
         (async () => {
-          // Hop one space at a time.
+          // Walk one space at a time down the lane.
+          let frame = 0;
+          const walk = window.setInterval(() => l.draw(true, frame++), 110);
+          l.draw(true, frame++);
           for (let n = from + 1; n <= to; n++) {
             this.placeRunner(row.pid, n);
-            await this.anim(l.runner, [{ translate: '0 0' }, { translate: '0 -9px' }, { translate: '0 0' }], {
-              duration: 210,
-            });
+            await this.wait(260);
           }
+          clearInterval(walk);
+          l.draw(false, 0);
           this.placeRunner(row.pid, to);
           const coins = (this.coinsShown.get(row.pid) ?? 0) + (grabbed ? K.derby.grabCoins : 0);
           this.coinsShown.set(row.pid, coins);

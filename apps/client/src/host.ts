@@ -264,7 +264,21 @@ export class HotSeat implements GameIO {
         }
       } else if (!ready) this.winReady.delete(p.id);
     }
-    sound.music(this.winReady.size ? 'urgent' : 'game');
+    this.playMusic();
+  }
+
+  /** The venture board or an arcade game, while one is up: it has its own music. */
+  private scene: 'venture' | 'arcade' | null = null;
+
+  private setScene(scene: 'venture' | 'arcade' | null) {
+    this.scene = scene;
+    this.playMusic();
+  }
+
+  /** The scene's music, else the board music (the urgent theme once someone can win). */
+  private playMusic() {
+    if (this.G.over) return;
+    sound.music(this.scene ?? (this.winReady.size ? 'urgent' : 'game'));
   }
 
   async wait(ms: number) {
@@ -414,6 +428,7 @@ export class HotSeat implements GameIO {
     if (this.arcade?.game !== game) {
       this.arcade?.close();
       this.arcade = new ArcadeStage(this.hud, game, this.G);
+      this.setScene('arcade');
     }
     return this.arcade;
   }
@@ -421,6 +436,7 @@ export class HotSeat implements GameIO {
   private endArcade() {
     this.arcade?.close();
     this.arcade = null;
+    this.setScene(null);
   }
 
   /**
@@ -443,6 +459,7 @@ export class HotSeat implements GameIO {
         this.venture?.m.close();
         this.venture = new VentureView(this.hud, G, p.id);
         this.venture.watch(p.name);
+        this.setScene('venture');
         break;
       case 'reels':
         void this.stage('Lucky Reels').reels(req, p, false);
@@ -604,6 +621,7 @@ export class HotSeat implements GameIO {
 
       case 'venturePanel':
         this.venture = new VentureView(hud, G, p.id);
+        this.setScene('venture');
         return this.venture.pick();
 
       case 'reels':
@@ -888,10 +906,11 @@ export class HotSeat implements GameIO {
       case 'venture': {
         const p = G.players[e.pid];
         hud.action('venture', `${p.name} drew ${e.title}.`, 'card');
-        sound.play('venture');
         const view = this.venture ?? new VentureView(hud, G, e.pid);
         this.venture = null;
+        this.setScene('venture');
         await view.reveal(e.panel, e.title, e.text, e.lines, e.bonus, this.localHuman(p.id), this.speed);
+        this.setScene(null);
         this.refresh();
         break;
       }
@@ -972,8 +991,9 @@ export class HotSeat implements GameIO {
       }
       case 'opened': {
         hud.action('shops-opening', 'Shops are reopening...', 'effect');
+        // In the background: no zoom out and no waiting; the gates roll up while play goes on.
         const open = G.nodes.filter((sq) => e.pids.includes(sq.owner)).map((sq) => sq.id);
-        await board.openShops(open);
+        board.openShops(open);
         this.refresh();
         break;
       }
