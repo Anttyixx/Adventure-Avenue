@@ -350,10 +350,13 @@ function propertyInfo(G: GameState, s: Square, color: string) {
     // Other buildings: the same art as the build choice (a circus by its tier).
     src = propIconURL((s.b === 'circus' ? `circus${Math.min(3, s.lv)}` : s.b) as PropKey, color);
   }
-  const closed = isClosed(G.players[s.owner]);
-  const rent = s.b === 'tax' ? '10%' : s.b === 'agency' ? '-' : fmt(squareFee(G, s));
+  const owner = G.players[s.owner];
+  const closed = !!owner && isClosed(owner);
+  // Nobody pays rent on a property nobody owns yet.
+  const rent = !owner ? '-' : s.b === 'tax' ? '10%' : s.b === 'agency' ? '-' : fmt(squareFee(G, s));
   const capped = isShopLike(s) ? maxValue(G, s) : 0;
   const name = s.t === 'shop' ? `${shortName(G, s)} (${s.base}G)` : shortName(G, s);
+  if (!owner) kind = s.t === 'plot' && !s.b ? 'Vacant plot' : 'For sale';
   const title = `${name}: ${kind}. Rent ${rent}${closed ? ' (closed now)' : ''}, value ${fmt(s.value)}${capped ? `, up to ${fmt(capped)}` : ''}. Click to find it on the board.`;
   return { src, kind, closed, rent, name, title };
 }
@@ -377,9 +380,16 @@ export function propertyCard(G: GameState, s: Square, color: string, hooks: Over
   const card = h(
     'div',
     { class: `pv-card ${info.closed ? 'closed' : ''}`, tabindex: '0', role: 'button', title: info.title },
-    info.src ? h('img', { src: info.src, alt: '' }) : h('span', { class: 'pv-card-none' }, '·'),
-    h('span', { class: 'pv-card-rent' }, info.rent),
-    h('span', { class: 'pv-card-val' }, fmt(s.value)),
+    info.src
+      ? h('img', { src: info.src, alt: '' })
+      : s.t === 'plot' && !s.b
+        ? h('span', { class: 'pv-card-vacant' }, 'VACANT')
+        : h('span', { class: 'pv-card-none' }, '·'),
+    // Nobody owns it yet: "For sale" (or "Plot") instead of a rent.
+    s.owner < 0
+      ? h('span', { class: 'pv-card-sale' }, s.t === 'plot' && !s.b ? 'Plot' : 'For sale')
+      : h('span', { class: 'pv-card-rent' }, info.rent),
+    s.owner < 0 && s.t === 'plot' && !s.b ? null : h('span', { class: 'pv-card-val' }, fmt(s.value)),
   );
   return findable(card, s.id, hooks);
 }

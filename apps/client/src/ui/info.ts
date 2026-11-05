@@ -7,7 +7,16 @@
  * The action bar while it is open is a stand-in laid over the real one, so whatever the game
  * shows meanwhile (statuses, a choice waiting for the player) is still there when it closes.
  */
-import { PLAYER_COLORS, SUITS, canPromote, netWorth, ranking, type GameState, type Player } from '@aa/engine';
+import {
+  PLAYER_COLORS,
+  SUITS,
+  canPromote,
+  netWorth,
+  ranking,
+  type GameState,
+  type Player,
+  type Square,
+} from '@aa/engine';
 import { bodyURL, portraitURL } from '../sprites';
 import { suitIconURL, wildIconURL } from '../icons';
 import { clear, fmt, h } from './dom';
@@ -15,6 +24,9 @@ import type { Hud } from './hud';
 import { marketView } from './market';
 import { keepClearOfCards } from './modals';
 import { ordinal, playerOverview, propertyCard, section } from './overview';
+
+/** Unowned property art is grey, as on the board. */
+const UNOWNED_ART = '#9aa3b8';
 
 /** What the info pop-up shows: the game, the stock market, or a player (their id). */
 export type InfoPage = 'game' | 'stocks' | 'props' | number;
@@ -184,8 +196,8 @@ export class InfoPopup {
       const parts = popParts(old);
       parts.forEach((el, i) =>
         el.animate([HERE, { opacity: 0, transform: 'scale(0.82)' }], {
-          duration: 143,
-          delay: Math.min(i, 8) * 17,
+          duration: 136,
+          delay: Math.min(i, 8) * 16,
           easing: 'ease-in',
           fill: 'forwards',
         }),
@@ -202,7 +214,7 @@ export class InfoPopup {
           const ease = 'cubic-bezier(0.2, 0.8, 0.2, 1)';
           if (Math.abs(to - from) > 1)
             this.box.animate([{ height: `${from}px` }, { height: `${to}px` }], {
-              duration: 247,
+              duration: 235,
               easing: ease,
             });
           // ...and the new page's parts pop in, one after another.
@@ -213,7 +225,7 @@ export class InfoPopup {
                 { opacity: 1, transform: 'scale(1.03)', offset: 0.7 },
                 HERE,
               ],
-              { duration: 266, delay: 152 + Math.min(i, 10) * 28.5, easing: 'ease-out', fill: 'backwards' },
+              { duration: 253, delay: 144 + Math.min(i, 10) * 27, easing: 'ease-out', fill: 'backwards' },
             ),
           );
         },
@@ -466,15 +478,16 @@ function standingCard(G: GameState, p: Player, place: number, onclick: () => voi
 }
 
 /**
- * The Properties page: every owned property, district by district (rows in Easy rules), each as
+ * The Properties page: every property (owned or not), district by district (rows in Easy rules), each as
  * a card in its owner's color with their portrait, under a chip per player with how many they own
  * and what they are worth. Tap a card to find it on the board.
  */
 function propertiesPage(G: GameState, onFind: (id: number) => void): HTMLElement {
   const standard = G.rules === 'standard';
   const owned = G.nodes.filter((s) => s.d >= 0 && s.owner >= 0);
-  const groups = new Map<number, typeof owned>();
-  for (const s of owned) {
+  // Every property of each district (owned or not), two districts to a row.
+  const groups = new Map<number, Square[]>();
+  for (const s of G.nodes.filter((q) => q.d >= 0)) {
     const key = standard ? s.d : s.g;
     if (!groups.has(key)) groups.set(key, []);
     groups.get(key)!.push(s);
@@ -482,7 +495,7 @@ function propertiesPage(G: GameState, onFind: (id: number) => void): HTMLElement
   const box = h('div', { class: 'pv-props info-props' });
   for (const [key, squares] of [...groups.entries()].sort((a, b) => a[0] - b[0])) {
     const dist = standard ? G.districts[key] : null;
-    const total = G.nodes.filter((s) => (standard ? s.d === key : s.g === key)).length;
+    const taken = squares.filter((s) => s.owner >= 0).length;
     box.append(
       h(
         'div',
@@ -492,15 +505,20 @@ function propertiesPage(G: GameState, onFind: (id: number) => void): HTMLElement
           { class: 'pv-group' },
           h('i', { class: 'pv-dot' }),
           h('span', null, dist?.name ?? 'Row'),
-          h('em', null, `${squares.length} of ${total} owned`),
+          h('em', null, `${taken} of ${squares.length} owned`),
         ),
         h(
           'div',
           { class: 'pv-cards' },
           ...squares.map((s) => {
-            const owner = G.players[s.owner];
-            const color = PLAYER_COLORS[owner.color];
+            const owner = s.owner >= 0 ? G.players[s.owner] : null;
+            // Unowned properties are drawn in grey and dimmed, with no owner badge.
+            const color = owner ? PLAYER_COLORS[owner.color] : UNOWNED_ART;
             const card = propertyCard(G, s, color, { onFind });
+            if (!owner) {
+              card.classList.add('unowned');
+              return card;
+            }
             card.classList.add('owned-by');
             card.style.setProperty('--pc', color);
             card.prepend(
@@ -534,8 +552,8 @@ function propertiesPage(G: GameState, onFind: (id: number) => void): HTMLElement
     { class: 'info-props-page' },
     h('div', { class: 'info-owners' }, ...who),
     section(
-      'Owned properties',
-      `${owned.length} of ${G.nodes.filter((s) => s.d >= 0).length}`,
+      'Properties',
+      `${owned.length} of ${G.nodes.filter((s) => s.d >= 0).length} owned`,
       owned.length ? box : h('p', { class: 'pv-empty' }, 'Nobody owns a property yet.'),
     ),
   );

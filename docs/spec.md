@@ -1063,11 +1063,13 @@ closes the pop-up). It updates live as the game goes on.
   by place, built like the player cards on the game screen (sprite, level, name, suits, the bar
   toward the goal, cash, place and net worth); tapping one opens that player's page.
 - **Properties:** a rounded chip per player across the top (portrait, name, how many properties
-  they own and their total value, bordered in their color), then every owned property, district
-  by district (rows in Easy rules), with how many of the district's squares are owned; each card
-  (larger than on a player page) shows the property's art in its owner's color, a small portrait
-  of the owner, its rent and value, and a bottom edge in the owner's color (tap one to find it on
-  the board, like on a player page).
+  they own and their total value, bordered in their color), then every property of the board
+  (owned or not), two districts to a row with each district's four properties side by side (eight
+  columns; one district a row on narrow screens), with how many of each district's squares are
+  owned. Owned cards show the property's art in its owner's color, a large portrait of the owner
+  in the corner, its rent and value, and a bottom edge in the owner's color; unowned ones are
+  dimmed, in grey, and say "For sale" with their price (a vacant plot shows a dashed VACANT box and
+  "Plot"). Tap any card to find it on the board.
 - **Stocks:** the stock market view (mini map, shop cards, district table), as on the buy/sell
   screen; picking a district plays the click sound.
 - **A player** (`ui/overview.ts`): every property the player does not own is greyed out on the

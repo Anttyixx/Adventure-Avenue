@@ -42,7 +42,7 @@ export const CHANGELOG: ChangelogEntry[] = [
       },
     ],
     extras: [
-      'A Properties page shows every owned property by district, with a chip per player on top',
+      'A Properties page shows every property, two districts to a row, with owners and what is still for sale',
       'The Game page standings look like the player cards',
       'Player pages: net worth beside the name, a goal bar that shows how far along on hover, and the next promotion pay',
       "A player's properties are a list: the building on the left, its details on the right",

@@ -583,8 +583,9 @@ if (!(await ask(`Delete ${d.name}?`, 'Its 4 properties will be removed from the 
   top right (`.info-close`). Centered and kept clear of the player cards (`keepClearOfCards`);
   non-dimming, only the box catches clicks; opening/closing motion as for the stock market. Page
   changes pop: the old page's parts (`popParts`: head, sections, map, shop cards, table) shrink
-  to 0.82 and fade (143ms, 17ms apart), the box morphs its height (247ms), then the new parts pop
-  in (0.82 → 1.03 → 1, 266ms, 28.5ms apart). Player pages: columns 26px apart (rows 18px),
+  to 0.82 and fade (136ms, 16ms apart), the box morphs its height (235ms), then the new parts pop
+  in (0.82 → 1.03 → 1, 253ms, 27ms apart). Scrolling areas keep 6px of room inside their edges
+  (`.info-scroll`, the property list's right side) so popping and hovered parts are never clipped. Player pages: columns 26px apart (rows 18px),
   sections 16px apart, the first column at least 300px; a container query keeps the top-right
   heading (or the name, single column) 70px clear of Back.
 - **Action bar:** a stand-in `.prompt-center.info-bar` over the real bar (`.hud.info-open` hides
@@ -596,8 +597,10 @@ if (!(await ask(`Delete ${d.name}?`, 'Its 4 properties will be removed from the 
   blinks).
 - **Pages:** Game (how to win and a facts grid at 14-17px; standings as `.pcard.info-pcard`
   cards, the game screen's player card markup, in a ~320px column); Properties (rounded player
-  chips `.info-owner` on top, 2px `--pc` border and tint; then 84px property cards
-  `.pv-card.owned-by` grouped by district, owner portrait badge top left and a `--pc` bottom edge);
+  chips `.info-owner` on top, 2px `--pc` border and tint; then a grid of two districts per row,
+  four cards each (`.info-props`, eight columns, one district a row below 640px): 64px art,
+  owned cards `.pv-card.owned-by` with a 26px owner portrait badge top left and a `--pc` bottom
+  edge, unowned cards `.unowned` dimmed to 55% with "For sale" or a dashed VACANT box);
   Stocks (`marketView(..., { split: true })`);
   a player (`playerOverview`: three columns. First: the head (sprite, name + CPU tag,
   level/rank/suits, net worth in Lilita 26px at the right), an 8px goal bar (`.pv-goal`;

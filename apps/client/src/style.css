@@ -9274,6 +9274,10 @@ div.sl-inline label {
   min-height: 0;
   overflow: auto;
   overscroll-behavior: contain;
+  /* A little room inside the scroll edge, so parts popping in (they grow to 103%) and hovered
+     cards are never clipped. */
+  padding: 6px;
+  margin: -6px;
 }
 .info-pop .market {
   margin-top: 0;
@@ -9523,24 +9527,62 @@ div.sl-inline label {
 .info-owner-val {
   color: var(--muted);
 }
+/* Two districts to a row, each with its four properties side by side (eight columns); narrow
+   pop-ups fall back to one district a row. */
 .info-props {
-  display: flex;
-  flex-wrap: wrap;
+  container-type: inline-size;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 14px 22px;
 }
+@container (max-width: 640px) {
+  .info-props > .pv-pgroup {
+    grid-column: 1 / -1;
+  }
+}
+.info-props .pv-cards {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
 .info-props .pv-card {
-  width: 84px;
-  padding: 6px 3px 7px;
+  width: auto;
+  padding: 8px 4px 8px;
 }
 .info-props .pv-card img:not(.pv-card-owner) {
-  width: 48px;
-  height: 48px;
+  width: 64px;
+  height: 64px;
 }
 .info-props .pv-card-rent {
-  font-size: 16px;
+  font-size: 17px;
 }
 .info-props .pv-card-val {
   font-size: 12px;
+}
+/* Not owned yet: "For sale" (or a dashed VACANT box and "Plot") in place of the rent. */
+.pv-card-sale {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--muted);
+}
+.pv-card-vacant {
+  display: grid;
+  place-items: center;
+  width: 56px;
+  height: 40px;
+  margin: 12px 0;
+  border: 2px dashed rgba(255, 255, 255, 0.45);
+  border-radius: 6px;
+  font: 700 9px var(--body);
+  color: var(--muted);
+}
+/* Nobody owns it yet: grey art, dimmed. */
+.info-props .pv-card.unowned {
+  opacity: 0.55;
+}
+.info-props .pv-card.unowned:hover,
+.info-props .pv-card.unowned:focus-visible {
+  opacity: 0.85;
 }
 .pv-card.owned-by {
   position: relative;
@@ -9548,10 +9590,12 @@ div.sl-inline label {
 }
 .pv-card .pv-card-owner {
   position: absolute;
-  top: 3px;
-  left: 3px;
-  width: 18px;
-  height: 18px;
+  top: 4px;
+  left: 4px;
+  width: 26px;
+  height: 26px;
+  border: 2px solid var(--pc);
+  box-sizing: border-box;
   border-radius: 50%;
   background: var(--pc);
   image-rendering: pixelated;
@@ -9563,6 +9607,8 @@ div.sl-inline label {
   flex-direction: column;
   flex-wrap: nowrap;
   align-items: stretch;
+  /* Room for a hovered row's nudge inside the scrolling list, so it is never clipped. */
+  padding: 2px 6px 2px 2px;
   gap: 4px;
 }
 .pv-row {
@@ -9581,6 +9627,8 @@ div.sl-inline label {
 }
 .pv-row:hover,
 .pv-row:focus-visible {
+  position: relative;
+  z-index: 1;
   background: rgba(255, 255, 255, 0.12);
   translate: 2px 0;
 }
