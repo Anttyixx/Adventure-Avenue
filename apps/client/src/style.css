@@ -2206,8 +2206,8 @@ input[type='range'] {
   pointer-events: auto;
   box-sizing: border-box;
   max-height: 100%;
-  /* Never wider than the space left of the player cards. */
-  max-width: calc(100vw - var(--free-right, 0px) - 24px) !important;
+  /* Never wider than the space left of the player cards, with a gap before them (CARD_GAP). */
+  max-width: calc(100vw - var(--free-right, 0px) - 40px) !important;
 }
 .stock-pop .market {
   margin-top: 6px;

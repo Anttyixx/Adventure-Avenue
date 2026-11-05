@@ -37,6 +37,9 @@ const priceFmt = (v: number) => `${(Math.round(v * 10) / 10).toLocaleString('en-
  * The stock market in a pop-up in the middle of the screen, over the board (pick a district on
  * its map or in its table), while the choice itself sits in the action bar below it.
  */
+/** Space kept between the stock pop-up and the player cards. */
+const CARD_GAP = 28;
+
 function stockPopup(hud: Hud, title: string, content: Node) {
   const box = h(
     'div',
@@ -52,7 +55,8 @@ function stockPopup(hud: Hud, title: string, content: Node) {
     box.style.transform = '';
     const r = box.getBoundingClientRect();
     const freeRight = parseFloat(getComputedStyle(hud.root).getPropertyValue('--free-right')) || 0;
-    const limit = window.innerWidth - freeRight - 12;
+    // Keep a clear gap between the pop-up and the player cards.
+    const limit = window.innerWidth - freeRight - CARD_GAP;
     const shift = r.right > limit ? Math.max(12 - r.left, limit - r.right) : 0;
     if (shift) box.style.transform = `translateX(${Math.round(shift)}px)`;
   };
