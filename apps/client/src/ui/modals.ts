@@ -143,8 +143,7 @@ export async function stockModal(
     clear(sum);
     sum.append(
       h('div', { class: 'm-total' }, `${mode === 'buy' ? 'Buy' : 'Sell'} ${G.districts[d].name} shares`),
-      // At a discount (buying) or a premium (selling): a chip in the card's top right corner, and
-      // the market price per share crossed out with the player's own price glowing beside it.
+      // At a discount (buying) or a premium (selling): a chip in the card's top right corner.
       ...(rate
         ? [
             h(
@@ -152,17 +151,12 @@ export async function stockModal(
               { class: 'm-deal-tag m-corner' },
               mode === 'buy' ? `${rate * 100}% off` : `${rate * 100}% above`,
             ),
-            h(
-              'div',
-              { class: 'm-deal-row' },
-              h('span', null, 'Per share'),
-              h('s', { class: 'm-was' }, fmt(now)),
-              h('b', { class: 'm-deal-price' }, priceFmt(unit())),
-            ),
           ]
         : []),
       mLine('Market price', fmt(now), fmt(after), after > now ? 'up' : after < now ? 'down' : ''),
-      mTotal(mode === 'buy' ? 'Purchase price' : 'Sell price', fmt(total)),
+      // What each share costs (or fetches) in this trade: the average of the price before and
+      // after it. A deal crosses out the market's price and shows the player's own, glowing.
+      perShare(n > 0 ? value / n : now, n > 0 ? total / n : unit(), !!rate),
       mLine('Your cash', fmt(p.cash), fmt(cashAfter), cashAfter < 0 ? 'down' : ''),
       mLine('Shares you hold', String(p.shares[d]), String(p.shares[d] + (mode === 'buy' ? n : -n)), 'held'),
     );
@@ -238,15 +232,18 @@ export async function stockModal(
   }
 }
 
-/** A row of a deal summary with a single amount (what the trade costs or pays). */
-function mTotal(label: string, amount: string) {
+/**
+ * The "Price per share" row: the price each share trades at. With a discount or premium the
+ * market's price is crossed out and the player's own price glows beside it.
+ */
+function perShare(market: number, mine: number | string, deal: boolean) {
   return h(
     'div',
     { class: 'm-line m-pay' },
-    h('span', null, label),
+    h('span', null, 'Price per share'),
+    deal ? h('s', { class: 'm-was' }, priceFmt(market)) : h('span', null),
     h('span', null),
-    h('span', null),
-    h('b', null, amount),
+    h('b', { class: deal ? 'm-deal-price' : '' }, typeof mine === 'string' ? mine : priceFmt(mine)),
   );
 }
 
@@ -324,7 +321,7 @@ export async function districtStockModal(
       free
         ? mLine('Market price', fmt(now), fmt(now))
         : mLine('Price per share', fmt(now), fmt(after), after > now ? 'up' : after < now ? 'down' : ''),
-      ...(free ? [mTotal('Purchase price', 'Free')] : []),
+      ...(free ? [perShare(now, 'Free', false)] : []),
       ...(free
         ? [mLine('Shares you hold', String(p.shares[d]), String(p.shares[d] + GIFT_SHARES), 'up')]
         : []),

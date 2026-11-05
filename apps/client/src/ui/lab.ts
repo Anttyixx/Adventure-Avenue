@@ -60,6 +60,7 @@ import { investOnBoard } from './invest';
 import { AuctionView } from './auction';
 import { confettiRain } from './confetti';
 import { TIMING as T } from '../timing';
+import { BUILD, VERSION_LABEL } from '../build';
 import { inviteURL } from '../net/protocol';
 import {
   answerTradeOnBoard,
@@ -110,12 +111,10 @@ const rnd = (n: number) => Math.floor(Math.random() * n);
 const RECENT = new Set([
   'Buy stock',
   'Buy stock (10% off)',
-  'Buy stock (shaken district)',
   'Sell stock',
   'Sell stock (20% above)',
   'Gift shares (venture card)',
-  'Bull market (venture card)',
-  'Bear market (venture card)',
+  'Stock market',
   'stockBuy',
   'stockSell',
 ]);
@@ -202,6 +201,14 @@ export async function openLab(app: HTMLElement, section?: string) {
   });
   board.zoomOut = 1;
   hud.setFastLabel(false);
+  // The info chip names the build being tested, like the main menu's version chip.
+  hud.infoChip.append(
+    h(
+      'span',
+      { class: 'gc-tag', title: `Build ${BUILD.sha} from ${BUILD.branch}` },
+      `${VERSION_LABEL} ${BUILD.branch} ${BUILD.sha}`,
+    ),
+  );
 
   let target = 0;
   const cur = (): Player => G.players[target];

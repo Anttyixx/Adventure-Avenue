@@ -38,10 +38,14 @@ export const CHANGELOG: ChangelogEntry[] = [
       {
         tag: 'better',
         title: 'Tidier stock bar',
-        text: 'A new purchase (or sell) price line shows what the deal costs; deals show their chip in the corner; the counter is smaller with Max right beside it.',
+        text: 'A price per share line shows what each share costs you (a deal crosses out the market price); deals show their chip in the corner; the counter is smaller with Max right beside it.',
       },
     ],
-    extras: ['New sounds for buying and selling stock', 'A slightly wider Price column'],
+    extras: [
+      'New sounds for buying and selling stock',
+      'A slightly wider Price column',
+      'Picking a district on the stock screen clicks',
+    ],
   },
   {
     id: '2026-11-07-stock-bar-polish',

@@ -761,19 +761,18 @@ class AudioEngine {
         this.tone(bus, 'triangle', freq('C6'), t + 0.34, 0.25, 0.08);
         break;
       case 'stockBuy':
-        // Buying shares: ticker blips climbing like a rising chart, then a bright "ding".
-        this.notes(['E5', 'G5', 'B5', 'E6'], t, 0.06, 'square', 0.1);
-        this.tone(bus, 'sine', 300, t, 0.3, 0.1, { to: 900 });
-        this.tone(bus, 'triangle', freq('B6'), t + 0.26, 0.35, 0.16);
-        this.tone(bus, 'sine', freq('E7'), t + 0.3, 0.4, 0.07);
+        // Buying shares: a quick register "ka-" click, then a bright "ching" (about 0.3s).
+        this.hiss(bus, t, 0.03, 0.18, 2500, 4);
+        this.tone(bus, 'square', freq('A5'), t + 0.03, 0.05, 0.1, { cutoff: 4000 });
+        this.tone(bus, 'square', freq('E6'), t + 0.08, 0.22, 0.1, { cutoff: 6000 });
+        this.tone(bus, 'sine', freq('E7'), t + 0.08, 0.22, 0.06);
         break;
       case 'stockSell':
-        // Selling shares: blips stepping down, then a cash drawer chunk and a coin shimmer.
-        this.notes(['E6', 'B5', 'G5', 'E5'], t, 0.06, 'square', 0.1);
-        this.hiss(bus, t + 0.26, 0.08, 0.2, 1200, 3);
-        this.tone(bus, 'sine', 140, t + 0.26, 0.15, 0.3, { to: 70 });
-        this.tone(bus, 'square', freq('A6'), t + 0.34, 0.12, 0.09, { cutoff: 5000 });
-        this.tone(bus, 'square', freq('E7'), t + 0.42, 0.3, 0.09, { cutoff: 5000 });
+        // Selling shares: coins handed over: two quick falling clinks into a soft "ching".
+        this.tone(bus, 'square', freq('B6'), t, 0.05, 0.09, { cutoff: 6000 });
+        this.tone(bus, 'square', freq('G6'), t + 0.06, 0.05, 0.09, { cutoff: 6000 });
+        this.tone(bus, 'triangle', freq('D6'), t + 0.12, 0.2, 0.14);
+        this.hiss(bus, t + 0.12, 0.06, 0.08, 6000, 3);
         break;
       case 'grow':
         this.tone(bus, 'sine', 500, t, 0.45, 0.22, { to: 1500 });

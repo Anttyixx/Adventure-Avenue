@@ -812,8 +812,9 @@ the summary card (`.m-card`, compact), the digit picker, then `.tb-btns` with th
 (or the district button) over a ghost Skip/Cancel. Changing district in the pop-up redraws the bar
 in place (no new prompt, so the bar doesn't morph). A ghost **View board** button hides the pop-up (`stockPopup().peek`,
 `board.overviewHold` for an auto whole-board view) and swaps the bar to a short note with a gold
-"Back to stocks". The deal chip is `.m-corner` (absolute, top right of the card); the total is an
-`.m-line.m-pay` row in gold. The digit picker runs with `minButton: false` and no suffix, Max
+"Back to stocks". The deal chip is `.m-corner` (absolute, top right of the card); the price per share
+is an `.m-line.m-pay` row in gold (a deal strikes the market price through and glows the
+player's price green). The digit picker runs with `minButton: false` and no suffix, Max
 beside it with even padding. The bar's padding is the same on all four
 sides (12px, phones 8px; no min height). The card's heading names only the action and district
 ("Buy Brick Row shares"). A discount or premium is a `.m-deal-row`: the green deal tag, the market

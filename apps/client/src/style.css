@@ -1597,20 +1597,9 @@ input[type='range'] {
   color: var(--muted);
   font-size: 14px;
 }
-/* Buying at a discount / selling at a premium: the market price per share crossed out, and the
-   player's own price glowing gold beside it. */
-.m-deal-row {
-  display: flex;
-  align-items: baseline;
-  gap: 6px;
-  font-size: 13px;
-  color: var(--muted);
-}
-.m-deal-row .m-deal-tag {
-  margin: 0;
-  vertical-align: 0;
-}
-.m-deal-row .m-was {
+/* Buying at a discount / selling at a premium: in the "Price per share" row the market's price
+   is crossed out and the player's own price glows green beside it. */
+.m-pay .m-was {
   margin: 0;
 }
 .m-deal-price {
@@ -2254,12 +2243,15 @@ input[type='range'] {
   margin: 0;
   font-size: 12px;
 }
-/* What the trade costs or pays: one amount, in gold. */
+/* The price each share trades at: one amount, in gold (green and glowing for a deal). */
 .stock-bar .m-card:has(.m-corner) .m-total {
   padding-right: 84px;
 }
 .m-line.m-pay b {
   color: var(--accent);
+}
+.m-line.m-pay b.m-deal-price {
+  color: var(--good);
 }
 /* Max sits right beside the counter, with the same padding all round its word. */
 .stock-bar .digits {

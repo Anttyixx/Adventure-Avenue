@@ -512,12 +512,13 @@ venture cards.
 middle of the screen (over the board, which stays visible around it) and the choice sits in the
 action bar: a summary card, the share counter and Buy/Sell with Skip (or Cancel). The card's
 heading just says "Buy Brick Row shares" (or Sell); under it: the market price (now and after),
-the **purchase price** (or **sell price**: what the whole trade costs or pays, in gold), the
-player's cash and their shares (now and after). At a discount (10% off) or premium (20% above) a
-green chip in the card's top right corner names the deal, and a row under the heading shows the
-market price per share crossed out and the player's own price per share in green with a soft
-pulsing glow. The share counter has no 0 button and no "shares" label; Max sits right beside it.
-Gift shares shows the market price, "Purchase price: Free" and the shares held.
+the **price per share** (what each share trades at in this deal: the average of the price before
+and after, in gold), the player's cash and their shares (now and after). At a discount (10% off)
+or premium (20% above) a green chip in the card's top right corner names the deal, and the price
+per share row shows the market's price crossed out with the player's own price in green with a
+soft pulsing glow. The share counter has no 0 button and no "shares" label; Max sits right
+beside it. Gift shares shows the market price, "Price per share: Free" and the shares held. Picking a
+district in the table or on the mini map plays the click sound.
 
 **View board:** the bar also has a View board button (on the district venture cards too). It hides
 the pop-up, the camera shows the whole board (auto zoom, so the player can still zoom), and the bar
@@ -1138,7 +1139,7 @@ ring/silent switch does not mute the game; the in-game Mute switch still does.
   sparse tune to think by (Memory Blocks), a galloping race theme (Coin Derby), a game-show tune
   (Lucky Wheel) and a sea shanty (Treasure Split). The board music comes back when they close. The music stops for the winning fanfare at the end of a game.
 - **Effects:** a domination fanfare, venture line and full-row jingles, button clicks, dice roll, each step, landing, gaining and paying money, buying a
-  shop, buying stock (ticker blips climbing to a bright ding), selling stock (blips stepping down to a cash-drawer chunk and coin shimmer), buying out a rival's property (a brass stab, a rising run and a cash-register ring), a shop's value going up, collecting a suit, promotion, venture cards, a card flipping over (a paper swish and a click), slot reels ticking as they spin and clunking as each stops, warps, the start of a
+  shop, buying stock (a short register click and "ching"), selling stock (two quick falling coin clinks into a soft "ching"), buying out a rival's property (a brass stab, a rising run and a cash-register ring), a shop's value going up, collecting a suit, promotion, venture cards, a card flipping over (a paper swish and a click), slot reels ticking as they spin and clunking as each stops, warps, the start of a
   human player's turn, a new round, bankruptcy and the win fanfare.
 - **Settings:** a speaker button on the main menu and game setup (and the Sound section of the in-game menu) has Music and
   Effects volume sliders and a Mute switch. Settings are saved per device. Audio pauses while the

@@ -25,6 +25,7 @@ import {
 import { SHOP_TIERS, SHOP_TIER_NAMES, STAR3_TIERS, STAR3_TIER_NAMES, propertyIconURL, tierFor } from '../art';
 import { cellAt, cellCenter, tileShape, worldSize } from '../geometry';
 import { portraitURL } from '../sprites';
+import { sound } from '../audio';
 import { clear, fmt, h } from './dom';
 
 /** Unowned squares use neutral greys so they never look like a player's color. */
@@ -60,6 +61,7 @@ export function marketView(
   let first = 0;
 
   const select = (d: number) => {
+    sound.play('click');
     sel = (d + G.districts.length) % G.districts.length;
     lastSelected = sel;
     onSelect?.(sel);
