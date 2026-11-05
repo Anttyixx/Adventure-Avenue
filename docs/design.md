@@ -373,7 +373,7 @@ Each element: **purpose**, **placement**, **anatomy**, **spec**, **behavior**, t
 
 - **Purpose:** what you're playing/editing, always visible.
 - **Placement:** `top: 10px; left: 10px` (`.top-row`; the UI Lab puts its build chip `.lab-ver` to
-  its left).
+  its right).
 - **Anatomy (game):** gold Lilita title ("Adventure Avenue") · a muted goal pill · Room button
   online · the Info button at its end. **(builder):** "Board builder" · inline name input · save status
   ("Not saved yet" gold, "Saved" green) · "Board settings" small ghost button.

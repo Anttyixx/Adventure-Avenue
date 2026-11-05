@@ -4977,7 +4977,7 @@ input[type='range'] {
     box-shadow: 0 0 8px rgba(255, 209, 102, 0.5);
   }
 }
-/* UI Lab: the build being tested, left of the info chip. */
+/* UI Lab: the build being tested, right of the info chip. */
 .lab-ver {
   padding: 5px 10px;
   border-radius: 999px;

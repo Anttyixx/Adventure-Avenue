@@ -198,8 +198,8 @@ export async function openLab(app: HTMLElement, section?: string) {
   });
   board.zoomOut = 1;
   hud.setFastLabel(false);
-  // The build being tested, in its own chip left of the info chip.
-  hud.infoChip.before(
+  // The build being tested, in its own chip right of the info chip.
+  hud.infoChip.after(
     h(
       'span',
       { class: 'lab-ver glass', title: `Build ${BUILD.sha} from ${BUILD.branch}` },
