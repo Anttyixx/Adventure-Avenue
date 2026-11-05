@@ -174,8 +174,9 @@ export class BoardView {
   onPick: ((id: number) => void) | null = null;
   onHover: ((id: number | null, cx: number, cy: number) => void) | null = null;
   /** Called when the shown zoom changes: 250% fully zoomed in on the player, 100% fully out. */
-  onZoom: ((pct: number) => void) | null = null;
+  onZoom: ((pct: number, mode: 'free' | 'locked' | 'auto') => void) | null = null;
   private zoomPct = 0;
+  private zoomModeShown = '';
 
   /**
    * The die: tumbling, then showing the roll, then shrunk next to the walking player as a
@@ -757,6 +758,18 @@ export class BoardView {
     return this.showHold || this.peekWhole || !!this.lookAt || !!this.G?.over;
   }
 
+  /**
+   * Which zoom mode the camera is in (the zoom chip's border shows it):
+   * - `locked`: the game is showing something and only it moves the zoom;
+   * - `auto`: the game framed part of the board, and the player may still zoom in and out;
+   * - `free`: the player's own zoom, which the game never changes.
+   * Locked and auto views go back to free zoom by themselves when the game is done with them.
+   */
+  get zoomMode(): 'free' | 'locked' | 'auto' {
+    if (this.zoomLocked) return 'locked';
+    return this.autoView() ? 'auto' : 'free';
+  }
+
   /** An automatic view is up that waits on the player (they may zoom it). */
   private autoView() {
     return !!this.frameIds?.length || this.fitIds.length > 0 || this.overviewHold;
@@ -958,9 +971,11 @@ export class BoardView {
     const far = this.zoomFor(ZOOM_MAX_OUT);
     const out = far < near ? Math.log(this.cam.z / near) / Math.log(far / near) : 0;
     const pct = Math.round(250 - 150 * Math.min(1, Math.max(0, out)));
-    if (pct !== this.zoomPct) {
+    const mode = this.zoomMode;
+    if (pct !== this.zoomPct || mode !== this.zoomModeShown) {
       this.zoomPct = pct;
-      this.onZoom?.(pct);
+      this.zoomModeShown = mode;
+      this.onZoom?.(pct, mode);
     }
     const ctx = this.ctx;
     const want = Math.min(3, Math.max(1, Math.ceil(this.camTarget.z * this.dpr * 2) / 2));

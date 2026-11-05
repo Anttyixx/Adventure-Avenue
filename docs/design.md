@@ -60,7 +60,8 @@ a default browser widget.
 | Make **this turn's** choice (2-6 options), or read what's happening now | **Action bar** (bottom center)                                                       | Buy this shop?, Roll, choose a building, "Rosa is moving..." |
 | Pick a **square** on the board                                          | **Board highlight** (glowing squares) + action bar explaining it                     | Choose where to move, cannon target, invest in a shop        |
 | Edit **many settings** or a **long list** while still seeing the board  | **Side panel** (right edge, nonmodal)                                                | Board settings, the selected tile's options, the Tiles pane  |
-| Read or decide something **big**, with the board out of the way         | **Pop-up** (centered, dims the board)                                                | Guide, player overview, menu, stock screen, results          |
+| Read or decide something **big**, with the board out of the way         | **Pop-up** (centered, dims the board)                                                | Guide, player overview, menu, results                        |
+| Make a choice that needs **a big view to choose from**                  | **Pop-up + action bar**: the view in a non-dimming pop-up, the choice in the bar     | Stock screen, venture board, arcade games                    |
 | Answer a **yes/no** that can lose something                             | **Question pop-up** (small pop-up, Cancel + answer)                                  | Discard changes?, Delete district?, Quit game?               |
 | **Choose one of many things** that have pictures                        | **Card grid** in a pop-up                                                            | New board templates                                          |
 | **Manage a list** of saved things                                       | **List rows** in a pop-up                                                            | My boards                                                    |
@@ -382,7 +383,9 @@ Each element: **purpose**, **placement**, **anatomy**, **spec**, **behavior**, t
 ### 5.2 Toolbar (top right)
 
 - **Purpose:** screen-wide tools.
-- **Anatomy:** zoom chip (a pill showing "250%"; tap = reset zoom **and recenter**), then small
+- **Anatomy:** zoom chip (a pill showing "250%"; tap = reset zoom **and recenter**; its 2px border
+  shows the zoom mode: grey `#8a93a8` free, blue `#4c9bff` auto, red `#e5484d` locked, via
+  `data-mode`), then small
   buttons ("? Guide", "☰ Menu"; builder: Undo, Save, gold "Test play", Menu).
 - **Spec:** `.toolbar`, `top/right: 10px`, gap 6, buttons `.btn.small` on glass. Order: zoom
   chip, Game log, Guide, Menu.
@@ -797,6 +800,24 @@ and Menu and the version chip reachable. The title always sits above the actions
 (phones in landscape) it shrinks and the tagline is hidden. Fit the complete center group to the
 available height when necessary, including Continue and the optional join-name field. Menu pop-ups
 and their content retain their own scrolling behavior.
+
+### Stock screen (pop-up + action bar)
+
+Buying and selling stock and the district venture cards (Gift shares, Bull/Bear market) follow the
+same pattern as the venture board: the stock market sits in a centered glass pop-up that does not
+dim the board (`.stock-layer > .modal.stock-pop`, only the pop-up catches clicks, kept clear of
+the toolbar, player cards and action bar), and the decision is in the action bar (`.stock-bar`):
+the summary card (`.m-card`, compact), the digit picker, then `.tb-btns` with the gold Buy/Sell
+(or the district button) over a ghost Skip/Cancel. Changing district in the pop-up redraws the bar
+in place (no new prompt, so the bar doesn't morph). Phones: the pop-up keeps only the district
+table, the digit faces shrink to 32x34 and the "shares you hold" line (`.m-line.held`) is hidden.
+
+### UI Lab tabs
+
+The Lab's control panel has a row of small `.seg` pills (`.lab-tabs`) under the search box:
+**New** (only the glowing `RECENT` controls, from every section), then one tab per group of
+sections (`LAB_TABS` in `lab.ts`). A gold dot marks tabs that hold glowing controls. Search looks
+through every tab. The Target player picker stays above every tab.
 
 ### Arcade games (board + action bar)
 

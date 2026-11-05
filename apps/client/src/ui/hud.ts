@@ -61,6 +61,13 @@ export interface HudCallbacks {
 /** The narrowest a centered action bar may get before it moves to the bottom left corner. */
 const AB_CENTER_MIN = 520;
 
+/** The zoom chip's tooltip for each zoom mode. */
+const ZOOM_TITLES = {
+  free: 'Free zoom: scroll, pinch or - / +. Tap to zoom back in.',
+  auto: 'Auto zoom: the game is showing part of the board. You can still zoom; tap to reset.',
+  locked: 'Locked zoom: the game is showing something. Your zoom comes back in a moment.',
+};
+
 export class Hud {
   root: HTMLElement;
   toolbar = h('div', { class: 'toolbar' });
@@ -175,7 +182,12 @@ export class Hud {
     this.cb = cb;
     this.fastBtn.onclick = cb.onToggleFast;
     this.zoomChip.onclick = () => board.resetZoom();
-    board.onZoom = (pct) => (this.zoomChip.textContent = `${pct}%`);
+    board.onZoom = (pct, mode) => {
+      this.zoomChip.textContent = `${pct}%`;
+      // The border shows who controls the zoom: grey free, blue auto, red locked.
+      this.zoomChip.dataset.mode = mode;
+      this.zoomChip.title = ZOOM_TITLES[mode];
+    };
     this.menuBtn.onclick = () => this.toggleMenu();
     this.marketBox.append(this.marketLabel, this.marketBody);
     this.marketBox.onclick = () => this.toggleMarket(true);

@@ -592,7 +592,9 @@ export class Game {
     // to pay back the bank at the end of the turn, like any other debt.
     const sellable = this.debtAssets(p).reduce((sum, a) => sum + a.amount, 0);
     const max = Math.floor(Math.min(K.investCap, p.cash + sellable));
-    if (!options.length || max <= 0) return;
+    // Say why nothing happens, so landing on your own property never looks like a skipped choice.
+    if (!options.length) return this.log(`${p.name} has no shops to invest in.`, p.id, 'property');
+    if (max <= 0) return this.log(`${p.name} has no money to invest.`, p.id, 'property');
     const ans = await this.ask({ kind: 'invest', pid: p.id, shops: options, max });
     if (!ans) return;
     const opt = options.find((o) => o.sq === ans.sq);
@@ -804,6 +806,9 @@ export class Game {
       lines,
       bonus,
     });
+    // Everyone keeps the card up until the player who drew it has read it and closes it; only
+    // then is it logged and any line bonus paid.
+    await this.ask({ kind: 'ventureRead', pid: p.id, card: card.id });
     await this.log(`Venture card: ${card.title}. ${card.text}`, p.id, 'card');
     if (bonus) {
       const desc = lines.map((l) => l.length).join(' and ');
@@ -814,8 +819,6 @@ export class Game {
       );
       await this.pay(null, p, bonus, 'Line bonus');
     }
-    // Everyone keeps the card up until the player who drew it has read it and closes it.
-    await this.ask({ kind: 'ventureRead', pid: p.id, card: card.id });
     await card.run(this, p);
   }
 

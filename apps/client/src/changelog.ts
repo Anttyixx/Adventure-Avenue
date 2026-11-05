@@ -26,6 +26,38 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: '2026-11-07-stocks-zoom-venture',
+    date: 'Nov 7, 2026',
+    title: 'A new stock screen, clearer zoom and smoother venture cards',
+    features: [
+      {
+        tag: 'better',
+        title: 'New stock screen',
+        text: 'Buying and selling stock now works like the rest of the game: the stock market opens in the middle of the screen and your choice (how many shares, what it costs, Buy or Skip) sits in the action bar.',
+      },
+      {
+        tag: 'new',
+        title: 'Zoom modes',
+        text: 'The zoom chip shows who controls the zoom: grey when it is all yours, blue when the game is showing you part of the board (you can still zoom), red when the game is showing something and the zoom is locked for a moment.',
+      },
+      {
+        tag: 'better',
+        title: 'Venture cards without the flicker',
+        text: 'Flip a card and it shows straight away with what it does and an OK button, with nothing else in between. A bonus line pays out once you close the venture board.',
+      },
+      {
+        tag: 'online',
+        title: 'Watch where others can go',
+        text: 'While another player decides where to move, you see the squares they can land on. Once they pick, they walk there as usual.',
+      },
+    ],
+    extras: [
+      'Every arcade game gets played once before any repeats',
+      'Landing on your own shop with nothing to invest in now says so',
+      'New sounds for shops closing and reopening',
+    ],
+  },
+  {
     id: '2026-11-06-setup-venture-domination',
     date: 'Nov 6, 2026',
     title: 'New game setup, dominations and a grand finale',

@@ -2157,6 +2157,111 @@ input[type='range'] {
   margin: 0;
 }
 
+/* Buy/sell stock and the district venture cards: the market in a pop-up over the board (only
+   the pop-up catches clicks) and the deal in the action bar: summary, share counter, buttons. */
+.hud > .stock-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  display: grid;
+  place-items: center;
+  box-sizing: border-box;
+  padding: calc(var(--top-free, 50px) + 4px) calc(var(--free-right, 0px) + 12px) 200px 12px;
+  pointer-events: none;
+}
+.stock-pop {
+  pointer-events: auto;
+  box-sizing: border-box;
+  max-height: 100%;
+}
+.stock-pop .market {
+  margin-top: 6px;
+}
+.stock-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+.stock-bar .m-card {
+  margin: 0;
+  padding: 6px 12px;
+  gap: 1px;
+  min-width: 250px;
+}
+.stock-bar .m-total {
+  font-size: 15px;
+}
+.stock-bar .m-line {
+  font-size: 12px;
+}
+.stock-bar .m-line b {
+  font-size: 14px;
+  min-width: 56px;
+}
+.stock-bar .hint {
+  margin: 2px 0 0;
+  font-size: 11px;
+}
+@media (max-height: 500px), (max-width: 760px) {
+  .hud > .stock-layer {
+    padding: calc(var(--top-free, 40px) + 2px) calc(var(--free-right, 0px) + 6px) 120px 8px;
+  }
+  .stock-pop {
+    padding: 8px 10px;
+  }
+  .stock-pop .modal-head h2 {
+    font-size: 16px;
+  }
+  .stock-bar {
+    gap: 6px;
+  }
+  .stock-bar .m-card {
+    min-width: 0;
+    padding: 4px 8px;
+  }
+  .stock-bar .m-total {
+    font-size: 13px;
+  }
+  .stock-bar .m-line {
+    font-size: 11px;
+    gap: 4px;
+  }
+  .stock-bar .m-line b {
+    font-size: 12px;
+    min-width: 40px;
+  }
+  /* Short screens: the counter gets smaller and only the cost, price and cash lines show; the
+     pop-up keeps just the district table (tap a row to pick). */
+  .stock-bar .digits {
+    margin: 0;
+    gap: 6px;
+  }
+  .stock-bar .dg-face {
+    width: 32px;
+    height: 34px;
+    font-size: 22px;
+  }
+  .stock-bar .dg-arrow {
+    width: 32px;
+    height: 20px;
+  }
+  .stock-bar .digits > .btn {
+    padding: 4px 8px;
+  }
+  .stock-bar .m-line.held {
+    display: none;
+  }
+  .stock-pop .m-map,
+  .stock-pop .m-shops,
+  .stock-pop .m-foot {
+    display: none;
+  }
+  .stock-pop .modal-head {
+    display: none;
+  }
+}
+
 /* venture + games */
 .venture {
   display: flex;
@@ -4711,7 +4816,21 @@ input[type='range'] {
   font-variant-numeric: tabular-nums;
   cursor: pointer;
 }
-.zoom-chip:hover {
+/* The border shows the zoom mode: grey free (the player's), blue auto (the game framed part of
+   the board; the player may still zoom), red locked (only the game moves the zoom). */
+.zoom-chip {
+  padding: 3px 9px;
+  border: 2px solid #8a93a8;
+  transition: border-color 0.25s;
+}
+.zoom-chip[data-mode='auto'] {
+  border-color: #4c9bff;
+}
+.zoom-chip[data-mode='locked'] {
+  border-color: #e5484d;
+  cursor: default;
+}
+.zoom-chip[data-mode='free']:hover {
   border-color: var(--accent);
 }
 
@@ -5276,8 +5395,39 @@ button.tb-chip:hover {
   font: inherit;
   font-size: 13px;
 }
-.lab-panel.collapsed .lab-search {
+.lab-panel.collapsed .lab-search,
+.lab-panel.collapsed .lab-tabs {
   display: none;
+}
+/* UI Lab tabs: small pills under the search; a gold dot marks tabs with recently changed controls. */
+.lab-tabs {
+  gap: 4px;
+  padding: 0 2px 8px;
+  border-bottom: 1px solid var(--glass-line);
+  margin: 0 8px;
+}
+.lab-tabs .seg-btn {
+  position: relative;
+  padding: 4px 9px;
+  font-size: 12px;
+  color: var(--text);
+}
+.lab-tabs .seg-btn.on {
+  color: #3b2a00;
+}
+.lab-tabs .seg-btn.has-new::after {
+  content: '';
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 6px rgba(255, 209, 102, 0.9);
+}
+.lab-tabs .seg-btn.on.has-new::after {
+  background: #fff;
 }
 .btn.lab-new {
   box-shadow:

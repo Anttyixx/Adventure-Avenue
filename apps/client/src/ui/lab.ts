@@ -84,6 +84,23 @@ export const LAB_SECTIONS = [
   { id: 'panels', title: 'Log, market & results' },
 ] as const;
 
+/**
+ * The control panel's tabs, each holding some sections. "New" shows only the controls in
+ * `RECENT`, wherever they are.
+ */
+const LAB_TABS: { id: string; title: string; sections: string[] }[] = [
+  { id: 'new', title: 'New', sections: [] },
+  { id: 'players', title: 'Players', sections: ['cards'] },
+  { id: 'bar', title: 'Action bar', sections: ['prompts'] },
+  { id: 'board', title: 'Board', sections: ['board'] },
+  { id: 'dialogs', title: 'Dialogs', sections: ['dialogs'] },
+  { id: 'games', title: 'Games', sections: ['games', 'arcade'] },
+  { id: 'panels', title: 'Panels', sections: ['panels'] },
+  { id: 'art', title: 'Art & sound', sections: ['art', 'sound'] },
+  { id: 'screens', title: 'Menus', sections: ['screens'] },
+];
+const LAB_TAB_KEY = 'aa-lab-tab';
+
 const rnd = (n: number) => Math.floor(Math.random() * n);
 
 /**
@@ -91,73 +108,24 @@ const rnd = (n: number) => Math.floor(Math.random() * n);
  * are easy to find. Update this list with each change.
  */
 const RECENT = new Set([
-  'Game setup',
-  'Game setup (friend joined)',
-  'Game setup (offline)',
-  'dominate',
-  'win',
-  'Music: Fortune Cards (venture board)',
-  'Build',
-  'Game log',
+  'Venture grid (play)',
+  'Venture (CPU view)',
+  'Line of 5 bonus',
   'Full row bonus',
-  'Line of 5 bonus',
-  'Venture (CPU view)',
-  'lineBonus',
-  'fullRow',
-  'Shops reopening',
-  'Music: Fortune Cards (venture board)',
-  'Music: Jackpot Jingle (Lucky Reels)',
-  'Music: Thinking Cap (Memory Blocks)',
-  'Music: Race Day (Coin Derby)',
-  'Music: Spin to Win (Lucky Wheel)',
-  'Music: Pirate Gold (Treasure Split)',
-  'reelTick',
-  'reelStop',
-  'flip',
-  'Venture grid (play)',
-  'Game log',
-  'Main menu (save + rejoin)',
-  'Buy prompt',
-  'Main menu (rejoin offer)',
-  'Build',
-  'Renovate',
-  'Main menu (saved game)',
-  'Main menu (no save)',
-  'Board builder',
-  'Board builder: Town',
-  'Board builder: Problems',
-  'Board builder: Board settings',
-  'Board builder: Tiles pane',
-  'Board builder: Pan',
-  'Board builder: Warps and portals',
-  'Game setup',
-  'Game setup (friend joined)',
-  'Game setup (offline)',
-  'Action lifecycle',
-  'Event burst → quiet fallback',
-  'Turn handoff',
-  'Buy result timing',
-  'Observer result → waiting',
-  'Text reveal',
-  'Action bar resize test',
-  'Repeated status text',
-  'Turn prompt',
-  'Buy prompt',
-  'Venture grid (play)',
-  'Venture (CPU view)',
-  'Line of 5 bonus',
-  'Lucky Reels',
-  'Memory Blocks',
-  'Coin Derby',
-  'Lucky Wheel',
-  'Treasure Split',
-  'Player overview',
-  'Guide',
-  'Venture card guide',
-  'buyout',
-  'Circus upgrade',
-  'Roll and walk',
+  'shopClose',
+  'shopOpen',
   'Shops closing',
+  'Shops reopening',
+  'Zoom modes',
+  'Path choice (watching)',
+  'No shops to invest in',
+  'Buy stock',
+  'Sell stock',
+  'Buy stock (10% off)',
+  'Sell stock (20% above)',
+  'Gift shares (venture card)',
+  'Bull market (venture card)',
+  'Bear market (venture card)',
 ]);
 
 /** Which board the lab plays on: Town (square) or Twin Lakes (hex), remembered per browser. */
@@ -288,21 +256,71 @@ export async function openLab(app: HTMLElement, section?: string) {
     placeholder: 'Search controls...',
     'aria-label': 'Search controls',
   }) as HTMLInputElement;
-  search.oninput = () => {
+  // Tabs: each shows a few sections; "New" shows only the glowing (recently changed) controls.
+  // A search looks through every tab.
+  let tab = 'new';
+  try {
+    const saved = localStorage.getItem(LAB_TAB_KEY);
+    if (saved && LAB_TABS.some((t) => t.id === saved)) tab = saved;
+  } catch {
+    /* private mode: start on New */
+  }
+  const tabBar = h('div', { class: 'seg lab-tabs', role: 'tablist' });
+  const filter = () => {
     const q = search.value.trim().toLowerCase();
+    const shown = LAB_TABS.find((t) => t.id === tab)!;
+    for (const b of tabBar.querySelectorAll<HTMLElement>('.seg-btn')) {
+      const on = b.dataset.tab === tab && !q;
+      b.classList.toggle('on', on);
+      b.setAttribute('aria-selected', String(on));
+    }
     for (const sec of body.querySelectorAll<HTMLElement>('.lab-sec')) {
+      if (sec.classList.contains('lab-pinned')) continue;
       const title = sec.querySelector('h4')?.textContent?.toLowerCase() ?? '';
-      const whole = !q || title.includes(q);
-      let any = whole;
+      const inTab = tab === 'new' || shown.sections.includes(sec.dataset.sec ?? '');
+      const whole = q ? title.includes(q) : tab !== 'new';
+      let any = false;
       for (const b of sec.querySelectorAll<HTMLElement>('.lab-row:not(.lab-players) > button')) {
-        const hit = whole || (b.textContent ?? '').toLowerCase().includes(q);
+        const hit = q
+          ? whole || (b.textContent ?? '').toLowerCase().includes(q)
+          : inTab && (whole || b.classList.contains('lab-new'));
         b.hidden = !hit;
         any ||= hit;
       }
-      sec.hidden = !any;
+      // Sections without buttons (e.g. the sound sliders) show with their tab.
+      sec.hidden = q ? !any && !whole : !inTab || (tab === 'new' ? !any : false);
+      // Rows left empty by the filter take no space.
+      for (const r of sec.querySelectorAll<HTMLElement>('.lab-row:not(.lab-players)')) {
+        const btns = [...r.children].filter((c) => c.tagName === 'BUTTON') as HTMLElement[];
+        r.hidden = btns.length > 0 && btns.every((b) => b.hidden);
+      }
     }
   };
-  panel.append(h('div', { class: 'lab-head' }, h('h3', null, 'UI Lab'), toggle), search, body);
+  for (const t of LAB_TABS)
+    tabBar.append(
+      h(
+        'button',
+        {
+          class: 'seg-btn',
+          role: 'tab',
+          'data-tab': t.id,
+          onclick: () => {
+            tab = t.id;
+            search.value = '';
+            try {
+              localStorage.setItem(LAB_TAB_KEY, tab);
+            } catch {
+              /* not remembered */
+            }
+            filter();
+            body.scrollTop = 0;
+          },
+        },
+        t.title,
+      ),
+    );
+  search.oninput = filter;
+  panel.append(h('div', { class: 'lab-head' }, h('h3', null, 'UI Lab'), toggle), search, tabBar, body);
   root.append(panel);
   window.addEventListener('resize', fitBoard);
   requestAnimationFrame(fitBoard);
@@ -311,7 +329,7 @@ export async function openLab(app: HTMLElement, section?: string) {
   const addSection = (id: string, title: string, note?: string) => {
     const el = h(
       'section',
-      { class: 'lab-sec', id: `lab-${id}` },
+      { class: 'lab-sec', id: `lab-${id}`, 'data-sec': id },
       h('h4', null, title),
       note ? h('p', { class: 'hint' }, note) : null,
     );
@@ -362,7 +380,7 @@ export async function openLab(app: HTMLElement, section?: string) {
     );
   };
   drawPicker();
-  body.append(h('div', { class: 'lab-sec' }, h('h4', null, 'Target player'), pickerRow));
+  body.append(h('div', { class: 'lab-sec lab-pinned' }, h('h4', null, 'Target player'), pickerRow));
 
   // Player cards
   {
@@ -675,6 +693,26 @@ export async function openLab(app: HTMLElement, section?: string) {
         board.clearChoices();
         result('Path choice', node);
       }),
+      btn('Path choice (watching)', async () => {
+        // Another player is choosing: their options glow here (no zoom), then they walk.
+        const p = cur();
+        setActive(p.id);
+        const dests = game.destinations(p, 4);
+        board.setChoices(
+          dests.map((d) => d.node),
+          PLAYER_COLORS[p.color],
+          () => {},
+          new Map(dests.map((d) => [d.node, d.path])),
+          { fit: false },
+        );
+        hud.status(`${p.name} is choosing where to go...`, 'move', true);
+        await new Promise((r) => setTimeout(r, 2500));
+        const pick = dests[rnd(dests.length)].node;
+        board.previewRoute(pick);
+        await new Promise((r) => setTimeout(r, 700));
+        board.clearChoices();
+        result('They picked', pick);
+      }),
       btn('Pick any square', async () => {
         const p = cur();
         board.setChoices(
@@ -870,10 +908,25 @@ export async function openLab(app: HTMLElement, section?: string) {
         board.confetti(cur().id);
         board.dance(cur().id);
       }),
+      btn('Zoom modes', async () => {
+        // The zoom chip's border: blue for auto zoom, red for locked zoom, grey for free zoom.
+        const p = cur();
+        setActive(p.id);
+        hud.tick('Auto zoom (blue): the game frames squares; you can still zoom.');
+        board.frameIds = game.destinations(p, 6).flatMap((r) => r.path);
+        await new Promise((r) => setTimeout(r, 3000));
+        board.frameIds = null;
+        hud.tick('Locked zoom (red): only the game moves the zoom.');
+        board.showHold = true;
+        await new Promise((r) => setTimeout(r, 3000));
+        board.showHold = false;
+        hud.tick('Free zoom (grey): your own zoom again.');
+      }),
       btn('Shops closing', async () => {
         // Close the target player's shops (gates come down and stay down).
         const p = cur();
         p.closed = true;
+        sound.play('shopClose');
         refresh();
         await board.closeShops(G.nodes.filter((n) => n.owner === p.id).map((n) => n.id));
       }),
@@ -882,6 +935,7 @@ export async function openLab(app: HTMLElement, section?: string) {
         const p = cur();
         p.closed = true;
         refresh();
+        sound.play('shopOpen');
         board.openShops(G.nodes.filter((n) => n.owner === p.id).map((n) => n.id));
         await new Promise((r) => setTimeout(r, 1500));
         p.closed = false;
@@ -930,6 +984,7 @@ export async function openLab(app: HTMLElement, section?: string) {
     );
     row(
       s,
+      btn('No shops to invest in', () => hud.tick(`${cur().name} has no shops to invest in.`, 'property')),
       btn('Invest', async () => {
         let shops = ownedShops(G, cur().id);
         if (!shops.length) {
@@ -1035,7 +1090,7 @@ export async function openLab(app: HTMLElement, section?: string) {
         G.vg.owner[panel] = p.id;
         const card = CARD_LIST[rnd(CARD_LIST.length)];
         G.vg.cards[panel] = card.id;
-        await view.reveal(panel, card.title, card.text, ...labLines(G.vg.owner, panel, p.id), true, 1);
+        await view.reveal(panel, card.title, card.text, ...labLines(G.vg.owner, panel, p.id), 1);
         await view.read();
         view.close();
         result('Venture panel', panel);
@@ -1048,7 +1103,7 @@ export async function openLab(app: HTMLElement, section?: string) {
         G.vg.owner[panel] = p.id;
         const card = CARD_LIST[rnd(CARD_LIST.length)];
         G.vg.cards[panel] = card.id;
-        await view.reveal(panel, card.title, card.text, ...labLines(G.vg.owner, panel, p.id), false, 1);
+        await view.reveal(panel, card.title, card.text, ...labLines(G.vg.owner, panel, p.id), 1);
         // Watching: the board stays up until the player who drew the card closes it.
         await new Promise((r) => setTimeout(r, 4000));
         view.close();
@@ -1067,7 +1122,6 @@ export async function openLab(app: HTMLElement, section?: string) {
           'Bank bonus',
           'Roll the die: the bank pays you 50G times the roll.',
           ...labLines(G.vg.owner, panel, p.id),
-          true,
           1,
         );
         await view.read();
@@ -1087,7 +1141,6 @@ export async function openLab(app: HTMLElement, section?: string) {
           'Bank bonus',
           'Roll the die: the bank pays you 50G times the roll.',
           ...labLines(G.vg.owner, panel, p.id),
-          true,
           1,
         );
         await view.read();
@@ -1639,6 +1692,16 @@ export async function openLab(app: HTMLElement, section?: string) {
     );
   }
 
+  // A link to a section (from the dev menu) opens its tab.
+  const linked = section ? LAB_TABS.find((t) => t.sections.includes(section)) : undefined;
+  if (linked) tab = linked.id;
+  // Tabs with recently changed controls get a dot.
+  for (const b of tabBar.querySelectorAll<HTMLElement>('.seg-btn')) {
+    const t = LAB_TABS.find((x) => x.id === b.dataset.tab)!;
+    const fresh = t.sections.some((id) => sections.get(id)?.querySelector('.lab-new'));
+    b.classList.toggle('has-new', fresh || t.id === 'new');
+  }
+  filter();
   if (section) {
     const el = sections.get(section);
     if (el) {

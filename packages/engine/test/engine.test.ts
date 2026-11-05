@@ -549,6 +549,15 @@ describe('investing', () => {
     const pay = events.find((e) => e.type === 'money' && e.reason === 'Investment');
     expect(pay).toMatchObject({ sq: shop.id, from: p.id, to: -1 });
   });
+  it('says so, instead of asking, when no shop can take more', async () => {
+    const { G, game, asked, events } = makeGame();
+    const p = G.players[0];
+    await game.investFlow(p, []);
+    expect(asked.some((r) => r.kind === 'invest')).toBe(false);
+    expect(events).toContainEqual(
+      expect.objectContaining({ type: 'log', text: `${p.name} has no shops to invest in.` }),
+    );
+  });
 });
 
 describe('shop growth and stock', () => {

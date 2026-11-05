@@ -377,7 +377,9 @@ as squares in their district, so domination requires building on the plot.
 player's stock and property would sell for (the debt-sale value) covers it. Going below 0G is
 settled at the end of the turn like any debt; the invest window shows cash after and says so.
 Investing raises value one-for-one, which raises the fee, the salary bonus and the district stock
-price. Cap: max value = base x (1 + k), x 1.5 if dominated.
+price. Cap: max value = base x (1 + k), x 1.5 if dominated. When none of the player's shops can
+take more (all at their cap, or they own only vacant-plot buildings), nothing is asked: the game
+says "Rosa has no shops to invest in." (or "has no money to invest" when nothing can pay for it).
 
 **Buyouts.** After paying a fee at a rival's shop, 3-Star Shop or other vacant-plot building (or
 visiting it, for an Estate Agency), the visitor may buy it for 5x value. The owner receives 3x value; the bank keeps 2x. Ownership transfers and expansion runs for
@@ -504,9 +506,14 @@ thing sold in debt. Buying into a rival's district and then selling 10+ shares a
 target is the signature sabotage move from the original. Easy rules hide the market and remove stock
 venture cards.
 
-**Stock screen (buy and sell):** the mini map sits beside the district list (with the district's
-summary under it), the selected district's squares fill a row of cards across the full width, and
-the amount picker sits beside the summary card and buttons. The panels:
+**Stock screen (buy and sell):** like the venture board, the stock market opens in a pop-up in the
+middle of the screen (over the board, which stays visible around it) and the choice sits in the
+action bar: a summary card (the cost, the share price, the player's cash and their shares now and
+after), the share counter and Buy/Sell with Skip (or Cancel). The venture cards that pick a
+district (Gift shares, Bull and Bear market) work the same, with one button naming the district.
+Picking a district on the map or in the table updates the bar. On short (phone) screens the
+pop-up keeps only the district table, the counter is smaller and the "shares you hold" line is
+left out. The pop-up's panels:
 
 - **Mini map** of the whole board. Squares in that district are filled with the district color. An
   owned square gets a ring in the owner's color plus their initial; no ring means it's for sale; a
@@ -554,12 +561,13 @@ player flips one face-down panel and resolves its card. The board container stay
 stationary, with rounded square tiles and no header or OK button in its container. It grows with the
 screen: up to 600px wide on monitors (about 62% of the window height, never reaching the player
 cards), while short phone screens keep a smaller board that fits above the action bar. It does not
-dim the background or block interaction with the action bar. After a flip, the action bar shows
-the card's title and description. The picked tile flips with a card-flip sound. If it makes a
+dim the background or block interaction with the action bar. As the tile flips, the action bar
+shows the card's title and description, for everyone, with nothing else shown in between. The picked tile flips with a card-flip sound. If it makes a
 bonus line, the line's tiles flip over again one after another, starting next to the picked tile
 and spreading along the line, each with the flip sound; then a gold "Line of 5! +50G" burst rises
 from the picked tile with a jingle (a full row of 8 says "Full row!" with a bigger fanfare). There
-is no separate bonus prompt. The player who drew the card gets an OK button and closes the board
+is no separate bonus prompt, and the bonus is paid (and logged with the card) only once the board
+closes. The player who drew the card gets an OK button and closes the board
 when they have read it (or it closes by itself after 10 seconds); everyone else sees the card
 without a button and the board stays up until then (the engine waits on a `ventureRead`
 decision, so online players stay in step). A CPU closes its card after a short reading pause.
@@ -618,7 +626,9 @@ cleared. This is what makes "until your next turn" effects expire.
 
 ## Arcade minigames
 
-Landing on an arcade chooses one of five games with equal probability. Lucky Reels and Memory
+Landing on an arcade chooses one of the five games at random, but never one already played since
+every game was last played: each game is played once before any repeats, and a new round of games
+never starts with the game that ended the last one (`G.arcadePlayed`). Lucky Reels and Memory
 Blocks are solo games; Coin Derby, Lucky Wheel and Treasure Split include every non-bankrupt
 player. Party choices are made privately one player at a time, starting with the player who
 landed and going round in turn order (online too), then revealed together. Hot-seat players pass
@@ -901,8 +911,8 @@ the bar never resizes. Tapping selects a card (gold ring). Building takes Build 
 the selected card, so one stray tap never builds. Buildings you can't build are greyed out and the
 tip says why (all 3 already built, or can't afford). Phones show the cards as picture and price
 only, with the question and buttons above them. Trades
-use the bar too (see Trades). Choices with more to them (stock amounts, investing, auctions,
-arcade games) open their own windows.
+use the bar too (see Trades), and so do stock amounts (the market in a pop-up above the bar). Choices
+with more to them (investing amounts, auctions) open their own windows.
 
 **Square symbols.** Boon and Boom squares show a symbol instead of a name and percent: Boon a
 green disc with an up arrow (20% commission), Boom a pink starburst with a double up arrow (50%).
@@ -924,7 +934,8 @@ even venture cards; the engine emits `closed`), the camera pulls back to the who
 their shops' gates rolls down in turn, then the camera returns to the player's zoom. The gates stay
 down (inside each tile's border, with a small CLOSED sign) until the owner's next turn starts; the
 engine then emits `opened` and the gates roll back up one after another in the background: the
-camera does not move and play carries straight on (timings `close*` in `timing.ts`).
+camera does not move and play carries straight on (timings `close*` in `timing.ts`). Closing
+plays a shutter rattling down with a low clunk; reopening plays it rattling up with a shop-door bell.
 
 **Pacing.** Most events get about a second to themselves (landing, money, ownership and value
 changes, suits), and a turn ends with a one-second pause before the next player's turn. When the
@@ -1040,14 +1051,26 @@ camera keeps the player centered and zooms out just enough to frame every glowin
 them (if they are too spread out for that, it frames them all instead; never closer than the
 player's own zoom). The game-over view shows the whole board.
 
+**Zoom modes.** The camera is always in one of three modes, shown by the zoom chip's border:
+
+- **Free zoom** (grey border): the player's own zoom. Only the player changes it; the game never does.
+- **Auto zoom** (blue border): the game frames part of the board for the player (see "Views that
+  wait on the player" below), and the player can still zoom in and out.
+- **Locked zoom** (red border): the game is showing something (see "Shows" below) and only the
+  game moves the zoom; the wheel, pinch, keys and the chip do nothing.
+
+When the game is done with an auto or locked view, the camera goes back to free zoom by itself.
+(`BoardView.zoomMode`; the chip's `data-mode`.)
+
 **Automatic zoom.** Two kinds:
 
 - _Shows_ play for a few seconds and go back by themselves: shops closing, a stock
   price move, finding a property from the player overview, the winner's dance. They play on every
   screen, and the zoom is locked (wheel, pinch, keys and the chip do nothing) until they end.
 - _Views that wait on the player_: the squares a roll can reach, a choice on the board, a trade.
-  They play only on the screen of the player deciding (a CPU's or another device's path choice
-  glows where the camera already is). The player can zoom them freely (the view keeps its
+  They play only on the screen of the player deciding. While another player (a CPU or someone on
+  another device) chooses where to move, everyone else sees the squares they could land on glow
+  where the camera already is; once they pick, the chosen route lights up and they walk it. The player can zoom them freely (the view keeps its
   center); when the choice ends (the player starts walking, picks, or the trade closes) the camera
   goes back to the zoom they had before, and the chip returns a view to its own zoom. The die and on-board pop-ups are
   drawn at screen size so they stay readable at any zoom. Taps on the board are converted through the
@@ -1069,8 +1092,9 @@ API where available.
   front of it; no "Cash"/"Net" labels.
   Cards are 10% larger on computer screens.
 - **Action bar:** the current prompt and its buttons. Enter or Space presses the main button.
-- **Modals:** buy stock and sell stock (with a summary card: the cost, and the share price, the
-  player's cash and their shares now and after), invest, venture grid, minigames, auction,
+- **Pop-ups with the action bar:** buy stock and sell stock (the market in the middle, the
+  summary card and share counter in the bar), the venture grid and the arcade games.
+- **Modals:** invest, venture grid, minigames, auction,
   debt, results. In hot-seat, prompts meant for another player show "Pass the device to...".
 
 **Type and color.** Lilita One for headings and numbers, Atkinson Hyperlegible for body text,

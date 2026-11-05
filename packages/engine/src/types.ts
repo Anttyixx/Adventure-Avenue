@@ -158,6 +158,8 @@ export interface GameState {
   market?: Market;
   changeSuit: number;
   vg: { cards: string[]; owner: number[] };
+  /** Arcade games (by index) played since every game was last played (older saves: none). */
+  arcadePlayed?: number[];
   /** Net worth of every player at the start of each round (and at the end of the match). */
   hist: number[][];
   log: LogLine[];

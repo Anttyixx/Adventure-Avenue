@@ -45,7 +45,9 @@ When the spec and the code disagree, ask the owner which is right; then fix the 
      controls with its section 2 ("How to make design decisions"), then follow the element's
      spec in section 5, and go through its checklist. Add a control for any new UI element to the UI Lab (`apps/client/src/ui/lab.ts`),
      and list the controls touched by the change in `RECENT` at the top of `lab.ts` (they shake
-     and glow so the owner can find them).
+     and glow so the owner can find them, and the Lab's **New** tab shows only them). Replace
+     the whole list with each push: `RECENT` holds only the latest change's controls, never
+     older ones. A new Lab section goes in one of the tabs in `LAB_TABS`.
 - **Engine changes that alter what happens in a game** (rules, decisions, randomness) must bump
   `NET_VERSION` in `apps/client/src/net/protocol.ts`, so players on different builds are not put
   in the same online game.

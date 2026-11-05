@@ -146,6 +146,9 @@ room, Continue resumes the saved game, and the board editor (`ui/editor.ts`).
   - _Views waiting on the player_ allow manual zoom and give the player's zoom back when they
     end: `frameIds` (where a roll can reach; only on the roller's device), `fitIds` (set by
     `setChoices`), `overviewHold` (trades).
+  - `zoomMode` names the three modes for the zoom chip's border: `locked` (a timed show), `auto`
+    (a view waiting on the player) or `free` (only the player's `zoomOut`). `onZoom(pct, mode)`
+    reports both to the HUD.
   - `insets` (set by `hud.updateInsets`) is the screen area covered by HUD panels, so framing
     keeps squares out from under them.
 

@@ -175,6 +175,16 @@ describe('all-player arcade games', () => {
     }
     expect(K.wheel.maxBet).toBe(100);
   });
+  it('plays every arcade game once before any repeats, never twice in a row', async () => {
+    const { G, game } = makeGame();
+    const seen: number[] = [];
+    for (let i = 0; i < 15; i++) {
+      await playArcade(game, G.players[0]);
+      seen.push(G.arcadePlayed![G.arcadePlayed!.length - 1]);
+    }
+    for (let c = 0; c < 3; c++) expect(new Set(seen.slice(c * 5, c * 5 + 5)).size).toBe(5);
+    for (let i = 1; i < seen.length; i++) expect(seen[i]).not.toBe(seen[i - 1]);
+  });
 });
 
 describe('arcade decision replay', () => {

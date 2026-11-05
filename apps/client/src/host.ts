@@ -492,6 +492,17 @@ export class HotSeat implements GameIO {
       case 'memory':
         void this.stage('Memory Blocks').memoryStart(req.prizes, p.level, this.speed);
         break;
+      case 'path':
+        // Everyone else sees where the player could land (no zooming out here: only the player
+        // choosing gets framed). The chosen route shows once they pick, then they walk it.
+        this.board.setChoices(
+          req.dests.map((d) => d.node),
+          PLAYER_COLORS[p.color],
+          () => {},
+          new Map(req.dests.map((d) => [d.node, d.path])),
+          { fit: false },
+        );
+        break;
       case 'answerTrade':
         // Everyone else can see the terms being considered.
         this.tradeWatch?.();
@@ -517,7 +528,8 @@ export class HotSeat implements GameIO {
           { fit: false },
         );
         this.board.previewRoute(ans as number);
-        await this.wait(T.cpuPath);
+        // A CPU "thinks" for a beat; a person elsewhere has already taken their time.
+        await this.wait(p.cpu ? T.cpuPath : T.afterChoice);
         this.board.clearChoices();
         this.board.walkTarget = ans as number;
         this.board.glowColor = PLAYER_COLORS[p.color];
@@ -950,13 +962,11 @@ export class HotSeat implements GameIO {
         break;
       }
       case 'venture': {
-        const p = G.players[e.pid];
-        hud.action('venture', `${p.name} drew ${e.title}.`, 'card');
         // The board stays up until the player who drew the card closes it (`ventureRead`).
         const view = this.venture ?? new VentureView(hud, G, e.pid);
         this.venture = view;
         this.setScene('venture');
-        await view.reveal(e.panel, e.title, e.text, e.lines, e.bonus, this.localHuman(p.id), this.speed);
+        await view.reveal(e.panel, e.title, e.text, e.lines, e.bonus, this.speed);
         this.refresh();
         break;
       }
@@ -1037,6 +1047,7 @@ export class HotSeat implements GameIO {
         hud.action('shops-closing', 'Shops are closing...', 'effect');
         this.refresh();
         const shut = G.nodes.filter((sq) => e.pids.includes(sq.owner)).map((sq) => sq.id);
+        if (shut.length) sound.play('shopClose');
         await board.closeShops(shut);
         break;
       }
@@ -1044,6 +1055,7 @@ export class HotSeat implements GameIO {
         hud.action('shops-opening', 'Shops are reopening...', 'effect');
         // In the background: no zoom out and no waiting; the gates roll up while play goes on.
         const open = G.nodes.filter((sq) => e.pids.includes(sq.owner)).map((sq) => sq.id);
+        if (open.length) sound.play('shopOpen');
         board.openShops(open);
         this.refresh();
         break;
@@ -1100,6 +1112,8 @@ export class HotSeat implements GameIO {
           this.summarizedPayments = this.summarizedPayments.filter((p) => !payments.includes(p));
           break;
         }
+        // The venture card itself was already on screen with the board.
+        if (e.text.startsWith('Venture card: ')) break;
         if (e.text.endsWith("'s trade.") && (e.text.includes(' accepted ') || e.text.includes(' declined ')))
           hud.action('trade', e.text, e.kind);
         else hud.tick(e.text, e.kind, T.actionResult, this.passing);

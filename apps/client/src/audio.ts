@@ -16,6 +16,8 @@ export type Sfx =
   | 'pay'
   | 'buy'
   | 'buyout'
+  | 'shopClose'
+  | 'shopOpen'
   | 'grow'
   | 'suit'
   | 'promote'
@@ -43,6 +45,8 @@ export const SFX_NAMES: Sfx[] = [
   'pay',
   'buy',
   'buyout',
+  'shopClose',
+  'shopOpen',
   'grow',
   'suit',
   'promote',
@@ -735,6 +739,22 @@ class AudioEngine {
         this.tone(bus, 'square', freq('G6'), t + 0.56, 0.1, 0.12, { cutoff: 6000 });
         this.tone(bus, 'square', freq('C7'), t + 0.64, 0.45, 0.12, { cutoff: 6000 });
         this.hiss(bus, t + 0.56, 0.25, 0.1, 7000, 3);
+        break;
+      case 'shopClose':
+        // A metal shutter rattling down, then a low clunk and a sad two-note droop.
+        for (let i = 0; i < 10; i++) this.hiss(bus, t + i * 0.035, 0.03, 0.22, 1800 - i * 90, 5);
+        this.tone(bus, 'sawtooth', 420, t, 0.36, 0.06, { to: 140, cutoff: 1200 });
+        this.tone(bus, 'sine', 110, t + 0.36, 0.22, 0.45, { to: 55 });
+        this.tone(bus, 'triangle', freq('E4'), t + 0.42, 0.14, 0.14);
+        this.tone(bus, 'triangle', freq('C4'), t + 0.56, 0.3, 0.14);
+        break;
+      case 'shopOpen':
+        // The shutter rattling up, then a bright shop-door bell.
+        for (let i = 0; i < 10; i++) this.hiss(bus, t + i * 0.032, 0.03, 0.18, 1000 + i * 120, 5);
+        this.tone(bus, 'sawtooth', 160, t, 0.32, 0.05, { to: 480, cutoff: 1400 });
+        this.tone(bus, 'sine', freq('E6'), t + 0.34, 0.5, 0.16);
+        this.tone(bus, 'sine', freq('A6'), t + 0.42, 0.6, 0.14);
+        this.tone(bus, 'triangle', freq('C6'), t + 0.34, 0.25, 0.08);
         break;
       case 'grow':
         this.tone(bus, 'sine', 500, t, 0.45, 0.22, { to: 1500 });

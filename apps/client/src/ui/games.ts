@@ -91,16 +91,13 @@ export class VentureView {
    * bar: for people watching straight away (it stays until the player who drew it closes the
    * board); the player who drew it gets it with an OK button from `read`.
    */
-  async reveal(
-    panel: number,
-    title: string,
-    text: string,
-    lines: number[][],
-    bonus: number,
-    human: boolean,
-    speed: number,
-  ) {
+  async reveal(panel: number, title: string, text: string, lines: number[][], bonus: number, speed: number) {
     this.paint(this.G.vg.owner);
+    // The card shows in the action bar as soon as it flips, for everyone, with nothing else in
+    // between. The player who drew it gets an OK button from `read` once any bonus line has played.
+    this.shown = { panel, title, text };
+    this.watching = true;
+    void this.hud.prompt(this.cardBody(panel, title, text), [], this.G.players[this.pid].color);
     const b = this.panels[panel];
     b.classList.add('flip');
     sound.play('flip');
@@ -148,12 +145,6 @@ export class VentureView {
       await wait(700 * speed);
     }
     this.panels.forEach((tile) => (tile.disabled = true));
-    this.shown = { panel, title, text };
-    if (!human) {
-      // Watching: the card stays up (no button) until the player who drew it closes the board.
-      this.watching = true;
-      void this.hud.prompt(this.cardBody(panel, title, text), [], this.G.players[this.pid].color);
-    }
   }
 
   /** A "+50G" burst rising from a venture tile, with a ring of sparkles. */
@@ -181,6 +172,7 @@ export class VentureView {
   async read() {
     const s = this.shown;
     if (!s) return;
+    this.watching = false;
     const done = this.hud.prompt(
       this.cardBody(s.panel, s.title, s.text),
       [{ label: 'OK', value: undefined, main: true }],

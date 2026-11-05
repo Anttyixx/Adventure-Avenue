@@ -46,7 +46,19 @@ export function reelSetSlots(symbols: ReelSymbol[]): boolean[] {
 
 export async function playArcade(g: Game, p: Player) {
   const games = [luckyReels, memoryBlocks, coinDerby, luckyWheel, treasureSplit];
-  const play = games[randInt(g.G, games.length)];
+  // Every game is played once before any repeats: pick among the ones not played this cycle.
+  const G = g.G;
+  // A new cycle never starts with the game that ended the last one.
+  let played = (G.arcadePlayed ?? []).filter((i) => i < games.length);
+  let last = -1;
+  if (played.length >= games.length) {
+    last = played[played.length - 1];
+    played = [];
+  }
+  const left = games.map((_, i) => i).filter((i) => !played.includes(i) && i !== last);
+  const pick = left[randInt(G, left.length)];
+  G.arcadePlayed = [...played, pick];
+  const play = games[pick];
   await g.log(`${p.name} visits the arcade.`, p.id, 'arcade');
   return play(g, p);
 }
