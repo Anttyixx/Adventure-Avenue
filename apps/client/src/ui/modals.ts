@@ -38,18 +38,34 @@ const priceFmt = (v: number) => `${(Math.round(v * 10) / 10).toLocaleString('en-
  * its map or in its table), while the choice itself sits in the action bar below it.
  */
 function stockPopup(hud: Hud, title: string, content: Node) {
-  const layer = h(
+  const box = h(
     'div',
-    { class: 'stock-layer' },
-    h(
-      'div',
-      { class: 'modal glass wide xl stock-pop', role: 'region', 'aria-label': title },
-      h('div', { class: 'modal-head' }, h('h2', null, title)),
-      content,
-    ),
+    { class: 'modal glass wide xl stock-pop', role: 'region', 'aria-label': title },
+    h('div', { class: 'modal-head' }, h('h2', null, title)),
+    content,
   );
+  const layer = h('div', { class: 'stock-layer' }, box);
   hud.root.append(layer);
-  return { close: () => layer.remove() };
+  // Centered on the screen; when that would run under the player cards, it slides left just far
+  // enough to clear them. Rechecked when its size (another district's shops) or the window changes.
+  const place = () => {
+    box.style.transform = '';
+    const r = box.getBoundingClientRect();
+    const freeRight = parseFloat(getComputedStyle(hud.root).getPropertyValue('--free-right')) || 0;
+    const limit = window.innerWidth - freeRight - 12;
+    const shift = r.right > limit ? Math.max(12 - r.left, limit - r.right) : 0;
+    if (shift) box.style.transform = `translateX(${Math.round(shift)}px)`;
+  };
+  const watch = new ResizeObserver(place);
+  watch.observe(box);
+  window.addEventListener('resize', place);
+  return {
+    close: () => {
+      watch.disconnect();
+      window.removeEventListener('resize', place);
+      layer.remove();
+    },
+  };
 }
 
 /**
@@ -161,11 +177,16 @@ export async function stockModal(
       : rate
         ? 'Sell stock at 20% above'
         : 'Sell stock',
-    marketView(G, d, (i) => {
-      d = i;
-      n = 0;
-      draw();
-    }),
+    marketView(
+      G,
+      d,
+      (i) => {
+        d = i;
+        n = 0;
+        draw();
+      },
+      { split: true },
+    ),
   );
   draw();
   try {
@@ -260,10 +281,15 @@ export async function districtStockModal(
   const pop = stockPopup(
     hud,
     title,
-    marketView(G, d, (i) => {
-      d = i;
-      draw();
-    }),
+    marketView(
+      G,
+      d,
+      (i) => {
+        d = i;
+        draw();
+      },
+      { split: true },
+    ),
   );
   draw();
   try {

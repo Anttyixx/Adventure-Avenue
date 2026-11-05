@@ -42,6 +42,7 @@ export const CHANGELOG: ChangelogEntry[] = [
       },
     ],
     extras: [
+      'Stock screen: map top left, shop cards under it, table on the right, centered on screen',
       'Phones show 6 districts at a time; the list shifts as you move through them',
       'Even spacing inside the stock action bar',
     ],

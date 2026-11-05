@@ -804,9 +804,10 @@ and their content retain their own scrolling behavior.
 ### Stock screen (pop-up + action bar)
 
 Buying and selling stock and the district venture cards (Gift shares, Bull/Bear market) follow the
-same pattern as the venture board: the stock market sits in a centered glass pop-up that does not
-dim the board (`.stock-layer > .modal.stock-pop`, only the pop-up catches clicks, kept clear of
-the toolbar, player cards and action bar), and the decision is in the action bar (`.stock-bar`):
+same pattern as the venture board: the stock market (`marketView(..., { split: true })`: map top
+left, shop cards bottom left, table on the right filling the height) sits in a centered glass pop-up that does not
+dim the board (`.stock-layer > .modal.stock-pop`, only the pop-up catches clicks; equal space above and below
+it, and `stockPopup` slides it left only as far as needed to clear the player cards), and the decision is in the action bar (`.stock-bar`):
 the summary card (`.m-card`, compact), the digit picker, then `.tb-btns` with the gold Buy/Sell
 (or the district button) over a ghost Skip/Cancel. Changing district in the pop-up redraws the bar
 in place (no new prompt, so the bar doesn't morph). The bar's padding is the same on all four

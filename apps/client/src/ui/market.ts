@@ -41,24 +41,23 @@ export function marketView(
   G: GameState,
   initial: number | null,
   onSelect?: (d: number) => void,
-  /** Extra panels for the buy/sell screen: one under the map, one beside the shop cards. */
-  slots: { underMap?: Node; besideShops?: Node } = {},
+  /**
+   * `split`: the buy/sell pop-up's layout: the mini map top left, the shop cards under it and the
+   * district table down the right side, with a bigger map.
+   */
+  opts: { split?: boolean } = {},
 ): HTMLElement {
   let sel = Math.min(initial ?? lastSelected, G.districts.length - 1);
-  const root = h('div', { class: 'market' });
-  const top = h('div', { class: 'm-top' });
+  const split = !!opts.split;
+  const root = h('div', { class: `market ${split ? 'm-split' : ''}` });
   const mapWrap = h('div', { class: 'm-map' });
   const grid = h('div', { class: 'm-grid-wrap' });
   const shops = h('div', { class: 'm-shops' });
-  top.append(
-    slots.underMap ? h('div', { class: 'm-left' }, mapWrap, slots.underMap) : mapWrap,
-    h('div', { class: 'm-right' }, grid),
-  );
+  if (split) root.append(h('div', { class: 'm-left' }, mapWrap, shops), h('div', { class: 'm-right' }, grid));
+  else root.append(h('div', { class: 'm-top' }, mapWrap, h('div', { class: 'm-right' }, grid)), shops);
   // Short (phone) screens show 6 districts at a time; the list shifts by one when the selection
   // moves past either end.
   let first = 0;
-  root.append(slots.besideShops ? h('div', { class: 'm-shops-row' }, shops, slots.besideShops) : shops);
-  root.prepend(top);
 
   const select = (d: number) => {
     sel = (d + G.districts.length) % G.districts.length;
@@ -69,7 +68,7 @@ export function marketView(
 
   const draw = () => {
     clear(mapWrap);
-    mapWrap.append(miniMap(G, sel, select));
+    mapWrap.append(miniMap(G, sel, select, split ? 1.6 : 1));
     clear(grid);
     const shown = matchMedia('(max-height: 500px)').matches ? MAX_ROWS_SHORT : G.districts.length;
     if (sel < first) first = sel;
@@ -95,11 +94,15 @@ export function marketView(
 
 // ------------------------------------------------------------------ mini map
 
-function miniMap(G: GameState, d: number, select: (d: number) => void): HTMLElement {
+/** `scale` makes the whole map bigger (the buy/sell pop-up has room for a larger one). */
+function miniMap(G: GameState, d: number, select: (d: number) => void, scale = 1): HTMLElement {
   const cols = G.cols ?? 12;
   const rows = G.rows ?? 7;
   // Shrink cells on big boards so the map keeps about the same size.
-  const cell = Math.max(10, Math.min(21, Math.floor(260 / cols), Math.floor(150 / rows)));
+  const cell = Math.max(
+    10,
+    Math.min(Math.round(21 * scale), Math.floor((260 * scale) / cols), Math.floor((150 * scale) / rows)),
+  );
   const pad = 6;
   const cv = h('canvas', { class: 'minimap' }) as HTMLCanvasElement;
   const dpr = Math.min(3, window.devicePixelRatio || 1);
@@ -190,12 +193,14 @@ function miniMap(G: GameState, d: number, select: (d: number) => void): HTMLElem
   // Hover shows the square; clicking a district square selects that district.
   const hit = (e: MouseEvent) => {
     const r = cv.getBoundingClientRect();
+    // The map may be drawn smaller than its natural size to fit the screen.
+    const f = W / Math.max(1, r.width);
     const c = cellAt(
       G.layout,
       cols,
       rows,
-      (e.clientX - r.left - pad) / k + 50,
-      (e.clientY - r.top - pad) / k + 50,
+      ((e.clientX - r.left) * f - pad) / k + 50,
+      ((e.clientY - r.top) * f - pad) / k + 50,
     );
     return c ? G.nodes.find((q) => q.x === c.x && q.y === c.y) : undefined;
   };

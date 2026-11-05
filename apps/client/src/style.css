@@ -1481,10 +1481,6 @@ input[type='range'] {
   min-width: 80px;
   padding: 6px 8px;
 }
-/* The note under the table wraps to the table's width instead of widening the screen. */
-.modal.xl .m-shops-row > .m-shops {
-  flex: 0 1 auto;
-}
 @keyframes fadein {
   from {
     opacity: 0;
@@ -2123,43 +2119,50 @@ input[type='range'] {
   padding-top: 8px;
   border-top: 1px solid var(--glass-line);
 }
-/* Buy/sell: the deal summary under the map, the share counter and buttons beside the shop cards. */
-.m-left {
-  flex: 0 0 300px;
+/* Buy/sell pop-up (`.m-split`): the mini map top left with the shop cards under it, and the
+   district table down the right side, stretched to the left column's height. */
+.market.m-split {
+  flex-direction: row;
+  align-items: stretch;
+  gap: 14px;
+}
+.m-split .m-left {
+  flex: 1 1 auto;
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 10px;
 }
-.m-left .m-card {
-  margin-top: 0;
-}
-.m-shops-row {
+.m-split .m-map {
   display: flex;
-  align-items: center;
-  gap: 14px;
+  justify-content: center;
 }
-.m-shops-row > .m-shops {
-  flex: 1;
+/* On narrower screens the map shrinks (keeping its shape) and the shop cards scroll sideways. */
+.m-split .minimap {
+  max-width: 100%;
+  height: auto !important;
+}
+.m-split .m-shops {
   min-width: 0;
 }
-.m-shops-row > .m-deal-side {
-  margin: 0;
+.m-split .m-right {
+  flex: none;
+  display: flex;
 }
-@media (max-width: 700px) {
-  /* Narrow: holdings, then the deal summary, the shops and the counter, one under another. */
-  .m-top:has(.m-left) {
-    flex-direction: column;
-    align-items: stretch;
-  }
-  .m-left {
-    order: 2;
-    flex-basis: auto;
-  }
-  .m-shops-row {
-    flex-direction: column;
-    align-items: stretch;
-  }
+.m-split .m-grid-wrap {
+  flex: 1;
+  display: flex;
+}
+.m-split .m-arrow-row td {
+  height: 22px;
+}
+.m-split .m-shop {
+  min-width: 78px;
+  padding: 6px 8px;
+}
+.m-split .m-grid {
+  height: 100%;
+  font-size: 14px;
 }
 .m-deal {
   display: flex;
@@ -2194,13 +2197,17 @@ input[type='range'] {
   display: grid;
   place-items: center;
   box-sizing: border-box;
-  padding: calc(var(--top-free, 50px) + 4px) calc(var(--free-right, 0px) + 12px) 200px 12px;
+  /* The same space on opposite sides, so the pop-up sits in the middle of the screen while
+     staying clear of the toolbar, the player cards and the action bar. */
+  padding: 170px 12px;
   pointer-events: none;
 }
 .stock-pop {
   pointer-events: auto;
   box-sizing: border-box;
   max-height: 100%;
+  /* Never wider than the space left of the player cards. */
+  max-width: calc(100vw - var(--free-right, 0px) - 24px) !important;
 }
 .stock-pop .market {
   margin-top: 6px;
@@ -2244,7 +2251,7 @@ input[type='range'] {
 }
 @media (max-height: 500px), (max-width: 760px) {
   .hud > .stock-layer {
-    padding: calc(var(--top-free, 40px) + 2px) calc(var(--free-right, 0px) + 6px) 120px 8px;
+    padding: calc(var(--top-free, 40px) + 2px) 8px 120px;
   }
   .stock-pop {
     padding: 8px 10px;
@@ -2294,8 +2301,7 @@ input[type='range'] {
   .stock-bar .m-line.held {
     display: none;
   }
-  .stock-pop .m-map,
-  .stock-pop .m-shops {
+  .stock-pop .m-left {
     display: none;
   }
   .stock-pop .modal-head {

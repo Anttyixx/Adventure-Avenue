@@ -517,7 +517,12 @@ a row under the heading shows the deal tag, the market price per share crossed o
 player's own price per share in green with a soft pulsing glow. The bar has the same padding on all
 four sides (12px; 8px on phones). The venture cards that pick a
 district (Gift shares, Bull and Bear market) work the same, with one button naming the district.
-Picking a district on the map or in the table updates the bar. On short (phone) screens the
+Picking a district on the map or in the table updates the bar. The pop-up puts the mini map (drawn
+larger) in the top left, the selected district's shop cards under it, and the district table down
+the right side, its rows stretched to the same height. It sits in the middle of the screen, the
+same distance from the top and bottom; when centering it would run under the player cards, it
+slides left just far enough to clear them (narrower screens shrink the map and let the shop cards
+scroll sideways). On short (phone) screens the
 pop-up keeps only the district table, showing 6 districts at a time: moving the selection past the
 bottom (or top) shifts the list by one. The counter is smaller and the "shares you hold" line is
 left out. The pop-up's panels:
