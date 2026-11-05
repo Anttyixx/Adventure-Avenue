@@ -295,7 +295,7 @@ export function playerOverview(G: GameState, p: Player, hooks: OverviewHooks): H
           'tr',
           null,
           h('th', { class: 'm-dname' }, 'District'),
-          h('th', { class: 'm-price-h' }, h('span', { class: 'coin-ico' }, 'G'), 'Price'),
+          h('th', { class: 'm-price-h' }, 'Price'),
           h(
             'th',
             { class: 'm-ph', style: `--pc:${pc}`, title: `${p.name}'s shares` },

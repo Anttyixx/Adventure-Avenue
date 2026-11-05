@@ -1933,7 +1933,18 @@ input[type='range'] {
   font-family: var(--head);
   font-weight: 400;
   color: var(--accent);
-  font-size: 12px;
+  font-size: 15px;
+}
+/* The price column stays narrow; each player's shares column gets a bit more room. */
+.m-grid .m-price-h,
+.m-grid .m-price {
+  width: 1%;
+  padding-left: 6px;
+  padding-right: 6px;
+}
+.m-grid .m-ph,
+.m-grid .m-cell {
+  min-width: 46px;
 }
 .coin-ico {
   display: inline-flex;

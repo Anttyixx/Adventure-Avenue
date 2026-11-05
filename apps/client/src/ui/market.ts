@@ -258,7 +258,7 @@ function holdingsGrid(
       { class: 'm-dname' },
       h('button', { class: 'm-arrow', onclick: () => select(sel - 1), title: 'Previous district' }, '▲'),
     ),
-    h('th', { class: 'm-price-h' }, h('span', { class: 'coin-ico' }, 'G'), 'Price'),
+    h('th', { class: 'm-price-h' }, 'Price'),
     ...players.map((p) =>
       h(
         'th',
