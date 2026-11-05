@@ -21,6 +21,8 @@ export type Sfx =
   | 'promote'
   | 'venture'
   | 'flip'
+  | 'reelTick'
+  | 'reelStop'
   | 'turn'
   | 'round'
   | 'warp'
@@ -43,6 +45,8 @@ export const SFX_NAMES: Sfx[] = [
   'promote',
   'venture',
   'flip',
+  'reelTick',
+  'reelStop',
   'turn',
   'round',
   'warp',
@@ -51,13 +55,18 @@ export const SFX_NAMES: Sfx[] = [
   'deny',
 ];
 
-export type Track = 'menu' | 'game' | 'urgent' | 'venture' | 'arcade';
+export type Track =
+  'menu' | 'game' | 'urgent' | 'venture' | 'reels' | 'memory' | 'derby' | 'wheel' | 'treasure';
 export const TRACK_NAMES: Record<Track, string> = {
   menu: 'Main Street (menu)',
   game: 'Avenue Stroll (game)',
   urgent: 'Final Stretch (someone can win)',
   venture: 'Fortune Cards (venture board)',
-  arcade: 'Arcade Rush (arcade games)',
+  reels: 'Jackpot Jingle (Lucky Reels)',
+  memory: 'Thinking Cap (Memory Blocks)',
+  derby: 'Race Day (Coin Derby)',
+  wheel: 'Spin to Win (Lucky Wheel)',
+  treasure: 'Pirate Gold (Treasure Split)',
 };
 
 interface AudioPrefs {
@@ -265,40 +274,180 @@ const SONGS: Record<Track, Song> = {
     ],
     drums: ['k . . h . . h .', 'k . . h s . h .'],
   },
-  // Quick, bright chiptune for the arcade games.
-  arcade: {
-    bpm: 138,
+  // Lucky Reels: a bouncy casino jingle.
+  reels: {
+    bpm: 132,
     chords: [
-      ['C4', 'E4', 'G4'],
-      ['C4', 'E4', 'G4'],
-      ['Ab3', 'C4', 'Eb4'],
-      ['Bb3', 'D4', 'F4'],
-      ['C4', 'E4', 'G4'],
-      ['A3', 'C4', 'E4'],
       ['F3', 'A3', 'C4'],
+      ['D3', 'F3', 'A3'],
+      ['G3', 'Bb3', 'D4'],
+      ['C3', 'E3', 'G3'],
+      ['F3', 'A3', 'C4'],
+      ['Bb2', 'D3', 'F3'],
       ['G3', 'B3', 'D4'],
+      ['C3', 'E3', 'G3'],
     ],
     lead: [
-      'C5 E5 G5 C6 G5 E5 C5 E5',
-      'G5 . G5 A5 G5 . E5 .',
-      'Ab5 . Eb5 . C5 . Eb5 Ab5',
-      'Bb5 - F5 . D5 . F5 .',
-      'C6 G5 E5 G5 C6 . E6 .',
-      'A5 E5 C5 E5 A5 . C6 .',
-      'F5 A5 C6 A5 F5 . A5 .',
-      'G5 - B5 - D6 - . .',
+      'C5 F5 A5 C6 A5 F5 C5 F5',
+      'D5 F5 A5 D6 - . A5 .',
+      'Bb4 D5 G5 Bb5 G5 D5 Bb4 D5',
+      'C5 E5 G5 C6 - . G5 .',
+      'A5 . A5 C6 A5 . F5 .',
+      'Bb5 . F5 . D5 . F5 Bb5',
+      'B5 . G5 . D6 . B5 .',
+      'C6 - - . G5 . E5 .',
     ],
     bass: [
-      'C3 C3 . C3 G2 . C3 .',
-      'C3 C3 . C3 G2 . E2 .',
-      'Ab2 Ab2 . Ab2 Eb2 . Ab2 .',
-      'Bb2 Bb2 . Bb2 F2 . D3 .',
-      'C3 C3 . C3 G2 . C3 .',
-      'A2 A2 . A2 E2 . A2 .',
-      'F2 F2 . F2 C3 . F2 .',
-      'G2 G2 . G2 D3 . B2 .',
+      'F2 . C3 . F2 . C3 .',
+      'D2 . A2 . D2 . A2 .',
+      'G2 . D3 . G2 . D3 .',
+      'C2 . G2 . C2 . G2 .',
+      'F2 . C3 . F2 . C3 .',
+      'Bb1 . F2 . Bb1 . F2 .',
+      'G2 . D3 . G2 . D3 .',
+      'C2 . G2 . C3 . G2 .',
     ],
-    drums: ['k h s h k h s h', 'k h s h k k s s'],
+    drums: ['k . h s k . h s', 'k . h s k h s s'],
+  },
+  // Memory Blocks: calm and sparse, to think by.
+  memory: {
+    bpm: 92,
+    chords: [
+      ['E3', 'G3', 'B3'],
+      ['C3', 'E3', 'G3'],
+      ['A2', 'C3', 'E3'],
+      ['B2', 'D#3', 'F#3'],
+      ['E3', 'G3', 'B3'],
+      ['C3', 'E3', 'G3'],
+      ['D3', 'F#3', 'A3'],
+      ['B2', 'D#3', 'F#3'],
+    ],
+    lead: [
+      'B4 . . E5 . . G5 .',
+      'E5 . . C5 . . G4 .',
+      'A4 . . C5 . . E5 .',
+      'F#5 - - . D#5 . B4 .',
+      'G5 . . E5 . . B4 .',
+      'C5 . . E5 . . G5 .',
+      'A5 . . F#5 . . D5 .',
+      'D#5 - - - . . . .',
+    ],
+    bass: [
+      'E2 . . . . . . .',
+      'C2 . . . . . . .',
+      'A1 . . . . . . .',
+      'B1 . . . . . . .',
+      'E2 . . . . . . .',
+      'C2 . . . . . . .',
+      'D2 . . . . . . .',
+      'B1 . . . . . . .',
+    ],
+    drums: ['. . h . . . h .', '. . h . . . h h'],
+  },
+  // Coin Derby: a galloping race theme.
+  derby: {
+    bpm: 156,
+    chords: [
+      ['G3', 'B3', 'D4'],
+      ['G3', 'B3', 'D4'],
+      ['C4', 'E4', 'G4'],
+      ['D4', 'F#4', 'A4'],
+      ['G3', 'B3', 'D4'],
+      ['E3', 'G3', 'B3'],
+      ['A3', 'C4', 'E4'],
+      ['D4', 'F#4', 'A4'],
+    ],
+    lead: [
+      'G5 . G5 G5 D5 . G5 .',
+      'B5 . A5 . G5 . D5 .',
+      'E5 . G5 . C6 . G5 .',
+      'F#5 . A5 . D6 - - .',
+      'G5 . G5 G5 B5 . D6 .',
+      'E6 . D6 . B5 . G5 .',
+      'A5 . C6 . E6 . C6 .',
+      'D6 - F#5 - A5 - D6 .',
+    ],
+    bass: [
+      'G2 G2 D3 . G2 G2 D3 .',
+      'G2 G2 D3 . G2 G2 B2 .',
+      'C3 C3 G2 . C3 C3 G2 .',
+      'D3 D3 A2 . D3 D3 F#2 .',
+      'G2 G2 D3 . G2 G2 D3 .',
+      'E2 E2 B2 . E2 E2 B2 .',
+      'A2 A2 E2 . A2 A2 E2 .',
+      'D3 D3 A2 . D3 . F#2 .',
+    ],
+    drums: ['k h k h s h k h', 'k h k h s h s s'],
+  },
+  // Lucky Wheel: a showy game-show tune.
+  wheel: {
+    bpm: 120,
+    chords: [
+      ['Bb3', 'D4', 'F4'],
+      ['G3', 'Bb3', 'D4'],
+      ['Eb3', 'G3', 'Bb3'],
+      ['F3', 'A3', 'C4'],
+      ['Bb3', 'D4', 'F4'],
+      ['G3', 'Bb3', 'D4'],
+      ['C4', 'Eb4', 'G4'],
+      ['F3', 'A3', 'C4'],
+    ],
+    lead: [
+      'F5 - D5 . Bb4 . D5 F5',
+      'G5 - D5 . Bb4 . G5 .',
+      'Eb5 G5 Bb5 - G5 . Eb5 .',
+      'F5 A5 C6 - A5 . F5 .',
+      'Bb5 - F5 . D5 . F5 Bb5',
+      'D6 - Bb5 . G5 . Bb5 .',
+      'C6 . Bb5 . G5 . Eb5 .',
+      'F5 - - - C5 . F5 .',
+    ],
+    bass: [
+      'Bb1 . F2 . Bb1 . F2 .',
+      'G1 . D2 . G1 . D2 .',
+      'Eb2 . Bb2 . Eb2 . Bb2 .',
+      'F2 . C3 . F2 . C3 .',
+      'Bb1 . F2 . Bb1 . F2 .',
+      'G1 . D2 . G1 . D2 .',
+      'C2 . G2 . C2 . G2 .',
+      'F2 . C3 . F2 . A2 .',
+    ],
+    drums: ['k . h . s . h h', 'k . h k s . h s'],
+  },
+  // Treasure Split: a swaying sea shanty.
+  treasure: {
+    bpm: 112,
+    chords: [
+      ['D3', 'F3', 'A3'],
+      ['D3', 'F3', 'A3'],
+      ['C3', 'E3', 'G3'],
+      ['A2', 'C#3', 'E3'],
+      ['D3', 'F3', 'A3'],
+      ['Bb2', 'D3', 'F3'],
+      ['C3', 'E3', 'G3'],
+      ['A2', 'C#3', 'E3'],
+    ],
+    lead: [
+      'A4 . D5 . D5 E5 F5 .',
+      'E5 . D5 . A4 . D5 .',
+      'G4 . C5 . C5 D5 E5 .',
+      'C#5 - - . A4 . . .',
+      'A4 . D5 . D5 E5 F5 .',
+      'G5 . F5 . D5 . F5 .',
+      'E5 . C5 . G4 . C5 .',
+      'D5 - - - . . . .',
+    ],
+    bass: [
+      'D2 . . A2 . . D2 .',
+      'D2 . . A2 . . F2 .',
+      'C2 . . G2 . . C2 .',
+      'A1 . . E2 . . C#2 .',
+      'D2 . . A2 . . D2 .',
+      'Bb1 . . F2 . . Bb1 .',
+      'C2 . . G2 . . C2 .',
+      'A1 . . E2 . . A1 .',
+    ],
+    drums: ['k . . s . . h .', 'k . . s . h s .'],
   },
 };
 
@@ -615,6 +764,16 @@ class AudioEngine {
         this.tone(bus, 'triangle', freq('A5'), t + 0.1, 0.08, 0.16, { to: freq('E6') });
         this.tone(bus, 'square', 1800, t + 0.15, 0.03, 0.05, { cutoff: 3500 });
         break;
+      case 'reelTick':
+        // Slot reels whirring past: a short, light tick.
+        this.tone(bus, 'square', 1250, t, 0.025, 0.045, { cutoff: 2600 });
+        this.hiss(bus, t, 0.03, 0.05, 3000, 2);
+        break;
+      case 'reelStop':
+        // A reel landing: a soft clunk with a little ring.
+        this.tone(bus, 'triangle', 240, t, 0.12, 0.3, { to: 110 });
+        this.tone(bus, 'square', freq('E6'), t + 0.02, 0.09, 0.05, { cutoff: 3200 });
+        break;
       case 'turn':
         this.tone(bus, 'sine', freq('G5'), t, 0.25, 0.2);
         this.tone(bus, 'sine', freq('C6'), t + 0.12, 0.4, 0.2);
@@ -703,7 +862,7 @@ class AudioEngine {
       if (bass[s] && bass[s] !== '.' && bass[s] !== '-')
         this.voice('bass', bass[s], at, hold(bass, s) * stepDur);
       if (s === 0) for (const n of song.chords[bar]) this.voice('pad', n, at, stepDur * 8);
-      if (s === 4 && this.track !== 'menu')
+      if (s === 4 && this.track !== 'menu' && this.track !== 'memory')
         for (const n of song.chords[bar]) this.voice('pad', n, at, stepDur * 3);
       const d = drums[s];
       if (d === 'k') this.tone(this.musicBus, 'sine', 150, at, 0.16, 0.5, { to: 45 });

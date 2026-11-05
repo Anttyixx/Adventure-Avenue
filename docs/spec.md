@@ -628,11 +628,11 @@ the device between choices. CPUs choose for their own seats and for disconnected
 | Memory Blocks  | Nine cards are dealt face up for 1.9 seconds, flip face down, and the player picks one.                                                                                                                              | Two "Shops +10%", two Gold (60G x level), one wild card, two "Shops -5%", two 20G.                                                                              |
 | Coin Derby     | Everyone races down a 15-space track over three legs. Each leg, every racer secretly picks Sprint (move 3-5 spaces) or Grab coins (move 1-3 spaces and take 30G). Racers stop at the finish flag.                    | Everyone keeps the coins they grabbed. The racer furthest along after leg 3 wins 100G x their level (tied leaders each win it).                                 |
 | Lucky Wheel    | One optional bet per player, in 10G steps, up to 100G and their cash. Twelve equally likely numbers; odd are red, even are blue. Bet on a color or a group of four (1-4, 5-8, 9-12), or skip.                        | A winning color bet wins 1x the bet; a winning group bet wins 2x. A losing bet loses the bet. No debt, no level multiplier.                                     |
-| Treasure Split | Two rounds. Each player secretly picks the 60G, 100G or 150G chest.                                                                                                                                                  | Each chest is shared equally by everyone who picked it (rounded down).                                                                                          |
+| Treasure Split | Two rounds. Each player secretly picks the 60G, 100G or 150G chest. Coins found are tallied each round and all handed out after the last round.                                                                      | Each chest is shared equally by everyone who picked it (rounded down).                                                                                          |
 
 **On screen:** like the venture board, each game sits on a board in the middle of the screen and
 the action bar carries its instructions, choices and results; the board stays up from the first
-choice to the last result (Lucky Reels keeps its slots between rolls). The party games show a row
+choice to the last result (Lucky Reels keeps its slots between rolls; on a roll every slot not kept spins, flicking through the symbols, and they stop one after another from left to right). The party games show a row
 of everyone's portraits that ticks off who has chosen. Lucky Reels shows the prize ladder with the
 current set highlighted; at the end only the slots in the set light up. Memory Blocks cards deal in,
 flip face up, then flip face down (nothing on a face shows through), and after the pick the chosen
@@ -1070,10 +1070,11 @@ ring/silent switch does not mute the game; the in-game Mute switch still does.
 
 - **Music:** looping chiptune tracks: a relaxed one for the main menu, setup and board editor, a
   bouncier one during games (a faster, urgent one once someone can win), a curious, twinkly one
-  while the venture board is up and a quick, bright one during arcade games (the board music comes
-  back when they close). The music stops for the winning fanfare at the end of a game.
+  while the venture board is up, and one per arcade game: a casino jingle (Lucky Reels), a calm,
+  sparse tune to think by (Memory Blocks), a galloping race theme (Coin Derby), a game-show tune
+  (Lucky Wheel) and a sea shanty (Treasure Split). The board music comes back when they close. The music stops for the winning fanfare at the end of a game.
 - **Effects:** button clicks, dice roll, each step, landing, gaining and paying money, buying a
-  shop, buying out a rival's property (a brass stab, a rising run and a cash-register ring), a shop's value going up, collecting a suit, promotion, venture cards, a card flipping over (a paper swish and a click), warps, the start of a
+  shop, buying out a rival's property (a brass stab, a rising run and a cash-register ring), a shop's value going up, collecting a suit, promotion, venture cards, a card flipping over (a paper swish and a click), slot reels ticking as they spin and clunking as each stops, warps, the start of a
   human player's turn, a new round, bankruptcy and the win fanfare.
 - **Settings:** a speaker button on the main menu and game setup (and the Sound section of the in-game menu) has Music and
   Effects volume sliders and a Mute switch. Settings are saved per device. Audio pauses while the

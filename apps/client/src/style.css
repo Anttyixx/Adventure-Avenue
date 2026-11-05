@@ -7823,6 +7823,19 @@ div.sl-inline label {
   display: grid;
   place-items: center;
 }
+/* While a slot spins, each symbol streaks down through the window. */
+.reel-face.spin > * {
+  filter: blur(1.5px);
+  animation: reel-scroll 0.07s linear;
+}
+@keyframes reel-scroll {
+  from {
+    transform: translateY(-55%);
+  }
+  to {
+    transform: translateY(45%);
+  }
+}
 .reel-face img {
   width: 48px;
   height: 48px;
@@ -8430,6 +8443,32 @@ div.sl-inline label {
 }
 .chest-split:empty {
   display: none;
+}
+.chest-totals {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 6px 8px;
+  font-size: 12px;
+  color: var(--muted);
+}
+.ct-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 1px 8px 1px 1px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  box-shadow: inset 0 0 0 2px var(--pc);
+  font: 400 13px var(--head);
+  color: var(--accent);
+  animation: pop 0.3s;
+}
+.ct-chip img {
+  width: 20px;
+  height: 20px;
+  image-rendering: pixelated;
 }
 .chest.empty {
   opacity: 0.5;

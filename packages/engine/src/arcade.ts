@@ -255,6 +255,8 @@ export async function luckyWheel(g: Game, lander: Player) {
 }
 
 export async function treasureSplit(g: Game, lander: Player) {
+  // Coins are tallied each round and handed out together once the last round is over.
+  const totals = g.G.players.map(() => 0);
   for (let round = 1; round <= K.treasure.rounds; round++) {
     const picks = await choices(g, lander, {
       game: 'Treasure Split',
@@ -262,26 +264,33 @@ export async function treasureSplit(g: Game, lander: Player) {
       options: K.treasure.chests.map((n) => `${n}G chest`),
       hint: `Round ${round} of ${K.treasure.rounds}. Anyone who picks the same chest splits it.`,
     });
-    const rows = picks.map(({ player: p, choice }) => ({
-      pid: p.id,
-      text: (() => {
-        const n = picks.filter((a) => a.choice === choice).length;
-        return `${K.treasure.chests[choice]}G chest${n > 1 ? ` · split ${n} ways` : ' · all yours'}`;
-      })(),
-      choice,
-      amount: Math.floor(K.treasure.chests[choice] / picks.filter((a) => a.choice === choice).length),
-    }));
+    const final = round === K.treasure.rounds;
+    const rows = picks.map(({ player: p, choice }) => {
+      const n = picks.filter((a) => a.choice === choice).length;
+      const share = Math.floor(K.treasure.chests[choice] / n);
+      totals[p.id] += share;
+      return {
+        pid: p.id,
+        text: `${K.treasure.chests[choice]}G chest${n > 1 ? ` · split ${n} ways` : ' · all yours'}`,
+        choice,
+        amount: share,
+        total: totals[p.id],
+      };
+    });
     await g.emit({
       type: 'arcadeRound',
       game: 'Treasure Split',
       title: `Treasure Split · Round ${round} of ${K.treasure.rounds}`,
-      detail: 'Each chest is shared equally by everyone who picked it.',
+      detail: final
+        ? 'Everyone now collects all the coins they found.'
+        : 'Each chest is shared equally. Coins are handed out after the last round.',
       rows,
-      final: round === K.treasure.rounds,
+      final,
     });
-    for (const row of rows) {
-      await g.pay(null, g.G.players[row.pid], row.amount, 'Treasure Split');
-      await g.log(`${g.G.players[row.pid].name} found ${row.amount}G in Treasure Split.`, row.pid, 'arcade');
-    }
+  }
+  for (const p of g.G.players) {
+    if (!totals[p.id]) continue;
+    await g.pay(null, p, totals[p.id], 'Treasure Split');
+    await g.log(`${p.name} found ${totals[p.id]}G in Treasure Split.`, p.id, 'arcade');
   }
 }

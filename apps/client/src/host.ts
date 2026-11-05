@@ -45,13 +45,22 @@ import {
   tradeOnBoard,
   type PickCtx,
 } from './ui/pick';
-import { sound } from './audio';
+import { sound, type Track } from './audio';
 import { closeSoundPopover } from './ui/soundpanel';
 import type { GameLink } from './net/link';
 import { inviteURL } from './net/protocol';
 import { IS_DEV_BUILD } from './build';
 
 const FAST_KEY = 'adventure-avenue-fast';
+
+/** Each arcade game's own music. */
+const GAME_MUSIC: Record<ArcadeGame, Track> = {
+  'Lucky Reels': 'reels',
+  'Memory Blocks': 'memory',
+  'Coin Derby': 'derby',
+  'Lucky Wheel': 'wheel',
+  'Treasure Split': 'treasure',
+};
 
 const never = <T>() => new Promise<T>(() => {});
 
@@ -267,10 +276,10 @@ export class HotSeat implements GameIO {
     this.playMusic();
   }
 
-  /** The venture board or an arcade game, while one is up: it has its own music. */
-  private scene: 'venture' | 'arcade' | null = null;
+  /** The venture board or an arcade game, while one is up: each has its own music. */
+  private scene: Track | null = null;
 
-  private setScene(scene: 'venture' | 'arcade' | null) {
+  private setScene(scene: Track | null) {
     this.scene = scene;
     this.playMusic();
   }
@@ -428,7 +437,7 @@ export class HotSeat implements GameIO {
     if (this.arcade?.game !== game) {
       this.arcade?.close();
       this.arcade = new ArcadeStage(this.hud, game, this.G);
-      this.setScene('arcade');
+      this.setScene(GAME_MUSIC[game]);
     }
     return this.arcade;
   }

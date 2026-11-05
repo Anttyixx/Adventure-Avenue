@@ -808,8 +808,8 @@ player cards) and the action bar for words and buttons. Never a pop-up.
   gold button then names the choice ("Bet 20G on Red", "Take the 150G chest").
 - **Art:** smooth icons (`coinIconURL`, `starIconURL`, suit icons, wild card), cream "paper" faces
   for slots and cards, player portraits for people. No text-symbol stand-ins.
-- **Sound:** the venture board and arcade games have their own music (`HotSeat.setScene`); a card
+- **Sound:** the venture board and each arcade game have their own music (`HotSeat.setScene`, `GAME_MUSIC`); a card
   flipping plays `flip`.
-- **Motion:** slot faces spin in (blurred drop, staggered); memory cards flip with 3D `rotateY`
+- **Motion:** slots not kept spin (symbols flick past blurred every 70ms, then stop left to right with a small bounce, `reelTick`/`reelStop` sounds); memory cards flip with 3D `rotateY`
   and `backface-visibility: hidden`; derby runners are the players' walking sprites (no circle), stepping one space at a time down a paved lane; the wheel spins about
   four turns and eases out; chest lids swing open. All respect reduced motion.

@@ -49,6 +49,8 @@ export type GameEvent =
         score?: number;
         previous?: number;
         choice?: number;
+        /** Treasure Split: coins found so far (handed out after the last round). */
+        total?: number;
       }[];
       wheel?: number;
       final: boolean;

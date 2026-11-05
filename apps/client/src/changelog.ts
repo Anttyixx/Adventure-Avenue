@@ -26,6 +26,24 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: '2026-11-05-arcade-music',
+    date: 'Nov 5, 2026',
+    title: 'A tune for every game',
+    features: [
+      {
+        tag: 'new',
+        title: 'Music for each arcade game',
+        text: 'Lucky Reels, Memory Blocks, Coin Derby, Lucky Wheel and Treasure Split each have their own music, alongside the venture board’s.',
+      },
+      {
+        tag: 'better',
+        title: 'Spinning reels',
+        text: 'Lucky Reels slots now spin through the symbols and stop one by one, with ticking and a clunk as each lands.',
+      },
+    ],
+    extras: ['Treasure Split adds up your coins each round and hands them all out at the end.'],
+  },
+  {
     id: '2026-11-05-music-guide-tiles',
     date: 'Nov 5, 2026',
     title: 'Music, a card-style Guide and tidier tiles',

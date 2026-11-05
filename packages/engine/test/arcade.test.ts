@@ -108,6 +108,26 @@ describe('all-player arcade games', () => {
     expect(G.players.map((p, i) => p.cash - before[i])).toEqual([74, 74, 74, 74]);
     expect(events.filter((e) => e.type === 'arcadeRound')).toHaveLength(2);
   });
+  it('hands out treasure only after the last round', async () => {
+    const { G, game, events } = makeGame('standard', (r) =>
+      r.kind === 'arcadeChoice' ? { choice: r.pid % 3 } : undefined,
+    );
+    const before = G.players.map((p) => p.cash);
+    const seen: number[][] = [];
+    const emit = game.emit.bind(game);
+    game.emit = async (e) => {
+      if (e.type === 'arcadeRound') seen.push(G.players.map((p, i) => p.cash - before[i]));
+      return emit(e);
+    };
+    await treasureSplit(game, G.players[0]);
+    expect(seen).toEqual([
+      [0, 0, 0, 0],
+      [0, 0, 0, 0],
+    ]);
+    const last = events.filter((e) => e.type === 'arcadeRound').pop()!;
+    if (last.type !== 'arcadeRound') throw Error('missing');
+    for (const row of last.rows) expect(G.players[row.pid].cash - before[row.pid]).toBe(row.total);
+  });
   it('uses predictable wheel groups and even color odds', () => {
     for (let choice = 0; choice < 5; choice++)
       expect(Array.from({ length: 12 }, (_, i) => wheelWins(choice, i + 1)).filter(Boolean)).toHaveLength(

@@ -11,6 +11,7 @@ import {
   MEMORY_SHOW_MS,
   PLAYER_COLORS,
   REEL_PRIZES,
+  REEL_SYMBOLS,
   WHEEL_BETS,
   reelPrize,
   reelSetSlots,
@@ -26,6 +27,7 @@ import { coinIconURL, starIconURL, suitIconURL, wildIconURL } from '../icons';
 import { propertyIconURL } from '../art';
 import { FRAME_H, FRAME_W, Facing, drawCharacter, portraitURL } from '../sprites';
 import { TIMING as T } from '../timing';
+import { sound } from '../audio';
 import { clear, fmt, h } from './dom';
 import type { Hud } from './hud';
 
@@ -259,31 +261,72 @@ export class ArcadeStage {
   }
 
   /** Show a roll: new symbols spin into the slots that were not kept. */
+  /**
+   * Show a roll. Slots that were not kept spin: they flick through the symbols, then stop one
+   * after another from left to right on their new symbol, with ticking and a clunk as each stops.
+   */
   private async showRoll(symbols: ReelSymbol[], kept: boolean[]) {
-    const spins: Promise<void>[] = [];
-    symbols.forEach((s, i) => {
-      const b = this.slots[i];
-      const face = b.querySelector('.reel-face')!;
-      const changed = this.shown[i] !== s || !kept[i];
-      this.shown[i] = s;
-      b.setAttribute('aria-label', `Slot ${i + 1}: ${SYMBOL_NAME[s]}`);
-      if (!changed && face.childElementCount) return;
-      clear(face);
-      face.append(symbolArt(s));
-      if (!kept[i])
-        spins.push(
-          this.anim(
-            face,
-            [
-              { transform: 'translateY(-120%)', filter: 'blur(3px)', opacity: 0.2 },
-              { transform: 'translateY(12%)', filter: 'blur(0)', opacity: 1, offset: 0.75 },
-              { transform: 'translateY(0)', opacity: 1 },
-            ],
-            { duration: T.arcadeRoll + i * 110 },
-          ),
-        );
+    const faces = this.slots.map((b) => b.querySelector('.reel-face') as HTMLElement);
+    const land = (i: number) => {
+      clear(faces[i]);
+      faces[i].classList.remove('spin');
+      faces[i].append(symbolArt(symbols[i]));
+      this.shown[i] = symbols[i];
+      this.slots[i].setAttribute('aria-label', `Slot ${i + 1}: ${SYMBOL_NAME[symbols[i]]}`);
+    };
+    const spinning = symbols.map((_, i) => i).filter((i) => !kept[i] || !faces[i].childElementCount);
+    if (!spinning.length) return;
+    if (reduced() || this.closed) {
+      spinning.forEach(land);
+      return;
+    }
+    // When each slot stops: the first after a short spin, then one every 220 ms.
+    const stopAt = new Map(spinning.map((i, n) => [i, T.arcadeRoll + 300 + n * 220]));
+    const done = new Set<number>();
+    const step = 70;
+    let t = 0;
+    let k = 0;
+    await new Promise<void>((resolve) => {
+      const finish = () => {
+        clearInterval(timer);
+        spinning.forEach((i) => done.has(i) || land(i));
+        resolve();
+      };
+      const timer = window.setInterval(() => {
+        t += step;
+        k++;
+        let ticking = false;
+        for (const i of spinning) {
+          if (done.has(i)) continue;
+          if (t >= stopAt.get(i)!) {
+            done.add(i);
+            land(i);
+            sound.play('reelStop');
+            void this.anim(
+              faces[i],
+              [
+                { transform: 'translateY(-22%)' },
+                { transform: 'translateY(6%)' },
+                { transform: 'translateY(0)' },
+              ],
+              { duration: 240 },
+            );
+          } else {
+            // Flick to the next symbol in the strip (each slot starts at a different place).
+            const face = faces[i];
+            clear(face);
+            face.append(symbolArt(REEL_SYMBOLS[(k + i * 2) % REEL_SYMBOLS.length]));
+            face.classList.remove('spin');
+            void face.offsetWidth;
+            face.classList.add('spin');
+            ticking = true;
+          }
+        }
+        if (ticking) sound.play('reelTick');
+        if (done.size === spinning.length) finish();
+      }, step);
+      this.abort.signal.addEventListener('abort', finish, { once: true });
     });
-    await Promise.all(spins);
   }
 
   private markRank(rank: number) {
@@ -516,9 +559,14 @@ export class ArcadeStage {
     } else if (e.game === 'Lucky Wheel' && e.wheel) {
       title = `The wheel stopped on ${e.wheel} · ${e.wheel % 2 ? 'Red' : 'Blue'}`;
     } else if (e.game === 'Treasure Split') {
-      const most = Math.max(...e.rows.map((r) => r.amount ?? 0));
-      const top = e.rows.filter((r) => r.amount === most).map((r) => r.pid);
-      title = `${names(top)} got the most: ${fmt(most)}${top.length > 1 ? ' each' : ''}`;
+      // Rounds say who found the most this round; the last one says who found the most in all,
+      // since that is when everyone is paid.
+      const key = (r: Round['rows'][number]) => (e.final ? (r.total ?? 0) : (r.amount ?? 0));
+      const most = Math.max(...e.rows.map(key));
+      const top = e.rows.filter((r) => key(r) === most).map((r) => r.pid);
+      title = e.final
+        ? `${names(top)} found the most: ${fmt(most)}${top.length > 1 ? ' each' : ''} in all`
+        : `${names(top)} found the most this round: ${fmt(most)}${top.length > 1 ? ' each' : ''}`;
     }
     await this.result(this.order[0] ?? lead, title, e.detail, waitMs);
   }
@@ -874,6 +922,24 @@ export class ArcadeStage {
         { duration: 260 },
       );
     }
+    // What everyone has found so far; it is all handed out after the last round.
+    this.body.querySelector('.chest-totals')?.remove();
+    this.body.append(
+      h(
+        'div',
+        { class: 'chest-totals' },
+        h('span', null, e.final ? 'Everyone collects:' : 'Found so far:'),
+        ...e.rows.map((r) => {
+          const p = this.G.players[r.pid];
+          return h(
+            'span',
+            { class: 'ct-chip', style: `--pc:${PLAYER_COLORS[p.color]}` },
+            h('img', { src: portraitURL(p.ch), alt: p.name, title: p.name }),
+            fmt(r.total ?? r.amount ?? 0),
+          );
+        }),
+      ),
+    );
     await this.wait(400);
   }
 }
