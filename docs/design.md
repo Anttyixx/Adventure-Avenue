@@ -575,7 +575,7 @@ if (!(await ask(`Delete ${d.name}?`, 'Its 4 properties will be removed from the 
 - **Info button** (`.info-btn`): a pill at the end of the info chip, a round gold "i" and "Info";
   gold (`.on`) while the pop-up is open.
 - **Pop-up** (`.info-layer > .modal.info-pop`): one width (up to 1,000px). Game and Stocks take
-  the height they need (max 640px); player pages (`.player`) all share one fixed height (500px;
+  the height they need (max 640px); player pages (`.player`) all share one fixed height (400px;
   phones fill the free area; with three columns the properties list `.pv-props` scrolls inside
   its column, scroll bar hidden) so flipping between players never resizes it; page changes ease the
   height (320ms); pages scroll inside. 5px top
@@ -588,14 +588,17 @@ if (!(await ask(`Delete ${d.name}?`, 'Its 4 properties will be removed from the 
   sections 16px apart, the first column at least 300px; a container query keeps the top-right
   heading (or the name, single column) 70px clear of Back.
 - **Action bar:** a stand-in `.prompt-center.info-bar` over the real bar (`.hud.info-open` hides
-  the real one and any stock/venture/arcade layer): pill tabs (`.ib-tab`, gold when on) Game,
+  the real one and any stock/venture/arcade layer): pill tabs (`.ib-tab`, 2px border, gold when on) Game,
   Stocks, a divider, one per player (`.ib-player`: portrait + name, border and fill in `--pc`;
   portrait only on phones). It morphs out of the real bar's size on opening (300ms, tabs fade in
-  after 120ms) and back into it on closing (tabs fade out first).
-- **Pages:** Game (how to win, facts grid, standings rows `.info-row` with place badge, portrait,
-  name/level/suits, net worth + `--pc` bar, cash); Properties (property cards `.pv-card.owned-by`
-  grouped by district, owner portrait badge top left and a `--pc` bottom edge; a count · value
-  line per player); Stocks (`marketView(..., { split: true })`);
+  after 120ms) and back into it on closing (tabs fade out first; then the real bar shows underneath while the
+  stand-in fades out over it, and the pop-up stays hidden once its closing motion ends, so nothing
+  blinks).
+- **Pages:** Game (how to win and a facts grid at 14-17px; standings as `.pcard.info-pcard`
+  cards, the game screen's player card markup, in a ~320px column); Properties (rounded player
+  chips `.info-owner` on top, 2px `--pc` border and tint; then 84px property cards
+  `.pv-card.owned-by` grouped by district, owner portrait badge top left and a `--pc` bottom edge);
+  Stocks (`marketView(..., { split: true })`);
   a player (`playerOverview`: three columns, net worth + ring chart + earnings · properties as
   small cards · shares table; property cards: district top edge, picture, rent big, value small;
   click to find it on the board).

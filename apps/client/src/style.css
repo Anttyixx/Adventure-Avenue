@@ -9227,7 +9227,7 @@ div.sl-inline label {
   margin-top: 0;
 }
 .info-pop.player {
-  height: min(100%, 500px);
+  height: min(100%, 400px);
 }
 .info-page {
   flex: 1 1 auto;
@@ -9281,78 +9281,35 @@ div.sl-inline label {
   flex-direction: column;
   gap: 6px;
 }
-.info-row {
-  display: grid;
-  grid-template-columns: auto 36px minmax(0, 1fr) minmax(120px, 0.9fr);
-  align-items: center;
-  gap: 10px;
+/* Game page: the facts read a little bigger; the standings are narrow cards built like the
+   player cards on the game screen. */
+.info-left {
+  flex: 1 1 320px;
+}
+.info-left .info-goal {
+  font-size: 17px;
+}
+.info-left .pv-note {
+  font-size: 14px;
+}
+.info-left .pv-fact {
+  font-size: 14px;
   padding: 6px 10px;
-  border: 1px solid var(--glass-line);
-  border-left: 4px solid var(--pc);
-  border-radius: 10px;
+}
+.info-standings-col {
+  flex: 0 1 320px;
+}
+.pcard.info-pcard {
+  width: 100%;
+  backdrop-filter: none;
   background: rgba(255, 255, 255, 0.05);
   color: var(--text);
   font: inherit;
   text-align: left;
   cursor: pointer;
 }
-.info-row:hover {
+.pcard.info-pcard:hover {
   background: rgba(255, 255, 255, 0.1);
-}
-.info-row.out {
-  opacity: 0.5;
-}
-.info-face {
-  width: 36px;
-  height: 36px;
-  image-rendering: pixelated;
-}
-.info-who {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  min-width: 0;
-}
-.info-who b {
-  font-family: var(--head);
-  font-weight: 400;
-  font-size: 16px;
-}
-.info-sub {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-.info-sub .suits img {
-  width: 14px;
-  height: 14px;
-}
-.info-sub .suits:not(.ready) img {
-  opacity: 0.9;
-}
-.info-nw {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-.info-nw-top {
-  display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-  gap: 8px;
-}
-.info-nw-top b {
-  font-family: var(--head);
-  font-weight: 400;
-  font-size: 16px;
-}
-.info-nw-top em {
-  font-style: normal;
-  font-size: 12px;
-  color: var(--muted);
-}
-.info-nw .bar-fill {
-  background: var(--pc);
 }
 
 /* The info pop-up's action bar: page tabs (Game, Stocks, then a button per player) and Close. */
@@ -9373,8 +9330,8 @@ div.sl-inline label {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 7px 14px;
-  border: 1px solid var(--glass-line);
+  padding: 6px 13px;
+  border: 2px solid rgba(255, 255, 255, 0.22);
   border-radius: 999px;
   background: transparent;
   color: var(--text);
@@ -9446,6 +9403,18 @@ div.sl-inline label {
     padding: 5px 10px;
     font-size: 12px;
   }
+  .info-owner {
+    padding: 3px 10px 3px 5px;
+    gap: 5px;
+    font-size: 12px;
+  }
+  .info-owner img {
+    width: 20px;
+    height: 20px;
+  }
+  .info-owner b {
+    font-size: 15px;
+  }
   /* Players by portrait only. */
   .ib-player {
     padding: 2px;
@@ -9457,15 +9426,6 @@ div.sl-inline label {
     width: 24px;
     height: 24px;
   }
-  .info-row {
-    grid-template-columns: auto 28px minmax(0, 1fr) minmax(90px, 0.9fr);
-    gap: 6px;
-    padding: 4px 8px;
-  }
-  .info-face {
-    width: 28px;
-    height: 28px;
-  }
 }
 @media (prefers-reduced-motion: reduce) {
   .info-btn,
@@ -9474,40 +9434,77 @@ div.sl-inline label {
   }
 }
 
-/* Properties page (info pop-up): every owned property by district, each card with a small
-   portrait of its owner and a bottom edge in their color; a count and value per player beside. */
+/* Properties page (info pop-up): a chip per player across the top (portrait, name, how many
+   properties, their value), then every owned property by district as bigger cards, each with a
+   small portrait of its owner and a bottom edge in their color. */
+.info-props-page {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.info-owners {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.info-owner {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 14px 6px 8px;
+  border: 2px solid var(--pc);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--pc) 16%, transparent);
+  font-size: 14px;
+}
+.info-owner img {
+  width: 26px;
+  height: 26px;
+  image-rendering: pixelated;
+}
+.info-owner-name {
+  font-weight: 700;
+}
+.info-owner b {
+  font: 400 18px var(--head);
+}
+.info-owner-val {
+  color: var(--muted);
+}
+.info-props {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px 22px;
+}
+.info-props .pv-card {
+  width: 84px;
+  padding: 6px 3px 7px;
+}
+.info-props .pv-card img:not(.pv-card-owner) {
+  width: 48px;
+  height: 48px;
+}
+.info-props .pv-card-rent {
+  font-size: 16px;
+}
+.info-props .pv-card-val {
+  font-size: 12px;
+}
 .pv-card.owned-by {
   position: relative;
   border-bottom: 3px solid var(--pc);
 }
 .pv-card .pv-card-owner {
   position: absolute;
-  top: 2px;
-  left: 2px;
-  width: 16px;
-  height: 16px;
+  top: 3px;
+  left: 3px;
+  width: 18px;
+  height: 18px;
   border-radius: 50%;
   background: var(--pc);
   image-rendering: pixelated;
 }
-.info-props {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px 18px;
-}
-.pv-facts.one {
-  grid-template-columns: 1fr;
-}
-.info-owner {
-  border-left: 3px solid var(--pc);
-}
-.info-owner span {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-}
-.info-owner img {
-  width: 20px;
-  height: 20px;
-  image-rendering: pixelated;
+/* What the next promotion pays, under the net worth on a player page. */
+.pv-promo {
+  margin-top: 8px;
 }

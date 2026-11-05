@@ -108,7 +108,14 @@ const rnd = (n: number) => Math.floor(Math.random() * n);
  * Controls for UI elements that were just added or changed: they shake once and glow so they
  * are easy to find. Update this list with each change.
  */
-const RECENT = new Set(['Info: properties page', 'Info: player page', 'Info: game page']);
+const RECENT = new Set([
+  'Info: game page',
+  'Info: properties page',
+  'Info: player page',
+  'Stocks: random for everyone',
+  'Stocks: +10 shares (target)',
+  'Stocks: clear (target)',
+]);
 
 /** Which board the lab plays on: Town (square) or Twin Lakes (hex), remembered per browser. */
 const LAB_BOARD_KEY = 'aa-lab-board';
@@ -164,6 +171,20 @@ async function playSample(G: GameState, turns: number) {
   G.players[1].cpu = false;
 }
 
+/**
+ * Give every player some shares in a few districts (CPU sample games rarely buy any), so the
+ * stock tables, net worth breakdowns and player pages show stock.
+ */
+function sampleStocks(G: GameState) {
+  G.players.forEach((p, i) => {
+    p.shares = G.districts.map(() => 0);
+    for (let k = 0; k < 3; k++) {
+      const d = (i * 2 + k * 3) % G.districts.length;
+      p.shares[d] += 10 + ((i * 7 + k * 13) % 5) * 10;
+    }
+  });
+}
+
 /** Bonus lines and payout for a venture panel, as the engine would compute them. */
 function labLines(owner: number[], panel: number, pid: number): [number[][], number] {
   const lines = linesThrough(owner, panel, pid);
@@ -174,6 +195,7 @@ export async function openLab(app: HTMLElement, section?: string) {
   const G = sampleState();
   await playSample(G, 24);
   showcaseBuildings(G);
+  sampleStocks(G);
   const game = new Game(G, { decide: () => new Promise(() => {}), emit: () => {} });
 
   const root = h('div', { class: 'game lab' });
@@ -399,6 +421,22 @@ export async function openLab(app: HTMLElement, section?: string) {
         refresh();
       }),
       btn('Info: player page', () => hud.toggleInfo(cur().id)),
+      btn('Stocks: random for everyone', () => {
+        for (const p of G.players)
+          p.shares = G.districts.map(() => (Math.random() < 0.4 ? 10 * (1 + rnd(8)) : 0));
+        refresh();
+        hud.tick('Every player now holds some random shares.');
+      }),
+      btn('Stocks: +10 shares (target)', () => {
+        const d = rnd(G.districts.length);
+        cur().shares[d] += 10;
+        refresh();
+        hud.tick(`${cur().name} got 10 ${G.districts[d].name} shares.`);
+      }),
+      btn('Stocks: clear (target)', () => {
+        cur().shares = G.districts.map(() => 0);
+        refresh();
+      }),
       btn('Swap characters', () => {
         // Every player moves on to the next character, to see each one on the player cards.
         for (const p of G.players) {

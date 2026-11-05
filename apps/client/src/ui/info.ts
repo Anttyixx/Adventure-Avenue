@@ -8,7 +8,7 @@
  * shows meanwhile (statuses, a choice waiting for the player) is still there when it closes.
  */
 import { PLAYER_COLORS, SUITS, canPromote, netWorth, ranking, type GameState, type Player } from '@aa/engine';
-import { portraitURL } from '../sprites';
+import { bodyURL, portraitURL } from '../sprites';
 import { suitIconURL, wildIconURL } from '../icons';
 import { clear, fmt, h } from './dom';
 import type { Hud } from './hud';
@@ -65,25 +65,36 @@ export class InfoPopup {
     const hud = this.hud;
     this.release();
     this.unplace();
-    const done = () => {
-      // Opened again while closing: keep it.
-      if (hud.infoPage != null) return;
+    const reopened = () => hud.infoPage != null;
+    const finish = () => {
+      if (reopened()) return;
       this.layer.hidden = true;
       this.bar.hidden = true;
+      this.bar.getAnimations({ subtree: true }).forEach((a) => a.cancel());
+      this.bar.classList.remove('morphing');
       clear(this.box);
       clear(this.bar);
       this.pageEl = null;
       hud.root.classList.remove('info-open');
-      // The real action bar's content fades back in where the stand-in ended.
-      if (!STILL())
-        hud.ask.animate([{ opacity: 0.35 }, { opacity: 1 }], { duration: 160, easing: 'ease-out' });
     };
-    if (STILL()) return done();
-    this.box.animate([HERE, AWAY], { duration: 200, easing: 'ease-in', fill: 'forwards' }).onfinish = (e) =>
+    if (STILL()) return finish();
+    // The pop-up sinks away and stays hidden once it has (no frame of it popping back).
+    this.box.animate([HERE, AWAY], { duration: 200, easing: 'ease-in', fill: 'forwards' }).onfinish = (e) => {
+      if (!reopened()) this.layer.hidden = true;
       (e.target as Animation).cancel();
-    // The stand-in bar morphs back to the real bar's size, then hands over to it.
+    };
+    // The stand-in bar morphs to the real bar's size, then the real bar shows underneath while the
+    // stand-in fades away on top of it, so the two never blink.
     const ask = hud.ask.classList.contains('show') ? hud.ask.getBoundingClientRect() : null;
-    this.morphBar(null, ask, done);
+    this.morphBar(null, ask, () => {
+      if (reopened()) return;
+      hud.root.classList.remove('info-open');
+      this.bar.animate([{ opacity: 1 }, { opacity: 0 }], {
+        duration: 140,
+        easing: 'ease-out',
+        fill: 'forwards',
+      }).onfinish = finish;
+    });
   }
 
   /**
@@ -120,11 +131,9 @@ export class InfoPopup {
         });
     }
     anim.onfinish = () => {
+      // Closing keeps the morphed size until `after` has finished handing over.
+      if (after) return after();
       bar.classList.remove('morphing');
-      if (after) {
-        bar.getAnimations({ subtree: true }).forEach((a) => a.cancel());
-        after();
-      }
     };
   }
 
@@ -328,7 +337,7 @@ export class InfoPopup {
 function popParts(page: HTMLElement): HTMLElement[] {
   const all = [
     ...page.querySelectorAll<HTMLElement>(
-      '.modal-head, .pv-head, .pv-nw, .pv-sec, .m-map, .m-shops, .m-grid-wrap',
+      '.modal-head, .pv-head, .pv-nw, .pv-sec, .m-map, .m-shops, .m-grid-wrap, .info-owners',
     ),
   ];
   return all.filter((el) => !all.some((o) => o !== el && o.contains(el)));
@@ -391,54 +400,74 @@ function gamePage(G: GameState, openPlayer: (pid: number) => void): HTMLElement 
     h(
       'div',
       { class: 'info-standings' },
-      ...ranked.map((p, i) => standingRow(G, p, i + 1, () => openPlayer(p.id))),
+      ...ranked.map((p, i) => standingCard(G, p, i + 1, () => openPlayer(p.id))),
     ),
   );
   return h(
     'div',
     { class: 'info-game' },
-    h('div', { class: 'pv-col info-col' }, goal, facts),
-    h('div', { class: 'pv-col info-col wide' }, standings),
+    h('div', { class: 'pv-col info-col info-left' }, goal, facts),
+    h('div', { class: 'pv-col info-col info-standings-col' }, standings),
   );
 }
 
-/** One player in the standings: place, portrait, name and level, suits, net worth toward the goal, cash. */
-function standingRow(G: GameState, p: Player, place: number, onclick: () => void): HTMLElement {
+/**
+ * One player in the standings, built like their player card on the game screen: their sprite,
+ * level, name and suits, the bar toward the goal, cash bottom left and place + net worth bottom
+ * right. Tap it for their page.
+ */
+function standingCard(G: GameState, p: Player, place: number, onclick: () => void): HTMLElement {
   const nw = netWorth(G, p);
   const pct = Math.max(0, Math.min(100, (nw / G.target) * 100));
+  const num = (n: number) => Math.round(n).toLocaleString('en-US');
   return h(
     'button',
-    { class: `info-row ${p.bankrupt ? 'out' : ''}`, style: `--pc:${PLAYER_COLORS[p.color]}`, onclick },
-    h('span', { class: `rank r${place}` }, p.bankrupt ? '-' : ordinal(place)),
-    h('img', { class: 'info-face', src: portraitURL(p.ch), alt: '' }),
+    {
+      class: `pcard info-pcard ${p.bankrupt ? 'bankrupt' : ''} ${nw >= G.target && !p.bankrupt ? 'can-win' : ''}`,
+      style: `--pc:${PLAYER_COLORS[p.color]}`,
+      onclick,
+      title: `${p.name}: open their page`,
+    },
+    h('div', { class: 'pc-side' }, h('img', { class: 'portrait body', src: bodyURL(p.ch), alt: '' })),
     h(
-      'span',
-      { class: 'info-who' },
-      h('b', null, p.name),
+      'div',
+      { class: 'pc-main' },
       h(
-        'span',
-        { class: 'info-sub' },
+        'div',
+        { class: 'pc-row pc-top' },
         h('span', { class: 'lvl' }, `Lv ${p.level}`),
+        h('span', { class: 'pname' }, p.name),
         h(
           'span',
           { class: `suits ${canPromote(p) && !p.bankrupt ? 'ready' : ''}` },
-          p.wild ? h('img', { src: wildIconURL(), alt: 'Wild' }) : null,
+          p.wild ? h('span', { class: 'wild' }, h('img', { src: wildIconURL(), alt: 'Wild' })) : null,
           ...SUITS.map((_, i) => h('img', { src: suitIconURL(i, p.suits[i]), alt: SUITS[i] })),
         ),
       ),
-    ),
-    h(
-      'span',
-      { class: 'info-nw' },
-      h('span', { class: 'info-nw-top' }, h('b', null, fmt(nw)), h('em', null, `cash ${fmt(p.cash)}`)),
-      h('span', { class: 'bar-track' }, h('span', { class: 'bar-fill', style: `width:${pct}%` })),
+      h('div', { class: 'bar-track' }, h('div', { class: 'bar-fill', style: `width:${pct}%` })),
+      h(
+        'div',
+        { class: 'pc-row money' },
+        h(
+          'span',
+          { class: 'm-cash', title: 'Cash' },
+          h('span', { class: 'gc', 'aria-hidden': 'true' }),
+          num(p.cash),
+        ),
+        h(
+          'span',
+          { class: 'm-nw', title: 'Net worth' },
+          p.bankrupt ? null : h('span', { class: `rank r${place}` }, ordinal(place)),
+          h('span', { class: 'nw' }, num(nw)),
+        ),
+      ),
     ),
   );
 }
 
 /**
  * The Properties page: every owned property, district by district (rows in Easy rules), each as
- * a card in its owner's color with their portrait; then a line per player with how many they own
+ * a card in its owner's color with their portrait, under a chip per player with how many they own
  * and what they are worth. Tap a card to find it on the board.
  */
 function propertiesPage(G: GameState, onFind: (id: number) => void): HTMLElement {
@@ -488,31 +517,26 @@ function propertiesPage(G: GameState, onFind: (id: number) => void): HTMLElement
       ),
     );
   }
+  // Each player's count and value as a chip across the top, then the properties under them.
   const who = G.players.map((p) => {
     const mine = owned.filter((s) => s.owner === p.id);
     return h(
       'div',
-      { class: 'pv-fact info-owner', style: `--pc:${PLAYER_COLORS[p.color]}` },
-      h('span', null, h('img', { src: portraitURL(p.ch), alt: '' }), p.name),
-      h('b', null, `${mine.length} · ${fmt(mine.reduce((sum, s) => sum + s.value, 0))}`),
+      { class: 'info-owner', style: `--pc:${PLAYER_COLORS[p.color]}` },
+      h('img', { src: portraitURL(p.ch), alt: '' }),
+      h('span', { class: 'info-owner-name' }, p.name),
+      h('b', null, `${mine.length}`),
+      h('span', { class: 'info-owner-val' }, fmt(mine.reduce((sum, s) => sum + s.value, 0))),
     );
   });
   return h(
     'div',
-    { class: 'info-game' },
-    h(
-      'div',
-      { class: 'pv-col info-col wide' },
-      section(
-        'Owned properties',
-        `${owned.length} of ${G.nodes.filter((s) => s.d >= 0).length}`,
-        owned.length ? box : h('p', { class: 'pv-empty' }, 'Nobody owns a property yet.'),
-      ),
-    ),
-    h(
-      'div',
-      { class: 'pv-col info-col' },
-      section('By player', 'Count · value', h('div', { class: 'pv-facts one' }, ...who)),
+    { class: 'info-props-page' },
+    h('div', { class: 'info-owners' }, ...who),
+    section(
+      'Owned properties',
+      `${owned.length} of ${G.nodes.filter((s) => s.d >= 0).length}`,
+      owned.length ? box : h('p', { class: 'pv-empty' }, 'Nobody owns a property yet.'),
     ),
   );
 }

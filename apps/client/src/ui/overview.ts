@@ -1,7 +1,7 @@
 /**
  * A player's page in the info pop-up (`ui/info.ts`): everything about one player, shown when
  * their player card is clicked or their button is picked in the action bar. Net
- * worth and how it splits between cash, properties and stock, the money earned, the properties
+ * worth and how it splits between cash, properties and stock, what the next promotion pays, the properties
  * by district (click one to find it on the board), the shares held and, once the game is over,
  * net worth over the game.
  */
@@ -133,6 +133,15 @@ export function playerOverview(G: GameState, p: Player, hooks: OverviewHooks): H
             ? `Reached the ${fmt(G.target)} goal: back to the bank to win!`
             : `${Math.round(pct)}% of the ${fmt(G.target)} goal, ${fmt(need)} to go.`,
       ),
+      // What the next promotion pays (fees, salary and other totals are on the end-of-game screen).
+      p.bankrupt
+        ? null
+        : h(
+            'div',
+            { class: 'pv-fact pv-promo', title: 'Collect all four suits, then reach the bank' },
+            h('span', null, `Next promotion (Lv ${p.level + 1}) pays`),
+            h('b', null, fmt(salary(G, { ...p, level: p.level + 1 }))),
+          ),
     ),
   );
 
@@ -322,39 +331,6 @@ export function playerOverview(G: GameState, p: Player, hooks: OverviewHooks): H
     colB.append(section('Shares', null, h('div', { class: 'm-grid-wrap' }, table)));
   }
 
-  // ---------------------------------------------------------------- money in and out
-  const st = p.stats;
-  const facts: [string, number, string?][] = [
-    ['Fees earned', st.feesEarned],
-    ['Fees paid', st.feesPaid ? -st.feesPaid : 0],
-    ['Salary', st.salary],
-  ];
-  if (standard) facts.push(['Dividends', st.dividends]);
-  facts.push(['Commission', st.commission]);
-  colA.append(
-    section(
-      'Earnings',
-      null,
-      h(
-        'div',
-        { class: 'pv-facts' },
-        ...facts.map(([label, v]) =>
-          h(
-            'div',
-            { class: 'pv-fact' },
-            h('span', null, label),
-            h('b', { class: v < 0 ? 'neg' : '' }, fmt(v)),
-          ),
-        ),
-        h(
-          'div',
-          { class: 'pv-fact wide' },
-          h('span', null, `Next promotion (Lv ${p.level + 1}) pays`),
-          h('b', null, fmt(salary(G, { ...p, level: p.level + 1 }))),
-        ),
-      ),
-    ),
-  );
   root.append(colA, colC, colB);
   // Net worth over the game: only once the game is over.
   const hist = G.hist.map((row) => row[p.id] ?? 0);
