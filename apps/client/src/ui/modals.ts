@@ -310,11 +310,9 @@ export async function districtStockModal(
       h(
         'div',
         { class: 'm-total' },
-        free
-          ? `Get ${GIFT_SHARES} ${name} shares for `
-          : `${name} stock ${purpose === 'up20' ? 'rises' : 'falls'} `,
-        h('b', null, free ? 'free' : '20%'),
-        free ? h('span', { class: 'm-deal-tag' }, `worth ${fmt(GIFT_SHARES * now)}`) : null,
+        // Gift shares just names the district; the rows below show the shares and "Free".
+        free ? `Get ${name} shares` : `${name} stock ${purpose === 'up20' ? 'rises' : 'falls'} `,
+        free ? null : h('b', null, '20%'),
       ),
       mLine('Market price', fmt(now), fmt(after), after > now ? 'up' : after < now ? 'down' : ''),
       ...(free

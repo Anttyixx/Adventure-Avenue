@@ -45,6 +45,7 @@ export const CHANGELOG: ChangelogEntry[] = [
       'New sounds for buying and selling stock',
       'A slightly wider Price column',
       'Picking a district on the stock screen clicks',
+      'Gift shares: a shorter heading',
     ],
   },
   {

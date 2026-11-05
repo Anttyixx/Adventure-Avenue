@@ -518,7 +518,8 @@ discount or premium, in gold; it stays the same while they change the count) and
 and after. At a discount (10% off) or premium (20% above) a green chip in the card's top right
 corner names the deal, and the price per share row shows the market's price crossed out with the
 player's own price in green with a soft pulsing glow. The share counter has no 0 button and no "shares" label; Max sits right
-beside it. Gift shares shows the market price and the shares held, then "Price per share: Free". Picking a
+beside it. Gift shares' heading just says "Get Brick Row shares"; it shows the market price and the shares
+held, then "Price per share: Free". Picking a
 district in the table or on the mini map plays the click sound.
 
 **View board chip:** whenever a pop-up is on screen (the stock market, the venture board, an
