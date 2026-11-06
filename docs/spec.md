@@ -895,7 +895,7 @@ smaller ones the middle scrolls, with no scroll bar.
   Winning goal and Vacant plots, each with a one-line hint.
 - **Round limit:** none (default), 15, 20 or 30.
 - **Characters:** each seat starts with a different random character and a name. Tapping a human
-  seat's character opens the character picker (all nine characters; ones other humans have are
+  seat's character opens the character picker (all ten characters; ones other humans have are
   greyed out with their name, so no two players share one; a CPU holding the picked one switches
   to a free one). Characters cannot change once the game
   starts. Each human seat has a name box (up to 12 characters; the characters `< > & " ' \`` and
@@ -982,7 +982,10 @@ cache, then highlights, sprites, coins, floating text and the die.
 - Hover (or tap) any square for a tooltip: owner, value, fee, max value, buyout price, group
   ownership, district stock price.
 
-**Characters (pixel).** Nine townsfolk from Franuka's "Medieval townsfolk" pack (CC BY 4.0,
+**Characters (pixel).** Ten characters: the Skeleton from Phewcumber's "Skeleton Pack" (its
+sheets were 64 x 64 frames, 6 per row, facing left only; they are cut to 32 x 48 frames, 6 per row,
+with the right-facing row mirrored and the down and up rows repeating the side views, `frames: 6`
+in `CHARACTERS`), and nine townsfolk from Franuka's "Medieval townsfolk" pack (CC BY 4.0,
 credited in Credits): Farmer, Fisherman, Blacksmith, Merchant, Alchemist, Barmaid, Bartender, Red
 Cap and Blue Cap (`apps/client/src/sprites.ts`, sheets in `apps/client/src/assets/townsfolk/`).
 Each has an idle and a walk sheet of 32 x 48 frames, 4 frames per row and one row per facing (down,

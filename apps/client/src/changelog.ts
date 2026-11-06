@@ -26,6 +26,18 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: '2026-11-06-skeleton',
+    date: 'Nov 6, 2026',
+    title: 'A new character: the Skeleton',
+    features: [
+      {
+        tag: 'new',
+        title: 'The Skeleton',
+        text: 'A tenth character to play as, with its own idle and walking animations. Art by Phewcumber (see Credits).',
+      },
+    ],
+  },
+  {
     id: '2026-11-06-motel-taxi-swap',
     date: 'Nov 6, 2026',
     title: 'Motels, taxis, swaps and your player card',
