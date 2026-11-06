@@ -9819,6 +9819,9 @@ div.sl-inline label {
   z-index: 1;
   flex: 1 1 auto;
   min-height: 0;
+  /* The panels sit in the middle of the room between the top bar and the bottom bar. */
+  display: flex;
+  flex-direction: column;
   overflow: auto;
   overscroll-behavior: contain;
   scrollbar-width: none;
@@ -9829,7 +9832,7 @@ div.sl-inline label {
 .su-main {
   width: min(1120px, 100%);
   box-sizing: border-box;
-  margin: 0 auto;
+  margin: auto;
   padding: 4px 16px 12px;
   /* The board picker on the left and the settings on the right, the same height. */
   display: grid;
@@ -9842,7 +9845,11 @@ div.sl-inline label {
   grid-area: auto;
 }
 .su-main .board-panel {
-  justify-content: center;
+  justify-content: flex-start;
+}
+/* The header stays at the top; the board picture takes the room left and centers in it. */
+.su-main .board-panel .carousel {
+  flex: 1 1 auto;
 }
 .su-main .setup-panel {
   padding: 12px 18px;
@@ -10125,6 +10132,8 @@ span.su-code {
     font-size: 16px;
   }
   .su-main {
+    /* Short screens scroll: start at the top instead of centering. */
+    margin: 0 auto;
     padding: 2px 8px 8px;
     gap: 8px;
   }

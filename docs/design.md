@@ -642,7 +642,9 @@ if (!(await ask(`Delete ${d.name}?`, 'Its 4 properties will be removed from the 
   the join code chip `.su-code` (dashed gold pill: "Code", the code in Lilita gold, "Copy link"),
   the main menu's Sound button), a scrolling middle `.su-scroll` (scroll bar hidden) holding the
   board panel (left) and the settings panel (right) in a two-column grid, equal heights (max
-  1120px; one column under 900px), and a fixed bottom container `.su-dock` (rounded glass,
+  1120px; one column under 900px), centered between the bars by `margin: auto` in the flex
+  scroll area (top-aligned on short screens); the Map header stays at the top of its panel and
+  the carousel fills the rest, and a fixed bottom container `.su-dock` (rounded glass,
   players + summary + Start; `fit-content` width like the action bar, morphing 280ms via
   `morphWidth` as seats change; seat cards 118px). A blocked Start sits in `.su-go` whose tooltip
   says why. Board tools are `.su-chip` pills in the

@@ -811,7 +811,8 @@ panel, no full-width backdrop): the players on the left and, on the right, the s
 players, rules, goal) and **Start game**. Like the action bar it is only as wide as its contents,
 and it morphs wider or narrower as players are added or leave. Between them: the board selector
 on the left and the game settings on the right, the two panels the same height (one under the
-other on windows narrower than 900px). On bigger screens (1180 x 820 and up) everything fits without scrolling; on
+other on windows narrower than 900px), centered in the room between the top and bottom bars
+(short phone screens start them at the top and scroll instead). On bigger screens (1180 x 820 and up) everything fits without scrolling; on
 smaller ones the middle scrolls, with no scroll bar.
 
 - **Board:** a carousel of the built-in boards followed by the player's saved boards. Arrows,
