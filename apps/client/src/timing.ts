@@ -55,7 +55,7 @@ export const TIMING = {
    * shutters, and how long the closed board stays before zooming back. */
   closeZoom: 900,
   closeShutter: 450,
-  closeStagger: 160,
+  closeStagger: 70,
   closeHold: 1000,
   /** The winner dancing under confetti before the results. */
   victory: 6500,

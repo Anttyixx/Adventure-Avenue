@@ -114,6 +114,7 @@ export class HotSeat implements GameIO {
     const boardHost = h('div', { class: 'board-host' });
     this.root.append(boardHost);
     this.board = new BoardView(boardHost);
+    this.board.onGate = (opening) => sound.play(opening ? 'shutterUp' : 'shutterDown');
     this.hud = new Hud(this.root, this.board, {
       onToggleFast: () => this.toggleFast(),
       onQuit: () => this.quit(),
@@ -1093,7 +1094,7 @@ export class HotSeat implements GameIO {
         hud.action('shops-closing', 'Shops are closing...', 'effect');
         this.refresh();
         const shut = G.nodes.filter((sq) => e.pids.includes(sq.owner)).map((sq) => sq.id);
-        if (shut.length) sound.play('shopClose');
+        // Each shutter plays its own short sound as it comes down (board.onGate).
         await board.closeShops(shut);
         break;
       }
@@ -1101,7 +1102,6 @@ export class HotSeat implements GameIO {
         hud.action('shops-opening', 'Shops are reopening...', 'effect');
         // In the background: no zoom out and no waiting; the gates roll up while play goes on.
         const open = G.nodes.filter((sq) => e.pids.includes(sq.owner)).map((sq) => sq.id);
-        if (open.length) sound.play('shopOpen');
         board.openShops(open);
         this.refresh();
         break;

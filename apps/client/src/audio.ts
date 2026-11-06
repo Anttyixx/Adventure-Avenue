@@ -18,6 +18,8 @@ export type Sfx =
   | 'buyout'
   | 'shopClose'
   | 'shopOpen'
+  | 'shutterDown'
+  | 'shutterUp'
   | 'stockBuy'
   | 'stockSell'
   | 'grow'
@@ -49,6 +51,8 @@ export const SFX_NAMES: Sfx[] = [
   'buyout',
   'shopClose',
   'shopOpen',
+  'shutterDown',
+  'shutterUp',
   'stockBuy',
   'stockSell',
   'grow',
@@ -795,6 +799,7 @@ class AudioEngine {
         this.hiss(bus, t + 0.56, 0.25, 0.1, 7000, 3);
         break;
       case 'shopClose':
+        // Not played now (each shutter has its own short sound, below); kept to switch back.
         // A metal shutter rattling down, then a low clunk and a sad two-note droop.
         for (let i = 0; i < 10; i++) this.hiss(bus, t + i * 0.035, 0.03, 0.22, 1800 - i * 90, 5);
         this.tone(bus, 'sawtooth', 420, t, 0.36, 0.06, { to: 140, cutoff: 1200 });
@@ -803,6 +808,7 @@ class AudioEngine {
         this.tone(bus, 'triangle', freq('C4'), t + 0.56, 0.3, 0.14);
         break;
       case 'shopOpen':
+        // Not played now (each shutter has its own short sound, below); kept to switch back.
         // The shutter rattling up, then a bright shop-door bell.
         for (let i = 0; i < 10; i++) this.hiss(bus, t + i * 0.032, 0.03, 0.18, 1000 + i * 120, 5);
         this.tone(bus, 'sawtooth', 160, t, 0.32, 0.05, { to: 480, cutoff: 1400 });
@@ -810,6 +816,20 @@ class AudioEngine {
         this.tone(bus, 'sine', freq('A6'), t + 0.42, 0.6, 0.14);
         this.tone(bus, 'triangle', freq('C6'), t + 0.34, 0.25, 0.08);
         break;
+      case 'shutterDown':
+      case 'shutterUp': {
+        // One shop's shutter (about 0.25s): a quick quiet rattle and a soft clunk, falling when it
+        // comes down and rising when it goes up. Many play in a row as a district closes, so each is
+        // quiet, short and slightly detuned at random so they cascade instead of piling up.
+        const down = name === 'shutterDown';
+        const k = 0.92 + Math.random() * 0.16;
+        for (let i = 0; i < 4; i++)
+          this.hiss(bus, t + i * 0.035, 0.025, 0.09, (down ? 2200 - i * 260 : 1300 + i * 260) * k, 6);
+        this.tone(bus, 'triangle', (down ? 520 : 300) * k, t, 0.14, 0.035, { to: (down ? 260 : 600) * k });
+        if (down) this.tone(bus, 'sine', 150 * k, t + 0.15, 0.09, 0.16, { to: 80 * k });
+        else this.tone(bus, 'square', 1500 * k, t + 0.15, 0.05, 0.03, { cutoff: 3500 });
+        break;
+      }
       case 'stockBuy':
         // Buying shares: a quick register "ka-" click, then a bright "ching" (about 0.3s).
         this.hiss(bus, t, 0.03, 0.18, 2500, 4);

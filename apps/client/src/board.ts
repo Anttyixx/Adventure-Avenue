@@ -155,6 +155,21 @@ export class BoardView {
   frameIds: number[] | null = null;
   /** While set, the camera frames this spot instead of following anyone (e.g. a district). */
   lookAt: { x: number; y: number; z: number } | null = null;
+  /** Called as each shop's gate starts moving (the host plays its shutter sound). */
+  onGate: ((opening: boolean) => void) | null = null;
+  /** Timers for the gates' sounds, so a closed view can stop them. */
+  private gateTimers: number[] = [];
+
+  /** Hear each gate as it starts to move (`start` is a performance.now() time). */
+  private gateSound(start: number, opening: boolean) {
+    const ms = Math.max(0, start - performance.now());
+    const id = window.setTimeout(() => {
+      this.gateTimers = this.gateTimers.filter((x) => x !== id);
+      if (this.alive) this.onGate?.(opening);
+    }, ms);
+    this.gateTimers.push(id);
+  }
+
   /** Squares whose gates are moving: when each starts, and whether it is opening. */
   private gates = new Map<number, { start: number; opening: boolean }>();
   private lastFrame = 0;
@@ -235,6 +250,7 @@ export class BoardView {
 
   destroy() {
     this.alive = false;
+    this.gateTimers.forEach(clearTimeout);
     cancelAnimationFrame(this.raf);
     window.removeEventListener('resize', this.resize);
     document.fonts?.removeEventListener('loadingdone', this.fontsLoaded);
@@ -393,9 +409,11 @@ export class BoardView {
    */
   openShops(sqs: number[]) {
     const t0 = performance.now();
-    sqs.forEach((id, i) =>
-      this.gates.set(id, { start: t0 + i * T.closeStagger * this.speed, opening: true }),
-    );
+    sqs.forEach((id, i) => {
+      const start = t0 + i * T.closeStagger * this.speed;
+      this.gates.set(id, { start, opening: true });
+      this.gateSound(start, true);
+    });
   }
 
   private async moveGates(sqs: number[], opening: boolean) {
@@ -404,7 +422,11 @@ export class BoardView {
     // Gates start moving once the camera has pulled back, one after another; until then they
     // stay as they were (up for closing, down for opening).
     const t0 = performance.now() + T.closeZoom * this.speed;
-    sqs.forEach((id, i) => this.gates.set(id, { start: t0 + i * T.closeStagger * this.speed, opening }));
+    sqs.forEach((id, i) => {
+      const start = t0 + i * T.closeStagger * this.speed;
+      this.gates.set(id, { start, opening });
+      this.gateSound(start, opening);
+    });
     await this.wait(T.closeZoom + T.closeStagger * (sqs.length - 1) + T.closeShutter + T.closeHold);
     // Closed gates stay drawn from the state; opened ones stay up until the state says open.
     if (!opening) for (const id of sqs) this.gates.delete(id);

@@ -26,6 +26,18 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: '2026-11-06-shutters',
+    date: 'Nov 6, 2026',
+    title: 'Snappier shop shutters',
+    features: [
+      {
+        tag: 'better',
+        title: 'Every shutter makes a sound',
+        text: 'When shops close or reopen, each shutter plays its own quick rattle as it moves, and the shops start closing one right after another, so it is over much sooner.',
+      },
+    ],
+  },
+  {
     id: '2026-11-06-motel-taxi-swap',
     date: 'Nov 6, 2026',
     title: 'Motels, taxis, swaps and your player card',

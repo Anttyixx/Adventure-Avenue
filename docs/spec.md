@@ -1037,8 +1037,12 @@ even venture cards; the engine emits `closed`), the camera pulls back to the who
 their shops' gates rolls down in turn, then the camera returns to the player's zoom. The gates stay
 down (inside each tile's border, with a small CLOSED sign) until the owner's next turn starts; the
 engine then emits `opened` and the gates roll back up one after another in the background: the
-camera does not move and play carries straight on (timings `close*` in `timing.ts`). Closing
-plays a shutter rattling down with a low clunk; reopening plays it rattling up with a shop-door bell.
+camera does not move and play carries straight on (timings `close*` in `timing.ts`). Each gate
+takes 450ms to move, and the next shop's gate starts 70ms after the one before (`closeStagger`), so
+a long row of shops closes quickly. Every gate plays its own short sound as it starts to move
+(`shutterDown`: a quick quiet rattle and a soft clunk; `shutterUp`: a rising rattle and a tiny
+click), slightly detuned at random so a run of them cascades. The older one-off sounds for the
+whole closing (`shopClose`, `shopOpen`) are kept in `audio.ts` but no longer played.
 
 **Pacing.** Most events get about a second to themselves (landing, money, ownership and value
 changes, suits), and a turn ends with a one-second pause before the next player's turn. When the

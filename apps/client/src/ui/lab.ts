@@ -109,7 +109,7 @@ const rnd = (n: number) => Math.floor(Math.random() * n);
  * Controls for UI elements that were just added or changed: they shake once and glow so they
  * are easy to find. Update this list with each change.
  */
-const RECENT = new Set(['Character picker', 'Credits']);
+const RECENT = new Set(['Shops closing', 'Shops reopening', 'shutterDown', 'shutterUp']);
 
 /** Which board the lab plays on: Town (square) or Twin Lakes (hex), remembered per browser. */
 const LAB_BOARD_KEY = 'aa-lab-board';
@@ -197,6 +197,7 @@ export async function openLab(app: HTMLElement, section?: string) {
   const boardHost = h('div', { class: 'board-host' });
   root.append(boardHost);
   const board = new BoardView(boardHost);
+  board.onGate = (opening) => sound.play(opening ? 'shutterUp' : 'shutterDown');
   const hud = new Hud(root, board, {
     onToggleFast: () => hud.tick('Fast CPU only affects real games.'),
     onQuit: () => {
@@ -948,7 +949,6 @@ export async function openLab(app: HTMLElement, section?: string) {
         // Close the target player's shops (gates come down and stay down).
         const p = cur();
         p.closed = true;
-        sound.play('shopClose');
         refresh();
         await board.closeShops(G.nodes.filter((n) => n.owner === p.id).map((n) => n.id));
       }),
@@ -957,7 +957,6 @@ export async function openLab(app: HTMLElement, section?: string) {
         const p = cur();
         p.closed = true;
         refresh();
-        sound.play('shopOpen');
         board.openShops(G.nodes.filter((n) => n.owner === p.id).map((n) => n.id));
         await new Promise((r) => setTimeout(r, 1500));
         p.closed = false;
