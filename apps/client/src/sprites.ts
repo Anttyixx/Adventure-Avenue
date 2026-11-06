@@ -1,6 +1,6 @@
 /**
  * Player characters: the "Medieval townsfolk" pixel-art pack by Franuka (CC BY 4.0) and
- * Phewcumber's skeleton (see the Credits screen). Each character has an idle and a walk sheet of
+ * Phewcumber's skeleton and zombie (see the Credits screen). Each character has an idle and a walk sheet of
  * 32 x 48 frames: 4 frames per row (`frames` for others), one row per facing (down, left, right,
  * up). Call `loadCharacters()` once before drawing.
  */
@@ -38,6 +38,7 @@ export const CHARACTERS: CharDef[] = [
   { id: 'kid02', name: 'Blue Cap', face: 19 },
   // Side view only: its down and up rows repeat the left and right ones.
   { id: 'skeleton', name: 'Skeleton', face: 22, frames: 6 },
+  { id: 'zombie', name: 'Zombie', face: 22, frames: 6 },
 ];
 
 const sheetURLs = import.meta.glob<string>('./assets/townsfolk/*.png', {

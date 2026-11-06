@@ -54,7 +54,10 @@ export const CREDITS: Credit[] = [
   {
     who: 'Phewcumber',
     role: 'Character art',
-    used: ['Skeleton Pack', 'The Skeleton player character with its idle and walking animations'],
+    used: [
+      'Skeleton Pack and the zombie',
+      'The Skeleton and Zombie player characters with their idle and walking animations',
+    ],
     license: { label: 'Terms on the pack page', url: 'https://phewcumber.itch.io/skeleton-pack' },
     links: [
       { label: 'itch.io', url: 'https://phewcumber.itch.io/' },
@@ -62,7 +65,7 @@ export const CREDITS: Credit[] = [
       { label: 'Portfolio', url: 'https://lukaslundin.carrd.co/' },
       { label: 'Skeleton Pack', url: 'https://phewcumber.itch.io/skeleton-pack' },
     ],
-    characters: ['skeleton'],
+    characters: ['skeleton', 'zombie'],
   },
 
   {
