@@ -36,7 +36,11 @@ export const CHANGELOG: ChangelogEntry[] = [
         text: 'Tap the arrow above the player cards to fold them into a stack with only the active player in front. When the turn passes, the stack cycles: the next player comes forward and the last one goes to the back. Tap the arrow again to see everyone.',
       },
     ],
-    extras: ['Player cards are a little slimmer on phones'],
+    extras: [
+      'Player cards are a little slimmer on phones',
+      'Game setup on phones: the map and settings fit side by side without scrolling',
+      'The card stack arrow is a small faded button that stays out of the way',
+    ],
   },
   {
     id: '2026-11-06-phone-layout',

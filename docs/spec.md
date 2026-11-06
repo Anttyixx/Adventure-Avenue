@@ -973,8 +973,8 @@ board; the rest of the board dims. Online games show a "Room ABCD" button above 
 glowing suits on their card. Arcade games and venture picks open for everyone, so other players
 watch them being played; their result screen closes by itself or with Close.
 
-**Collapsing the player cards.** A small arrow tab sits against the right edge of the window just
-above the player cards. Tapping it folds the cards into a stack: only the active player's card
+**Collapsing the player cards.** A small, faded arrow button floats just above the right end of
+the player cards (it brightens when pointed at). Tapping it folds the cards into a stack: only the active player's card
 shows in full, with the other players' cards stacked behind it in turn order (the next player
 just behind, the player who just went at the back), each peeking out a little higher as a strip
 in that player's color. When the turn passes, the front card slides away and comes back in at the
@@ -1094,7 +1094,9 @@ along the card's bottom edge. If five cards still would reach the toolbar, they 
 (`hud.ts` `fitCards`). Arcade games and the live auction shrink as a whole to fit the room
 between the toolbar and the action bar instead of cutting off or scrolling (`modals.ts`
 `fitInLayer`), and game boards always leave room for the action bar however tall it is. In game
-setup the bottom bar keeps the players and Start on one row (seats shrink to fit five), and on
+setup on a phone held sideways, the map and the settings sit side by side and fit on screen
+together (smaller buttons, no hint lines, the map picture sized to the room), the bottom bar keeps
+the players and Start on one row (seats shrink to fit five), and on
 touch screens a small gold pencil badge on each character replaces the "Change" strip.
 
 **Layout.** Scrolling panels hide their scrollbars (they still scroll). The board fills the whole game screen edge to edge, and everything else floats over it

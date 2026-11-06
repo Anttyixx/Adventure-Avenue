@@ -1146,17 +1146,22 @@ input[type='range'] {
 .cards-toggle {
   display: grid;
   place-items: center;
-  width: 36px;
+  width: 34px;
   height: 22px;
-  margin-right: -10px;
   padding: 0;
-  border-right: none;
-  border-radius: 10px 0 0 10px;
+  border-radius: 8px;
+  box-shadow: none;
   color: var(--text);
   cursor: pointer;
-  transition: background 0.2s;
+  /* Faded so it doesn't pull the eye from the game; full strength when pointed at or used. */
+  opacity: 0.45;
+  transition:
+    opacity 0.2s,
+    background 0.2s;
 }
-.cards-toggle:hover {
+.cards-toggle:hover,
+.cards-toggle:focus-visible {
+  opacity: 1;
   background: var(--navy-2);
 }
 .cards-toggle:focus-visible {
@@ -1209,9 +1214,6 @@ input[type='range'] {
 }
 .cards-wrap.collapsed .pcard.deep {
   opacity: 0;
-}
-.hud.upright .cards-toggle {
-  margin-right: -6px;
 }
 .pc-main {
   flex: 1;
@@ -10681,5 +10683,112 @@ span.su-code {
   }
   .su .lobby-seat small {
     display: none;
+  }
+}
+/* Landscape phones: the map and the settings side by side, filling the room between the top bar
+   and the dock, so everything is on screen at once. The map picture shrinks to the room left;
+   the settings drop their hints and use smaller buttons, and only scroll inside their own panel
+   if a very short phone still can't fit them. */
+@media (max-height: 500px) and (min-width: 540px) {
+  .su-scroll {
+    overflow: hidden;
+  }
+  .su-main {
+    height: 100%;
+    grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr);
+    grid-template-rows: minmax(0, 1fr);
+    padding: 2px 8px 6px;
+  }
+  .su-main .setup-panel {
+    min-height: 0;
+    padding: 8px 10px;
+    gap: 6px;
+  }
+  .su-main .setup-panel h3 {
+    font-size: 16px;
+  }
+  .su-main .rules-panel {
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-width: thin;
+  }
+  .su-main .board-panel {
+    overflow: hidden;
+  }
+  .su-main .board-panel .su-chip {
+    padding: 3px 8px;
+    font-size: 10px;
+  }
+  .su-main .carousel {
+    min-height: 0;
+    grid-template-columns: 28px minmax(0, 1fr) 28px;
+    gap: 4px;
+  }
+  .su-main .car-arrow {
+    width: 28px;
+    height: 28px;
+    font-size: 22px;
+    line-height: 26px;
+  }
+  .su .car-thumb {
+    padding: 4px;
+    border-radius: 10px;
+  }
+  /* The picture takes what is left of the screen's height after the bars and labels. */
+  .su .car-thumb .thumb {
+    max-height: max(48px, calc(100dvh - 268px));
+  }
+  .su-main .car-title b {
+    font-size: 17px;
+  }
+  .su-main .car-info .hint {
+    font-size: 11px;
+  }
+  .su-main .car-dots {
+    display: none;
+  }
+  .su-rules {
+    gap: 6px 12px;
+  }
+  .su-rule {
+    gap: 3px;
+  }
+  .su-rule .hint {
+    display: none;
+  }
+  .su-rule .opt-label {
+    font-size: 11px;
+    margin: 0;
+  }
+  .su-rule .seg {
+    gap: 4px;
+  }
+  .su-rule .seg-btn {
+    min-height: 26px;
+    padding: 2px 9px;
+    font-size: 12px;
+  }
+  .su-rule .dg-face {
+    width: 26px;
+    height: 28px;
+    font-size: 17px;
+  }
+  .su-rule .dg-arrow {
+    width: 26px;
+    height: 14px;
+  }
+}
+/* The shortest phones: the dock drops its "Players · 5 of 5" heading (the seats show it) and the
+   buttons get a little tighter, so the settings still fit beside the map. */
+@media (max-height: 360px) and (min-width: 540px) {
+  .su-dock .su-players-head {
+    display: none;
+  }
+  .su-top {
+    padding-top: 4px;
+  }
+  .su-rule .seg-btn {
+    padding: 2px 7px;
+    font-size: 11px;
   }
 }

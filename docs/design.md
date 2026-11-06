@@ -573,9 +573,9 @@ if (!(await ask(`Delete ${d.name}?`, 'Its 4 properties will be removed from the 
     bottom-right. Active player: breathing `--pc` glow on an `::after` layer. Money changes pop out
     beside the card ("+120G" green / "-50G" red). Can win: net worth and portrait pulse gold.
     Clicking opens that player's page in the info pop-up.
-- **Card stack** (`.cards-toggle` + `.cards-wrap.collapsed`): a glass tab (36x22, left corners
-  rounded, flush with the window's right edge) above the cards with a chevron: down folds the
-  cards, up spreads them. Collapsed, every card shares one grid cell; the active card is in front
+- **Card stack** (`.cards-toggle` + `.cards-wrap.collapsed`): a floating glass button (34x22,
+  radius 8, no shadow) above the cards' right end with a chevron: down folds the cards, up spreads
+  them. It sits at 45% opacity so it doesn't draw the eye, full on hover or focus. Collapsed, every card shares one grid cell; the active card is in front
   and the others sit behind by turn order (`--d` = depth), each 7px higher and 5% narrower, filled
   with their `--pc` and their contents hidden (3 show, deeper ones fade out). Turn change: the old
   front card slides right and fades, then reappears at the back (`T.cardCycle`, Web Animations),
@@ -662,6 +662,11 @@ if (!(await ask(`Delete ${d.name}?`, 'Its 4 properties will be removed from the 
   says why. Board tools are `.su-chip` pills in the
   Map panel's top right. Settings are a grid (`.su-rules`): rule set, round limit, stocks; then
   in two columns: rule set, round limit; goal, stocks; vacant plots across.
+- **Landscape phones** (500px tall or less, 540px wide or more): the map and settings panels
+  stay side by side (0.85 : 1.15) and fill the room between the bars instead of scrolling: the map
+  picture shrinks to fit (dots hidden, 28px arrows), settings drop their hints and use 26px
+  buttons and a smaller digit picker; only the settings panel scrolls (thin bar) if a phone is too
+  short. At 360px tall or less the dock drops its "Players" heading.
 - Players sit in the bottom container: up to 5 seat cards in a row (`.setup .seat-card`, smaller here): the
   character trimmed to its pixels (`charButton(look, 'body', ...)`) standing centered on a soft
   spot in the seat's color, the name (an input for players on this device), a muted tag
