@@ -11,7 +11,7 @@
 import type { BoardDef, CharId, GameState, PlotSetting, RuleSet, StockSystem } from '@aa/engine';
 
 /** Protocol version: a joiner on a different version is turned away. */
-export const NET_VERSION = 34;
+export const NET_VERSION = 35;
 
 export type SeatKind = 'host' | 'local' | 'remote' | 'open' | 'cpu';
 
@@ -21,6 +21,8 @@ export interface LobbySeat {
   look: CharId | null;
   /** False while a joined player's connection is lost. */
   online: boolean;
+  /** In the lobby: this player tapped Ready (bots always are). The game starts when all are. */
+  ready?: boolean;
 }
 
 /** The game's settings as the host has them, shown (read-only) to players who join. */
@@ -35,6 +37,8 @@ export interface LobbyInfo {
   stocks?: StockSystem;
   /** One per player in the game; open seats are played by a CPU unless a friend joins. */
   seats: LobbySeat[];
+  /** Everyone is ready: the host starts the game in a moment (unless someone changes their mind). */
+  starting?: boolean;
 }
 
 /**
@@ -72,6 +76,8 @@ export type ToHost =
   | { t: 'look'; look: CharId }
   /** Change name in the lobby. */
   | { t: 'name'; name: string }
+  /** Ready (or not) to start, in the lobby. */
+  | { t: 'ready'; ready: boolean }
   | { t: 'answer'; seq: number; ans: unknown }
   /** A bid or a pass in the live auction for decision `seq`. */
   | { t: 'auctionAct'; seq: number; act: 'bid' | 'pass' }

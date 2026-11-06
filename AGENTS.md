@@ -148,7 +148,8 @@ npm run sim -- 500   # CPU-only balance simulation (average match length, etc.)
   script can set up a situation directly. Game options can be preset with
   `localStorage['adventure-avenue-options']` (e.g. `{"humans":1,"bots":3,"target":4000}`) and
   `localStorage['adventure-avenue-fast'] = '1'` speeds up CPU turns. Start a game from the main
-  menu with `.menu-btn.start`, then the "Start game" button.
+  menu with `.menu-btn.start`, then tap each player's Ready button (`button.seat-ready`); the game
+  starts when everyone is ready.
 
 ## Project layout (short version; full map in `docs/codemap.md`)
 

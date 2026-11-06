@@ -657,16 +657,18 @@ if (!(await ask(`Delete ${d.name}?`, 'Its 4 properties will be removed from the 
   1120px; one column under 900px), centered between the bars by `margin: auto` in the flex
   scroll area (top-aligned on short screens); the Map header stays at the top of its panel and
   the carousel fills the rest, and a fixed bottom container `.su-dock` (rounded glass,
-  players + summary + Start; `fit-content` width like the action bar, morphing 280ms via
-  `morphWidth` as seats change; seat cards 118px). A blocked Start sits in `.su-go` whose tooltip
-  says why. Board tools are `.su-chip` pills in the
+  players only, no Start; `fit-content` width like the action bar, morphing 280ms via
+  `morphWidth` as seats change; seat cards 118px). Ready up: each person's seat card ends in a
+  `.seat-ready` pill button (gold outline "Ready", green with a tick when ready; joined players'
+  state as the same pill without a button, `.badge`), and `.su-status` beside the "Players"
+  heading says who we wait for (muted), counts down (green) or why it can't start (red). Board tools are `.su-chip` pills in the
   Map panel's top right. Settings are a grid (`.su-rules`): rule set, round limit, stocks; then
   in two columns: rule set, round limit; goal, stocks; vacant plots across.
 - **Landscape phones** (500px tall or less, 540px wide or more): the map and settings panels
   stay side by side (0.85 : 1.15) and fill the room between the bars instead of scrolling: the map
   picture shrinks to fit (dots hidden, 28px arrows), settings drop their hints and use 26px
   buttons and a smaller digit picker; only the settings panel scrolls (thin bar) if a phone is too
-  short. At 360px tall or less the dock drops its "Players" heading.
+  short. At 360px tall or less the seat characters and name boxes are a little smaller.
 - Players sit in the bottom container: up to 5 seat cards in a row (`.setup .seat-card`, smaller here): the
   character trimmed to its pixels (`charButton(look, 'body', ...)`) standing centered on a soft
   spot in the seat's color, the name (an input for players on this device), a muted tag

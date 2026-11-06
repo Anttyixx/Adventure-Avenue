@@ -109,7 +109,7 @@ const rnd = (n: number) => Math.floor(Math.random() * n);
  * Controls for UI elements that were just added or changed: they shake once and glow so they
  * are easy to find. Update this list with each change.
  */
-const RECENT = new Set(['Online: continue saved game', 'Joined game (locked setup)']);
+const RECENT = new Set(['Game setup', 'Game setup (friend joined)', 'Joined game (locked setup)']);
 
 /** Which board the lab plays on: Town (square) or Twin Lakes (hex), remembered per browser. */
 const LAB_BOARD_KEY = 'aa-lab-board';
@@ -1451,6 +1451,7 @@ export async function openLab(app: HTMLElement, section?: string) {
             listeners.forEach((f) => f());
           },
           setSettings: () => {},
+          setStarting: () => {},
           kick(i: number) {
             remotes.splice(remotes.indexOf(seats[i]), 1);
             seats = seats.filter((_, k) => k !== i);
@@ -1481,6 +1482,16 @@ export async function openLab(app: HTMLElement, section?: string) {
               const p = G.players[k + 1];
               remotes.push({ kind: 'remote', name: p.name, look: p.ch, online: true });
             }
+            // The friends tap Ready a little later, one after the other.
+            remotes.forEach((r, k) =>
+              setTimeout(
+                () => {
+                  r.ready = true;
+                  listeners.forEach((f) => f());
+                },
+                2500 + k * 1500,
+              ),
+            );
             return room;
           },
         );
@@ -1542,8 +1553,8 @@ export async function openLab(app: HTMLElement, section?: string) {
             roundCap: 30,
             plots: 'some',
             seats: [
-              { kind: 'host', name: 'Rosa', look: looks[0], online: true },
-              { kind: 'remote', name: 'Milo', look: looks[1], online: true },
+              { kind: 'host', name: 'Rosa', look: looks[0], online: true, ready: true },
+              { kind: 'remote', name: 'Milo', look: looks[1], online: true, ready: false },
               { kind: 'open', name: '', look: null, online: false },
               { kind: 'open', name: '', look: null, online: false },
             ],
@@ -1560,6 +1571,12 @@ export async function openLab(app: HTMLElement, section?: string) {
               },
               setName: (n) => {
                 lobby.seats[1].name = n;
+                view.update();
+              },
+              // Everyone else is ready here, so tapping Ready shows the "Starting..." state.
+              setReady: (on) => {
+                lobby.seats[1].ready = on;
+                lobby.starting = on;
                 view.update();
               },
               leave: () => {},

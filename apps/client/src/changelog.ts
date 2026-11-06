@@ -26,6 +26,23 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: '2026-11-06-ready-up',
+    date: 'Nov 6, 2026',
+    title: 'Ready up',
+    features: [
+      {
+        tag: 'new',
+        title: 'Ready up to start',
+        text: 'Game setup has no Start button any more. Each player taps Ready on their own seat, and when everyone is ready the game starts after a short countdown. Changed your mind? Tap Ready again to stop it.',
+      },
+      {
+        tag: 'online',
+        title: 'Friends ready up too',
+        text: 'Friends who join tap Ready in their own bottom bar. Changing the board or a setting asks everyone to ready up again, so nobody starts a game they did not see.',
+      },
+    ],
+  },
+  {
     id: '2026-11-06-card-stack',
     date: 'Nov 6, 2026',
     title: 'Fold the player cards away',

@@ -10286,6 +10286,91 @@ div.sl-inline label {
   width: 34px;
   height: 20px;
 }
+/* Ready up (game setup has no Start button): each person taps Ready on their own seat card; the
+   status line beside "Players" says who we are waiting for, then counts down and the game starts.
+   Grey outlined pill when not ready, green with a tick when ready; joined players' state shows as
+   the same pill without a button. */
+.seat-ready {
+  align-self: stretch;
+  padding: 3px 8px;
+  border: 1px solid var(--glass-line);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text);
+  font: 700 12px var(--body);
+  text-align: center;
+  white-space: nowrap;
+}
+button.seat-ready {
+  cursor: pointer;
+  border-color: var(--accent);
+  color: var(--accent);
+  transition:
+    background 0.15s,
+    transform 0.15s;
+}
+button.seat-ready:hover {
+  background: rgba(255, 209, 102, 0.16);
+}
+button.seat-ready:active {
+  transform: scale(0.95);
+}
+.seat-ready.on,
+button.seat-ready.on {
+  border-color: var(--good);
+  background: var(--good);
+  color: #0d3a1c;
+}
+.seat-ready.badge:not(.on) {
+  color: var(--muted);
+}
+.lobby-seat .seat-ready {
+  align-self: center;
+  flex: none;
+}
+.su-status {
+  font: 700 12px var(--body);
+  color: var(--muted);
+  text-align: right;
+}
+.su-status.go {
+  color: var(--good);
+}
+.su-status.bad {
+  color: var(--bad);
+}
+@media (max-height: 500px) {
+  .seat-ready {
+    padding: 1px 6px;
+    font-size: 10px;
+    line-height: 14px;
+  }
+  .su-status {
+    font-size: 11px;
+  }
+  .su-players-head {
+    min-width: 0;
+  }
+  .su-players-head h3 {
+    flex: none;
+  }
+  /* Joined players' rows are narrow on phones: the pill sits in the row's top right corner. */
+  .lobby-seat {
+    position: relative;
+  }
+  .lobby-seat .seat-ready {
+    position: absolute;
+    top: 2px;
+    right: 4px;
+    padding: 0 4px;
+    font-size: 9px;
+    line-height: 12px;
+  }
+}
+.btn.seat-ready-big.on {
+  background: var(--good);
+  color: #0d3a1c;
+}
 /* Continue game (online.ts resumeLobby): the round the game was saved in, in the Map panel's
    top right, and players who haven't rejoined yet faded with an "Away" badge on their seat. */
 .su-round {
@@ -10537,16 +10622,6 @@ span.su-code {
   flex: none;
   margin: 0;
 }
-.su-go {
-  display: block;
-}
-/* Start can't be pressed yet: the reason pops up when hovering it (the wrapper's tooltip). */
-.su-go.blocked {
-  cursor: not-allowed;
-}
-.su-go.blocked .btn {
-  pointer-events: none;
-}
 .su-start .btn.big {
   width: 100%;
   min-width: 0;
@@ -10791,14 +10866,18 @@ span.su-code {
     height: 14px;
   }
 }
-/* The shortest phones: the dock drops its "Players · 5 of 5" heading (the seats show it) and the
-   buttons get a little tighter, so the settings still fit beside the map. */
+/* The shortest phones: the buttons get a little tighter, so the settings still fit beside the
+   map. */
 @media (max-height: 360px) and (min-width: 540px) {
-  .su-dock .su-players-head {
-    display: none;
-  }
   .su-top {
     padding-top: 4px;
+  }
+  .su .seat-stage .char-btn {
+    width: 24px;
+    height: 32px;
+  }
+  .su .seat-card .name {
+    height: 20px;
   }
   .su-rule .seg-btn {
     padding: 2px 7px;

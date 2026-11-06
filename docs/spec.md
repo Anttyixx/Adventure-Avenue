@@ -881,8 +881,7 @@ what was used, the license and links to their pages.
 **Game setup options.** The screen has three bands over the title scene. A **top bar** that never
 scrolls: **Back** (to the main menu), the "New game" title, the join code chip and **Sound** (the
 same button as on the main menu). A **bottom container** that never scrolls (a rounded glass
-panel, no full-width backdrop): the players on the left and, on the right, the summary (board,
-players, rules, goal) and **Start game**. Like the action bar it is only as wide as its contents,
+panel, no full-width backdrop) with the players; there is no Start button (see **Ready up**). Like the action bar it is only as wide as its contents,
 and it morphs wider or narrower as players are added or leave. Between them: the board selector
 on the left and the game settings on the right, the two panels the same height (one under the
 other on windows narrower than 900px), centered in the room between the top and bottom bars
@@ -897,8 +896,17 @@ smaller ones the middle scrolls, with no scroll bar.
   is a card with the character standing on a spot in the seat's color (centered, tap to change it
   for players on this device), the name and what kind of player it is. An empty spot (until there
   are 5 players) has **Add bot** and a smaller **+ Local player** button (to add a player who plays on this device; phones show it too); bots and extra
-  players on this device have a small red remove button (×) in the card's top right corner, joined friends can be removed too. A game needs
-  at least 2 players: until then Start is disabled, and hovering it says why.
+  players on this device have a small red remove button (×) in the card's top right corner, joined friends can be removed too.
+- **Ready up:** instead of a Start button, every person taps **Ready** on their own seat card
+  (each player on the host's device has one; a friend who joined has a big Ready button in their
+  bottom bar). Ready turns green with a tick; tapping it again takes it back. Bots are always
+  ready. A status line beside "Players" says what is needed: "Tap Ready to start", "Waiting for
+  Ada, Pip", or a reason the game can't start (fewer than 2 players, or a board with problems).
+  When everyone is ready the game starts: straight away when there is only one person, otherwise
+  after a 3-second countdown ("Everyone's ready! Starting in 3...") that anyone can stop by
+  taking their Ready back. Changing the board or a setting un-readies everyone, so nobody starts a
+  game they didn't see; a friend who joins arrives not ready. Online, joined players see "Everyone's
+  ready! Starting..." during the countdown. If a game is saved, a note says starting replaces it.
 - **Join code:** setup opens a room straight away and always shows its code as a chip in the top
   bar (tap it to copy or share the invite; "Getting a code..." while opening, "Offline · Try again"
   without a connection). A friend who joins takes a free seat; when all 5 seats are full they replace the last

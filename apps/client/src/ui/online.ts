@@ -71,6 +71,10 @@ export function lobbySeats(
           h('b', null, open ? `Seat ${i + 1}` : s.name + (i === mine ? ' (you)' : '')),
           h('small', null, label),
         ),
+        // Who has tapped Ready (bots always are, so they show nothing).
+        s.kind !== 'cpu' && s.kind !== 'open' && s.ready != null
+          ? h('span', { class: `seat-ready badge ${s.ready ? 'on' : ''}` }, s.ready ? '✓ Ready' : 'Not ready')
+          : null,
         kick && s.kind === 'remote'
           ? h('button', { class: 'btn ghost small', onclick: () => kick(i) }, 'Remove')
           : null,

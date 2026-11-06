@@ -45,6 +45,7 @@ export type LobbySettings = Omit<LobbyInfo, 'seats'>;
 export interface LocalSeat {
   name: string;
   look: CharId;
+  ready?: boolean;
 }
 
 const MAX_SEATS = PLAYER_COLORS.length;
@@ -170,12 +171,36 @@ export class HostRoom implements GameLink {
   lobby(): LobbyInfo {
     return {
       ...this.settings,
-      seats: this.seats.map(({ kind, name, look, online }) => ({ kind, name, look, online })),
+      seats: this.seats.map(({ kind, name, look, online, ready }) => ({
+        kind,
+        name,
+        look,
+        online,
+        ready: kind === 'cpu' || kind === 'open' || !!ready,
+      })),
+      starting: this.starting,
     };
   }
 
+  /** Set by game setup while everyone is ready and the game is about to start. */
+  private starting = false;
+  setStarting(on: boolean) {
+    if (on === this.starting) return;
+    this.starting = on;
+    this.changed();
+  }
+
+  /** New settings. Joined players must say Ready again, so nobody starts a game they didn't see. */
   setSettings(s: LobbySettings) {
     this.settings = s;
+    for (const seat of this.seats) if (seat.kind === 'remote') seat.ready = false;
+    this.changed();
+  }
+
+  /** A joined player says they are ready to start (or not any more). */
+  private setReady(seat: Seat, ready: unknown) {
+    if (this.started) return;
+    seat.ready = ready === true;
     this.changed();
   }
 
@@ -270,6 +295,7 @@ export class HostRoom implements GameLink {
     if (!seat) return;
     if (msg.t === 'look') this.relook(seat, msg.look);
     else if (msg.t === 'name') this.rename(seat, msg.name);
+    else if (msg.t === 'ready') this.setReady(seat, msg.ready);
     else if (msg.t === 'answer' && typeof msg.seq === 'number') this.answered(seat, msg.seq, msg.ans);
     else if (
       msg.t === 'auctionAct' &&

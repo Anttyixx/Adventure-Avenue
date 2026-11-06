@@ -31,7 +31,7 @@ import { lobbySeats } from './online';
 import { digitPicker } from './digits';
 import { closeSoundPopover, soundButton } from './soundpanel';
 import { sound } from '../audio';
-import { clear, fmt, h } from './dom';
+import { clear, h } from './dom';
 
 const NAMES = [
   'Rosa',
@@ -97,11 +97,31 @@ export interface SetupHandlers {
 /** What game setup uses of the host's room (a HostRoom; the UI Lab passes a stand-in). */
 export type SetupRoom = Pick<
   HostRoom,
-  'code' | 'joined' | 'lobby' | 'configure' | 'setSettings' | 'kick' | 'onChange' | 'seatConfigs' | 'leave'
+  | 'code'
+  | 'joined'
+  | 'lobby'
+  | 'configure'
+  | 'setSettings'
+  | 'setStarting'
+  | 'kick'
+  | 'onChange'
+  | 'seatConfigs'
+  | 'leave'
 >;
 
 /** What the locked setup a joined player sees uses of their room. */
-export type GuestSetupRoom = Pick<GuestRoom, 'code' | 'seat' | 'lobby' | 'setLook' | 'setName' | 'leave'>;
+export type GuestSetupRoom = Pick<
+  GuestRoom,
+  'code' | 'seat' | 'lobby' | 'setLook' | 'setName' | 'setReady' | 'leave'
+>;
+
+/** Seconds between everyone being ready and the game starting (to change their mind). */
+const START_COUNTDOWN = 3;
+
+/** A joined player's ready state on their seat card. */
+function readyBadge(on: boolean): HTMLElement {
+  return h('span', { class: `seat-ready badge ${on ? 'on' : ''}` }, on ? '✓ Ready' : 'Not ready');
+}
 
 /** The rules part of the settings. */
 interface RuleSettings {
@@ -366,6 +386,15 @@ export function setupScreen(
   /** Direction of the last carousel move, so only that redraw animates the slide. */
   let slide: 'next' | 'prev' | '' = '';
   const typed: string[] = readJSON(NAMES_KEY, []);
+  /** Which players on this device have tapped Ready (by seat). */
+  const ready: boolean[] = [];
+  /** The board and settings the Ready taps were for: changing them asks everyone again. */
+  let readyFor = '';
+  /** Seconds left before the game starts once everyone is ready (0: not counting down). */
+  let countdown = 0;
+  let countTimer = 0;
+  /** The line above the seats saying who we are waiting for, or the countdown. */
+  const statusEl = h('span', { class: 'su-status', role: 'status', 'aria-live': 'polite' });
   let looks: CharId[] = [];
   let suggested: string[] = [];
   const shuffle = () => {
@@ -433,6 +462,7 @@ export function setupScreen(
     const locals: LocalSeat[] = Array.from({ length: humans }, (_, i) => ({
       name: nameOf(i),
       look: looks[i],
+      ready: !!ready[i],
     }));
     const first = humans + joined();
     const botSeats: LocalSeat[] = Array.from({ length: bots }, (_, k) => ({
@@ -652,6 +682,7 @@ export function setupScreen(
       name: Node,
       tag: string,
       remove?: { label: string; act: () => void },
+      readyEl?: Node,
     ) =>
       h(
         'div',
@@ -659,6 +690,7 @@ export function setupScreen(
         h('div', { class: 'seat-stage' }, charButton(look, 'body', pick)),
         name,
         h('span', { class: 'seat-tag' }, tag),
+        readyEl ?? null,
         remove
           ? h(
               'button',
@@ -692,11 +724,26 @@ export function setupScreen(
               act: () => {
                 // The players after them move up a seat, keeping their names and characters.
                 typed.splice(i, 1);
+                ready.splice(i, 1);
                 looks.push(looks.splice(i, 1)[0]);
                 humans--;
                 draw();
               },
             },
+        // Each player on this device says they are ready with their own button.
+        h(
+          'button',
+          {
+            class: `seat-ready ${ready[i] ? 'on' : ''}`,
+            'aria-pressed': String(!!ready[i]),
+            title: ready[i] ? 'Tap if you are not ready after all' : 'Tap when you are ready to play',
+            onclick: () => {
+              ready[i] = !ready[i];
+              draw();
+            },
+          },
+          ready[i] ? '✓ Ready' : 'Ready',
+        ),
       );
     }
     const seat = lobbySeatsNow()[i];
@@ -708,6 +755,7 @@ export function setupScreen(
         h('span', { class: 'name' }, seat.name),
         seat.online ? 'Joined online' : 'Away',
         { label: `Remove ${seat.name}`, act: () => room?.kick(i) },
+        readyBadge(!!seat.ready),
       );
     return card('bot', cpuLook(i), null, h('span', { class: 'name cpu' }, suggested[i]), 'Bot', {
       label: 'Remove this bot',
@@ -754,7 +802,13 @@ export function setupScreen(
     h(
       'section',
       { class: 'su-players' },
-      h('div', { class: 'su-players-head' }, h('h3', null, `Players · ${total()} of ${MAX_PLAYERS}`)),
+      h(
+        'div',
+        { class: 'su-players-head' },
+        h('h3', null, `Players · ${total()} of ${MAX_PLAYERS}`),
+        statusEl,
+        loadSave() ? h('span', { class: 'hint' }, 'Starting replaces your saved game.') : null,
+      ),
       h(
         'div',
         { class: 'seats' },
@@ -775,36 +829,15 @@ export function setupScreen(
     // Someone joined a full game: they took a bot's seat (checked again once the room has the
     // latest seats).
     const fit = () => (bots = Math.max(0, Math.min(bots, MAX_PLAYERS - humans - joined())));
+    // A different board or settings: everyone says Ready again (the room asks joined players).
+    const key = JSON.stringify([boardId, st]);
+    if (readyFor && key !== readyFor) ready.fill(false);
+    readyFor = key;
     fit();
     sync();
     fit();
     sync();
-    const board = getBoard(boardId) ?? BUILT_IN[0];
     const online = joined() > 0;
-    const start = h(
-      'button',
-      { class: 'btn main big', disabled: !playable(board) || total() < 2 },
-      online ? 'Start online game' : 'Start game',
-    );
-    start.onclick = () => {
-      writeJSON(NAMES_KEY, typed);
-      writeJSON(OPTS_KEY, { humans, bots, total: total(), boardId, ...st });
-      const base = { ...st, board };
-      if (room && online) {
-        const seats = room.seatConfigs((i) => ({ name: suggested[i], ch: cpuLook(i) }));
-        offRoom?.();
-        closed = true;
-        handlers.onStart({ ...base, seats }, true);
-        return;
-      }
-      const seats = Array.from({ length: total() }, (_, i) => ({
-        name: i < humans ? nameOf(i) : suggested[i],
-        cpu: i >= humans,
-        ch: i < humans ? looks[i] : cpuLook(i),
-      }));
-      leaveRoom();
-      handlers.onStart({ ...base, seats }, false);
-    };
     setupHead(
       frame.top,
       () => {
@@ -822,44 +855,103 @@ export function setupScreen(
         draw();
       }),
     );
-    const j = joined();
-    // Why Start can't be pressed yet shows when hovering it (a disabled button gets no hover, so
-    // the note sits on a wrapper around it).
-    const why = !playable(board)
-      ? 'This board has problems: fix it in the board editor to play.'
-      : total() < 2
-        ? 'A game needs at least 2 players: add a bot or a friend.'
-        : '';
-    const startWrap = h('span', { class: `su-go ${why ? 'blocked' : ''}`, title: why || null }, start);
     // The bottom bar fits its contents like the action bar, morphing when players come and go.
     const dockFrom = frame.dock.getBoundingClientRect().width;
     clear(frame.dock);
-    frame.dock.append(
-      playersPanel(),
-      h(
-        'div',
-        { class: 'su-start' },
-        h(
-          'div',
-          { class: 'setup-summary' },
-          h('strong', null, board.name),
-          h(
-            'span',
-            null,
-            `${total()} players · ${st.rules === 'standard' ? 'Standard' : 'Easy'} · ${fmt(st.target)} goal`,
-          ),
-          j ? h('small', { class: 'hint' }, `${j} friend${j > 1 ? 's' : ''} joined: an online game.`) : null,
-          loadSave() ? h('small', { class: 'hint' }, 'Starting replaces the game in progress.') : null,
-        ),
-        startWrap,
-      ),
-    );
+    frame.dock.append(playersPanel());
     morphWidth(frame.dock, dockFrom);
     slide = '';
+    checkReady();
+  };
+
+  /** Start the game with the seats as they are now. */
+  const startGame = () => {
+    stopCountdown();
+    writeJSON(NAMES_KEY, typed);
+    writeJSON(OPTS_KEY, { humans, bots, total: total(), boardId, ...st });
+    const board = getBoard(boardId) ?? BUILT_IN[0];
+    const base = { ...st, board };
+    if (room && joined() > 0) {
+      const seats = room.seatConfigs((i) => ({ name: suggested[i], ch: cpuLook(i) }));
+      offRoom?.();
+      closed = true;
+      handlers.onStart({ ...base, seats }, true);
+      return;
+    }
+    const seats = Array.from({ length: total() }, (_, i) => ({
+      name: i < humans ? nameOf(i) : suggested[i],
+      cpu: i >= humans,
+      ch: i < humans ? looks[i] : cpuLook(i),
+    }));
+    leaveRoom();
+    handlers.onStart({ ...base, seats }, false);
+  };
+
+  const stopCountdown = () => {
+    clearInterval(countTimer);
+    countTimer = 0;
+    countdown = 0;
+    if (room) {
+      syncing = true;
+      room.setStarting(false);
+      syncing = false;
+    }
+  };
+
+  /**
+   * Start once every person is ready (bots always are). With only one person it starts right
+   * away; with more, a short countdown gives anyone a moment to change their mind.
+   */
+  const checkReady = () => {
+    const board = getBoard(boardId) ?? BUILT_IN[0];
+    const remotes = lobbySeatsNow().filter((x) => x.kind === 'remote');
+    const people = [
+      ...Array.from({ length: humans }, (_, i) => ({ name: nameOf(i), ready: !!ready[i] })),
+      ...remotes.map((x) => ({ name: x.name, ready: !!x.ready && x.online })),
+    ];
+    const waiting = people.filter((x) => !x.ready);
+    const blocked = !playable(board)
+      ? 'Fix this board in the board editor to play.'
+      : total() < 2
+        ? 'Add a bot or a friend: a game needs 2 players.'
+        : '';
+    statusEl.classList.toggle('go', !waiting.length && !blocked);
+    statusEl.classList.toggle('bad', !!blocked);
+    if (blocked || waiting.length) {
+      if (countTimer) stopCountdown();
+      statusEl.textContent =
+        blocked ||
+        (waiting.length === people.length
+          ? people.length > 1
+            ? 'Everyone taps Ready to start'
+            : 'Tap Ready to start'
+          : `Waiting for ${waiting.map((x) => x.name).join(', ')}`);
+      return;
+    }
+    if (people.length === 1) {
+      statusEl.textContent = 'Starting...';
+      // Let the button show its tick before the screen changes.
+      if (!countTimer) countTimer = window.setTimeout(startGame, 250);
+      return;
+    }
+    if (countdown) return;
+    countdown = START_COUNTDOWN;
+    statusEl.textContent = `Everyone's ready! Starting in ${countdown}...`;
+    if (room) {
+      syncing = true;
+      room.setStarting(true);
+      syncing = false;
+    }
+    countTimer = window.setInterval(() => {
+      countdown--;
+      if (countdown <= 0) startGame();
+      else statusEl.textContent = `Everyone's ready! Starting in ${countdown}...`;
+    }, 1000);
   };
   connect();
   draw();
   return () => {
+    clearInterval(countTimer);
     if (!closed) leaveRoom();
     document.removeEventListener('keydown', onKey);
     frame.close();
@@ -982,7 +1074,26 @@ export function guestSetup(root: HTMLElement, room: GuestSetupRoom, handlers: Gu
         me
           ? h('label', { class: 'opt su-myname' }, h('div', { class: 'opt-label' }, 'Your name'), nameIn)
           : null,
-        h('p', { class: 'waiting' }, h('span', { class: 'spinner' }), 'Waiting for the host to start...'),
+        me
+          ? h(
+              'button',
+              {
+                class: `btn big seat-ready-big ${me.ready ? 'on' : 'main'}`,
+                'aria-pressed': String(!!me.ready),
+                onclick: () => room.setReady(!me.ready),
+              },
+              me.ready ? '✓ Ready' : 'Ready',
+            )
+          : null,
+        h(
+          'p',
+          { class: 'waiting', role: 'status' },
+          lobby?.starting
+            ? "Everyone's ready! Starting..."
+            : me?.ready
+              ? 'Waiting for everyone else to be ready...'
+              : 'Tap Ready when you are set.',
+        ),
       ),
     );
     morphWidth(frame.dock, dockFrom);
