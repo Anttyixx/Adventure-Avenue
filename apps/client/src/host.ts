@@ -872,9 +872,9 @@ export class HotSeat implements GameIO {
         // camera goes back to the player's own zoom.
         board.directionsPid = -1;
         board.frameIds = null;
-        // A small sound as the hop starts; the step sounds as the token lands on the square.
+        // The step sounds as the token lands on the square. (The 'hop' sound as it lifts off is
+        // turned off for now, as a test; it stays in audio.ts.)
         hud.action('moving', `${G.players[e.pid].name} is moving...`, 'move');
-        sound.play('hop');
         await board.step(e.pid, e.to, e.left);
         sound.play('step');
         // Mid-walk, tolls and value bumps play as the token passes without stopping it.

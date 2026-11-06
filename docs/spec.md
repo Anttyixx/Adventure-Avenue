@@ -1270,7 +1270,7 @@ ring/silent switch does not mute the game; the in-game Mute switch still does.
   (Lucky Wheel) and a sea shanty (Treasure Split). The board music comes back when they close.
   Every change of track cross-fades: the old song plays on while it fades out over 0.7 seconds
   as the new one fades in. The music stops for the winning fanfare at the end of a game.
-- **Effects:** a domination fanfare, venture line and full-row jingles, button clicks, dice roll, each step, landing, gaining and paying money, buying a
+- **Effects:** a domination fanfare, venture line and full-row jingles, button clicks, dice roll, each step (a soft tap as the token touches each square; the lift-off "hop" sound is switched off for now and kept in `audio.ts`), landing, gaining and paying money, buying a
   shop, buying stock (a short register click and "ching"), selling stock (two quick falling coin clinks into a soft "ching"), buying out a rival's property (a brass stab, a rising run and a cash-register ring), a shop's value going up, collecting a suit, promotion, venture cards, a card flipping over (a paper swish and a click), slot reels ticking as they spin and clunking as each stops, warps, the start of a
   human player's turn, a new round, bankruptcy and the win fanfare.
 - **Settings:** a speaker button on the main menu and game setup (and the Sound section of the in-game menu) has Music and

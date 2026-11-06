@@ -26,6 +26,18 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: '2026-11-06-quiet-moves',
+    date: 'Nov 6, 2026',
+    title: 'Quieter moves',
+    features: [
+      {
+        tag: 'better',
+        title: 'No more hop sound',
+        text: 'Players moving across the board now only make a soft step on each tile and a chime where they stop.',
+      },
+    ],
+  },
+  {
     id: '2026-11-06-shutters',
     date: 'Nov 6, 2026',
     title: 'Snappier shop shutters',

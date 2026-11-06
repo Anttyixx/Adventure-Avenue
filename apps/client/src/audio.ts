@@ -765,6 +765,7 @@ class AudioEngine {
         this.tone(bus, 'triangle', 300, t + 0.55, 0.09, 0.4, { to: 160 });
         break;
       case 'hop':
+        // Not played now (a test without it); kept to switch back.
         // A token leaving its square: a small, quiet lift (the step sounds when it lands).
         this.tone(bus, 'sine', 520, t, 0.06, 0.07, { to: 760 });
         break;
