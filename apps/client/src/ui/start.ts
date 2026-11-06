@@ -748,7 +748,7 @@ export function setupScreen(
       ),
     );
 
-  /** The players, in the bottom container: a seat card each, the empty spot, and Shuffle. */
+  /** The players, in the bottom container: a seat card each and the empty spot. */
   const playersPanel = () =>
     h(
       'section',
