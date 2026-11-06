@@ -2219,6 +2219,22 @@ input[type='range'] {
 .hud > .arcade-layer[hidden] {
   display: none;
 }
+/* When the action bar moves to the bottom left (small screens, hud.ts .ab-left), the pop-ups
+   above it line up on the left with it too, using all the room up to the player cards. */
+.hud.ab-left > .stock-layer,
+.hud.ab-left > .venture-layer,
+.hud.ab-left > .arcade-layer,
+.hud.ab-left > .info-layer {
+  justify-items: start;
+  padding-left: calc(var(--free-left, 0px) + 8px);
+  padding-right: calc(var(--free-right, 0px) + 8px);
+}
+.hud.ab-left .venture-board {
+  --venture-size: min(
+    calc(100vw - var(--free-left, 0px) - var(--free-right, 0px) - 52px),
+    max(140px, calc(100dvh - var(--top-free, 50px) - var(--ask-free, 120px) - 40px))
+  );
+}
 .stock-pop {
   pointer-events: auto;
   box-sizing: border-box;
@@ -2309,7 +2325,7 @@ input[type='range'] {
 }
 @media (max-height: 500px), (max-width: 760px) {
   .hud > .stock-layer {
-    padding: calc(var(--top-free, 40px) + 2px) 8px 120px;
+    padding: calc(var(--top-free, 40px) + 2px) 8px var(--ask-free, 120px);
   }
   .stock-pop {
     padding: 8px 10px;
@@ -2382,14 +2398,19 @@ input[type='range'] {
   pointer-events: none;
   z-index: 4;
 }
+.hud > .venture-layer {
+  /* Kept clear of the toolbar and the action bar, so the board can use the room between them. */
+  box-sizing: border-box;
+  padding: var(--top-free, 50px) 12px var(--ask-free, 120px);
+}
 .venture-board {
-  /* Grows with the screen on monitors (up to 600px) without reaching the player cards; short
-     phone screens keep their fit. */
+  /* As big as the room between the toolbar and the action bar allows (up to 660px), without
+     reaching the player cards. Bigger tiles are easier to tap. */
   --venture-size: min(
-    clamp(360px, 62dvh, 600px),
-    max(360px, calc(100vw - 720px)),
+    clamp(360px, 72dvh, 660px),
+    max(360px, calc(100vw - 2 * var(--free-right, 0px) - 80px)),
     calc(100vw - 64px),
-    max(112px, calc(100dvh - 250px))
+    max(140px, calc(100dvh - var(--top-free, 50px) - var(--ask-free, 120px) - 40px))
   );
   padding: 16px;
   background: rgba(16, 26, 51, 0.96);
@@ -2398,7 +2419,7 @@ input[type='range'] {
 }
 .venture-board .vgrid {
   width: var(--venture-size);
-  gap: clamp(4px, calc(var(--venture-size) / 90), 7px);
+  gap: clamp(3px, calc(var(--venture-size) / 110), 6px);
   aspect-ratio: 1;
   grid-template-rows: repeat(8, minmax(0, 1fr));
 }
@@ -4549,6 +4570,62 @@ input[type='range'] {
 .au-ask .hint {
   margin: 2px 0 0;
   font-size: 12px;
+}
+@media (max-height: 500px), (max-width: 760px) {
+  /* The auction pop-up, compact: smaller lot and high bid so the bidders fit too. */
+  .auction {
+    gap: 6px;
+    margin-top: 4px;
+  }
+  .au-lot {
+    gap: 10px;
+    padding: 6px 10px;
+    border-radius: 12px;
+  }
+  .au-art {
+    width: 44px;
+    height: 38px;
+    border-radius: 8px;
+  }
+  .au-lot-text small,
+  .au-lot-text span {
+    font-size: 11px;
+  }
+  .au-lot-text b {
+    font-size: 17px;
+  }
+  .au-high {
+    flex-direction: row;
+    justify-content: center;
+    gap: 10px;
+    padding: 6px 10px;
+    border-radius: 12px;
+  }
+  .au-high b {
+    font-size: 26px;
+  }
+  .auction-pop {
+    overflow: auto;
+    scrollbar-width: none;
+  }
+  .au-bidder {
+    width: 64px;
+    gap: 0;
+    padding: 3px 2px 2px;
+    border-radius: 10px;
+    border-bottom-width: 3px;
+    font-size: 11px;
+  }
+  .au-bidder img {
+    width: 20px;
+    height: 20px;
+  }
+  .au-st {
+    font-size: 9px;
+  }
+  .auction-pop .modal-head h2 {
+    font-size: 15px;
+  }
 }
 
 /* All four suits: they hop until the player levels up at the bank */

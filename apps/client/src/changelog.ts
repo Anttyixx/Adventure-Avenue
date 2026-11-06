@@ -26,6 +26,24 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: '2026-11-06-phone-popups',
+    date: 'Nov 6, 2026',
+    title: 'Bigger venture board, tidier phone screens',
+    features: [
+      {
+        tag: 'better',
+        title: 'A bigger venture board',
+        text: 'The venture board and its tiles are bigger, so tiles are easier to tap, especially on phones.',
+      },
+      {
+        tag: 'better',
+        title: 'Pop-ups line up on phones',
+        text: 'On small screens, where the action bar sits in the bottom left, the stock market, auctions, the venture board, arcade games and the info pop-up line up on the left with it, using all the room up to the player cards.',
+      },
+    ],
+    extras: ['A compact auction pop-up on phones, so every bidder fits'],
+  },
+  {
     id: '2026-11-06-quiet-moves',
     date: 'Nov 6, 2026',
     title: 'Quieter moves',

@@ -399,7 +399,10 @@ Each element: **purpose**, **placement**, **anatomy**, **spec**, **behavior**, t
 - **Placement:** centered on the whole window, `bottom: 16px`, never under the player cards.
   When the window is too narrow for a centered bar to have 520px (`AB_CENTER_MIN` in `hud.ts`)
   between the cards on both sides, the HUD gets `.ab-left` and the bar sits bottom left
-  (14px from the edge, 8px on phones), using all the room up to the cards. Decide by window size
+  (14px from the edge, 8px on phones), using all the room up to the cards. With `.ab-left`, the
+  pop-up layers (`.stock-layer`, `.venture-layer`, `.arcade-layer`, `.info-layer`) use
+  `justify-items: start` with the same left gap, so pop-ups line up with the bar. `hud.ts` sets
+  `--ask-free` (the room the bar takes at the bottom) so pop-ups can fill the height above it. Decide by window size
   only, never by the bar's content, so the bar does not jump between prompts. Safety net: if a
   centered bar still overflows (or squeezes its question into a sliver), it moves bottom left and
   stays there until the window width changes.

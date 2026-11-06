@@ -624,9 +624,11 @@ economy, so its numbers set match length (see Balance constants).
 
 Landing on a Venture square, or stopping exactly on a suit square, opens the 8 x 8 venture grid; the
 player flips one face-down panel and resolves its card. The board container stays centered and
-stationary, with rounded square tiles and no header or OK button in its container. It grows with the
-screen: up to 600px wide on monitors (about 62% of the window height, never reaching the player
-cards), while short phone screens keep a smaller board that fits above the action bar. It does not
+stationary, with rounded square tiles and no header or OK button in its container. It is as big as
+the room between the toolbar and the action bar allows, so its tiles are easy to tap: up to 660px
+wide on monitors (about 72% of the window height, never reaching the player cards). When the action
+bar sits in the bottom left corner (phones), the board sits on the left above it too and fills the
+height between the toolbar and the action bar. It does not
 dim the background or block interaction with the action bar. As the tile flips, the action bar
 shows the card's title and description, for everyone, with nothing else shown in between. The picked tile flips with a card-flip sound. If it makes a
 bonus line, the line's tiles flip over again one after another, starting next to the picked tile
@@ -1079,7 +1081,11 @@ round are on the info pop-up's Game page instead. Bottom center: the **action ba
 narrow windows such as phones in landscape, where a centered bar would have less than 520px
 between the screen edge and the player cards, it sits in the bottom left corner instead and uses
 all the width up to the cards; this depends only on the window, not on what the bar shows; as a safety net, a centered bar
-whose options would not fit moves bottom left too and stays there at that window size). While the game waits on
+whose options would not fit moves bottom left too and stays there at that window size). When it
+sits bottom left, the pop-ups over the board (the stock market, auctions, the venture board, arcade
+games and the info pop-up) line up on the left with it too, between the bar and the toolbar, so they
+use all the room up to the player cards. On phones the auction pop-up is compact (a smaller lot
+row, the high bid on one line, small bidder chips) so the bidders always fit. While the game waits on
 nobody here, it is the status line: one line saying what is going on now: what the game is waiting
 on a player to do ("Blue is buying stocks...", "Blue is deciding which space to go to...", see
 `ui/activity.ts`; turn handoffs have their own message, and rolling/walking are active phases) or else the last thing that happened, with the log icon for

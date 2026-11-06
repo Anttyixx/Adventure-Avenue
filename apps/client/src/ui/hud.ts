@@ -388,6 +388,8 @@ export class Hud {
     if (!portraitStack && cards.width) right = Math.min(W * 0.4, W - cards.left + 8);
     const top = Math.min(ask ? ask.top : Infinity, portraitStack ? lineTop : Infinity);
     const bottom = H - top + 4;
+    // The room the action bar takes at the bottom, so pop-ups above it can use the rest.
+    this.root.style.setProperty('--ask-free', `${Math.max(0, Number.isFinite(bottom) ? bottom : 0)}px`);
     this.board.insets = {
       top: Math.max(tools.bottom, topLeftBottom) + 6,
       right,
