@@ -5,7 +5,7 @@
  */
 import {
   buildingAvailable,
-  BUILDINGS,
+  BUILDABLE,
   K,
   PLAYER_COLORS,
   isProperty,
@@ -163,13 +163,20 @@ export async function renovateOnBoard(
     if (id == null) return null;
     const sq = G.nodes[id as number];
     spotlight(ctx.board, sq.id, p.color);
-    const options = BUILDINGS.filter(
+    const options = BUILDABLE.filter(
       (b) => b.b !== sq.b && b.cost + K.renovate <= p.cash && buildingAvailable(G, b.b, sq.id),
     ).map(({ b, cost }) => ({
       b,
       cost,
     }));
-    const b = await buildPrompt(hud, p, options, `Renovate your ${shortName(G, sq)} into what?`, K.renovate);
+    const b = await buildPrompt(
+      hud,
+      p,
+      options,
+      `Renovate your ${shortName(G, sq)} into what?`,
+      K.renovate,
+      sq.id,
+    );
     ctx.board.clearChoices();
     if (b) return { sq: sq.id, b };
   }
@@ -246,9 +253,53 @@ export function buyoutPrompt(ctx: PickCtx, p: Player, sqId: number, price: numbe
   );
 }
 
-/** Cannon: tap a player on the board, then confirm. */
-export async function cannonOnBoard(ctx: PickCtx, p: Player, options: number[]): Promise<number> {
+/** Passing a motel: stop here, or keep moving. */
+export function motelPrompt(
+  ctx: PickCtx,
+  p: Player,
+  sqId: number,
+  fee: number,
+  left: number,
+): Promise<boolean> {
   const { G, hud, board } = ctx;
+  const sq = G.nodes[sqId];
+  const mine = sq.owner === p.id;
+  spotlight(board, sqId, p.color);
+  return hud
+    .prompt(
+      question(mine ? 'Stop at your motel?' : `Stop at ${G.players[sq.owner].name}'s motel?`, [
+        mine ? ['Stopping here', 'Invest in one of your shops'] : ['Fee to stop here', fmt(fee), 'big'],
+        ['Spaces left to move', String(left)],
+      ]),
+      [
+        { label: 'Stop here', value: true },
+        { label: 'Keep moving', value: false, main: true },
+      ],
+      p.color,
+    )
+    .finally(() => board.clearChoices());
+}
+
+/** Cannon or Swap square: tap a player on the board, then confirm. */
+export async function cannonOnBoard(
+  ctx: PickCtx,
+  p: Player,
+  options: number[],
+  kind: 'cannon' | 'swap' = 'cannon',
+): Promise<number> {
+  const { G, hud, board } = ctx;
+  const words =
+    kind === 'swap'
+      ? {
+          title: 'Swap! Tap the player you want to trade places with.',
+          which: 'Swap with which player?',
+          go: 'Swap with',
+        }
+      : {
+          title: 'The cannon! Tap the player you want to fly to.',
+          which: 'Fly to which player?',
+          go: 'Fly to',
+        };
   for (;;) {
     const nodes = [...new Set(options.map((id) => G.players[id].node))];
     const labels = new Map(
@@ -260,24 +311,17 @@ export async function cannonOnBoard(ctx: PickCtx, p: Player, options: number[]):
           .join(' & '),
       ]),
     );
-    const node = (await pickOnBoard(
-      ctx,
-      nodes,
-      p.color,
-      'The cannon! Tap the player you want to fly to.',
-      [],
-      {
-        labels,
-        cancel: '',
-      },
-    )) as number;
+    const node = (await pickOnBoard(ctx, nodes, p.color, words.title, [], {
+      labels,
+      cancel: '',
+    })) as number;
     const here = options.filter((id) => G.players[id].node === node);
     spotlight(board, node, p.color);
     const target = await hud.prompt<number | null>(
-      here.length > 1 ? 'Fly to which player?' : `Fly to ${G.players[here[0]].name}?`,
+      here.length > 1 ? words.which : `${words.go} ${G.players[here[0]].name}?`,
       [
         ...here.map((id) => ({
-          label: here.length > 1 ? G.players[id].name : `Fly to ${G.players[id].name}`,
+          label: here.length > 1 ? G.players[id].name : `${words.go} ${G.players[id].name}`,
           value: id,
           main: here.length === 1,
         })),

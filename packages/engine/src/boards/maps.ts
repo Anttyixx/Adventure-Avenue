@@ -34,6 +34,9 @@ const GLYPHS: Record<string, SquareType> = {
   N: 'cannon',
   Q: 'portal',
   W: 'warp',
+  P: 'hike',
+  Y: 'taxi',
+  U: 'swap',
 };
 
 interface MapDistrict extends District {
@@ -157,7 +160,7 @@ export const TOWN = fromMap({
     'V33A33RB44N44V',
     'K............5',
     'M............5',
-    'C77V7766V6655D',
+    'C77Y7766U6655D',
   ],
 });
 
@@ -180,12 +183,12 @@ export const HARBOR = fromMap({
     'S0O0VR11VA22VNH',
     '0....1...4....2',
     '0....1...4....2',
-    'V....3...V....V',
+    'V....3...V....P',
     'T....V3B3R....T',
     'K....3...4....R',
     '7....6...4....5',
     '7....V...V....5',
-    'C77V6V6K6R55MND',
+    'C77V6U6K6R55MND',
   ],
 });
 
@@ -213,7 +216,7 @@ export const CROSSROADS = fromMap({
     '7.....V.....3',
     'R.....6.....K',
     '7.....6.....3',
-    'O7V6V6H55N33T',
+    'O7P6Y6H55N33T',
   ],
 });
 

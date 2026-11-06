@@ -11,7 +11,7 @@
 import type { BoardDef, CharId, GameState, PlotSetting, RuleSet, StockSystem } from '@aa/engine';
 
 /** Protocol version: a joiner on a different version is turned away. */
-export const NET_VERSION = 32;
+export const NET_VERSION = 33;
 
 export type SeatKind = 'host' | 'local' | 'remote' | 'open' | 'cpu';
 
@@ -55,7 +55,8 @@ export interface StartInfo {
 }
 
 export type ToHost =
-  | { t: 'hello'; v: number; token: string; name: string }
+  /** `look`: the character the player would like (their player card), if it is free. */
+  | { t: 'hello'; v: number; token: string; name: string; look?: CharId }
   /** Pick a different character in the lobby (refused if someone else has it). */
   | { t: 'look'; look: CharId }
   /** Change name in the lobby. */

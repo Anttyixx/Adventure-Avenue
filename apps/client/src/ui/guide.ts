@@ -3,7 +3,7 @@
  * tab per topic: the basic rules, stocks, vacant plot buildings, the arcade games and numbered
  * venture cards. Each topic is a card with an icon, a title and a few short points.
  */
-import { BUILDINGS, CARD_LIST, K, REEL_PRIZES, type GameState } from '@aa/engine';
+import { BUILDABLE, buildingsLeft, CARD_LIST, K, REEL_PRIZES, type GameState } from '@aa/engine';
 import { propertyIconURL } from '../art';
 import { coinIconURL, starIconURL, suitIconURL, wildIconURL } from '../icons';
 import { BUILDING_INFO } from '../names';
@@ -53,7 +53,7 @@ export function guideModal(hud: Hud, G: GameState | null, initialTab?: Tab) {
             ? ventureCards(easy)
             : tab === 'arcade'
               ? arcade()
-              : plots()),
+              : plots(G)),
     );
     page.scrollTop = 0;
   };
@@ -143,6 +143,7 @@ function basics(G: GameState | null): Node[] {
           'Boon and Boom: earn a share of the fees others pay.',
           'Warp (stop on it) or portal (just step on it): jump to its partner, or gold ones to the bank.',
           'Cannon: fire to another player. Arcade: play a game (see the Arcade games tab).',
+          'Price Up: your fees are 10% higher until your next turn. Taxi: ride to any special square and use it. Swap: trade places with any player.',
         ),
       ),
       card(
@@ -302,11 +303,13 @@ function arcade(): Node[] {
         ),
       ),
     ),
-    intro('In the "Everyone plays" games, choices stay secret until everyone has picked.'),
+    intro(
+      'In the "Everyone plays" games, everyone chooses at the same time and locks in. Choices stay secret until all have locked in.',
+    ),
   ];
 }
 
-function plots(): Node[] {
+function plots(G: GameState | null): Node[] {
   const pick = (b: string) => (b === 'star3' ? 'star0' : b === 'circus' ? 'circus0' : b) as PropKey;
   return [
     h(
@@ -317,7 +320,7 @@ function plots(): Node[] {
     h(
       'div',
       { class: 'guide-plots' },
-      ...BUILDINGS.map((b) =>
+      ...BUILDABLE.map((b) =>
         h(
           'div',
           { class: 'guide-plot' },
@@ -325,7 +328,16 @@ function plots(): Node[] {
           h(
             'div',
             null,
-            h('div', { class: 'guide-plot-head' }, h('b', null, b.name), h('span', null, fmt(b.cost))),
+            h(
+              'div',
+              { class: 'guide-plot-head' },
+              h('b', null, b.name),
+              // In a game: how many more of it this board allows.
+              G && buildingsLeft(G, b.b) != null
+                ? h('small', { class: 'guide-left' }, `${buildingsLeft(G, b.b)} left to build`)
+                : null,
+              h('span', null, fmt(b.cost)),
+            ),
             h('p', null, h('em', null, 'Rival stops: '), BUILDING_INFO[b.b].rival),
             h('p', null, h('em', null, 'You stop: '), BUILDING_INFO[b.b].owner),
             b.b === 'circus'

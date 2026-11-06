@@ -21,7 +21,7 @@ import { drawBoonIcon, drawCoin, drawSparkle, SUIT_CHARS } from './icons';
 import { Facing, FRAME_H, FRAME_W, drawCharacter, drawCharacterGlow, facingFor } from './sprites';
 import { TIMING as T } from './timing';
 
-import { ZOOM_MAX_OUT, fitZoom, nearZoom, zoomScale, wheelZoomStep } from './zoom';
+import { ZOOM_MAX_OUT, fitZoom, gameNearZoom, zoomScale, wheelZoomStep } from './zoom';
 export { ZOOM_STEP } from './zoom';
 
 export { worldSize };
@@ -166,6 +166,13 @@ export class BoardView {
   choiceLabels = new Map<number, string>();
   /** Draw a bouncing pin over each choice square. */
   choicePins = true;
+  /**
+   * Every square is a choice (fly or ride anywhere): nothing is dimmed, lit or pinned, which
+   * would only cover the whole board (and slow it down); only the square under the pointer glows.
+   */
+  choicePlain = false;
+  /** The square under the pointer. */
+  private hoverId: number | null = null;
   /** Squares lit up without being choices (e.g. the district a button would pick). */
   highlight: number[] = [];
   routes = new Map<number, number[]>();
@@ -596,7 +603,7 @@ export class BoardView {
     color: string,
     onPick: (id: number) => void,
     routes?: Map<number, number[]>,
-    opts: { labels?: Map<number, string>; pins?: boolean; fit?: boolean } = {},
+    opts: { labels?: Map<number, string>; pins?: boolean; fit?: boolean; plain?: boolean } = {},
   ) {
     this.glow = ids;
     this.glowColor = color;
@@ -607,6 +614,7 @@ export class BoardView {
     this.fitIds = opts.fit === false ? [] : ids;
     this.choiceLabels = opts.labels ?? new Map();
     this.choicePins = opts.pins ?? true;
+    this.choicePlain = opts.plain ?? false;
   }
 
   clearChoices() {
@@ -616,6 +624,7 @@ export class BoardView {
     this.hoverRoute = null;
     this.fitIds = [];
     this.choiceLabels = new Map();
+    this.choicePlain = false;
     this.highlight = [];
   }
 
@@ -849,7 +858,7 @@ export class BoardView {
   }
 
   followZoom() {
-    return nearZoom(this.w, this.h, this.ww, this.wh);
+    return gameNearZoom(this.w, this.h);
   }
 
   updateCamera() {
@@ -940,6 +949,7 @@ export class BoardView {
       this.pinchDist = d;
     }
     const id = this.squareAt(e.clientX, e.clientY);
+    this.hoverId = id;
     this.canvas.style.cursor = id != null && this.glow.includes(id) ? 'pointer' : 'default';
     if (this.routes.size) this.previewRoute(id != null && this.glow.includes(id) ? id : null);
     this.onHover?.(id, e.clientX, e.clientY);
@@ -1201,6 +1211,11 @@ export class BoardView {
   private drawGlow(ctx: CanvasRenderingContext2D, now: number) {
     if (this.spot >= 0) return this.glowTile(ctx, now, this.spot, this.spotColor, true);
     if (!this.glow.length && !this.highlight.length) return;
+    if (this.choicePlain && !this.highlight.length) {
+      const id = this.hoverId;
+      if (id != null && this.glow.includes(id)) this.glowTile(ctx, now, id, this.glowColor, true);
+      return;
+    }
     const G = this.G!;
     // Dim everything that is not a choice so the choices stand out.
     const lit = new Set([...this.glow, ...this.highlight]);
@@ -1226,7 +1241,7 @@ export class BoardView {
 
   /** Bouncing pins and labels over choice squares, drawn above the tokens. */
   private drawPins(ctx: CanvasRenderingContext2D, now: number, motion: boolean) {
-    if (!this.glow.length || this.spot >= 0) return;
+    if (!this.glow.length || this.spot >= 0 || this.choicePlain) return;
     const G = this.G!;
     for (const id of this.glow) {
       const c = this.center(G.nodes[id]);
@@ -1871,6 +1886,9 @@ const SPECIAL_LABEL: Record<string, string> = {
   portal: 'PORTAL',
   arcade: 'ARCADE',
   cannon: 'CANNON',
+  hike: 'PRICE UP',
+  taxi: 'TAXI',
+  swap: 'SWAP',
   warp: 'WARP',
 };
 
@@ -2039,6 +2057,15 @@ function buildingIcon(
     case 'home':
       house(ctx, x, y, main, initial);
       break;
+    case 'motel':
+      ctx.fillStyle = '#e9ecf1';
+      ctx.fillRect(x - 22, y - 10, 44, 26);
+      ctx.fillStyle = main;
+      for (let i = -16; i <= 12; i += 10) {
+        ctx.fillRect(x + i, y - 6, 5, 8);
+        ctx.fillRect(x + i, y + 5, 5, 9);
+      }
+      break;
     case 'agency':
       ctx.fillStyle = main;
       ctx.fillRect(x - 16, y - 16, 32, 32);
@@ -2186,6 +2213,90 @@ function specialIcon(ctx: CanvasRenderingContext2D, G: GameState, sq: Square, x:
       ctx.arc(x - 6, y + 12, 9, 0, Math.PI * 2);
       ctx.fill();
       break;
+    case 'hike':
+      // A price tag with an up arrow.
+      ctx.fillStyle = '#ffd166';
+      ctx.strokeStyle = '#7a4f00';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(x - 18, y - 12);
+      ctx.lineTo(x + 8, y - 12);
+      ctx.lineTo(x + 20, y);
+      ctx.lineTo(x + 8, y + 12);
+      ctx.lineTo(x - 18, y + 12);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+      ctx.fillStyle = '#7a4f00';
+      ctx.beginPath();
+      ctx.arc(x + 8, y, 3, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#2f9e44';
+      ctx.beginPath();
+      ctx.moveTo(x - 8, y - 9);
+      ctx.lineTo(x - 1, y);
+      ctx.lineTo(x - 5, y);
+      ctx.lineTo(x - 5, y + 8);
+      ctx.lineTo(x - 11, y + 8);
+      ctx.lineTo(x - 11, y);
+      ctx.lineTo(x - 15, y);
+      ctx.closePath();
+      ctx.fill();
+      break;
+    case 'taxi':
+      // A yellow cab with a roof sign.
+      ctx.fillStyle = '#ffc531';
+      ctx.strokeStyle = '#26314f';
+      ctx.lineWidth = 3;
+      roundRect(ctx, x - 22, y - 2, 44, 14, 5);
+      ctx.fill();
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(x - 13, y - 2);
+      ctx.lineTo(x - 8, y - 12);
+      ctx.lineTo(x + 8, y - 12);
+      ctx.lineTo(x + 13, y - 2);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+      ctx.fillStyle = '#9fd3ff';
+      ctx.fillRect(x - 7, y - 9, 6, 6);
+      ctx.fillRect(x + 1, y - 9, 6, 6);
+      ctx.fillStyle = '#26314f';
+      roundRect(ctx, x - 5, y - 19, 10, 6, 2);
+      ctx.fill();
+      for (const wx of [-12, 12]) {
+        ctx.beginPath();
+        ctx.arc(x + wx, y + 13, 5, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      break;
+    case 'swap': {
+      // Two arrows chasing each other.
+      ctx.lineWidth = 5;
+      ctx.lineCap = 'round';
+      for (const [col, a0] of [
+        ['#4dabf7', Math.PI * 1.1],
+        ['#ff6b6b', Math.PI * 0.1],
+      ] as [string, number][]) {
+        ctx.strokeStyle = col;
+        ctx.fillStyle = col;
+        ctx.beginPath();
+        ctx.arc(x, y, 15, a0, a0 + Math.PI * 0.75);
+        ctx.stroke();
+        const a1 = a0 + Math.PI * 0.75;
+        const tx = x + Math.cos(a1) * 15;
+        const ty = y + Math.sin(a1) * 15;
+        const dir = a1 + Math.PI / 2;
+        ctx.beginPath();
+        ctx.moveTo(tx + Math.cos(dir) * 9, ty + Math.sin(dir) * 9);
+        ctx.lineTo(tx + Math.cos(dir + 2.3) * 8, ty + Math.sin(dir + 2.3) * 8);
+        ctx.lineTo(tx + Math.cos(dir - 2.3) * 8, ty + Math.sin(dir - 2.3) * 8);
+        ctx.closePath();
+        ctx.fill();
+      }
+      break;
+    }
     case 'portal':
     case 'warp': {
       // A pair shares its color, bank links are gold, unlinked tiles grey (games saved before

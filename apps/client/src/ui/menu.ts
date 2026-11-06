@@ -6,11 +6,13 @@
  */
 import { PLAYER_COLORS } from '@aa/engine';
 import { propertyIconURL, SHOP_TIERS } from '../art';
-import { Facing, FRAME_H, FRAME_W, drawCharacter, shuffledCharacters } from '../sprites';
+import { Facing, FRAME_H, FRAME_W, drawCharacter, portraitURL, shuffledCharacters } from '../sprites';
 import { loadGuest, loadSave, type GuestSave, type SaveInfo } from '../save';
 import { sound } from '../audio';
 import { cleanCode } from '../net/protocol';
-import { h } from './dom';
+import { clear, h } from './dom';
+import { loadProfile, saveProfile } from '../profile';
+import { charButton, pickCharacter } from './charpick';
 import { hasUnseenUpdate } from '../changelog';
 import { openCredits } from './credits';
 import { openWhatsNew } from './whatsnew';
@@ -63,6 +65,97 @@ export function titleScene(walkers = true): { el: HTMLElement; stop: () => void 
     h('div', { class: 'hill front' }, h('div', { class: 'road' }, ...people)),
   );
   return { el, stop: () => clearInterval(timer) };
+}
+
+/**
+ * The player card pop-up: pick a character and type a name. Changes are saved as they are made;
+ * `changed` repaints the menu's button.
+ */
+export function openPlayerCard(root: HTMLElement, changed: () => void) {
+  const card = loadProfile();
+  const color = PLAYER_COLORS[0];
+  const stage = h('div', { class: 'pc-stage', style: `--pc:${color}` });
+  const paintLook = () => {
+    clear(stage);
+    const look = loadProfile().look;
+    stage.append(
+      look
+        ? charButton(look, 'body', choose, 'Change character')
+        : h('button', { class: 'btn pc-pick', onclick: choose }, 'Pick a character'),
+    );
+  };
+  const choose = async () => {
+    const id = await pickCharacter({ current: loadProfile().look, taken: new Map(), color });
+    if (!id) return;
+    saveProfile({ look: id });
+    paintLook();
+    changed();
+  };
+  const name = h('input', {
+    class: 'name pc-name',
+    maxlength: '12',
+    placeholder: 'Your name',
+    value: card.name,
+    'aria-label': 'Your name',
+  }) as HTMLInputElement;
+  name.oninput = () => {
+    saveProfile({
+      name: name.value
+        .replace(/[<>&"'`\\]/g, '')
+        .trim()
+        .slice(0, 12),
+    });
+    changed();
+  };
+  name.onkeydown = (e) => {
+    if (e.key === 'Enter') close();
+  };
+  const onKey = (e: KeyboardEvent) => {
+    if (e.key === 'Escape') close();
+  };
+  const close = () => {
+    wrap.remove();
+    window.removeEventListener('keydown', onKey);
+  };
+  const wrap = h(
+    'div',
+    {
+      class: 'modal-wrap menu-pop',
+      onclick: (e: Event) => {
+        if (e.target === wrap) close();
+      },
+    },
+    h(
+      'div',
+      { class: 'modal glass player-card', role: 'dialog', 'aria-label': 'Your player card' },
+      h(
+        'div',
+        { class: 'modal-head' },
+        h('h2', null, 'Player card'),
+        h('button', { class: 'btn small ghost', onclick: close }, 'Done'),
+      ),
+      h(
+        'div',
+        { class: 'pc-body' },
+        stage,
+        h(
+          'label',
+          { class: 'opt pc-field' },
+          h('div', { class: 'opt-label' }, 'Name'),
+          name,
+          h(
+            'p',
+            { class: 'hint' },
+            'You play as this card when you start or join a game. If someone in that game already has your character, you get a random one (you can still change it before the game starts).',
+          ),
+        ),
+      ),
+    ),
+  );
+  window.addEventListener('keydown', onKey);
+  paintLook();
+  root.append(wrap);
+  name.focus();
 }
 
 export interface MenuHandlers {
@@ -305,12 +398,30 @@ export function mainMenu(
     menuBtn.setAttribute('aria-expanded', 'true');
     wrap.querySelector<HTMLButtonElement>('.pop-menu-item')?.focus();
   };
+  // The player card: the name and character this device plays as (top right, beside Sound).
+  const cardBtn = h('button', {
+    class: 'btn menu-sound menu-card',
+    'aria-haspopup': 'dialog',
+    title: 'Your player card',
+  }) as HTMLButtonElement;
+  const paintCard = () => {
+    const card = loadProfile();
+    clear(cardBtn);
+    cardBtn.append(
+      card.look
+        ? h('img', { src: portraitURL(card.look, 4), alt: '' })
+        : h('span', { class: 'menu-card-blank', 'aria-hidden': 'true' }, '?'),
+      h('span', null, card.name || 'Player card'),
+    );
+  };
+  paintCard();
+  cardBtn.onclick = () => openPlayerCard(el, paintCard);
   const el = h(
     'div',
     { class: 'menu' },
     scene.el,
     rejoin,
-    h('div', { class: 'menu-top' }, soundButton('btn menu-sound', 'Sound'), menuBtn),
+    h('div', { class: 'menu-top' }, cardBtn, soundButton('btn menu-sound', 'Sound'), menuBtn),
     h(
       'div',
       { class: 'menu-center' },

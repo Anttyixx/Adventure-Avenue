@@ -15,6 +15,15 @@ export function nearZoom(width: number, height: number, worldWidth: number, worl
   return Math.min(width / worldWidth, height / worldHeight) * (Math.min(width, height) < 520 ? 2.2 : 1.65);
 }
 
+/**
+ * The game's close view (250% on the zoom chip): the same size of square on every board, as
+ * close as the original 12 x 7 board's. Bigger boards used to get a farther close view, because
+ * it was worked out from the whole board's size.
+ */
+export function gameNearZoom(width: number, height: number) {
+  return nearZoom(width, height, 12 * 100 + 100, 7 * 100 + 100);
+}
+
 /** Whole-board fit, with the game's minimum free area and 3% margin. */
 export function fitZoom(width: number, height: number, worldWidth: number, worldHeight: number) {
   return Math.min(Math.max(100, width) / worldWidth, Math.max(100, height) / worldHeight) * 0.97;

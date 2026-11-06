@@ -142,8 +142,10 @@ export async function memoryBlocks(g: Game, p: Player) {
 }
 
 /**
- * Collect choices privately in turn order starting with the player who landed, then reveal them
- * together. Never reveal earlier answers.
+ * Everyone chooses at the same time, privately; the round starts once all have locked in, and
+ * the choices are revealed together. Every request goes out before any answer is awaited, and
+ * the answers are applied in seat order (the player who landed first) whatever order they
+ * arrive in, so every copy of the game agrees.
  */
 async function choices(
   g: Game,
@@ -153,15 +155,22 @@ async function choices(
   const answers: { player: Player; choice: number; stake: number }[] = [];
   const n = g.G.players.length;
   const order = g.G.players.map((_, i) => g.G.players[(lander.id + i) % n]).filter((p) => !p.bankrupt);
-  for (const player of order) {
-    const maxBet = payload.maxBet == null ? undefined : Math.min(payload.maxBet, Math.max(0, player.cash));
-    const answer = await g.ask({
+  const bets = order.map((player) =>
+    payload.maxBet == null ? undefined : Math.min(payload.maxBet, Math.max(0, player.cash)),
+  );
+  const asked = order.map((player, i) =>
+    g.ask({
       kind: 'arcadeChoice',
       pid: player.id,
       ...payload,
       order: order.map((p) => p.id),
-      maxBet,
-    });
+      maxBet: bets[i],
+    }),
+  );
+  const got = await Promise.all(asked);
+  for (const [i, player] of order.entries()) {
+    const maxBet = bets[i];
+    const answer = got[i];
     const choice =
       Number.isInteger(answer?.choice) && answer.choice >= 0 && answer.choice < payload.options.length
         ? answer.choice

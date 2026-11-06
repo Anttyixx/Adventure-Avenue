@@ -434,6 +434,9 @@ shops. Existing game saves keep their already-chosen plots.
 Each building can be built at most 3 times, except with All, which has no building limit. The
 first player to stop on a plot may build one of seven buildings; each has an effect on rivals and
 a different one for its owner. Built plots show only the building's art on the tile (no name).
+The build (and renovate) bar shows how many more of each building can still go up on the board
+as a small "2 left" badge in each card's top right corner (just the number on phones; red at 0);
+the Guide's Buildings tab says the same during a game ("2 left to build").
 
 | Building      | Cost   | When a rival lands                                                                                                                         | When the owner lands                                                                  | Fee label on board |
 | ------------- | ------ | ------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------- | ------------------ |
@@ -441,7 +444,7 @@ a different one for its owner. Built plots show only the building's art on the t
 | Circus        | 200G   | Pays the show fee: 100G (tier 0)                                                                                                           | Upgrade to 500 / 1,000 / 2,000G for 300 / 600 / 1,200G                                | Show fee           |
 | Balloonport   | 200G   | Pays 150G                                                                                                                                  | Fly to any square; that square's landing effect applies (bank counts as a bank visit) | 150G               |
 | Tax Office    | 200G   | Pays the owner 10% of the rival's own net worth                                                                                            | Bank pays the owner 5% of their net worth                                             | 10%                |
-| Home          | 200G   | Pays 60G x owner's level                                                                                                                   | Every other player is moved to this square (free direction next turn)                 | Fee                |
+| Motel         | 200G   | Pays 25% of the cash they hold (`K.motelRate`). Anyone passing may stop here instead (see below)                                           | Invest in any of your shops                                                           | 25%                |
 | Estate Agency | 200G   | Rival takes a break: their shops close until their next turn                                                                               | Buy any unowned shop at its value                                                     | Break              |
 | 3-Star Shop   | 1,000G | Pays a shop fee on a 1,000G base, with district multipliers; buyouts allowed                                                               | Invest in any of your shops                                                           | Fee                |
 
@@ -451,8 +454,15 @@ a different one for its owner. Built plots show only the building's art on the t
   circus upgrades.
 - Only the 3-Star Shop counts as a shop for expansion bonuses, salary and stock price. Every built
   plot counts toward district ownership and domination.
-- Fixed fees (checkpoint, circus, balloonport, home) are multiplied by the owner's fee boost (Price
-  Hike card). All building fees pay dividends and commissions like shop fees.
+- Fixed fees (checkpoint, circus, balloonport, motel) are multiplied by the owner's fee boost (Price
+  hike card, Price Up square). All building fees pay dividends and commissions like shop fees.
+- **Motel stops:** every player who passes a motel (its owner too) is asked in the action bar
+  "Stop at Rosa's motel?" (the fee to stop and the spaces left to move) with **Stop here** or
+  **Keep moving**. Stopping ends the move there and counts as landing on it: a rival pays the fee,
+  the owner may invest. Landing on it with the roll works the same. CPUs never stop at a rival's
+  motel; at their own they stop when they have more than 900G and a shop to invest in.
+- **The Home is retired:** the Motel took its place in the build list. Games saved with a Home
+  keep it working as before (rivals pay 60G x the owner's level; the owner calls everyone home).
 - Closed owners (on a break) charge nothing and their Estate Agency does not trigger.
 - **Renovate** (before rolling): swap a building for any other for the new building's cost + 150G.
   Value resets to the new cost; circus tier and checkpoint toll reset.
@@ -673,6 +683,9 @@ player's next turn begins.
 | Portal         | Stepping on it jumps to its partner portal or the bank, then keep moving; bank arrivals visit it  | Up to five pairs (auto colors) plus any number to the bank    |
 | Warp           | Stopping on it jumps to its partner warp or the bank; arrival does not teleport again             | Up to five pairs (auto colors) plus any number to the bank    |
 | Cannon         | Pick another player and warp to their square. Suits and bank still apply there; nothing else does | Suits, bank, promotion, win                                   |
+| Price Up       | Your fees are 10% higher until your next turn (`K.hike`, multiplies any other boost)              | Shop and building fees you charge                             |
+| Taxi           | Pick any special square (not the bank, a taxi, a portal or a warp), ride there and use it         | Every special square's effect                                 |
+| Swap           | Pick another player and trade places. You pick up a suit or visit the bank where you arrive       | Suits, bank, promotion, win                                   |
 | Arcade         | Play one random minigame (see Arcade minigames)                                                   | Cash, shop values, wild suit cards, stock                     |
 | Venture        | Venture grid                                                                                      | See Venture cards                                             |
 | Change-of-suit | Gives the current suit, then rotates                                                              | Promotion                                                     |
@@ -686,9 +699,15 @@ Landing on an arcade chooses one of the five games at random, but never one alre
 every game was last played: each game is played once before any repeats, and a new round of games
 never starts with the game that ended the last one (`G.arcadePlayed`). Lucky Reels and Memory
 Blocks are solo games; Coin Derby, Lucky Wheel and Treasure Split include every non-bankrupt
-player. Party choices are made privately one player at a time, starting with the player who
-landed and going round in turn order (online too), then revealed together. Hot-seat players pass
-the device between choices. CPUs choose for their own seats and for disconnected guests.
+player. Party choices are made by **everyone at the same time**: each player picks privately and
+taps **Lock in** (Coin Derby: tap Sprint or Grab, then Lock in; Lucky Wheel and Treasure Split:
+pick on the board, then Lock in). Portraits over the game show who is still choosing and who has
+locked in (a green check); the round starts once everyone has locked in, and the choices are
+revealed together. A player who locks in sees "Rosa locked in! Waiting for Milo, Kai…". Players
+sharing one device take turns (passing the device between them); players on other devices and
+CPUs choose alongside. CPUs choose for their own seats and for disconnected guests. The engine
+asks every player at once and applies the answers in seat order (the player who landed first),
+so every copy of the game agrees.
 
 | Game           | How it plays                                                                                                                                                                                                                                | Prizes                                                                                                                                                           |
 | -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -750,11 +769,14 @@ it gives + 20G and it can afford its cash side. CPUs never propose trades in the
 - **Debt sale:** when a player sells a shop to the bank in debt, the bank pays them 75% of value,
   then auctions the shop to everyone else. Opening bid = 75% of value; the winning bid goes to the
   bank.
-- **Live window:** an auction opens a window in the middle of every player's screen showing the
-  lot (art, name, value), the high bid and leader, and each bidder (in, passed, leading,
-  deciding); players bid from inside it. A human has 12 seconds (`TIMING.auctionBid`) to raise,
-  with a countdown bar everyone sees; running out of time counts as a pass, so the high bidder wins
-  once everyone else has passed or timed out.
+- **Live auction:** like the stock market, an auction is a pop-up in the middle of every player's
+  screen with the bidding in the action bar. The pop-up shows the lot (art, name, value), the high
+  bid and leader, a countdown bar, and each bidder (in, passed, leading, deciding); the View board
+  chip hides it. A player on this device bids in the action bar ("Raise your bid to 240G" with the
+  seconds left, Bid and Pass); everyone else's status line says who is deciding. A human has 12
+  seconds (`TIMING.auctionBid`) to raise; running out of time counts as a pass, so the high bidder
+  wins once everyone else has passed or timed out. The result shows in the action bar with
+  Continue, and the pop-up closes.
 - **Bidding:** players are asked in turn order. Each either raises (opening bid, then + 10% of value,
   minimum 10G) or passes and drops out. It ends when one bidder holds the high bid and everyone else
   has passed, or when nobody bids (no sale; the property stays with the seller or, for the bank,
@@ -823,8 +845,17 @@ When rejoining a running game needs the player's name there, or joining failed, 
 the button holds the name field and the reason. **Continue** (only with a saved game) is a smaller
 green row centered under it (narrower and shorter than Play) showing the round, board and how long ago it was saved, with a colored dot per
 player. **Rejoin** is a small chip in the top left corner ("Rejoin KQZD, as Milo, 5 min ago") while
-this device has an online game to go back to. In the top right corner sit
-the **Sound** button and, to its right, **Menu**: a pop-up in the middle of the screen with
+this device has an online game to go back to. In the top right corner sit the **player card**
+button (the card's portrait and name; just the portrait on phones), the **Sound** button and, to
+its right, **Menu**. The **player card** (`profile.ts`, kept on this device) is the name and
+character this device plays as: its button opens a pop-up with the character on its colored spot
+(tap it to open the character picker) beside a name box (up to 12 characters, the same characters
+removed as in setup), and a line on how it's used. Changes save as they are made; Done, Escape or
+a click outside closes it. Game setup seats the host with the card's name and character, and
+joining a game uses its name (unless one was typed for a rejoin) and asks the host for its
+character: if someone in that game already has it, the player gets a random free one, and can
+still change it before the game starts. Changing the name or character in a game's setup doesn't
+change the card. **Menu**: a pop-up in the middle of the screen with
 **What's new**, **Board editor** and **Credits**, each a row with a line saying what it is (Close,
 Escape or a click outside closes it). Menu carries a red "New" badge until the latest update has
 been read on this device, and What's new shows a "New" tag in the pop-up. **Credits** lists everyone whose
@@ -850,7 +881,7 @@ smaller ones the middle scrolls, with no scroll bar.
   is a card with the character standing on a spot in the seat's color (centered, tap to change it
   for players on this device), the name and what kind of player it is. An empty spot (until there
   are 5 players) has **Add bot** and a smaller **+ Local player** button (to add a player who plays on this device; phones show it too); bots and extra
-  players on this device have a remove button (×), joined friends can be removed too. A game needs
+  players on this device have a small red remove button (×) in the card's top right corner, joined friends can be removed too. A game needs
   at least 2 players: until then Start is disabled, and hovering it says why.
 - **Join code:** setup opens a room straight away and always shows its code as a chip in the top
   bar (tap it to copy or share the invite; "Getting a code..." while opening, "Offline · Try again"
@@ -869,7 +900,10 @@ smaller ones the middle scrolls, with no scroll bar.
   to a free one). Characters cannot change once the game
   starts. Each human seat has a name box (up to 12 characters; the characters `< > & " ' \`` and
 `\` are removed; leave it blank to keep the suggested name), and typed names are remembered for
-  the next game. In the online build, validate names on the server.
+  the next game (the host's seat starts with the player card's name and character). A player who
+  joined types their name in the bottom container; it is sent to the host half a second after
+  they stop typing, and the lobby updating never interrupts the typing. In the online build,
+  validate names on the server.
 
 In-game, the Menu button (top right) opens the menu as a pop-up in the middle of the screen, over
 everything; a game on this device pauses while it is open (online games carry on). It has Resume, a Fast CPU
@@ -1149,8 +1183,9 @@ each of its squares and a brassy fanfare plays. When the game is won, the camera
 winner, who dances under falling confetti and bursting fireworks to a grand (about 5 second)
 victory fanfare, before the results appear.
 
-**Camera.** The camera always follows the active player, centered on screen and zoomed in (about
-1.65x the fit-to-screen zoom, more on small screens), eased smoothly as they move; it keeps the
+**Camera.** The camera always follows the active player, centered on screen and zoomed in (250%:
+1.65x the zoom that fits a 12 x 7 board on screen, 2.2x on small screens, so squares are the same
+size on every board however big it is), eased smoothly as they move; it keeps the
 player in the middle of the screen even at the board edge (grass continues past it). The mouse wheel, a pinch, or the - and + keys zoom out to show more of the map (a chip at
 the start of the top-right toolbar shows the zoom: 250% fully in on the player, about 135% for the whole board, 100%
 fully out (`ZOOM_MAX_OUT`), in 5% steps per wheel notch or key press (`ZOOM_STEP`); tapping it zooms back in);
@@ -1160,6 +1195,9 @@ both sides, so it never runs under the toolbar, player cards or action bar) with
 camera keeps the player centered and zooms out just enough to frame every glowing square around
 them (if they are too spread out for that, it frames them all instead; never closer than the
 player's own zoom). The game-over view shows the whole board.
+When almost every square is a choice (the Balloonport flying anywhere, the Taxi, the zoom
+card), nothing is dimmed, lit or pinned: the player taps any square, and only the square under
+the pointer glows (lighting the whole board hid it and could slow the game down).
 
 **Zoom modes.** The camera is always in one of three modes, shown by the zoom chip's border:
 

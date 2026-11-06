@@ -37,7 +37,7 @@ export interface DebtAsset {
   amount: number;
 }
 
-export type SquarePurpose = 'balloon' | 'zoom' | 'agency' | 'forcedBuyout';
+export type SquarePurpose = 'balloon' | 'zoom' | 'agency' | 'forcedBuyout' | 'taxi';
 export type DistrictPurpose = 'free20' | 'up20' | 'down20';
 
 /** Map of decision kind -> [request payload, answer]. */
@@ -79,6 +79,10 @@ export interface DecisionMap {
   memory: [{ prizes: MemoryPrize[] }, number];
   pickSquare: [{ purpose: SquarePurpose; options: number[]; optional: boolean }, number | null];
   cannonTarget: [{ options: number[] }, number];
+  /** Swap square: the player to trade places with. */
+  swapTarget: [{ options: number[] }, number];
+  /** Passing a motel: stop here instead of moving on (`fee`: what stopping costs, 0 for its owner). */
+  motelStop: [{ sq: number; fee: number; left: number }, boolean];
   pickDistrict: [{ purpose: DistrictPurpose; options: number[] }, number];
   /** Accept, decline, or send back different terms (a counter-offer from the answering player). */
   answerTrade: [{ offer: TradeOffer; canCounter: boolean }, boolean | { counter: TradeOffer }];

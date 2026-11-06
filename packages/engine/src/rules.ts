@@ -71,6 +71,8 @@ export function squareFee(G: GameState, sq: Square, payer?: Player): number {
       return ceil5(K.balloonFee * owner.boost);
     case 'home':
       return ceil5(K.homeFee * owner.level * owner.boost);
+    case 'motel':
+      return payer ? ceil5(Math.max(0, payer.cash) * K.motelRate * owner.boost) : 0;
     case 'tax':
       return payer ? ceil5(Math.max(0, netWorth(G, payer)) * K.taxRate) : 0;
     default:
@@ -241,8 +243,17 @@ export function expand(G: GameState, pid: number, g: number): number[] {
  * unless every property started as a plot. `except` is a square being renovated.
  */
 export function buildingAvailable(G: GameState, b: BuildingKey, except = -1): boolean {
-  if (G.plots === 'all') return true;
-  return G.nodes.filter((s) => s.b === b && s.id !== except).length < K.buildingLimit;
+  const left = buildingsLeft(G, b, except);
+  return left == null || left > 0;
+}
+
+/**
+ * How many more of `b` can be built (null: no limit, when every property started as a plot).
+ * `except` is a square being renovated.
+ */
+export function buildingsLeft(G: GameState, b: BuildingKey, except = -1): number | null {
+  if (G.plots === 'all') return null;
+  return Math.max(0, K.buildingLimit - G.nodes.filter((s) => s.b === b && s.id !== except).length);
 }
 
 /** Classic stocks: a trade of K.bigTrade+ shares moves the district's multiplier 10%. */

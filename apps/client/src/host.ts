@@ -40,6 +40,7 @@ import {
   auctionOnBoard,
   buyoutPrompt,
   cannonOnBoard,
+  motelPrompt,
   debtOnBoard,
   feeIfOwned,
   question,
@@ -356,14 +357,29 @@ export class HotSeat implements GameIO {
       if (this.dead) return never();
       return ans;
     }
-    if (this.humans > 1 && this.holder !== p.id) {
-      await this.hud.passDevice(p);
+    const ans = await this.oneAtATime(async () => {
+      if (this.humans > 1 && this.holder !== p.id) {
+        await this.hud.passDevice(p);
+        this.holder = p.id;
+      }
       this.holder = p.id;
-    }
-    this.holder = p.id;
-    const ans = await this.askHuman(req as DecisionRequest);
+      return this.askHuman(req as DecisionRequest);
+    });
     if (this.dead) return never();
     return ans as DecisionAnswer<T>;
+  }
+
+  /** The choice on this device being answered now; the next one waits for it. */
+  private humanTurn: Promise<unknown> = Promise.resolve();
+
+  /**
+   * Party games ask everyone at once. Players elsewhere and CPUs answer side by side, but the
+   * people sharing this device take turns with the one action bar.
+   */
+  private oneAtATime<R>(ask: () => Promise<R>): Promise<R> {
+    const run = this.humanTurn.then(ask, ask);
+    this.humanTurn = run.catch(() => undefined);
+    return run;
   }
 
   /**
@@ -382,7 +398,7 @@ export class HotSeat implements GameIO {
     if (link.role === 'host') {
       let ans: unknown;
       if (who === 'local') {
-        ans = await this.askHuman(req);
+        ans = await this.oneAtATime(() => this.askHuman(req));
       } else if (who === 'cpu') {
         ans = cpuDecide(G, req);
         this.waitOn(req);
@@ -399,7 +415,7 @@ export class HotSeat implements GameIO {
     }
     // Replaying a turn after rejoining: decisions already made aren't asked again.
     if (who === 'local' && !link.known?.(seq)) {
-      const mine = await this.askHuman(req);
+      const mine = await this.oneAtATime(() => this.askHuman(req));
       if (this.dead) return never();
       link.submit(seq, mine);
     } else if (who !== 'local') {
@@ -486,8 +502,8 @@ export class HotSeat implements GameIO {
         break;
       case 'arcadeChoice':
         this.stage(req.game).choosing(req);
-        // Name who is choosing right away (a plain wait only shows after a quiet moment).
-        this.hud.action(`arcade-choice:${req.round}:${p.id}`, `${p.name} is choosing…`, 'arcade');
+        // Everyone chooses at once; the chips over the game show who has locked in.
+        this.hud.action(`arcade-choice:${req.game}:${req.round}`, 'Everyone is choosing…', 'arcade');
         break;
       case 'memory':
         void this.stage('Memory Blocks').memoryStart(req.prizes, p.level, this.speed);
@@ -540,8 +556,12 @@ export class HotSeat implements GameIO {
         if ((ans as { act: string }).act !== 'roll') await this.wait(T.cpuPreRoll);
         break;
       case 'venturePanel':
-      case 'arcadeChoice':
         await this.wait(T.cpuDecision);
+        break;
+      case 'arcadeChoice':
+        // Players lock in one by one (CPUs at slightly different moments), all at the same time.
+        if (p.cpu) await this.wait(T.cpuDecision * (0.6 + Math.random() * 0.9));
+        this.arcade?.lockIn(p.id);
         break;
       case 'reels':
         // Give the CPU a brief beat to choose its held slots.
@@ -685,7 +705,17 @@ export class HotSeat implements GameIO {
       case 'arcadeChoice': {
         const stage = this.stage(req.game);
         stage.choosing(req);
-        return stage.choose(req, p);
+        const ans = await stage.choose(req, p);
+        stage.lockIn(p.id);
+        // Until the round starts: who the game is still waiting for.
+        const left = stage.notLockedIn().map((id) => G.players[id].name);
+        if (left.length)
+          hud.action(
+            `arcade-locked:${req.game}:${req.round}:${p.id}`,
+            `${p.name} locked in! Waiting for ${left.join(', ')}…`,
+            'arcade',
+          );
+        return ans;
       }
 
       case 'memory': {
@@ -700,6 +730,7 @@ export class HotSeat implements GameIO {
           zoom: 'Zoom to any square.',
           agency: 'Pick an unowned shop to buy at its value.',
           forcedBuyout: "Pick a rival's shop to buy for 5x its value.",
+          taxi: 'Taxi! Ride to any special square and use it.',
         }[req.purpose];
         const price = (id: number) =>
           req.purpose === 'forcedBuyout' ? G.nodes[id].value * K.buyoutX : G.nodes[id].value;
@@ -707,21 +738,34 @@ export class HotSeat implements GameIO {
           req.purpose === 'forcedBuyout' || req.purpose === 'agency'
             ? new Map(req.options.map((id) => [id, fmt(price(id))]))
             : undefined;
+        // When nearly every square is a choice, nothing is lit or pinned: tap any square.
+        const plain = req.options.length > G.nodes.length * 0.6;
         this.board.setChoices(req.options, PLAYER_COLORS[color], (id) => hud.resolvePrompt(id), undefined, {
           labels,
+          plain,
         });
         const buttons: PromptButton<number | null>[] =
           req.options.length <= 6
             ? req.options.map((id) => ({ label: squareName(G, G.nodes[id]), value: id }))
             : [];
         if (req.optional) buttons.push({ label: 'Skip', value: null, secondary: true });
-        const id = await hud.prompt(`${text} Tap a glowing square.`, buttons, color);
+        const id = await hud.prompt(
+          `${text} ${plain ? 'Tap a square.' : 'Tap a glowing square.'}`,
+          buttons,
+          color,
+        );
         this.board.clearChoices();
         return id;
       }
 
       case 'cannonTarget':
         return cannonOnBoard(this.pick, p, req.options);
+
+      case 'swapTarget':
+        return cannonOnBoard(this.pick, p, req.options, 'swap');
+
+      case 'motelStop':
+        return motelPrompt(this.pick, p, req.sq, req.fee, req.left);
 
       case 'pickDistrict':
         // The stock screen with the amount fixed: pick the district on its map or list.
@@ -1011,7 +1055,7 @@ export class HotSeat implements GameIO {
       }
       case 'auctionStart':
         hud.action('auction', 'The auction is starting...', 'property');
-        this.auction?.end(-1, 0, 0);
+        this.auction?.close();
         this.auction = new AuctionView(hud, G, e.sq, e.seller, e.opening, e.bidders);
         board.setChoices([e.sq], '#ffd166', () => {}, undefined, { pins: false });
         await this.wait(T.cpuDecision);

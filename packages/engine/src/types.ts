@@ -23,6 +23,12 @@ export type SquareType =
   | 'portal'
   | 'arcade'
   | 'cannon'
+  /** Price Up: the lander's fees are K.hike times higher until their next turn. */
+  | 'hike'
+  /** Taxi: ride to any special square and use it. */
+  | 'taxi'
+  /** Swap: trade places with any other player. */
+  | 'swap'
   /** Landing here moves the player to the square in `link` (detached areas). */
   | 'warp';
 
@@ -34,7 +40,8 @@ export type PlotSetting = 'none' | 'few' | 'some' | 'lot' | 'all';
  */
 export type StockSystem = 'classic' | 'dynamic';
 
-export type BuildingKey = 'checkpoint' | 'circus' | 'balloon' | 'tax' | 'home' | 'agency' | 'star3';
+/** 'home' is retired (replaced by the motel): it is only found in older saves. */
+export type BuildingKey = 'checkpoint' | 'circus' | 'balloon' | 'tax' | 'home' | 'motel' | 'agency' | 'star3';
 
 export interface Square {
   id: number;

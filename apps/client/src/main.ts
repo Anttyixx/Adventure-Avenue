@@ -24,6 +24,7 @@ import { openLab } from './ui/lab';
 import { applyLiveStockSettings, openStocksLab } from './ui/stockslab';
 import { mainMenu, type MenuOptions } from './ui/menu';
 import { guestSetup, randomName, setupScreen } from './ui/start';
+import { loadProfile } from './profile';
 import './style.css';
 
 const app = document.getElementById('app')!;
@@ -38,7 +39,7 @@ function showStart(opts: MenuOptions = {}) {
       },
       onJoin(code, name) {
         close();
-        void joinGame(code, name || savedName() || randomName());
+        void joinGame(code, name || loadProfile().name || savedName() || randomName());
       },
       onContinue(save) {
         close();

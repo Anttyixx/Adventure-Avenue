@@ -1847,6 +1847,14 @@ input[type='range'] {
   font-family: var(--head);
   color: var(--accent);
 }
+/* In a game: how many more of the building the board allows, beside its price. */
+.guide-plot-head .guide-left {
+  margin-left: auto;
+  align-self: center;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 700;
+}
 .rules .guide-plot p {
   font-size: 13px;
   line-height: 1.35;
@@ -3451,6 +3459,109 @@ input[type='range'] {
 .menu-pop {
   z-index: 20;
 }
+/* The player card button (top right): the card's portrait and name. */
+.menu-card {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 180px;
+}
+.menu-card img,
+.menu-card-blank {
+  flex: none;
+  width: 22px;
+  height: 22px;
+  margin: -4px 0 -4px -4px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.12);
+  image-rendering: pixelated;
+}
+.menu-card-blank {
+  display: grid;
+  place-items: center;
+  font: 400 13px var(--head);
+}
+.menu-card span:last-child {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+/* The player card pop-up: the character on its spot beside the name box. */
+.player-card {
+  width: min(460px, calc(100vw - 24px));
+}
+.pc-body {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+.pc-stage {
+  position: relative;
+  flex: none;
+  width: 120px;
+  height: 130px;
+  display: grid;
+  place-items: center;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.06);
+  box-shadow: inset 0 3px 0 var(--pc);
+}
+.pc-stage::after {
+  content: '';
+  position: absolute;
+  bottom: 14px;
+  left: 50%;
+  width: 70px;
+  height: 14px;
+  translate: -50% 0;
+  border-radius: 50%;
+  background: radial-gradient(var(--pc) 0 45%, transparent 70%);
+  opacity: 0.55;
+}
+.pc-stage .char-btn {
+  z-index: 1;
+  width: 64px;
+  height: 96px;
+  margin-bottom: 8px;
+  background: none;
+}
+.pc-stage .char-btn img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  object-position: center bottom;
+}
+.pc-field {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.player-card input.pc-name {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 8px 10px;
+  font-weight: 700;
+  font-size: 15px;
+}
+.pc-field .hint {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.35;
+}
+@media (max-height: 500px) {
+  .menu-card span:last-child {
+    display: none;
+  }
+  .pc-stage {
+    width: 96px;
+    height: 104px;
+  }
+  .pc-stage .char-btn {
+    height: 76px;
+  }
+}
 .setup-sound {
   margin-left: auto;
   background: rgba(16, 26, 51, 0.6);
@@ -4238,8 +4349,8 @@ input[type='range'] {
 }
 
 /* Live auction */
-.modal.auction-modal {
-  width: min(520px, 100%);
+.auction-pop {
+  width: min(460px, 100%);
 }
 .auction {
   display: flex;
@@ -4423,26 +4534,21 @@ input[type='range'] {
   border-radius: inherit;
   background: var(--pc, var(--accent));
 }
-.au-row {
-  justify-content: center;
-  align-items: center;
-  min-height: 44px;
-}
-.au-you {
-  font-weight: 700;
-  color: var(--pc);
-}
-.au-bid {
-  font-size: 18px;
+.au-ask-title {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  font: 400 18px var(--head);
 }
 .au-secs {
-  min-width: 34px;
+  min-width: 30px;
   font-family: var(--head);
-  font-size: 20px;
+  font-size: 18px;
   color: var(--accent);
 }
-.au-wait {
-  color: var(--muted);
+.au-ask .hint {
+  margin: 2px 0 0;
+  font-size: 12px;
 }
 
 /* All four suits: they hop until the player levels up at the bank */
@@ -7633,6 +7739,7 @@ div.sl-inline label {
   gap: 6px;
 }
 .bp-card {
+  position: relative;
   min-width: 0;
   display: flex;
   flex-direction: column;
@@ -7677,6 +7784,24 @@ div.sl-inline label {
 .bp-price {
   font: 400 12px var(--head);
   color: var(--accent);
+}
+/* How many more of this building the board allows, in the card's top-right corner. */
+.bp-left {
+  position: absolute;
+  top: 3px;
+  right: 3px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: rgba(16, 26, 51, 0.85);
+  color: var(--text);
+  font: 700 9px/15px var(--body);
+  white-space: nowrap;
+}
+.bp-left.none {
+  color: var(--bad);
+}
+.bp-left b {
+  font-weight: 800;
 }
 .bp-card.off img {
   filter: grayscale(1);
@@ -7776,6 +7901,17 @@ div.sl-inline label {
   }
   .bp-card img {
     height: 26px;
+  }
+  /* Phones: just the number, so the badge doesn't cover the picture. */
+  .bp-left {
+    top: 2px;
+    right: 2px;
+    padding: 0 4px;
+    font-size: 8px;
+    line-height: 13px;
+  }
+  .bp-left-word {
+    display: none;
   }
   .bp-name {
     display: none;
@@ -8191,6 +8327,11 @@ div.sl-inline label {
 }
 .aa-actions .btn {
   white-space: nowrap;
+}
+/* A choice to pick before locking it in (Coin Derby): the picked one is outlined in gold. */
+.aa-actions .btn.aa-pick[aria-pressed='true'] {
+  box-shadow: inset 0 0 0 2px var(--accent);
+  background: rgba(255, 209, 102, 0.18);
 }
 .aa-stake {
   display: inline-flex;
@@ -10063,8 +10204,19 @@ span.su-code {
   font-size: 10px;
 }
 .su .seat-card .seat-kick {
-  top: 4px;
-  right: 4px;
+  /* Small and red, so removing a player reads as a remove button, not part of the card. */
+  top: 5px;
+  right: 5px;
+  width: 16px;
+  height: 16px;
+  background: var(--bad);
+  color: #fff;
+  font: 700 11px/16px var(--body);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
+}
+.su .seat-card .seat-kick:hover {
+  background: #ff6b6b;
+  transform: scale(1.12);
 }
 .su .seat-plus {
   width: 34px;

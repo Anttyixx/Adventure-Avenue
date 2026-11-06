@@ -4,8 +4,10 @@
  * renovations. Choices made on the board (trades, auctions, debt...) are in pick.ts.
  */
 import {
+  BUILDABLE,
   BUILDINGS,
   buildingAvailable,
+  buildingsLeft,
   shareTradeValue,
   sharesHeld,
   stockPriceExact,
@@ -64,10 +66,14 @@ export function keepClearOfCards(hud: Hud, box: HTMLElement): () => void {
   };
 }
 
-function stockPopup(hud: Hud, title: string, content: Node) {
+/**
+ * A pop-up in the middle of the screen whose choices sit in the action bar below it (the stock
+ * market, the auction). `cls` replaces the stock market's size classes.
+ */
+export function stockPopup(hud: Hud, title: string, content: Node, cls = 'wide xl') {
   const box = h(
     'div',
-    { class: 'modal glass wide xl stock-pop', role: 'region', 'aria-label': title },
+    { class: `modal glass ${cls} stock-pop`, role: 'region', 'aria-label': title },
     h('div', { class: 'modal-head' }, h('h2', null, title)),
     content,
   );
@@ -482,6 +488,8 @@ export function buildPrompt(
   options: { b: BuildingKey; cost: number }[],
   text: string,
   extra = 0,
+  /** Renovating: the square whose building is being replaced. */
+  renovating = -1,
 ): Promise<BuildingKey | null> {
   const color = PLAYER_COLORS[p.color];
   const verb = extra ? 'Renovate' : 'Build';
@@ -490,7 +498,7 @@ export function buildPrompt(
   const blocked = (b: BuildingKey) =>
     options.some((o) => o.b === b)
       ? null
-      : !buildingAvailable(hud.G, b)
+      : !buildingAvailable(hud.G, b, renovating)
         ? `All ${K.buildingLimit} are already built.`
         : 'You can’t afford it right now.';
   let picked: BuildingKey | null = null;
@@ -523,15 +531,17 @@ export function buildPrompt(
     else if (over)
       tip.append(h('p', { class: 'bp-note' }, 'More than your cash: sell at the end of your turn.'));
     // Centered over the card, kept inside the picker's width.
-    const card = cards[BUILDINGS.findIndex((x) => x.b === b)];
+    const card = cards[BUILDABLE.findIndex((x) => x.b === b)];
     const box = tip.parentElement;
     if (!box) return;
     const half = tip.offsetWidth / 2;
     const mid = card.offsetLeft + card.offsetWidth / 2;
     tip.style.left = `${Math.max(half, Math.min(box.clientWidth - half, mid))}px`;
   };
-  const cards: HTMLButtonElement[] = BUILDINGS.map((def) => {
+  const cards: HTMLButtonElement[] = BUILDABLE.map((def) => {
     const key = (def.b === 'star3' ? 'star0' : def.b === 'circus' ? 'circus0' : def.b) as PropKey;
+    // How many more can go up on this board (renovating counts the building being replaced).
+    const left = buildingsLeft(hud.G, def.b, renovating);
     const card = h(
       'button',
       {
@@ -540,6 +550,14 @@ export function buildPrompt(
         'aria-pressed': 'false',
       },
       h('img', { src: propIconURL(key, color), alt: '' }),
+      left == null
+        ? null
+        : h(
+            'span',
+            { class: `bp-left ${left ? '' : 'none'}`, title: `${left} more can be built` },
+            h('b', null, String(left)),
+            h('span', { class: 'bp-left-word' }, ' left'),
+          ),
       h('span', { class: 'bp-name' }, def.name),
       h('span', { class: 'bp-price' }, fmt(cost(def.b))),
     ) as HTMLButtonElement;

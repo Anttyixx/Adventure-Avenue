@@ -42,6 +42,9 @@ export const PLACEABLE: SquareType[] = [
   'portal',
   'arcade',
   'cannon',
+  'hike',
+  'taxi',
+  'swap',
   'warp',
 ];
 

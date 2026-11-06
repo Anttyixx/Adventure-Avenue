@@ -6,7 +6,7 @@
  */
 import {
   netWorth,
-  BUILDINGS,
+  BUILDABLE,
   BUILT_IN_BOARDS,
   CARD_LIST,
   Game,
@@ -42,7 +42,7 @@ import { luckyReels, memoryBlocks, coinDerby, luckyWheel, treasureSplit } from '
 import { Hud } from './hud';
 import { paymentActivity, paymentLogMatches } from './activity';
 import { clearGuest, loadGuest, saveGuest } from '../save';
-import { mainMenu } from './menu';
+import { mainMenu, openPlayerCard } from './menu';
 import { openEditor } from './editor';
 import { openWhatsNew } from './whatsnew';
 import { openCredits } from './credits';
@@ -70,6 +70,7 @@ import {
   question,
   cannonOnBoard,
   debtOnBoard,
+  motelPrompt,
   renovateOnBoard,
   tradeOnBoard,
 } from './pick';
@@ -108,7 +109,24 @@ const rnd = (n: number) => Math.floor(Math.random() * n);
  * Controls for UI elements that were just added or changed: they shake once and glow so they
  * are easy to find. Update this list with each change.
  */
-const RECENT = new Set(['Board builder: Return Ridge']);
+const RECENT = new Set([
+  'Player card',
+  'Game setup',
+  'Game setup (friend joined)',
+  'Joined game (locked setup)',
+  'New squares and Motel',
+  'Zoom in',
+  'Build',
+  'Renovate',
+  'Swap target',
+  'Motel stop',
+  'Taxi / fly anywhere (no highlights)',
+  'Live auction',
+  'Coin Derby',
+  'Lucky Wheel',
+  'Treasure Split',
+  'Guide',
+]);
 
 /** Which board the lab plays on: Town (square) or Twin Lakes (hex), remembered per browser. */
 const LAB_BOARD_KEY = 'aa-lab-board';
@@ -138,7 +156,7 @@ function sampleState(): GameState {
  * seen in place. Uses shops nobody owns where it can.
  */
 function showcaseBuildings(G: GameState) {
-  const missing = BUILDINGS.filter((b) => !G.nodes.some((s) => s.b === b.b));
+  const missing = BUILDABLE.filter((b) => !G.nodes.some((s) => s.b === b.b));
   const shops = G.nodes.filter((s) => s.t === 'shop');
   const free = shops.filter((s) => s.owner < 0);
   const pool = free.length >= missing.length ? free : shops;
@@ -980,6 +998,20 @@ export async function openLab(app: HTMLElement, section?: string) {
         cur().onBreak = !cur().onBreak;
         refresh();
       }),
+      btn('New squares and Motel', () => {
+        // Price Up, Taxi and Swap squares, and a Motel, near the start of the board.
+        const specials = G.nodes.filter((n) => ['venture', 'roll', 'break', 'boon'].includes(n.t));
+        (['hike', 'taxi', 'swap'] as const).forEach((t, i) => {
+          if (specials[i]) specials[i].t = t;
+        });
+        const plot = G.nodes.find((n) => n.t === 'plot');
+        if (plot) {
+          plot.b = 'motel';
+          plot.owner = cur().id;
+          plot.value = K.plotCost;
+        }
+        refresh();
+      }),
       btn('Zoom in', () => board.zoomBy(-ZOOM_STEP)),
       btn('Zoom out', () => board.zoomBy(ZOOM_STEP)),
     );
@@ -1031,7 +1063,7 @@ export async function openLab(app: HTMLElement, section?: string) {
           await buildPrompt(
             hud,
             cur(),
-            BUILDINGS.filter((b) => b.cost <= Math.max(cur().cash, 1000)).map(({ b, cost }) => ({ b, cost })),
+            BUILDABLE.filter((b) => b.cost <= Math.max(cur().cash, 1000)).map(({ b, cost }) => ({ b, cost })),
             'What will you build on this plot?',
           ),
         ),
@@ -1088,6 +1120,42 @@ export async function openLab(app: HTMLElement, section?: string) {
         if (sq.owner < 0) sq.owner = q.id;
         refresh();
         result('Buyout', await buyoutPrompt(pick, cur(), sq.id, sq.value * K.buyoutX));
+      }),
+      btn('Swap target', async () =>
+        result(
+          'Swap',
+          await cannonOnBoard(
+            pick,
+            cur(),
+            G.players.filter((q) => q.id !== cur().id).map((q) => q.id),
+            'swap',
+          ),
+        ),
+      ),
+      btn('Motel stop', async () => {
+        const q = G.players[(target + 1) % G.players.length];
+        const plot = G.nodes.find((n) => n.t === 'plot') ?? G.nodes.find((n) => n.t === 'shop')!;
+        plot.t = 'plot';
+        plot.b = 'motel';
+        plot.owner = q.id;
+        plot.value = K.plotCost;
+        refresh();
+        result('Motel', await motelPrompt(pick, cur(), plot.id, Math.ceil(cur().cash * K.motelRate), 3));
+      }),
+      btn('Taxi / fly anywhere (no highlights)', async () => {
+        const ids = G.nodes.filter((n) => !['shop', 'plot', 'bank'].includes(n.t)).map((n) => n.id);
+        const all = G.nodes.map((n) => n.id);
+        const list = ids.length > G.nodes.length * 0.6 ? ids : all;
+        board.setChoices(list, PLAYER_COLORS[cur().color], (id) => hud.resolvePrompt(id), undefined, {
+          plain: true,
+        });
+        const id = await hud.prompt<number | null>(
+          'Taxi! Ride to any special square and use it. Tap a square.',
+          [{ label: 'Skip', value: null, secondary: true }],
+          cur().color,
+        );
+        board.clearChoices();
+        result('Taxi', id ?? undefined);
       }),
       btn('Cannon target', async () =>
         result(
@@ -1255,7 +1323,8 @@ export async function openLab(app: HTMLElement, section?: string) {
           ]),
           ['balloon', 'Balloonport', ''],
           ['tax', 'Tax Office', ''],
-          ['home', 'Home', ''],
+          ['motel', 'Motel', ''],
+          ['home', 'Home', 'retired'],
           ['agency', 'Estate Agency', ''],
         ];
         const buildingGrid = h(
@@ -1467,6 +1536,7 @@ export async function openLab(app: HTMLElement, section?: string) {
         });
         result('Character picker', id ?? undefined);
       }),
+      btn('Player card', () => openPlayerCard(document.body, () => {})),
       btn('Game setup', () => setup(0)),
       btn('Game setup (friend joined)', () => setup(1)),
       btn('Game setup (offline)', () => setup(-1)),

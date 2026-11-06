@@ -339,8 +339,9 @@ export class HostRoom implements GameLink {
     const seat: Seat = {
       kind: 'remote',
       name: name || 'Player',
-      // A random character nobody has; they can change it in the lobby.
-      look: freeCharacter(this.takenLooks(-1)),
+      // The character on their player card, or a random one nobody has if it is taken; they can
+      // change it in the lobby.
+      look: this.lookFree(msg.look, -1) ? msg.look : freeCharacter(this.takenLooks(-1)),
       online: true,
       token: msg.token,
       conn,

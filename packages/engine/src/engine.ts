@@ -59,15 +59,23 @@ export interface GameIO {
   emit(e: GameEvent): void | Promise<void>;
 }
 
-export const BUILDINGS: { b: BuildingKey; name: string; cost: number }[] = [
+/**
+ * Every plot building. `retired` ones can no longer be built; they stay listed so games saved
+ * with one still show and play it (the Home, replaced by the Motel).
+ */
+export const BUILDINGS: { b: BuildingKey; name: string; cost: number; retired?: boolean }[] = [
   { b: 'checkpoint', name: 'Checkpoint', cost: K.plotCost },
   { b: 'circus', name: 'Circus', cost: K.plotCost },
   { b: 'balloon', name: 'Balloonport', cost: K.plotCost },
   { b: 'tax', name: 'Tax Office', cost: K.plotCost },
-  { b: 'home', name: 'Home', cost: K.plotCost },
+  { b: 'motel', name: 'Motel', cost: K.plotCost },
   { b: 'agency', name: 'Estate Agency', cost: K.plotCost },
   { b: 'star3', name: '3-Star Shop', cost: K.star3Cost },
+  { b: 'home', name: 'Home', cost: K.plotCost, retired: true },
 ];
+
+/** The buildings that can be built now. */
+export const BUILDABLE = BUILDINGS.filter((x) => !x.retired);
 
 export const buildingCost = (b: BuildingKey) => BUILDINGS.find((x) => x.b === b)!.cost;
 export const buildingName = (b: BuildingKey) => BUILDINGS.find((x) => x.b === b)!.name;
@@ -243,6 +251,7 @@ export class Game {
   async renovate(p: Player, sqId: number, b: BuildingKey) {
     const sq = this.G.nodes[sqId];
     if (!sq || sq.t !== 'plot' || sq.owner !== p.id || !sq.b || sq.b === b) return;
+    if (!BUILDABLE.some((x) => x.b === b)) return;
     if (!buildingAvailable(this.G, b, sq.id)) return;
     const cost = buildingCost(b) + K.renovate;
     if (p.cash < cost) return;
@@ -352,6 +361,8 @@ export class Game {
       if (left > 0) {
         await this.passSquare(p, G.nodes[p.node]);
         if (G.over) return;
+        // Passing a motel: the player may stop there instead, giving up the rest of the roll.
+        if (await this.motelStop(p, G.nodes[p.node], left)) break;
       }
     }
     // Arrival at a paired portal does not immediately send the player back.
@@ -367,6 +378,17 @@ export class Game {
       if (sq.owner !== p.id) await this.payToll(p, sq);
       else await this.raiseToll(p, sq);
     }
+  }
+
+  /** Passing a motel: ask whether to stop there instead of moving on. */
+  async motelStop(p: Player, sq: Square, left: number): Promise<boolean> {
+    if (sq.t !== 'plot' || sq.b !== 'motel' || sq.owner < 0) return false;
+    const owner = this.G.players[sq.owner];
+    const fee = sq.owner === p.id || isClosed(owner) ? 0 : squareFee(this.G, sq, p);
+    const yes = await this.ask({ kind: 'motelStop', pid: p.id, sq: sq.id, fee, left });
+    if (yes !== true) return false;
+    await this.log(`${p.name} stopped at the motel.`, p.id, 'move');
+    return true;
   }
 
   /** The owner passes their own checkpoint: no money changes hands, the toll rises. */
@@ -431,7 +453,7 @@ export class Game {
 
   // ---------------------------------------------------------------- landing
 
-  async land(p: Player, sq: Square) {
+  async land(p: Player, sq: Square): Promise<void> {
     const G = this.G;
     await this.emit({ type: 'land', pid: p.id, sq: sq.id });
     switch (sq.t) {
@@ -469,6 +491,14 @@ export class Game {
         );
         return;
       }
+      case 'hike':
+        p.boost = Math.round(p.boost * K.hike * 1000) / 1000;
+        await this.log(`${p.name}'s fees are 10% higher until their next turn.`, p.id, 'effect');
+        return;
+      case 'taxi':
+        return this.taxi(p);
+      case 'swap':
+        return this.swap(p);
       case 'broker':
         if (G.rules === 'easy') return this.venture(p);
         return this.buyStockFlow(p, 0);
@@ -510,6 +540,42 @@ export class Game {
     await this.log(`${p.name} was fired from the cannon to ${q.name}.`, p.id, 'move', [q.id]);
     await this.warp(p, q.node);
     const dest = G.nodes[q.node];
+    if (SUIT_TYPES.includes(dest.t) || dest.t === 'change') await this.collectSuit(p, dest);
+    else if (dest.t === 'bank') await this.bankVisit(p, true);
+  }
+
+  /** The squares a taxi can take you to: every special square except the bank, taxis and portals. */
+  taxiStops(): number[] {
+    const skip = ['shop', 'plot', 'bank', 'taxi', 'portal', 'warp'];
+    return this.G.nodes.filter((s) => !skip.includes(s.t)).map((s) => s.id);
+  }
+
+  /** Taxi: ride to any special square and land there (its effect applies). */
+  async taxi(p: Player): Promise<void> {
+    const G = this.G;
+    const options = this.taxiStops();
+    if (!options.length) return;
+    let to = await this.ask({ kind: 'pickSquare', pid: p.id, purpose: 'taxi', options, optional: false });
+    if (to == null || !options.includes(to)) to = options[0];
+    await this.log(`${p.name} took a taxi.`, p.id, 'move');
+    await this.warp(p, to);
+    return this.land(p, G.nodes[to]);
+  }
+
+  /** Swap: trade places with another player. */
+  async swap(p: Player) {
+    const G = this.G;
+    const options = G.players.filter((q) => q.id !== p.id && !q.bankrupt).map((q) => q.id);
+    if (!options.length) return;
+    let target = await this.ask({ kind: 'swapTarget', pid: p.id, options });
+    if (!options.includes(target)) target = options[0];
+    const q = G.players[target];
+    const mine = p.node;
+    await this.log(`${p.name} swapped places with ${q.name}.`, p.id, 'move', [q.id]);
+    await this.warp(p, q.node);
+    await this.warp(q, mine);
+    // Like the cannon: arriving on a suit picks it up, arriving at the bank counts as stopping.
+    const dest = G.nodes[p.node];
     if (SUIT_TYPES.includes(dest.t) || dest.t === 'change') await this.collectSuit(p, dest);
     else if (dest.t === 'bank') await this.bankVisit(p, true);
   }
@@ -654,7 +720,7 @@ export class Game {
   async landPlot(p: Player, sq: Square) {
     const G = this.G;
     if (sq.owner < 0) {
-      const options = BUILDINGS.filter((b) => canAfford(G, p, b.cost) && buildingAvailable(G, b.b)).map(
+      const options = BUILDABLE.filter((b) => canAfford(G, p, b.cost) && buildingAvailable(G, b.b)).map(
         ({ b, cost }) => ({ b, cost }),
       );
       if (!options.length) return;
@@ -746,6 +812,8 @@ export class Game {
         await this.log(`The Tax Office pays ${p.name} a ${amt}G rebate.`, p.id, 'money');
         return this.pay(null, p, amt, 'Tax rebate');
       }
+      case 'motel':
+        return this.investFlow(p, ownedShops(G, p.id));
       case 'home': {
         const others = G.players.filter((q) => q.id !== p.id && !q.bankrupt);
         await this.log(

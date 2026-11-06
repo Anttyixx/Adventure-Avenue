@@ -20,6 +20,7 @@ import {
 import { boardThumb } from './thumb';
 import { BUILT_IN, getBoard, listBoards, pickBoardFile, readBoardFile, saveBoard } from '../boardstore';
 import { freeCharacter, shuffledCharacters } from '../sprites';
+import { loadProfile } from '../profile';
 import { charButton, pickCharacter } from './charpick';
 import { loadSave } from '../save';
 import { titleScene } from './menu';
@@ -378,6 +379,9 @@ export function setupScreen(
     suggested = PLAYER_COLORS.map(() => pool.splice(Math.floor(Math.random() * pool.length), 1)[0]);
   };
   shuffle();
+  // The host sits down as their player card (set on the main menu).
+  const card = loadProfile();
+  if (card.name) typed[0] = card.name;
 
   // The room for the join code: opening, open, or unavailable.
   let room: SetupRoom | null = null;
@@ -418,6 +422,7 @@ export function setupScreen(
       if (j !== i && l === id) looks[j] = freeCharacter(looks.filter((_, k) => k !== j));
     });
   };
+  if (card.look) setLook(0, card.look);
   const choose = async (i: number) => {
     const id = await pickCharacter({ current: looks[i], taken: peopleLooks(i), color: PLAYER_COLORS[i] });
     if (id) {
@@ -884,9 +889,16 @@ export function guestSetup(root: HTMLElement, room: GuestSetupRoom, handlers: Gu
     maxlength: '12',
     'aria-label': 'Your name',
   }) as HTMLInputElement;
+  // Sent as they type (after a short pause), so a lobby update never undoes it.
+  let renameTimer = 0;
   const rename = () => {
+    clearTimeout(renameTimer);
     const n = cleanName(nameIn.value);
-    if (n) room.setName(n);
+    if (n && n !== room.lobby?.seats[room.seat]?.name) room.setName(n);
+  };
+  nameIn.oninput = () => {
+    clearTimeout(renameTimer);
+    renameTimer = window.setTimeout(rename, 500);
   };
   nameIn.onchange = rename;
   // (A handler that returns false would cancel every key, so no expression body here.)
@@ -907,6 +919,10 @@ export function guestSetup(root: HTMLElement, room: GuestSetupRoom, handlers: Gu
 
   const draw = () => {
     const lobby = room.lobby;
+    // Rebuilding the dock takes the name box out of the page, which would end the typing: note
+    // where the cursor was and put it back afterwards.
+    const typing = document.activeElement === nameIn;
+    const caret = [nameIn.selectionStart, nameIn.selectionEnd] as const;
     clear(frame.wrap);
     const board = lobby ? (lobby.board ?? BUILT_IN.find((b) => b.name === lobby.boardName)) : undefined;
     const me = lobby?.seats[room.seat];
@@ -975,7 +991,17 @@ export function guestSetup(root: HTMLElement, room: GuestSetupRoom, handlers: Gu
       ),
     );
     morphWidth(frame.dock, dockFrom);
+    if (typing && nameIn.isConnected) {
+      nameIn.focus({ preventScroll: true });
+      nameIn.setSelectionRange(caret[0], caret[1]);
+    }
   };
   draw();
-  return { update: draw, close: () => frame.close() };
+  return {
+    update: draw,
+    close: () => {
+      clearTimeout(renameTimer);
+      frame.close();
+    },
+  };
 }

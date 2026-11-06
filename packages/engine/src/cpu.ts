@@ -334,12 +334,34 @@ function decide(G: GameState, req: DecisionRequest): unknown {
     case 'cannonTarget':
       return pick(G, req.options);
 
+    case 'swapTarget': {
+      // Trade places with whoever stands closest to what this CPU is heading for.
+      const near = (id: number) => goalDistance(G, p, G.players[id].node);
+      return req.options.slice().sort((a, b) => near(a) - near(b))[0];
+    }
+
+    case 'motelStop': {
+      // Rivals never stop to pay; the owner stops when it has the cash to invest.
+      if (G.nodes[req.sq].owner !== p.id) return false;
+      return (
+        p.cash > C.investAbove &&
+        G.nodes.some((s) => s.owner === p.id && isShopLike(s) && investRoom(G, s) > 0)
+      );
+    }
+
     case 'pickSquare': {
       if (req.purpose === 'balloon' || req.purpose === 'zoom') {
         const targets = goals(G, p).filter((id) => req.options.includes(id));
         if (!targets.length) return req.optional ? null : pick(G, req.options);
         const d = distances(G, p.node);
         return targets.sort((a, b) => d[a] - d[b])[0];
+      }
+      if (req.purpose === 'taxi') {
+        // A missing suit first, then a venture card, else anywhere.
+        const want = goals(G, p).filter((id) => req.options.includes(id) && G.nodes[id].t !== 'bank');
+        if (want.length) return pick(G, want);
+        const venture = req.options.filter((id) => G.nodes[id].t === 'venture');
+        return pick(G, venture.length ? venture : req.options);
       }
       if (req.purpose === 'agency') {
         const g = bestGroup(G, p);

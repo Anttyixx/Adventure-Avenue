@@ -2,7 +2,7 @@
  * Names and descriptions of squares for the interface: tooltips, prompts, the log and the guide.
  * `BUILDING_INFO` says what each vacant plot building does for a rival and for its owner.
  */
-import { BUILDINGS, type GameState, type Square } from '@aa/engine';
+import { buildingName, type GameState, type Square } from '@aa/engine';
 
 const SPECIAL: Record<string, string> = {
   bank: 'Bank',
@@ -20,6 +20,9 @@ const SPECIAL: Record<string, string> = {
   portal: 'Portal',
   arcade: 'Arcade',
   cannon: 'Cannon',
+  hike: 'Price Up',
+  taxi: 'Taxi',
+  swap: 'Swap',
   warp: 'Warp',
 };
 
@@ -27,7 +30,7 @@ export function squareName(G: GameState, sq: Square): string {
   if (sq.t === 'shop') return `${G.districts[sq.d]?.name ?? 'Row'} shop (${sq.base}G)`;
   if (sq.t === 'plot') {
     const d = G.districts[sq.d]?.name ?? '';
-    return sq.b ? `${d} ${BUILDINGS.find((b) => b.b === sq.b)!.name}` : `${d} vacant plot`;
+    return sq.b ? `${d} ${buildingName(sq.b)}` : `${d} vacant plot`;
   }
   if (sq.t === 'broker' && G.rules === 'easy') return 'Venture square';
   return SPECIAL[sq.t] ?? sq.t;
@@ -46,6 +49,10 @@ export const BUILDING_INFO: Record<string, { rival: string; owner: string }> = {
   circus: { rival: 'Pays the show fee: 100G.', owner: 'Upgrade to 500 / 1,000 / 2,000G shows.' },
   balloon: { rival: 'Pays 150G.', owner: 'Fly to any square; its landing effect applies.' },
   tax: { rival: 'Pays you 10% of their own net worth.', owner: 'The bank pays you 5% of your net worth.' },
+  motel: {
+    rival: 'Pays 25% of the cash they hold. Anyone passing may stop here instead of moving on.',
+    owner: 'Invest in any of your shops (you can stop here when passing too).',
+  },
   home: { rival: 'Pays 60G x your level.', owner: 'Every other player is pulled to this square.' },
   agency: {
     rival: 'Takes a break: their shops close until their next turn.',
@@ -79,6 +86,9 @@ export function squareInfo(G: GameState, sq: Square): string {
     portal: `Step on it to jump to ${G.nodes[sq.link ?? -1]?.t === 'bank' ? 'the bank' : 'its partner portal (same color)'}, then keep moving.`,
     arcade: 'Play an arcade game for prizes: Lucky Reels, Memory Blocks or Coin Derby.',
     cannon: 'Fire yourself to any other player on the board.',
+    hike: 'Price Up: your fees are 10% higher until your next turn.',
+    taxi: 'Taxi: ride to any special square and use it.',
+    swap: 'Swap: trade places with any other player.',
     warp: `Stop here to jump to ${G.nodes[sq.link ?? -1]?.t === 'bank' ? 'the bank' : 'its partner warp (same color), even in another part of the map'}.`,
   };
   return info[sq.t] ?? '';

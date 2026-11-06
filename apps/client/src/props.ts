@@ -15,6 +15,7 @@ export type PropKey =
   | 'balloon'
   | 'tax'
   | 'home'
+  | 'motel'
   | 'agency'
   | 'bank';
 

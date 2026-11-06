@@ -26,6 +26,45 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: '2026-11-06-motel-taxi-swap',
+    date: 'Nov 6, 2026',
+    title: 'Motels, taxis, swaps and your player card',
+    features: [
+      {
+        tag: 'new',
+        title: 'Three new squares',
+        text: 'Price Up raises your fees 10% until your next turn. Taxi rides you to any special square and uses it. Swap trades places with any player. Find them on Town, Harbor and Crossroads City, and in the board builder.',
+      },
+      {
+        tag: 'new',
+        title: 'The Motel',
+        text: 'A new building that replaces the Home. Anyone passing a motel can stop there instead of moving on. Rivals who stop pay 25% of the cash they hold; the owner can invest in a shop.',
+      },
+      {
+        tag: 'new',
+        title: 'Your player card',
+        text: 'Set your name and character on the main menu. You play as them when you start or join a game. If someone in the game already has your character, you get a random one (you can still change it).',
+      },
+      {
+        tag: 'better',
+        title: 'Party games: everyone chooses at once',
+        text: 'In Coin Derby, Lucky Wheel and Treasure Split everyone picks at the same time and locks in. The round starts as soon as everyone has.',
+      },
+      {
+        tag: 'better',
+        title: 'Auctions in the action bar',
+        text: 'The auction is a pop-up with the lot and the bidders, and you bid from the action bar, like the stock market.',
+      },
+    ],
+    extras: [
+      'The build menu shows how many of each building are left',
+      'Flying or riding anywhere no longer lights up every square',
+      'The 250% zoom is as close on big boards as on small ones',
+      'Players who joined can type their name without being interrupted',
+      'Smaller red remove buttons on player cards',
+    ],
+  },
+  {
     id: '2026-11-05-bank-districts',
     date: 'Nov 5, 2026',
     title: 'New districts around the bank',

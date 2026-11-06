@@ -116,6 +116,12 @@ room, Continue resumes the saved game, and the board editor (`ui/editor.ts`).
   `board.setChoices`, or a dialog from `ui/modals.ts` / `ui/pick.ts` / `ui/games.ts`) and returns
   the answer. Several humans on one device get a "pass the device" screen between them. Online,
   `decideOnline` adds the network step (below).
+- **Several decisions at once:** party games (`arcade.ts` `choices`) ask every player at the same
+  time and wait with `Promise.all`, applying the answers in seat order. CPUs and players on other
+  devices answer side by side; people on this device take turns with the one action bar
+  (`oneAtATime` chains their prompts). Decision numbers (`seq`) are still handed out in request
+  order, so every device numbers them the same, and answers are matched by number whatever order
+  they arrive in.
 - **`emit(event)`**: turns each event into animation and sound (tokens walking, coins flying,
   rings, banners, gates closing...) and waits the time in `timing.ts` so a turn is easy to follow.
   `refresh()` redraws the board and HUD from the state. After events it announces any stock

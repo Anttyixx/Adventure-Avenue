@@ -98,6 +98,8 @@ const PALETTE: { group: string; items: { tool: Tool; label: string; hint: string
       { tool: 'boom', label: 'Boom', hint: '50% commission on fees.' },
       { tool: 'broker', label: 'Stockbroker', hint: 'Buy stock (a venture square in Easy rules).' },
       { tool: 'arcade', label: 'Arcade', hint: 'Plays a minigame.' },
+      { tool: 'hike', label: 'Price Up', hint: 'Your fees are 10% higher until your next turn.' },
+      { tool: 'swap', label: 'Swap', hint: 'Trade places with any other player.' },
     ],
   },
   {
@@ -105,6 +107,7 @@ const PALETTE: { group: string; items: { tool: Tool; label: string; hint: string
     items: [
       { tool: 'warp', label: 'Warp', hint: 'Landing here warps you to its partner. Use them in pairs.' },
       { tool: 'cannon', label: 'Cannon', hint: 'Fires you to another player.' },
+      { tool: 'taxi', label: 'Taxi', hint: 'Ride to any special square and use it.' },
       {
         tool: 'portal',
         label: 'Portal',

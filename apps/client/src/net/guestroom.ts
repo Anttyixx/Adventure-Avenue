@@ -4,6 +4,7 @@
  * get back in, and the host sends the current turn to replay from.
  */
 import type { CharId, DecisionRequest, GameState } from '@aa/engine';
+import { loadProfile } from '../profile';
 import type { GameLink } from './link';
 import { connectTo, openPeer, peerErrorText, type DataConnection, type Peer } from './peer';
 import {
@@ -93,7 +94,14 @@ export class GuestRoom implements GameLink {
       });
       conn.on('close', () => this.lost(conn));
       conn.on('error', () => this.lost(conn));
-      this.send({ t: 'hello', v: NET_VERSION, token: this.token, name: this.name });
+      const look = loadProfile().look;
+      this.send({
+        t: 'hello',
+        v: NET_VERSION,
+        token: this.token,
+        name: this.name,
+        ...(look ? { look } : {}),
+      });
     });
   }
 

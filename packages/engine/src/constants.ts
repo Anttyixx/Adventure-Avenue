@@ -94,6 +94,8 @@ export const K = {
   // Commission squares
   boon: 0.2,
   boom: 0.5,
+  /** Price Up squares: the lander's fees are multiplied by this until their next turn. */
+  hike: 1.1,
 
   // Vacant plots
   plotCost: 200,
@@ -105,6 +107,8 @@ export const K = {
   circusUp: [300, 600, 1200],
   balloonFee: 150,
   homeFee: 60,
+  /** Motel: a rival who stops there pays this share of the cash they hold. */
+  motelRate: 0.25,
   taxRate: 0.1,
   taxOwner: 0.05,
 
@@ -144,7 +148,7 @@ export const K = {
     star3Chance: 0.5,
     star3Keep: 500,
     buildKeep: 150,
-    buildWeights: { tax: 3, checkpoint: 2, circus: 2, home: 1, agency: 1, balloon: 1 } as Record<
+    buildWeights: { tax: 3, checkpoint: 2, circus: 2, motel: 2, agency: 1, balloon: 1 } as Record<
       string,
       number
     >,

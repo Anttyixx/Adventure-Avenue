@@ -653,9 +653,16 @@ if (!(await ask(`Delete ${d.name}?`, 'Its 4 properties will be removed from the 
 - Players sit in the bottom container: up to 5 seat cards in a row (`.setup .seat-card`, smaller here): the
   character trimmed to its pixels (`charButton(look, 'body', ...)`) standing centered on a soft
   spot in the seat's color, the name (an input for players on this device), a muted tag
-  ("You · host", "On this device", "Joined online", "Bot") and a × remove button in the top right
-  (never on the host). The empty spot is a dashed card with a gold round **+ Add bot** button and
-  a small ghost **+ Local player** button.
+  ("You · host", "On this device", "Joined online", "Bot") and a small red × remove button in the
+  top right (16px `--bad` circle, white ×; never on the host). The empty spot is a dashed card with
+  a gold round **+ Add bot** button and a small ghost **+ Local player** button. Every name box and
+  its tag line up across cards: a name input and a bot's name share one height (26px, phones 22px),
+  and the host's name placeholder is bright text, so it never looks disabled.
+- **Player card** (main menu, `.menu-card` + `openPlayerCard`): a `.menu-sound` button in the top
+  right beside Sound (round 22px portrait + name; portrait only on phones). Its pop-up is a
+  `.modal.player-card` (same frame as the Menu pop-up): the character on a spot in a tile like a
+  seat card (`.pc-stage`, gold-free, the seat color's top edge) beside a labeled name input and a
+  muted hint; Done in the head. No Save button: changes save as they are made.
 
 ### 5.18 Game log
 
@@ -878,6 +885,27 @@ price per share struck through, and the player's price in green Lilita with a pu
 falling-chart icon) after their name in the table; every name has the empty 14px slot. Phones: the pop-up keeps only the district
 table (6 rows at a time, shifting by one to follow the selection), the digit faces shrink to 32x34 and the "shares you hold" line (`.m-line.held`) is hidden.
 
+### Auction (pop-up + action bar)
+
+The live auction follows the stock screen: `stockPopup(hud, 'Auction', content, 'auction-pop')`
+(460px wide, centered, View board chip) holds the lot, the high bid, the countdown bar and the
+bidder chips; the bid itself is a normal `hud.prompt` in the action bar: a Lilita title ("Raise
+your bid to 240G") with the seconds left in gold beside it, a muted line (who leads, your cash),
+gold **Bid** and ghost **Pass**. Watchers get the status line ("Kai is deciding whether to
+raise..."). The result is a prompt with Continue (auto after a moment), then the pop-up closes.
+
+### Choices that cover the whole board
+
+When almost every square is a choice (`setChoices(..., { plain: true })`, used when the options
+are more than 60% of the board), don't dim, light or pin anything: only the hovered square glows,
+and the bar says "Tap a square". Lighting the whole board hides it and costs frame time.
+
+### Badges on picture cards
+
+A count on a picture card (the build bar's "2 left") is a small navy pill in the card's top right
+corner (`.bp-left`: 9px bold, `--text`; red when 0). On phones it shows the number only, so it
+doesn't cover the picture.
+
 ### UI Lab tabs
 
 The Lab's control panel has a row of small `.seg` pills (`.lab-tabs`) under the search box:
@@ -892,8 +920,11 @@ Arcade games follow the venture board: a glass board centered on the screen
 player cards) and the action bar for words and buttons. Never a pop-up.
 
 - **Board head:** the game name in Lilita gold, a muted one-line subtitle ("Leg 1 of 3", "Everyone
-  may bet"), and for party games a row of portraits: faded = waiting, gold ring + bob = choosing,
-  green tick = ready.
+  may bet"), and for party games a row of portraits: gold ring + bob = still choosing, green tick
+  = locked in. Everyone chooses at the same time, so there is no "waiting" state.
+- **Pick, then lock in:** party choices are picked first (the picked option gets a gold inset
+  outline, `.aa-pick[aria-pressed='true']`, or the board zone/chest is pressed) and a gold **Lock
+  in** button sends it. After locking in, the status line names who the round still waits for.
 - **Action bar (`.aa`):** a Lilita title saying what to do or what happened ("Rosa: pick a chest",
   "Rosa leads after leg 2"), one muted hint line with the numbers that matter, and the controls on
   the right (stacked under the text on phones). One gold button; equal options (Sprint / Grab

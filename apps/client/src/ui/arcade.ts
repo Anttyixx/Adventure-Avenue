@@ -203,31 +203,46 @@ export class ArcadeStage {
 
   // -------------------------------------------------------------- who has chosen (party games)
 
-  /** Show everyone in the game, with `pid` thinking and those before them done. */
-  private markChoosing(order: number[], pid: number) {
+  /** Everyone in the round, each choosing or locked in (everyone chooses at the same time). */
+  private markChoosing() {
     clear(this.who);
-    const at = order.indexOf(pid);
-    order.forEach((id, i) => {
+    for (const id of this.order) {
       const p = this.G.players[id];
-      const state = i < at ? 'done' : i === at ? 'now' : 'wait';
+      const done = this.locked.has(id);
       this.who.append(
         h(
           'span',
           {
-            class: `as-chip ${state}`,
+            class: `as-chip ${done ? 'done' : 'now'}`,
             style: `--pc:${PLAYER_COLORS[p.color]}`,
-            title: `${p.name}: ${state === 'done' ? 'ready' : state === 'now' ? 'choosing' : 'waiting'}`,
+            title: `${p.name}: ${done ? 'locked in' : 'choosing'}`,
           },
           h('img', { src: portraitURL(p.ch), alt: '' }),
-          state === 'done' ? h('i', { 'aria-hidden': 'true' }, '✓') : null,
+          done ? h('i', { 'aria-hidden': 'true' }, '✓') : null,
         ),
       );
-    });
+    }
+  }
+
+  /** This player has locked in their choice for the round. */
+  lockIn(pid: number) {
+    if (this.locked.has(pid)) return;
+    this.locked.add(pid);
+    this.markChoosing();
+  }
+
+  /** The players this round is still waiting for. */
+  notLockedIn(): number[] {
+    return this.order.filter((id) => !this.locked.has(id));
   }
 
   private clearWho() {
     clear(this.who);
   }
+
+  /** Who has locked in this round, and which round that is ("game:round"). */
+  private locked = new Set<number>();
+  private lockRound = '';
 
   /** Party games: everyone playing, in the order they choose (the player who landed first). */
   private order: number[] = [];
@@ -525,7 +540,7 @@ export class ArcadeStage {
 
   // ================================================================== party games: shared
 
-  /** Someone is making their private choice: show the board and who is still choosing. */
+  /** A round of choices has opened: show the board and who is still choosing. */
   choosing(req: DecisionRequest<'arcadeChoice'>) {
     this.order = req.order;
     this.sub.textContent =
@@ -537,7 +552,12 @@ export class ArcadeStage {
     if (req.game === 'Coin Derby') this.derbyBoard();
     if (req.game === 'Lucky Wheel') this.wheelBoard();
     if (req.game === 'Treasure Split') this.chestBoard(req.round);
-    this.markChoosing(req.order, req.pid);
+    const round = `${req.game}:${req.round}`;
+    if (round !== this.lockRound) {
+      this.lockRound = round;
+      this.locked.clear();
+    }
+    this.markChoosing();
   }
 
   /** This player's private choice. */
@@ -646,17 +666,24 @@ export class ArcadeStage {
 
   private async derbyChoose(req: DecisionRequest<'arcadeChoice'>, p: Player) {
     const D = K.derby;
-    const sprint = this.btn(`Sprint · ${D.sprint[0]}-${D.sprint[1]} spaces`, '', () =>
-      this.hud.resolvePrompt({ choice: 0 }),
-    );
-    const grab = this.btn(`Grab ${fmt(D.grabCoins)} · ${D.grab[0]}-${D.grab[1]} spaces`, '', () =>
-      this.hud.resolvePrompt({ choice: 1 }),
+    // Pick one, then lock it in (everyone chooses at the same time; the leg starts once all have).
+    let pick = -1;
+    const go = this.btn('Pick one', 'main', () => this.hud.resolvePrompt({ choice: pick }), true);
+    const choose = (i: number) => {
+      pick = i;
+      [sprint, grab].forEach((b, k) => b.setAttribute('aria-pressed', String(k === i)));
+      go.disabled = false;
+      go.textContent = 'Lock in';
+    };
+    const sprint = this.btn(`Sprint · ${D.sprint[0]}-${D.sprint[1]} spaces`, 'aa-pick', () => choose(0));
+    const grab = this.btn(`Grab ${fmt(D.grabCoins)} · ${D.grab[0]}-${D.grab[1]} spaces`, 'aa-pick', () =>
+      choose(1),
     );
     return this.bar<{ choice: number }>(
       p.id,
       `${p.name}: sprint or grab coins?`,
       `Leg ${req.round} of ${D.legs}. Whoever is furthest after leg ${D.legs} wins ${fmt(D.winner * p.level)}.`,
-      [sprint, grab],
+      [sprint, grab, go],
     );
   }
 
@@ -762,7 +789,7 @@ export class ArcadeStage {
       minus.disabled = stake <= step;
       plus.disabled = stake + step > max;
       go.disabled = pick < 0 || stake <= 0;
-      go.textContent = pick < 0 ? 'Pick a bet' : `Bet ${fmt(stake)} on ${WHEEL_BETS[pick]}`;
+      go.textContent = pick < 0 ? 'Pick a bet' : `Lock in ${fmt(stake)} on ${WHEEL_BETS[pick]}`;
       this.zones.forEach((z, i) => z.setAttribute('aria-pressed', String(i === pick)));
     };
     const change = (d: number) => {
@@ -873,7 +900,7 @@ export class ArcadeStage {
         pick = i;
         this.chests.forEach((x, k) => x.setAttribute('aria-pressed', String(k === i)));
         go.disabled = false;
-        go.textContent = `Take the ${fmt(K.treasure.chests[i])} chest`;
+        go.textContent = `Lock in the ${fmt(K.treasure.chests[i])} chest`;
       };
     });
     const answer = await this.bar<{ choice: number }>(

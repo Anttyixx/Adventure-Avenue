@@ -55,10 +55,16 @@ export function activity(G: GameState, req: DecisionRequest, rolled?: number): A
           return is('choosing a shop to buy', 'property');
         case 'forcedBuyout':
           return is('choosing a shop to buy out', 'property');
+        case 'taxi':
+          return is('choosing where to take the taxi', 'move');
       }
       return is('choosing a square', 'move');
     case 'cannonTarget':
       return is('aiming the cannon', 'move');
+    case 'swapTarget':
+      return is('choosing who to swap places with', 'move');
+    case 'motelStop':
+      return is('deciding whether to stop at the motel', 'move');
     case 'pickDistrict':
       return is(
         req.purpose === 'free20' ? 'choosing a district for free shares' : 'choosing a district',
