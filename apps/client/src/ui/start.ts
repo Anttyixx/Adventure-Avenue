@@ -328,15 +328,89 @@ export function setupFrame() {
   };
 }
 
-/** Ease an element from its old width to its new one (the bottom bar, as players come and go). */
-export function morphWidth(el: HTMLElement, from: number) {
-  if (!from || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-  const to = el.getBoundingClientRect().width;
-  if (Math.abs(to - from) < 1) return;
-  el.animate([{ width: `${from}px` }, { width: `${to}px` }], {
-    duration: 280,
-    easing: 'cubic-bezier(0.2, 0.8, 0.2, 1)',
-  });
+/** How long the bottom bar takes to grow, shrink and move its seats (ms). */
+const DOCK_MS = 320;
+const DOCK_EASE = 'cubic-bezier(0.2, 0.8, 0.2, 1)';
+
+/**
+ * Rebuild the bottom bar (`rebuild` replaces its contents) and animate the change: the bar eases
+ * from its old size to its new one, seats that stayed slide to their new places, new seats pop
+ * in, and seats that left fade out where they were. Seats are matched by `data-key` (their
+ * character, which no two seats share). Safe to call while an earlier change is still animating:
+ * it starts from wherever things are on screen.
+ */
+export function morphDock(dock: HTMLElement, rebuild: () => void) {
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const from = dock.getBoundingClientRect();
+  const before = new Map<string, { el: HTMLElement; r: DOMRect }>();
+  for (const el of dock.querySelectorAll<HTMLElement>('[data-key]'))
+    if (!el.classList.contains('dock-ghost'))
+      before.set(el.dataset.key!, { el, r: el.getBoundingClientRect() });
+  // Stop what is still running (measured above, so nothing jumps) and drop old ghosts.
+  for (const a of dock.getAnimations({ subtree: true })) a.cancel();
+  dock.querySelectorAll('.dock-ghost').forEach((g) => g.remove());
+  rebuild();
+  if (reduce || !from.width || !before.size) return;
+  const to = dock.getBoundingClientRect();
+  const opts = { duration: DOCK_MS, easing: DOCK_EASE };
+  if (Math.abs(to.width - from.width) > 0.5 || Math.abs(to.height - from.height) > 0.5)
+    dock.animate(
+      [
+        { width: `${from.width}px`, height: `${from.height}px` },
+        { width: `${to.width}px`, height: `${to.height}px` },
+      ],
+      opts,
+    );
+  const seen = new Set<string>();
+  for (const el of dock.querySelectorAll<HTMLElement>('[data-key]')) {
+    const key = el.dataset.key!;
+    seen.add(key);
+    const old = before.get(key);
+    const r = el.getBoundingClientRect();
+    if (!old) {
+      el.animate(
+        [
+          { opacity: 0, transform: 'scale(0.85)' },
+          { opacity: 1, transform: 'none' },
+        ],
+        { ...opts, delay: 60, fill: 'backwards' },
+      );
+      continue;
+    }
+    // Positions inside the bar (the bar itself is moving too while it resizes).
+    const dx = old.r.left - from.left - (r.left - to.left);
+    const dy = old.r.top - from.top - (r.top - to.top);
+    if (Math.abs(dx) > 0.5 || Math.abs(dy) > 0.5)
+      el.animate([{ transform: `translate(${dx}px, ${dy}px)` }, { transform: 'none' }], opts);
+  }
+  // Seats that left: a copy fades and shrinks away where the seat was.
+  for (const [key, { el, r }] of before) {
+    if (seen.has(key)) continue;
+    const ghost = el.cloneNode(true) as HTMLElement;
+    ghost.classList.add('dock-ghost');
+    Object.assign(ghost.style, {
+      position: 'absolute',
+      left: `${r.left - to.left}px`,
+      top: `${r.top - to.top}px`,
+      width: `${r.width}px`,
+      height: `${r.height}px`,
+      margin: '0',
+      pointerEvents: 'none',
+    });
+    dock.append(ghost);
+    ghost
+      .animate(
+        [
+          { opacity: 1, transform: 'none' },
+          { opacity: 0, transform: 'scale(0.85)' },
+        ],
+        { duration: DOCK_MS * 0.7, easing: 'ease-in', fill: 'forwards' },
+      )
+      .finished.then(
+        () => ghost.remove(),
+        () => ghost.remove(),
+      );
+  }
 }
 
 /** The top bar: Back, the title, the join code chip (if any) and Sound (as on the main menu). */
@@ -360,10 +434,8 @@ export function setupScreen(
   handlers: SetupHandlers,
   openRoom?: () => Promise<SetupRoom | null>,
 ) {
+  // The board and settings are remembered from the last game; the players are not.
   const saved = readJSON(OPTS_KEY, {
-    humans: 1,
-    total: 4,
-    bots: undefined as number | undefined,
     target: K.defaultTarget as number,
     roundCap: 0,
     plots: 'few' as PlotSetting,
@@ -371,9 +443,12 @@ export function setupScreen(
     rules: 'standard' as RuleSet,
     boardId: 'town',
   });
-  /** Players on this device (the host first), then friends who joined, then bots. */
-  let humans = Math.max(1, Math.min(saved.humans ?? 1, MAX_PLAYERS));
-  let bots = Math.max(0, Math.min(saved.bots ?? (saved.total ?? 4) - humans, MAX_PLAYERS - humans));
+  /**
+   * Players on this device (the host first), then friends who joined, then bots. Setup starts
+   * with only the host: bots and other players are added by hand (or join with the code).
+   */
+  let humans = 1;
+  let bots = 0;
   const st: RuleSettings = {
     target: cleanTarget(saved.target),
     roundCap: saved.roundCap,
@@ -689,7 +764,7 @@ export function setupScreen(
     ) =>
       h(
         'div',
-        { class: `seat-card ${kind}`, style: `--pc:${color}` },
+        { class: `seat-card ${kind}`, style: `--pc:${color}`, 'data-key': look },
         seatName(name),
         h('div', { class: 'seat-stage' }, charButton(look, 'body', pick)),
         // Bots have no chip; an empty one keeps every card's rows lined up.
@@ -763,7 +838,7 @@ export function setupScreen(
   const addCard = () =>
     h(
       'div',
-      { class: 'seat-card add' },
+      { class: 'seat-card add', 'data-key': 'add' },
       h(
         'button',
         {
@@ -849,18 +924,19 @@ export function setupScreen(
       }),
     );
     // The bottom bar fits its contents like the action bar, morphing when players come and go.
-    const dockFrom = frame.dock.getBoundingClientRect().width;
-    clear(frame.dock);
-    frame.dock.append(playersPanel());
-    morphWidth(frame.dock, dockFrom);
+    morphDock(frame.dock, () => {
+      clear(frame.dock);
+      frame.dock.append(playersPanel());
+      // The status line's new text is part of the bar's new size, so set it before measuring.
+      checkReady();
+    });
     slide = '';
-    checkReady();
   };
 
   /** Start the game with the seats as they are now. */
   const startGame = () => {
     stopCountdown();
-    writeJSON(OPTS_KEY, { humans, bots, total: total(), boardId, ...st });
+    writeJSON(OPTS_KEY, { boardId, ...st });
     const board = getBoard(boardId) ?? BUILT_IN[0];
     const base = { ...st, board };
     if (room && joined() > 0) {
@@ -905,10 +981,11 @@ export function setupScreen(
     const blocked = !playable(board)
       ? 'Fix this board in the board editor to play.'
       : total() < 2
-        ? 'Add a bot or a friend: a game needs 2 players.'
+        ? 'Add a bot, a local player or a friend to play'
         : '';
     statusEl.classList.toggle('go', !waiting.length && !blocked);
-    statusEl.classList.toggle('bad', !!blocked);
+    // Too few players is just the next step (add someone), not an error.
+    statusEl.classList.toggle('bad', !playable(board));
     if (blocked || waiting.length) {
       if (countTimer) stopCountdown();
       statusEl.textContent =
@@ -1016,8 +1093,6 @@ export function guestSetup(root: HTMLElement, room: GuestSetupRoom, handlers: Gu
           })
         : h('section', { class: 'setup-panel glass rules-panel' }, h('h3', null, 'Game settings')),
     );
-    const dockFrom = frame.dock.getBoundingClientRect().width;
-    clear(frame.dock);
     const status = !lobby
       ? 'Connected. Waiting for the lobby...'
       : lobby.starting
@@ -1025,75 +1100,78 @@ export function guestSetup(root: HTMLElement, room: GuestSetupRoom, handlers: Gu
         : me?.ready
           ? 'Waiting for everyone else...'
           : 'Tap Ready when you are set';
-    frame.dock.append(
-      h(
-        'section',
-        { class: 'su-players' },
+    morphDock(frame.dock, () => {
+      clear(frame.dock);
+      frame.dock.append(
         h(
-          'div',
-          { class: 'su-players-head' },
-          h('h3', null, lobby ? `Players · ${lobby.seats.length}` : 'Players'),
-          h('span', { class: `su-status ${lobby?.starting ? 'go' : ''}`, role: 'status' }, status),
-        ),
-        lobby
-          ? h(
-              'div',
-              { class: 'seats' },
-              ...lobby.seats.map((x, i) => {
-                const mine = i === room.seat;
-                const bot = x.kind === 'cpu' || x.kind === 'open';
-                return h(
-                  'div',
-                  {
-                    class: `seat-card ${bot ? 'bot' : mine ? 'human' : 'joined'}`,
-                    style: `--pc:${PLAYER_COLORS[i]}`,
-                  },
-                  seatName(x.kind === 'open' ? 'Open' : x.name),
-                  h(
+          'section',
+          { class: 'su-players' },
+          h(
+            'div',
+            { class: 'su-players-head' },
+            h('h3', null, lobby ? `Players · ${lobby.seats.length}` : 'Players'),
+            h('span', { class: `su-status ${lobby?.starting ? 'go' : ''}`, role: 'status' }, status),
+          ),
+          lobby
+            ? h(
+                'div',
+                { class: 'seats' },
+                ...lobby.seats.map((x, i) => {
+                  const mine = i === room.seat;
+                  const bot = x.kind === 'cpu' || x.kind === 'open';
+                  return h(
                     'div',
-                    { class: 'seat-stage' },
-                    x.look
-                      ? charButton(x.look, 'body', mine ? () => pick(lobby, i) : null)
-                      : h('span', { class: 'portrait empty' }, '?'),
-                  ),
-                  mine
-                    ? h(
-                        'button',
-                        {
-                          class: `seat-ready ${x.ready ? 'on' : ''}`,
-                          'aria-pressed': String(!!x.ready),
-                          title: x.ready
-                            ? 'Tap if you are not ready after all'
-                            : 'Tap when you are ready to play',
-                          onclick: () => room.setReady(!x.ready),
-                        },
-                        x.ready ? '✓ Ready' : 'Ready',
-                      )
-                    : bot
-                      ? h('span', { class: 'seat-ready ghost', 'aria-hidden': 'true' }, 'Ready')
-                      : readyBadge(!!x.ready),
-                  h(
-                    'span',
-                    { class: 'seat-tag' },
+                    {
+                      class: `seat-card ${bot ? 'bot' : mine ? 'human' : 'joined'}`,
+                      'data-key': x.look ?? `open${i}`,
+                      style: `--pc:${PLAYER_COLORS[i]}`,
+                    },
+                    seatName(x.kind === 'open' ? 'Open' : x.name),
+                    h(
+                      'div',
+                      { class: 'seat-stage' },
+                      x.look
+                        ? charButton(x.look, 'body', mine ? () => pick(lobby, i) : null)
+                        : h('span', { class: 'portrait empty' }, '?'),
+                    ),
                     mine
-                      ? 'You'
-                      : x.kind === 'host'
-                        ? 'Host'
-                        : x.kind === 'open'
-                          ? 'A friend can join'
-                          : bot
-                            ? 'Bot'
-                            : x.kind === 'local'
-                              ? "Host's device"
-                              : 'Joined',
-                  ),
-                );
-              }),
-            )
-          : null,
-      ),
-    );
-    morphWidth(frame.dock, dockFrom);
+                      ? h(
+                          'button',
+                          {
+                            class: `seat-ready ${x.ready ? 'on' : ''}`,
+                            'aria-pressed': String(!!x.ready),
+                            title: x.ready
+                              ? 'Tap if you are not ready after all'
+                              : 'Tap when you are ready to play',
+                            onclick: () => room.setReady(!x.ready),
+                          },
+                          x.ready ? '✓ Ready' : 'Ready',
+                        )
+                      : bot
+                        ? h('span', { class: 'seat-ready ghost', 'aria-hidden': 'true' }, 'Ready')
+                        : readyBadge(!!x.ready),
+                    h(
+                      'span',
+                      { class: 'seat-tag' },
+                      mine
+                        ? 'You'
+                        : x.kind === 'host'
+                          ? 'Host'
+                          : x.kind === 'open'
+                            ? 'A friend can join'
+                            : bot
+                              ? 'Bot'
+                              : x.kind === 'local'
+                                ? "Host's device"
+                                : 'Joined',
+                    ),
+                  );
+                }),
+              )
+            : null,
+        ),
+      );
+    });
   };
   draw();
   return {

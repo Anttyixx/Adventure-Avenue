@@ -6,7 +6,7 @@ import { PLAYER_COLORS } from '@aa/engine';
 import type { HostRoom } from '../net/hostroom';
 import { inviteURL, type LobbySeat } from '../net/protocol';
 import { BUILT_IN, listBoards } from '../boardstore';
-import { boardStage, morphWidth, rulesPanel, seatName, setupFrame, setupHead } from './start';
+import { boardStage, morphDock, rulesPanel, seatName, setupFrame, setupHead } from './start';
 import { charButton } from './charpick';
 import { clear, fmt, h } from './dom';
 
@@ -84,6 +84,7 @@ export function resumeLobby(
       {
         class: `seat-card ${s.kind === 'cpu' || s.kind === 'open' ? 'bot' : 'joined'} ${away ? 'away' : ''}`,
         style: `--pc:${PLAYER_COLORS[i]}`,
+        'data-key': s.look ?? `seat${i}`,
         title: away ? `${s.name} is not back yet: a CPU plays for them until they join.` : null,
       },
       seatName(s.name),
@@ -147,46 +148,50 @@ export function resumeLobby(
         stocks: lobby.stocks ?? 'dynamic',
       }),
     );
-    const dockFrom = f.dock.getBoundingClientRect().width;
-    clear(f.dock);
-    f.dock.append(
-      h(
-        'section',
-        { class: 'su-players' },
+    morphDock(f.dock, () => {
+      clear(f.dock);
+      f.dock.append(
+        h(
+          'section',
+          { class: 'su-players' },
+          h(
+            'div',
+            { class: 'su-players-head' },
+            h('h3', null, `Players · ${lobby.seats.length}`),
+            h(
+              'span',
+              { class: 'hint' },
+              !oldCode || room.code === oldCode
+                ? 'Friends rejoin with the code and the same name.'
+                : `The old code ${oldCode} was taken: friends use the new one.`,
+            ),
+          ),
+          h('div', { class: 'seats' }, ...lobby.seats.map(seatCard)),
+        ),
         h(
           'div',
-          { class: 'su-players-head' },
-          h('h3', null, `Players · ${lobby.seats.length}`),
+          { class: 'su-start' },
           h(
-            'span',
-            { class: 'hint' },
-            !oldCode || room.code === oldCode
-              ? 'Friends rejoin with the code and the same name.'
-              : `The old code ${oldCode} was taken: friends use the new one.`,
+            'div',
+            { class: 'setup-summary' },
+            h('strong', null, lobby.boardName),
+            h('span', null, `${round ? `Round ${round} · ` : ''}${fmt(lobby.target)} goal`),
+            missing
+              ? h(
+                  'small',
+                  { class: 'hint' },
+                  `${missing} not back yet: a CPU plays for them until they join.`,
+                )
+              : null,
+          ),
+          h(
+            'button',
+            { class: 'btn main big', onclick: () => handlers.onResume() },
+            missing ? `Resume (${missing} away)` : 'Resume game',
           ),
         ),
-        h('div', { class: 'seats' }, ...lobby.seats.map(seatCard)),
-      ),
-      h(
-        'div',
-        { class: 'su-start' },
-        h(
-          'div',
-          { class: 'setup-summary' },
-          h('strong', null, lobby.boardName),
-          h('span', null, `${round ? `Round ${round} · ` : ''}${fmt(lobby.target)} goal`),
-          missing
-            ? h('small', { class: 'hint' }, `${missing} not back yet: a CPU plays for them until they join.`)
-            : null,
-        ),
-        h(
-          'button',
-          { class: 'btn main big', onclick: () => handlers.onResume() },
-          missing ? `Resume (${missing} away)` : 'Resume game',
-        ),
-      ),
-    );
-    morphWidth(f.dock, dockFrom);
+      );
+    });
   };
   const off = room.onChange(draw);
   draw();

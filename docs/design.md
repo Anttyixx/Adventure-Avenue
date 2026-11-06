@@ -657,8 +657,12 @@ if (!(await ask(`Delete ${d.name}?`, 'Its 4 properties will be removed from the 
   1120px; one column under 900px), centered between the bars by `margin: auto` in the flex
   scroll area (top-aligned on short screens); the Map header stays at the top of its panel and
   the carousel fills the rest, and a fixed bottom container `.su-dock` (rounded glass,
-  players only, no Start; `fit-content` width like the action bar, morphing 280ms via
-  `morphWidth` as seats change; seat cards 118px). Ready up: each person's seat card has a
+  players only, no Start; `fit-content` width like the action bar; seat cards 118px with 12/10px
+  padding, phones 8/6px). Every redraw goes through `morphDock`: the bar eases its width and
+  height (320ms, `cubic-bezier(0.2, 0.8, 0.2, 1)`), seats matched by `data-key` (their character)
+  slide from their old place, new seats pop in (fade + scale from 0.85) and removed seats leave a
+  fading ghost copy; an interrupted change starts from what is on screen. The status line is set
+  inside the rebuild so its new length is part of the measured size. Ready up: each person's seat card has a
   `.seat-ready` chip just under the character's feet (gold outline on navy "Ready", green with a
   tick when ready; joined players' state as the same chip without a button, `.badge`), and `.su-status` beside the "Players"
   heading says who we wait for (muted), counts down (green) or why it can't start (red). Board tools are `.su-chip` pills in the

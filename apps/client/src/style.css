@@ -10374,7 +10374,7 @@ button.seat-ready.on {
   white-space: nowrap;
 }
 .su .seat-card.away .seat-stage,
-.su .seat-card.away .name {
+.su .seat-card.away .seat-name {
   opacity: 0.5;
 }
 .su .seat-away {
@@ -10539,8 +10539,9 @@ span.su-code {
   min-width: 0;
 }
 .su .seat-card {
-  padding: 6px 6px 5px;
-  gap: 3px;
+  /* Room around the name plate, character, Ready chip and tag, so nothing touches the edges. */
+  padding: 12px 10px 10px;
+  gap: 6px;
 }
 .su .seat-stage .char-btn {
   width: 38px;
@@ -10549,22 +10550,6 @@ span.su-code {
 .su .seat-stage::after {
   width: 46px;
   height: 11px;
-}
-.su .seat-card .name {
-  /* The host's name box and a bot's name are the same height, so the tags under them line up. */
-  height: 26px;
-  box-sizing: border-box;
-  font-size: 13px;
-  padding: 0 6px;
-}
-.su .seat-card .name.cpu {
-  display: grid;
-  place-items: center;
-  padding: 0;
-}
-.su .seat-card input.name::placeholder {
-  color: var(--text);
-  opacity: 0.8;
 }
 .su .seat-card .seat-tag {
   font-size: 10px;
@@ -10694,8 +10679,8 @@ span.su-code {
     line-height: 1;
   }
   .su .seat-card {
-    padding: 4px 4px 4px;
-    gap: 2px;
+    padding: 8px 6px 7px;
+    gap: 4px;
   }
   .su .seat-stage .char-btn {
     width: 30px;
@@ -10704,11 +10689,6 @@ span.su-code {
   .su .seat-stage::after {
     width: 32px;
     height: 8px;
-  }
-  .su .seat-card .name {
-    height: 22px;
-    font-size: 11px;
-    padding: 0 4px;
   }
   .su .seat-card .seat-tag {
     display: none;
@@ -10852,9 +10832,6 @@ span.su-code {
   .su .seat-stage .char-btn {
     width: 24px;
     height: 32px;
-  }
-  .su .seat-card .name {
-    height: 20px;
   }
   .su-rule .seg-btn {
     padding: 2px 7px;

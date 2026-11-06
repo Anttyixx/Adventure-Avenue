@@ -882,7 +882,8 @@ what was used, the license and links to their pages.
 scrolls: **Back** (to the main menu), the "New game" title, the join code chip and **Sound** (the
 same button as on the main menu). A **bottom container** that never scrolls (a rounded glass
 panel, no full-width backdrop) with the players; there is no Start button (see **Ready up**). Like the action bar it is only as wide as its contents,
-and it morphs wider or narrower as players are added or leave. Between them: the board selector
+and it eases wider or narrower as players are added or leave (seats that stay slide over, new
+ones pop in, removed ones fade out). Between them: the board selector
 on the left and the game settings on the right, the two panels the same height (one under the
 other on windows narrower than 900px), centered in the room between the top and bottom bars
 (short phone screens start them at the top and scroll instead). On bigger screens (1180 x 820 and up) everything fits without scrolling; on
@@ -892,7 +893,9 @@ smaller ones the middle scrolls, with no scroll bar.
   swiping, the arrow keys or the dots move through it, and it loops from the last board back to
   the first. **Import board** and **Board editor** (Edit this board for a saved one) are small
   chips in the panel's top right corner.
-- **Players** (in the bottom container, smaller cards): the host is always seated ("You · host"). Each seat
+- **Players** (in the bottom container, smaller cards): setup starts with only the host ("You ·
+  host"); bots and other players on this device are added by hand, and friends join with the code
+  (the board and settings are remembered from the last game, the players are not). Each seat
   is a card with the character standing on a spot in the seat's color (centered, tap to change it
   for players on this device), the name and what kind of player it is. An empty spot (until there
   are 5 players) has **Add bot** and a smaller **+ Local player** button (to add a player who plays on this device; phones show it too); bots and extra

@@ -33,7 +33,12 @@ export const CHANGELOG: ChangelogEntry[] = [
       {
         tag: 'better',
         title: 'Name plates on the seats',
-        text: "Each seat shows the player's name in a colored plate above their character, just like on the board, with the Ready chip under their feet. Names are set before the game: yours is on your player card in the main menu.",
+        text: "Each seat shows the player's name in a colored plate above their character, just like on the board, with the Ready chip under their feet. Names are set before the game: yours is on your player card in the main menu. The players bar now glides smoothly as players come and go.",
+      },
+      {
+        tag: 'better',
+        title: 'Start with just you',
+        text: 'A new game starts with only you in the players bar. Add bots or players on this device with the + button, or share the code so friends can join.',
       },
       {
         tag: 'new',
