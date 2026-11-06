@@ -33,7 +33,7 @@ export const CHANGELOG: ChangelogEntry[] = [
       {
         tag: 'better',
         title: 'Game setup, rearranged',
-        text: 'Back, the title, the join code and Sound stay at the top; the players and Start game stay at the bottom. The board picker sits in the middle with every game setting under it, and on most screens it all fits without scrolling.',
+        text: 'Back, the title, the join code and Sound stay at the top; the players and Start game stay at the bottom in a bar that grows and shrinks with the players. The board picker and the game settings sit side by side, and on most screens it all fits without scrolling.',
       },
       {
         tag: 'new',

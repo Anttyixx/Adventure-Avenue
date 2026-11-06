@@ -312,6 +312,17 @@ function setupFrame() {
   };
 }
 
+/** Ease an element from its old width to its new one (the bottom bar, as players come and go). */
+function morphWidth(el: HTMLElement, from: number) {
+  if (!from || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  const to = el.getBoundingClientRect().width;
+  if (Math.abs(to - from) < 1) return;
+  el.animate([{ width: `${from}px` }, { width: `${to}px` }], {
+    duration: 280,
+    easing: 'cubic-bezier(0.2, 0.8, 0.2, 1)',
+  });
+}
+
 /** The top bar: Back, the title, the join code chip (if any) and Sound (as on the main menu). */
 function setupHead(top: HTMLElement, onBack: () => void, title: string, code: Node | null) {
   clear(top);
@@ -742,12 +753,7 @@ export function setupScreen(
     h(
       'section',
       { class: 'su-players' },
-      h(
-        'div',
-        { class: 'su-players-head' },
-        h('h3', null, `Players · ${total()} of ${MAX_PLAYERS}`),
-        h('button', { class: 'su-chip', onclick: () => (shuffle(), draw()) }, 'Shuffle characters'),
-      ),
+      h('div', { class: 'su-players-head' }, h('h3', null, `Players · ${total()} of ${MAX_PLAYERS}`)),
       h(
         'div',
         { class: 'seats' },
@@ -816,6 +822,16 @@ export function setupScreen(
       }),
     );
     const j = joined();
+    // Why Start can't be pressed yet shows when hovering it (a disabled button gets no hover, so
+    // the note sits on a wrapper around it).
+    const why = !playable(board)
+      ? 'This board has problems: fix it in the board editor to play.'
+      : total() < 2
+        ? 'A game needs at least 2 players: add a bot or a friend.'
+        : '';
+    const startWrap = h('span', { class: `su-go ${why ? 'blocked' : ''}`, title: why || null }, start);
+    // The bottom bar fits its contents like the action bar, morphing when players come and go.
+    const dockFrom = frame.dock.getBoundingClientRect().width;
     clear(frame.dock);
     frame.dock.append(
       playersPanel(),
@@ -832,12 +848,12 @@ export function setupScreen(
             `${total()} players · ${st.rules === 'standard' ? 'Standard' : 'Easy'} · ${fmt(st.target)} goal`,
           ),
           j ? h('small', { class: 'hint' }, `${j} friend${j > 1 ? 's' : ''} joined: an online game.`) : null,
-          total() < 2 ? h('small', { class: 'hint warn' }, 'A game needs at least 2 players.') : null,
           loadSave() ? h('small', { class: 'hint' }, 'Starting replaces the game in progress.') : null,
         ),
-        start,
+        startWrap,
       ),
     );
+    morphWidth(frame.dock, dockFrom);
     slide = '';
   };
   connect();
@@ -932,6 +948,7 @@ export function guestSetup(root: HTMLElement, room: GuestSetupRoom, handlers: Gu
           })
         : h('section', { class: 'setup-panel glass rules-panel' }, h('h3', null, 'Game settings')),
     );
+    const dockFrom = frame.dock.getBoundingClientRect().width;
     clear(frame.dock);
     frame.dock.append(
       h(
@@ -956,6 +973,7 @@ export function guestSetup(root: HTMLElement, room: GuestSetupRoom, handlers: Gu
         h('p', { class: 'waiting' }, h('span', { class: 'spinner' }), 'Waiting for the host to start...'),
       ),
     );
+    morphWidth(frame.dock, dockFrom);
   };
   draw();
   return { update: draw, close: () => frame.close() };

@@ -641,10 +641,13 @@ if (!(await ask(`Delete ${d.name}?`, 'Its 4 properties will be removed from the 
 - **Layout** (`.setup.su`): a fixed top bar `.su-top` (ghost "‹ Back", the title in Lilita 34px,
   the join code chip `.su-code` (dashed gold pill: "Code", the code in Lilita gold, "Copy link"),
   the main menu's Sound button), a scrolling middle `.su-scroll` (scroll bar hidden) holding the
-  board panel and the settings panel (max 880px, centered), and a fixed bottom container
-  `.su-dock` (rounded glass, players + summary + Start). Board tools are `.su-chip` pills in the
+  board panel (left) and the settings panel (right) in a two-column grid, equal heights (max
+  1120px; one column under 900px), and a fixed bottom container `.su-dock` (rounded glass,
+  players + summary + Start; `fit-content` width like the action bar, morphing 280ms via
+  `morphWidth` as seats change; seat cards 118px). A blocked Start sits in `.su-go` whose tooltip
+  says why. Board tools are `.su-chip` pills in the
   Map panel's top right. Settings are a grid (`.su-rules`): rule set, round limit, stocks; then
-  goal and vacant plots (two columns on narrow/short screens).
+  in two columns: rule set, round limit; goal, stocks; vacant plots across.
 - Players sit in the bottom container: up to 5 seat cards in a row (`.setup .seat-card`, smaller here): the
   character trimmed to its pixels (`charButton(look, 'body', ...)`) standing centered on a soft
   spot in the seat's color, the name (an input for players on this device), a muted tag

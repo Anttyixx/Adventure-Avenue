@@ -9827,13 +9827,22 @@ div.sl-inline label {
   display: none;
 }
 .su-main {
-  width: min(880px, 100%);
+  width: min(1120px, 100%);
   box-sizing: border-box;
   margin: 0 auto;
   padding: 4px 16px 12px;
-  display: flex;
-  flex-direction: column;
+  /* The board picker on the left and the settings on the right, the same height. */
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  align-items: stretch;
   gap: 12px;
+}
+.su-main > .setup-panel {
+  /* (Older setup styles give the panels named grid areas this grid doesn't have.) */
+  grid-area: auto;
+}
+.su-main .board-panel {
+  justify-content: center;
 }
 .su-main .setup-panel {
   padding: 12px 18px;
@@ -9848,7 +9857,7 @@ div.sl-inline label {
 .su .car-thumb .thumb {
   width: auto !important;
   max-width: 100%;
-  max-height: min(150px, 15vh);
+  max-height: min(190px, 22vh);
 }
 .su .car-slide {
   gap: 6px;
@@ -9896,10 +9905,11 @@ div.sl-inline label {
    then the winning goal and vacant plots. */
 .su-rules {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   grid-template-areas:
-    'rules round stocks'
-    'goal plots plots';
+    'rules round'
+    'goal stocks'
+    'plots plots';
   gap: 12px 22px;
 }
 .su-r-rules {
@@ -9981,7 +9991,10 @@ span.su-code {
   display: flex;
   align-items: center;
   gap: 16px;
-  width: min(1120px, calc(100% - 24px));
+  /* Like the action bar: only as wide as the players and Start need. */
+  width: fit-content;
+  max-width: calc(100% - 24px);
+  overflow: hidden;
   box-sizing: border-box;
   margin: 0 auto 10px;
   padding: 8px 14px;
@@ -9989,7 +10002,7 @@ span.su-code {
   background: rgba(16, 26, 51, 0.94);
 }
 .su-players {
-  flex: 1 1 auto;
+  flex: 0 1 auto;
   min-width: 0;
   display: flex;
   flex-direction: column;
@@ -10007,8 +10020,12 @@ span.su-code {
   color: #fff;
 }
 .su .seats {
-  grid-template-columns: repeat(5, minmax(0, 1fr));
+  display: flex;
   gap: 8px;
+}
+.su .seats > .seat-card {
+  flex: 0 0 118px;
+  min-width: 0;
 }
 .su .seat-card {
   padding: 6px 6px 5px;
@@ -10063,9 +10080,15 @@ span.su-code {
 .su-start .setup-summary {
   margin: 0;
 }
-.su-start .hint.warn {
-  color: var(--accent);
-  font-weight: 700;
+.su-go {
+  display: block;
+}
+/* Start can't be pressed yet: the reason pops up when hovering it (the wrapper's tooltip). */
+.su-go.blocked {
+  cursor: not-allowed;
+}
+.su-go.blocked .btn {
+  pointer-events: none;
 }
 .su-start .btn.big {
   width: 100%;
@@ -10083,13 +10106,10 @@ span.su-code {
   width: 100%;
   box-sizing: border-box;
 }
-@media (max-width: 760px), (max-height: 500px) {
-  .su-rules {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    grid-template-areas:
-      'rules round'
-      'goal stocks'
-      'plots plots';
+/* Narrow windows: the board picker, then the settings, one under the other. */
+@media (max-width: 900px) {
+  .su-main {
+    grid-template-columns: minmax(0, 1fr);
   }
 }
 /* Phones (landscape): a slimmer top bar and dock, so the middle has room to scroll. */
@@ -10119,7 +10139,7 @@ span.su-code {
     gap: 8px 14px;
   }
   .su-dock {
-    width: calc(100% - 12px);
+    max-width: calc(100% - 12px);
     margin-bottom: 6px;
     padding: 6px 8px;
     gap: 8px;
@@ -10129,6 +10149,9 @@ span.su-code {
   }
   .su .seats {
     gap: 5px;
+  }
+  .su .seats > .seat-card {
+    flex-basis: 84px;
   }
   .su .seat-card {
     padding: 4px 4px 4px;
