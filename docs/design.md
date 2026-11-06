@@ -658,9 +658,11 @@ if (!(await ask(`Delete ${d.name}?`, 'Its 4 properties will be removed from the 
   scroll area (top-aligned on short screens); the Map header stays at the top of its panel and
   the carousel fills the rest, and a fixed bottom container `.su-dock` (rounded glass,
   players only, no Start; `fit-content` width like the action bar, morphing 280ms via
-  `morphWidth` as seats change; seat cards 118px). Ready up: each person's seat card ends in a
-  `.seat-ready` pill button (gold outline "Ready", green with a tick when ready; joined players'
-  state as the same pill without a button, `.badge`), and `.su-status` beside the "Players"
+  `morphWidth` as seats change; seat cards 118px). Ready up: each person's seat card has a
+  `.seat-ready` chip sitting centered on the character's spot, over their feet, so the card is no
+  taller (gold outline on navy "Ready", green with a tick when ready; joined players' state as the
+  same chip without a button, `.badge`; a joined player's own row in their lobby has it as a
+  button), and `.su-status` beside the "Players"
   heading says who we wait for (muted), counts down (green) or why it can't start (red). Board tools are `.su-chip` pills in the
   Map panel's top right. Settings are a grid (`.su-rules`): rule set, round limit, stocks; then
   in two columns: rule set, round limit; goal, stocks; vacant plots across.

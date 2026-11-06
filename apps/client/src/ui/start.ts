@@ -687,10 +687,10 @@ export function setupScreen(
       h(
         'div',
         { class: `seat-card ${kind}`, style: `--pc:${color}` },
-        h('div', { class: 'seat-stage' }, charButton(look, 'body', pick)),
+        // The Ready chip sits on the character's spot, so the card is no taller.
+        h('div', { class: 'seat-stage' }, charButton(look, 'body', pick), readyEl ?? null),
         name,
         h('span', { class: 'seat-tag' }, tag),
-        readyEl ?? null,
         remove
           ? h(
               'button',
@@ -1065,7 +1065,13 @@ export function guestSetup(root: HTMLElement, room: GuestSetupRoom, handlers: Gu
           h('span', { class: 'hint' }, 'Tap your picture to pick a different character.'),
         ),
         lobby
-          ? lobbySeats(lobby, room.seat, undefined, (i) => pick(lobby, i))
+          ? lobbySeats(
+              lobby,
+              room.seat,
+              undefined,
+              (i) => pick(lobby, i),
+              () => room.setReady(!me?.ready),
+            )
           : h('p', { class: 'hint' }, 'Connected. Waiting for the lobby...'),
       ),
       h(
@@ -1074,17 +1080,6 @@ export function guestSetup(root: HTMLElement, room: GuestSetupRoom, handlers: Gu
         me
           ? h('label', { class: 'opt su-myname' }, h('div', { class: 'opt-label' }, 'Your name'), nameIn)
           : null,
-        me
-          ? h(
-              'button',
-              {
-                class: `btn big seat-ready-big ${me.ready ? 'on' : 'main'}`,
-                'aria-pressed': String(!!me.ready),
-                onclick: () => room.setReady(!me.ready),
-              },
-              me.ready ? '✓ Ready' : 'Ready',
-            )
-          : null,
         h(
           'p',
           { class: 'waiting', role: 'status' },
@@ -1092,7 +1087,7 @@ export function guestSetup(root: HTMLElement, room: GuestSetupRoom, handlers: Gu
             ? "Everyone's ready! Starting..."
             : me?.ready
               ? 'Waiting for everyone else to be ready...'
-              : 'Tap Ready when you are set.',
+              : 'Tap Ready on your seat when you are set.',
         ),
       ),
     );

@@ -897,9 +897,9 @@ smaller ones the middle scrolls, with no scroll bar.
   for players on this device), the name and what kind of player it is. An empty spot (until there
   are 5 players) has **Add bot** and a smaller **+ Local player** button (to add a player who plays on this device; phones show it too); bots and extra
   players on this device have a small red remove button (×) in the card's top right corner, joined friends can be removed too.
-- **Ready up:** instead of a Start button, every person taps **Ready** on their own seat card
-  (each player on the host's device has one; a friend who joined has a big Ready button in their
-  bottom bar). Ready turns green with a tick; tapping it again takes it back. Bots are always
+- **Ready up:** instead of a Start button, every person taps the **Ready** chip on their own seat
+  (a small chip over the character's feet; each player on the host's device has one, and a friend
+  who joined has one on their own seat in their list). Ready turns green with a tick; tapping it again takes it back. Bots are always
   ready. A status line beside "Players" says what is needed: "Tap Ready to start", "Waiting for
   Ada, Pip", or a reason the game can't start (fewer than 2 players, or a board with problems).
   When everyone is ready the game starts: straight away when there is only one person, otherwise

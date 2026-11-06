@@ -33,13 +33,14 @@ export function keepName(n: string) {
 
 /**
  * The seat list, shared by the host's and the guests' lobbies. With `pick`, the player's own
- * seat (`mine`) has a button to change character.
+ * seat (`mine`) has a button to change character; with `onReady`, its Ready chip is a button.
  */
 export function lobbySeats(
   lobby: LobbyInfo,
   mine: number,
   kick?: (i: number) => void,
   pick?: (i: number) => void,
+  onReady?: () => void,
 ): HTMLElement {
   return h(
     'div',
@@ -72,9 +73,24 @@ export function lobbySeats(
           h('small', null, label),
         ),
         // Who has tapped Ready (bots always are, so they show nothing).
-        s.kind !== 'cpu' && s.kind !== 'open' && s.ready != null
-          ? h('span', { class: `seat-ready badge ${s.ready ? 'on' : ''}` }, s.ready ? '✓ Ready' : 'Not ready')
-          : null,
+        onReady && i === mine
+          ? h(
+              'button',
+              {
+                class: `seat-ready ${s.ready ? 'on' : ''}`,
+                'aria-pressed': String(!!s.ready),
+                title: s.ready ? 'Tap if you are not ready after all' : 'Tap when you are ready to play',
+                onclick: onReady,
+              },
+              s.ready ? '✓ Ready' : 'Ready',
+            )
+          : s.kind !== 'cpu' && s.kind !== 'open' && s.ready != null
+            ? h(
+                'span',
+                { class: `seat-ready badge ${s.ready ? 'on' : ''}` },
+                s.ready ? '✓ Ready' : 'Not ready',
+              )
+            : null,
         kick && s.kind === 'remote'
           ? h('button', { class: 'btn ghost small', onclick: () => kick(i) }, 'Remove')
           : null,

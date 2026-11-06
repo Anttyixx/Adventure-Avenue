@@ -10328,6 +10328,22 @@ button.seat-ready.on {
   align-self: center;
   flex: none;
 }
+/* On a seat card the chip sits centered on the spot the character stands on (over their feet),
+   clear of the remove × and the name, so the card stays as small as it was. */
+.su .seat-card .seat-ready {
+  position: absolute;
+  z-index: 1;
+  bottom: -2px;
+  left: 50%;
+  translate: -50% 0;
+  padding: 1px 7px;
+  font-size: 11px;
+  line-height: 15px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
+}
+.su .seat-card .seat-ready:not(.on) {
+  background: var(--navy);
+}
 .su-status {
   font: 700 12px var(--body);
   color: var(--muted);
@@ -10360,16 +10376,23 @@ button.seat-ready.on {
   }
   .lobby-seat .seat-ready {
     position: absolute;
-    top: 2px;
-    right: 4px;
+    bottom: 2px;
+    left: 4px;
     padding: 0 4px;
     font-size: 9px;
     line-height: 12px;
   }
-}
-.btn.seat-ready-big.on {
-  background: var(--good);
-  color: #0d3a1c;
+  .lobby-seat button.seat-ready {
+    padding: 1px 6px;
+    font-size: 10px;
+    line-height: 14px;
+  }
+  .su .seat-card .seat-ready {
+    bottom: -3px;
+    padding: 0 5px;
+    font-size: 10px;
+    line-height: 15px;
+  }
 }
 /* Continue game (online.ts resumeLobby): the round the game was saved in, in the Map panel's
    top right, and players who haven't rejoined yet faded with an "Away" badge on their seat. */
