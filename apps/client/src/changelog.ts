@@ -26,6 +26,26 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: '2026-11-05-portal-maps',
+    date: 'Nov 5, 2026',
+    title: 'Two new portal boards',
+    features: [
+      {
+        tag: 'new',
+        title: 'Crossgate Gardens',
+        text: 'Four square courtyards joined by portal shortcuts. Step into a portal and keep moving through a different quarter.',
+      },
+      {
+        tag: 'new',
+        title: 'Prism Junction',
+        text: 'Three hexagonal loops with portals between their outer rims and roads back to the central bank.',
+      },
+    ],
+    extras: [
+      'Districts stay together, with relief tiles between every property. Both boards are available in game setup and the board builder.',
+    ],
+  },
+  {
     id: '2026-11-08-setup-layout',
     date: 'Nov 8, 2026',
     title: 'A new game setup screen',

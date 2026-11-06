@@ -288,8 +288,8 @@ are in the right-side panel.
 Save, export and validation feedback appears in the action bar.
 
 **Built-in boards.** Every built-in board has the bank in the middle of the map, exactly 4
-properties in each district (8 districts, 32 properties), its Stockbroker squares as far from the
-bank as the roads allow, and Boon and Boom far apart. Town (square, 14 x 7, 50 squares: a ring with
+properties in each district. The original seven boards have 8 districts and 32 properties, with
+Stockbroker squares toward their outer roads and Boon and Boom apart. Town (square, 14 x 7, 50 squares: a ring with
 the bank on the middle road), Harbor (square, 15 x 9, 61: a ring split by two piers joined by the
 quay with the bank), Crossroads City (square, 13 x 9, 57: a ring cut into quarters by two avenues
 crossing at the bank), Twin Lakes (hex, 14 x 11, 50: two lakes with Main Street and the bank
@@ -299,6 +299,24 @@ tall lagoon town with an island on each side). The two island boards have detach
 only by warp: a warp square on the main board sends you to an island, and every warp square on an
 island sends you back. Each island has all four suits and one or two districts. Each board can be
 copied into the editor to remix.
+
+Two portal-focused boards extend the built-in selection:
+
+- **Crossgate Gardens** (square, 13 × 13, 77 tiles, 8 districts / 32 properties): four courtyard
+  rings around a central bank promenade. Each half-courtyard holds one district. Four portal
+  pairs exchange distant courtyard corners as soon as a player steps on them, letting the same
+  roll continue into another quarter. Inward roads offer a route home through the bank.
+- **Prism Junction** (hex, 18 × 18, 63 tiles, 6 districts / 24 properties): three hexagonal petals
+  around a three-way bank junction. Three portal pairs link the outer rims into a second circuit;
+  inner spokes lead back to the bank. Each half-petal holds one district.
+
+Both boards alternate each district's properties with non-property relief stops (suits, venture,
+Boon, Take-a-break or Stockbroker). No two properties share a road edge. All four properties of a
+district are within six walking steps of one another without crossing a different district or
+using a portal. The bank and suits remain reachable under automatic portal entry and the
+no-turn-back movement rule. Ordinary roads also connect the complete board; portals are meaningful
+shortcuts rather than a requirement to land on an exact tile. Both layouts can be remixed in the
+builder and use the usual district pricing and random vacant-plot settings.
 
 **Movement rules:**
 

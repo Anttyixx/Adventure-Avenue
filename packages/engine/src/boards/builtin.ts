@@ -1,4 +1,5 @@
 import type { BoardDef } from '../types';
+import { CROSSGATE_GARDENS, PRISM_JUNCTION } from './portal-maps';
 
 import { CORAL_ISLE, CROSSROADS, HARBOR, LAGOON, SKY_ISLANDS, TOWN, TWIN_LAKES } from './maps';
 
@@ -11,6 +12,8 @@ export const BUILT_IN_BOARDS: BoardDef[] = [
   CORAL_ISLE,
   SKY_ISLANDS,
   LAGOON,
+  CROSSGATE_GARDENS,
+  PRISM_JUNCTION,
 ];
 
 export const BOARDS: Record<string, BoardDef> = Object.fromEntries(BUILT_IN_BOARDS.map((b) => [b.id, b]));

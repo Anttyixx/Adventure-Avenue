@@ -11,7 +11,7 @@ import { autoEdges } from './format';
  *   B  bank            V  venture                   S H D C  spade, heart, diamond, club
  *   X  change of suit  R  roll on                   K  take a break
  *   O  boon            M  boom                      T  stockbroker
- *   A  arcade          N  cannon                    Q  portal
+ *   A  arcade          N  cannon                    Q  portal (pairs listed in `portals`)
  *   W  warp (where it leads is listed in the board's `warps`)
  *
  * Which properties start as vacant plots is set when a game starts (the plot setting), so maps
@@ -49,9 +49,11 @@ interface MapBoard {
   map: string[];
   /** Warps: landing on the first cell takes you to the second, as [x, y] pairs. */
   warps?: [[number, number], [number, number]][];
+  /** Portal pairs: stepping onto either endpoint jumps to the other and keeps walking. */
+  portals?: [[number, number], [number, number]][];
 }
 
-export function fromMap({ id, name, layout, districts, map, warps = [] }: MapBoard): BoardDef {
+export function fromMap({ id, name, layout, districts, map, warps = [], portals = [] }: MapBoard): BoardDef {
   const count = districts.map(() => 0);
   const squares: BoardSquareDef[] = [];
   map.forEach((row, y) =>
@@ -93,6 +95,23 @@ export function fromMap({ id, name, layout, districts, map, warps = [] }: MapBoa
     delete last.channel;
     last.toBank = true;
   }
+  const portalEnds = new Set<number>();
+  portals.forEach(([[ax, ay], [bx, by]], channel) => {
+    const a = at(ax, ay),
+      b = at(bx, by);
+    if (
+      channel >= 5 ||
+      a === b ||
+      squares[a]?.t !== 'portal' ||
+      squares[b]?.t !== 'portal' ||
+      portalEnds.has(a) ||
+      portalEnds.has(b)
+    )
+      throw new Error(`${name}: invalid portal pair at ${ax},${ay} and ${bx},${by}`);
+    squares[a].channel = squares[b].channel = channel;
+    portalEnds.add(a);
+    portalEnds.add(b);
+  });
   connectTransports({ squares } as BoardDef);
 
   return {

@@ -19,3 +19,5 @@ export * from './headless';
 export * from './boards/format';
 
 export * from './transport';
+
+export { CROSSGATE_GARDENS, PRISM_JUNCTION } from './boards/portal-maps';
