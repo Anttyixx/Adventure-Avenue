@@ -655,7 +655,7 @@ if (!(await ask(`Delete ${d.name}?`, 'Its 4 properties will be removed from the 
   spot in the seat's color, the name (an input for players on this device), a muted tag
   ("You · host", "On this device", "Joined online", "Bot") and a × remove button in the top right
   (never on the host). The empty spot is a dashed card with a gold round **+ Add bot** button and
-  a small ghost **+ Player on this device** button.
+  a small ghost **+ Local player** button.
 
 ### 5.18 Game log
 

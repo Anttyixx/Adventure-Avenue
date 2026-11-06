@@ -739,12 +739,13 @@ export function setupScreen(
         'button',
         {
           class: 'btn small ghost',
+          title: 'Add a player who plays on this device',
           onclick: () => {
             humans++;
             draw();
           },
         },
-        '+ Player on this device',
+        '+ Local player',
       ),
     );
 

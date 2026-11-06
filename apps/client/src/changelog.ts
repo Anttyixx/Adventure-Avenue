@@ -26,6 +26,19 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: '2026-11-06-setup-tidy',
+    date: 'Nov 6, 2026',
+    title: 'Tidier game setup',
+    features: [
+      {
+        tag: 'fix',
+        title: 'Everything lines up',
+        text: 'In game setup, the winning goal digits sit level, the player cards line up their names and tags, and your name box no longer looks greyed out.',
+      },
+    ],
+    extras: ['"+ Player on this device" is now "+ Local player", and phones show it too'],
+  },
+  {
     id: '2026-11-05-portal-maps',
     date: 'Nov 5, 2026',
     title: 'Two new portal boards',

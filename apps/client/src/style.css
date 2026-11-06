@@ -3750,6 +3750,10 @@ input[type='range'] {
   align-items: center;
   gap: 2px;
 }
+/* A digit with no arrows sits centred, level with the faces between arrows. */
+.dg-col.fixed {
+  justify-content: center;
+}
 .dg-face {
   display: grid;
   place-items: center;
@@ -3764,7 +3768,6 @@ input[type='range'] {
 }
 .dg-col.fixed .dg-face {
   opacity: 0.6;
-  margin: 26px 0;
 }
 .dg-arrow {
   width: 44px;
@@ -4227,9 +4230,6 @@ input[type='range'] {
   width: 32px;
   height: 20px;
   font-size: 10px;
-}
-.cash-pick .dg-col.fixed .dg-face {
-  margin: 22px 0;
 }
 @media (max-width: 760px) {
   .trade-dock .trade-cols {
@@ -4878,9 +4878,6 @@ input[type='range'] {
 .digits.read-only .dg-arrow,
 .digits.read-only > .btn {
   display: none;
-}
-.digits.read-only .dg-col.fixed .dg-face {
-  margin: 0;
 }
 .carousel.locked {
   grid-template-columns: minmax(0, 1fr);
@@ -10047,11 +10044,20 @@ span.su-code {
   height: 11px;
 }
 .su .seat-card .name {
+  /* The host's name box and a bot's name are the same height, so the tags under them line up. */
+  height: 26px;
+  box-sizing: border-box;
   font-size: 13px;
-  padding: 3px 6px;
+  padding: 0 6px;
 }
 .su .seat-card .name.cpu {
-  padding: 3px 0;
+  display: grid;
+  place-items: center;
+  padding: 0;
+}
+.su .seat-card input.name::placeholder {
+  color: var(--text);
+  opacity: 0.8;
 }
 .su .seat-card .seat-tag {
   font-size: 10px;
@@ -10175,12 +10181,24 @@ span.su-code {
     height: 8px;
   }
   .su .seat-card .name {
+    height: 22px;
     font-size: 11px;
-    padding: 2px 4px;
+    padding: 0 4px;
   }
-  .su .seat-card .seat-tag,
-  .su .seat-card.add .btn.small {
+  .su .seat-card .seat-tag {
     display: none;
+  }
+  .su .seat-card.add {
+    gap: 4px;
+    outline-offset: -4px;
+  }
+  .su .seat-add {
+    padding: 0 4px;
+  }
+  .su .seat-card.add .btn.small {
+    padding: 2px 5px;
+    font-size: 9px;
+    white-space: nowrap;
   }
   .su .seat-plus {
     width: 26px;

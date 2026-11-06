@@ -840,7 +840,7 @@ smaller ones the middle scrolls, with no scroll bar.
 - **Players** (in the bottom container, smaller cards): the host is always seated ("You · host"). Each seat
   is a card with the character standing on a spot in the seat's color (centered, tap to change it
   for players on this device), the name and what kind of player it is. An empty spot (until there
-  are 5 players) has **Add bot** and a smaller **+ Player on this device** button; bots and extra
+  are 5 players) has **Add bot** and a smaller **+ Local player** button (to add a player who plays on this device; phones show it too); bots and extra
   players on this device have a remove button (×), joined friends can be removed too. A game needs
   at least 2 players: until then Start is disabled, and hovering it says why.
 - **Join code:** setup opens a room straight away and always shows its code as a chip in the top
