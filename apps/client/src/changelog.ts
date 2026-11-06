@@ -26,6 +26,15 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: '2026-11-05-ridge-pairs',
+    date: 'Nov 5, 2026',
+    title: 'Return Ridge property pairs',
+    features: [],
+    extras: [
+      'Return Ridge now groups each district into two touching property pairs, separated by relief tiles.',
+    ],
+  },
+  {
     id: '2026-11-05-twelve-districts',
     date: 'Nov 5, 2026',
     title: 'Bigger districts lineup',

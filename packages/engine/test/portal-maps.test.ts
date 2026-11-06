@@ -19,14 +19,20 @@ for (const board of [CROSSGATE_GARDENS, PRISM_JUNCTION, RETURN_RIDGE])
         plots: 'none',
       });
 
-    it('keeps every district together with a relief stop between every property', () => {
+    it('keeps districts compact with relief stops between property groups', () => {
       expect(validateBoard(board).issues).toEqual([]);
       const G = state();
-      for (const s of G.nodes.filter((s) => s.t === 'shop'))
-        expect(s.nb.every((i) => G.nodes[i].t !== 'shop')).toBe(true);
+      if (board !== RETURN_RIDGE)
+        for (const s of G.nodes.filter((s) => s.t === 'shop'))
+          expect(s.nb.every((i) => G.nodes[i].t !== 'shop')).toBe(true);
       for (let d = 0; d < G.districts.length; d++) {
         const shops = G.nodes.filter((s) => s.t === 'shop' && s.d === d);
         expect(shops).toHaveLength(4);
+        if (board === RETURN_RIDGE) {
+          // Each property has exactly one same-district neighbor: two pairs, never a four-shop run.
+          for (const shop of shops)
+            expect(shop.nb.filter((id) => G.nodes[id].t === 'shop' && G.nodes[id].d === d)).toHaveLength(1);
+        }
         for (const from of shops) {
           const dist = new Map([[from.id, 0]]),
             queue = [from.id];

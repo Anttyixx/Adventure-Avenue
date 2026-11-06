@@ -315,8 +315,10 @@ Two portal-focused boards extend the built-in selection:
   reciprocal, so entering one near the bank also offers a shortcut out to its branch tip.
   Linked portal endpoints do not receive dead-end warnings: entering them teleports the player.
 
-These boards alternate each district's properties with non-property relief stops (suits, venture,
-Boon, Take-a-break or Stockbroker). No two properties share a road edge. All four properties of a
+Crossgate Gardens and Prism Junction alternate properties with non-property relief stops.
+Return Ridge groups each district into two touching pairs, separated by relief tiles, so all
+four never form a continuous run. Relief stops include suits, venture, Boon, Take-a-break and
+Stockbroker tiles. All four properties of a
 district are within six walking steps of one another without crossing a different district or
 using a portal. The bank and suits remain reachable under automatic portal entry and the
 no-turn-back movement rule. Ordinary roads also connect the complete board; portals are meaningful
