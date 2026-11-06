@@ -197,8 +197,26 @@ it('has eight districts on Prism Junction and returns dead-end portals two steps
   }
 });
 
-it('gives Return Ridge twelve complete districts and only four venture squares', () => {
-  expect(RETURN_RIDGE.districts).toHaveLength(12);
-  expect(RETURN_RIDGE.squares.filter((s) => s.t === 'shop')).toHaveLength(48);
+it('gives Return Ridge ten complete districts and only four venture squares', () => {
+  expect(RETURN_RIDGE.districts).toHaveLength(10);
+  expect(RETURN_RIDGE.squares.filter((s) => s.t === 'shop')).toHaveLength(40);
   expect(RETURN_RIDGE.squares.filter((s) => s.t === 'venture')).toHaveLength(4);
+});
+
+it('keeps Return Ridge compact, with no change suits, four roll-ons and suits at branch tips', () => {
+  expect(RETURN_RIDGE.cols).toBeLessThan(27);
+  expect(RETURN_RIDGE.squares.filter((s) => s.t === 'change')).toHaveLength(0);
+  expect(RETURN_RIDGE.squares.filter((s) => s.t === 'roll')).toHaveLength(4);
+  const suits = RETURN_RIDGE.squares.filter((s) => ['spade', 'heart', 'club', 'diamond'].includes(s.t));
+  expect(suits).toHaveLength(4);
+  for (const suit of suits) {
+    const id = RETURN_RIDGE.squares.indexOf(suit);
+    expect(
+      RETURN_RIDGE.edges.some(
+        ([a, b]) =>
+          (a === id && RETURN_RIDGE.squares[b].t === 'portal') ||
+          (b === id && RETURN_RIDGE.squares[a].t === 'portal'),
+      ),
+    ).toBe(true);
+  }
 });

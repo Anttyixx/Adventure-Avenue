@@ -26,6 +26,15 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: '2026-11-05-compact-ridge',
+    date: 'Nov 5, 2026',
+    title: 'A smaller Return Ridge',
+    features: [],
+    extras: [
+      'Return Ridge now has ten districts on a smaller board, no change-of-suit tiles, and four Roll-again tiles. Each suit is near a branch tip, just before its return portal.',
+    ],
+  },
+  {
     id: '2026-11-05-ridge-variety',
     date: 'Nov 5, 2026',
     title: 'More varied Return Ridge routes',
