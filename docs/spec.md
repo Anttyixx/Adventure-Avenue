@@ -865,7 +865,7 @@ this device has an online game to go back to. In the top right corner sit the **
 button (the card's portrait and name; just the portrait on phones), the **Sound** button and, to
 its right, **Menu**. The **player card** (`profile.ts`, kept on this device) is the name and
 character this device plays as: its button opens a pop-up with the character on its colored spot
-(tap it to open the character picker) beside a name box (up to 12 characters, the same characters
+(tap it to open the character picker) beside a name box (up to 10 characters, the same characters
 removed as in setup), and a line on how it's used. Changes save as they are made; Done, Escape or
 a click outside closes it. Game setup seats the host with the card's name and character, and
 joining a game uses its name (unless one was typed for a rejoin) and asks the host for its
@@ -914,7 +914,7 @@ smaller ones the middle scrolls, with no scroll bar.
   seat's character opens the character picker (all nine characters; ones other humans have are
   greyed out with their name, so no two players share one; a CPU holding the picked one switches
   to a free one). Characters cannot change once the game
-  starts. Each human seat has a name box (up to 12 characters; the characters `< > & " ' \`` and
+  starts. Each human seat has a name box (up to 10 characters; the characters `< > & " ' \`` and
 `\` are removed; leave it blank to keep the suggested name), and typed names are remembered for
   the next game (the host's seat starts with the player card's name and character). A player who
   joined types their name in the bottom container; it is sent to the host half a second after
@@ -1089,7 +1089,7 @@ active player changes, tokens ease to their new sizes (the active one larger, th
 **Phones (small screens).** On short screens (500px tall or less) and narrow ones the game
 screen packs everything so nothing overlaps: the toolbar stays on one row with short labels
 (**Log**, **☰**), the info chip drops the game's name when space is tight, and the player cards are
-narrower (176px) and two rows each (level, name and suits; cash, place and net worth) with the goal bar as a thin line
+narrower (176px) and two rows each; names of 8 to 10 letters are a size smaller there so the suits stay beside them (level, name and suits; cash, place and net worth) with the goal bar as a thin line
 along the card's bottom edge. If five cards still would reach the toolbar, they shrink to fit
 (`hud.ts` `fitCards`). Arcade games and the live auction shrink as a whole to fit the room
 between the toolbar and the action bar instead of cutting off or scrolling (`modals.ts`

@@ -14,6 +14,7 @@ import {
 } from '@aa/engine';
 import type { OnlineSave, SaveInfo } from '../save';
 import { CHARACTERS, freeCharacter } from '../sprites';
+import { cleanName } from '../profile';
 import type { GameLink } from './link';
 import { openPeer, peerErrorText, type DataConnection, type Peer } from './peer';
 import {
@@ -48,11 +49,7 @@ export interface LocalSeat {
 
 const MAX_SEATS = PLAYER_COLORS.length;
 
-const cleanSeatName = (s: unknown) =>
-  String(s ?? '')
-    .replace(/[<>&"'`\\]/g, '')
-    .trim()
-    .slice(0, 12);
+const cleanSeatName = cleanName;
 
 export class HostRoom implements GameLink {
   role = 'host' as const;

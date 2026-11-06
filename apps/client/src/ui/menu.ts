@@ -11,7 +11,7 @@ import { loadGuest, loadSave, type GuestSave, type SaveInfo } from '../save';
 import { sound } from '../audio';
 import { cleanCode } from '../net/protocol';
 import { clear, h } from './dom';
-import { loadProfile, saveProfile } from '../profile';
+import { NAME_MAX, cleanName, loadProfile, saveProfile } from '../profile';
 import { charButton, pickCharacter } from './charpick';
 import { hasUnseenUpdate } from '../changelog';
 import { openCredits } from './credits';
@@ -93,17 +93,14 @@ export function openPlayerCard(root: HTMLElement, changed: () => void) {
   };
   const name = h('input', {
     class: 'name pc-name',
-    maxlength: '12',
+    maxlength: String(NAME_MAX),
     placeholder: 'Your name',
     value: card.name,
     'aria-label': 'Your name',
   }) as HTMLInputElement;
   name.oninput = () => {
     saveProfile({
-      name: name.value
-        .replace(/[<>&"'`\\]/g, '')
-        .trim()
-        .slice(0, 12),
+      name: cleanName(name.value),
     });
     changed();
   };
@@ -259,7 +256,7 @@ export function mainMenu(
     opts.askName != null
       ? (h('input', {
           class: 'join-name',
-          maxlength: '12',
+          maxlength: String(NAME_MAX),
           placeholder: 'Your name in that game',
           value: opts.askName,
           'aria-label': 'Your name in that game',

@@ -20,7 +20,7 @@ import {
 import { boardThumb } from './thumb';
 import { BUILT_IN, getBoard, listBoards, pickBoardFile, readBoardFile, saveBoard } from '../boardstore';
 import { freeCharacter, shuffledCharacters } from '../sprites';
-import { loadProfile } from '../profile';
+import { NAME_MAX, cleanName, loadProfile } from '../profile';
 import { charButton, pickCharacter } from './charpick';
 import { loadSave } from '../save';
 import { titleScene } from './menu';
@@ -67,12 +67,7 @@ const PLOT_LABEL: Record<PlotSetting, string> = {
 const NAMES_KEY = 'adventure-avenue-names';
 const OPTS_KEY = 'adventure-avenue-options';
 
-export function cleanName(s: string): string {
-  return s
-    .replace(/[<>&"'`\\]/g, '')
-    .trim()
-    .slice(0, 12);
-}
+export { cleanName };
 
 function readJSON<T>(key: string, fallback: T): T {
   try {
@@ -675,7 +670,7 @@ export function setupScreen(
     if (i < humans) {
       const input = h('input', {
         class: 'name',
-        maxlength: '12',
+        maxlength: String(NAME_MAX),
         placeholder: suggested[i],
         value: typed[i] ?? '',
         'aria-label': `Player ${i + 1} name`,
@@ -886,7 +881,7 @@ export function guestSetup(root: HTMLElement, room: GuestSetupRoom, handlers: Gu
   // Kept across redraws so typing isn't interrupted when the lobby changes.
   const nameIn = h('input', {
     class: 'name',
-    maxlength: '12',
+    maxlength: String(NAME_MAX),
     'aria-label': 'Your name',
   }) as HTMLInputElement;
   // Sent as they type (after a short pause), so a lobby update never undoes it.

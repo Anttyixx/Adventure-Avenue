@@ -1253,7 +1253,7 @@ input[type='range'] {
   white-space: nowrap;
 }
 .pname {
-  /* Names are short (12 characters at most), so they always show in full. */
+  /* Names are short (10 characters at most, profile.ts NAME_MAX), so they show in full. */
   flex: none;
   font-family: var(--head);
   font-size: 16px;
@@ -2868,6 +2868,21 @@ input[type='range'] {
   .pcard .pc-row .tag {
     font-size: 8px;
     line-height: 12px;
+  }
+  /* Long names (8-10 characters) a size smaller, so the suits stay on the name's row; a very
+     wide name with a wild card badge ends in "..." rather than pushing the suits off. */
+  .pc-top {
+    flex-wrap: nowrap;
+    gap: 3px;
+  }
+  .pc-top .pname {
+    flex: 0 1 auto;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .pc-top .pname.long {
+    font-size: 10px;
   }
 }
 

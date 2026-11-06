@@ -612,7 +612,7 @@ export class Hud {
           'div',
           { class: 'pc-row pc-top' },
           h('span', { class: 'lvl', title: `Level ${p.level}` }, `Lv ${p.level}`),
-          h('span', { class: 'pname' }, p.name),
+          h('span', { class: `pname ${p.name.length > 7 ? 'long' : ''}` }, p.name),
           // An active Boon or Boom shows as its symbol, like on the board.
           p.boon > 0
             ? h('img', {

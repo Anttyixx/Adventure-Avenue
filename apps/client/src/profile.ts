@@ -22,7 +22,7 @@ export function loadProfile(): Profile {
     const raw = JSON.parse(localStorage.getItem(KEY) ?? 'null') as Partial<Profile> | null;
     const name = typeof raw?.name === 'string' ? raw.name : (localStorage.getItem(OLD_NAME_KEY) ?? '');
     const look = CHARACTERS.some((c) => c.id === raw?.look) ? (raw!.look as CharId) : '';
-    return { name: name.slice(0, 12), look };
+    return { name: cleanName(name), look };
   } catch {
     return { name: '', look: '' };
   }
@@ -35,4 +35,15 @@ export function saveProfile(patch: Partial<Profile>) {
   } catch {
     /* storage unavailable */
   }
+}
+
+/** The longest a player's name can be, so it fits on the player cards next to the suits. */
+export const NAME_MAX = 10;
+
+/** A player's name as typed, made safe and short: no markup characters, trimmed, at most NAME_MAX. */
+export function cleanName(s: unknown): string {
+  return String(s ?? '')
+    .replace(/[<>&"'`\\]/g, '')
+    .trim()
+    .slice(0, NAME_MAX);
 }
