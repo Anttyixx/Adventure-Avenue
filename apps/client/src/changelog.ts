@@ -57,6 +57,7 @@ export const CHANGELOG: ChangelogEntry[] = [
       },
     ],
     extras: [
+      'New motel art: its sign shows the owner’s color',
       'The build menu shows how many of each building are left',
       'Flying or riding anywhere no longer lights up every square',
       'The 250% zoom is as close on big boards as on small ones',

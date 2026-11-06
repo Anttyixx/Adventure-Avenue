@@ -109,24 +109,7 @@ const rnd = (n: number) => Math.floor(Math.random() * n);
  * Controls for UI elements that were just added or changed: they shake once and glow so they
  * are easy to find. Update this list with each change.
  */
-const RECENT = new Set([
-  'Player card',
-  'Game setup',
-  'Game setup (friend joined)',
-  'Joined game (locked setup)',
-  'New squares and Motel',
-  'Zoom in',
-  'Build',
-  'Renovate',
-  'Swap target',
-  'Motel stop',
-  'Taxi / fly anywhere (no highlights)',
-  'Live auction',
-  'Coin Derby',
-  'Lucky Wheel',
-  'Treasure Split',
-  'Guide',
-]);
+const RECENT = new Set(['Build', 'New squares and Motel', 'Design gallery']);
 
 /** Which board the lab plays on: Town (square) or Twin Lakes (hex), remembered per browser. */
 const LAB_BOARD_KEY = 'aa-lab-board';
