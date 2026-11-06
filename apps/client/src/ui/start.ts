@@ -20,14 +20,13 @@ import {
 import { boardThumb } from './thumb';
 import { BUILT_IN, getBoard, listBoards, pickBoardFile, readBoardFile, saveBoard } from '../boardstore';
 import { freeCharacter, shuffledCharacters } from '../sprites';
-import { NAME_MAX, cleanName, loadProfile } from '../profile';
+import { cleanName, loadProfile } from '../profile';
 import { charButton, pickCharacter } from './charpick';
 import { loadSave } from '../save';
 import { titleScene } from './menu';
 import type { GuestRoom } from '../net/guestroom';
 import type { HostRoom, LocalSeat } from '../net/hostroom';
 import { inviteURL, type LobbyInfo } from '../net/protocol';
-import { lobbySeats } from './online';
 import { digitPicker } from './digits';
 import { closeSoundPopover, soundButton } from './soundpanel';
 import { sound } from '../audio';
@@ -64,7 +63,6 @@ const PLOT_LABEL: Record<PlotSetting, string> = {
   all: 'All',
 };
 
-const NAMES_KEY = 'adventure-avenue-names';
 const OPTS_KEY = 'adventure-avenue-options';
 
 export { cleanName };
@@ -110,10 +108,7 @@ export type SetupRoom = Pick<
 >;
 
 /** What the locked setup a joined player sees uses of their room. */
-export type GuestSetupRoom = Pick<
-  GuestRoom,
-  'code' | 'seat' | 'lobby' | 'setLook' | 'setName' | 'setReady' | 'leave'
->;
+export type GuestSetupRoom = Pick<GuestRoom, 'code' | 'seat' | 'lobby' | 'setLook' | 'setReady' | 'leave'>;
 
 /** Seconds between everyone being ready and the game starting (to change their mind). */
 const START_COUNTDOWN = 3;
@@ -121,6 +116,11 @@ const START_COUNTDOWN = 3;
 /** A joined player's ready state on their seat card. */
 function readyBadge(on: boolean): HTMLElement {
   return h('span', { class: `seat-ready badge ${on ? 'on' : ''}` }, on ? '✓ Ready' : 'Not ready');
+}
+
+/** A player's name plate on their seat card: a pill in their color, as over tokens on the board. */
+export function seatName(name: string): HTMLElement {
+  return h('span', { class: 'seat-name' }, name);
 }
 
 /** The rules part of the settings. */
@@ -385,7 +385,6 @@ export function setupScreen(
   let notice = '';
   /** Direction of the last carousel move, so only that redraw animates the slide. */
   let slide: 'next' | 'prev' | '' = '';
-  const typed: string[] = readJSON(NAMES_KEY, []);
   /** Which players on this device have tapped Ready (by seat). */
   const ready: boolean[] = [];
   /** The board and settings the Ready taps were for: changing them asks everyone again. */
@@ -405,7 +404,6 @@ export function setupScreen(
   shuffle();
   // The host sits down as their player card (set on the main menu).
   const card = loadProfile();
-  if (card.name) typed[0] = card.name;
 
   // The room for the join code: opening, open, or unavailable.
   let room: SetupRoom | null = null;
@@ -419,7 +417,9 @@ export function setupScreen(
   let copied = false;
 
   const joined = () => room?.joined ?? 0;
-  const nameOf = (i: number) => cleanName(typed[i] || '') || suggested[i];
+  /** Names are set before game setup (the host's on the main menu's player card); other players
+   * on this device and bots get a suggested name. */
+  const nameOf = (i: number) => (i === 0 && cleanName(card.name)) || suggested[i];
   /** Seats of joined players, in seat order (they come right after the humans on this device). */
   const lobbySeatsNow = () => room?.lobby().seats ?? [];
   /** Characters held by people (this device's humans and joined friends), except seat `but`. */
@@ -672,14 +672,17 @@ export function setupScreen(
   const total = () => humans + joined() + bots;
   const room4 = () => total() < MAX_PLAYERS;
 
-  /** One seat card: the character standing on a spot, a name, what kind of player, and remove. */
+  /**
+   * One seat card: the player's name plate over the character standing on a spot (as on the
+   * board), the Ready chip under their feet, what kind of player, and remove.
+   */
   const seatCard = (i: number) => {
     const color = PLAYER_COLORS[i];
     const card = (
       kind: string,
       look: CharId,
       pick: (() => void) | null,
-      name: Node,
+      name: string,
       tag: string,
       remove?: { label: string; act: () => void },
       readyEl?: Node,
@@ -687,9 +690,10 @@ export function setupScreen(
       h(
         'div',
         { class: `seat-card ${kind}`, style: `--pc:${color}` },
-        // The Ready chip sits on the character's spot, so the card is no taller.
-        h('div', { class: 'seat-stage' }, charButton(look, 'body', pick), readyEl ?? null),
-        name,
+        seatName(name),
+        h('div', { class: 'seat-stage' }, charButton(look, 'body', pick)),
+        // Bots have no chip; an empty one keeps every card's rows lined up.
+        readyEl ?? h('span', { class: 'seat-ready ghost', 'aria-hidden': 'true' }, 'Ready'),
         h('span', { class: 'seat-tag' }, tag),
         remove
           ? h(
@@ -700,22 +704,11 @@ export function setupScreen(
           : null,
       );
     if (i < humans) {
-      const input = h('input', {
-        class: 'name',
-        maxlength: String(NAME_MAX),
-        placeholder: suggested[i],
-        value: typed[i] ?? '',
-        'aria-label': `Player ${i + 1} name`,
-        oninput: (e: Event) => {
-          typed[i] = cleanName((e.target as HTMLInputElement).value);
-          sync();
-        },
-      }) as HTMLInputElement;
       return card(
         'human',
         looks[i],
         () => void choose(i),
-        input,
+        nameOf(i),
         i === 0 ? 'You · host' : 'On this device',
         i === 0
           ? undefined
@@ -723,7 +716,7 @@ export function setupScreen(
               label: 'Remove this player',
               act: () => {
                 // The players after them move up a seat, keeping their names and characters.
-                typed.splice(i, 1);
+                suggested.push(suggested.splice(i, 1)[0]);
                 ready.splice(i, 1);
                 looks.push(looks.splice(i, 1)[0]);
                 humans--;
@@ -752,12 +745,12 @@ export function setupScreen(
         'joined',
         seat.look ?? looks[i],
         null,
-        h('span', { class: 'name' }, seat.name),
+        seat.name,
         seat.online ? 'Joined online' : 'Away',
         { label: `Remove ${seat.name}`, act: () => room?.kick(i) },
         readyBadge(!!seat.ready),
       );
-    return card('bot', cpuLook(i), null, h('span', { class: 'name cpu' }, suggested[i]), 'Bot', {
+    return card('bot', cpuLook(i), null, suggested[i], 'Bot', {
       label: 'Remove this bot',
       act: () => {
         bots--;
@@ -867,7 +860,6 @@ export function setupScreen(
   /** Start the game with the seats as they are now. */
   const startGame = () => {
     stopCountdown();
-    writeJSON(NAMES_KEY, typed);
     writeJSON(OPTS_KEY, { humans, bots, total: total(), boardId, ...st });
     const board = getBoard(boardId) ?? BUILT_IN[0];
     const base = { ...st, board };
@@ -964,35 +956,12 @@ export interface GuestSetupHandlers {
 
 /**
  * What a player who joined sees until the host starts: the host's setup with every setting
- * shown but locked. They can change only their own name and character. Call `update` when the
- * lobby changes.
+ * shown but locked. They can change only their character (their name was set before joining)
+ * and say they are ready. Call `update` when the lobby changes.
  */
 export function guestSetup(root: HTMLElement, room: GuestSetupRoom, handlers: GuestSetupHandlers) {
   const frame = setupFrame();
   root.append(frame.el);
-  // Kept across redraws so typing isn't interrupted when the lobby changes.
-  const nameIn = h('input', {
-    class: 'name',
-    maxlength: String(NAME_MAX),
-    'aria-label': 'Your name',
-  }) as HTMLInputElement;
-  // Sent as they type (after a short pause), so a lobby update never undoes it.
-  let renameTimer = 0;
-  const rename = () => {
-    clearTimeout(renameTimer);
-    const n = cleanName(nameIn.value);
-    if (n && n !== room.lobby?.seats[room.seat]?.name) room.setName(n);
-  };
-  nameIn.oninput = () => {
-    clearTimeout(renameTimer);
-    renameTimer = window.setTimeout(rename, 500);
-  };
-  nameIn.onchange = rename;
-  // (A handler that returns false would cancel every key, so no expression body here.)
-  nameIn.onkeydown = (e) => {
-    if (e.key === 'Enter') nameIn.blur();
-  };
-
   const pick = (lobby: LobbyInfo, i: number) => {
     // Characters other people have can't be picked; CPUs take whatever is left.
     const taken = new Map<CharId, string>();
@@ -1006,14 +975,9 @@ export function guestSetup(root: HTMLElement, room: GuestSetupRoom, handlers: Gu
 
   const draw = () => {
     const lobby = room.lobby;
-    // Rebuilding the dock takes the name box out of the page, which would end the typing: note
-    // where the cursor was and put it back afterwards.
-    const typing = document.activeElement === nameIn;
-    const caret = [nameIn.selectionStart, nameIn.selectionEnd] as const;
     clear(frame.wrap);
     const board = lobby ? (lobby.board ?? BUILT_IN.find((b) => b.name === lobby.boardName)) : undefined;
     const me = lobby?.seats[room.seat];
-    if (me && document.activeElement !== nameIn) nameIn.value = me.name;
     setupHead(
       frame.top,
       () => {
@@ -1054,6 +1018,13 @@ export function guestSetup(root: HTMLElement, room: GuestSetupRoom, handlers: Gu
     );
     const dockFrom = frame.dock.getBoundingClientRect().width;
     clear(frame.dock);
+    const status = !lobby
+      ? 'Connected. Waiting for the lobby...'
+      : lobby.starting
+        ? "Everyone's ready! Starting..."
+        : me?.ready
+          ? 'Waiting for everyone else...'
+          : 'Tap Ready when you are set';
     frame.dock.append(
       h(
         'section',
@@ -1061,48 +1032,72 @@ export function guestSetup(root: HTMLElement, room: GuestSetupRoom, handlers: Gu
         h(
           'div',
           { class: 'su-players-head' },
-          h('h3', null, 'Players'),
-          h('span', { class: 'hint' }, 'Tap your picture to pick a different character.'),
+          h('h3', null, lobby ? `Players · ${lobby.seats.length}` : 'Players'),
+          h('span', { class: `su-status ${lobby?.starting ? 'go' : ''}`, role: 'status' }, status),
         ),
         lobby
-          ? lobbySeats(
-              lobby,
-              room.seat,
-              undefined,
-              (i) => pick(lobby, i),
-              () => room.setReady(!me?.ready),
+          ? h(
+              'div',
+              { class: 'seats' },
+              ...lobby.seats.map((x, i) => {
+                const mine = i === room.seat;
+                const bot = x.kind === 'cpu' || x.kind === 'open';
+                return h(
+                  'div',
+                  {
+                    class: `seat-card ${bot ? 'bot' : mine ? 'human' : 'joined'}`,
+                    style: `--pc:${PLAYER_COLORS[i]}`,
+                  },
+                  seatName(x.kind === 'open' ? 'Open' : x.name),
+                  h(
+                    'div',
+                    { class: 'seat-stage' },
+                    x.look
+                      ? charButton(x.look, 'body', mine ? () => pick(lobby, i) : null)
+                      : h('span', { class: 'portrait empty' }, '?'),
+                  ),
+                  mine
+                    ? h(
+                        'button',
+                        {
+                          class: `seat-ready ${x.ready ? 'on' : ''}`,
+                          'aria-pressed': String(!!x.ready),
+                          title: x.ready
+                            ? 'Tap if you are not ready after all'
+                            : 'Tap when you are ready to play',
+                          onclick: () => room.setReady(!x.ready),
+                        },
+                        x.ready ? '✓ Ready' : 'Ready',
+                      )
+                    : bot
+                      ? h('span', { class: 'seat-ready ghost', 'aria-hidden': 'true' }, 'Ready')
+                      : readyBadge(!!x.ready),
+                  h(
+                    'span',
+                    { class: 'seat-tag' },
+                    mine
+                      ? 'You'
+                      : x.kind === 'host'
+                        ? 'Host'
+                        : x.kind === 'open'
+                          ? 'A friend can join'
+                          : bot
+                            ? 'Bot'
+                            : x.kind === 'local'
+                              ? "Host's device"
+                              : 'Joined',
+                  ),
+                );
+              }),
             )
-          : h('p', { class: 'hint' }, 'Connected. Waiting for the lobby...'),
-      ),
-      h(
-        'div',
-        { class: 'su-start' },
-        me
-          ? h('label', { class: 'opt su-myname' }, h('div', { class: 'opt-label' }, 'Your name'), nameIn)
           : null,
-        h(
-          'p',
-          { class: 'waiting', role: 'status' },
-          lobby?.starting
-            ? "Everyone's ready! Starting..."
-            : me?.ready
-              ? 'Waiting for everyone else to be ready...'
-              : 'Tap Ready on your seat when you are set.',
-        ),
       ),
     );
     morphWidth(frame.dock, dockFrom);
-    if (typing && nameIn.isConnected) {
-      nameIn.focus({ preventScroll: true });
-      nameIn.setSelectionRange(caret[0], caret[1]);
-    }
   };
   draw();
   return {
     update: draw,
-    close: () => {
-      clearTimeout(renameTimer);
-      frame.close();
-    },
+    close: () => frame.close(),
   };
 }

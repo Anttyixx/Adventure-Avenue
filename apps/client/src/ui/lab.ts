@@ -47,7 +47,7 @@ import { openEditor } from './editor';
 import { openWhatsNew } from './whatsnew';
 import { openCredits } from './credits';
 import { pickCharacter } from './charpick';
-import { lobbySeats, resumeLobby } from './online';
+import { resumeLobby } from './online';
 import { soundButton, soundControls } from './soundpanel';
 import { SFX_NAMES, TRACK_NAMES, sound, type Track } from '../audio';
 import { guestSetup, setupScreen, type SetupRoom } from './start';
@@ -109,7 +109,12 @@ const rnd = (n: number) => Math.floor(Math.random() * n);
  * Controls for UI elements that were just added or changed: they shake once and glow so they
  * are easy to find. Update this list with each change.
  */
-const RECENT = new Set(['Game setup', 'Game setup (friend joined)', 'Joined game (locked setup)']);
+const RECENT = new Set([
+  'Game setup',
+  'Game setup (friend joined)',
+  'Joined game (locked setup)',
+  'Online: continue saved game',
+]);
 
 /** Which board the lab plays on: Town (square) or Twin Lakes (hex), remembered per browser. */
 const LAB_BOARD_KEY = 'aa-lab-board';
@@ -1569,10 +1574,6 @@ export async function openLab(app: HTMLElement, section?: string) {
                 lobby.seats[1].look = id;
                 view.update();
               },
-              setName: (n) => {
-                lobby.seats[1].name = n;
-                view.update();
-              },
               // Everyone else is ready here, so tapping Ready shows the "Starting..." state.
               setReady: (on) => {
                 lobby.seats[1].ready = on;
@@ -1616,42 +1617,6 @@ export async function openLab(app: HTMLElement, section?: string) {
             },
             G.round,
           );
-        }),
-      ),
-      btn('Online: lobby seats', () =>
-        overlay((holder) => {
-          const looks = G.players.map((p) => p.ch);
-          const el = h(
-            'div',
-            { class: 'setup' },
-            h(
-              'div',
-              { class: 'setup-wrap narrow' },
-              h(
-                'section',
-                { class: 'setup-panel glass' },
-                h('div', { class: 'room-code' }, h('small', null, 'Room code'), h('b', null, 'KQZD')),
-                lobbySeats(
-                  {
-                    boardName: G.boardName ?? 'Town',
-                    rules: 'standard',
-                    target: 5000,
-                    roundCap: 0,
-                    seats: [
-                      { kind: 'host', name: 'Rosa', look: looks[0], online: true },
-                      { kind: 'remote', name: 'Milo', look: looks[1], online: true },
-                      { kind: 'remote', name: 'Juno', look: looks[2], online: false },
-                      { kind: 'open', name: '', look: null, online: false },
-                    ],
-                  },
-                  0,
-                  (i) => hud.tick(`Remove seat ${i + 1} pressed.`),
-                ),
-              ),
-            ),
-          );
-          holder.append(el);
-          return () => el.remove();
         }),
       ),
     );

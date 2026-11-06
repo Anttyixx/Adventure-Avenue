@@ -659,10 +659,8 @@ if (!(await ask(`Delete ${d.name}?`, 'Its 4 properties will be removed from the 
   the carousel fills the rest, and a fixed bottom container `.su-dock` (rounded glass,
   players only, no Start; `fit-content` width like the action bar, morphing 280ms via
   `morphWidth` as seats change; seat cards 118px). Ready up: each person's seat card has a
-  `.seat-ready` chip sitting centered on the character's spot, over their feet, so the card is no
-  taller (gold outline on navy "Ready", green with a tick when ready; joined players' state as the
-  same chip without a button, `.badge`; a joined player's own row in their lobby has it as a
-  button), and `.su-status` beside the "Players"
+  `.seat-ready` chip just under the character's feet (gold outline on navy "Ready", green with a
+  tick when ready; joined players' state as the same chip without a button, `.badge`), and `.su-status` beside the "Players"
   heading says who we wait for (muted), counts down (green) or why it can't start (red). Board tools are `.su-chip` pills in the
   Map panel's top right. Settings are a grid (`.su-rules`): rule set, round limit, stocks; then
   in two columns: rule set, round limit; goal, stocks; vacant plots across.
@@ -670,15 +668,18 @@ if (!(await ask(`Delete ${d.name}?`, 'Its 4 properties will be removed from the 
   stay side by side (0.85 : 1.15) and fill the room between the bars instead of scrolling: the map
   picture shrinks to fit (dots hidden, 28px arrows), settings drop their hints and use 26px
   buttons and a smaller digit picker; only the settings panel scrolls (thin bar) if a phone is too
-  short. At 360px tall or less the seat characters and name boxes are a little smaller.
+  short. At 360px tall or less the seat characters are a little smaller.
 - Players sit in the bottom container: up to 5 seat cards in a row (`.setup .seat-card`, smaller here): the
   character trimmed to its pixels (`charButton(look, 'body', ...)`) standing centered on a soft
-  spot in the seat's color, the name (an input for players on this device), a muted tag
-  ("You · host", "On this device", "Joined online", "Bot") and a small red × remove button in the
-  top right (16px `--bad` circle, white ×; never on the host). The empty spot is a dashed card with
-  a gold round **+ Add bot** button and a small ghost **+ Local player** button. Every name box and
-  its tag line up across cards: a name input and a bot's name share one height (26px, phones 22px),
-  and the host's name placeholder is bright text, so it never looks disabled.
+  spot in the seat's color, with the name plate above it (`.seat-name`, `seatName()`: a pill in
+  `--pc`, white Lilita text, 1.5px white outline, like the plates over tokens on the board; no name
+  box, names are set before setup), the Ready chip under the feet, a muted tag ("You · host", "On
+  this device", "Joined online", "Bot") and a small red × remove button on the card's top right
+  corner (16px `--bad` circle, white ×, overlapping the corner so it never covers the plate; never
+  on the host). Bots get an invisible chip so every card's rows line up. The joined game and
+  Continue game use the same cards (an open seat: "Open" plate and a dashed "?" box; a player not
+  back yet: an "Away" chip under the feet). The empty spot is a dashed card with
+  a gold round **+ Add bot** button and a small ghost **+ Local player** button.
 - **Player card** (main menu, `.menu-card` + `openPlayerCard`): a `.menu-sound` button in the top
   right beside Sound (round 22px portrait + name; portrait only on phones). Its pop-up is a
   `.modal.player-card` (same frame as the Menu pop-up): the character on a spot in a tile like a

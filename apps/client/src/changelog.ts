@@ -31,6 +31,11 @@ export const CHANGELOG: ChangelogEntry[] = [
     title: 'Ready up',
     features: [
       {
+        tag: 'better',
+        title: 'Name plates on the seats',
+        text: "Each seat shows the player's name in a colored plate above their character, just like on the board, with the Ready chip under their feet. Names are set before the game: yours is on your player card in the main menu.",
+      },
+      {
         tag: 'new',
         title: 'Ready up to start',
         text: 'Game setup has no Start button any more. Each player taps the Ready chip on their own seat, and when everyone is ready the game starts after a short countdown. Changed your mind? Tap Ready again to stop it.',

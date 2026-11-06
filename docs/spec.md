@@ -898,8 +898,8 @@ smaller ones the middle scrolls, with no scroll bar.
   are 5 players) has **Add bot** and a smaller **+ Local player** button (to add a player who plays on this device; phones show it too); bots and extra
   players on this device have a small red remove button (×) in the card's top right corner, joined friends can be removed too.
 - **Ready up:** instead of a Start button, every person taps the **Ready** chip on their own seat
-  (a small chip over the character's feet; each player on the host's device has one, and a friend
-  who joined has one on their own seat in their list). Ready turns green with a tick; tapping it again takes it back. Bots are always
+  (a small chip under the character's feet; each player on the host's device has one, and a friend
+  who joined has one on their own seat). Ready turns green with a tick; tapping it again takes it back. Bots are always
   ready. A status line beside "Players" says what is needed: "Tap Ready to start", "Waiting for
   Ada, Pip", or a reason the game can't start (fewer than 2 players, or a board with problems).
   When everyone is ready the game starts: straight away when there is only one person, otherwise
@@ -922,12 +922,12 @@ smaller ones the middle scrolls, with no scroll bar.
   seat's character opens the character picker (all nine characters; ones other humans have are
   greyed out with their name, so no two players share one; a CPU holding the picked one switches
   to a free one). Characters cannot change once the game
-  starts. Each human seat has a name box (up to 10 characters; the characters `< > & " ' \`` and
-`\` are removed; leave it blank to keep the suggested name), and typed names are remembered for
-  the next game (the host's seat starts with the player card's name and character). A player who
-  joined types their name in the bottom container; it is sent to the host half a second after
-  they stop typing, and the lobby updating never interrupts the typing. In the online build,
-  validate names on the server.
+  starts. **Names can't be changed in game setup:** players set them before (the host's seat uses
+  the main menu's player card name and character; a friend joins with the name on their player
+  card or typed in the join box; other players on the host's device and bots get a suggested
+  name). Each seat card shows the name as a plate in the player's color above the character, like
+  the plates over tokens on the board, with the Ready chip just under the character's feet. In the
+  online build, validate names on the server.
 
 In-game, the Menu button (top right) opens the menu as a pop-up in the middle of the screen, over
 everything; a game on this device pauses while it is open (online games carry on). It has Resume, a Fast CPU
@@ -1542,8 +1542,8 @@ rebuild.
 See "Game setup options": a fixed top bar (Back, title, join code chip, Sound), the board selector
 and then the game settings in the middle (scrolling only on small screens, no scroll bar), and a
 fixed bottom container with the players and Start. Joined guests see the same screen with the
-host's board and settings locked, the players in the bottom container, their name box and
-"Waiting for the host to start...".
+host's board and settings locked and the same seat cards in the bottom container, where they tap
+the Ready chip on their own seat.
 
 ### Warps and portals
 
