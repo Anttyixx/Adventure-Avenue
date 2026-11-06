@@ -20,4 +20,4 @@ export * from './boards/format';
 
 export * from './transport';
 
-export { CROSSGATE_GARDENS, PRISM_JUNCTION } from './boards/portal-maps';
+export { CROSSGATE_GARDENS, PRISM_JUNCTION, RETURN_RIDGE } from './boards/portal-maps';

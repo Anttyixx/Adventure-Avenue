@@ -306,11 +306,15 @@ Two portal-focused boards extend the built-in selection:
   rings around a central bank promenade. Each half-courtyard holds one district. Four portal
   pairs exchange distant courtyard corners as soon as a player steps on them, letting the same
   roll continue into another quarter. Inward roads offer a route home through the bank.
-- **Prism Junction** (hex, 18 × 18, 63 tiles, 6 districts / 24 properties): three hexagonal petals
-  around a three-way bank junction. Three portal pairs link the outer rims into a second circuit;
-  inner spokes lead back to the bank. Each half-petal holds one district.
+- **Prism Junction** (hex): four hexagonal petals, eight districts / 32 properties and four
+  portal pairs between their outer rims. Inner spokes lead back to the bank.
+- **Return Ridge** (square): four winding dead-end branches, eight districts / 32 properties.
+  Each branch ends in a portal paired with a return tile exactly two road steps from the bank.
+  Players teleport on entry and use any remaining movement normally. The return portals are
+  reciprocal, so entering one near the bank also offers a shortcut out to its branch tip.
+  Linked portal endpoints do not receive dead-end warnings: entering them teleports the player.
 
-Both boards alternate each district's properties with non-property relief stops (suits, venture,
+These boards alternate each district's properties with non-property relief stops (suits, venture,
 Boon, Take-a-break or Stockbroker). No two properties share a road edge. All four properties of a
 district are within six walking steps of one another without crossing a different district or
 using a portal. The bank and suits remain reachable under automatic portal entry and the

@@ -284,7 +284,7 @@ export function validateBoard(def: BoardDef): BoardCheck {
         squares: [i],
         tileText: 'Not connected to anything: put it next to another tile.',
       });
-    else if (nb[i].length === 1)
+    else if (nb[i].length === 1 && !(s.t === 'portal' && s.link != null && sq[s.link]))
       warn(`Square ${where(s)} is a dead end: players turn around there.`, {
         squares: [i],
         tileText: 'A dead end: players turn around here.',

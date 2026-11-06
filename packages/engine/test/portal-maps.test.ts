@@ -1,12 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { CROSSGATE_GARDENS, PRISM_JUNCTION } from '../src/boards/portal-maps';
+import { CROSSGATE_GARDENS, PRISM_JUNCTION, RETURN_RIDGE } from '../src/boards/portal-maps';
 import { fromMap } from '../src/boards/maps';
 import { boardFromFile, boardToFile, validateBoard } from '../src/boards/format';
 import { Game } from '../src/engine';
 import { cpuIO, cpuSeats, simulate } from '../src/headless';
 import { newGame } from '../src/setup';
 
-for (const board of [CROSSGATE_GARDENS, PRISM_JUNCTION])
+for (const board of [CROSSGATE_GARDENS, PRISM_JUNCTION, RETURN_RIDGE])
   describe(board.name, () => {
     const state = () =>
       newGame({
@@ -45,7 +45,7 @@ for (const board of [CROSSGATE_GARDENS, PRISM_JUNCTION])
     it('makes each portal a substantial shortcut, with reciprocal links surviving export', () => {
       const G = state();
       const portals = G.nodes.filter((s) => s.t === 'portal');
-      expect(portals).toHaveLength(board.layout === 'hex' ? 6 : 8);
+      expect(portals).toHaveLength(8);
       for (const portal of portals) {
         expect(G.nodes[portal.link!].link).toBe(portal.id);
         const dist = new Map([[portal.id, 0]]),
@@ -159,4 +159,34 @@ it('rejects mistyped or reused portal endpoints in authored maps', () => {
       ],
     }),
   ).toThrow(/invalid portal pair/);
+});
+
+it('has eight districts on Prism Junction and returns dead-end portals two steps before the bank', () => {
+  expect(PRISM_JUNCTION.districts).toHaveLength(8);
+  const G = newGame({
+    rules: 'standard',
+    target: 10000,
+    roundCap: 0,
+    seats: cpuSeats(),
+    seed: 42,
+    board: RETURN_RIDGE,
+  });
+  const bank = G.nodes.find((n) => n.t === 'bank')!;
+  const distance = (start: number) => {
+    const dist = new Map([[start, 0]]),
+      queue = [start];
+    for (const id of queue)
+      for (const next of G.nodes[id].nb)
+        if (!dist.has(next)) {
+          dist.set(next, dist.get(id)! + 1);
+          queue.push(next);
+        }
+    return dist.get(bank.id)!;
+  };
+  const ends = G.nodes.filter((n) => n.nb.length === 1 && distance(n.id) > 3);
+  expect(ends).toHaveLength(4);
+  for (const end of ends) {
+    expect(end.t).toBe('portal');
+    expect(distance(end.link!)).toBe(2);
+  }
 });

@@ -26,6 +26,23 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: '2026-11-05-return-ridge',
+    date: 'Nov 5, 2026',
+    title: 'More portal routes',
+    features: [
+      {
+        tag: 'better',
+        title: 'Eight districts in Prism Junction',
+        text: 'Prism Junction now has four hexagonal loops with eight full districts and four portal pairs.',
+      },
+      {
+        tag: 'new',
+        title: 'Return Ridge',
+        text: 'Explore four winding dead-end branches. Portals at their tips return you two spaces before the bank. Eight districts, with relief stops between properties.',
+      },
+    ],
+  },
+  {
     id: '2026-11-06-setup-tidy',
     date: 'Nov 6, 2026',
     title: 'Tidier game setup',

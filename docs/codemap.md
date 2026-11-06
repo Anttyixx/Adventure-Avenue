@@ -243,4 +243,4 @@ debounced fallback and immediate decision interruption; tested with fake timers.
 
 Arcade games on screen: `apps/client/src/ui/arcade.ts` (`ArcadeStage`: the board in the middle plus action-bar prompts for all five games). Engine scoring and games live in `packages/engine/src/arcade.ts`.
 
-`packages/engine/src/boards/portal-maps.ts` defines Crossgate Gardens (square courtyards) and Prism Junction (hex petals). `fromMap` accepts explicit reciprocal portal coordinate pairs; `portal-maps.test.ts` checks district relief spacing, real movement reachability and return routes, transport export, and complete matches.
+`packages/engine/src/boards/portal-maps.ts` defines Crossgate Gardens (square courtyards) , Prism Junction (four hex petals) and Return Ridge (square dead-end branches). `fromMap` accepts explicit reciprocal portal coordinate pairs; `portal-maps.test.ts` checks district relief spacing, real movement reachability and return routes, transport export, and complete matches.
