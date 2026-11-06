@@ -309,7 +309,8 @@ Two portal-focused boards extend the built-in selection:
 - **Prism Junction** (hex): four hexagonal petals, eight districts / 32 properties and four
   portal pairs between their outer rims. Inner spokes lead back to the bank.
 - **Return Ridge** (square): four winding dead-end branches, twelve districts / 48 properties.
-  Only four venture squares remain; other relief stops include suits, arcades, stockbrokers,
+  Special tiles use different orders on each branch and varied distances from the bank, rather
+  than mirrored placements. Only four venture squares remain; other relief stops include suits, arcades, stockbrokers,
   change-of-suit, Boon, Boom, Take-a-break and Roll-on tiles. Each branch ends in a portal paired with a return tile exactly two road steps from the bank.
   Players teleport on entry and use any remaining movement normally. The return portals are
   reciprocal, so entering one near the bank also offers a shortcut out to its branch tip.

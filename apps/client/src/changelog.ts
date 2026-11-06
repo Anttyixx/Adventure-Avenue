@@ -26,6 +26,15 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: '2026-11-05-ridge-variety',
+    date: 'Nov 5, 2026',
+    title: 'More varied Return Ridge routes',
+    features: [],
+    extras: [
+      'Special tiles appear in different orders and at varied distances from the bank across Return Ridge’s four branches.',
+    ],
+  },
+  {
     id: '2026-11-05-ridge-pairs',
     date: 'Nov 5, 2026',
     title: 'Return Ridge property pairs',
