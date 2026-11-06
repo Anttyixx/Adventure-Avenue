@@ -682,8 +682,12 @@ if (!(await ask(`Delete ${d.name}?`, 'Its 4 properties will be removed from the 
   corner (16px `--bad` circle, white ×, overlapping the corner so it never covers the plate; never
   on the host). Bots get an invisible chip so every card's rows line up. The joined game and
   Continue game use the same cards (an open seat: "Open" plate and a dashed "?" box; a player not
-  back yet: an "Away" chip under the feet). The empty spot is a dashed card with
-  a gold round **+ Add bot** button and a small ghost **+ Local player** button.
+  back yet: an "Away" chip under the feet). The empty spot mirrors a seat card:
+  only a 2px dashed outline (no fill, no colored top edge, 2px less padding so its rows line up),
+  a gold `.seat-name.add-chip` "Add bot" chip in the name plate's place, the round gold
+  `.seat-plus` (34px, margins making it as tall as a standing character) on a faint spot, a
+  `.seat-ready.add-local` "+ Local player" chip ("+ Local" on phones) in the Ready chip's place,
+  and the tag "Empty seat".
 - **Player card** (main menu, `.menu-card` + `openPlayerCard`): a `.menu-sound` button in the top
   right beside Sound (round 22px portrait + name; portrait only on phones). Its pop-up is a
   `.modal.player-card` (same frame as the Menu pop-up): the character on a spot in a tile like a

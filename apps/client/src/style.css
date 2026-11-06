@@ -9539,32 +9539,36 @@ div.sl-inline label {
 .setup .seat-card .seat-kick:hover {
   background: var(--bad);
 }
+/* The empty spot: only a dashed outline (no fill, no colored top edge), laid out like a seat
+   card: an "Add bot" chip in the name plate's place, a gold + where the character stands, and
+   a "+ Local player" chip in the Ready chip's place. */
 .seat-card.add {
-  justify-content: center;
-  gap: 8px;
+  --pc: var(--accent);
   background: none;
-  box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.15);
-  border: 0;
-  outline: 2px dashed rgba(255, 255, 255, 0.18);
-  outline-offset: -6px;
+  box-shadow: none;
+  border: 2px dashed rgba(255, 255, 255, 0.25);
 }
-.seat-add {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 4px;
-  padding: 10px 14px;
-  border: 0;
-  border-radius: 12px;
-  background: none;
-  color: var(--text);
+.seat-card.add .seat-stage::after {
+  opacity: 0.25;
+}
+.seat-name.add-chip {
+  color: #3b2a00;
   cursor: pointer;
-  transition: transform 0.12s;
 }
-.seat-add:hover {
-  transform: translateY(-2px);
+.seat-name.add-chip:hover,
+.seat-plus:hover {
+  filter: brightness(1.08);
+}
+.seat-card.add .al-short {
+  display: none;
 }
 .seat-plus {
+  position: relative;
+  z-index: 1;
+  padding: 0;
+  border: 0;
+  cursor: pointer;
+  transition: transform 0.12s;
   width: 46px;
   height: 46px;
   border-radius: 50%;
@@ -9574,9 +9578,6 @@ div.sl-inline label {
   color: #3b2a00;
   font: 400 30px/1 var(--head);
   box-shadow: 0 4px 0 #b07c00;
-}
-.seat-add b {
-  font: 400 15px var(--head);
 }
 .players-panel .hint.warn {
   color: var(--accent);
@@ -10571,21 +10572,21 @@ span.su-code {
   background: #ff6b6b;
   transform: scale(1.12);
 }
+.su .seat-card.add {
+  /* 2px less than other cards: the dashed border takes that room, so the rows line up. */
+  padding: 10px 8px 8px;
+}
 .su .seat-plus {
   width: 34px;
   height: 34px;
+  /* As tall as a standing character, so the chips line up with the other cards'. */
+  margin: 8px 0;
   font-size: 24px;
   box-shadow: 0 3px 0 #b07c00;
 }
-.su .seat-add {
-  padding: 2px 8px;
-}
-.su .seat-add b {
-  font-size: 13px;
-}
-.su .seat-card.add .btn.small {
-  padding: 3px 8px;
-  font-size: 11px;
+.seat-plus:active {
+  transform: translateY(2px);
+  box-shadow: 0 1px 0 #b07c00;
 }
 .su-start {
   flex: none;
@@ -10693,22 +10694,24 @@ span.su-code {
   .su .seat-card .seat-tag {
     display: none;
   }
-  .su .seat-card.add {
-    gap: 4px;
-    outline-offset: -4px;
-  }
-  .su .seat-add {
-    padding: 0 4px;
-  }
-  .su .seat-card.add .btn.small {
-    padding: 2px 5px;
-    font-size: 9px;
-    white-space: nowrap;
-  }
   .su .seat-plus {
     width: 26px;
     height: 26px;
+    margin: 7px 0;
     font-size: 20px;
+  }
+  .su .seat-card.add {
+    padding: 6px 4px 5px;
+  }
+  .su .seat-card.add .seat-name.add-chip {
+    padding: 0 5px;
+    font-size: 10px;
+  }
+  .su .seat-card.add .al-long {
+    display: none;
+  }
+  .su .seat-card.add .al-short {
+    display: inline;
   }
   .su-start {
     width: 150px;
@@ -10832,6 +10835,9 @@ span.su-code {
   .su .seat-stage .char-btn {
     width: 24px;
     height: 32px;
+  }
+  .su .seat-plus {
+    margin: 3px 0;
   }
   .su-rule .seg-btn {
     padding: 2px 7px;

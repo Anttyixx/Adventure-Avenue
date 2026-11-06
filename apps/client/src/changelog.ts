@@ -38,7 +38,7 @@ export const CHANGELOG: ChangelogEntry[] = [
       {
         tag: 'better',
         title: 'Start with just you',
-        text: 'A new game starts with only you in the players bar. Add bots or players on this device with the + button, or share the code so friends can join.',
+        text: 'A new game starts with only you in the players bar. The empty spot looks like a seat: tap the big + (or Add bot) for a bot, or + Local player for someone on this device, or share the code so friends can join.',
       },
       {
         tag: 'new',

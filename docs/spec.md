@@ -898,7 +898,9 @@ smaller ones the middle scrolls, with no scroll bar.
   (the board and settings are remembered from the last game, the players are not). Each seat
   is a card with the character standing on a spot in the seat's color (centered, tap to change it
   for players on this device), the name and what kind of player it is. An empty spot (until there
-  are 5 players) has **Add bot** and a smaller **+ Local player** button (to add a player who plays on this device; phones show it too); bots and extra
+  are 5 players) is laid out like a seat: a dashed outline, an **Add bot** chip where the name
+  plate goes, a big gold **+** where the character stands (both add a bot) and a **+ Local
+  player** chip where the Ready chip goes (a player on this device; "+ Local" on phones); bots and extra
   players on this device have a small red remove button (×) in the card's top right corner, joined friends can be removed too.
 - **Ready up:** instead of a Start button, every person taps the **Ready** chip on their own seat
   (a small chip under the character's feet; each player on the host's device has one, and a friend

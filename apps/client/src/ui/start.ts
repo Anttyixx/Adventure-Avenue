@@ -834,36 +834,41 @@ export function setupScreen(
     });
   };
 
-  /** The empty spots: add a bot, or (smaller) a player on this device. */
-  const addCard = () =>
-    h(
+  /**
+   * The empty spot, laid out like a seat card: an "Add bot" chip where the name plate goes, a
+   * big + where the character stands (both add a bot), and a "+ Local player" chip where the
+   * Ready chip goes (a player on this device).
+   */
+  const addCard = () => {
+    const addBot = () => {
+      bots++;
+      draw();
+    };
+    return h(
       'div',
       { class: 'seat-card add', 'data-key': 'add' },
+      h('button', { class: 'seat-name add-chip', onclick: addBot }, 'Add bot'),
       h(
-        'button',
-        {
-          class: 'seat-add',
-          onclick: () => {
-            bots++;
-            draw();
-          },
-        },
-        h('span', { class: 'seat-plus', 'aria-hidden': 'true' }, '+'),
-        h('b', null, 'Add bot'),
+        'div',
+        { class: 'seat-stage' },
+        h('button', { class: 'seat-plus', 'aria-label': 'Add bot', onclick: addBot }, '+'),
       ),
       h(
         'button',
         {
-          class: 'btn small ghost',
+          class: 'seat-ready add-local',
           title: 'Add a player who plays on this device',
           onclick: () => {
             humans++;
             draw();
           },
         },
-        '+ Local player',
+        h('span', { class: 'al-long' }, '+ Local player'),
+        h('span', { class: 'al-short' }, '+ Local'),
       ),
+      h('span', { class: 'seat-tag' }, 'Empty seat'),
     );
+  };
 
   /** The players, in the bottom container: a seat card each and the empty spot. */
   const playersPanel = () =>
