@@ -1,8 +1,7 @@
 /**
- * Player characters: the "Medieval townsfolk" pixel-art pack by Franuka (CC BY 4.0) and
- * Phewcumber's skeleton and zombie (see the Credits screen). Each character has an idle and a walk sheet of
- * 32 x 48 frames: 4 frames per row (`frames` for others), one row per facing (down, left, right,
- * up). Call `loadCharacters()` once before drawing.
+ * Player characters: the "Medieval townsfolk" pixel-art pack by Franuka (CC BY 4.0, see the
+ * Credits screen). Each character has an idle and a walk sheet of 32 x 48 frames: 4 frames per
+ * row, one row per facing (down, left, right, up). Call `loadCharacters()` once before drawing.
  */
 import type { CharId } from '@aa/engine';
 
@@ -22,8 +21,6 @@ export interface CharDef {
   name: string;
   /** Top row of the portrait crop (hats and heights differ). */
   face: number;
-  /** Frames per row when not FRAMES (the skeleton's sheets have 6). */
-  frames?: number;
 }
 
 export const CHARACTERS: CharDef[] = [
@@ -36,9 +33,6 @@ export const CHARACTERS: CharDef[] = [
   { id: 'bartender', name: 'Bartender', face: 16 },
   { id: 'kid01', name: 'Red Cap', face: 19 },
   { id: 'kid02', name: 'Blue Cap', face: 19 },
-  // Side view only: its down and up rows repeat the left and right ones.
-  { id: 'skeleton', name: 'Skeleton', face: 22, frames: 6 },
-  { id: 'zombie', name: 'Zombie', face: 22, frames: 6 },
 ];
 
 const sheetURLs = import.meta.glob<string>('./assets/townsfolk/*.png', {
@@ -119,12 +113,10 @@ export function drawCharacter(
   y: number,
   scale: number,
 ): boolean {
-  const def = charDef(ch);
-  const s = sheets.get(def.id);
+  const s = sheets.get(charDef(ch).id);
   if (!s) return false;
   const img = walking ? s.walk : s.idle;
-  const n = def.frames ?? FRAMES;
-  const f = ((frame % n) + n) % n;
+  const f = ((frame % FRAMES) + FRAMES) % FRAMES;
   ctx.drawImage(
     img,
     f * FRAME_W,
@@ -208,8 +200,7 @@ export function drawCharacterGlow(
   const def = charDef(ch);
   const s = sheets.get(def.id);
   if (!s) return;
-  const n = def.frames ?? FRAMES;
-  const f = ((frame % n) + n) % n;
+  const f = ((frame % FRAMES) + FRAMES) % FRAMES;
   const glow = glowFrame(walking ? s.walk : s.idle, `${def.id}|${walking}|${facing}|${f}`, facing, f);
   ctx.save();
   ctx.imageSmoothingEnabled = true;

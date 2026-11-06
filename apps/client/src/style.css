@@ -5283,27 +5283,6 @@ input[type='range'] {
   opacity: 0.4;
   filter: grayscale(1);
 }
-/* Phones: six smaller cards a row, so every character fits without scrolling. */
-@media (max-height: 500px) {
-  .modal.char-pick {
-    width: min(620px, 100%);
-  }
-  .char-grid {
-    grid-template-columns: repeat(6, minmax(0, 1fr));
-    gap: 6px;
-    margin-top: 8px;
-  }
-  .char-card {
-    padding: 4px 2px;
-  }
-  .char-card img {
-    width: 40px;
-    height: 60px;
-  }
-  .char-card b {
-    font-size: 11px;
-  }
-}
 
 /* A character that opens the picker */
 .char-btn {

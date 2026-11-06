@@ -26,18 +26,6 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
-    id: '2026-11-06-skeleton',
-    date: 'Nov 6, 2026',
-    title: 'New characters: the Skeleton and the Zombie',
-    features: [
-      {
-        tag: 'new',
-        title: 'The Skeleton and the Zombie',
-        text: 'Two new characters to play as, each with its own idle and walking animations. Art by Phewcumber (see Credits).',
-      },
-    ],
-  },
-  {
     id: '2026-11-06-motel-taxi-swap',
     date: 'Nov 6, 2026',
     title: 'Motels, taxis, swaps and your player card',

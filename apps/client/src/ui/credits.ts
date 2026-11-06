@@ -48,13 +48,11 @@ function creditCard(c: Credit): HTMLElement {
       h('b', { class: 'cr-who' }, c.who),
       h('span', { class: 'cr-role' }, c.role),
     ),
-    c.characters
+    c.showCharacters
       ? h(
           'div',
           { class: 'cr-art' },
-          ...CHARACTERS.filter((ch) => c.characters!.includes(ch.id)).map((ch) =>
-            h('img', { src: characterURL(ch.id, 2), alt: ch.name, title: ch.name }),
-          ),
+          ...CHARACTERS.map((ch) => h('img', { src: characterURL(ch.id, 2), alt: ch.name, title: ch.name })),
         )
       : null,
     h('div', { class: 'cr-label' }, 'Used in the game'),
