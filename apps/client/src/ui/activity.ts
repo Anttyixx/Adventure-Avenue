@@ -72,8 +72,8 @@ export function activity(G: GameState, req: DecisionRequest, rolled?: number): A
       );
     case 'answerTrade':
       return is(`deciding on ${G.players[req.offer.from].name}'s trade offer`, 'property');
-    case 'bid':
-      return is('deciding whether to bid', 'money');
+    case 'auction':
+      return { text: 'The auction is on...', kind: 'money' };
     case 'debt':
       return is('selling assets to pay a debt', 'alert');
   }

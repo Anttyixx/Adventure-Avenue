@@ -1036,8 +1036,10 @@ export class Game {
   }
 
   /**
-   * Run an auction. `seller` null means the bank (debt sale). Bidders are asked in turn order;
-   * each raises by the step or passes and drops out.
+   * Run an auction. `seller` null means the bank (debt sale). The auction itself is live: every
+   * bidder may raise (opening bid, then + step) or pass at any moment, and it ends 5 seconds after
+   * the last bid or when one bidder is left. The screen runs that and answers one `auction`
+   * decision with the winner and price, which are checked here.
    */
   async auction(sq: Square, seller: Player | null, opening: number) {
     const G = this.G;
@@ -1045,14 +1047,11 @@ export class Game {
     const step = Math.max(K.auctionStepMin, Math.round(sq.value * K.auctionStep));
     const start = G.turn;
     const bidders: number[] = [];
-    // Asked in turn order, starting after the active player (who is asked last).
+    // Listed in turn order, starting after the active player.
     for (let i = 1; i <= G.order.length; i++) {
       const q = G.players[G.order[(start + i) % G.order.length]];
       if (!q.bankrupt && (!seller || q.id !== seller.id)) bidders.push(q.id);
     }
-    const inRace = new Set(bidders);
-    let high = 0;
-    let highBidder = -1;
     await this.emit({
       type: 'auctionStart',
       sq: sq.id,
@@ -1061,51 +1060,34 @@ export class Game {
       step,
       bidders,
     });
-    while (inRace.size > 0) {
-      if (highBidder >= 0 && inRace.size === 1) break;
-      for (const pid of bidders) {
-        if (!inRace.has(pid) || pid === highBidder) continue;
-        if (highBidder >= 0 && inRace.size === 1) break;
-        const next = highBidder < 0 ? opening : high + step;
-        const q = G.players[pid];
-        if (q.cash < next) {
-          inRace.delete(pid);
-          await this.emit({ type: 'auctionBid', sq: sq.id, pid, bid: next, raised: false });
-          continue;
-        }
-        const yes = await this.ask({
-          kind: 'bid',
-          pid,
+    const ans = bidders.length
+      ? await this.ask({
+          kind: 'auction',
+          pid: this.current.id,
           sq: sq.id,
-          bid: next,
-          high,
-          highBidder,
           seller: seller ? seller.id : -1,
-        });
-        if (yes && q.cash >= next) {
-          high = next;
-          highBidder = pid;
-        } else inRace.delete(pid);
-        await this.emit({
-          type: 'auctionBid',
-          sq: sq.id,
-          pid,
-          bid: next,
-          raised: highBidder === pid && high === next,
-        });
-      }
-    }
-    if (highBidder < 0) {
+          opening,
+          step,
+          bidders,
+        })
+      : null;
+    const winner = ans && bidders.includes(ans.winner) ? G.players[ans.winner] : null;
+    const price = Math.round(ans?.price ?? 0);
+    if (!winner || price < opening || price > winner.cash) {
       await this.log('Nobody bid. No sale.', seller?.id, 'property');
       await this.emit({ type: 'auctionEnd', sq: sq.id, winner: -1, price: 0 });
       return;
     }
-    const w = G.players[highBidder];
-    sq.owner = w.id;
-    await this.pay(w, seller, high, 'Auction');
-    await this.log(`${w.name} won the auction for ${high}G.`, w.id, 'property', seller ? [seller.id] : []);
-    await this.transfer(sq, w.id);
-    await this.emit({ type: 'auctionEnd', sq: sq.id, winner: w.id, price: high });
+    sq.owner = winner.id;
+    await this.pay(winner, seller, price, 'Auction');
+    await this.log(
+      `${winner.name} won the auction for ${price}G.`,
+      winner.id,
+      'property',
+      seller ? [seller.id] : [],
+    );
+    await this.transfer(sq, winner.id);
+    await this.emit({ type: 'auctionEnd', sq: sq.id, winner: winner.id, price });
   }
 
   // ---------------------------------------------------------------- debt and bankruptcy

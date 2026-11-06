@@ -86,7 +86,16 @@ export interface DecisionMap {
   pickDistrict: [{ purpose: DistrictPurpose; options: number[] }, number];
   /** Accept, decline, or send back different terms (a counter-offer from the answering player). */
   answerTrade: [{ offer: TradeOffer; canCounter: boolean }, boolean | { counter: TradeOffer }];
-  bid: [{ sq: number; bid: number; high: number; highBidder: number; seller: number }, boolean];
+  /**
+   * A live auction, answered for everyone at once: the screen runs it in real time (anyone may
+   * bid or pass at any moment; it ends 5 seconds after the last bid, or when one bidder is left)
+   * and answers with the winner (-1: no sale) and the winning price. `pid` is the player whose
+   * turn it is.
+   */
+  auction: [
+    { sq: number; seller: number; opening: number; step: number; bidders: number[] },
+    { winner: number; price: number },
+  ];
   /** Sell one asset (index into `assets`), or some shares of one district. */
   debt: [{ assets: DebtAsset[] }, number | { d: number; n: number }];
 }

@@ -26,6 +26,24 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: '2026-11-06-live-auctions',
+    date: 'Nov 6, 2026',
+    title: 'Live auctions',
+    features: [
+      {
+        tag: 'new',
+        title: 'Bid any time',
+        text: 'Auctions no longer go round in turns: everyone can bid or pass at any moment. The auction ends 5 seconds after the last bid (the highest bid wins), or as soon as everyone else has passed.',
+      },
+      {
+        tag: 'better',
+        title: 'A new auction screen',
+        text: 'A countdown bar that refills with every bid, the high bid and every bidder in the pop-up, and Bid and Pass always ready in the action bar. Players sharing a device each get their own buttons.',
+      },
+    ],
+    extras: ['The Guide is now in the Menu'],
+  },
+  {
     id: '2026-11-06-phone-popups',
     date: 'Nov 6, 2026',
     title: 'Bigger venture board, tidier phone screens',

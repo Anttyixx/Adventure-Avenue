@@ -97,8 +97,8 @@ Requests refer to parts of the game by these names:
   - **Info button:** right of the info chip; it opens the **info pop-up** (`ui/info.ts`): Game,
     Stocks and one page per player, picked in the action bar.
   - **toolbar:** top right; the **zoom chip**, the **Game log** button (opens the **game log**
-    panel in the top right, under the toolbar and above the player cards), the **Guide** button (`ui/guide.ts`, a centered
-    pop-up with tabs) and the **Menu** button (a centered pop-up that pauses games on this device).
+    panel in the top right, under the toolbar and above the player cards) and the **Menu** button (a centered
+    pop-up that pauses games on this device; it holds the **Guide**, `ui/guide.ts`, a centered pop-up with tabs).
   - **action bar** (`.prompt-center`): the current player's options at the bottom, or the
     **status line** when no options are up; it morphs between the two. `ui/status-messages.ts` gives new action phases priority over old results, protects brief in-phase overlays and debounces idle activity; actual choices interrupt stale announcements.
   - **player cards:** bottom right. Clicking one opens that player's page in the info pop-up

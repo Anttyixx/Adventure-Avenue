@@ -4,7 +4,7 @@
  */
 import type { DecisionRequest, GameState } from '@aa/engine';
 import type { OnlineSave } from '../save';
-import type { Answer } from './protocol';
+import type { AuctionLive, Answer } from './protocol';
 
 /** Who answers a player's decisions on this device. */
 export type Answerer = 'local' | 'cpu' | 'remote';
@@ -30,6 +30,14 @@ export interface GameLink {
   turnStart(seq: number, G: GameState): void;
   /** Host: the room details to keep in the save, so the game can be reopened online. */
   saveInfo?(): OnlineSave;
+  /** Host: tell every guest how the live auction for decision `seq` stands. */
+  auctionShare?(seq: number, live: AuctionLive): void;
+  /** Guest: bid or pass in the live auction for decision `seq`. */
+  auctionSend?(seq: number, act: 'bid' | 'pass'): void;
+  /** Host: hears a guest's bid or pass (`pid` is checked against their seat). */
+  onAuctionAct?: ((seq: number, pid: number, act: 'bid' | 'pass') => void) | null;
+  /** Guest: hears the host's live auction updates. */
+  onAuctionLive?: ((seq: number, live: AuctionLive) => void) | null;
   /** Leave the game (closes connections). */
   leave(): void;
 }

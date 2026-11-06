@@ -771,20 +771,31 @@ it gives + 20G and it can afford its cash side. CPUs never propose trades in the
 - **Debt sale:** when a player sells a shop to the bank in debt, the bank pays them 75% of value,
   then auctions the shop to everyone else. Opening bid = 75% of value; the winning bid goes to the
   bank.
-- **Live auction:** like the stock market, an auction is a pop-up in the middle of every player's
-  screen with the bidding in the action bar. The pop-up shows the lot (art, name, value), the high
-  bid and leader, a countdown bar, and each bidder (in, passed, leading, deciding); the View board
-  chip hides it. A player on this device bids in the action bar ("Raise your bid to 240G" with the
-  seconds left, Bid and Pass); everyone else's status line says who is deciding. A human has 12
-  seconds (`TIMING.auctionBid`) to raise; running out of time counts as a pass, so the high bidder
-  wins once everyone else has passed or timed out. The result shows in the action bar with
-  Continue, and the pop-up closes.
-- **Bidding:** players are asked in turn order. Each either raises (opening bid, then + 10% of value,
-  minimum 10G) or passes and drops out. It ends when one bidder holds the high bid and everyone else
-  has passed, or when nobody bids (no sale; the property stays with the seller or, for the bank,
-  goes back on the market).
-- **CPU bids** while the bid is <= value x 1.25 (x 1.6 if it already owns a square in that group)
-  and it keeps 200G in cash.
+- **Live bidding:** there are no turns. Every bidder can bid or pass at any moment. A bid is always
+  the next step up: the opening bid first, then + 10% of value (minimum 10G) over the high bid.
+  The high bidder can't pass (their bid stands); a player who passes is out. A bidder who can't
+  pay the next bid counts as out ("Too pricey"). The auction ends:
+  - 5 seconds (`TIMING.auctionWindow`) after the last bid: the high bidder wins;
+  - 5 seconds after it opens with no bids: no sale (the property stays with the seller or, for
+    the bank, goes back on the market);
+  - as soon as only one bidder is left: they win (at the opening bid if nobody bid).
+- **Screen:** a pop-up in the middle of every player's screen ("Live auction") shows the lot (art,
+  name, value and the bid step), the high bid and leader (it pops and a coin chimes on each new
+  bid), a countdown bar with the seconds left (gold, turning red for the last 2 seconds; every bid
+  fills it again), and each bidder (In, Leading, Passed, Too pricey). The View board chip hides
+  it. The action bar says who leads ("Kai leads with 340G", or the opening bid) and when it ends
+  ("Sold in 3s unless someone bids"); each player on this device gets **Bid 374G** and **Pass**
+  (a row each, with their name, when several share the device; "You lead" while they lead). The
+  result shows in the action bar with Continue, and the pop-up closes.
+- **Who runs it:** the engine asks one `auction` decision and gets the winner and price back,
+  checking that the winner was a bidder and can pay at least the opening bid. The screen runs the
+  live auction: on one device it takes bids from everyone there; online the host runs it, guests
+  send their bids and passes to the host (`auctionAct`) and draw the state it sends back
+  (`auction`), and the host shares the result like any other answer. Without a screen (tests, the
+  CPU simulation) it is settled as an ascending auction: the highest CPU limit wins, one step
+  above the runner-up's limit.
+- **CPU bids:** a CPU bids (after 0.7-2 seconds) while the next bid is <= value x 1.25 (x 1.6 if
+  it already owns a square in that group) and it keeps 200G in cash; otherwise it passes.
 - The winner gets the property and expansion runs.
 
 ## Debt, bankruptcy and ending the game
@@ -1065,8 +1076,9 @@ active player changes, tokens ease to their new sizes (the active one larger, th
 | Interface       | Prompts and status lines rise in, dialogs ease in, venture and Memory Blocks panels flip, revealed cards pop, main buttons give a small nudge | New prompt, dialog or reveal                              |
 
 **Layout.** Scrolling panels hide their scrollbars (they still scroll). The board fills the whole game screen edge to edge, and everything else floats over it
-as dark glass overlays. Top right: the zoom chip, the Guide button and the Menu button (the menu
-also shows the round, target and rule set). **Guide** (`ui/guide.ts`) opens a pop-up in the middle
+as dark glass overlays. Top right: the zoom chip, the Game log button and the Menu button (the menu
+also shows the round, target and rule set). **Guide** (`ui/guide.ts`, in the Menu, under Resume; the
+menu closes as it opens) opens a pop-up in the middle
 of the screen with a tab per topic: Basics (the goal, shops, buyouts, suits and promotion, special
 squares, before rolling, debt, controls), Stocks (buying and selling, dividends, what sets the
 price, demand and volatility, sell-offs; the classic rules for classic-stock games) and Vacant

@@ -31,7 +31,7 @@ import { buildPrompt, districtStockModal, stockModal } from './ui/modals';
 import { guideModal } from './ui/guide';
 import { showResults } from './ui/results';
 import { investOnBoard } from './ui/invest';
-import { AuctionView } from './ui/auction';
+import { AuctionView, LiveAuction, type AuctionReq } from './ui/auction';
 import { confettiRain, fireworks } from './ui/confetti';
 import { activity, paymentActivity, paymentLogMatches, PRE_ROLL_STEPS } from './ui/activity';
 import {
@@ -167,6 +167,7 @@ export class HotSeat implements GameIO {
 
   destroy() {
     this.arcade?.close();
+    this.liveAuction?.stop();
     this.dead = true;
     closeSoundPopover();
     window.removeEventListener('keydown', this.onKey);
@@ -348,8 +349,9 @@ export class HotSeat implements GameIO {
     this.summarizedPayments = [];
     const seq = this.seq++;
     if (this.link) return (await this.decideOnline(seq, req as DecisionRequest)) as DecisionAnswer<T>;
+    // A live auction is run here for everyone at once (bids from people here and CPUs).
+    if (req.kind === 'auction') return (await this.runAuction(seq, req as AuctionReq)) as DecisionAnswer<T>;
     const p = this.G.players[req.pid];
-    if (req.kind === 'bid' && !this.localHuman(p.id)) this.auction?.waiting(p.id);
     if (p.cpu) {
       this.spectate(req as DecisionRequest);
       const ans = cpuDecide(this.G, req);
@@ -394,7 +396,7 @@ export class HotSeat implements GameIO {
     const p = G.players[req.pid];
     const who = link.who(req.pid);
     this.updateSpeed();
-    if (req.kind === 'bid' && who !== 'local') this.auction?.waiting(req.pid);
+    if (req.kind === 'auction') return this.auctionOnline(seq, req);
     if (who !== 'local') this.spectate(req);
     if (link.role === 'host') {
       let ans: unknown;
@@ -427,6 +429,73 @@ export class HotSeat implements GameIO {
     G.rng = a.rng;
     if (who !== 'local' && (p.cpu || req.kind !== 'preRoll')) await this.showCpu(req, a.ans);
     if (this.dead) return never();
+    return a.ans;
+  }
+
+  /** The live auction being run on this device, if any (stopped if the game is left). */
+  private liveAuction: LiveAuction | null = null;
+
+  /**
+   * Run a live auction here (a game on this device, or the host online): this device's players
+   * bid in the action bar, CPUs (and players who dropped) bid by themselves, and online guests'
+   * bids arrive through the link. Resolves with the winner and price.
+   */
+  private async runAuction(seq: number, req: AuctionReq): Promise<{ winner: number; price: number }> {
+    const G = this.G;
+    const link = this.link;
+    const who = (pid: number) => (link ? link.who(pid) : G.players[pid].cpu ? 'cpu' : 'local');
+    const view =
+      this.auction ?? new AuctionView(this.hud, G, req.sq, req.seller, req.opening, req.step, req.bidders);
+    this.auction = view;
+    const live = new LiveAuction(G, req, view, {
+      cpu: (pid) => who(pid) === 'cpu',
+      anyPerson: req.bidders.some((pid) => who(pid) !== 'cpu'),
+      speed: this.speed,
+      share: link?.auctionShare ? (l) => link.auctionShare!(seq, l) : undefined,
+    });
+    this.liveAuction = live;
+    view.openBar(
+      req.bidders.filter((pid) => who(pid) === 'local'),
+      (pid, act) => live.act(pid, act),
+    );
+    if (link)
+      link.onAuctionAct = (s, pid, act) => {
+        if (s === seq && who(pid) === 'remote') live.act(pid, act);
+      };
+    const ans = await live.run();
+    if (link) link.onAuctionAct = null;
+    this.liveAuction = null;
+    view.closeBar();
+    return ans;
+  }
+
+  /** Online live auction: the host runs it and shares the answer; guests bid through the host. */
+  private async auctionOnline(seq: number, req: AuctionReq): Promise<unknown> {
+    const link = this.link!;
+    if (link.role === 'host') {
+      const ans = await this.runAuction(seq, req);
+      if (this.dead) return never();
+      link.publish({ seq, ans, rng: this.G.rng });
+      return ans;
+    }
+    // Guests: draw the host's updates and send this device's bids (not when replaying a turn
+    // whose auction is already decided).
+    if (!link.known?.(seq)) {
+      const view =
+        this.auction ??
+        new AuctionView(this.hud, this.G, req.sq, req.seller, req.opening, req.step, req.bidders);
+      this.auction = view;
+      link.onAuctionLive = (s, l) => s === seq && view.show(l);
+      view.openBar(
+        req.bidders.filter((pid) => link.who(pid) === 'local'),
+        (_pid, act) => link.auctionSend?.(seq, act),
+      );
+    }
+    const a = await link.answer(seq);
+    link.onAuctionLive = null;
+    this.auction?.closeBar();
+    if (this.dead) return never();
+    this.G.rng = a.rng;
     return a.ans;
   }
 
@@ -775,26 +844,6 @@ export class HotSeat implements GameIO {
       case 'answerTrade':
         return answerTradeOnBoard(this.pick, req.offer, req.canCounter);
 
-      case 'bid': {
-        // Bids are made in the live auction window everyone can see.
-        if (this.auction) return this.auction.ask(req);
-        const sq = G.nodes[req.sq];
-        return hud.prompt(
-          question(`Bid on the ${shortName(G, sq)}?`, [
-            ['Value', fmt(sq.value)],
-            ...(req.highBidder >= 0
-              ? [[`High bid (${G.players[req.highBidder].name})`, fmt(req.high)] as [string, string]]
-              : []),
-            ['Your bid', fmt(req.bid), 'big'],
-          ]),
-          [
-            { label: `Bid ${fmt(req.bid)}`, value: true, main: true },
-            { label: 'Pass', value: false, secondary: true },
-          ],
-          color,
-        );
-      }
-
       case 'debt':
         return debtOnBoard(this.pick, p, req.assets);
     }
@@ -1057,20 +1106,9 @@ export class HotSeat implements GameIO {
       case 'auctionStart':
         hud.action('auction', 'The auction is starting...', 'property');
         this.auction?.close();
-        this.auction = new AuctionView(hud, G, e.sq, e.seller, e.opening, e.bidders);
+        this.auction = new AuctionView(hud, G, e.sq, e.seller, e.opening, e.step, e.bidders);
         board.setChoices([e.sq], '#ffd166', () => {}, undefined, { pins: false });
         await this.wait(T.cpuDecision);
-        break;
-      case 'auctionBid':
-        hud.action(
-          `auction-bid:${e.pid}:${e.bid}:${e.raised}`,
-          e.raised
-            ? `${G.players[e.pid].name} bid ${fmt(e.bid)}.`
-            : `${G.players[e.pid].name} passed on bidding.`,
-          'money',
-        );
-        this.auction?.bid(e.pid, e.bid, e.raised);
-        await this.wait(T.cpuDecision * 0.6);
         break;
       case 'auctionEnd': {
         hud.action(

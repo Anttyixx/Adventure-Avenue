@@ -11,7 +11,7 @@
 import type { BoardDef, CharId, GameState, PlotSetting, RuleSet, StockSystem } from '@aa/engine';
 
 /** Protocol version: a joiner on a different version is turned away. */
-export const NET_VERSION = 33;
+export const NET_VERSION = 34;
 
 export type SeatKind = 'host' | 'local' | 'remote' | 'open' | 'cpu';
 
@@ -35,6 +35,17 @@ export interface LobbyInfo {
   stocks?: StockSystem;
   /** One per player in the game; open seats are played by a CPU unless a friend joins. */
   seats: LobbySeat[];
+}
+
+/**
+ * A live auction as it stands (the host runs it): the high bid and who holds it (-1: none yet),
+ * who has passed, and how long until it ends unless someone bids.
+ */
+export interface AuctionLive {
+  high: number;
+  highBidder: number;
+  passed: number[];
+  leftMs: number;
 }
 
 /** One broadcast decision answer. */
@@ -62,6 +73,8 @@ export type ToHost =
   /** Change name in the lobby. */
   | { t: 'name'; name: string }
   | { t: 'answer'; seq: number; ans: unknown }
+  /** A bid or a pass in the live auction for decision `seq`. */
+  | { t: 'auctionAct'; seq: number; act: 'bid' | 'pass' }
   | { t: 'resync' }
   | { t: 'bye' };
 
@@ -71,6 +84,8 @@ export type ToGuest =
   | { t: 'lobby'; lobby: LobbyInfo }
   | { t: 'start'; start: StartInfo }
   | { t: 'ans'; a: Answer }
+  /** The live auction for decision `seq` changed. */
+  | { t: 'auction'; seq: number; live: AuctionLive }
   | { t: 'hash'; key: string; h: string }
   | { t: 'seat'; pid: number; online: boolean }
   | { t: 'bye'; reason: string };

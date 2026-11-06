@@ -23,6 +23,7 @@ import {
   stateHash,
   turnKey,
   type Answer,
+  type AuctionLive,
   type LobbyInfo,
   type LobbySeat,
   type StartInfo,
@@ -65,6 +66,11 @@ export class HostRoom implements GameLink {
   private listeners = new Set<() => void>();
   /** Called with a message for the host's screen (e.g. "Rosa disconnected"). */
   onNotice: (text: string) => void = () => {};
+  onAuctionAct: ((seq: number, pid: number, act: 'bid' | 'pass') => void) | null = null;
+
+  auctionShare(seq: number, live: AuctionLive) {
+    this.broadcast({ t: 'auction', seq, live });
+  }
 
   private constructor(
     public code: string,
@@ -268,6 +274,12 @@ export class HostRoom implements GameLink {
     if (msg.t === 'look') this.relook(seat, msg.look);
     else if (msg.t === 'name') this.rename(seat, msg.name);
     else if (msg.t === 'answer' && typeof msg.seq === 'number') this.answered(seat, msg.seq, msg.ans);
+    else if (
+      msg.t === 'auctionAct' &&
+      typeof msg.seq === 'number' &&
+      (msg.act === 'bid' || msg.act === 'pass')
+    )
+      this.onAuctionAct?.(msg.seq, seat.pid, msg.act);
     else if (msg.t === 'resync' && this.snap) this.send(seat, { t: 'start', start: this.startFor(seat) });
     else if (msg.t === 'bye') this.dropped(conn);
   }

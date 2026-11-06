@@ -4529,17 +4529,10 @@ input[type='range'] {
 .au-bidder.lead .au-st {
   color: var(--accent);
 }
-.au-bidder.deciding {
-  transform: translateY(-3px);
-  box-shadow:
-    0 0 0 2px var(--pc),
-    0 6px 18px rgba(0, 0, 0, 0.35);
-}
-.au-bidder.deciding .au-st {
-  color: #fff;
-}
 .au-clock {
-  height: 8px;
+  /* The countdown: a bar that empties until the auction ends; every bid fills it again. */
+  position: relative;
+  height: 14px;
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.08);
   overflow: hidden;
@@ -4553,23 +4546,72 @@ input[type='range'] {
   height: 100%;
   width: 100%;
   border-radius: inherit;
-  background: var(--pc, var(--accent));
+  background: linear-gradient(90deg, #ffb340, var(--accent));
+}
+.au-clock.low i {
+  background: linear-gradient(90deg, #e5484d, #ff8a65);
+}
+.au-clock-secs {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  font: 400 11px/1 var(--head);
+  color: #1b1f2e;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.4);
+}
+.au-clock.low .au-clock-secs {
+  color: #fff;
+  text-shadow: none;
+}
+/* The bidding in the action bar: the state on the left, each local bidder's Bid and Pass on
+   the right (several people on one device get a row each). */
+.au-ask {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+.au-ask-text {
+  min-width: 0;
 }
 .au-ask-title {
-  display: flex;
-  align-items: baseline;
-  gap: 10px;
   font: 400 18px var(--head);
-}
-.au-secs {
-  min-width: 30px;
-  font-family: var(--head);
-  font-size: 18px;
-  color: var(--accent);
 }
 .au-ask .hint {
   margin: 2px 0 0;
   font-size: 12px;
+}
+.au-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.au-me {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+}
+.au-me-name {
+  min-width: 56px;
+  font: 400 14px var(--head);
+  color: var(--pc);
+}
+.au-me .btn {
+  white-space: nowrap;
+}
+.au-tag {
+  padding: 4px 12px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--muted);
+  font: 700 13px var(--body);
+  white-space: nowrap;
+}
+.au-tag.lead {
+  background: rgba(255, 209, 102, 0.18);
+  color: var(--accent);
+  box-shadow: inset 0 0 0 2px var(--accent);
 }
 @media (max-height: 500px), (max-width: 760px) {
   /* The auction pop-up, compact: smaller lot and high bid so the bidders fit too. */
@@ -4607,6 +4649,15 @@ input[type='range'] {
   .auction-pop {
     overflow: auto;
     scrollbar-width: none;
+  }
+  .au-ask {
+    gap: 10px;
+  }
+  .au-ask-title {
+    font-size: 15px;
+  }
+  .au-controls {
+    gap: 3px;
   }
   .au-bidder {
     width: 64px;

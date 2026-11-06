@@ -67,7 +67,7 @@ a default browser widget.
 | **Manage a list** of saved things                                       | **List rows** in a pop-up                                                            | My boards                                                    |
 | Be **told** something happened (no answer needed)                       | **Banner** (top center, fades) or the status line                                    | "Rosa's turn", "Bay Market stock up!"                        |
 | See **details on demand** about something on the board                  | **Tooltip**                                                                          | Hovering/tapping a square                                    |
-| Get to a **screen-wide tool** or info at any time                       | **Toolbar / info chip** (top corners)                                                | Zoom, Guide, Menu, game name and goal                        |
+| Get to a **screen-wide tool** or info at any time                       | **Toolbar / info chip** (top corners)                                                | Zoom, Game log, Menu (with the Guide), game name and goal    |
 | Pick a **tool** in an editor                                            | **Tool rail** (icon buttons, left edge)                                              | Select, Pan, Place, Erase                                    |
 | Pick **one color/category** while doing something else                  | Let **the game decide** and say so; a color row only if the player truly must choose | Districts and warp/portal colors (automatic)                 |
 
@@ -387,10 +387,11 @@ Each element: **purpose**, **placement**, **anatomy**, **spec**, **behavior**, t
 - **Anatomy:** zoom chip (a pill showing "250%"; tap = reset zoom **and recenter**; its 2px border
   shows the zoom mode: grey `#8a93a8` free, blue `#4c9bff` auto, red `#e5484d` locked, via
   `data-mode`), then small
-  buttons ("? Guide", "☰ Menu"; builder: Undo, Save, gold "Test play", Menu).
+  buttons ("Game log", "☰ Menu"; builder: Undo, Save, gold "Test play", Menu).
 - **Spec:** `.toolbar`, `top/right: 10px`, gap 6, buttons `.btn.small` on glass. Order: View
   board chip (only while a pop-up is up; pops in, gold "Back" while the pop-up is hidden), zoom
-  chip, Game log, Guide, Menu.
+  chip, Game log, Menu. The Guide is an item in the Menu pop-up (under Resume), not a toolbar
+  button.
 - **Rule:** at most one gold button here (the thing to do next, e.g. Test play).
 
 ### 5.3 Action bar (bottom center)
@@ -888,14 +889,19 @@ price per share struck through, and the player's price in green Lilita with a pu
 falling-chart icon) after their name in the table; every name has the empty 14px slot. Phones: the pop-up keeps only the district
 table (6 rows at a time, shifting by one to follow the selection), the digit faces shrink to 32x34 and the "shares you hold" line (`.m-line.held`) is hidden.
 
-### Auction (pop-up + action bar)
+### Auction (pop-up + action bar, live)
 
-The live auction follows the stock screen: `stockPopup(hud, 'Auction', content, 'auction-pop')`
-(460px wide, centered, View board chip) holds the lot, the high bid, the countdown bar and the
-bidder chips; the bid itself is a normal `hud.prompt` in the action bar: a Lilita title ("Raise
-your bid to 240G") with the seconds left in gold beside it, a muted line (who leads, your cash),
-gold **Bid** and ghost **Pass**. Watchers get the status line ("Kai is deciding whether to
-raise..."). The result is a prompt with Continue (auto after a moment), then the pop-up closes.
+The live auction follows the stock screen: `stockPopup(hud, 'Live auction', content, 'auction-pop')`
+(460px wide, centered, View board chip) holds the lot (with the bid step), the high bid (it pops on
+each new bid), the countdown (`.au-clock`: a 14px bar emptying to the end with the seconds in
+Lilita on it, gold, red for the last 2 seconds; every bid refills it) and the bidder chips (In,
+Leading in gold, Passed / Too pricey faded). The action bar is one live `hud.prompt` that stays up
+for the whole auction and is redrawn in place (no morphing between bids): on the left the state
+("Kai leads with 340G", muted "Sold in 3s unless someone bids"), on the right a row per bidder on
+this device (`.au-me`): gold **Bid 374G** and ghost **Pass**, or a "You lead" / "Passed" tag
+(`.au-tag`); with several people on one device each row starts with their name in their color.
+Watchers get the same bar with no buttons. The result is a prompt with Continue (auto after a
+moment), then the pop-up closes.
 
 ### Choices that cover the whole board
 

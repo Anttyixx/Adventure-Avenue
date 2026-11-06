@@ -79,8 +79,11 @@ export const TIMING = {
   arcadeRace: 1800,
   arcadeResult: 3500,
 
-  /** How long a player has to raise in an auction before it counts as a pass. */
-  auctionBid: 12000,
+  /** A live auction ends this long after the last bid (or after it opens, with no bids). */
+  auctionWindow: 5000,
+  /** How long a CPU waits before bidding or passing in a live auction (a random time between). */
+  auctionCpuMin: 700,
+  auctionCpuMax: 2000,
 } as const;
 
 export const FAST_CPU_SPEED = 0.3;

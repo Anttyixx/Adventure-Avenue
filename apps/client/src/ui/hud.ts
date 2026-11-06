@@ -203,9 +203,8 @@ export class Hud {
       this.zoomChip.title = ZOOM_TITLES[mode];
     };
     this.menuBtn.onclick = () => this.toggleMenu();
-    this.guideBtn.onclick = () => this.cb.onGuide();
     this.viewChip.onclick = () => this.setPeek(!this.peeking);
-    this.toolbar.append(this.viewChip, this.zoomChip, this.logBtn, this.guideBtn, this.menuBtn);
+    this.toolbar.append(this.viewChip, this.zoomChip, this.logBtn, this.menuBtn);
     this.buildMenu();
     window.addEventListener('keydown', this.onKey);
     board.onHover = (id, x, y) => this.showTooltip(id, x, y);
@@ -245,8 +244,6 @@ export class Hud {
   // ------------------------------------------------------------ game menu
 
   private cb: HudCallbacks;
-  /** Opens the game guide (rules, stocks, vacant plots), between the zoom chip and Menu. */
-  guideBtn = h('button', { class: 'btn small guide-toggle', title: 'How to play' }, '? Guide');
   menuBtn = h(
     'button',
     { class: 'btn small menu-toggle', 'aria-haspopup': 'true', 'aria-expanded': 'false' },
@@ -273,6 +270,11 @@ export class Hud {
         'Resume',
         close(() => {}),
         'resume',
+      ),
+      // The game guide (rules, stocks, vacant plots, cards, arcade): the menu closes as it opens.
+      item(
+        'Guide',
+        close(() => this.cb.onGuide()),
       ),
       this.fastBtn,
     );

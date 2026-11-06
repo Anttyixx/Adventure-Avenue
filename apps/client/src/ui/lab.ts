@@ -57,7 +57,7 @@ import { buildPrompt, districtStockModal, stockModal } from './modals';
 import { guideModal } from './guide';
 import { showResults } from './results';
 import { investOnBoard } from './invest';
-import { AuctionView } from './auction';
+import { AuctionView, LiveAuction } from './auction';
 import { confettiRain } from './confetti';
 import { TIMING as T } from '../timing';
 import { BUILD, VERSION_LABEL } from '../build';
@@ -109,7 +109,12 @@ const rnd = (n: number) => Math.floor(Math.random() * n);
  * Controls for UI elements that were just added or changed: they shake once and glow so they
  * are easy to find. Update this list with each change.
  */
-const RECENT = new Set(['Venture grid (play)', 'Live auction', 'Buy stock', 'Info: game page']);
+const RECENT = new Set([
+  'Live auction',
+  'Live auction (two players here)',
+  'Auction a property',
+  'Game menu',
+]);
 
 /** Which board the lab plays on: Town (square) or Twin Lakes (hex), remembered per browser. */
 const LAB_BOARD_KEY = 'aa-lab-board';
@@ -1632,29 +1637,55 @@ export async function openLab(app: HTMLElement, section?: string) {
       btn('Quit confirm', () => hud.confirmQuit()),
       btn('Room code button', () => hud.setRoom('KQZD', inviteURL('KQZD'))),
       btn('Live auction', async () => {
+        // The real live auction: you bid in the action bar, the others are CPUs.
         const sq = G.nodes.find((n) => n.t === 'shop')!;
         const bidders = G.players.map((q) => q.id);
-        const view = new AuctionView(hud, G, sq.id, -1, sq.value, bidders);
-        const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
-        let high = sq.value;
-        await wait(700);
-        for (const pid of bidders.slice(1)) {
-          view.waiting(pid);
-          await wait(700);
-          view.bid(pid, high, true);
-          high += 20;
-        }
-        const yes = await view.ask({
-          kind: 'bid',
-          pid: bidders[0],
+        const step = Math.max(K.auctionStepMin, Math.round(sq.value * K.auctionStep));
+        const req = {
+          kind: 'auction' as const,
+          pid: cur().id,
           sq: sq.id,
-          bid: high,
-          high: high - 20,
-          highBidder: bidders.at(-1)!,
           seller: -1,
+          opening: sq.value,
+          step,
+          bidders,
+        };
+        const view = new AuctionView(hud, G, sq.id, -1, sq.value, step, bidders);
+        const live = new LiveAuction(G, req, view, {
+          cpu: (pid) => pid !== cur().id,
+          anyPerson: true,
+          speed: 1,
         });
-        view.bid(bidders[0], high, yes);
-        await view.end(yes ? bidders[0] : bidders.at(-1)!, yes ? high : high - 20, 3000);
+        view.openBar([cur().id], (pid, act) => live.act(pid, act));
+        const ans = await live.run();
+        view.closeBar();
+        await view.end(ans.winner, ans.price, 3000);
+      }),
+      btn('Live auction (two players here)', async () => {
+        // Two people on this device bid side by side; the others are CPUs.
+        const sq = G.nodes.find((n) => n.t === 'shop')!;
+        const bidders = G.players.map((q) => q.id);
+        const here = [cur().id, (cur().id + 1) % G.players.length];
+        const step = Math.max(K.auctionStepMin, Math.round(sq.value * K.auctionStep));
+        const req = {
+          kind: 'auction' as const,
+          pid: cur().id,
+          sq: sq.id,
+          seller: -1,
+          opening: sq.value,
+          step,
+          bidders,
+        };
+        const view = new AuctionView(hud, G, sq.id, -1, sq.value, step, bidders);
+        const live = new LiveAuction(G, req, view, {
+          cpu: (pid) => !here.includes(pid),
+          anyPerson: true,
+          speed: 1,
+        });
+        view.openBar(here, (pid, act) => live.act(pid, act));
+        const ans = await live.run();
+        view.closeBar();
+        await view.end(ans.winner, ans.price, 3000);
       }),
       btn('Info: game page', () => hud.toggleInfo('game')),
       btn('Info: stocks page', () => hud.toggleInfo('stocks')),

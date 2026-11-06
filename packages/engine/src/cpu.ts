@@ -219,6 +219,17 @@ export function cpuAcceptsTrade(G: GameState, o: TradeOffer): boolean {
   return receives >= C.tradeAccept * gives + C.tradeAcceptPlus && cpu.cash >= o.cashGet;
 }
 
+/**
+ * The most a CPU will bid for a square at auction: its value x 1.25 (x 1.6 if it already owns a
+ * square in that group), keeping 200G in cash.
+ */
+export function cpuBidLimit(G: GameState, pid: number, sqId: number): number {
+  const p = G.players[pid];
+  const sq = G.nodes[sqId];
+  const limit = sq.value * (ownedCount(G, p.id, sq.g) > 0 ? C.bidMaxGroup : C.bidMax);
+  return Math.floor(Math.min(limit, p.cash - C.bidKeep));
+}
+
 export function cpuDecide<T extends DecisionKind>(G: GameState, req: DecisionRequest<T>): DecisionAnswer<T> {
   return decide(G, req as DecisionRequest) as DecisionAnswer<T>;
 }
@@ -399,10 +410,18 @@ function decide(G: GameState, req: DecisionRequest): unknown {
     case 'answerTrade':
       return cpuAcceptsTrade(G, req.offer);
 
-    case 'bid': {
-      const sq = G.nodes[req.sq];
-      const limit = sq.value * (ownedCount(G, p.id, sq.g) > 0 ? C.bidMaxGroup : C.bidMax);
-      return req.bid <= limit && p.cash - req.bid >= C.bidKeep;
+    case 'auction': {
+      // Without a screen the live auction plays out as an ascending auction: the bidder willing
+      // to go highest wins, paying one step above the next highest (never under the opening bid).
+      const limits = req.bidders
+        .map((pid) => ({ pid, limit: cpuBidLimit(G, pid, req.sq) }))
+        .filter((b) => b.limit >= req.opening)
+        .sort((a, b) => b.limit - a.limit);
+      if (!limits.length) return { winner: -1, price: 0 };
+      const [top, next] = limits;
+      let price = req.opening;
+      if (next) price = req.opening + (Math.floor((next.limit - req.opening) / req.step) + 1) * req.step;
+      return { winner: top.pid, price: Math.min(price, top.limit) };
     }
 
     case 'debt': {

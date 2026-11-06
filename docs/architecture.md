@@ -116,6 +116,10 @@ room, Continue resumes the saved game, and the board editor (`ui/editor.ts`).
   `board.setChoices`, or a dialog from `ui/modals.ts` / `ui/pick.ts` / `ui/games.ts`) and returns
   the answer. Several humans on one device get a "pass the device" screen between them. Online,
   `decideOnline` adds the network step (below).
+- **Live auctions:** the engine asks one `auction` decision; `runAuction` answers it by running the
+  live auction on screen (`ui/auction.ts` `LiveAuction`: bids and passes at any time, a 5-second
+  clock, CPU bidders). Online only the host runs it: guests send `auctionAct` messages and draw
+  the `auction` updates the host sends (`auctionOnline`), then everyone applies the host's answer.
 - **Several decisions at once:** party games (`arcade.ts` `choices`) ask every player at the same
   time and wait with `Promise.all`, applying the answers in seat order. CPUs and players on other
   devices answer side by side; people on this device take turns with the one action bar

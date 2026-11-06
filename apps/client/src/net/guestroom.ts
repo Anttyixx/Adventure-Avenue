@@ -14,6 +14,7 @@ import {
   stateHash,
   turnKey,
   type Answer,
+  type AuctionLive,
   type LobbyInfo,
   type StartInfo,
   type ToGuest,
@@ -105,6 +106,12 @@ export class GuestRoom implements GameLink {
     });
   }
 
+  onAuctionLive: ((seq: number, live: AuctionLive) => void) | null = null;
+
+  auctionSend(seq: number, act: 'bid' | 'pass') {
+    this.send({ t: 'auctionAct', seq, act });
+  }
+
   /** Ask the host for a different character (lobby only). */
   setLook(look: CharId) {
     this.send({ t: 'look', look });
@@ -142,6 +149,9 @@ export class GuestRoom implements GameLink {
         break;
       case 'ans':
         this.take(msg.a);
+        break;
+      case 'auction':
+        this.onAuctionLive?.(msg.seq, msg.live);
         break;
       case 'hash':
         this.hostHashes.set(msg.key, msg.h);

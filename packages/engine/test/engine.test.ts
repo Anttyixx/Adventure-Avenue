@@ -383,30 +383,53 @@ describe('win check', () => {
 
 describe('auctions and trades', () => {
   it('runs a voluntary auction and pays the seller', async () => {
-    const { G, game } = makeGame('standard', (r) => {
-      if (r.kind === 'bid') return r.pid === 2 && r.bid <= 300;
-      return undefined;
-    });
-    const seller = G.players[G.order[G.turn]];
+    const { G, game } = makeGame('standard', (r) =>
+      r.kind === 'auction' ? { winner: 2, price: r.opening + r.step } : undefined,
+    );
+    const seller = G.players[0];
     const shop = at(G, 6, 0);
     shop.owner = seller.id;
     const cash = seller.cash;
+    const buyer = G.players[2].cash;
     await game.voluntaryAuction(seller, shop.id);
-    if (seller.id === 2) return; // seller cannot bid on their own shop
+    const price = shop.value + Math.max(K.auctionStepMin, Math.round(shop.value * K.auctionStep));
     expect(shop.owner).toBe(2);
-    expect(seller.cash).toBe(cash + 200);
+    expect(seller.cash).toBe(cash + price);
+    expect(G.players[2].cash).toBe(buyer - price);
   });
 
-  it('announces the auction start and every bid', async () => {
-    const { G, game, events } = makeGame('standard', (r) => (r.kind === 'bid' ? r.bid <= 250 : undefined));
+  it('announces the auction start and end, asking one live auction decision', async () => {
+    const { G, game, events, asked } = makeGame();
     const seller = G.players[0];
     const shop = at(G, 6, 0);
     shop.owner = seller.id;
     await game.voluntaryAuction(seller, shop.id);
-    const start = events.find((e) => e.type === 'auctionStart');
-    expect(start).toBeTruthy();
-    expect(events.filter((e) => e.type === 'auctionBid').length).toBeGreaterThan(0);
-    expect(events.at(-1)?.type === 'auctionEnd' || events.some((e) => e.type === 'auctionEnd')).toBe(true);
+    expect(events.find((e) => e.type === 'auctionStart')).toBeTruthy();
+    expect(events.some((e) => e.type === 'auctionEnd')).toBe(true);
+    const req = asked.filter((r) => r.kind === 'auction');
+    expect(req).toHaveLength(1);
+    expect(req[0].kind === 'auction' && req[0].bidders).not.toContain(seller.id);
+  });
+
+  it('refuses an auction answer the winner cannot pay or below the opening bid', async () => {
+    for (const price of [1, 999999]) {
+      const { G, game } = makeGame('standard', (r) =>
+        r.kind === 'auction' ? { winner: 1, price } : undefined,
+      );
+      const shop = at(G, 6, 0);
+      shop.owner = 0;
+      await game.voluntaryAuction(G.players[0], shop.id);
+      expect(shop.owner).toBe(0);
+    }
+  });
+
+  it('CPUs settle an auction one step above the runner-up', async () => {
+    const { G, game } = makeGame();
+    const shop = at(G, 6, 0);
+    shop.owner = 0;
+    G.players.forEach((p) => (p.cash = 5000));
+    await game.voluntaryAuction(G.players[0], shop.id);
+    expect(shop.owner).not.toBe(0);
   });
 
   it('lets the other side send back different terms, and the proposer accept them', async () => {
