@@ -507,13 +507,47 @@ export class Hud {
 
   /** Fold the player cards into a stack (only the active player's card in front) or spread them out. */
   setCardsCollapsed(on: boolean) {
+    const els = [...this.cardEls.values()];
+    const flip =
+      !!this.G && on !== this.cardsCollapsed && !matchMedia('(prefers-reduced-motion: reduce)').matches;
+    // Where every card is on screen now (mid-animation too), so each can glide from there.
+    const before = flip ? els.map((el) => el.getBoundingClientRect()) : [];
+    if (flip) {
+      for (const el of els) for (const a of el.getAnimations()) a.cancel();
+      // The cards' own transform transitions would fight the glide: off until it ends.
+      this.cardsWrap.classList.add('stacking');
+    }
     this.cardsCollapsed = on;
     saveCollapsed(on);
     this.cardsWrap.classList.toggle('collapsed', on);
     this.cardsToggle.setAttribute('aria-expanded', String(!on));
     this.cardsToggle.title = on ? 'Show all player cards' : 'Show only the active player';
     this.cardsToggle.setAttribute('aria-label', this.cardsToggle.title);
-    if (this.G) this.stackCards();
+    if (this.G) this.stackCards(false);
+    if (!flip) return;
+    // The cards' new size can change their fit-to-screen zoom: settle it before measuring.
+    this.updateInsets();
+    const wrap = this.cardsWrap;
+    const zoom = wrap.getBoundingClientRect().width / (wrap.offsetWidth || 1) || 1;
+    let left = els.length;
+    const done = () => {
+      if (--left <= 0) wrap.classList.remove('stacking');
+    };
+    els.forEach((el, i) => {
+      const a = before[i];
+      const b = el.getBoundingClientRect();
+      const end = getComputedStyle(el).transform;
+      const final = end === 'none' ? '' : end;
+      // Cards scale around their top middle (transform-origin 50% 0), so match that point.
+      const dx = (a.left + a.width / 2 - (b.left + b.width / 2)) / zoom;
+      const dy = (a.top - b.top) / zoom;
+      const k = b.width ? a.width / b.width : 1;
+      el.animate(
+        [{ transform: `translate(${dx}px, ${dy}px) ${final} scale(${k})` }, { transform: end }],
+        // Front to back, one after another, so the stack gathers (or fans out) in a ripple.
+        { duration: T.cardStack, delay: i * 25, easing: 'cubic-bezier(0.2, 0.8, 0.2, 1)', fill: 'backwards' },
+      ).finished.then(done, done);
+    });
   }
 
   /**
@@ -521,7 +555,7 @@ export class Hud {
    * just behind, and the player who just went at the back. When the active player changes,
    * the old front card drops out and slides in at the back while the rest move up one.
    */
-  private stackCards() {
+  private stackCards(cycle = true) {
     const ids = this.G.order;
     const n = ids.length;
     const front = ids.includes(this.activePid)
@@ -548,19 +582,26 @@ export class Hud {
     }
     const old = this.cardEls.get(prev);
     const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    if (on && old && prev !== front && !reduce && old.animate) {
-      // The cycle: the old front card slides away to the right and fades, then comes back in
-      // at the bottom of the stack.
-      const back = getComputedStyle(old).transform;
+    if (cycle && on && old && prev !== front && !reduce) {
+      // The cycle: the old front card drops down out of the way (revealing the next player),
+      // slips behind the stack, and rises into its place at the back.
+      const d = Math.min((ids.indexOf(prev) - f + n) % n, STACK_SHOWN + 1);
+      const back = stackTransform(d);
       const top = String(n + 1);
+      for (const a of old.getAnimations()) a.cancel();
       old.animate(
         [
-          { transform: 'none', opacity: 1, zIndex: top },
-          { transform: 'translateX(48px) scale(0.92)', opacity: 0, zIndex: top, offset: 0.45 },
-          { transform: back, opacity: 0, zIndex: '0', offset: 0.55 },
+          { transform: 'none', zIndex: top, easing: 'cubic-bezier(0.5, 0, 0.75, 0)' },
+          { transform: 'translateY(55%) scale(0.96)', zIndex: top, offset: 0.42 },
+          {
+            transform: 'translateY(55%) scale(0.96)',
+            zIndex: '0',
+            offset: 0.46,
+            easing: 'cubic-bezier(0.2, 0.8, 0.2, 1)',
+          },
           { transform: back, zIndex: '0' },
         ],
-        { duration: T.cardCycle, easing: 'ease-in-out' },
+        { duration: T.cardCycle },
       );
     }
   }
@@ -1367,6 +1408,11 @@ function ordinal(n: number) {
 
 /** How many cards peek out behind the front card when the player cards are collapsed. */
 const STACK_SHOWN = 3;
+
+/** A collapsed card's place `d` cards behind the front (matches the CSS for `.pcard.behind`). */
+function stackTransform(d: number): string {
+  return d ? `translateY(${-d * 7}px) scale(${1 - d * 0.05})` : 'none';
+}
 const COLLAPSE_KEY = 'adventure-avenue-cards-collapsed';
 function loadCollapsed(): boolean {
   try {

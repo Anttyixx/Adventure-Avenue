@@ -64,6 +64,7 @@ export const CHANGELOG: ChangelogEntry[] = [
       },
     ],
     extras: [
+      'The player cards glide into and out of the stack, and the last player drops to the back',
       'Player cards are a little slimmer on phones',
       'Game setup on phones: the map and settings fit side by side without scrolling',
       'The card stack arrow is a small faded button that stays out of the way',

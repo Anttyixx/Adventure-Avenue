@@ -966,6 +966,9 @@ input[type='range'] {
 }
 .pcard {
   position: relative;
+  /* The top middle, so stacked cards (scaled smaller) keep their tops lined up and the
+     collapse/expand glide in hud.ts can match that point. */
+  transform-origin: 50% 0;
   transition:
     transform 0.25s,
     box-shadow 0.3s;
@@ -1179,6 +1182,11 @@ input[type='range'] {
 }
 .cards-wrap.collapsed .pcard.active {
   transform: none;
+}
+/* While the cards glide into or out of the stack (hud.ts setCardsCollapsed), their own
+   transform transitions are off so they don't fight the glide. */
+.cards-wrap.stacking .pcard {
+  transition-property: opacity, background, box-shadow;
 }
 .pcard > * {
   transition: opacity 0.3s;

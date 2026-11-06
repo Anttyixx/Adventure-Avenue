@@ -990,9 +990,10 @@ watch them being played; their result screen closes by itself or with Close.
 the player cards (it brightens when pointed at). Tapping it folds the cards into a stack: only the active player's card
 shows in full, with the other players' cards stacked behind it in turn order (the next player
 just behind, the player who just went at the back), each peeking out a little higher as a strip
-in that player's color. When the turn passes, the front card slides away and comes back in at the
-back of the stack while the next player's card moves forward. Tapping the arrow again spreads
-the cards out. The choice is remembered on that device.
+in that player's color. Folding and unfolding are animated: the cards glide together into the
+stack (or fan back out to their places) one just after another. When the turn passes, the front
+card drops down out of the way, slips behind the stack and rises into its place at the back,
+while the next player's card moves forward. Tapping the arrow again spreads the cards out. The choice is remembered on that device.
 
 One rule decides every asset: only the player character sprites are pixel art. Everything else,
 including the board, the interface, suits, wild cards, coins and effects, is HD (vector). _(Changed

@@ -577,9 +577,12 @@ if (!(await ask(`Delete ${d.name}?`, 'Its 4 properties will be removed from the 
   radius 8, no shadow) above the cards' right end with a chevron: down folds the cards, up spreads
   them. It sits at 45% opacity so it doesn't draw the eye, full on hover or focus. Collapsed, every card shares one grid cell; the active card is in front
   and the others sit behind by turn order (`--d` = depth), each 7px higher and 5% narrower, filled
-  with their `--pc` and their contents hidden (3 show, deeper ones fade out). Turn change: the old
-  front card slides right and fades, then reappears at the back (`T.cardCycle`, Web Animations),
-  while the rest ease forward (0.4s). Behind cards are `inert`. The pattern for any stack of
+  with their `--pc` and their contents hidden (3 show, deeper ones fade out). Folding/unfolding (`setCardsCollapsed`): each card glides from
+  where it was to its new place, matched at its top middle (`.pcard` `transform-origin: 50% 0`,
+  `T.cardStack` 480ms, 25ms stagger, `cubic-bezier(0.2, 0.8, 0.2, 1)`), with the cards' own
+  transform transitions off meanwhile (`.cards-wrap.stacking`). Turn change: the old front card
+  drops 55% of its height (ease-in), goes behind the stack, then rises into its back place
+  (ease-out; `T.cardCycle` 750ms, Web Animations), while the rest ease forward (0.4s). Behind cards are `inert`. The pattern for any stack of
   same-shaped cards where only the front one matters.
 
 ### 5.15 Info pop-up (pop-up + action bar)
