@@ -97,6 +97,7 @@ export class AuctionView {
     );
     // The View board chip hides the pop-up to look at the board (the bidding stays in the bar).
     this.pop.offer(() => {});
+    this.pop.fit();
     this.tick = window.setInterval(() => this.paintClock(), 200);
     this.show(this.live);
   }

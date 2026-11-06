@@ -88,8 +88,15 @@ export class Hud {
   /** The Game log button in the toolbar (between the zoom chip and Guide); it opens the log panel. */
   logBtn = h(
     'button',
-    { class: 'btn small log-toggle', 'aria-haspopup': 'dialog', 'aria-expanded': 'false' },
-    'Game log',
+    {
+      class: 'btn small log-toggle',
+      'aria-haspopup': 'dialog',
+      'aria-expanded': 'false',
+      'aria-label': 'Game log',
+    },
+    // Phones show the short label.
+    h('span', { class: 'tb-long' }, 'Game log'),
+    h('span', { class: 'tb-short' }, 'Log'),
   );
   /** The game log: a panel in the top right, under the toolbar and above the player cards. */
   logPanel = h('div', { class: 'log-panel glass', role: 'dialog', 'aria-label': 'Game log', hidden: true });
@@ -246,8 +253,14 @@ export class Hud {
   private cb: HudCallbacks;
   menuBtn = h(
     'button',
-    { class: 'btn small menu-toggle', 'aria-haspopup': 'true', 'aria-expanded': 'false' },
-    '☰ Menu',
+    {
+      class: 'btn small menu-toggle',
+      'aria-haspopup': 'true',
+      'aria-expanded': 'false',
+      'aria-label': 'Menu',
+    },
+    '☰',
+    h('span', { class: 'tb-long' }, ' Menu'),
   );
   /** The menu's contents, shown in a pop-up in the middle of the screen. */
   menu = h('div', { class: 'game-menu', role: 'menu' });
@@ -367,6 +380,17 @@ export class Hud {
     this.fastBtn.classList.toggle('on', fast);
   }
 
+  /** Scale the player cards down (CSS zoom) when they would run into the toolbar. */
+  private fitCards(H: number, portraitStack: boolean) {
+    const wrap = this.cardsWrap;
+    wrap.style.zoom = '';
+    if (portraitStack) return;
+    const base = parseFloat(getComputedStyle(wrap).zoom) || 1;
+    const r = wrap.getBoundingClientRect();
+    const room = r.bottom - this.toolbar.getBoundingClientRect().bottom - 8;
+    if (r.height > room && room > 0) wrap.style.zoom = String(Math.max(0.6, (base * room) / r.height));
+  }
+
   /** Tell the board which parts of the screen the overlays cover. */
   updateInsets() {
     // The layout viewport (iPad Safari's innerWidth can lag behind it after a resize).
@@ -376,6 +400,9 @@ export class Hud {
     // Where the action bar sits once shown (layout box, so the slide animation does not count).
     const a = this.ask;
     const ask = a.classList.contains('show') ? { top: a.offsetTop, height: a.offsetHeight } : null;
+    // The player cards shrink to fit between the toolbar and the bottom of the screen (short
+    // phone screens with many players), never overlapping the toolbar.
+    this.fitCards(H, portraitStack);
     // The log panel sits between the toolbar and the player cards, as wide as the cards.
     const cards = this.cardsWrap.getBoundingClientRect();
     this.root.style.setProperty('--cards-w', `${cards.width}px`);

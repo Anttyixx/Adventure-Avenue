@@ -1075,6 +1075,17 @@ active player changes, tokens ease to their new sizes (the active one larger, th
 | Player cards    | Net worth and cash count up or down to the new value, tinted green or red while changing; the active card's glow breathes                     | Any money change                                          |
 | Interface       | Prompts and status lines rise in, dialogs ease in, venture and Memory Blocks panels flip, revealed cards pop, main buttons give a small nudge | New prompt, dialog or reveal                              |
 
+**Phones (small screens).** On short screens (500px tall or less) and narrow ones the game
+screen packs everything so nothing overlaps: the toolbar stays on one row with short labels
+(**Log**, **☰**), the info chip drops the game's name when space is tight, and the player cards are
+two rows each (level, name and suits; cash, place and net worth) with the goal bar as a thin line
+along the card's bottom edge. If five cards still would reach the toolbar, they shrink to fit
+(`hud.ts` `fitCards`). Arcade games and the live auction shrink as a whole to fit the room
+between the toolbar and the action bar instead of cutting off or scrolling (`modals.ts`
+`fitInLayer`), and game boards always leave room for the action bar however tall it is. In game
+setup the bottom bar keeps the players and Start on one row (seats shrink to fit five), and on
+touch screens a small gold pencil badge on each character replaces the "Change" strip.
+
 **Layout.** Scrolling panels hide their scrollbars (they still scroll). The board fills the whole game screen edge to edge, and everything else floats over it
 as dark glass overlays. Top right: the zoom chip, the Game log button and the Menu button (the menu
 also shows the round, target and rule set). **Guide** (`ui/guide.ts`, in the Menu, under Resume; the

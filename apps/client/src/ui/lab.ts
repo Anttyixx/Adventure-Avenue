@@ -109,12 +109,7 @@ const rnd = (n: number) => Math.floor(Math.random() * n);
  * Controls for UI elements that were just added or changed: they shake once and glow so they
  * are easy to find. Update this list with each change.
  */
-const RECENT = new Set([
-  'Live auction',
-  'Live auction (two players here)',
-  'Auction a property',
-  'Game menu',
-]);
+const RECENT = new Set(['Game setup', 'Coin Derby', 'Memory Blocks', 'Lucky Wheel', 'Live auction', 'Build']);
 
 /** Which board the lab plays on: Town (square) or Twin Lakes (hex), remembered per browser. */
 const LAB_BOARD_KEY = 'aa-lab-board';

@@ -30,6 +30,7 @@ import { TIMING as T } from '../timing';
 import { sound } from '../audio';
 import { clear, fmt, h } from './dom';
 import type { Hud } from './hud';
+import { fitInLayer } from './modals';
 
 export type ArcadeGame = 'Lucky Reels' | 'Memory Blocks' | 'Coin Derby' | 'Lucky Wheel' | 'Treasure Split';
 type Round = Extract<GameEvent, { type: 'arcadeRound' }>;
@@ -128,15 +129,19 @@ export class ArcadeStage {
     hud.root.append(this.layer);
     // The toolbar's View board chip can hide the game to look at the board.
     this.releaseView = hud.offerViewBoard(this.layer);
+    // Small screens: the whole game shrinks to fit rather than scrolling.
+    this.unfit = fitInLayer(this.box);
   }
 
   private releaseView: () => void;
+  private unfit: () => void;
 
   close() {
     if (this.closed) return;
     this.closed = true;
     this.abort.abort();
     this.releaseView();
+    this.unfit();
     this.layer.remove();
   }
 

@@ -778,6 +778,10 @@ input[type='range'] {
 .toolbar .btn.on {
   background: #2d6a4f;
 }
+/* Toolbar labels: the long one normally, the short one on phones. */
+.toolbar .tb-short {
+  display: none;
+}
 /* The info chip, top left: the game's name, board, round and goal, and the room code button online. */
 .top-left {
   position: absolute;
@@ -2721,6 +2725,72 @@ input[type='range'] {
   }
   .banner {
     font-size: 18px;
+  }
+}
+
+/* Phones: one toolbar row with short labels, and the info chip without the game's name, so
+   the top corners never wrap or touch. */
+@media (max-height: 500px), (max-width: 760px) {
+  .toolbar {
+    flex-wrap: nowrap;
+    max-width: none;
+    gap: 4px;
+  }
+  .toolbar .tb-long {
+    display: none;
+  }
+  .toolbar .tb-short {
+    display: inline;
+  }
+  .toolbar .menu-toggle {
+    min-width: 30px;
+  }
+}
+@media (max-height: 500px) and (max-width: 720px), (max-width: 600px) {
+  .info-chip .gc-title {
+    display: none;
+  }
+}
+
+/* Short phone screens: two-row player cards (name and suits; cash and net worth) with the goal
+   bar as a thin line along the bottom edge, so five players fit beside the board. hud.ts
+   fitCards scales them down further if they would still reach the toolbar. */
+@media (max-height: 500px) {
+  .cards-wrap {
+    width: 190px;
+  }
+  .pcard {
+    padding: 3px 6px 5px;
+    border-radius: 10px;
+  }
+  .pc-main {
+    gap: 1px;
+  }
+  .pcard .bar-track {
+    position: absolute;
+    left: 6px;
+    right: 6px;
+    bottom: 2px;
+    height: 2px;
+    margin: 0;
+  }
+  .pcard .portrait.body {
+    width: 22px;
+    height: 32px;
+  }
+  .money .nw,
+  .money .cash {
+    font-size: 12px;
+  }
+  .pcard .rank {
+    min-width: 22px;
+    font-size: 9px;
+    padding: 0 3px;
+    border-width: 1px;
+  }
+  .pcard .pc-row .tag {
+    font-size: 8px;
+    line-height: 12px;
   }
 }
 
@@ -8331,7 +8401,8 @@ div.sl-inline label {
   display: grid;
   place-items: center;
   box-sizing: border-box;
-  padding: calc(var(--top-free, 50px) + 4px) 12px 124px;
+  /* Clear of the toolbar and of the action bar, however tall the bar is right now. */
+  padding: calc(var(--top-free, 50px) + 4px) 12px max(124px, calc(var(--ask-free, 0px) + 8px));
   pointer-events: none;
 }
 .arcade-stage {
@@ -9182,7 +9253,8 @@ div.sl-inline label {
 /* Short screens (phones in landscape): the board shrinks to fit beside the player cards. */
 @media (max-height: 500px), (max-width: 760px) {
   .hud > .arcade-layer {
-    padding: calc(var(--top-free, 40px) + 2px) calc(var(--free-right, 0px) + 6px) 96px 8px;
+    padding: calc(var(--top-free, 40px) + 2px) calc(var(--free-right, 0px) + 6px)
+      max(96px, calc(var(--ask-free, 0px) + 6px)) 8px;
   }
   .arcade-stage {
     gap: 6px;
@@ -9216,6 +9288,10 @@ div.sl-inline label {
   }
   .aa-hint {
     font-size: 11px;
+  }
+  .aa-actions {
+    flex-wrap: wrap;
+    gap: 5px;
   }
   .aa-actions .btn {
     padding: 5px 10px;
@@ -10371,6 +10447,8 @@ span.su-code {
   gap: 8px;
 }
 .su-start .setup-summary {
+  /* Never stretched (an older setup rule gives summaries a 180px flex basis). */
+  flex: none;
   margin: 0;
 }
 .su-go {
@@ -10446,7 +10524,28 @@ span.su-code {
     gap: 5px;
   }
   .su .seats > .seat-card {
-    flex-basis: 84px;
+    /* Five seats and Start fit in one row on the narrowest phones. */
+    flex-basis: clamp(58px, calc((100vw - 236px) / 5 - 5px), 84px);
+  }
+  /* Touch screens: a small pencil badge says the character can be changed, instead of a
+     "Change" strip over a tiny character. */
+  .su .seat-stage .char-btn-tag {
+    display: none;
+  }
+  .su .seat-stage button.char-btn::after {
+    content: '✎';
+    position: absolute;
+    right: -4px;
+    bottom: 0;
+    width: 15px;
+    height: 15px;
+    display: grid;
+    place-items: center;
+    border-radius: 50%;
+    background: var(--accent);
+    color: #3b2a00;
+    font-size: 9px;
+    line-height: 1;
   }
   .su .seat-card {
     padding: 4px 4px 4px;

@@ -903,6 +903,16 @@ this device (`.au-me`): gold **Bid 374G** and ghost **Pass**, or a "You lead" / 
 Watchers get the same bar with no buttons. The result is a prompt with Continue (auto after a
 moment), then the pop-up closes.
 
+### Fitting small screens
+
+Phones in landscape can be 320px tall. Rules, in order: (1) pack first: short labels
+(`.tb-long` / `.tb-short` in the toolbar), compact rows (two-row player cards under
+`max-height: 500px`), hide decoration (the info chip's game name); (2) then shrink: a board or
+pop-up whose contents don't fit its layer gets `fitInLayer(box)` (CSS zoom, down to 55%) rather
+than scrolling or clipping; the player cards shrink with `fitCards` so they never reach the
+toolbar; (3) layers above the action bar pad their bottom with `--ask-free` (the bar's real height),
+never a fixed number. Check 568x320, 667x375 and 844x390 with five players.
+
 ### Choices that cover the whole board
 
 When almost every square is a choice (`setChoices(..., { plain: true })`, used when the options

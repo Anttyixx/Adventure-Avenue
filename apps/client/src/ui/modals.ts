@@ -67,6 +67,47 @@ export function keepClearOfCards(hud: Hud, box: HTMLElement): () => void {
 }
 
 /**
+ * Shrink a pop-up or game board (CSS zoom) when its contents don't fit the room its layer gives
+ * it (small phone screens), instead of cutting them off or making them scroll. Rechecked as its
+ * contents or the window change. Returns the function that stops it.
+ */
+export function fitInLayer(box: HTMLElement, min = 0.55): () => void {
+  let busy = false;
+  const fit = () => {
+    const layer = box.parentElement;
+    if (busy || !layer || !box.isConnected) return;
+    busy = true;
+    box.style.zoom = '';
+    box.style.maxHeight = '';
+    box.style.maxWidth = '';
+    const cs = getComputedStyle(layer);
+    const roomW = layer.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
+    const roomH = layer.clientHeight - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom);
+    // Its natural size: everything inside it, even what would have to scroll.
+    const w = Math.max(box.scrollWidth, box.offsetWidth);
+    const hgt = Math.max(box.scrollHeight, box.offsetHeight);
+    const z = Math.min(1, roomW / w, roomH / hgt);
+    if (roomW > 0 && roomH > 0 && z < 0.98) {
+      box.style.maxHeight = 'none';
+      box.style.maxWidth = 'none';
+      box.style.zoom = String(Math.max(min, z));
+    }
+    requestAnimationFrame(() => (busy = false));
+  };
+  const watch = new ResizeObserver(() => requestAnimationFrame(fit));
+  watch.observe(box);
+  const kids = new MutationObserver(() => requestAnimationFrame(fit));
+  kids.observe(box, { childList: true, subtree: true });
+  window.addEventListener('resize', fit);
+  requestAnimationFrame(fit);
+  return () => {
+    watch.disconnect();
+    kids.disconnect();
+    window.removeEventListener('resize', fit);
+  };
+}
+
+/**
  * A pop-up in the middle of the screen whose choices sit in the action bar below it (the stock
  * market, the auction). `cls` replaces the stock market's size classes.
  */
@@ -81,7 +122,12 @@ export function stockPopup(hud: Hud, title: string, content: Node, cls = 'wide x
   hud.root.append(layer);
   const unplace = keepClearOfCards(hud, box);
   let release = () => {};
+  let unfit = () => {};
   return {
+    /** Shrink the pop-up when its contents don't fit the screen (instead of scrolling). */
+    fit: () => {
+      unfit = fitInLayer(box);
+    },
     /** Offer the toolbar's View board chip for this pop-up; `onPeek` hears it hide and return. */
     offer: (onPeek: (on: boolean) => void) => {
       release = hud.offerViewBoard(layer, onPeek);
@@ -89,6 +135,7 @@ export function stockPopup(hud: Hud, title: string, content: Node, cls = 'wide x
     close: () => {
       release();
       unplace();
+      unfit();
       layer.remove();
     },
   };

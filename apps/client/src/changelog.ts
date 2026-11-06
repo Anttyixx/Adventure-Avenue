@@ -26,6 +26,19 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: '2026-11-06-phone-layout',
+    date: 'Nov 6, 2026',
+    title: 'Fits on small phones',
+    features: [
+      {
+        tag: 'better',
+        title: 'Made for small screens',
+        text: 'On phones the player cards are slimmer, the top buttons stay on one row, and arcade games and auctions shrink to fit instead of being cut off. Nothing overlaps, even with five players on a small phone.',
+      },
+    ],
+    extras: ['Game setup keeps the players and Start on one row on phones'],
+  },
+  {
     id: '2026-11-06-live-auctions',
     date: 'Nov 6, 2026',
     title: 'Live auctions',
