@@ -573,6 +573,14 @@ if (!(await ask(`Delete ${d.name}?`, 'Its 4 properties will be removed from the 
     bottom-right. Active player: breathing `--pc` glow on an `::after` layer. Money changes pop out
     beside the card ("+120G" green / "-50G" red). Can win: net worth and portrait pulse gold.
     Clicking opens that player's page in the info pop-up.
+- **Card stack** (`.cards-toggle` + `.cards-wrap.collapsed`): a glass tab (36x22, left corners
+  rounded, flush with the window's right edge) above the cards with a chevron: down folds the
+  cards, up spreads them. Collapsed, every card shares one grid cell; the active card is in front
+  and the others sit behind by turn order (`--d` = depth), each 7px higher and 5% narrower, filled
+  with their `--pc` and their contents hidden (3 show, deeper ones fade out). Turn change: the old
+  front card slides right and fades, then reappears at the back (`T.cardCycle`, Web Animations),
+  while the rest ease forward (0.4s). Behind cards are `inert`. The pattern for any stack of
+  same-shaped cards where only the front one matters.
 
 ### 5.15 Info pop-up (pop-up + action bar)
 

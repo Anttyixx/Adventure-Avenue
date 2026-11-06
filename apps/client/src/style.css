@@ -1138,6 +1138,81 @@ input[type='range'] {
     opacity: 1;
   }
 }
+
+/* Player card stack: the arrow tab above the cards, against the window's right edge, folds the
+   cards into a stack. The active player's card stays in front; the others sit behind it in turn
+   order, each peeking out a little higher and narrower, showing only their color. hud.ts
+   stackCards sets each card's depth (--d) and plays the cycle when the turn moves on. */
+.cards-toggle {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 22px;
+  margin-right: -10px;
+  padding: 0;
+  border-right: none;
+  border-radius: 10px 0 0 10px;
+  color: var(--text);
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.cards-toggle:hover {
+  background: var(--navy-2);
+}
+.cards-toggle:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+/* A chevron: pointing down folds the cards away, pointing up spreads them out. */
+.cards-toggle::before {
+  content: '';
+  width: 8px;
+  height: 8px;
+  border-right: 2.5px solid currentColor;
+  border-bottom: 2.5px solid currentColor;
+  transform: translateY(-2px) rotate(45deg);
+  transition: transform 0.25s;
+}
+.cards-wrap.collapsed .cards-toggle::before {
+  transform: translateY(2px) rotate(-135deg);
+}
+.hud .cards-wrap.collapsed .cards {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  padding-top: calc(var(--stack-n, 0) * 7px);
+}
+.cards-wrap.collapsed .pcard {
+  grid-area: 1 / 1;
+  align-self: end;
+  transform-origin: 50% 0;
+  transition:
+    transform 0.4s ease,
+    opacity 0.4s,
+    background 0.4s,
+    box-shadow 0.3s;
+}
+.cards-wrap.collapsed .pcard.active {
+  transform: none;
+}
+.pcard > * {
+  transition: opacity 0.3s;
+}
+.cards-wrap.collapsed .pcard.behind {
+  transform: translateY(calc(var(--d) * -7px)) scale(calc(1 - var(--d) * 0.05));
+  opacity: calc(1 - var(--d) * 0.12);
+  /* Only a strip shows, so it is filled with the player's color to tell who goes next. */
+  background: color-mix(in srgb, var(--pc) 70%, var(--navy));
+  border-color: color-mix(in srgb, var(--pc) 80%, #fff);
+}
+.cards-wrap.collapsed .pcard.behind > * {
+  opacity: 0;
+}
+.cards-wrap.collapsed .pcard.deep {
+  opacity: 0;
+}
+.hud.upright .cards-toggle {
+  margin-right: -6px;
+}
 .pc-main {
   flex: 1;
   min-width: 0;
@@ -2757,7 +2832,7 @@ input[type='range'] {
    fitCards scales them down further if they would still reach the toolbar. */
 @media (max-height: 500px) {
   .cards-wrap {
-    width: 190px;
+    width: 176px;
   }
   .pcard {
     padding: 3px 6px 5px;

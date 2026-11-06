@@ -26,6 +26,7 @@ import { motelFee, squareInfo, squareName } from '../names';
 import { boonIconURL, suitIconURL, wildIconURL } from '../icons';
 import { bodyURL, portraitURL } from '../sprites';
 import { clear, fmt, h } from './dom';
+import { TIMING as T } from '../timing';
 import { kindIcon, logView, namesInColor, type IconKind } from './log';
 import { InfoPopup, type InfoPage } from './info';
 
@@ -123,6 +124,15 @@ export class Hud {
   cardsWrap = h('div', { class: 'cards-wrap' });
   cards = h('div', { class: 'cards' });
   /**
+   * The arrow tab above the player cards, against the right edge: it folds the cards into a
+   * stack with only the active player's card in front, or spreads them out again.
+   */
+  cardsToggle = h('button', { class: 'cards-toggle glass', 'aria-expanded': 'true' });
+  /** Whether the player cards are folded into a stack (remembered on this device). */
+  cardsCollapsed = loadCollapsed();
+  /** The player whose card is at the front of the stack. */
+  private stackFront = -1;
+  /**
    * The Info button, right of the info chip: it opens the info pop-up (the game, the stock market
    * and each player), with the page picked in the action bar.
    */
@@ -177,7 +187,9 @@ export class Hud {
   ) {
     this.root = h('div', { class: 'hud' });
     this.logPanel.append(this.logBox);
-    this.cardsWrap.append(this.cards);
+    this.cardsWrap.append(this.cardsToggle, this.cards);
+    this.cardsToggle.onclick = () => this.setCardsCollapsed(!this.cardsCollapsed);
+    this.setCardsCollapsed(this.cardsCollapsed);
     // The info chip: the game's name, the goal, the Room button online and the Info button.
     this.infoChip.append(
       h('span', { class: 'gc-title' }, 'Adventure Avenue'),
@@ -489,6 +501,67 @@ export class Hud {
         this.cards.append(el);
       }
       this.fillCard(el, p);
+    }
+    this.stackCards();
+  }
+
+  /** Fold the player cards into a stack (only the active player's card in front) or spread them out. */
+  setCardsCollapsed(on: boolean) {
+    this.cardsCollapsed = on;
+    saveCollapsed(on);
+    this.cardsWrap.classList.toggle('collapsed', on);
+    this.cardsToggle.setAttribute('aria-expanded', String(!on));
+    this.cardsToggle.title = on ? 'Show all player cards' : 'Show only the active player';
+    this.cardsToggle.setAttribute('aria-label', this.cardsToggle.title);
+    if (this.G) this.stackCards();
+  }
+
+  /**
+   * Place each card in the stack by turn order: the active player in front, the next player
+   * just behind, and the player who just went at the back. When the active player changes,
+   * the old front card drops out and slides in at the back while the rest move up one.
+   */
+  private stackCards() {
+    const ids = this.G.order;
+    const n = ids.length;
+    const front = ids.includes(this.activePid)
+      ? this.activePid
+      : ids.includes(this.stackFront)
+        ? this.stackFront
+        : ids[0];
+    const prev = this.stackFront;
+    this.stackFront = front;
+    const f = ids.indexOf(front);
+    const on = this.cardsCollapsed;
+    // Room above the front card for the cards peeking out behind it.
+    this.cards.style.setProperty('--stack-n', String(Math.min(n - 1, STACK_SHOWN)));
+    for (const id of ids) {
+      const el = this.cardEls.get(id);
+      if (!el) continue;
+      const d = (ids.indexOf(id) - f + n) % n;
+      el.style.setProperty('--d', String(Math.min(d, STACK_SHOWN + 1)));
+      el.style.zIndex = on ? String(n - d) : '';
+      el.classList.toggle('behind', on && d > 0);
+      el.classList.toggle('deep', on && d > STACK_SHOWN);
+      // Cards behind the front one are only a glimpse: not clickable or reachable by Tab.
+      el.inert = on && d > 0;
+    }
+    const old = this.cardEls.get(prev);
+    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (on && old && prev !== front && !reduce && old.animate) {
+      // The cycle: the old front card slides away to the right and fades, then comes back in
+      // at the bottom of the stack.
+      const back = getComputedStyle(old).transform;
+      const top = String(n + 1);
+      old.animate(
+        [
+          { transform: 'none', opacity: 1, zIndex: top },
+          { transform: 'translateX(48px) scale(0.92)', opacity: 0, zIndex: top, offset: 0.45 },
+          { transform: back, opacity: 0, zIndex: '0', offset: 0.55 },
+          { transform: back, zIndex: '0' },
+        ],
+        { duration: T.cardCycle, easing: 'ease-in-out' },
+      );
     }
   }
 
@@ -1290,4 +1363,22 @@ function ordinal(n: number) {
       ? 'th'
       : (({ 1: 'st', 2: 'nd', 3: 'rd' } as Record<number, string>)[n % 10] ?? 'th');
   return `${n}${s}`;
+}
+
+/** How many cards peek out behind the front card when the player cards are collapsed. */
+const STACK_SHOWN = 3;
+const COLLAPSE_KEY = 'adventure-avenue-cards-collapsed';
+function loadCollapsed(): boolean {
+  try {
+    return localStorage.getItem(COLLAPSE_KEY) === '1';
+  } catch {
+    return false;
+  }
+}
+function saveCollapsed(on: boolean) {
+  try {
+    localStorage.setItem(COLLAPSE_KEY, on ? '1' : '0');
+  } catch {
+    // Storage blocked: the choice lasts until the page closes.
+  }
 }

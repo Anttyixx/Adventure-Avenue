@@ -57,6 +57,8 @@ export const TIMING = {
   closeShutter: 450,
   closeStagger: 70,
   closeHold: 1000,
+  /** Collapsed player cards: the old front card leaving and coming back in at the back. */
+  cardCycle: 650,
   /** The winner dancing under confetti before the results. */
   victory: 6500,
   gameOver: 900,

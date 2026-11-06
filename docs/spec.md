@@ -973,6 +973,14 @@ board; the rest of the board dims. Online games show a "Room ABCD" button above 
 glowing suits on their card. Arcade games and venture picks open for everyone, so other players
 watch them being played; their result screen closes by itself or with Close.
 
+**Collapsing the player cards.** A small arrow tab sits against the right edge of the window just
+above the player cards. Tapping it folds the cards into a stack: only the active player's card
+shows in full, with the other players' cards stacked behind it in turn order (the next player
+just behind, the player who just went at the back), each peeking out a little higher as a strip
+in that player's color. When the turn passes, the front card slides away and comes back in at the
+back of the stack while the next player's card moves forward. Tapping the arrow again spreads
+the cards out. The choice is remembered on that device.
+
 One rule decides every asset: only the player character sprites are pixel art. Everything else,
 including the board, the interface, suits, wild cards, coins and effects, is HD (vector). _(Changed
 by the owner on Oct 23, 2026; the original spec drew suits, coins and wild cards as pixel art.)_
@@ -1081,7 +1089,7 @@ active player changes, tokens ease to their new sizes (the active one larger, th
 **Phones (small screens).** On short screens (500px tall or less) and narrow ones the game
 screen packs everything so nothing overlaps: the toolbar stays on one row with short labels
 (**Log**, **☰**), the info chip drops the game's name when space is tight, and the player cards are
-two rows each (level, name and suits; cash, place and net worth) with the goal bar as a thin line
+narrower (176px) and two rows each (level, name and suits; cash, place and net worth) with the goal bar as a thin line
 along the card's bottom edge. If five cards still would reach the toolbar, they shrink to fit
 (`hud.ts` `fitCards`). Arcade games and the live auction shrink as a whole to fit the room
 between the toolbar and the action bar instead of cutting off or scrolling (`modals.ts`

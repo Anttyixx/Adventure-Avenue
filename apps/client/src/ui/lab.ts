@@ -109,7 +109,7 @@ const rnd = (n: number) => Math.floor(Math.random() * n);
  * Controls for UI elements that were just added or changed: they shake once and glow so they
  * are easy to find. Update this list with each change.
  */
-const RECENT = new Set(['Motel stop', 'New squares and Motel']);
+const RECENT = new Set(['Collapse / expand cards', 'Next player (card stack)']);
 
 /** Which board the lab plays on: Town (square) or Twin Lakes (hex), remembered per browser. */
 const LAB_BOARD_KEY = 'aa-lab-board';
@@ -478,6 +478,11 @@ export async function openLab(app: HTMLElement, section?: string) {
     row(
       s,
       btn('Make active', () => setActive(cur().id)),
+      btn('Collapse / expand cards', () => hud.setCardsCollapsed(!hud.cardsCollapsed)),
+      btn('Next player (card stack)', () => {
+        const i = G.order.indexOf(hud.activePid);
+        setActive(G.order[(i + 1) % G.order.length]);
+      }),
       btn('Toggle bankrupt', () => {
         cur().bankrupt = !cur().bankrupt;
         refresh();
