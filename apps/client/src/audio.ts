@@ -116,6 +116,18 @@ function freq(note: string): number {
  * A song is a loop of bars. Each part line holds 8 steps per bar (eighth notes): a note name
  * plays, "-" holds the previous note, "." is a rest. Chords give the pad and bass their roots.
  */
+/** Seconds the old and new songs overlap when the music changes. */
+const CROSSFADE = 0.7;
+
+/** One song looping: its fade gain, its track, the next step and when it plays. */
+interface MusicPlayer {
+  track: Track;
+  out: GainNode;
+  step: number;
+  next: number;
+  timer: number;
+}
+
 interface Song {
   bpm: number;
   chords: string[][];
@@ -535,9 +547,11 @@ class AudioEngine {
   private sfxBus!: GainNode;
   private noise!: AudioBuffer;
   private track: Track | null = null;
-  private timer = 0;
-  private step = 0;
-  private nextTime = 0;
+  /**
+   * The song playing: its own fade gain (into the music bus) and where its loop has got to. On a
+   * change of track the old player keeps going while it fades out and the new one fades in.
+   */
+  private player: MusicPlayer | null = null;
   /** Last time each effect played, to keep fast CPU turns from stacking sounds. */
   private last = new Map<Sfx, number>();
   private listeners = new Set<() => void>();
@@ -968,47 +982,67 @@ class AudioEngine {
 
   // ------------------------------------------------------------ music
 
-  /** Switch the background music (null = silence). Safe to call before audio is unlocked. */
+  /**
+   * Switch the background music (null = silence) with a quick cross-fade: the old song plays on
+   * while it fades out and the new one fades in. Safe to call before audio is unlocked.
+   */
   music(track: Track | null) {
     if (track === this.track) return;
     this.track = track;
-    clearInterval(this.timer);
-    this.timer = 0;
     if (!this.ctx) return;
-    // Fade out whatever is playing; the new song starts on a fresh bar.
-    const t = this.ctx.currentTime;
-    const old = this.musicBus;
-    old.gain.setTargetAtTime(0, t, 0.15);
-    setTimeout(() => old.disconnect(), 800);
-    this.musicBus = this.ctx.createGain();
-    this.musicBus.connect(this.master);
-    this.applyVolumes();
-    if (track) this.startLoop();
+    const old = this.player;
+    this.player = null;
+    if (old) this.fadeOut(old);
+    if (track) this.startLoop(old ? CROSSFADE : 0.05);
   }
 
   get currentTrack() {
     return this.track;
   }
 
-  private startLoop() {
-    if (!this.ctx || !this.track) return;
-    clearInterval(this.timer);
-    this.step = 0;
-    this.nextTime = this.ctx.currentTime + 0.25;
-    this.timer = window.setInterval(() => this.schedule(), 40);
+  /** Fade a song out over the cross-fade, still playing it meanwhile, then stop it. */
+  private fadeOut(p: MusicPlayer) {
+    const t = this.ctx!.currentTime;
+    const g = p.out.gain;
+    g.cancelScheduledValues(t);
+    g.setValueAtTime(g.value, t);
+    g.linearRampToValueAtTime(0, t + CROSSFADE);
+    setTimeout(
+      () => {
+        clearInterval(p.timer);
+        p.out.disconnect();
+      },
+      CROSSFADE * 1000 + 300,
+    );
   }
 
-  private schedule() {
+  /** Start the current track on a fresh bar, fading in over `fadeIn` seconds. */
+  private startLoop(fadeIn = 0.05) {
     const ctx = this.ctx;
     if (!ctx || !this.track) return;
-    const song = SONGS[this.track];
+    if (this.player) clearInterval(this.player.timer);
+    const out = ctx.createGain();
+    out.connect(this.musicBus);
+    const t = ctx.currentTime;
+    out.gain.setValueAtTime(0, t);
+    out.gain.linearRampToValueAtTime(1, t + fadeIn);
+    const p: MusicPlayer = { track: this.track, out, step: 0, next: t + 0.05, timer: 0 };
+    p.timer = window.setInterval(() => this.schedule(p), 40);
+    this.player = p;
+  }
+
+  private schedule(p: MusicPlayer) {
+    const ctx = this.ctx;
+    if (!ctx) return;
+    const song = SONGS[p.track];
     const stepDur = 60 / song.bpm / 2;
     const bars = song.chords.length;
     const parse = (line: string) => line.split(/\s+/);
-    while (this.nextTime < ctx.currentTime + 0.2) {
-      const bar = Math.floor(this.step / 8) % bars;
-      const s = this.step % 8;
-      const at = this.nextTime;
+    const bus = p.out;
+    while (p.next < ctx.currentTime + 0.2) {
+      const bar = Math.floor(p.step / 8) % bars;
+      const s = p.step % 8;
+      const at = p.next;
       const lead = parse(song.lead[bar % song.lead.length]);
       const bass = parse(song.bass[bar % song.bass.length]);
       const drums = parse(song.drums[bar % song.drums.length]);
@@ -1018,24 +1052,23 @@ class AudioEngine {
         return n;
       };
       if (lead[s] && lead[s] !== '.' && lead[s] !== '-')
-        this.voice('lead', lead[s], at, hold(lead, s) * stepDur);
+        this.voice(bus, 'lead', lead[s], at, hold(lead, s) * stepDur);
       if (bass[s] && bass[s] !== '.' && bass[s] !== '-')
-        this.voice('bass', bass[s], at, hold(bass, s) * stepDur);
-      if (s === 0) for (const n of song.chords[bar]) this.voice('pad', n, at, stepDur * 8);
-      if (s === 4 && this.track !== 'menu' && this.track !== 'memory')
-        for (const n of song.chords[bar]) this.voice('pad', n, at, stepDur * 3);
+        this.voice(bus, 'bass', bass[s], at, hold(bass, s) * stepDur);
+      if (s === 0) for (const n of song.chords[bar]) this.voice(bus, 'pad', n, at, stepDur * 8);
+      if (s === 4 && p.track !== 'menu' && p.track !== 'memory')
+        for (const n of song.chords[bar]) this.voice(bus, 'pad', n, at, stepDur * 3);
       const d = drums[s];
-      if (d === 'k') this.tone(this.musicBus, 'sine', 150, at, 0.16, 0.5, { to: 45 });
-      if (d === 's') this.hiss(this.musicBus, at, 0.12, 0.22, 1800, 0.8);
-      if (d === 'h') this.hiss(this.musicBus, at, 0.04, 0.12, 8000, 1.5);
-      this.nextTime += stepDur;
-      this.step++;
+      if (d === 'k') this.tone(bus, 'sine', 150, at, 0.16, 0.5, { to: 45 });
+      if (d === 's') this.hiss(bus, at, 0.12, 0.22, 1800, 0.8);
+      if (d === 'h') this.hiss(bus, at, 0.04, 0.12, 8000, 1.5);
+      p.next += stepDur;
+      p.step++;
     }
   }
 
-  private voice(v: Voice, note: string, at: number, dur: number) {
+  private voice(bus: AudioNode, v: Voice, note: string, at: number, dur: number) {
     const f = freq(note);
-    const bus = this.musicBus;
     if (v === 'lead') {
       this.tone(bus, 'square', f, at, Math.max(0.12, dur * 0.95), 0.07, {
         cutoff: 2600,

@@ -41,7 +41,11 @@ export const CHANGELOG: ChangelogEntry[] = [
         text: 'Game setup and the online lobbies have their own upbeat "getting ready" tune.',
       },
     ],
-    extras: ['Board tools are chips on the board picker', 'The winning goal has no Min/Max buttons'],
+    extras: [
+      'Board tools are chips on the board picker',
+      'The winning goal has no Min/Max buttons',
+      'Music cross-fades when it changes between screens',
+    ],
   },
   {
     id: '2026-11-08-info-popup',
