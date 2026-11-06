@@ -155,7 +155,7 @@ function seg<T>(
  * The rules panel: target net worth (arrows on each digit, in 1,000G steps), round limit, rule
  * set and vacant plots. Without `edit` everything is shown but locked.
  */
-function rulesPanel(st: RuleSettings, edit?: (patch: Partial<RuleSettings>) => void): HTMLElement {
+export function rulesPanel(st: RuleSettings, edit?: (patch: Partial<RuleSettings>) => void): HTMLElement {
   const target = digitPicker({
     max: K.targetMax,
     min: K.targetStep,
@@ -256,7 +256,7 @@ function rulesPanel(st: RuleSettings, edit?: (patch: Partial<RuleSettings>) => v
 }
 
 /** The chosen board: its picture, name and size. */
-function boardStage(board: BoardDef, mine: boolean, slide = ''): HTMLElement {
+export function boardStage(board: BoardDef, mine: boolean, slide = ''): HTMLElement {
   return h(
     'div',
     { class: `car-slide ${slide}` },
@@ -288,7 +288,7 @@ function boardStage(board: BoardDef, mine: boolean, slide = ''): HTMLElement {
  * Sound) and a bottom container (the players and Start) that stay put; and between them the
  * panels, which scroll on small screens (no scroll bar).
  */
-function setupFrame() {
+export function setupFrame() {
   sound.music('setup');
   const scene = titleScene(false);
   const top = h('header', { class: 'su-top' });
@@ -309,7 +309,7 @@ function setupFrame() {
 }
 
 /** Ease an element from its old width to its new one (the bottom bar, as players come and go). */
-function morphWidth(el: HTMLElement, from: number) {
+export function morphWidth(el: HTMLElement, from: number) {
   if (!from || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
   const to = el.getBoundingClientRect().width;
   if (Math.abs(to - from) < 1) return;
@@ -320,7 +320,7 @@ function morphWidth(el: HTMLElement, from: number) {
 }
 
 /** The top bar: Back, the title, the join code chip (if any) and Sound (as on the main menu). */
-function setupHead(top: HTMLElement, onBack: () => void, title: string, code: Node | null) {
+export function setupHead(top: HTMLElement, onBack: () => void, title: string, code: Node | null) {
   clear(top);
   top.append(
     h('button', { class: 'btn small su-back', onclick: onBack }, '‹ Back'),

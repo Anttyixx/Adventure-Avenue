@@ -135,28 +135,34 @@ async function resumeOnline(save: SaveInfo) {
     return;
   }
   wait.remove();
-  const close = resumeLobby(app, room, save.online?.code ?? '', {
-    onResume() {
-      close();
-      const game = new HotSeat(
-        app,
-        room.game!,
-        () => {
-          room.leave();
-          showStart();
-        },
-        true,
-        room,
-      );
-      room.onNotice = (text) => game.hud.banner(text, '#ffd166', 3500);
-      void game.start();
+  const close = resumeLobby(
+    app,
+    room,
+    save.online?.code ?? '',
+    {
+      onResume() {
+        close();
+        const game = new HotSeat(
+          app,
+          room.game!,
+          () => {
+            room.leave();
+            showStart();
+          },
+          true,
+          room,
+        );
+        room.onNotice = (text) => game.hud.banner(text, '#ffd166', 3500);
+        void game.start();
+      },
+      onBack() {
+        close();
+        room.leave();
+        showStart();
+      },
     },
-    onBack() {
-      close();
-      room.leave();
-      showStart();
-    },
-  });
+    save.state.round,
+  );
 }
 
 /**

@@ -456,22 +456,6 @@ input[type='range'] {
   gap: 14px;
   min-height: 100%;
 }
-.setup-head {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-.setup-head h2 {
-  margin: 0;
-  font-family: var(--head);
-  font-weight: 400;
-  font-size: 34px;
-  color: #fff;
-  text-shadow: 0 3px 0 rgba(16, 26, 51, 0.45);
-}
-.setup-head .back {
-  background: rgba(16, 26, 51, 0.6);
-}
 .setup-grid {
   display: grid;
   grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
@@ -534,9 +518,6 @@ input[type='range'] {
   .setup-foot .btn.big {
     flex: 1;
     min-width: 0;
-  }
-  .setup-head h2 {
-    font-size: 28px;
   }
 }
 
@@ -3745,10 +3726,6 @@ input[type='range'] {
     height: 76px;
   }
 }
-.setup-sound {
-  margin-left: auto;
-  background: rgba(16, 26, 51, 0.6);
-}
 .snd-pop {
   position: fixed;
   z-index: 200;
@@ -3810,17 +3787,11 @@ input[type='range'] {
   font-size: 14px;
   color: var(--muted);
 }
-.join-card {
-  align-items: stretch;
-}
 .join-portrait {
   align-self: center;
   width: 84px;
   height: 63px;
   image-rendering: pixelated;
-}
-.join-card .name {
-  width: 100%;
 }
 .name.code-input {
   font-family: var(--head);
@@ -7080,9 +7051,6 @@ div.sl-inline label {
     padding-top: 12px;
     gap: 12px;
   }
-  .setup-head h2 {
-    font-size: 26px;
-  }
   .setup-panel {
     padding: 14px;
     gap: 10px;
@@ -10318,6 +10286,32 @@ div.sl-inline label {
   width: 34px;
   height: 20px;
 }
+/* Continue game (online.ts resumeLobby): the round the game was saved in, in the Map panel's
+   top right, and players who haven't rejoined yet faded with an "Away" badge on their seat. */
+.su-round {
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--muted);
+  font: 700 12px var(--body);
+  white-space: nowrap;
+}
+.su .seat-card.away .seat-stage,
+.su .seat-card.away .name {
+  opacity: 0.5;
+}
+.su .seat-away {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: var(--bad);
+  color: #3a0c0c;
+  font: 700 9px var(--body);
+  line-height: 14px;
+  text-transform: uppercase;
+}
 /* Small pill buttons: the board tools in the Map panel's top right, Shuffle in the dock. */
 .su-chips {
   display: flex;
@@ -10738,6 +10732,10 @@ span.su-code {
     min-height: 0;
     grid-template-columns: 28px minmax(0, 1fr) 28px;
     gap: 4px;
+  }
+  /* Locked boards (joined or continued games) have no arrows: the picture takes the full width. */
+  .su-main .carousel.locked {
+    grid-template-columns: minmax(0, 1fr);
   }
   .su-main .car-arrow {
     width: 28px;

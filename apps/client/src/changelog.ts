@@ -41,6 +41,7 @@ export const CHANGELOG: ChangelogEntry[] = [
       'Game setup on phones: the map and settings fit side by side without scrolling',
       'The card stack arrow is a small faded button that stays out of the way',
       'Player names can be up to 10 letters, so they always fit on the player cards',
+      'Continue game looks like New game: the map, settings and players, with who is back',
     ],
   },
   {

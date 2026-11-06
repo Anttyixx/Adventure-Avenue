@@ -109,7 +109,7 @@ const rnd = (n: number) => Math.floor(Math.random() * n);
  * Controls for UI elements that were just added or changed: they shake once and glow so they
  * are easy to find. Update this list with each change.
  */
-const RECENT = new Set(['Longest name (10 letters)', 'Game setup']);
+const RECENT = new Set(['Online: continue saved game', 'Joined game (locked setup)']);
 
 /** Which board the lab plays on: Town (square) or Twin Lakes (hex), remembered per browser. */
 const LAB_BOARD_KEY = 'aa-lab-board';
@@ -1576,20 +1576,29 @@ export async function openLab(app: HTMLElement, section?: string) {
         overlay((holder, done) => {
           const lobby = () => ({
             boardName: G.boardName ?? 'Town',
+            plots: G.plots,
+            stocks: G.stocks,
             rules: G.rules,
             target: G.target,
             roundCap: G.roundCap,
             seats: G.players.map((p, i) => ({
-              kind: i === 0 ? ('host' as const) : p.cpu ? ('cpu' as const) : ('remote' as const),
+              // The host, a friend who is back, a friend not back yet, then bots.
+              kind: i === 0 ? ('host' as const) : i <= 2 ? ('remote' as const) : ('cpu' as const),
               name: p.name,
               look: p.ch,
-              online: i === 0 || i === 1,
+              online: i !== 2,
             })),
           });
-          return resumeLobby(holder, { code: 'KQZD', lobby, onChange: () => () => true }, 'KQZD', {
-            onResume: () => done('Resume game pressed.'),
-            onBack: () => done('Back pressed.'),
-          });
+          return resumeLobby(
+            holder,
+            { code: 'KQZD', lobby, onChange: () => () => true },
+            'KQZD',
+            {
+              onResume: () => done('Resume game pressed.'),
+              onBack: () => done('Back pressed.'),
+            },
+            G.round,
+          );
         }),
       ),
       btn('Online: lobby seats', () =>

@@ -1382,6 +1382,13 @@ the host's device, and a friend who joins (before the host resumes) with that pl
 takes the seat over, before or after the host resumes. Without a connection, such a game simply
 continues on the device.
 
+**Continue game screen.** It looks like game setup: the top bar (Back, "Continue game", the code
+chip that shares or copies the invite, Sound), the saved game's map with "Saved in round N" and
+its settings (shown, but locked), and the bottom bar with a seat card per player and **Resume
+game**. Each seat says who it is ("You · host", "On this device", "Back online", "Not back yet",
+"Bot"); players who haven't rejoined are faded with a red "Away" badge, and the button reads
+"Resume (N away)" until they are back.
+
 **Coming back as a guest:** each device remembers the room and name it last joined (for 3 days,
 cleared when that game ends). Reloading the page during a game rejoins straight away; on a later
 visit the main menu shows "Rejoin online game". A guest who rejoins mid-turn replays the turn

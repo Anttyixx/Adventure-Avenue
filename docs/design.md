@@ -681,6 +681,15 @@ if (!(await ask(`Delete ${d.name}?`, 'Its 4 properties will be removed from the 
   seat card (`.pc-stage`, gold-free, the seat color's top edge) beside a labeled name input and a
   muted hint; Done in the head. No Save button: changes save as they are made.
 
+### 5.17d Continue game
+
+- `online.ts` `resumeLobby` builds the game setup frame (`setupFrame`, `setupHead`, exported from
+  `start.ts`) so continuing looks like starting: the code chip in the top bar, the Map panel with
+  the saved board locked (`.carousel.locked`) and a muted "Saved in round N" pill (`.su-round`) in
+  its top right, the locked settings panel (`rulesPanel` without `edit`), and the dock with seat
+  cards (no remove buttons) and Resume. A player not back yet: seat faded to 50% with a red "AWAY"
+  pill (`.seat-away`) in the card's top right.
+
 ### 5.18 Game log
 
 - **Game log:** a toolbar button (`.log-toggle`, between the zoom chip and Guide, gold `.on`

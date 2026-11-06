@@ -1,17 +1,16 @@
 /**
  * Online play helpers: the name a player joins with, the seat list shared by the setup screens,
- * and the screen for reopening a saved game so friends can rejoin. Hosting and joining happen
+ * and the Continue game screen (reopening a saved game so friends can rejoin). Hosting and joining happen
  * in game setup (start.ts): Play opens a room, and players who join see the host's setup.
  */
 import { PLAYER_COLORS } from '@aa/engine';
-import { sound } from '../audio';
 import type { HostRoom } from '../net/hostroom';
-import { inviteURL, type LobbyInfo } from '../net/protocol';
+import { inviteURL, type LobbyInfo, type LobbySeat } from '../net/protocol';
+import { BUILT_IN, listBoards } from '../boardstore';
+import { boardStage, morphWidth, rulesPanel, setupFrame, setupHead } from './start';
 import { portraitURL } from '../sprites';
 import { charButton } from './charpick';
-import { clear, h } from './dom';
-import { titleScene } from './menu';
-import { closeSoundPopover, soundButton } from './soundpanel';
+import { clear, fmt, h } from './dom';
 
 const NAME_KEY = 'adventure-avenue-online-name';
 
@@ -30,38 +29,6 @@ export function keepName(n: string) {
   } catch {
     /* storage unavailable */
   }
-}
-
-/** Shared frame: the title scene, a header with Back, and a card. */
-function frame(title: string, onBack: () => void, ...body: HTMLElement[]) {
-  // Lobbies (joining, continuing an online game) share the game setup's music.
-  sound.music('setup');
-  const scene = titleScene(false);
-  const el = h(
-    'div',
-    { class: 'setup online' },
-    scene.el,
-    h(
-      'div',
-      { class: 'setup-wrap narrow' },
-      h(
-        'header',
-        { class: 'setup-head' },
-        h('button', { class: 'btn ghost small back', onclick: onBack }, '‹ Back'),
-        h('h2', null, title),
-        soundButton('btn small ghost setup-sound'),
-      ),
-      ...body,
-    ),
-  );
-  return {
-    el,
-    close: () => {
-      closeSoundPopover();
-      scene.stop();
-      el.remove();
-    },
-  };
 }
 
 /**
@@ -118,26 +85,30 @@ export interface ResumeHandlers {
 }
 
 /**
- * Reopening a saved online game: the room is open again and players rejoin with the code (and
- * the same name). The host resumes when ready; anyone not back yet is played by a CPU.
+ * Continuing a saved game. It looks like game setup (start.ts): the top bar with the room code
+ * chip, the saved game's board and settings (locked, as a joined player sees them), and the
+ * players in the bottom bar with Resume. The room is open again and friends rejoin with the code
+ * (and the same name); the host resumes when ready, and anyone not back yet is played by a CPU.
+ * `round` is the round the game was saved in.
  */
 export function resumeLobby(
   root: HTMLElement,
   room: Pick<HostRoom, 'code' | 'lobby' | 'onChange'>,
   oldCode: string,
   handlers: ResumeHandlers,
+  round = 0,
 ) {
-  const card = h('section', { class: 'setup-panel glass join-card resume-card' });
-  const f = frame('Continue game', () => handlers.onBack(), card);
+  const f = setupFrame();
   root.append(f.el);
   let copied = false;
   const share = async () => {
     const url = inviteURL(room.code);
+    const text = `Join my Adventure Avenue game! Code: ${room.code}`;
     try {
       if (navigator.share && 'ontouchstart' in window)
-        await navigator.share({ title: 'Adventure Avenue', url });
+        await navigator.share({ title: 'Adventure Avenue', text, url });
       else {
-        await navigator.clipboard.writeText(url);
+        await navigator.clipboard.writeText(`${text}\n${url}`);
         copied = true;
         draw();
       }
@@ -145,37 +116,127 @@ export function resumeLobby(
       /* cancelled */
     }
   };
-  const draw = () => {
-    clear(card);
-    const lobby = room.lobby();
-    const missing = lobby.seats.filter((x) => x.kind === 'remote' && !x.online).length;
-    card.append(
+  /** A player's seat card in the bottom bar: their character, name and whether they are back. */
+  const seatCard = (s: LobbySeat, i: number) => {
+    const away = s.kind === 'remote' && !s.online;
+    const tag =
+      s.kind === 'host'
+        ? 'You · host'
+        : s.kind === 'local'
+          ? 'On this device'
+          : s.kind === 'cpu' || s.kind === 'open'
+            ? 'Bot'
+            : s.online
+              ? 'Back online'
+              : 'Not back yet';
+    return h(
+      'div',
+      {
+        class: `seat-card ${s.kind === 'cpu' || s.kind === 'open' ? 'bot' : 'joined'} ${away ? 'away' : ''}`,
+        style: `--pc:${PLAYER_COLORS[i]}`,
+        title: away ? `${s.name} is not back yet: a CPU plays for them until they join.` : null,
+      },
       h(
         'div',
-        { class: 'room-code' },
-        h('small', null, 'Room code'),
-        h('b', null, room.code),
-        h('button', { class: 'btn small', onclick: share }, copied ? 'Copied!' : 'Share invite'),
+        { class: 'seat-stage' },
+        s.look ? charButton(s.look, 'body', null) : h('span', { class: 'portrait empty' }, '?'),
       ),
-      h(
-        'p',
-        { class: 'hint' },
-        !oldCode
-          ? 'Friends can join this game: Join on the main menu, this code, and the name of their player in the game. Seats nobody takes stay on this device.'
-          : room.code === oldCode
-            ? 'Your friends rejoin the same way as before: Join on the main menu, this code and the same name (or their old invite link).'
-            : `The old code ${oldCode} was taken, so this game has a new one. Friends join with it and the same name as before.`,
-      ),
-      lobbySeats(lobby, -1),
+      h('span', { class: `name ${s.kind === 'cpu' ? 'cpu' : ''}` }, s.name),
+      h('span', { class: 'seat-tag' }, tag),
+      away ? h('span', { class: 'seat-away', 'aria-hidden': 'true' }, 'Away') : null,
+    );
+  };
+  const draw = () => {
+    const lobby = room.lobby();
+    const missing = lobby.seats.filter((x) => x.kind === 'remote' && !x.online).length;
+    // The saved game keeps only the board's name: find it among the built-in and saved boards.
+    const board =
+      lobby.board ??
+      BUILT_IN.find((b) => b.name === lobby.boardName) ??
+      listBoards().find((b) => b.board.name === lobby.boardName)?.board;
+    setupHead(
+      f.top,
+      () => handlers.onBack(),
+      'Continue game',
       h(
         'button',
-        { class: 'btn main big', onclick: () => handlers.onResume() },
-        missing ? `Resume game (${missing} not back yet)` : 'Resume game',
+        {
+          class: 'su-code',
+          title: 'Friends rejoin with this code and the same name as before. Tap to share the invite.',
+          onclick: share,
+        },
+        h('small', null, 'Code'),
+        h('b', null, room.code),
+        h(
+          'span',
+          { class: 'su-code-act' },
+          copied ? 'Copied!' : 'ontouchstart' in window ? 'Share' : 'Copy link',
+        ),
       ),
-      missing
-        ? h('p', { class: 'hint' }, 'Players who are not back yet are played by a CPU until they join.')
-        : '',
     );
+    clear(f.wrap);
+    f.wrap.append(
+      h(
+        'section',
+        { class: 'setup-panel glass board-panel' },
+        h(
+          'div',
+          { class: 'panel-head' },
+          h('h3', null, 'Map'),
+          round ? h('span', { class: 'su-round' }, `Saved in round ${round}`) : null,
+        ),
+        board
+          ? h('div', { class: 'carousel locked' }, boardStage(board, false))
+          : h('p', { class: 'hint' }, lobby.boardName),
+      ),
+      rulesPanel({
+        rules: lobby.rules,
+        target: lobby.target,
+        roundCap: lobby.roundCap,
+        plots: lobby.plots ?? 'few',
+        stocks: lobby.stocks ?? 'dynamic',
+      }),
+    );
+    const dockFrom = f.dock.getBoundingClientRect().width;
+    clear(f.dock);
+    f.dock.append(
+      h(
+        'section',
+        { class: 'su-players' },
+        h(
+          'div',
+          { class: 'su-players-head' },
+          h('h3', null, `Players · ${lobby.seats.length}`),
+          h(
+            'span',
+            { class: 'hint' },
+            !oldCode || room.code === oldCode
+              ? 'Friends rejoin with the code and the same name.'
+              : `The old code ${oldCode} was taken: friends use the new one.`,
+          ),
+        ),
+        h('div', { class: 'seats' }, ...lobby.seats.map(seatCard)),
+      ),
+      h(
+        'div',
+        { class: 'su-start' },
+        h(
+          'div',
+          { class: 'setup-summary' },
+          h('strong', null, lobby.boardName),
+          h('span', null, `${round ? `Round ${round} · ` : ''}${fmt(lobby.target)} goal`),
+          missing
+            ? h('small', { class: 'hint' }, `${missing} not back yet: a CPU plays for them until they join.`)
+            : null,
+        ),
+        h(
+          'button',
+          { class: 'btn main big', onclick: () => handlers.onResume() },
+          missing ? `Resume (${missing} away)` : 'Resume game',
+        ),
+      ),
+    );
+    morphWidth(f.dock, dockFrom);
   };
   const off = room.onChange(draw);
   draw();
