@@ -206,10 +206,10 @@ Place remembers the last chosen tile. The pane is hidden for every other tool an
 **Districts are automatic.** There is no color picker: each new property goes into the first
 district that has fewer than four properties (so a gap left by erasing is filled first); when
 every district is full, the next property starts a new district in the next unused color and name
-(ten colors, up to ten districts). The action bar says where the next one goes ("Property: goes
+(twelve colors, up to twelve districts). The action bar says where the next one goes ("Property: goes
 into Bay Market (2 of 4)"), and the Property tile in the Tiles pane shows that district's color.
 Painting over an existing property keeps its district. A property can still be moved to another
-district (with room) from the tile info panel. When all ten districts are full, the action bar
+district (with room) from the tile info panel. When all twelve districts are full, the action bar
 says so and properties can't be placed.
 
 Select clicks one tile or drags a selection rectangle around multiple tiles. Selected tiles glow
@@ -308,8 +308,9 @@ Two portal-focused boards extend the built-in selection:
   roll continue into another quarter. Inward roads offer a route home through the bank.
 - **Prism Junction** (hex): four hexagonal petals, eight districts / 32 properties and four
   portal pairs between their outer rims. Inner spokes lead back to the bank.
-- **Return Ridge** (square): four winding dead-end branches, eight districts / 32 properties.
-  Each branch ends in a portal paired with a return tile exactly two road steps from the bank.
+- **Return Ridge** (square): four winding dead-end branches, twelve districts / 48 properties.
+  Only four venture squares remain; other relief stops include suits, arcades, stockbrokers,
+  change-of-suit, Boon, Boom, Take-a-break and Roll-on tiles. Each branch ends in a portal paired with a return tile exactly two road steps from the bank.
   Players teleport on entry and use any remaining movement normally. The return portals are
   reciprocal, so entering one near the bank also offers a shortcut out to its branch tip.
   Linked portal endpoints do not receive dead-end warnings: entering them teleports the player.

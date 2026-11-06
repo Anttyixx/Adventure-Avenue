@@ -1489,7 +1489,7 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
                   : tool === 'shop'
                     ? next
                       ? `Property: goes into ${next.name} (${next.count} of ${BOARD_LIMITS.districtSize}) · click or drag to place`
-                      : 'All ten districts have 4 properties'
+                      : 'All twelve districts have 4 properties'
                     : `${label}: ${tool === 'erase' ? 'click or drag to remove squares' : 'click or drag to place tiles'}`),
       ),
       h(

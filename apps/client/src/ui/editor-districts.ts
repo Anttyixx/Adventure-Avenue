@@ -12,6 +12,8 @@ export const DISTRICT_COLORS = [
   '#ff8a1f',
   '#a16b3b',
   '#5c6bc0',
+  '#a3be36',
+  '#ce7eab',
 ];
 export const DISTRICT_NAMES = [
   'Brick Row',
@@ -24,6 +26,8 @@ export const DISTRICT_NAMES = [
   'Maple Court',
   'Cedar Lane',
   'Orchard Walk',
+  'Meadow Lane',
+  'Rose Court',
 ];
 
 export interface DistrictChoice {

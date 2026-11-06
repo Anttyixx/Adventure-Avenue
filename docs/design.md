@@ -113,7 +113,7 @@ two options (use segmented pills), tiny ✕ glyphs as close buttons.
 - **Three text levels are enough:** title / value (Lilita, 16-22px, `--text` or gold), body
   (Atkinson 13-15px, `--text`), label (Atkinson 11-12px, `--muted`).
 - **Section headings are small, not big:** 12px bold uppercase, letter-spacing 0.06em, muted
-  ("BOARD", "DISTRICTS"), with an optional count on the right ("8 of 10").
+  ("BOARD", "DISTRICTS"), with an optional count on the right ("8 of 12").
 - **Group with surfaces, not lines.** Related things share an inset box (`rgba(255,255,255,.05)`,
   radius 10). Use a 1px `--glass-line` divider only between major sections.
 - **Compact by default.** Put pairs side by side (label left, value right; two-column fact grids).
@@ -454,7 +454,7 @@ const yes = await hud.prompt(
      ("Column 17 · Row 15"), "Close" ghost button right; 1px divider under it. Stays put.
   2. **Body** (`.ed-side-body`): scrolls; padding `10px 14px 14px`.
   3. **Sections** (`sideSection(title, aside, ...)`): uppercase muted heading + optional count
-     right ("DISTRICTS · 8 of 10"); sections separated by a divider and 12-14px.
+     right ("DISTRICTS · 8 of 12"); sections separated by a divider and 12-14px.
 - **Spec:** `.ed-side.glass`, background `rgba(16,26,51,.94)`, **4px gold top edge**, slides in
   from the right (16px, 220ms).
 - **Behavior:** Escape or Close closes it; the button that opened it is gold while open; keep the
@@ -467,7 +467,7 @@ panel.append(
     'div',
     { class: 'ed-side-body' },
     sideSection('Board', null, gridField, madeByField),
-    sideSection('Districts', '8 of 10', hint, ...districtCards, addRow),
+    sideSection('Districts', '8 of 12', hint, ...districtCards, addRow),
     sideSection('Ready to play', null, summary, okRow),
   ),
 );
@@ -781,7 +781,7 @@ Questions are the title; the sentence under it says what will happen.
 
 _Request: "Let builders set each district's starting price."_
 
-1. **Job:** while building, adjust up to ten prices and see tiles update.
+1. **Job:** while building, adjust up to twelve prices and see tiles update.
 2. **Container:** several values + live board → **side panel** (Board settings), not the action
    bar and not a pop-up.
 3. **Controls:** a number per row in a list → **stepper** (not the digit picker); a way back to the
@@ -792,7 +792,7 @@ _Request: "Let builders set each district's starting price."_
    turning green when complete, a dashed "+ Add district" row at the end.
 6. **Motion:** none beyond the panel slide-in; values change instantly; holding the stepper
    repeats.
-7. **Words:** section "DISTRICTS · 8 of 10"; hint "Each needs exactly 4 properties. In a game the
+7. **Words:** section "DISTRICTS · 8 of 12"; hint "Each needs exactly 4 properties. In a game the
    nearest one costs 30G less than the average and the farthest 30G more."
 8. **Check:** desktop and phone; Escape closes; keyboard works on − / +; the action bar shows
    "Board settings · ready to play".

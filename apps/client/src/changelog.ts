@@ -26,6 +26,23 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: '2026-11-05-twelve-districts',
+    date: 'Nov 5, 2026',
+    title: 'Bigger districts lineup',
+    features: [
+      {
+        tag: 'rules',
+        title: 'Up to twelve districts',
+        text: 'Boards can now have twelve districts, with four properties in each. Two new district colors and names are available in the builder.',
+      },
+      {
+        tag: 'better',
+        title: 'Return Ridge expanded',
+        text: 'Return Ridge now has twelve districts and 48 properties. Only four venture squares remain, with varied relief stops between shops.',
+      },
+    ],
+  },
+  {
     id: '2026-11-05-return-ridge',
     date: 'Nov 5, 2026',
     title: 'More portal routes',

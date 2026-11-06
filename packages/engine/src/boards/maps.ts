@@ -7,7 +7,7 @@ import { autoEdges } from './format';
  * automatically, so a map is only valid when its roads are one cell wide and every fork is meant.
  * Hex maps use the editor's grid: odd rows sit half a cell to the right.
  *
- *   .  empty           0-7  shop in district N      a-h  vacant plot in district 0-7
+ *   .  empty           0-9/I/J  shop in district N      a-h  vacant plot in district 0-7
  *   B  bank            V  venture                   S H D C  spade, heart, diamond, club
  *   X  change of suit  R  roll on                   K  take a break
  *   O  boon            M  boom                      T  stockbroker
@@ -59,10 +59,18 @@ export function fromMap({ id, name, layout, districts, map, warps = [], portals 
   map.forEach((row, y) =>
     [...row].forEach((ch, x) => {
       if (ch === '.') return;
-      const shop = /[0-7]/.test(ch) ? +ch : /[a-h]/.test(ch) ? ch.charCodeAt(0) - 97 : -1;
+      const shop = /[0-9]/.test(ch)
+        ? +ch
+        : ch === 'I'
+          ? 10
+          : ch === 'J'
+            ? 11
+            : /[a-h]/.test(ch)
+              ? ch.charCodeAt(0) - 97
+              : -1;
       if (shop >= 0) {
         const base = districts[shop].base + count[shop]++ * 20;
-        squares.push({ x, y, t: 'shop', d: shop, base, ...(ch > '9' ? { plot: true } : {}) });
+        squares.push({ x, y, t: 'shop', d: shop, base, ...(/[a-h]/.test(ch) ? { plot: true } : {}) });
       } else if (GLYPHS[ch]) {
         squares.push({ x, y, t: GLYPHS[ch] });
       } else {

@@ -190,3 +190,9 @@ it('has eight districts on Prism Junction and returns dead-end portals two steps
     expect(distance(end.link!)).toBe(2);
   }
 });
+
+it('gives Return Ridge twelve complete districts and only four venture squares', () => {
+  expect(RETURN_RIDGE.districts).toHaveLength(12);
+  expect(RETURN_RIDGE.squares.filter((s) => s.t === 'shop')).toHaveLength(48);
+  expect(RETURN_RIDGE.squares.filter((s) => s.t === 'venture')).toHaveLength(4);
+});
