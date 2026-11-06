@@ -36,7 +36,10 @@ export const CHANGELOG: ChangelogEntry[] = [
         text: 'On phones the player cards are slimmer, the top buttons stay on one row, and arcade games and auctions shrink to fit instead of being cut off. Nothing overlaps, even with five players on a small phone.',
       },
     ],
-    extras: ['Game setup keeps the players and Start on one row on phones'],
+    extras: [
+      'Game setup keeps the players and Start on one row on phones',
+      'Motel tiles show what the current player would pay there',
+    ],
   },
   {
     id: '2026-11-06-live-auctions',

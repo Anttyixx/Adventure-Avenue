@@ -22,7 +22,7 @@ import {
 } from '@aa/engine';
 import type { BoardView } from '../board';
 import { soundControls } from './soundpanel';
-import { squareInfo, squareName } from '../names';
+import { motelFee, squareInfo, squareName } from '../names';
 import { boonIconURL, suitIconURL, wildIconURL } from '../icons';
 import { bodyURL, portraitURL } from '../sprites';
 import { clear, fmt, h } from './dom';
@@ -941,7 +941,7 @@ export class Hud {
     if (sq.t === 'shop' || sq.t === 'plot') {
       if (sq.t === 'shop' || sq.b) boxes.push(box('Value', fmt(sq.value)));
       if (owner && sq.b !== 'agency') {
-        const fee = sq.b === 'tax' ? '10% NW' : fmt(squareFee(G, sq));
+        const fee = sq.b === 'tax' ? '10% NW' : sq.b === 'motel' ? motelFee(G, sq) : fmt(squareFee(G, sq));
         boxes.push(box(isClosed(owner) ? 'Fee (closed)' : 'Fee', fee, 'fee'));
       }
       if (sq.t === 'shop' || sq.b === 'star3') {

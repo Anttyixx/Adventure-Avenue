@@ -28,7 +28,7 @@ import { SHOP_TIERS, SHOP_TIER_NAMES, STAR3_TIERS, STAR3_TIER_NAMES, propertyIco
 import { boonIconURL, suitIconURL, wildIconURL } from '../icons';
 import { propIconURL, type PropKey } from '../props';
 import { bodyURL, portraitURL } from '../sprites';
-import { shortName } from '../names';
+import { motelFee, shortName } from '../names';
 import { fmt, h } from './dom';
 
 /** Net worth parts, in a fixed order and color (validated dataviz palette, on the dark glass). */
@@ -353,7 +353,15 @@ function propertyInfo(G: GameState, s: Square, color: string) {
   const owner = G.players[s.owner];
   const closed = !!owner && isClosed(owner);
   // Nobody pays rent on a property nobody owns yet.
-  const rent = !owner ? '-' : s.b === 'tax' ? '10%' : s.b === 'agency' ? '-' : fmt(squareFee(G, s));
+  const rent = !owner
+    ? '-'
+    : s.b === 'tax'
+      ? '10%'
+      : s.b === 'agency'
+        ? '-'
+        : s.b === 'motel'
+          ? motelFee(G, s)
+          : fmt(squareFee(G, s));
   const capped = isShopLike(s) ? maxValue(G, s) : 0;
   const name = s.t === 'shop' ? `${shortName(G, s)} (${s.base}G)` : shortName(G, s);
   if (!owner) kind = s.t === 'plot' && !s.b ? 'Vacant plot' : 'For sale';

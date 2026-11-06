@@ -2,7 +2,8 @@
  * Names and descriptions of squares for the interface: tooltips, prompts, the log and the guide.
  * `BUILDING_INFO` says what each vacant plot building does for a rival and for its owner.
  */
-import { buildingName, type GameState, type Square } from '@aa/engine';
+import { K, buildingName, squareFee, type GameState, type Square } from '@aa/engine';
+import { fmt } from './ui/dom';
 
 const SPECIAL: Record<string, string> = {
   bank: 'Bank',
@@ -92,4 +93,14 @@ export function squareInfo(G: GameState, sq: Square): string {
     warp: `Stop here to jump to ${G.nodes[sq.link ?? -1]?.t === 'bank' ? 'the bank' : 'its partner warp (same color), even in another part of the map'}.`,
   };
   return info[sq.t] ?? '';
+}
+
+/**
+ * A motel's fee as shown on its tile and in lists: what the player whose turn it is would pay
+ * there now (25% of their cash), or just "25%" when it is their own motel.
+ */
+export function motelFee(G: GameState, sq: Square): string {
+  const p = G.players[G.order[G.turn]];
+  if (!p || p.id === sq.owner) return `${Math.round(K.motelRate * 100)}%`;
+  return fmt(squareFee(G, sq, p));
 }

@@ -1,4 +1,5 @@
 import { transportColor } from '@aa/engine';
+import { motelFee } from './names';
 /**
  * The HD board: a 1300 x 800 logical canvas with 100-unit squares, scaled to the container
  * and devicePixelRatio. The static board is cached offscreen and redrawn only when the state
@@ -2510,7 +2511,14 @@ function drawSquare(ctx: CanvasRenderingContext2D, G: GameState, sq: Square) {
         owner?.name[0]?.toUpperCase() ?? '',
         sq.lv,
       );
-      const fee = sq.b === 'tax' ? '10%' : sq.b === 'agency' ? 'Break' : `${squareFee(G, sq)}G`;
+      const fee =
+        sq.b === 'tax'
+          ? '10%'
+          : sq.b === 'agency'
+            ? 'Break'
+            : sq.b === 'motel'
+              ? motelFee(G, sq)
+              : `${squareFee(G, sq)}G`;
       if (owner) amount(fee);
     }
   } else {

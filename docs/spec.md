@@ -456,6 +456,9 @@ the Guide's Buildings tab says the same during a game ("2 left to build").
   plot counts toward district ownership and domination.
 - Fixed fees (checkpoint, circus, balloonport, motel) are multiplied by the owner's fee boost (Price
   hike card, Price Up square). All building fees pay dividends and commissions like shop fees.
+- **Motel fee on the board:** a motel's tile (and its fee in the tooltip, the info pop-up and the
+  stock market's shop cards) shows what the player whose turn it is would pay there right now,
+  25% of their cash; on its owner's turn it shows "25%".
 - **Motel stops:** every player who passes a motel (its owner too) is asked in the action bar
   "Stop at Rosa's motel?" (the fee to stop and the spaces left to move) with **Stop here** or
   **Keep moving**. Stopping ends the move there and counts as landing on it: a rival pays the fee,

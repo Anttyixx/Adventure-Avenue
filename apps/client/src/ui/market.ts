@@ -22,6 +22,7 @@ import {
   type GameState,
   type Square,
 } from '@aa/engine';
+import { motelFee } from '../names';
 import { SHOP_TIERS, SHOP_TIER_NAMES, STAR3_TIERS, STAR3_TIER_NAMES, propertyIconURL, tierFor } from '../art';
 import { cellAt, cellCenter, tileShape, worldSize } from '../geometry';
 import { portraitURL } from '../sprites';
@@ -327,7 +328,15 @@ function shopCard(G: GameState, sq: Square): HTMLElement {
   const vacant = sq.t === 'plot' && !sq.b;
   const building = sq.t === 'plot' && sq.b ? BUILDINGS.find((b) => b.b === sq.b)!.name : null;
   const shopLike = isShopLike(sq);
-  const fee = !owner ? '–' : sq.b === 'tax' ? '10%' : sq.b === 'agency' ? 'Break' : fmt(squareFee(G, sq));
+  const fee = !owner
+    ? '–'
+    : sq.b === 'tax'
+      ? '10%'
+      : sq.b === 'agency'
+        ? 'Break'
+        : sq.b === 'motel'
+          ? motelFee(G, sq)
+          : fmt(squareFee(G, sq));
   const room = owner && shopLike ? fmt(investRoom(G, sq)) : '–';
   // Owned squares show a house in the owner's color with their initial.
   const icon = h('div', {
