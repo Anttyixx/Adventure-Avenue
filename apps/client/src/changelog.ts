@@ -26,6 +26,15 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: '2026-11-05-bank-districts',
+    date: 'Nov 5, 2026',
+    title: 'New districts around the bank',
+    features: [],
+    extras: [
+      'Return Ridge adds a district above the bank and one below, replacing eight middle specials. Four Boon tiles become Roll-again tiles, for eight Roll-again tiles total.',
+    ],
+  },
+  {
     id: '2026-11-05-compact-ridge',
     date: 'Nov 5, 2026',
     title: 'A smaller Return Ridge',

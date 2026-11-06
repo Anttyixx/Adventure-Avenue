@@ -197,16 +197,16 @@ it('has eight districts on Prism Junction and returns dead-end portals two steps
   }
 });
 
-it('gives Return Ridge ten complete districts and only four venture squares', () => {
-  expect(RETURN_RIDGE.districts).toHaveLength(10);
-  expect(RETURN_RIDGE.squares.filter((s) => s.t === 'shop')).toHaveLength(40);
+it('gives Return Ridge twelve complete districts and only four venture squares', () => {
+  expect(RETURN_RIDGE.districts).toHaveLength(12);
+  expect(RETURN_RIDGE.squares.filter((s) => s.t === 'shop')).toHaveLength(48);
   expect(RETURN_RIDGE.squares.filter((s) => s.t === 'venture')).toHaveLength(4);
 });
 
-it('keeps Return Ridge compact, with no change suits, four roll-ons and suits at branch tips', () => {
+it('keeps Return Ridge compact, with no change suits, eight roll-ons and suits at branch tips', () => {
   expect(RETURN_RIDGE.cols).toBeLessThan(27);
   expect(RETURN_RIDGE.squares.filter((s) => s.t === 'change')).toHaveLength(0);
-  expect(RETURN_RIDGE.squares.filter((s) => s.t === 'roll')).toHaveLength(4);
+  expect(RETURN_RIDGE.squares.filter((s) => s.t === 'roll')).toHaveLength(8);
   const suits = RETURN_RIDGE.squares.filter((s) => ['spade', 'heart', 'club', 'diamond'].includes(s.t));
   expect(suits).toHaveLength(4);
   for (const suit of suits) {
@@ -219,4 +219,17 @@ it('keeps Return Ridge compact, with no change suits, four roll-ons and suits at
       ),
     ).toBe(true);
   }
+});
+
+it('places the new districts above and below the bank and cuts Boon tiles', () => {
+  const bank = RETURN_RIDGE.squares[RETURN_RIDGE.bank];
+  for (const [d, above] of [
+    [10, true],
+    [11, false],
+  ] as const) {
+    const properties = RETURN_RIDGE.squares.filter((s) => s.t === 'shop' && s.d === d);
+    expect(properties).toHaveLength(4);
+    expect(properties.every((s) => s.x === bank.x && (above ? s.y < bank.y : s.y > bank.y))).toBe(true);
+  }
+  expect(RETURN_RIDGE.squares.filter((s) => s.t === 'boon').length).toBeLessThanOrEqual(6);
 });
