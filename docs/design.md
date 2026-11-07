@@ -658,11 +658,15 @@ if (!(await ask(`Delete ${d.name}?`, 'Its 4 properties will be removed from the 
   chip `.su-code` (dashed gold pill: "Code", the code in Lilita gold, "Copy link") right of the
   title, then the main menu's Sound button in the top right corner; Back and Sound are both 40px
   tall (32px on phones). The status line is a screen-reader-only live region (`.sr-only`). Under
-  it `.su-body` (a row): a scrolling `.su-scroll` (scroll bar hidden) with the board panel (left,
-  0.9fr) and the settings panel (right, 1.1fr) in a grid, equal heights (max 1120px; one column
-  under 1100px), centered by `margin: auto` (top-aligned on short screens); panel headings are
-  Lilita 28px (21px on phones). The Map header stays at the top of its panel and the carousel
-  fills the rest. On the right, the players column
+  it `.su-body` (a row): a scrolling `.su-scroll` (scroll bar hidden, stretched to the full height
+  left of the players column) with the board panel (left, 1.15fr) and the settings panel (right,
+  0.85fr) in a grid, each its own height and centered beside each other (max 1120px; one column
+  under 1100px), the grid centered across and up and down by `margin: auto` (top-aligned and
+  stretched on short phones). On big monitors `.su-main` zooms 1.15 (1600 x 860+), 1.35 (1900 x
+  1000+) or 1.7 (2400 x 1300+); its `width: min(1120px, 100%)` stays within the room on screen, so it
+  never reaches the players column. Panel headings are title case, Lilita 28px (21px on phones):
+  "Board" and "Game Settings"; screen titles too ("New Game"). Board tools (`.su-chip`) and the
+  settings' `.seg-btn` pills have 2px borders (one step up from 1px). On the right, the players column
   `.su-side` (`setupFrame().side`) sits against the bottom right corner like the game's
   `.cards-wrap`: 300px at zoom 1.1 (phones 215px, 176px when 500px tall or less, zoom 1), 10px from
   the edges, `justify-content: flex-end` so it grows upward. Every redraw goes through
@@ -671,16 +675,18 @@ if (!(await ask(`Delete ${d.name}?`, 'Its 4 properties will be removed from the 
   can change) slide from their old place (measured from the column's
   bottom edge, divided by its zoom), new seats pop in (fade + scale from 0.85) and removed seats
   leave a fading ghost copy; an interrupted change starts from what is on screen. Board tools are
-  `.su-chip` pills in the Map panel's top right. Settings are a grid (`.su-rules`) in two columns:
-  rule set, round limit; goal, stocks; vacant plots across (one column on phones narrower than
-  760px).
+  `.su-chip` pills in the Board panel's top right. Settings are one column (`.su-rules`): rule
+  set, goal, stocks, vacant plots. Vacant plots is a cycler (`cycler()`, `.su-cycle`): the value
+  in a gold-outlined pill (2px, gold 12% fill, min 96px) between two 32px gold round arrow buttons
+  (`.su-cycle-btn`, 3px drop shadow, pressed 2px down) that loop through the amounts; read-only
+  shows the pill alone.
 - **Map carousel** (`mapCarousel()`): `.mapcar` (overflow hidden, edges faded out with a
   12%/88% mask) holds a `.mapcar-track` of five `.mapcar-slide`s (the board and two either side,
-  wrapping round the list), each 58% wide with a 14px gap; the middle one (`.on`) is full size,
+  wrapping round the list), each 62% wide with a 14px gap; the middle one (`.on`) is full size,
   the others scale to 0.8 toward it (`.before`/`.after` set the origin) at 45% opacity (70% on
   hover) with their names hidden; tapping one moves there. Each card (`mapSlide()`) is the
-  `.car-thumb` picture and `.mapcar-name` (Lilita 24px, plus a purple "My board" `.car-tag`). A move
-  redraws the row and animates it in from one step over (`translateX(k * (58% + 14px))`, 380ms,
+  `.car-thumb` picture (up to 250px / 30vh tall) and `.mapcar-name` (Lilita 24px, plus a purple "My board" `.car-tag`). A move
+  redraws the row and animates it in from one step over (`translateX(k * (62% + 14px))`, 380ms,
   `cubic-bezier(0.2, 0.8, 0.2, 1)`), the new middle board growing from 0.8 and the old one
   shrinking. Under it `.mapcar-line` (6px, white 14%, up to 320px / 70% wide, tappable with a
   taller hit area) holds `.mapcar-pos`, a gold bar one board's share wide (min 18px) with a soft
@@ -698,8 +704,9 @@ if (!(await ask(`Delete ${d.name}?`, 'Its 4 properties will be removed from the 
   else above by arrival, newest on top; seats already there when a device first draws keep seat
   order. Because the column is bottom-anchored, a new seat on top pushes the chips up (they slide)
   and pops in itself; at 5 players the chips leave as a fading ghost while the new card pops in.
-- **Add chips** (`.su-add`, right-aligned, 6px gap): `.seat-add-local` "Add local player" (navy
-  88% fill, 1.5px gold outline, gold text) left of `.seat-add` "Add bot" (solid gold, dark text);
+- **Add chips** (`.su-add`, right-aligned, 6px gap): both navy 88% fill with a 2.5px outline:
+  `.seat-add-local` "Add local player" in blue (`#4c9bff` outline, `#7db8ff` text) left of
+  `.seat-add` "Add bot" in gold (`--accent` outline and text);
   both 999px pills, 12px bold, 4/12px padding (phones 11px, 2/9px), a soft shadow so they read over
   the scene, scale .95 on press.
 - **Seat cards** (`seatCard()`, `.pcard.su-seat`): the game's player card tile (glass, 5px

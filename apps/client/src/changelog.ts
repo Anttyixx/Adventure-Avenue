@@ -37,6 +37,10 @@ export const CHANGELOG: ChangelogEntry[] = [
       },
     ],
     extras: [
+      'Settings in one column; Vacant Plots cycles with arrows',
+      'No more round limit option',
+      'The board and settings sit in the middle of the room and grow on big monitors',
+      'Add local player is blue, Add bot is gold',
       'Back and the title sit in the top left corner, Sound in the top right',
       'The join code sits right next to the title',
       'Bigger Map and Game settings headings',

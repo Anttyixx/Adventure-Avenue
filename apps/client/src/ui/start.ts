@@ -305,8 +305,38 @@ function seg<T>(
 }
 
 /**
- * The rules panel: target net worth (arrows on each digit, in 1,000G steps), round limit, rule
- * set and vacant plots. Without `edit` everything is shown but locked.
+ * One choice shown as its value between two arrows that cycle through `values` (looping). Without
+ * `set` only the value shows (a joined player's view).
+ */
+function cycler<T>(label: string, values: T[], cur: T, text: (v: T) => string, set?: (v: T) => void) {
+  const i = Math.max(0, values.indexOf(cur));
+  const step = (d: number) => set?.(values[(i + d + values.length) % values.length]);
+  return h(
+    'div',
+    { class: 'opt' },
+    h('div', { class: 'opt-label' }, label),
+    h(
+      'div',
+      { class: `su-cycle ${set ? '' : 'ro'}` },
+      set
+        ? h(
+            'button',
+            { class: 'su-cycle-btn', 'aria-label': `Previous: ${label}`, onclick: () => step(-1) },
+            '‹',
+          )
+        : null,
+      h('output', { class: 'su-cycle-value', 'aria-live': 'polite' }, text(cur)),
+      set
+        ? h('button', { class: 'su-cycle-btn', 'aria-label': `Next: ${label}`, onclick: () => step(1) }, '›')
+        : null,
+    ),
+  );
+}
+
+/**
+ * The rules panel, in one column: rule set, target net worth (arrows on each digit, in 1,000G
+ * steps), stocks and vacant plots (arrows cycle through the amounts). Without `edit` everything is
+ * shown but locked.
  */
 export function rulesPanel(st: RuleSettings, edit?: (patch: Partial<RuleSettings>) => void): HTMLElement {
   const target = digitPicker({
@@ -324,7 +354,7 @@ export function rulesPanel(st: RuleSettings, edit?: (patch: Partial<RuleSettings
   return h(
     'section',
     { class: 'setup-panel glass rules-panel' },
-    h('h3', null, 'Game settings'),
+    h('h3', null, 'Game Settings'),
     h(
       'div',
       { class: 'su-rules' },
@@ -332,7 +362,7 @@ export function rulesPanel(st: RuleSettings, edit?: (patch: Partial<RuleSettings
         'div',
         { class: 'su-rule su-r-rules' },
         seg(
-          'Rule set',
+          'Rule Set',
           ['standard', 'easy'] as RuleSet[],
           st.rules,
           (v) => (v === 'standard' ? 'Standard' : 'Easy'),
@@ -349,41 +379,10 @@ export function rulesPanel(st: RuleSettings, edit?: (patch: Partial<RuleSettings
       h(
         'div',
         { class: 'su-rule opt target-opt su-r-goal' },
-        h('div', { class: 'opt-label' }, 'Winning goal'),
+        h('div', { class: 'opt-label' }, 'Winning Goal'),
         target.el,
         h('p', { class: 'hint' }, 'Reach it, then return to the bank.'),
       ),
-      h(
-        'div',
-        { class: 'su-rule su-r-round' },
-        seg(
-          'Round limit',
-          K.roundCapOptions as unknown as number[],
-          st.roundCap,
-          (v) => (v ? String(v) : 'None'),
-          edit && ((v) => edit({ roundCap: v })),
-        ),
-      ),
-      standard
-        ? h(
-            'div',
-            { class: 'su-rule su-r-plots' },
-            seg(
-              'Vacant plots',
-              ['none', 'few', 'some', 'lot', 'all'] as PlotSetting[],
-              st.plots,
-              (v) => PLOT_LABEL[v],
-              edit && ((v) => edit({ plots: v })),
-            ),
-            h(
-              'p',
-              { class: 'hint' },
-              st.plots === 'all'
-                ? 'Every property starts as a vacant plot.'
-                : `${K.plotsPerDistrict[st.plots]} of each district's 4 properties start as plots.`,
-            ),
-          )
-        : null,
       standard
         ? h(
             'div',
@@ -401,6 +400,26 @@ export function rulesPanel(st: RuleSettings, edit?: (patch: Partial<RuleSettings
               st.stocks === 'dynamic'
                 ? `Buying lifts prices; selling ${K.sellOff}+ shakes a district.`
                 : 'Trading 10+ shares at once moves the price 10%.',
+            ),
+          )
+        : null,
+      standard
+        ? h(
+            'div',
+            { class: 'su-rule su-r-plots' },
+            cycler(
+              'Vacant Plots',
+              ['none', 'few', 'some', 'lot', 'all'] as PlotSetting[],
+              st.plots,
+              (v) => PLOT_LABEL[v],
+              edit && ((v) => edit({ plots: v })),
+            ),
+            h(
+              'p',
+              { class: 'hint' },
+              st.plots === 'all'
+                ? 'Every property starts as a vacant plot.'
+                : `${K.plotsPerDistrict[st.plots]} of each district's 4 properties start as plots.`,
             ),
           )
         : null,
@@ -447,8 +466,8 @@ function mapSlide(board: BoardDef, mine: boolean): HTMLElement {
   );
 }
 
-/** How far a move slides the carousel: one card (58% of the width) and the gap. */
-const MAP_STEP = 'calc(58% + 14px)';
+/** How far a move slides the carousel: one card (62% of the width) and the gap. */
+const MAP_STEP = 'calc(62% + 14px)';
 const MAP_MS = 380;
 const MAP_EASE = 'cubic-bezier(0.2, 0.8, 0.2, 1)';
 
@@ -709,7 +728,8 @@ export function setupScreen(
   let nextSpot = 0;
   const st: RuleSettings = {
     target: cleanTarget(saved.target),
-    roundCap: saved.roundCap,
+    // The round limit option was removed: games have none (older saved options may have one).
+    roundCap: 0,
     plots: saved.plots ?? 'few',
     stocks: saved.stocks ?? 'dynamic',
     rules: saved.rules,
@@ -901,7 +921,7 @@ export function setupScreen(
       h(
         'div',
         { class: 'panel-head' },
-        h('h3', null, 'Map'),
+        h('h3', null, 'Board'),
         h(
           'div',
           { class: 'su-chips' },
@@ -1110,7 +1130,7 @@ export function setupScreen(
         leaveRoom();
         handlers.onBack();
       },
-      'New game',
+      'New Game',
       codeChip(),
       statusEl,
     );
@@ -1270,7 +1290,7 @@ export function guestSetup(root: HTMLElement, room: GuestSetupRoom, handlers: Gu
         room.leave();
         handlers.onBack();
       },
-      'Joined game',
+      'Joined Game',
       h(
         'span',
         { class: 'su-code', title: 'The code of the game you joined' },
@@ -1286,7 +1306,7 @@ export function guestSetup(root: HTMLElement, room: GuestSetupRoom, handlers: Gu
         h(
           'div',
           { class: 'panel-head' },
-          h('h3', null, 'Map'),
+          h('h3', null, 'Board'),
           h('span', { class: 'hint' }, 'The host picks the board and the rules.'),
         ),
         board ? boardStage(board, false) : h('p', { class: 'hint' }, lobby ? lobby.boardName : 'Loading...'),
@@ -1299,7 +1319,7 @@ export function guestSetup(root: HTMLElement, room: GuestSetupRoom, handlers: Gu
             plots: lobby.plots ?? 'few',
             stocks: lobby.stocks ?? 'dynamic',
           })
-        : h('section', { class: 'setup-panel glass rules-panel' }, h('h3', null, 'Game settings')),
+        : h('section', { class: 'setup-panel glass rules-panel' }, h('h3', null, 'Game Settings')),
     );
     morphSide(frame.side, () => {
       clear(frame.side);

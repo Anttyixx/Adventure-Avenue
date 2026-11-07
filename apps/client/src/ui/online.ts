@@ -112,7 +112,7 @@ export function resumeLobby(
     setupHead(
       f.top,
       () => handlers.onBack(),
-      'Continue game',
+      'Continue Game',
       h(
         'button',
         {
@@ -137,7 +137,7 @@ export function resumeLobby(
         h(
           'div',
           { class: 'panel-head' },
-          h('h3', null, 'Map'),
+          h('h3', null, 'Board'),
           round ? h('span', { class: 'su-round' }, `Saved in round ${round}`) : null,
         ),
         board ? boardStage(board, false) : h('p', { class: 'hint' }, lobby.boardName),

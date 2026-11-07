@@ -9939,6 +9939,12 @@ div.sl-inline label {
   background: rgba(16, 26, 51, 0.6);
   color: #fff;
 }
+/* The room left of the players column, all the way down: the panels center in it, across and
+   up and down. */
+.su-body > .su-scroll {
+  align-self: stretch;
+  min-width: 0;
+}
 .su-scroll {
   position: relative;
   z-index: 1;
@@ -9959,11 +9965,11 @@ div.sl-inline label {
   box-sizing: border-box;
   margin: auto;
   padding: 4px 16px 12px;
-  /* The board picker on the left and the settings (a little wider) on the right, the same
-     height. */
+  /* The board picker on the left (a little wider) and the one-column settings on the right, each
+     as tall as its contents, centered beside each other. */
   display: grid;
-  grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
-  align-items: stretch;
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr);
+  align-items: center;
   gap: 12px;
 }
 .su-main > .setup-panel {
@@ -9991,7 +9997,8 @@ div.sl-inline label {
   display: flex;
   flex-direction: column;
   justify-content: center;
-  gap: 14px;
+  gap: 10px;
+  padding-bottom: 4px;
 }
 .mapcar {
   position: relative;
@@ -10008,7 +10015,7 @@ div.sl-inline label {
   gap: 14px;
 }
 .mapcar-slide {
-  flex: 0 0 58%;
+  flex: 0 0 62%;
   min-width: 0;
   transform: scale(0.8);
   opacity: 0.45;
@@ -10097,7 +10104,7 @@ div.sl-inline label {
 .su .car-thumb .thumb {
   width: auto !important;
   max-width: 100%;
-  max-height: min(190px, 22vh);
+  max-height: min(250px, 30vh);
 }
 
 /* The winning goal's digit picker, a size smaller here. */
@@ -10193,8 +10200,8 @@ button.seat-ready.on {
   gap: 6px;
 }
 .su-chip {
-  padding: 5px 12px;
-  border: 1px solid var(--glass-line);
+  padding: 4px 11px;
+  border: 2px solid var(--glass-line);
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.07);
   color: var(--text);
@@ -10209,22 +10216,16 @@ button.seat-ready.on {
   border-color: var(--accent);
   background: rgba(255, 255, 255, 0.12);
 }
-/* Game settings: every option shown at once, in two rows: rule set, round limit and stocks;
-   then the winning goal and vacant plots. */
+/* Game settings: every option shown at once, in one column: rule set, winning goal, stocks and
+   vacant plots. */
 .su-rules {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  grid-template-areas:
-    'rules round'
-    'goal stocks'
-    'plots plots';
-  gap: 12px 22px;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-areas: 'rules' 'goal' 'stocks' 'plots';
+  gap: 12px;
 }
 .su-r-rules {
   grid-area: rules;
-}
-.su-r-round {
-  grid-area: round;
 }
 .su-r-stocks {
   grid-area: stocks;
@@ -10234,6 +10235,10 @@ button.seat-ready.on {
 }
 .su-r-plots {
   grid-area: plots;
+}
+/* The settings' choice pills: a border one step thicker than other pills. */
+.su-rule .seg-btn {
+  border-width: 2px;
 }
 .su-rule {
   display: flex;
@@ -10443,6 +10448,41 @@ button.char-btn:hover img {
   line-height: 14px;
   text-transform: uppercase;
 }
+/* A choice cycled with arrows (vacant plots): the value in a navy pill between two gold round
+   arrow buttons; a joined player sees the pill only. */
+.su-cycle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.su-cycle-value {
+  min-width: 96px;
+  padding: 6px 14px;
+  border: 2px solid var(--accent);
+  border-radius: 999px;
+  background: rgba(255, 209, 102, 0.12);
+  color: var(--accent);
+  font: 700 14px/20px var(--body);
+  text-align: center;
+  white-space: nowrap;
+}
+.su-cycle-btn {
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: var(--accent);
+  color: #3b2a00;
+  font: 400 24px/30px var(--head);
+  cursor: pointer;
+  box-shadow: 0 3px 0 #b07c00;
+  transition: transform 0.08s;
+}
+.su-cycle-btn:active {
+  transform: translateY(2px);
+  box-shadow: 0 1px 0 #b07c00;
+}
 /* Game setup (the host): Add local player and Add bot above the top player, against the right
    edge. They slide up as players are added and pop out when the game is full. */
 .su-add {
@@ -10455,7 +10495,7 @@ button.char-btn:hover img {
 .seat-add-local {
   flex: none;
   padding: 4px 12px;
-  border: 1.5px solid var(--accent);
+  border: 2.5px solid var(--accent);
   border-radius: 999px;
   font: 700 12px/16px var(--body);
   white-space: nowrap;
@@ -10466,17 +10506,16 @@ button.char-btn:hover img {
     transform 0.15s,
     filter 0.15s;
 }
-.seat-add {
-  background: var(--accent);
-  color: #3b2a00;
-}
-.seat-add:hover {
-  filter: brightness(1.08);
-}
+.seat-add,
 .seat-add-local {
   background: rgba(16, 26, 51, 0.88);
   color: var(--accent);
 }
+.seat-add-local {
+  border-color: #4c9bff;
+  color: #7db8ff;
+}
+.seat-add:hover,
 .seat-add-local:hover {
   background: rgba(40, 52, 82, 0.95);
 }
@@ -10634,6 +10673,7 @@ button.char-btn:hover img {
   }
   .su-main {
     height: 100%;
+    align-items: stretch;
     grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr);
     grid-template-rows: minmax(0, 1fr);
     padding: 2px 8px 6px;
@@ -10720,11 +10760,20 @@ button.char-btn:hover img {
     font-size: 11px;
   }
 }
-/* Narrow landscape phones: beside the players column the settings have room for one column
-   only (the settings panel scrolls if it has to). */
-@media (max-height: 500px) and (max-width: 760px) {
-  .su-rules {
-    grid-template-columns: minmax(0, 1fr);
-    grid-template-areas: 'rules' 'round' 'goal' 'stocks' 'plots';
+/* Bigger monitors: the map and settings panels scale up to fill more of the room beside the
+   players column (their width stays within it, so they never reach the player cards). */
+@media (min-width: 1600px) and (min-height: 860px) {
+  .su-main {
+    zoom: 1.15;
+  }
+}
+@media (min-width: 1900px) and (min-height: 1000px) {
+  .su-main {
+    zoom: 1.35;
+  }
+}
+@media (min-width: 2400px) and (min-height: 1300px) {
+  .su-main {
+    zoom: 1.7;
   }
 }

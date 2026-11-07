@@ -879,14 +879,17 @@ work the game uses (art, fonts, libraries; data in `apps/client/src/credits.ts`)
 what was used, the license and links to their pages.
 
 **Game setup options.** Over the title scene, a **top bar** that never scrolls runs across the
-screen: **Back** (to the main menu, as tall as Sound) and the "New game" title in the top left
+screen: **Back** (to the main menu, as tall as Sound) and the "New Game" title in the top left
 corner with the join code chip right of the title, and **Sound** (the same button as on the main
 menu) in the top right corner. The **players column** sits in the bottom right corner, where the
-player cards sit in the game. Under the top bar: the board selector on the left and the game
-settings on the right, the two panels the same height (one under the other on windows narrower
-than 1100px), centered in the room left of the players column (short phone screens start them at
-the top). On bigger screens (1180 x 820 and up) everything fits without scrolling; on smaller ones
-the panels scroll, with no scroll bar. There is no Start button (see **Ready up**).
+player cards sit in the game. Under the top bar: the **Board** panel on the left (a little wider)
+and the **Game Settings** panel on the right (one under the other on windows narrower than
+1100px), each as tall as its contents, centered across and up and down in the room between the
+left edge of the screen and the player cards (short phone screens start them at the top and give
+them the full height). On big monitors the panels scale up to fill more of that room (1600 x 860
+and up, more at 1900 x 1000 and 2400 x 1300), but never reach the player cards. On bigger screens
+(1180 x 820 and up) everything fits without scrolling; on smaller ones the panels scroll, with no
+scroll bar. Headings capitalize every word. There is no Start button (see **Ready up**).
 
 - **Players column:** the seats stacked like the player cards in the game (as wide, the same
   tiles with the player's color down the left edge). There is no heading and no empty seats.
@@ -897,7 +900,8 @@ the panels scroll, with no scroll bar. There is no Start button (see **Ready up*
   pops in at the top on every screen and the cards above the bottom ones make room; when a player
   leaves, their card fades out and the ones above slide down.
 - **Add chips (the host):** above the top player sit two chips against the right edge of the
-  window: **Add local player** (a player on this device) and, right of it, **Add bot**. They slide
+  window: **Add local player** (a player on this device, blue) and, right of it, **Add bot**
+  (gold), both outlined pills on navy. They slide
   up as each player is added; when the 5th player joins they pop out (while the new player pops
   in), and they come back when a seat frees up.
 
@@ -937,9 +941,12 @@ the panels scroll, with no scroll bar. There is no Start button (see **Ready up*
   the game is played on this device.
 - **Target net worth:** 5,000G by default; arrows on each digit set any amount in 1,000G steps from
   1,000G to 90,000G (like the share picker); no Min or Max buttons.
-- **Game settings** are all shown at once, in two rows: Rule set, Round limit and Stocks, then
-  Winning goal and Vacant plots, each with a one-line hint.
-- **Round limit:** none (default), 15, 20 or 30.
+- **Game settings** are all shown at once, in one column: Rule Set, Winning Goal, Stocks and
+  Vacant Plots, each with a one-line hint. Their choice pills have a slightly thicker outline.
+- **Vacant Plots:** the amount (None, A few, Some, A lot, All) between two gold arrows that cycle
+  through them, looping. Joined players see the amount only.
+- **Round limit:** no longer offered: games have no round limit (older saved options with one are
+  ignored; saved games keep theirs).
 - **Characters:** each seat starts with a different random character and a name. Tapping a human
   seat's character opens the character picker (all nine characters; ones other humans have are
   greyed out with their name, so no two players share one; a CPU holding the picked one switches
