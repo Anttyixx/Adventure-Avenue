@@ -878,34 +878,38 @@ been read on this device, and What's new shows a "New" tag in the pop-up. **Cred
 work the game uses (art, fonts, libraries; data in `apps/client/src/credits.ts`), one card each with
 what was used, the license and links to their pages.
 
-**Game setup options.** The screen has three bands over the title scene. A **top bar** that never
+**Game setup options.** Over the title scene, the screen has a **players column** in the bottom
+right corner, where the player cards sit in the game, and to its left a **top bar** that never
 scrolls: **Back** (to the main menu), the "New game" title, the join code chip and **Sound** (the
-same button as on the main menu). A **bottom container** that never scrolls (a rounded glass
-panel, no full-width backdrop) with the players; there is no Start button (see **Ready up**). Like the action bar it is only as wide as its contents,
-and it eases wider or narrower as players are added or leave (seats that stay slide over, new
-ones pop in, removed ones fade out). Between them: the board selector
-on the left and the game settings on the right, the two panels the same height (one under the
-other on windows narrower than 900px), centered in the room between the top and bottom bars
-(short phone screens start them at the top and scroll instead). On bigger screens (1180 x 820 and up) everything fits without scrolling; on
-smaller ones the middle scrolls, with no scroll bar.
+same button as on the main menu). Under the top bar: the board selector on the left and the game
+settings on the right, the two panels the same height (one under the other on windows narrower
+than 1100px), centered in the room left of the players column (short phone screens start them at
+the top). On bigger screens (1180 x 820 and up) everything fits without scrolling; on smaller ones
+the panels scroll, with no scroll bar. There is no Start button (see **Ready up**).
+
+- **Players column:** the seats stacked top to bottom like the player cards in the game (as wide,
+  the same tiles with the player's color down the left edge), under a heading tile with "Players ·
+  N of 5" and the status line. It grows upward as players are added and shrinks as they leave
+  (seats that stay slide over, new ones pop in, removed ones fade out).
 
 - **Board:** a carousel of the built-in boards followed by the player's saved boards. Arrows,
   swiping, the arrow keys or the dots move through it, and it loops from the last board back to
   the first. **Import board** and **Board editor** (Edit this board for a saved one) are small
   chips in the panel's top right corner.
-- **Players** (in the bottom container, smaller cards): setup starts with only the host ("You ·
-  host"); bots and other players on this device are added by hand, and friends join with the code
-  (the board and settings are remembered from the last game, the players are not). Each seat
-  is a card with the character standing on a spot in the seat's color (centered, tap to change it
-  for players on this device), the name and what kind of player it is. An empty spot (until there
-  are 5 players) is laid out like a seat: a dashed outline, an **Add bot** chip where the name
-  plate goes, a big gold **+** where the character stands (both add a bot) and a **+ Local
-  player** chip where the Ready chip goes (a player on this device; "+ Local" on phones); bots and extra
-  players on this device have a small red remove button (×) in the card's top right corner, joined friends can be removed too.
+- **Players** (in the players column): setup starts with only the host ("You · host"); bots and
+  other players on this device are added by hand, and friends join with the code (the board and
+  settings are remembered from the last game, the players are not). Each seat is a card like a
+  player card in the game: the character on the left (tap it to change it, for players on this
+  device; a small gold pencil badge says so), the name on the top row, and what kind of player it
+  is with the Ready chip on the bottom row. An empty seat (until there are 5 players) is laid out
+  the same way: a dashed outline, a big gold **+** where the character goes, "Empty seat" where the
+  name goes, and **Add bot** and **+ Local player** chips below (a player on this device; "+ Local"
+  on phones); the + and Add bot both add a bot. Bots, extra players on this device and joined
+  friends have a small round remove button (×) at the end of the name row.
 - **Ready up:** instead of a Start button, every person taps the **Ready** chip on their own seat
-  (a small chip under the character's feet; each player on the host's device has one, and a friend
+  (at the end of the card's bottom row; each player on the host's device has one, and a friend
   who joined has one on their own seat). Ready turns green with a tick; tapping it again takes it back. Bots are always
-  ready. A status line beside "Players" says what is needed: "Tap Ready to start", "Waiting for
+  ready. A status line under "Players" says what is needed: "Tap Ready to start", "Waiting for
   Ada, Pip", or a reason the game can't start (fewer than 2 players, or a board with problems).
   When everyone is ready the game starts: straight away when there is only one person, otherwise
   after a 3-second countdown ("Everyone's ready! Starting in 3...") that anyone can stop by
@@ -930,9 +934,7 @@ smaller ones the middle scrolls, with no scroll bar.
   starts. **Names can't be changed in game setup:** players set them before (the host's seat uses
   the main menu's player card name and character; a friend joins with the name on their player
   card or typed in the join box; other players on the host's device and bots get a suggested
-  name). Each seat card shows the name as a plate in the player's color above the character, like
-  the plates over tokens on the board, with the Ready chip just under the character's feet. In the
-  online build, validate names on the server.
+  name). In the online build, validate names on the server.
 
 In-game, the Menu button (top right) opens the menu as a pop-up in the middle of the screen, over
 everything; a game on this device pauses while it is open (online games carry on). It has Resume, a Fast CPU
@@ -1109,9 +1111,9 @@ along the card's bottom edge. If five cards still would reach the toolbar, they 
 between the toolbar and the action bar instead of cutting off or scrolling (`modals.ts`
 `fitInLayer`), and game boards always leave room for the action bar however tall it is. In game
 setup on a phone held sideways, the map and the settings sit side by side and fit on screen
-together (smaller buttons, no hint lines, the map picture sized to the room), the bottom bar keeps
-the players and Start on one row (seats shrink to fit five), and on
-touch screens a small gold pencil badge on each character replaces the "Change" strip.
+together beside the players column (smaller buttons, no hint lines, the map picture sized to the
+room; on narrow phones the settings are one column), and the seat cards are as compact as the
+game's player cards on a phone, so five fit.
 
 **Layout.** Scrolling panels hide their scrollbars (they still scroll). The board fills the whole game screen edge to edge, and everything else floats over it
 as dark glass overlays. Top right: the zoom chip, the Game log button and the Menu button (the menu
@@ -1398,8 +1400,8 @@ continues on the device.
 
 **Continue game screen.** It looks like game setup: the top bar (Back, "Continue game", the code
 chip that shares or copies the invite, Sound), the saved game's map with "Saved in round N" and
-its settings (shown, but locked), and the bottom bar with a seat card per player and **Resume
-game**. Each seat says who it is ("You · host", "On this device", "Back online", "Not back yet",
+its settings (shown, but locked), and the players column with a seat card per player and **Resume
+game** in a tile under them. Each seat says who it is ("You · host", "On this device", "Back online", "Not back yet",
 "Bot"); players who haven't rejoined are faded with a red "Away" badge, and the button reads
 "Resume (N away)" until they are back.
 
@@ -1545,11 +1547,11 @@ rebuild.
 
 ### Game setup layout
 
-See "Game setup options": a fixed top bar (Back, title, join code chip, Sound), the board selector
-and then the game settings in the middle (scrolling only on small screens, no scroll bar), and a
-fixed bottom container with the players and Start. Joined guests see the same screen with the
-host's board and settings locked and the same seat cards in the bottom container, where they tap
-the Ready chip on their own seat.
+See "Game setup options": a fixed top bar (Back, title, join code chip, Sound) over the board
+selector and the game settings (scrolling only on small screens, no scroll bar), and the players
+column in the bottom right corner, laid out like the player cards in the game. Joined guests see
+the same screen with the host's board and settings locked and the same seat cards in the players
+column, where they tap the Ready chip on their own seat.
 
 ### Warps and portals
 

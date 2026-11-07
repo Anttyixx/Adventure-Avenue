@@ -484,9 +484,7 @@ input[type='range'] {
 .rules-panel {
   grid-area: rules;
 }
-.players-panel {
-  grid-area: players;
-}
+
 .panel-head {
   display: flex;
   justify-content: space-between;
@@ -687,33 +685,7 @@ input[type='range'] {
   gap: 8px;
   align-items: center;
 }
-.seats {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
-  gap: 10px;
-}
-.seat-card {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 6px;
-  padding: 10px;
-  border-radius: 12px;
-  background: rgba(255, 255, 255, 0.05);
-  border-top: 4px solid var(--pc);
-}
-.seat-card .portrait {
-  width: 60px;
-  height: 45px;
-}
-.seat-card .name {
-  width: 100%;
-  text-align: center;
-}
-.seat-card .name.cpu {
-  font-weight: 700;
-  padding: 6px 0;
-}
+
 .seat-tag {
   font-size: 11px;
   color: var(--muted);
@@ -5186,9 +5158,7 @@ input[type='range'] {
 .room-code.failed .btn {
   margin-left: 0;
 }
-.seat-card.joined {
-  position: relative;
-}
+
 .seat-kick {
   position: absolute;
   top: -6px;
@@ -6895,9 +6865,7 @@ div.sl-inline label {
   min-height: 38px;
   padding: 6px 14px;
 }
-.setup-panel .seats {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-}
+
 .setup-panel .panel-head {
   flex-wrap: wrap;
 }
@@ -9469,134 +9437,6 @@ div.sl-inline label {
   background: var(--navy);
 }
 
-/* Game setup players: up to five seat cards in a row, each a character standing on a coloured
-   spot with a name and what kind of player it is; the empty spot adds a bot. */
-.setup .seats {
-  grid-template-columns: repeat(5, minmax(0, 1fr));
-  gap: 10px;
-}
-.setup .seat-card {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 6px;
-  justify-content: flex-start;
-  min-width: 0;
-  padding: 12px 8px 10px;
-  border-radius: 14px;
-  background: rgba(255, 255, 255, 0.06);
-  border-top: 0;
-  box-shadow: inset 0 3px 0 var(--pc);
-}
-.seat-stage {
-  position: relative;
-  width: 100%;
-  display: grid;
-  place-items: center;
-  padding-bottom: 4px;
-}
-/* The spot the character stands on, in the seat's colour. */
-.seat-stage::after {
-  content: '';
-  position: absolute;
-  bottom: 2px;
-  left: 50%;
-  width: 62px;
-  height: 14px;
-  translate: -50% 0;
-  border-radius: 50%;
-  background: radial-gradient(var(--pc) 0 45%, transparent 70%);
-  opacity: 0.55;
-}
-.setup .seat-stage .char-btn {
-  z-index: 1;
-  width: 64px;
-  height: 88px;
-  background: none;
-}
-.setup .seat-stage .char-btn img {
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-  object-position: center bottom;
-}
-.setup .seat-card .name {
-  width: 100%;
-  box-sizing: border-box;
-  text-align: center;
-  font-weight: 700;
-}
-.setup .seat-card .name.cpu {
-  padding: 6px 0;
-}
-.setup .seat-card .seat-tag {
-  font-size: 11px;
-  font-weight: 700;
-  color: var(--muted);
-}
-.setup .seat-card.bot {
-  background: rgba(255, 255, 255, 0.04);
-}
-.setup .seat-card .seat-kick {
-  top: 6px;
-  right: 6px;
-  background: rgba(255, 255, 255, 0.12);
-  color: var(--text);
-}
-.setup .seat-card .seat-kick:hover {
-  background: var(--bad);
-}
-/* The empty spot: only a dashed outline (no fill, no colored top edge), laid out like a seat
-   card: an "Add bot" chip in the name plate's place, a gold + where the character stands, and
-   a "+ Local player" chip in the Ready chip's place. */
-.seat-card.add {
-  --pc: var(--accent);
-  background: none;
-  box-shadow: none;
-  border: 2px dashed rgba(255, 255, 255, 0.25);
-}
-.seat-card.add .seat-stage::after {
-  opacity: 0.25;
-}
-.seat-name.add-chip {
-  color: #3b2a00;
-  cursor: pointer;
-}
-.seat-name.add-chip:hover,
-.seat-plus:hover {
-  filter: brightness(1.08);
-}
-.seat-card.add .al-short {
-  display: none;
-}
-.seat-plus {
-  position: relative;
-  z-index: 1;
-  padding: 0;
-  border: 0;
-  cursor: pointer;
-  transition: transform 0.12s;
-  width: 46px;
-  height: 46px;
-  border-radius: 50%;
-  display: grid;
-  place-items: center;
-  background: var(--accent);
-  color: #3b2a00;
-  font: 400 30px/1 var(--head);
-  box-shadow: 0 4px 0 #b07c00;
-}
-.players-panel .hint.warn {
-  color: var(--accent);
-  font-weight: 700;
-}
-@media (max-width: 900px), (max-height: 500px) {
-  .setup .seats {
-    grid-template-columns: repeat(auto-fill, minmax(118px, 1fr));
-  }
-}
-
 /* ------------------------------------------------------------ info pop-up */
 
 /* Centered over the board like the stock market (only the pop-up catches clicks); while it is
@@ -10204,9 +10044,10 @@ div.sl-inline label {
   box-sizing: border-box;
   margin: auto;
   padding: 4px 16px 12px;
-  /* The board picker on the left and the settings on the right, the same height. */
+  /* The board picker on the left and the settings (a little wider) on the right, the same
+     height. */
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
   align-items: stretch;
   gap: 12px;
 }
@@ -10292,48 +10133,11 @@ button.seat-ready.on {
 .seat-ready.badge:not(.on) {
   color: var(--muted);
 }
-/* Seat cards (game setup, joined game, continue game): the player's name plate above the
-   character, like the plates over tokens on the board (a pill in their color, white text and a
-   thin white outline), and the Ready chip just under their feet. Names are set before game setup
-   (the main menu's player card), so there is no name box. */
-.seat-name {
-  max-width: 100%;
-  box-sizing: border-box;
-  padding: 1px 9px;
-  border: 1.5px solid rgba(255, 255, 255, 0.9);
-  border-radius: 999px;
-  background: var(--pc);
-  color: #fff;
-  font: 400 14px/18px var(--head);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.su .seat-card .seat-ready {
-  align-self: center;
-  margin-top: -2px;
-  padding: 1px 8px;
-  font-size: 11px;
-  line-height: 15px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
-}
-.su .seat-card .seat-ready:not(.on) {
-  background: var(--navy);
-}
+
 .seat-ready.ghost {
   visibility: hidden;
 }
-/* An open seat (a friend can still join; a CPU plays it otherwise). */
-.seat-stage .portrait.empty {
-  display: grid;
-  place-items: center;
-  width: 30px;
-  height: 40px;
-  border: 2px dashed var(--glass-line);
-  border-radius: 10px;
-  color: var(--muted);
-  font: 400 18px var(--head);
-}
+
 .su-status {
   font: 700 12px var(--body);
   color: var(--muted);
@@ -10354,23 +10158,6 @@ button.seat-ready.on {
   .su-status {
     font-size: 11px;
   }
-  .su-players-head {
-    min-width: 0;
-  }
-  .su-players-head h3 {
-    flex: none;
-  }
-  .seat-name {
-    padding: 0 6px;
-    border-width: 1px;
-    font-size: 11px;
-    line-height: 15px;
-  }
-  .su .seat-card .seat-ready {
-    padding: 0 5px;
-    font-size: 10px;
-    line-height: 15px;
-  }
 }
 /* Continue game (online.ts resumeLobby): the round the game was saved in, in the Map panel's
    top right, and players who haven't rejoined yet faded with an "Away" chip under their feet. */
@@ -10382,21 +10169,7 @@ button.seat-ready.on {
   font: 700 12px var(--body);
   white-space: nowrap;
 }
-.su .seat-card.away .seat-stage,
-.su .seat-card.away .seat-name {
-  opacity: 0.5;
-}
-.su .seat-away {
-  align-self: center;
-  margin-top: -2px;
-  padding: 0 6px;
-  border-radius: 999px;
-  background: var(--bad);
-  color: #3a0c0c;
-  font: 700 9px var(--body);
-  line-height: 14px;
-  text-transform: uppercase;
-}
+
 /* Small pill buttons: the board tools in the Map panel's top right, Shuffle in the dock. */
 .su-chips {
   display: flex;
@@ -10503,106 +10276,261 @@ span.su-code {
   width: 12px;
   height: 12px;
 }
-/* The bottom container: the players (smaller seat cards) and the Start button. */
-.su-dock {
+/* The top bar and the panels (scrolling) on the left, lined up with each other, and the players
+   column against the bottom right corner, where the player cards sit in the game. */
+.su-body {
   position: relative;
-  z-index: 2;
-  flex: none;
+  z-index: 1;
+  flex: 1 1 auto;
+  min-height: 0;
   display: flex;
-  align-items: center;
-  gap: 16px;
-  /* Like the action bar: only as wide as the players and Start need. */
-  width: fit-content;
-  max-width: calc(100% - 24px);
-  overflow: hidden;
-  box-sizing: border-box;
-  margin: 0 auto 10px;
-  padding: 8px 14px;
-  border-radius: 16px;
-  background: rgba(16, 26, 51, 0.94);
+  align-items: flex-end;
 }
-.su-players {
-  flex: 0 1 auto;
+.su-col {
+  flex: 1 1 auto;
+  align-self: stretch;
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 6px;
 }
-.su-players-head {
+/* The players column: seat cards stacked like the player cards in the game (as wide, and 10%
+   bigger on computer screens), with a heading tile on top. Its contents sit against its bottom
+   edge, so it grows upward as players are added (start.ts morphSide eases its height). */
+.su-side {
+  position: relative;
+  flex: none;
+  width: 300px;
+  zoom: 1.1;
+  max-height: 100%;
+  box-sizing: border-box;
+  margin: 0 10px 10px 0;
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
+  flex-direction: column;
+  justify-content: flex-end;
+  gap: 6px;
+  overflow: hidden;
 }
-.su-players-head h3 {
+.su-side-head {
+  flex: none;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 2px 8px;
+  padding: 7px 10px;
+  border-radius: 12px;
+  box-shadow: none;
+}
+.su-side-head h3 {
   margin: 0;
   font: 400 17px var(--head);
   color: #fff;
 }
-.su .seats {
+/* The status line and the hint each take a line of their own under "Players". */
+.su-side-head .su-status,
+.su-side-head .hint {
+  flex-basis: 100%;
+  margin: 0;
+  text-align: left;
+}
+.su-seats {
   display: flex;
-  gap: 8px;
-}
-.su .seats > .seat-card {
-  flex: 0 0 118px;
-  min-width: 0;
-}
-.su .seat-card {
-  /* Room around the name plate, character, Ready chip and tag, so nothing touches the edges. */
-  padding: 12px 10px 10px;
+  flex-direction: column;
   gap: 6px;
 }
-.su .seat-stage .char-btn {
-  width: 38px;
-  height: 50px;
+/* A seat card: a player card (.pcard) with the character on the left, the name and remove on
+   the top row, and what kind of player with the Ready chip on the bottom row. */
+.su-seat {
+  flex: none;
+  align-items: center;
 }
-.su .seat-stage::after {
-  width: 46px;
-  height: 11px;
+.su-seat .pc-main {
+  gap: 4px;
 }
-.su .seat-card .seat-tag {
-  font-size: 10px;
+.su-seat .pc-top {
+  flex-wrap: nowrap;
 }
-.su .seat-card .seat-kick {
-  /* Small and red, so removing a player reads as a remove button, not part of the card. It sits
-     on the card's corner, clear of the name plate. */
-  top: -5px;
+.su-seat .pname {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.su-seat-foot {
+  flex-wrap: nowrap;
+  justify-content: space-between;
+}
+.su-seat .seat-tag {
+  min-width: 0;
+  overflow: hidden;
+  font-weight: 700;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.su-seat .seat-ready {
+  flex: none;
+  padding: 1px 10px;
+  font-size: 11px;
+  line-height: 16px;
+}
+/* The character, standing, as tall as the card allows (like .pcard .portrait.body). Players on
+   this device tap it to change character: a small gold pencil badge says so. */
+.su-seat .char-btn {
+  width: 34px;
+  height: 52px;
+  margin: -4px 2px;
+  overflow: visible;
+  background: none;
+  border-radius: 6px;
+}
+.su-seat .char-btn img {
+  object-fit: contain;
+  object-position: center bottom;
+}
+.su-seat .char-btn-tag {
+  display: none;
+}
+.su-seat button.char-btn::after {
+  content: '✎';
+  position: absolute;
   right: -5px;
-  z-index: 1;
-  width: 16px;
-  height: 16px;
+  bottom: -1px;
+  width: 15px;
+  height: 15px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--accent);
+  color: #3b2a00;
+  font-size: 9px;
+  line-height: 1;
+}
+button.char-btn:hover img {
+  filter: brightness(1.12);
+}
+/* An open seat (a friend can still join; a CPU plays it otherwise). */
+.su-seat .portrait.empty {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 40px;
+  margin: 0 4px;
+  box-sizing: border-box;
+  border: 2px dashed var(--glass-line);
+  border-radius: 10px;
+  color: var(--muted);
+  font: 400 18px var(--head);
+}
+/* Remove: a small round × at the end of the name row (never on the host). */
+.su-seat .seat-kick {
+  position: static;
+  flex: none;
+  width: 18px;
+  height: 18px;
+  margin-left: auto;
+  background: rgba(255, 255, 255, 0.12);
+  color: var(--text);
+  font: 700 12px/18px var(--body);
+  transition:
+    background 0.15s,
+    transform 0.15s;
+}
+.su-seat .seat-kick:hover {
   background: var(--bad);
   color: #fff;
-  font: 700 11px/16px var(--body);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
+  transform: scale(1.1);
 }
-.su .seat-card .seat-kick:hover {
-  background: #ff6b6b;
-  transform: scale(1.12);
+/* The empty seat: a dashed outline instead of the colored edge, a gold + where the character
+   goes, "Empty seat" where the name goes, and Add bot and + Local player chips below. The
+   padding makes up for the thinner border, so it is as tall as a seat card. */
+.su-seat.add {
+  --pc: var(--accent);
+  padding: 7px 7px 7px 11px;
+  border: 2px dashed rgba(255, 255, 255, 0.3);
+  background: rgba(16, 26, 51, 0.6);
 }
-.su .seat-card.add {
-  /* 2px less than other cards: the dashed border takes that room, so the rows line up. */
-  padding: 10px 8px 8px;
+.su-seat.add .pname {
+  color: var(--muted);
 }
-.su .seat-plus {
+.seat-plus {
+  display: grid;
+  place-items: center;
   width: 34px;
   height: 34px;
-  /* As tall as a standing character, so the chips line up with the other cards'. */
-  margin: 8px 0;
-  font-size: 24px;
+  margin: 5px 2px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: var(--accent);
+  color: #3b2a00;
+  font: 400 24px/1 var(--head);
   box-shadow: 0 3px 0 #b07c00;
+  cursor: pointer;
+  transition: transform 0.12s;
+}
+.seat-plus:hover,
+.seat-add:hover {
+  filter: brightness(1.08);
 }
 .seat-plus:active {
   transform: translateY(2px);
   box-shadow: 0 1px 0 #b07c00;
 }
+.seat-add,
+.seat-add-local {
+  flex: none;
+  padding: 1px 10px;
+  border: 1px solid var(--accent);
+  border-radius: 999px;
+  font: 700 11px/16px var(--body);
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    background 0.15s,
+    transform 0.15s;
+}
+.seat-add {
+  background: var(--accent);
+  color: #3b2a00;
+}
+.seat-add-local {
+  background: none;
+  color: var(--accent);
+}
+.seat-add-local:hover {
+  background: rgba(255, 209, 102, 0.16);
+}
+.seat-add:active,
+.seat-add-local:active {
+  transform: scale(0.95);
+}
+.su-seat.add .al-short {
+  display: none;
+}
+/* Continue game: players who haven't rejoined yet are faded, with an "Away" chip. */
+.su-seat.away .pc-side,
+.su-seat.away .pname {
+  opacity: 0.5;
+}
+.seat-away {
+  flex: none;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: var(--bad);
+  color: #3a0c0c;
+  font: 700 9px var(--body);
+  line-height: 14px;
+  text-transform: uppercase;
+}
+/* Continue game: Resume (and what is being resumed) in a tile under the seat cards. */
 .su-start {
   flex: none;
-  width: 240px;
   display: flex;
   flex-direction: column;
   align-items: stretch;
-  gap: 8px;
+  gap: 6px;
+  padding: 8px 10px;
+  border-radius: 12px;
+  box-shadow: none;
 }
 .su-start .setup-summary {
   /* Never stretched (an older setup rule gives summaries a 180px flex basis). */
@@ -10613,17 +10541,78 @@ span.su-code {
   width: 100%;
   min-width: 0;
 }
-.su-myname input {
-  width: 100%;
-  box-sizing: border-box;
-}
-/* Narrow windows: the board picker, then the settings, one under the other. */
-@media (max-width: 900px) {
+
+/* Narrow windows: the board picker, then the settings, one under the other (the players column
+   takes ~340px of the width). */
+@media (max-width: 1100px) {
   .su-main {
     grid-template-columns: minmax(0, 1fr);
   }
 }
-/* Phones (landscape): a slimmer top bar and dock, so the middle has room to scroll. */
+/* Phones and small windows: the players column is as compact as the game's player cards there
+   (hud.ts uses the same sizes), at its normal zoom. */
+@media (max-height: 500px), (max-width: 760px) {
+  .su-side {
+    width: 215px;
+    zoom: 1;
+    margin: 0 6px 6px 0;
+    gap: 4px;
+  }
+  .su-seats {
+    gap: 4px;
+  }
+  .su-side-head {
+    padding: 4px 8px;
+    border-radius: 10px;
+  }
+  .su-side-head h3 {
+    font-size: 13px;
+  }
+  .su-seat .pc-main {
+    gap: 2px;
+  }
+  .su-seat .char-btn {
+    width: 24px;
+    height: 38px;
+    margin: -3px 1px;
+  }
+  .su-seat button.char-btn::after {
+    right: -6px;
+    width: 13px;
+    height: 13px;
+    font-size: 8px;
+  }
+  .su-seat .portrait.empty {
+    width: 24px;
+    height: 32px;
+    margin: 0 1px;
+  }
+  .su-seat .seat-ready,
+  .seat-add,
+  .seat-add-local {
+    padding: 0 7px;
+    font-size: 10px;
+    line-height: 15px;
+  }
+  .su-seat .seat-kick {
+    width: 15px;
+    height: 15px;
+    font-size: 10px;
+    line-height: 15px;
+  }
+  .seat-plus {
+    width: 26px;
+    height: 26px;
+    margin: 3px 0;
+    font-size: 19px;
+    box-shadow: 0 2px 0 #b07c00;
+  }
+  .su-seat.add {
+    padding: 3px 4px 3px 7px;
+  }
+}
+/* Phones (landscape): a slimmer top bar, so the middle has room, and the narrow player cards of
+   the game. */
 @media (max-height: 500px) {
   .su-top {
     padding: 6px 10px 4px;
@@ -10651,78 +10640,27 @@ span.su-code {
   .su-rules {
     gap: 8px 14px;
   }
-  .su-dock {
-    max-width: calc(100% - 12px);
-    margin-bottom: 6px;
-    padding: 6px 8px;
-    gap: 8px;
+  .su-side {
+    width: 176px;
   }
-  .su-players-head h3 {
-    font-size: 13px;
+  .su-seat .char-btn {
+    width: 22px;
+    height: 32px;
   }
-  .su .seats {
-    gap: 5px;
-  }
-  .su .seats > .seat-card {
-    /* Five seats and Start fit in one row on the narrowest phones. */
-    flex-basis: clamp(58px, calc((100vw - 236px) / 5 - 5px), 84px);
-  }
-  /* Touch screens: a small pencil badge says the character can be changed, instead of a
-     "Change" strip over a tiny character. */
-  .su .seat-stage .char-btn-tag {
+  .su-side-head .hint {
     display: none;
   }
-  .su .seat-stage button.char-btn::after {
-    content: '✎';
-    position: absolute;
-    right: -4px;
-    bottom: 0;
-    width: 15px;
-    height: 15px;
-    display: grid;
-    place-items: center;
-    border-radius: 50%;
-    background: var(--accent);
-    color: #3b2a00;
-    font-size: 9px;
-    line-height: 1;
-  }
-  .su .seat-card {
-    padding: 8px 6px 7px;
-    gap: 4px;
-  }
-  .su .seat-stage .char-btn {
-    width: 30px;
-    height: 40px;
-  }
-  .su .seat-stage::after {
-    width: 32px;
-    height: 8px;
-  }
-  .su .seat-card .seat-tag {
+  .su-seat.add .al-long {
     display: none;
   }
-  .su .seat-plus {
-    width: 26px;
-    height: 26px;
-    margin: 7px 0;
-    font-size: 20px;
-  }
-  .su .seat-card.add {
-    padding: 6px 4px 5px;
-  }
-  .su .seat-card.add .seat-name.add-chip {
-    padding: 0 5px;
-    font-size: 10px;
-  }
-  .su .seat-card.add .al-long {
-    display: none;
-  }
-  .su .seat-card.add .al-short {
+  .su-seat.add .al-short {
     display: inline;
   }
+  .su-seat .pc-main {
+    gap: 1px;
+  }
   .su-start {
-    width: 150px;
+    padding: 5px 6px;
     gap: 4px;
   }
   .su-start .setup-summary small,
@@ -10732,9 +10670,6 @@ span.su-code {
   .su-start .btn.big {
     padding: 8px 10px;
     font-size: 17px;
-  }
-  .su-players-head .hint {
-    display: none;
   }
 }
 /* Landscape phones: the map and the settings side by side, filling the room between the top bar
@@ -10790,9 +10725,9 @@ span.su-code {
     padding: 4px;
     border-radius: 10px;
   }
-  /* The picture takes what is left of the screen's height after the bars and labels. */
+  /* The picture takes what is left of the screen's height after the top bar and labels. */
   .su .car-thumb .thumb {
-    max-height: max(48px, calc(100dvh - 268px));
+    max-height: max(48px, calc(100dvh - 170px));
   }
   .su-main .car-title b {
     font-size: 17px;
@@ -10840,15 +10775,17 @@ span.su-code {
   .su-top {
     padding-top: 4px;
   }
-  .su .seat-stage .char-btn {
-    width: 24px;
-    height: 32px;
-  }
-  .su .seat-plus {
-    margin: 3px 0;
-  }
+
   .su-rule .seg-btn {
     padding: 2px 7px;
     font-size: 11px;
+  }
+}
+/* Narrow landscape phones: beside the players column the settings have room for one column
+   only (the settings panel scrolls if it has to). */
+@media (max-height: 500px) and (max-width: 760px) {
+  .su-rules {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas: 'rules' 'round' 'goal' 'stocks' 'plots';
   }
 }

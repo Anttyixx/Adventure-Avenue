@@ -653,44 +653,49 @@ if (!(await ask(`Delete ${d.name}?`, 'Its 4 properties will be removed from the 
 
 ### 5.17c Game setup
 
-- **Layout** (`.setup.su`): a fixed top bar `.su-top` (ghost "‹ Back", the title in Lilita 34px,
-  the join code chip `.su-code` (dashed gold pill: "Code", the code in Lilita gold, "Copy link"),
-  the main menu's Sound button), a scrolling middle `.su-scroll` (scroll bar hidden) holding the
-  board panel (left) and the settings panel (right) in a two-column grid, equal heights (max
-  1120px; one column under 900px), centered between the bars by `margin: auto` in the flex
-  scroll area (top-aligned on short screens); the Map header stays at the top of its panel and
-  the carousel fills the rest, and a fixed bottom container `.su-dock` (rounded glass,
-  players only, no Start; `fit-content` width like the action bar; seat cards 118px with 12/10px
-  padding, phones 8/6px). Every redraw goes through `morphDock`: the bar eases its width and
-  height (320ms, `cubic-bezier(0.2, 0.8, 0.2, 1)`), seats matched by `data-key` (their character)
-  slide from their old place, new seats pop in (fade + scale from 0.85) and removed seats leave a
-  fading ghost copy; an interrupted change starts from what is on screen. The status line is set
-  inside the rebuild so its new length is part of the measured size. Ready up: each person's seat card has a
-  `.seat-ready` chip just under the character's feet (gold outline on navy "Ready", green with a
-  tick when ready; joined players' state as the same chip without a button, `.badge`), and `.su-status` beside the "Players"
-  heading says who we wait for (muted), counts down (green) or why it can't start (red). Board tools are `.su-chip` pills in the
-  Map panel's top right. Settings are a grid (`.su-rules`): rule set, round limit, stocks; then
-  in two columns: rule set, round limit; goal, stocks; vacant plots across.
+- **Layout** (`.setup.su` > `.su-body`, a row): on the left `.su-col` holds a fixed top bar
+  `.su-top` (ghost "‹ Back", the title in Lilita 34px, the join code chip `.su-code` (dashed gold
+  pill: "Code", the code in Lilita gold, "Copy link"), the main menu's Sound button) over a
+  scrolling `.su-scroll` (scroll bar hidden) with the board panel (left, 0.9fr) and the settings
+  panel (right, 1.1fr) in a grid, equal heights (max 1120px; one column under 1100px), centered by
+  `margin: auto` (top-aligned on short screens), so the top bar and panels line up; the Map header
+  stays at the top of its panel and the carousel fills the rest. On the right, the players column
+  `.su-side` (`setupFrame().side`) sits against the bottom right corner like the game's
+  `.cards-wrap`: 300px at zoom 1.1 (phones 215px, 176px when 500px tall or less, zoom 1), 10px from
+  the edges, `justify-content: flex-end` so it grows upward. Every redraw goes through
+  `morphSide`: the column eases its height (320ms, `cubic-bezier(0.2, 0.8, 0.2, 1)`), seats
+  matched by `data-key` (their character) slide from their old place (measured from the column's
+  bottom edge, divided by its zoom), new seats pop in (fade + scale from 0.85) and removed seats
+  leave a fading ghost copy; an interrupted change starts from what is on screen. The status line
+  is set inside the rebuild so its new length is part of the measured size. Board tools are
+  `.su-chip` pills in the Map panel's top right. Settings are a grid (`.su-rules`) in two columns:
+  rule set, round limit; goal, stocks; vacant plots across (one column on phones narrower than
+  760px).
 - **Landscape phones** (500px tall or less, 540px wide or more): the map and settings panels
   stay side by side (0.85 : 1.15) and fill the room between the bars instead of scrolling: the map
   picture shrinks to fit (dots hidden, 28px arrows), settings drop their hints and use 26px
   buttons and a smaller digit picker; only the settings panel scrolls (thin bar) if a phone is too
-  short. At 360px tall or less the seat characters are a little smaller.
-- Players sit in the bottom container: up to 5 seat cards in a row (`.setup .seat-card`, smaller here): the
-  character trimmed to its pixels (`charButton(look, 'body', ...)`) standing centered on a soft
-  spot in the seat's color, with the name plate above it (`.seat-name`, `seatName()`: a pill in
-  `--pc`, white Lilita text, 1.5px white outline, like the plates over tokens on the board; no name
-  box, names are set before setup), the Ready chip under the feet, a muted tag ("You · host", "On
-  this device", "Joined online", "Bot") and a small red × remove button on the card's top right
-  corner (16px `--bad` circle, white ×, overlapping the corner so it never covers the plate; never
-  on the host). Bots get an invisible chip so every card's rows line up. The joined game and
-  Continue game use the same cards (an open seat: "Open" plate and a dashed "?" box; a player not
-  back yet: an "Away" chip under the feet). The empty spot mirrors a seat card:
-  only a 2px dashed outline (no fill, no colored top edge, 2px less padding so its rows line up),
-  a gold `.seat-name.add-chip` "Add bot" chip in the name plate's place, the round gold
-  `.seat-plus` (34px, margins making it as tall as a standing character) on a faint spot, a
-  `.seat-ready.add-local` "+ Local player" chip ("+ Local" on phones) in the Ready chip's place,
-  and the tag "Empty seat".
+  short.
+- **Players column** (`playersColumn()`): a heading tile `.su-side-head` (glass, 12px radius, no
+  shadow: "Players · N of 5" in Lilita 17px, then `.su-status` and an optional hint each on their
+  own line; the status says who we wait for (muted), counts down (green) or why it can't start
+  (red)), then `.su-seats`, up to 5 seat cards stacked with the game's 6px gap (4px on phones),
+  then an optional footer tile (`.su-start`: Resume on Continue game).
+- **Seat cards** (`seatCard()`, `.pcard.su-seat`): the game's player card tile (glass, 5px
+  `--pc` left edge, 12px radius, same paddings and phone sizes) so setup and game read as one. Left
+  (`.pc-side`): the character trimmed to its pixels (`charButton(look, 'body', ...)`, 34 x 52 like
+  `.pcard .portrait.body`; phones 24 x 38, short phones 22 x 32); a player who can change it gets a
+  15px gold pencil badge on its bottom right instead of the "Change" strip. Top row: the name
+  (`.pname`, Lilita 16px) and, at the row's end, a round 18px remove button (`.seat-kick`, faint
+  white, red on hover; never on the host). Bottom row (`.su-seat-foot`): a muted bold tag ("You ·
+  host", "On this device", "Joined online", "Bot") and, at the end, the `.seat-ready` chip (gold
+  outline "Ready", green with a tick when ready; joined players' state as the same chip without a
+  button, `.badge`; bots have none). An open seat shows a dashed "?" box and "Open"; a player not
+  back yet is faded with a red "AWAY" pill (`.seat-away`) beside the tag. The empty seat
+  (`.su-seat.add`) mirrors a seat card: a 2px dashed outline (padding adjusted so it is as tall),
+  the round gold `.seat-plus` (34px, phones 26px) in the character's place, a muted "Empty seat"
+  name, and a gold `.seat-add` "Add bot" chip and an outlined `.seat-add-local` "+ Local player"
+  chip ("+ Local" on short phones) in the bottom row.
 - **Player card** (main menu, `.menu-card` + `openPlayerCard`): a `.menu-sound` button in the top
   right beside Sound (round 22px portrait + name; portrait only on phones). Its pop-up is a
   `.modal.player-card` (same frame as the Menu pop-up): the character on a spot in a tile like a
@@ -702,9 +707,9 @@ if (!(await ask(`Delete ${d.name}?`, 'Its 4 properties will be removed from the 
 - `online.ts` `resumeLobby` builds the game setup frame (`setupFrame`, `setupHead`, exported from
   `start.ts`) so continuing looks like starting: the code chip in the top bar, the Map panel with
   the saved board locked (`.carousel.locked`) and a muted "Saved in round N" pill (`.su-round`) in
-  its top right, the locked settings panel (`rulesPanel` without `edit`), and the dock with seat
-  cards (no remove buttons) and Resume. A player not back yet: seat faded to 50% with a red "AWAY"
-  pill (`.seat-away`) in the card's top right.
+  its top right, the locked settings panel (`rulesPanel` without `edit`), and the players column
+  with seat cards (no remove buttons) and a `.su-start` tile with what is resumed and Resume. A
+  player not back yet: seat faded to 50% with a red "AWAY" pill (`.seat-away`) beside the tag.
 
 ### 5.18 Game log
 

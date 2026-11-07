@@ -26,6 +26,22 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: '2026-11-07-players-column',
+    date: 'Nov 7, 2026',
+    title: 'Players in the corner',
+    features: [
+      {
+        tag: 'better',
+        title: 'Players sit like player cards',
+        text: 'The bar along the bottom of the new game screen is gone. Players and bots now sit in the bottom right corner, stacked like the player cards in the game, with Ready on each card. The map and settings get the rest of the screen.',
+      },
+    ],
+    extras: [
+      'Joined and continued games use the same player cards',
+      'Narrow phones show the settings in one column',
+    ],
+  },
+  {
     id: '2026-11-06-ready-up',
     date: 'Nov 6, 2026',
     title: 'Ready up',

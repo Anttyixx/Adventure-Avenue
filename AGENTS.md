@@ -149,7 +149,7 @@ npm run sim -- 500   # CPU-only balance simulation (average match length, etc.)
   `localStorage['adventure-avenue-options']` (e.g. `{"target":4000,"rules":"easy"}`) and
   `localStorage['adventure-avenue-fast'] = '1'` speeds up CPU turns. Start a game from the main
   menu with `.menu-btn.start`; setup starts with only the host, so add bots with `.seat-add` (and
-  local players with `.seat-card.add .btn.small`), then tap each player's Ready chip
+  local players with `.seat-add-local`), then tap each player's Ready chip
   (`button.seat-ready`); the game starts when everyone is ready.
 
 ## Project layout (short version; full map in `docs/codemap.md`)
