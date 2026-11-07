@@ -61,6 +61,8 @@ export const TIMING = {
   cardCycle: 750,
   /** Player cards gathering into a stack (collapse) or fanning back out (expand). */
   cardStack: 480,
+  /** Smart stack: how long a card that changed stays out of the stack after its last change. */
+  cardPop: 2800,
   /** The winner dancing under confetti before the results. */
   victory: 6500,
   gameOver: 900,

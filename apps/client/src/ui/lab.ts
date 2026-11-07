@@ -112,15 +112,11 @@ const rnd = (n: number) => Math.floor(Math.random() * n);
  * are easy to find. Update this list with each change.
  */
 const RECENT = new Set([
-  'Buy stock',
-  'Buy stock (shaken district)',
-  'Buy stock (10% off)',
-  'Sell stock',
-  'Sell stock (20% above)',
-  'Gift shares (venture card)',
-  'Bull market (venture card)',
-  'Bear market (venture card)',
-  'Live auction',
+  'Cards: list',
+  'Cards: stack',
+  'Cards: smart',
+  'Smart stack: pay someone else',
+  'Next player (card stack)',
 ]);
 
 /** Which board the lab plays on: Town (square) or Twin Lakes (hex), remembered per browser. */
@@ -528,7 +524,18 @@ export async function openLab(app: HTMLElement, section?: string) {
         cur().name = 'Maximilian';
         refresh();
       }),
-      btn('Collapse / expand cards', () => hud.setCardsCollapsed(!hud.cardsCollapsed)),
+      btn('Cards: list', () => hud.setCardsMode('list')),
+      btn('Cards: stack', () => hud.setCardsMode('stack')),
+      btn('Cards: smart', () => hud.setCardsMode('smart')),
+      // A player who isn't up gets paid: in a smart stack their card rises out for a moment.
+      btn('Smart stack: pay someone else', () => {
+        if (hud.cardsMode !== 'smart') hud.setCardsMode('smart');
+        const others = G.players.filter((p) => p.id !== hud.activePid && !p.bankrupt);
+        const p = others[rnd(others.length)];
+        if (!p) return;
+        p.cash += 100 + rnd(4) * 50;
+        refresh();
+      }),
       btn('Next player (card stack)', () => {
         const i = G.order.indexOf(hud.activePid);
         setActive(G.order[(i + 1) % G.order.length]);

@@ -1004,62 +1004,81 @@ input[type='range'] {
   }
 }
 
-/* Player card stack: the arrow tab above the cards, against the window's right edge, folds the
-   cards into a stack. The active player's card stays in front; the others sit behind it in turn
-   order, each peeking out a little higher and narrower, showing only their color. hud.ts
-   stackCards sets each card's depth (--d) and plays the cycle when the turn moves on. */
-.cards-toggle {
+/* Player card layouts: three buttons above the cards, against the window's right edge: List,
+   Stack and Smart. Just an outline with no fill, so they can be found when looked for but don't
+   pull the eye from the board; the chosen one gets a brighter outline. Stack folds the cards: the
+   active player's card stays in front and the others sit behind it in turn order, each peeking
+   out a little higher and narrower, showing only their color. Smart is a stack too, but a card
+   that changes on someone else's turn rises out of it into a list above the stack for a moment.
+   hud.ts stackCards sets each card's depth (--d) and row (--row) and plays the cycle when the
+   turn moves on; popCard lifts cards out. */
+.cards-modes {
+  display: flex;
+  gap: 2px;
+  padding: 2px;
+  border: 1.5px solid rgba(255, 255, 255, 0.45);
+  border-radius: 9px;
+  background: none;
+  filter: drop-shadow(0 0 1px rgba(16, 26, 51, 0.55));
+}
+.cards-mode {
   display: grid;
   place-items: center;
-  width: 34px;
-  height: 22px;
+  width: 26px;
+  height: 20px;
   padding: 0;
-  border-radius: 8px;
-  box-shadow: none;
-  color: var(--text);
+  border: 1.5px solid transparent;
+  border-radius: 6px;
+  background: none;
+  color: rgba(255, 255, 255, 0.55);
   cursor: pointer;
-  /* Faded so it doesn't pull the eye from the game; full strength when pointed at or used. */
-  opacity: 0.45;
   transition:
-    opacity 0.2s,
-    background 0.2s;
+    color 0.15s,
+    border-color 0.15s;
 }
-.cards-toggle:hover,
-.cards-toggle:focus-visible {
-  opacity: 1;
-  background: var(--navy-2);
+.cards-mode:hover {
+  color: #fff;
 }
-.cards-toggle:focus-visible {
+.cards-mode.on {
+  border-color: rgba(255, 255, 255, 0.85);
+  color: #fff;
+}
+.cards-mode:focus-visible {
   outline: 2px solid var(--accent);
-  outline-offset: 2px;
+  outline-offset: 1px;
 }
-/* A chevron: pointing down folds the cards away, pointing up spreads them out. */
-.cards-toggle::before {
-  content: '';
-  width: 8px;
-  height: 8px;
-  border-right: 2.5px solid currentColor;
-  border-bottom: 2.5px solid currentColor;
-  transform: translateY(-2px) rotate(45deg);
-  transition: transform 0.25s;
+.cards-mode-ico,
+.cards-mode-ico svg {
+  display: block;
+  width: 14px;
+  height: 14px;
 }
-.cards-wrap.collapsed .cards-toggle::before {
-  transform: translateY(2px) rotate(-135deg);
+.cards-mode-ico svg {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
+/* Folded: one grid column. Cards lifted out of a smart stack take the rows above (--row 1, 2...);
+   the stack shares the last row, with room above it for the cards peeking out behind. */
 .hud .cards-wrap.collapsed .cards {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-  padding-top: calc(var(--stack-n, 0) * 7px);
 }
 .cards-wrap.collapsed .pcard {
-  grid-area: 1 / 1;
+  grid-area: var(--row, 1) / 1;
   align-self: end;
+  margin-top: calc(var(--stack-n, 0) * 7px);
   transform-origin: 50% 0;
   transition:
     transform 0.4s ease,
     opacity 0.4s,
     background 0.4s,
     box-shadow 0.3s;
+}
+.cards-wrap.collapsed .pcard.popped {
+  margin-top: 0;
 }
 .cards-wrap.collapsed .pcard.active {
   transform: none;

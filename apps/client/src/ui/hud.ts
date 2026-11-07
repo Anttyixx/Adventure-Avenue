@@ -124,12 +124,19 @@ export class Hud {
   cardsWrap = h('div', { class: 'cards-wrap' });
   cards = h('div', { class: 'cards' });
   /**
-   * The arrow tab above the player cards, against the right edge: it folds the cards into a
-   * stack with only the active player's card in front, or spreads them out again.
+   * The three outlined buttons above the player cards, against the right edge: List (every
+   * card), Stack (only the active player's card in front) and Smart (a stack, but a card that
+   * changes on someone else's turn rises out of it for a moment).
    */
-  cardsToggle = h('button', { class: 'cards-toggle glass', 'aria-expanded': 'true' });
-  /** Whether the player cards are folded into a stack (remembered on this device). */
-  cardsCollapsed = loadCollapsed();
+  cardsModes = h('div', { class: 'cards-modes', role: 'radiogroup', 'aria-label': 'Player cards' });
+  /** How the player cards are shown (remembered on this device). */
+  cardsMode: CardsMode = loadCardsMode();
+  /** Whether the player cards are folded into a stack (Stack or Smart). */
+  get cardsCollapsed() {
+    return this.cardsMode !== 'list';
+  }
+  /** Smart mode: cards out of the stack for a moment, with the timer that puts each back. */
+  private popped = new Map<number, number>();
   /** The player whose card is at the front of the stack. */
   private stackFront = -1;
   /**
@@ -187,9 +194,26 @@ export class Hud {
   ) {
     this.root = h('div', { class: 'hud' });
     this.logPanel.append(this.logBox);
-    this.cardsWrap.append(this.cardsToggle, this.cards);
-    this.cardsToggle.onclick = () => this.setCardsCollapsed(!this.cardsCollapsed);
-    this.setCardsCollapsed(this.cardsCollapsed);
+    for (const m of CARDS_MODES) {
+      const ico = h('span', { class: 'cards-mode-ico', 'aria-hidden': 'true' });
+      ico.innerHTML = m.icon;
+      this.cardsModes.append(
+        h(
+          'button',
+          {
+            class: 'cards-mode',
+            role: 'radio',
+            'data-mode': m.id,
+            title: m.title,
+            'aria-label': m.title,
+            onclick: () => this.setCardsMode(m.id),
+          },
+          ico,
+        ),
+      );
+    }
+    this.cardsWrap.append(this.cardsModes, this.cards);
+    this.setCardsMode(this.cardsMode);
     // The info chip: the game's name, the goal, the Room button online and the Info button.
     this.infoChip.append(
       h('span', { class: 'gc-title' }, 'Adventure Avenue'),
@@ -502,11 +526,23 @@ export class Hud {
       }
       this.fillCard(el, p);
     }
-    this.stackCards();
+    if (this.popPending) {
+      this.popPending = false;
+      this.glide(() => this.stackCards());
+    } else this.stackCards();
   }
 
   /** Fold the player cards into a stack (only the active player's card in front) or spread them out. */
   setCardsCollapsed(on: boolean) {
+    this.setCardsMode(on ? (this.cardsMode === 'list' ? 'stack' : this.cardsMode) : 'list');
+  }
+
+  /**
+   * Show the player cards as a list, a stack or a smart stack. Folding or unfolding glides every
+   * card from where it was; switching between Stack and Smart only changes which button is lit.
+   */
+  setCardsMode(mode: CardsMode) {
+    const on = mode !== 'list';
     const els = [...this.cardEls.values()];
     const flip =
       !!this.G && on !== this.cardsCollapsed && !matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -517,12 +553,18 @@ export class Hud {
       // The cards' own transform transitions would fight the glide: off until it ends.
       this.cardsWrap.classList.add('stacking');
     }
-    this.cardsCollapsed = on;
-    saveCollapsed(on);
+    // Cards lifted out of a smart stack go back first.
+    for (const t of this.popped.values()) clearTimeout(t);
+    this.popped.clear();
+    this.cardsMode = mode;
+    saveCardsMode(mode);
     this.cardsWrap.classList.toggle('collapsed', on);
-    this.cardsToggle.setAttribute('aria-expanded', String(!on));
-    this.cardsToggle.title = on ? 'Show all player cards' : 'Show only the active player';
-    this.cardsToggle.setAttribute('aria-label', this.cardsToggle.title);
+    this.cardsWrap.dataset.mode = mode;
+    for (const b of this.cardsModes.querySelectorAll<HTMLElement>('.cards-mode')) {
+      const lit = b.dataset.mode === mode;
+      b.classList.toggle('on', lit);
+      b.setAttribute('aria-checked', String(lit));
+    }
     if (this.G) this.stackCards(false);
     if (!flip) return;
     // The cards' new size can change their fit-to-screen zoom: settle it before measuring.
@@ -565,27 +607,36 @@ export class Hud {
         : ids[0];
     const prev = this.stackFront;
     this.stackFront = front;
-    const f = ids.indexOf(front);
     const on = this.cardsCollapsed;
+    // Smart stack: cards lifted out sit in a list above the stack, in turn order; the rest
+    // stay in the stack, the active player's in front.
+    const lifted = on ? ids.filter((id) => this.popped.has(id) && id !== front) : [];
+    const stacked = ids.filter((id) => !lifted.includes(id));
+    const sn = stacked.length;
+    const sf = stacked.indexOf(front);
     // Room above the front card for the cards peeking out behind it.
-    this.cards.style.setProperty('--stack-n', String(Math.min(n - 1, STACK_SHOWN)));
+    this.cards.style.setProperty('--stack-n', String(Math.min(sn - 1, STACK_SHOWN)));
+    this.cards.style.setProperty('--pop-n', String(lifted.length));
     for (const id of ids) {
       const el = this.cardEls.get(id);
       if (!el) continue;
-      const d = (ids.indexOf(id) - f + n) % n;
+      const up = lifted.indexOf(id);
+      el.classList.toggle('popped', up >= 0);
+      el.style.setProperty('--row', String(up >= 0 ? up + 1 : lifted.length + 1));
+      const d = up >= 0 ? 0 : (stacked.indexOf(id) - sf + sn) % sn;
       el.style.setProperty('--d', String(Math.min(d, STACK_SHOWN + 1)));
-      el.style.zIndex = on ? String(n - d) : '';
-      el.classList.toggle('behind', on && d > 0);
-      el.classList.toggle('deep', on && d > STACK_SHOWN);
+      el.style.zIndex = on && up < 0 ? String(n - d) : '';
+      el.classList.toggle('behind', on && up < 0 && d > 0);
+      el.classList.toggle('deep', on && up < 0 && d > STACK_SHOWN);
       // Cards behind the front one are only a glimpse: not clickable or reachable by Tab.
-      el.inert = on && d > 0;
+      el.inert = on && up < 0 && d > 0;
     }
     const old = this.cardEls.get(prev);
     const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    if (cycle && on && old && prev !== front && !reduce) {
+    if (cycle && on && old && prev !== front && !reduce && stacked.includes(prev)) {
       // The cycle: the old front card drops down out of the way (revealing the next player),
       // slips behind the stack, and rises into its place at the back.
-      const d = Math.min((ids.indexOf(prev) - f + n) % n, STACK_SHOWN + 1);
+      const d = Math.min((stacked.indexOf(prev) - sf + sn) % sn, STACK_SHOWN + 1);
       const back = stackTransform(d);
       const top = String(n + 1);
       for (const a of old.getAnimations()) a.cancel();
@@ -604,6 +655,56 @@ export class Hud {
         { duration: T.cardCycle },
       );
     }
+  }
+
+  /**
+   * Smart stack: lift player `pid`'s card out of the stack into a list above it while it
+   * updates, then put it back (`T.cardPop` after its last change). Every card glides from where
+   * it was, as when folding.
+   */
+  private popCard(pid: number) {
+    const was = this.popped.get(pid);
+    if (was) clearTimeout(was);
+    const back = window.setTimeout(() => {
+      this.popped.delete(pid);
+      this.glide(() => this.stackCards(false));
+    }, T.cardPop);
+    this.popped.set(pid, back);
+    // renderCards glides once for every card that rose out in this update.
+    if (was == null) this.popPending = true;
+  }
+  /** Set when a card rose out of the smart stack during this update (see renderCards). */
+  private popPending = false;
+
+  /** Change the cards' layout with `change`, gliding every card from where it was to its new place. */
+  private glide(change: () => void) {
+    const els = [...this.cardEls.values()];
+    if (!this.G || matchMedia('(prefers-reduced-motion: reduce)').matches) return change();
+    const before = els.map((el) => el.getBoundingClientRect());
+    for (const el of els) for (const a of el.getAnimations()) a.cancel();
+    const wrap = this.cardsWrap;
+    wrap.classList.add('stacking');
+    change();
+    this.updateInsets();
+    const zoom = wrap.getBoundingClientRect().width / (wrap.offsetWidth || 1) || 1;
+    let left = els.length;
+    const done = () => {
+      if (--left <= 0) wrap.classList.remove('stacking');
+    };
+    els.forEach((el, i) => {
+      const a = before[i];
+      const b = el.getBoundingClientRect();
+      const end = getComputedStyle(el).transform;
+      const final = end === 'none' ? '' : end;
+      const dx = (a.left + a.width / 2 - (b.left + b.width / 2)) / zoom;
+      const dy = (a.top - b.top) / zoom;
+      const k = b.width ? a.width / b.width : 1;
+      if (Math.abs(dx) < 0.5 && Math.abs(dy) < 0.5 && Math.abs(k - 1) < 0.01) return done();
+      el.animate([{ transform: `translate(${dx}px, ${dy}px) ${final} scale(${k})` }, { transform: end }], {
+        duration: T.cardStack,
+        easing: 'cubic-bezier(0.2, 0.8, 0.2, 1)',
+      }).finished.then(done, done);
+    });
   }
 
   private fillCard(el: HTMLElement, p: Player) {
@@ -638,6 +739,9 @@ export class Hud {
       p.cash,
     ]);
     if (this.cardSigs.get(p.id) === sig) return;
+    // Smart stack: a card behind the front one that changes on someone else's turn rises out
+    // of the stack for a moment, so the change can be seen.
+    if (this.cardSigs.has(p.id) && this.cardsMode === 'smart' && p.id !== this.stackFront) this.popCard(p.id);
     this.cardSigs.set(p.id, sig);
     clear(el);
     const nwEl = h('span', { class: 'nw' }, plain(prev.nw));
@@ -1413,17 +1517,42 @@ const STACK_SHOWN = 3;
 function stackTransform(d: number): string {
   return d ? `translateY(${-d * 7}px) scale(${1 - d * 0.05})` : 'none';
 }
+/** How the player cards are shown: a list, a stack, or a smart stack. */
+export type CardsMode = 'list' | 'stack' | 'smart';
+
+/** The three buttons above the player cards, in this order, with their icons (16 x 16). */
+const CARDS_MODES: { id: CardsMode; title: string; icon: string }[] = [
+  {
+    id: 'list',
+    title: 'List: show every player card',
+    icon: '<svg viewBox="0 0 16 16"><rect x="2.5" y="2" width="11" height="3" rx="1"/><rect x="2.5" y="6.5" width="11" height="3" rx="1"/><rect x="2.5" y="11" width="11" height="3" rx="1"/></svg>',
+  },
+  {
+    id: 'stack',
+    title: "Stack: show only the active player's card",
+    icon: '<svg viewBox="0 0 16 16"><path d="M4.5 3.5h7M3.5 6h9"/><rect x="2" y="8.5" width="12" height="5" rx="1"/></svg>',
+  },
+  {
+    id: 'smart',
+    title: 'Smart: a stack, but cards that change pop out for a moment',
+    icon: '<svg viewBox="0 0 16 16"><rect x="2" y="8.5" width="12" height="5" rx="1"/><path d="M8 6.5V1.5M5.5 4 8 1.5 10.5 4"/></svg>',
+  },
+];
+const MODE_KEY = 'adventure-avenue-cards-mode';
+/** The older on/off setting (a stack when '1'), read once so the choice carries over. */
 const COLLAPSE_KEY = 'adventure-avenue-cards-collapsed';
-function loadCollapsed(): boolean {
+function loadCardsMode(): CardsMode {
   try {
-    return localStorage.getItem(COLLAPSE_KEY) === '1';
+    const m = localStorage.getItem(MODE_KEY);
+    if (m === 'list' || m === 'stack' || m === 'smart') return m;
+    return localStorage.getItem(COLLAPSE_KEY) === '1' ? 'stack' : 'list';
   } catch {
-    return false;
+    return 'list';
   }
 }
-function saveCollapsed(on: boolean) {
+function saveCardsMode(mode: CardsMode) {
   try {
-    localStorage.setItem(COLLAPSE_KEY, on ? '1' : '0');
+    localStorage.setItem(MODE_KEY, mode);
   } catch {
     // Storage blocked: the choice lasts until the page closes.
   }

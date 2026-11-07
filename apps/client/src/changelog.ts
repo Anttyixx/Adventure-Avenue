@@ -26,6 +26,19 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: '2026-11-07-smart-cards',
+    date: 'Nov 7, 2026',
+    title: 'Smart player cards',
+    features: [
+      {
+        tag: 'new',
+        title: 'List, Stack or Smart',
+        text: "Three small buttons above the player cards pick how they show. List shows every card, Stack shows only the active player's card, and Smart is a stack where another player's card pops out for a moment whenever it changes on someone else's turn, so you can watch their money move.",
+      },
+    ],
+    extras: ['The card layout buttons are a quiet outline, so they stay out of the way of the board'],
+  },
+  {
     id: '2026-11-07-stock-popup-fit',
     date: 'Nov 7, 2026',
     title: 'A steadier stock market',

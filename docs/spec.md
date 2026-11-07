@@ -1029,14 +1029,25 @@ board; the rest of the board dims. Online games show a "Room ABCD" button above 
 glowing suits on their card. Arcade games and venture picks open for everyone, so other players
 watch them being played; their result screen closes by itself or with Close.
 
-**Collapsing the player cards.** A small, faded arrow button floats just above the right end of
-the player cards (it brightens when pointed at). Tapping it folds the cards into a stack: only the active player's card
-shows in full, with the other players' cards stacked behind it in turn order (the next player
-just behind, the player who just went at the back), each peeking out a little higher as a strip
-in that player's color. Folding and unfolding are animated: the cards glide together into the
-stack (or fan back out to their places) one just after another. When the turn passes, the front
-card drops down out of the way, slips behind the stack and rises into its place at the back,
-while the next player's card moves forward. Tapping the arrow again spreads the cards out. The choice is remembered on that device.
+**Player card layouts.** Three small buttons float just above the right end of the player
+cards, in this order: **List**, **Stack** and **Smart**. They are only an outline with no fill (the
+chosen one outlined brighter), so they can be found when looked for but don't pull the eye from
+the board. The choice is remembered on that device (an older "folded" choice becomes Stack).
+
+- **List:** every player card, one above the other.
+- **Stack:** the cards fold into a stack: only the active player's card shows in full, with the
+  other players' cards stacked behind it in turn order (the next player just behind, the player
+  who just went at the back), each peeking out a little higher as a strip in that player's color.
+  When the turn passes, the front card drops down out of the way, slips behind the stack and rises
+  into its place at the back, while the next player's card moves forward.
+- **Smart:** a stack, except that when another player's card changes on someone else's turn (they
+  get paid, lose money, their net worth or rank moves, they collect a suit...), their card rises
+  out of the stack into a list above it, so the player can watch it update. About 3 seconds after
+  its last change it slides back into the stack. Several cards can be out at once, in turn order.
+
+Switching between List and a stack is animated: the cards glide together into the stack (or fan
+back out to their places) one just after another; cards rising out of a smart stack and going
+back glide the same way.
 
 One rule decides every asset: only the player character sprites are pixel art. Everything else,
 including the board, the interface, suits, wild cards, coins and effects, is HD (vector). _(Changed

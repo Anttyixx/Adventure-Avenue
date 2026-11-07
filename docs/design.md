@@ -573,16 +573,26 @@ if (!(await ask(`Delete ${d.name}?`, 'Its 4 properties will be removed from the 
     bottom-right. Active player: breathing `--pc` glow on an `::after` layer. Money changes pop out
     beside the card ("+120G" green / "-50G" red). Can win: net worth and portrait pulse gold.
     Clicking opens that player's page in the info pop-up.
-- **Card stack** (`.cards-toggle` + `.cards-wrap.collapsed`): a floating glass button (34x22,
-  radius 8, no shadow) above the cards' right end with a chevron: down folds the cards, up spreads
-  them. It sits at 45% opacity so it doesn't draw the eye, full on hover or focus. Collapsed, every card shares one grid cell; the active card is in front
+- **Card layouts** (`.cards-modes` + `.cards-wrap.collapsed`, `hud.setCardsMode`): above the
+  cards' right end, a group outlined in 1.5px white 45% (radius 9, no fill, a 1px navy drop shadow
+  so it reads on bright grass) holding three 26x20 icon buttons (`.cards-mode`, 14px stroked SVG
+  icons in white 55%): List (three bars), Stack (a card with two strips above), Smart (a card with
+  an arrow rising out). The chosen one has a 1.5px white 85% outline and white icon; hover makes an
+  icon white; focus shows a gold ring. No fill anywhere, so it stays quiet over the board.
+  Collapsed (Stack and Smart), every card shares one grid cell (`grid-area: var(--row) / 1`, with
+  `--stack-n` x 7px of room above for the peeking cards); the active card is in front
   and the others sit behind by turn order (`--d` = depth), each 7px higher and 5% narrower, filled
   with their `--pc` and their contents hidden (3 show, deeper ones fade out). Folding/unfolding (`setCardsCollapsed`): each card glides from
   where it was to its new place, matched at its top middle (`.pcard` `transform-origin: 50% 0`,
   `T.cardStack` 480ms, 25ms stagger, `cubic-bezier(0.2, 0.8, 0.2, 1)`), with the cards' own
   transform transitions off meanwhile (`.cards-wrap.stacking`). Turn change: the old front card
   drops 55% of its height (ease-in), goes behind the stack, then rises into its back place
-  (ease-out; `T.cardCycle` 750ms, Web Animations), while the rest ease forward (0.4s). Behind cards are `inert`. The pattern for any stack of
+  (ease-out; `T.cardCycle` 750ms, Web Animations), while the rest ease forward (0.4s). Behind cards are `inert`.
+  Smart: a card behind the front one whose contents change (`fillCard`'s signature) gets `.popped`
+  (`popCard`): it takes a row of its own above the stack (`--row` 1, 2... in turn order, the stack
+  on the next row) with its contents showing, and goes back `T.cardPop` (2.8s) after its last
+  change. Rising out and going back glide every card from where it was (`glide`, `T.cardStack`),
+  once per update however many cards changed. The pattern for any stack of
   same-shaped cards where only the front one matters.
 
 ### 5.15 Info pop-up (pop-up + action bar)
