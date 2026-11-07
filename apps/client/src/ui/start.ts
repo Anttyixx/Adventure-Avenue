@@ -19,14 +19,14 @@ import {
 } from '@aa/engine';
 import { boardThumb } from './thumb';
 import { BUILT_IN, getBoard, listBoards, pickBoardFile, readBoardFile, saveBoard } from '../boardstore';
-import { freeCharacter, shuffledCharacters } from '../sprites';
+import { freeCharacter } from '../sprites';
 import { cleanName, loadProfile } from '../profile';
 import { charButton, pickCharacter } from './charpick';
 import { loadSave } from '../save';
 import { titleScene } from './menu';
 import type { GuestRoom } from '../net/guestroom';
 import type { HostRoom, LocalSeat } from '../net/hostroom';
-import { inviteURL, type LobbyInfo } from '../net/protocol';
+import { inviteURL, type LobbyInfo, type LobbySeat } from '../net/protocol';
 import { digitPicker } from './digits';
 import { closeSoundPopover, soundButton } from './soundpanel';
 import { sound } from '../audio';
@@ -190,28 +190,70 @@ export function seatCard(s: SeatView): HTMLElement {
   );
 }
 
+/** A player on the host's device or a bot, in game setup. */
+interface Spot {
+  /** Lasting, so the seat keeps its place in the players column as others come and go. */
+  id: number;
+  name: string;
+  look: CharId;
+  /** Tapped Ready (bots always are). */
+  ready: boolean;
+}
+
 /**
- * The players column's contents: a heading tile ("Players", the status line and an optional
- * hint) over the seat cards, and an optional footer (Resume on the Continue game screen).
+ * The players column's order on this device: this device's own player at the bottom, and
+ * everyone else above them in the order they arrived, the newest on top. So each device lists
+ * the players differently. `seen` remembers the arrival order between redraws (oldest first);
+ * seats that are already there the first time keep their seat order.
  */
-export function playersColumn(
-  title: string,
-  status: Node | null,
-  hint: string | null,
-  cards: Node[],
-  foot: Node | null = null,
-): Node[] {
-  return [
+export function byArrival<T extends { key: string; mine?: boolean }>(seen: string[], seats: T[]): T[] {
+  const keys = new Set(seats.map((x) => x.key));
+  for (let i = seen.length - 1; i >= 0; i--) if (!keys.has(seen[i])) seen.splice(i, 1);
+  for (const x of seats) if (x.mine && !seen.includes(x.key)) seen.unshift(x.key);
+  for (const x of seats) if (!seen.includes(x.key)) seen.push(x.key);
+  return seats.slice().sort((a, b) => seen.indexOf(b.key) - seen.indexOf(a.key));
+}
+
+/**
+ * A lobby's seats for the players column, without open seats (a CPU plays them unless a friend
+ * joins). Each gets a key that stays the same between redraws (its name, unlike the character,
+ * doesn't change); `mine` marks this device's own seats.
+ */
+export function lobbyRows(seats: LobbySeat[], mine: (x: LobbySeat, i: number) => boolean) {
+  const used = new Map<string, number>();
+  return seats.flatMap((x, i) => {
+    if (x.kind === 'open') return [];
+    let key = `${x.kind === 'cpu' ? 'b' : 'p'}:${x.name}`;
+    const n = used.get(key) ?? 0;
+    used.set(key, n + 1);
+    if (n) key += `#${n}`;
+    return [{ x, i, key, mine: mine(x, i) }];
+  });
+}
+
+/**
+ * The two chips above the top player in game setup (the host only, until the game is full):
+ * Add local player (a player on this device) and Add bot, against the right edge.
+ */
+export function addChips(addLocal: () => void, addBot: () => void): HTMLElement {
+  return h(
+    'div',
+    { class: 'su-add', 'data-key': 'add' },
     h(
-      'div',
-      { class: 'su-side-head glass' },
-      h('h3', null, title),
-      status,
-      hint ? h('span', { class: 'hint' }, hint) : null,
+      'button',
+      { class: 'seat-add-local', title: 'Add a player who plays on this device', onclick: addLocal },
+      'Add local player',
     ),
-    h('div', { class: 'su-seats' }, ...cards),
-    ...(foot ? [foot] : []),
-  ];
+    h('button', { class: 'seat-add', title: 'Add a computer player', onclick: addBot }, 'Add bot'),
+  );
+}
+
+/**
+ * The players column's contents, top to bottom: optional chips (`top`), the seat cards and an
+ * optional footer (Resume on the Continue game screen).
+ */
+export function playersColumn(cards: Node[], foot: Node | null = null, top: Node | null = null): Node[] {
+  return [...(top ? [top] : []), h('div', { class: 'su-seats' }, ...cards), ...(foot ? [foot] : [])];
 }
 
 /** The rules part of the settings. */
@@ -521,12 +563,22 @@ export function morphSide(dock: HTMLElement, rebuild: () => void) {
   }
 }
 
-/** The top bar: Back, the title, the join code chip (if any) and Sound (as on the main menu). */
-export function setupHead(top: HTMLElement, onBack: () => void, title: string, code: Node | null) {
+/**
+ * The top bar: Back, the title, the status line (`status`: who we wait for, the countdown...),
+ * the join code chip (if any) and Sound (as on the main menu).
+ */
+export function setupHead(
+  top: HTMLElement,
+  onBack: () => void,
+  title: string,
+  code: Node | null,
+  status: Node | null = null,
+) {
   clear(top);
   top.append(
     h('button', { class: 'btn small su-back', onclick: onBack }, '‹ Back'),
     h('h2', null, title),
+    status ?? '',
     h('span', { class: 'su-top-gap' }),
     code ?? '',
     soundButton('btn menu-sound', 'Sound'),
@@ -552,11 +604,14 @@ export function setupScreen(
     boardId: 'town',
   });
   /**
-   * Players on this device (the host first), then friends who joined, then bots. Setup starts
-   * with only the host: bots and other players are added by hand (or join with the code).
+   * Seats are players on this device (the host first), then friends who joined, then bots.
+   * Setup starts with only the host: bots and other players are added by hand (or join with the
+   * code). Each keeps its name and character when others come and go.
    */
-  let humans = 1;
-  let bots = 0;
+  const people: Spot[] = [];
+  /** Bots, oldest first (a friend joining a full game takes the newest one's seat). */
+  const bots: Spot[] = [];
+  let nextSpot = 0;
   const st: RuleSettings = {
     target: cleanTarget(saved.target),
     roundCap: saved.roundCap,
@@ -568,23 +623,15 @@ export function setupScreen(
   let notice = '';
   /** Direction of the last carousel move, so only that redraw animates the slide. */
   let slide: 'next' | 'prev' | '' = '';
-  /** Which players on this device have tapped Ready (by seat). */
-  const ready: boolean[] = [];
   /** The board and settings the Ready taps were for: changing them asks everyone again. */
   let readyFor = '';
   /** Seconds left before the game starts once everyone is ready (0: not counting down). */
   let countdown = 0;
   let countTimer = 0;
-  /** The line above the seats saying who we are waiting for, or the countdown. */
+  /** The line in the top bar saying who we are waiting for, or the countdown. */
   const statusEl = h('span', { class: 'su-status', role: 'status', 'aria-live': 'polite' });
-  let looks: CharId[] = [];
-  let suggested: string[] = [];
-  const shuffle = () => {
-    looks = shuffledCharacters(PLAYER_COLORS.length);
-    const pool = NAMES.slice();
-    suggested = PLAYER_COLORS.map(() => pool.splice(Math.floor(Math.random() * pool.length), 1)[0]);
-  };
-  shuffle();
+  /** Arrival order of the seats for the players column (see `byArrival`). */
+  const seen: string[] = [];
   // The host sits down as their player card (set on the main menu).
   const card = loadProfile();
 
@@ -600,40 +647,59 @@ export function setupScreen(
   let copied = false;
 
   const joined = () => room?.joined ?? 0;
-  /** Names are set before game setup (the host's on the main menu's player card); other players
-   * on this device and bots get a suggested name. */
-  const nameOf = (i: number) => (i === 0 && cleanName(card.name)) || suggested[i];
-  /** Seats of joined players, in seat order (they come right after the humans on this device). */
+  /** Seats of joined players, in seat order (they come right after the people on this device). */
   const lobbySeatsNow = () => room?.lobby().seats ?? [];
-  /** Characters held by people (this device's humans and joined friends), except seat `but`. */
-  const peopleLooks = (but: number) => {
+  const remotes = () => lobbySeatsNow().filter((x) => x.kind === 'remote');
+  /**
+   * A new seat on this device: a friendly name and a character nobody has yet. Names are set
+   * before game setup (the host's is on the main menu's player card); other players on this
+   * device and bots get a suggested one.
+   */
+  const newSpot = (): Spot => {
+    const names = new Set([...people, ...bots, ...remotes()].map((x) => x.name));
+    const pool = NAMES.filter((n) => !names.has(n));
+    const list = pool.length ? pool : NAMES;
+    const looks = [...people, ...bots].map((x) => x.look);
+    for (const r of remotes()) if (r.look) looks.push(r.look);
+    return {
+      id: nextSpot++,
+      name: list[Math.floor(Math.random() * list.length)],
+      look: freeCharacter(looks),
+      ready: false,
+    };
+  };
+  {
+    const host = newSpot();
+    people.push({ ...host, name: cleanName(card.name) || host.name, look: card.look || host.look });
+  }
+  /** The seat number (and so the color) of a player on this device or a bot. */
+  const seatOf = (x: Spot) => {
+    const i = people.indexOf(x);
+    return i >= 0 ? i : people.length + joined() + bots.indexOf(x);
+  };
+  /** Characters held by people (this device's players and joined friends), except `but`'s. */
+  const peopleLooks = (but: Spot | null) => {
     const out = new Map<CharId, string>();
-    for (let j = 0; j < humans; j++) if (j !== but) out.set(looks[j], nameOf(j));
-    lobbySeatsNow().forEach((s, j) => {
-      if (j !== but && s.kind === 'remote' && s.look) out.set(s.look, s.name);
-    });
+    for (const x of people) if (x !== but) out.set(x.look, x.name);
+    for (const r of remotes()) if (r.look) out.set(r.look, r.name);
     return out;
   };
-  /** A CPU seat's character: its own unless a person has it. */
-  const cpuLook = (i: number) => {
-    const taken = peopleLooks(i);
-    return taken.has(looks[i]) ? freeCharacter([...taken.keys()]) : looks[i];
+  /** Bots give up a character a person picked (people never share: the picker greys them out). */
+  const freeBots = () => {
+    for (const b of bots) {
+      const taken = [...peopleLooks(null).keys(), ...bots.filter((x) => x !== b).map((x) => x.look)];
+      if (taken.includes(b.look)) b.look = freeCharacter(taken);
+    }
   };
-  /**
-   * Give seat `i` a character. A CPU seat that had it switches to a free one; human seats never
-   * share, because the picker greys out what other people have.
-   */
-  const setLook = (i: number, id: CharId) => {
-    looks[i] = id;
-    looks.forEach((l, j) => {
-      if (j !== i && l === id) looks[j] = freeCharacter(looks.filter((_, k) => k !== j));
+  const choose = async (x: Spot) => {
+    const id = await pickCharacter({
+      current: x.look,
+      taken: peopleLooks(x),
+      color: PLAYER_COLORS[seatOf(x)],
     });
-  };
-  if (card.look) setLook(0, card.look);
-  const choose = async (i: number) => {
-    const id = await pickCharacter({ current: looks[i], taken: peopleLooks(i), color: PLAYER_COLORS[i] });
     if (id) {
-      setLook(i, id);
+      x.look = id;
+      freeBots();
       draw();
     }
   };
@@ -642,16 +708,8 @@ export function setupScreen(
   const sync = () => {
     if (!room) return;
     syncing = true;
-    const locals: LocalSeat[] = Array.from({ length: humans }, (_, i) => ({
-      name: nameOf(i),
-      look: looks[i],
-      ready: !!ready[i],
-    }));
-    const first = humans + joined();
-    const botSeats: LocalSeat[] = Array.from({ length: bots }, (_, k) => ({
-      name: suggested[first + k],
-      look: cpuLook(first + k),
-    }));
+    const locals: LocalSeat[] = people.map((x) => ({ name: x.name, look: x.look, ready: x.ready }));
+    const botSeats: LocalSeat[] = bots.map((x) => ({ name: x.name, look: x.look }));
     const seatKey = JSON.stringify([locals, botSeats]);
     if (seatKey !== sentSeats) {
       sentSeats = seatKey;
@@ -851,138 +909,105 @@ export function setupScreen(
     );
   };
 
-  /** Everyone in the game, in seat order. */
-  const total = () => humans + joined() + bots;
+  /** Everyone in the game. */
+  const total = () => people.length + joined() + bots.length;
   const room4 = () => total() < MAX_PLAYERS;
 
-  /** One seat card: the character, the name and remove on top, what kind of player and Ready below. */
-  const seatAt = (i: number) => {
-    const color = PLAYER_COLORS[i];
-    if (i < humans) {
-      return seatCard({
-        key: looks[i],
-        color,
-        look: looks[i],
-        pick: () => void choose(i),
-        name: nameOf(i),
-        tag: i === 0 ? 'You · host' : 'On this device',
-        kind: 'human',
-        remove:
-          i === 0
-            ? undefined
-            : {
-                label: 'Remove this player',
-                act: () => {
-                  // The players after them move up a seat, keeping their names and characters.
-                  suggested.push(suggested.splice(i, 1)[0]);
-                  ready.splice(i, 1);
-                  looks.push(looks.splice(i, 1)[0]);
-                  humans--;
-                  draw();
-                },
+  /** A player on this device: the character (tap to change), the name, remove and Ready. */
+  const personCard = (x: Spot) =>
+    seatCard({
+      key: `s${x.id}`,
+      color: PLAYER_COLORS[seatOf(x)],
+      look: x.look,
+      pick: () => void choose(x),
+      name: x.name,
+      tag: x === people[0] ? 'You · host' : 'On this device',
+      kind: 'human',
+      remove:
+        x === people[0]
+          ? undefined
+          : {
+              label: 'Remove this player',
+              act: () => {
+                people.splice(people.indexOf(x), 1);
+                draw();
               },
-        // Each player on this device says they are ready with their own button.
-        ready: h(
-          'button',
-          {
-            class: `seat-ready ${ready[i] ? 'on' : ''}`,
-            'aria-pressed': String(!!ready[i]),
-            title: ready[i] ? 'Tap if you are not ready after all' : 'Tap when you are ready to play',
-            onclick: () => {
-              ready[i] = !ready[i];
-              draw();
             },
+      // Each player on this device says they are ready with their own button.
+      ready: h(
+        'button',
+        {
+          class: `seat-ready ${x.ready ? 'on' : ''}`,
+          'aria-pressed': String(x.ready),
+          title: x.ready ? 'Tap if you are not ready after all' : 'Tap when you are ready to play',
+          onclick: () => {
+            x.ready = !x.ready;
+            draw();
           },
-          ready[i] ? '✓ Ready' : 'Ready',
-        ),
-      });
-    }
-    const seat = lobbySeatsNow()[i];
-    if (seat?.kind === 'remote') {
-      const look = seat.look ?? looks[i];
-      return seatCard({
-        key: look,
-        color,
-        look,
-        name: seat.name,
-        tag: seat.online ? 'Joined online' : 'Away',
-        kind: 'joined',
-        remove: { label: `Remove ${seat.name}`, act: () => room?.kick(i) },
-        ready: readyBadge(!!seat.ready),
-      });
-    }
-    const look = cpuLook(i);
-    return seatCard({
-      key: look,
-      color,
-      look,
-      name: suggested[i],
+        },
+        x.ready ? '✓ Ready' : 'Ready',
+      ),
+    });
+
+  const botCard = (x: Spot) =>
+    seatCard({
+      key: `s${x.id}`,
+      color: PLAYER_COLORS[seatOf(x)],
+      look: x.look,
+      name: x.name,
       tag: 'Bot',
       kind: 'bot',
       remove: {
         label: 'Remove this bot',
         act: () => {
-          bots--;
+          bots.splice(bots.indexOf(x), 1);
           draw();
         },
       },
     });
-  };
 
-  /**
-   * The empty seat, laid out like a seat card: a gold + where the character goes (adds a bot),
-   * "Empty seat" where the name goes, and Add bot and + Local player (a player on this device)
-   * where the tag and Ready chip go.
-   */
-  const addCard = () => {
-    const addBot = () => {
-      bots++;
-      draw();
-    };
-    return h(
-      'div',
-      { class: 'pcard su-seat add', 'data-key': 'add' },
-      h(
-        'div',
-        { class: 'pc-side' },
-        h('button', { class: 'seat-plus', 'aria-label': 'Add bot', title: 'Add bot', onclick: addBot }, '+'),
-      ),
-      h(
-        'div',
-        { class: 'pc-main' },
-        h('div', { class: 'pc-row pc-top' }, h('span', { class: 'pname' }, 'Empty seat')),
-        h(
-          'div',
-          { class: 'pc-row su-seat-foot' },
-          h('button', { class: 'seat-add', onclick: addBot }, 'Add bot'),
-          h(
-            'button',
-            {
-              class: 'seat-add-local',
-              title: 'Add a player who plays on this device',
-              onclick: () => {
-                humans++;
-                draw();
-              },
+  /** The players column: the add chips (until the game is full), then everyone, newest on top. */
+  const playersPanel = () => {
+    const seats = [
+      ...people.map((x, i) => ({ key: `s${x.id}`, mine: i === 0, el: personCard(x) })),
+      ...lobbySeatsNow()
+        .map((x, i) => ({ x, i }))
+        .filter(({ x }) => x.kind === 'remote')
+        .map(({ x, i }) => {
+          const look = x.look ?? null;
+          return {
+            key: `r:${x.name}`,
+            el: seatCard({
+              key: `r:${x.name}`,
+              color: PLAYER_COLORS[i],
+              look,
+              name: x.name,
+              tag: x.online ? 'Joined online' : 'Away',
+              kind: 'joined',
+              remove: { label: `Remove ${x.name}`, act: () => room?.kick(i) },
+              ready: readyBadge(!!x.ready),
+            }),
+          };
+        }),
+      ...bots.map((x) => ({ key: `s${x.id}`, el: botCard(x) })),
+    ];
+    return playersColumn(
+      byArrival(seen, seats).map((x) => x.el),
+      null,
+      room4()
+        ? addChips(
+            () => {
+              people.push(newSpot());
+              draw();
             },
-            h('span', { class: 'al-long' }, '+ Local player'),
-            h('span', { class: 'al-short' }, '+ Local'),
-          ),
-        ),
-      ),
+            () => {
+              bots.push(newSpot());
+              draw();
+            },
+          )
+        : null,
     );
   };
-
-  /** The players column: the heading with the status line, a seat card each and the empty seat. */
-  const playersPanel = () =>
-    playersColumn(
-      `Players · ${total()} of ${MAX_PLAYERS}`,
-      statusEl,
-      loadSave() ? 'Starting replaces your saved game.' : null,
-      [...Array.from({ length: total() }, (_, i) => seatAt(i)), room4() ? addCard() : null].filter(
-        (x): x is HTMLElement => !!x,
-      ),
-    );
 
   const leaveRoom = () => {
     closed = true;
@@ -995,10 +1020,13 @@ export function setupScreen(
     clear(wrap);
     // Someone joined a full game: they took a bot's seat (checked again once the room has the
     // latest seats).
-    const fit = () => (bots = Math.max(0, Math.min(bots, MAX_PLAYERS - humans - joined())));
+    const fit = () => {
+      bots.splice(Math.max(0, MAX_PLAYERS - people.length - joined()));
+      freeBots();
+    };
     // A different board or settings: everyone says Ready again (the room asks joined players).
     const key = JSON.stringify([boardId, st]);
-    if (readyFor && key !== readyFor) ready.fill(false);
+    if (readyFor && key !== readyFor) for (const x of people) x.ready = false;
     readyFor = key;
     fit();
     sync();
@@ -1014,6 +1042,12 @@ export function setupScreen(
       },
       'New game',
       codeChip(),
+      h(
+        'div',
+        { class: 'su-top-status' },
+        statusEl,
+        loadSave() ? h('span', { class: 'hint' }, 'Starting replaces your saved game.') : null,
+      ),
     );
     wrap.append(
       boardPanel(),
@@ -1039,17 +1073,19 @@ export function setupScreen(
     const board = getBoard(boardId) ?? BUILT_IN[0];
     const base = { ...st, board };
     if (room && joined() > 0) {
-      const seats = room.seatConfigs((i) => ({ name: suggested[i], ch: cpuLook(i) }));
+      const seats = room.seatConfigs((i) => {
+        const b = bots[i - people.length - joined()] ?? newSpot();
+        return { name: b.name, ch: b.look };
+      });
       offRoom?.();
       closed = true;
       handlers.onStart({ ...base, seats }, true);
       return;
     }
-    const seats = Array.from({ length: total() }, (_, i) => ({
-      name: i < humans ? nameOf(i) : suggested[i],
-      cpu: i >= humans,
-      ch: i < humans ? looks[i] : cpuLook(i),
-    }));
+    const seats = [
+      ...people.map((x) => ({ name: x.name, cpu: false, ch: x.look })),
+      ...bots.map((x) => ({ name: x.name, cpu: true, ch: x.look })),
+    ];
     leaveRoom();
     handlers.onStart({ ...base, seats }, false);
   };
@@ -1071,12 +1107,12 @@ export function setupScreen(
    */
   const checkReady = () => {
     const board = getBoard(boardId) ?? BUILT_IN[0];
-    const remotes = lobbySeatsNow().filter((x) => x.kind === 'remote');
-    const people = [
-      ...Array.from({ length: humans }, (_, i) => ({ name: nameOf(i), ready: !!ready[i] })),
-      ...remotes.map((x) => ({ name: x.name, ready: !!x.ready && x.online })),
+    const remoteSeats = remotes();
+    const everyone = [
+      ...people.map((x) => ({ name: x.name, ready: x.ready })),
+      ...remoteSeats.map((x) => ({ name: x.name, ready: !!x.ready && x.online })),
     ];
-    const waiting = people.filter((x) => !x.ready);
+    const waiting = everyone.filter((x) => !x.ready);
     const blocked = !playable(board)
       ? 'Fix this board in the board editor to play.'
       : total() < 2
@@ -1089,14 +1125,14 @@ export function setupScreen(
       if (countTimer) stopCountdown();
       statusEl.textContent =
         blocked ||
-        (waiting.length === people.length
-          ? people.length > 1
+        (waiting.length === everyone.length
+          ? everyone.length > 1
             ? 'Everyone taps Ready to start'
             : 'Tap Ready to start'
           : `Waiting for ${waiting.map((x) => x.name).join(', ')}`);
       return;
     }
-    if (people.length === 1) {
+    if (everyone.length === 1) {
       statusEl.textContent = 'Starting...';
       // Let the button show its tick before the screen changes.
       if (!countTimer) countTimer = window.setTimeout(startGame, 250);
@@ -1148,12 +1184,21 @@ export function guestSetup(root: HTMLElement, room: GuestSetupRoom, handlers: Gu
       (id) => id && room.setLook(id),
     );
   };
+  /** Arrival order of the seats for the players column (see `byArrival`). */
+  const seen: string[] = [];
 
   const draw = () => {
     const lobby = room.lobby;
     clear(frame.wrap);
     const board = lobby ? (lobby.board ?? BUILT_IN.find((b) => b.name === lobby.boardName)) : undefined;
     const me = lobby?.seats[room.seat];
+    const status = !lobby
+      ? 'Connected. Waiting for the lobby...'
+      : lobby.starting
+        ? "Everyone's ready! Starting..."
+        : me?.ready
+          ? 'Waiting for everyone else...'
+          : 'Tap Ready when you are set';
     setupHead(
       frame.top,
       () => {
@@ -1166,6 +1211,11 @@ export function guestSetup(root: HTMLElement, room: GuestSetupRoom, handlers: Gu
         { class: 'su-code', title: 'The code of the game you joined' },
         h('small', null, 'Code'),
         h('b', null, room.code),
+      ),
+      h(
+        'div',
+        { class: 'su-top-status' },
+        h('span', { class: `su-status ${lobby?.starting ? 'go' : ''}`, role: 'status' }, status),
       ),
     );
     frame.wrap.append(
@@ -1192,40 +1242,31 @@ export function guestSetup(root: HTMLElement, room: GuestSetupRoom, handlers: Gu
           })
         : h('section', { class: 'setup-panel glass rules-panel' }, h('h3', null, 'Game settings')),
     );
-    const status = !lobby
-      ? 'Connected. Waiting for the lobby...'
-      : lobby.starting
-        ? "Everyone's ready! Starting..."
-        : me?.ready
-          ? 'Waiting for everyone else...'
-          : 'Tap Ready when you are set';
     morphSide(frame.side, () => {
       clear(frame.side);
       frame.side.append(
         ...playersColumn(
-          lobby ? `Players · ${lobby.seats.length}` : 'Players',
-          h('span', { class: `su-status ${lobby?.starting ? 'go' : ''}`, role: 'status' }, status),
-          null,
-          (lobby?.seats ?? []).map((x, i) => {
+          byArrival(
+            seen,
+            lobbyRows(lobby?.seats ?? [], (_, i) => i === room.seat),
+          ).map(({ x, i, key }) => {
             const mine = i === room.seat;
-            const bot = x.kind === 'cpu' || x.kind === 'open';
+            const bot = x.kind === 'cpu';
             return seatCard({
-              key: x.look ?? `open${i}`,
+              key,
               color: PLAYER_COLORS[i],
               look: x.look ?? null,
               pick: mine ? () => pick(lobby!, i) : null,
-              name: x.kind === 'open' ? 'Open' : x.name,
+              name: x.name,
               tag: mine
                 ? 'You'
                 : x.kind === 'host'
                   ? 'Host'
-                  : x.kind === 'open'
-                    ? 'A friend can join'
-                    : bot
-                      ? 'Bot'
-                      : x.kind === 'local'
-                        ? "Host's device"
-                        : 'Joined',
+                  : bot
+                    ? 'Bot'
+                    : x.kind === 'local'
+                      ? "Host's device"
+                      : 'Joined',
               kind: bot ? 'bot' : mine ? 'human' : 'joined',
               ready: mine
                 ? h(

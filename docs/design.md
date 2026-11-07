@@ -655,7 +655,10 @@ if (!(await ask(`Delete ${d.name}?`, 'Its 4 properties will be removed from the 
 
 - **Layout** (`.setup.su` > `.su-body`, a row): on the left `.su-col` holds a fixed top bar
   `.su-top` (ghost "‹ Back", the title in Lilita 34px, the join code chip `.su-code` (dashed gold
-  pill: "Code", the code in Lilita gold, "Copy link"), the main menu's Sound button) over a
+  pill: "Code", the code in Lilita gold, "Copy link"), the main menu's Sound button, and right of
+  the title the status pill `.su-top-status` (navy 72%, 12px radius: `.su-status` in #d4dced,
+  green when counting down, red when blocked, and the saved-game hint under it; under 760px wide
+  it wraps onto its own line as plain white text with a dark outline)) over a
   scrolling `.su-scroll` (scroll bar hidden) with the board panel (left, 0.9fr) and the settings
   panel (right, 1.1fr) in a grid, equal heights (max 1120px; one column under 1100px), centered by
   `margin: auto` (top-aligned on short screens), so the top bar and panels line up; the Map header
@@ -664,10 +667,10 @@ if (!(await ask(`Delete ${d.name}?`, 'Its 4 properties will be removed from the 
   `.cards-wrap`: 300px at zoom 1.1 (phones 215px, 176px when 500px tall or less, zoom 1), 10px from
   the edges, `justify-content: flex-end` so it grows upward. Every redraw goes through
   `morphSide`: the column eases its height (320ms, `cubic-bezier(0.2, 0.8, 0.2, 1)`), seats
-  matched by `data-key` (their character) slide from their old place (measured from the column's
+  matched by `data-key` (a lasting seat id, or a joined player's name: never the character, which
+  can change) slide from their old place (measured from the column's
   bottom edge, divided by its zoom), new seats pop in (fade + scale from 0.85) and removed seats
-  leave a fading ghost copy; an interrupted change starts from what is on screen. The status line
-  is set inside the rebuild so its new length is part of the measured size. Board tools are
+  leave a fading ghost copy; an interrupted change starts from what is on screen. Board tools are
   `.su-chip` pills in the Map panel's top right. Settings are a grid (`.su-rules`) in two columns:
   rule set, round limit; goal, stocks; vacant plots across (one column on phones narrower than
   760px).
@@ -676,11 +679,17 @@ if (!(await ask(`Delete ${d.name}?`, 'Its 4 properties will be removed from the 
   picture shrinks to fit (dots hidden, 28px arrows), settings drop their hints and use 26px
   buttons and a smaller digit picker; only the settings panel scrolls (thin bar) if a phone is too
   short.
-- **Players column** (`playersColumn()`): a heading tile `.su-side-head` (glass, 12px radius, no
-  shadow: "Players · N of 5" in Lilita 17px, then `.su-status` and an optional hint each on their
-  own line; the status says who we wait for (muted), counts down (green) or why it can't start
-  (red)), then `.su-seats`, up to 5 seat cards stacked with the game's 6px gap (4px on phones),
-  then an optional footer tile (`.su-start`: Resume on Continue game).
+- **Players column** (`playersColumn()`): no heading and no empty seats. Top to bottom: the add
+  chips (host only, until 5 players; `addChips()`, `.su-add`, keyed `add`), `.su-seats` (up to 5
+  seat cards with the game's 6px gap, 4px on phones), then an optional footer tile (`.su-start`:
+  Resume on Continue game). Order (`byArrival`): this device's own player at the bottom, everyone
+  else above by arrival, newest on top; seats already there when a device first draws keep seat
+  order. Because the column is bottom-anchored, a new seat on top pushes the chips up (they slide)
+  and pops in itself; at 5 players the chips leave as a fading ghost while the new card pops in.
+- **Add chips** (`.su-add`, right-aligned, 6px gap): `.seat-add-local` "Add local player" (navy
+  88% fill, 1.5px gold outline, gold text) left of `.seat-add` "Add bot" (solid gold, dark text);
+  both 999px pills, 12px bold, 4/12px padding (phones 11px, 2/9px), a soft shadow so they read over
+  the scene, scale .95 on press.
 - **Seat cards** (`seatCard()`, `.pcard.su-seat`): the game's player card tile (glass, 5px
   `--pc` left edge, 12px radius, same paddings and phone sizes) so setup and game read as one. Left
   (`.pc-side`): the character trimmed to its pixels (`charButton(look, 'body', ...)`, 34 x 52 like
@@ -691,11 +700,8 @@ if (!(await ask(`Delete ${d.name}?`, 'Its 4 properties will be removed from the 
   host", "On this device", "Joined online", "Bot") and, at the end, the `.seat-ready` chip (gold
   outline "Ready", green with a tick when ready; joined players' state as the same chip without a
   button, `.badge`; bots have none). An open seat shows a dashed "?" box and "Open"; a player not
-  back yet is faded with a red "AWAY" pill (`.seat-away`) beside the tag. The empty seat
-  (`.su-seat.add`) mirrors a seat card: a 2px dashed outline (padding adjusted so it is as tall),
-  the round gold `.seat-plus` (34px, phones 26px) in the character's place, a muted "Empty seat"
-  name, and a gold `.seat-add` "Add bot" chip and an outlined `.seat-add-local` "+ Local player"
-  chip ("+ Local" on short phones) in the bottom row.
+  back yet is faded with a red "AWAY" pill (`.seat-away`) beside the tag. Open seats (a CPU
+  plays them unless a friend joins) are not shown.
 - **Player card** (main menu, `.menu-card` + `openPlayerCard`): a `.menu-sound` button in the top
   right beside Sound (round 22px portrait + name; portrait only on phones). Its pop-up is a
   `.modal.player-card` (same frame as the Menu pop-up): the character on a spot in a tile like a

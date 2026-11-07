@@ -881,16 +881,25 @@ what was used, the license and links to their pages.
 **Game setup options.** Over the title scene, the screen has a **players column** in the bottom
 right corner, where the player cards sit in the game, and to its left a **top bar** that never
 scrolls: **Back** (to the main menu), the "New game" title, the join code chip and **Sound** (the
-same button as on the main menu). Under the top bar: the board selector on the left and the game
+same button as on the main menu), with the status line right of the title (on its own line under
+the bar on narrow screens). Under the top bar: the board selector on the left and the game
 settings on the right, the two panels the same height (one under the other on windows narrower
 than 1100px), centered in the room left of the players column (short phone screens start them at
 the top). On bigger screens (1180 x 820 and up) everything fits without scrolling; on smaller ones
 the panels scroll, with no scroll bar. There is no Start button (see **Ready up**).
 
-- **Players column:** the seats stacked top to bottom like the player cards in the game (as wide,
-  the same tiles with the player's color down the left edge), under a heading tile with "Players ·
-  N of 5" and the status line. It grows upward as players are added and shrinks as they leave
-  (seats that stay slide over, new ones pop in, removed ones fade out).
+- **Players column:** the seats stacked like the player cards in the game (as wide, the same
+  tiles with the player's color down the left edge). There is no heading and no empty seats.
+  **Order:** each device shows its own player at the bottom, and everyone else above in the order
+  they arrived, the newest on top, so every device lists the players differently (a friend who
+  joins sees themselves at the bottom, with the players already there above them in seat order).
+  Turn order is still the seat order. When a bot, a local player or a friend joins, the new card
+  pops in at the top on every screen and the cards above the bottom ones make room; when a player
+  leaves, their card fades out and the ones above slide down.
+- **Add chips (the host):** above the top player sit two chips against the right edge of the
+  window: **Add local player** (a player on this device) and, right of it, **Add bot**. They slide
+  up as each player is added; when the 5th player joins they pop out (while the new player pops
+  in), and they come back when a seat frees up.
 
 - **Board:** a carousel of the built-in boards followed by the player's saved boards. Arrows,
   swiping, the arrow keys or the dots move through it, and it loops from the last board back to
@@ -901,15 +910,13 @@ the panels scroll, with no scroll bar. There is no Start button (see **Ready up*
   settings are remembered from the last game, the players are not). Each seat is a card like a
   player card in the game: the character on the left (tap it to change it, for players on this
   device; a small gold pencil badge says so), the name on the top row, and what kind of player it
-  is with the Ready chip on the bottom row. An empty seat (until there are 5 players) is laid out
-  the same way: a dashed outline, a big gold **+** where the character goes, "Empty seat" where the
-  name goes, and **Add bot** and **+ Local player** chips below (a player on this device; "+ Local"
-  on phones); the + and Add bot both add a bot. Bots, extra players on this device and joined
-  friends have a small round remove button (×) at the end of the name row.
+  is with the Ready chip on the bottom row. Every seat keeps its name and character as others
+  come and go. Bots, extra players on this device and joined friends have a small round remove
+  button (×) at the end of the name row.
 - **Ready up:** instead of a Start button, every person taps the **Ready** chip on their own seat
   (at the end of the card's bottom row; each player on the host's device has one, and a friend
   who joined has one on their own seat). Ready turns green with a tick; tapping it again takes it back. Bots are always
-  ready. A status line under "Players" says what is needed: "Tap Ready to start", "Waiting for
+  ready. The status line in the top bar says what is needed: "Tap Ready to start", "Waiting for
   Ada, Pip", or a reason the game can't start (fewer than 2 players, or a board with problems).
   When everyone is ready the game starts: straight away when there is only one person, otherwise
   after a 3-second countdown ("Everyone's ready! Starting in 3...") that anyone can stop by

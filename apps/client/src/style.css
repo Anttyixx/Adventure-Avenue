@@ -10021,6 +10021,8 @@ div.sl-inline label {
   flex: 1;
 }
 .su-back {
+  flex: none;
+  white-space: nowrap;
   background: rgba(16, 26, 51, 0.6);
   color: #fff;
 }
@@ -10310,28 +10312,7 @@ span.su-code {
   gap: 6px;
   overflow: hidden;
 }
-.su-side-head {
-  flex: none;
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  gap: 2px 8px;
-  padding: 7px 10px;
-  border-radius: 12px;
-  box-shadow: none;
-}
-.su-side-head h3 {
-  margin: 0;
-  font: 400 17px var(--head);
-  color: #fff;
-}
-/* The status line and the hint each take a line of their own under "Players". */
-.su-side-head .su-status,
-.su-side-head .hint {
-  flex-basis: 100%;
-  margin: 0;
-  text-align: left;
-}
+
 .su-seats {
   display: flex;
   flex-direction: column;
@@ -10439,73 +10420,7 @@ button.char-btn:hover img {
   color: #fff;
   transform: scale(1.1);
 }
-/* The empty seat: a dashed outline instead of the colored edge, a gold + where the character
-   goes, "Empty seat" where the name goes, and Add bot and + Local player chips below. The
-   padding makes up for the thinner border, so it is as tall as a seat card. */
-.su-seat.add {
-  --pc: var(--accent);
-  padding: 7px 7px 7px 11px;
-  border: 2px dashed rgba(255, 255, 255, 0.3);
-  background: rgba(16, 26, 51, 0.6);
-}
-.su-seat.add .pname {
-  color: var(--muted);
-}
-.seat-plus {
-  display: grid;
-  place-items: center;
-  width: 34px;
-  height: 34px;
-  margin: 5px 2px;
-  padding: 0;
-  border: 0;
-  border-radius: 50%;
-  background: var(--accent);
-  color: #3b2a00;
-  font: 400 24px/1 var(--head);
-  box-shadow: 0 3px 0 #b07c00;
-  cursor: pointer;
-  transition: transform 0.12s;
-}
-.seat-plus:hover,
-.seat-add:hover {
-  filter: brightness(1.08);
-}
-.seat-plus:active {
-  transform: translateY(2px);
-  box-shadow: 0 1px 0 #b07c00;
-}
-.seat-add,
-.seat-add-local {
-  flex: none;
-  padding: 1px 10px;
-  border: 1px solid var(--accent);
-  border-radius: 999px;
-  font: 700 11px/16px var(--body);
-  white-space: nowrap;
-  cursor: pointer;
-  transition:
-    background 0.15s,
-    transform 0.15s;
-}
-.seat-add {
-  background: var(--accent);
-  color: #3b2a00;
-}
-.seat-add-local {
-  background: none;
-  color: var(--accent);
-}
-.seat-add-local:hover {
-  background: rgba(255, 209, 102, 0.16);
-}
-.seat-add:active,
-.seat-add-local:active {
-  transform: scale(0.95);
-}
-.su-seat.add .al-short {
-  display: none;
-}
+
 /* Continue game: players who haven't rejoined yet are faded, with an "Away" chip. */
 .su-seat.away .pc-side,
 .su-seat.away .pname {
@@ -10520,6 +10435,75 @@ button.char-btn:hover img {
   font: 700 9px var(--body);
   line-height: 14px;
   text-transform: uppercase;
+}
+/* Game setup (the host): Add local player and Add bot above the top player, against the right
+   edge. They slide up as players are added and pop out when the game is full. */
+.su-add {
+  flex: none;
+  display: flex;
+  justify-content: flex-end;
+  gap: 6px;
+}
+.seat-add,
+.seat-add-local {
+  flex: none;
+  padding: 4px 12px;
+  border: 1.5px solid var(--accent);
+  border-radius: 999px;
+  font: 700 12px/16px var(--body);
+  white-space: nowrap;
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+  transition:
+    background 0.15s,
+    transform 0.15s,
+    filter 0.15s;
+}
+.seat-add {
+  background: var(--accent);
+  color: #3b2a00;
+}
+.seat-add:hover {
+  filter: brightness(1.08);
+}
+.seat-add-local {
+  background: rgba(16, 26, 51, 0.88);
+  color: var(--accent);
+}
+.seat-add-local:hover {
+  background: rgba(40, 52, 82, 0.95);
+}
+.seat-add:active,
+.seat-add-local:active {
+  transform: scale(0.95);
+}
+/* The status line in the top bar, right of the title: who we wait for (muted), the countdown
+   (green) or why the game can't start (red), and the saved-game note under it. */
+.su-top-status {
+  flex: 0 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  padding: 4px 12px;
+  border-radius: 12px;
+  background: rgba(16, 26, 51, 0.72);
+}
+.su-top-status .su-status {
+  overflow: hidden;
+  color: #d4dced;
+  text-align: left;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.su-top-status .su-status.go {
+  color: var(--good);
+}
+.su-top-status .su-status.bad {
+  color: var(--bad);
+}
+.su-top-status .hint {
+  margin: 0;
+  font-size: 11px;
 }
 /* Continue game: Resume (and what is being resumed) in a tile under the seat cards. */
 .su-start {
@@ -10561,13 +10545,7 @@ button.char-btn:hover img {
   .su-seats {
     gap: 4px;
   }
-  .su-side-head {
-    padding: 4px 8px;
-    border-radius: 10px;
-  }
-  .su-side-head h3 {
-    font-size: 13px;
-  }
+
   .su-seat .pc-main {
     gap: 2px;
   }
@@ -10587,28 +10565,32 @@ button.char-btn:hover img {
     height: 32px;
     margin: 0 1px;
   }
-  .su-seat .seat-ready,
-  .seat-add,
-  .seat-add-local {
+  .su-seat .seat-ready {
     padding: 0 7px;
     font-size: 10px;
     line-height: 15px;
+  }
+  .su-add {
+    gap: 4px;
+  }
+  .seat-add,
+  .seat-add-local {
+    padding: 2px 9px;
+    font-size: 11px;
+    line-height: 15px;
+  }
+  .su-top-status {
+    padding: 2px 8px;
+    border-radius: 9px;
+  }
+  .su-top-status .hint {
+    display: none;
   }
   .su-seat .seat-kick {
     width: 15px;
     height: 15px;
     font-size: 10px;
     line-height: 15px;
-  }
-  .seat-plus {
-    width: 26px;
-    height: 26px;
-    margin: 3px 0;
-    font-size: 19px;
-    box-shadow: 0 2px 0 #b07c00;
-  }
-  .su-seat.add {
-    padding: 3px 4px 3px 7px;
   }
 }
 /* Phones (landscape): a slimmer top bar, so the middle has room, and the narrow player cards of
@@ -10647,15 +10629,7 @@ button.char-btn:hover img {
     width: 22px;
     height: 32px;
   }
-  .su-side-head .hint {
-    display: none;
-  }
-  .su-seat.add .al-long {
-    display: none;
-  }
-  .su-seat.add .al-short {
-    display: inline;
-  }
+
   .su-seat .pc-main {
     gap: 1px;
   }
@@ -10787,5 +10761,26 @@ button.char-btn:hover img {
   .su-rules {
     grid-template-columns: minmax(0, 1fr);
     grid-template-areas: 'rules' 'round' 'goal' 'stocks' 'plots';
+  }
+}
+/* Narrow screens: no room for the status line beside the title, so it gets a line of its own
+   under the top bar (plain text with a dark outline instead of the pill). */
+@media (max-width: 760px) {
+  .su-top {
+    flex-wrap: wrap;
+    row-gap: 0;
+  }
+  .su-top-status {
+    order: 10;
+    flex-basis: 100%;
+    padding: 0 2px;
+    background: none;
+  }
+  .su-top-status .su-status {
+    color: #fff;
+    font-size: 11px;
+    text-shadow:
+      0 1px 2px rgba(16, 26, 51, 0.9),
+      0 0 4px rgba(16, 26, 51, 0.7);
   }
 }

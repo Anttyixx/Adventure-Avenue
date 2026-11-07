@@ -6,7 +6,17 @@ import { PLAYER_COLORS } from '@aa/engine';
 import type { HostRoom } from '../net/hostroom';
 import { inviteURL, type LobbySeat } from '../net/protocol';
 import { BUILT_IN, listBoards } from '../boardstore';
-import { boardStage, morphSide, playersColumn, rulesPanel, seatCard, setupFrame, setupHead } from './start';
+import {
+  boardStage,
+  byArrival,
+  lobbyRows,
+  morphSide,
+  playersColumn,
+  rulesPanel,
+  seatCard,
+  setupFrame,
+  setupHead,
+} from './start';
 import { clear, fmt, h } from './dom';
 
 const NAME_KEY = 'adventure-avenue-online-name';
@@ -66,11 +76,11 @@ export function resumeLobby(
     }
   };
   /** A player's seat card: their character, name and whether they are back. */
-  const seat = (s: LobbySeat, i: number) => {
+  const seat = (s: LobbySeat, i: number, key: string) => {
     const away = s.kind === 'remote' && !s.online;
     const bot = s.kind === 'cpu' || s.kind === 'open';
     return seatCard({
-      key: s.look ?? `seat${i}`,
+      key,
       color: PLAYER_COLORS[i],
       look: s.look ?? null,
       name: s.name,
@@ -89,6 +99,8 @@ export function resumeLobby(
       title: away ? `${s.name} is not back yet: a CPU plays for them until they join.` : null,
     });
   };
+  /** Arrival order of the seats for the players column (see `byArrival`). */
+  const seen: string[] = [];
   const draw = () => {
     const lobby = room.lobby();
     const missing = lobby.seats.filter((x) => x.kind === 'remote' && !x.online).length;
@@ -144,12 +156,11 @@ export function resumeLobby(
       clear(f.side);
       f.side.append(
         ...playersColumn(
-          `Players · ${lobby.seats.length}`,
-          null,
-          !oldCode || room.code === oldCode
-            ? 'Friends rejoin with the code and the same name.'
-            : `The old code ${oldCode} was taken: friends use the new one.`,
-          lobby.seats.map(seat),
+          // This device's players at the bottom, friends above them as they come back.
+          byArrival(
+            seen,
+            lobbyRows(lobby.seats, (x) => x.kind === 'host' || x.kind === 'local'),
+          ).map(({ x, i, key }) => seat(x, i, key)),
           h(
             'div',
             { class: 'su-start glass' },
@@ -158,6 +169,13 @@ export function resumeLobby(
               { class: 'setup-summary' },
               h('strong', null, lobby.boardName),
               h('span', null, `${round ? `Round ${round} · ` : ''}${fmt(lobby.target)} goal`),
+              h(
+                'small',
+                { class: 'hint' },
+                !oldCode || room.code === oldCode
+                  ? 'Friends rejoin with the code and the same name.'
+                  : `The old code ${oldCode} was taken: friends use the new one.`,
+              ),
               missing
                 ? h(
                     'small',

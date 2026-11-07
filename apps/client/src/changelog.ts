@@ -35,9 +35,16 @@ export const CHANGELOG: ChangelogEntry[] = [
         title: 'Players sit like player cards',
         text: 'The bar along the bottom of the new game screen is gone. Players and bots now sit in the bottom right corner, stacked like the player cards in the game, with Ready on each card. The map and settings get the rest of the screen.',
       },
+      {
+        tag: 'better',
+        title: 'Newest players on top',
+        text: "You're always at the bottom of the list. Anyone who joins, bot, local player or friend, pops in at the top, under the Add local player and Add bot chips. Those chips step aside once the game is full.",
+      },
     ],
     extras: [
       'Joined and continued games use the same player cards',
+      'Who we wait for now shows in the top bar',
+      'Players keep their name and character as others come and go',
       'Narrow phones show the settings in one column',
     ],
   },
