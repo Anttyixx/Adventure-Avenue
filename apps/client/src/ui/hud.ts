@@ -663,7 +663,7 @@ export class Hud {
    * updates, then put it back (`T.cardPop` after its last change). Every card glides from where
    * it was, as when folding.
    */
-  private popCard(pid: number) {
+  private popCard(pid: number): boolean {
     const was = this.popped.get(pid);
     if (was) clearTimeout(was);
     const back = window.setTimeout(() => {
@@ -673,6 +673,7 @@ export class Hud {
     this.popped.set(pid, back);
     // renderCards glides once for every card that rose out in this update.
     if (was == null) this.popPending = true;
+    return was == null;
   }
   /** Set when a card rose out of the smart stack during this update (see renderCards). */
   private popPending = false;
@@ -693,6 +694,9 @@ export class Hud {
       if (--left <= 0) wrap.classList.remove('stacking');
     };
     els.forEach((el, i) => {
+      // A card the change set moving itself (the old front card dropping to the back when the
+      // turn passes) keeps its own move: gliding it too would pull it out of line.
+      if (el.getAnimations().length) return done();
       const a = before[i];
       const b = el.getBoundingClientRect();
       const end = getComputedStyle(el).transform;
@@ -740,9 +744,16 @@ export class Hud {
       p.cash,
     ]);
     if (this.cardSigs.get(p.id) === sig) return;
-    // Smart stack: a card behind the front one that changes on someone else's turn rises out
-    // of the stack for a moment, so the change can be seen.
-    if (this.cardSigs.has(p.id) && this.cardsMode === 'smart' && p.id !== this.stackFront) this.popCard(p.id);
+    // Smart stack: when the cash or net worth of a card behind the front one changes (on someone
+    // else's turn), it rises out of the stack for a moment so the change can be seen. A card that
+    // only just rose starts its count-up and money chip once it has arrived.
+    const moneyMoved = this.shown.has(p.id) && (prev.cash !== p.cash || prev.nw !== nw);
+    // Never the active player's card (it is, or is about to be, in front; the stack's front only
+    // moves to them once every card is filled in).
+    const rising =
+      moneyMoved && this.cardsMode === 'smart' && p.id !== this.stackFront && p.id !== this.activePid
+        ? this.popCard(p.id)
+        : false;
     this.cardSigs.set(p.id, sig);
     clear(el);
     const nwEl = h('span', { class: 'nw' }, plain(prev.nw));
@@ -815,9 +826,14 @@ export class Hud {
       ),
     );
     const delta = p.cash - prev.cash;
-    if (delta && this.shown.has(p.id)) this.moneyPop(el, p.id, delta);
-    countUp(nwEl, prev.nw, nw, plain);
-    countUp(cashEl, prev.cash, p.cash, plain);
+    const known = this.shown.has(p.id);
+    const animate = () => {
+      if (delta && known && el.isConnected) this.moneyPop(el, p.id, delta);
+      countUp(nwEl, prev.nw, nw, plain);
+      countUp(cashEl, prev.cash, p.cash, plain);
+    };
+    if (rising) setTimeout(animate, T.cardStack);
+    else animate();
     this.shown.set(p.id, { nw, cash: p.cash });
   }
 

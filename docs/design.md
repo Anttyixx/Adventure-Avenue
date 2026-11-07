@@ -574,11 +574,12 @@ if (!(await ask(`Delete ${d.name}?`, 'Its 4 properties will be removed from the 
     beside the card ("+120G" green / "-50G" red). Can win: net worth and portrait pulse gold.
     Clicking opens that player's page in the info pop-up.
 - **Card layouts** (`.cards-modes` + `.cards-wrap.collapsed`, `hud.setCardsMode`): above the
-  cards' right end, a group outlined in 1.5px white 45% (radius 9, no fill, a 1px navy drop shadow
-  so it reads on bright grass) holding three 26x20 icon buttons (`.cards-mode`, 14px stroked SVG
-  icons in white 55%): List (three bars), Stack (a card with two strips above), Smart (a card with
-  an arrow rising out). The chosen one has a 1.5px white 85% outline and white icon; hover makes an
-  icon white; focus shows a gold ring. No fill anywhere, so it stays quiet over the board.
+  cards' right end, a group outlined in 1.5px white 55% (radius 9) on a light see-through backing
+  (white 16% with a 4px backdrop blur and a soft navy shadow) holding three 26x20 icon buttons
+  (`.cards-mode`, 14px stroked SVG icons in white 70%): List (three bars), Stack (a card with two
+  strips above), Smart (a card with an arrow rising out). The chosen one has a 1.5px white 90%
+  outline, a white 18% fill and a white icon; hover makes an icon white; focus shows a gold ring.
+  Easy to find, but quiet over the board.
   Collapsed (Stack and Smart), every card shares one grid cell (`grid-area: var(--row) / 1`, with
   `--stack-n` x 7px of room above for the peeking cards); the active card is in front
   and the others sit behind by turn order (`--d` = depth), each 7px higher and 5% narrower, filled
@@ -588,11 +589,14 @@ if (!(await ask(`Delete ${d.name}?`, 'Its 4 properties will be removed from the 
   transform transitions off meanwhile (`.cards-wrap.stacking`). Turn change: the old front card
   drops 55% of its height (ease-in), goes behind the stack, then rises into its back place
   (ease-out; `T.cardCycle` 750ms, Web Animations), while the rest ease forward (0.4s). Behind cards are `inert`.
-  Smart: a card behind the front one whose contents change (`fillCard`'s signature) gets `.popped`
+  Smart: a card behind the front one (never the active player's) whose cash or net worth changes
+  gets `.popped`
   (`popCard`): it takes a row of its own above the stack (`--row` 1, 2... in turn order, the stack
   on the next row) with its contents showing, and goes back `T.cardPop` (2.8s) after its last
-  change. Rising out and going back glide every card from where it was (`glide`, `T.cardStack`),
-  once per update however many cards changed. The pattern for any stack of
+  change; its count-up and money chip start `T.cardStack` later, once it has arrived. Rising out
+  and going back glide every card from where it was (`glide`, `T.cardStack`), once per update
+  however many cards changed; a card already running its own move (the old front card's drop to
+  the back) is left to finish it. The pattern for any stack of
   same-shaped cards where only the front one matters.
 
 ### 5.15 Info pop-up (pop-up + action bar)

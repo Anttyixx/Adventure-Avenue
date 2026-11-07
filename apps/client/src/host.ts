@@ -39,6 +39,7 @@ import {
   watchTradeOnBoard,
   auctionOnBoard,
   buyoutPrompt,
+  buyOnBoard,
   cannonOnBoard,
   motelPrompt,
   debtOnBoard,
@@ -808,6 +809,17 @@ export class HotSeat implements GameIO {
           req.purpose === 'forcedBuyout' || req.purpose === 'agency'
             ? new Map(req.options.map((id) => [id, fmt(price(id))]))
             : undefined;
+        // Buying a shop (a rival's, or an unowned one): tap it on the board, then Buy.
+        if (labels)
+          return buyOnBoard(
+            this.pick,
+            p,
+            req.options,
+            text,
+            price,
+            req.purpose === 'forcedBuyout',
+            req.optional,
+          );
         // When nearly every square is a choice, nothing is lit or pinned: tap any square.
         const plain = req.options.length > G.nodes.length * 0.6;
         this.board.setChoices(req.options, PLAYER_COLORS[color], (id) => hud.resolvePrompt(id), undefined, {

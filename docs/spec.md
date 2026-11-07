@@ -1031,14 +1031,19 @@ tile has a solid border in its district's color; an owned tile is filled with it
 player is drawn larger. Money everywhere ends in a small gold coin instead of "G". A shop whose
 value changes swells with a green "+" or red "-" label. Property choices (investing, trades,
 auctions, renovations, debt sales, buyout and agency cards, the cannon) are made by tapping the
-board; the rest of the board dims. Online games show a "Room ABCD" button above the player cards. A player holding all four suits has
+board; the rest of the board dims. **Buying a shop from a venture card** (Hostile takeover: a
+rival's shop for 5x its value; Estate Agency: an unowned shop at its value): the action bar never
+lists the shops. It says what to do with only **Skip**; tapping a glowing shop marks it (spreading
+rings) and the bar asks "Buy Ivy's Bay Market for 2,350G?" with the price (the shop's value too for a
+takeover) and the player's cash after, and **Buy** (gold) and **Skip**. Tapping another shop
+switches to it; Buy buys the marked one. Online games show a "Room ABCD" button above the player cards. A player holding all four suits has
 glowing suits on their card. Arcade games and venture picks open for everyone, so other players
 watch them being played; their result screen closes by itself or with Close.
 
 **Player card layouts.** Three small buttons float just above the right end of the player
-cards, in this order: **List**, **Stack** and **Smart**. They are only an outline with no fill (the
-chosen one outlined brighter), so they can be found when looked for but don't pull the eye from
-the board. The choice is remembered on that device (an older "folded" choice becomes Stack).
+cards, in this order: **List**, **Stack** and **Smart**. They are an outline with a light, see-through
+backing (the chosen one outlined brighter), so they can be found easily but don't pull the eye
+from the board. The choice is remembered on that device (an older "folded" choice becomes Stack).
 
 - **List:** every player card, one above the other.
 - **Stack:** the cards fold into a stack: only the active player's card shows in full, with the
@@ -1046,10 +1051,13 @@ the board. The choice is remembered on that device (an older "folded" choice bec
   who just went at the back), each peeking out a little higher as a strip in that player's color.
   When the turn passes, the front card drops down out of the way, slips behind the stack and rises
   into its place at the back, while the next player's card moves forward.
-- **Smart:** a stack, except that when another player's card changes on someone else's turn (they
-  get paid, lose money, their net worth or rank moves, they collect a suit...), their card rises
-  out of the stack into a list above it, so the player can watch it update. About 3 seconds after
-  its last change it slides back into the stack. Several cards can be out at once, in turn order.
+- **Smart:** a stack, except that when another player's **cash or net worth** changes on someone
+  else's turn (they get paid, pay, their shops or shares change value), their card rises out of
+  the stack into a list above it. Once it has arrived, the numbers count to their new values and
+  the money chip beside the card shows what they gained or lost. About 3 seconds after its last
+  change it slides back into the stack. Other changes (suits, level) don't lift a card, and the
+  active player's card never rises out. Several cards can be out at once, in turn order. A card
+  rising out never knocks the old front card out of line as it drops to the back.
 
 Switching between List and a stack is animated: the cards glide together into the stack (or fan
 back out to their places) one just after another; cards rising out of a smart stack and going

@@ -50,6 +50,52 @@ export async function pickOnBoard<T = never>(
   return v;
 }
 
+/** The Buy button's answer while picking a shop to buy (square ids are never negative). */
+const BUY_PICKED = -1;
+
+/**
+ * Buying a shop from a venture card (a rival's for 5x its value, `takeover`; or an unowned one):
+ * tap a glowing shop on the board, then Buy in the action bar. Tapping another shop switches to
+ * it. The bar never lists the shops. Resolves with the shop bought, or null for Skip.
+ */
+export async function buyOnBoard(
+  { hud, board }: PickCtx,
+  p: Player,
+  options: number[],
+  text: string,
+  price: (id: number) => number,
+  takeover: boolean,
+  optional = true,
+): Promise<number | null> {
+  const G = hud.G;
+  const labels = new Map(options.map((id) => [id, fmt(price(id))]));
+  board.setChoices(options, PLAYER_COLORS[p.color], (id) => hud.resolvePrompt(id), undefined, { labels });
+  let sel: number | null = null;
+  for (;;) {
+    board.highlight = sel == null ? [] : [sel];
+    let body: string | HTMLElement = `${text} Tap a glowing square.`;
+    if (sel != null) {
+      const sq = G.nodes[sel];
+      const owner = sq.owner >= 0 ? G.players[sq.owner] : null;
+      const cost = price(sel);
+      body = question(`Buy ${owner ? `${owner.name}'s ` : ''}${squareName(G, sq)} for ${fmt(cost)}?`, [
+        ['Price', fmt(cost)],
+        ...(takeover ? ([['Its value', fmt(sq.value)]] as [string, string][]) : []),
+        ['Your cash after', fmt(p.cash - cost)],
+      ]);
+    }
+    const buttons: PromptButton<number | null>[] = [];
+    if (sel != null) buttons.push({ label: 'Buy', value: BUY_PICKED, main: true });
+    if (optional) buttons.push({ label: 'Skip', value: null, secondary: true });
+    const v: number | null = await hud.prompt<number | null>(body, buttons, p.color);
+    if (v === BUY_PICKED || v == null) {
+      board.clearChoices();
+      return v == null ? null : sel;
+    }
+    sel = v;
+  }
+}
+
 /** Keep one square lit while a question about it is open. */
 function spotlight(board: BoardView, id: number, color: number) {
   board.setChoices([id], PLAYER_COLORS[color], () => {}, undefined, { pins: true });

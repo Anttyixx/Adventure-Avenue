@@ -1016,10 +1016,13 @@ input[type='range'] {
   display: flex;
   gap: 2px;
   padding: 2px;
-  border: 1.5px solid rgba(255, 255, 255, 0.45);
+  border: 1.5px solid rgba(255, 255, 255, 0.55);
   border-radius: 9px;
-  background: none;
-  filter: drop-shadow(0 0 1px rgba(16, 26, 51, 0.55));
+  /* A light, see-through backing so it can be spotted over the board without standing out. */
+  background: rgba(255, 255, 255, 0.16);
+  -webkit-backdrop-filter: blur(4px);
+  backdrop-filter: blur(4px);
+  box-shadow: 0 1px 3px rgba(16, 26, 51, 0.25);
 }
 .cards-mode {
   display: grid;
@@ -1030,7 +1033,7 @@ input[type='range'] {
   border: 1.5px solid transparent;
   border-radius: 6px;
   background: none;
-  color: rgba(255, 255, 255, 0.55);
+  color: rgba(255, 255, 255, 0.7);
   cursor: pointer;
   transition:
     color 0.15s,
@@ -1040,7 +1043,8 @@ input[type='range'] {
   color: #fff;
 }
 .cards-mode.on {
-  border-color: rgba(255, 255, 255, 0.85);
+  border-color: rgba(255, 255, 255, 0.9);
+  background: rgba(255, 255, 255, 0.18);
   color: #fff;
 }
 .cards-mode:focus-visible {

@@ -66,6 +66,7 @@ import {
   answerTradeOnBoard,
   auctionOnBoard,
   buyoutPrompt,
+  buyOnBoard,
   feeIfOwned,
   question,
   cannonOnBoard,
@@ -111,7 +112,12 @@ const rnd = (n: number) => Math.floor(Math.random() * n);
  * Controls for UI elements that were just added or changed: they shake once and glow so they
  * are easy to find. Update this list with each change.
  */
-const RECENT = new Set(['Game setup', 'Game setup (friend joined)', 'Joined game (locked setup)']);
+const RECENT = new Set([
+  'Hostile takeover (venture card)',
+  'Cards: smart',
+  'Smart stack: pay someone else',
+  'Next player (card stack)',
+]);
 
 /** Which board the lab plays on: Town (square) or Twin Lakes (hex), remembered per browser. */
 const LAB_BOARD_KEY = 'aa-lab-board';
@@ -1158,6 +1164,24 @@ export async function openLab(app: HTMLElement, section?: string) {
         if (sq.owner < 0) sq.owner = q.id;
         refresh();
         result('Buyout', await buyoutPrompt(pick, cur(), sq.id, sq.value * K.buyoutX));
+      }),
+      // The Hostile takeover venture card: tap a rival's shop, then Buy.
+      btn('Hostile takeover (venture card)', async () => {
+        const p = cur();
+        const options = G.nodes
+          .filter((n) => isShopLike(n) && n.owner >= 0 && n.owner !== p.id)
+          .map((n) => n.id);
+        result(
+          'Hostile takeover',
+          await buyOnBoard(
+            pick,
+            p,
+            options,
+            "Pick a rival's shop to buy for 5x its value.",
+            (id) => G.nodes[id].value * K.buyoutX,
+            true,
+          ),
+        );
       }),
       btn('Swap target', async () =>
         result(

@@ -26,6 +26,27 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: '2026-11-07-takeover-pick',
+    date: 'Nov 7, 2026',
+    title: 'Pick, then buy',
+    features: [
+      {
+        tag: 'fix',
+        title: 'Buying a shop from a venture card',
+        text: 'Hostile takeover and Estate Agency cards no longer list shops in the action bar. Tap a glowing shop on the board, check its price, then tap Buy (or Skip).',
+      },
+      {
+        tag: 'better',
+        title: 'Smart cards show the money',
+        text: "In the Smart layout a player's card only pops out when their cash or net worth changes, and you see the numbers count and the money chip once the card is up.",
+      },
+    ],
+    extras: [
+      'Fixed the old front card landing out of line at the back of the stack',
+      'The card layout buttons have a light backing so they are easier to find',
+    ],
+  },
+  {
     id: '2026-11-07-rename-in-setup',
     date: 'Nov 7, 2026',
     title: 'Rename in game setup',
