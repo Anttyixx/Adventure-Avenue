@@ -141,7 +141,9 @@ npm run sim -- 500   # CPU-only balance simulation (average match length, etc.)
 - **Engine:** Vitest tests in `packages/engine/test/` (`helpers.ts` has `makeGame()` with a small
   test board and scripted answers). Add a test for every rule change or rule bug fix.
 - **UI Lab:** `/#ui-lab` (or the dev menu: hold the version chip on the main menu for 3 seconds).
-  It builds a sample game and has a button for every UI element. `/#stocks-lab` compares the
+  It builds a sample game and has a button for every UI element, in a pop-up that the version chip
+  in the top left opens and closes (scripts can preset `localStorage['aa-lab-open'] = '0'` to
+  start with it closed). `/#stocks-lab` compares the
   stock systems; `/#editor` is the board editor.
 - **Browser automation:** Playwright works against `npm run preview`. Dev builds expose the
   running game as `window.__aaGame` (the `HotSeat`: `.G` state, `.board`, `.hud`, `.game`), so a

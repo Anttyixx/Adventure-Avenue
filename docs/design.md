@@ -947,8 +947,18 @@ and their content retain their own scrolling behavior.
 Buying and selling stock and the district venture cards (Gift shares, Bull/Bear market) follow the
 same pattern as the venture board: the stock market (`marketView(..., { split: true })`: map top
 left, shop cards bottom left, table on the right filling the height) sits in a centered glass pop-up that does not
-dim the board (`.stock-layer > .modal.stock-pop`, only the pop-up catches clicks; equal space above and below
-it, and `stockPopup` slides it left only as far as needed to clear the player cards), and the decision is in the action bar (`.stock-bar`):
+dim the board (`.stock-layer > .modal.stock-pop`, only the pop-up catches clicks; the layer's room is
+`--top-free` + 8px to `--ask-free` + 8px, `stockPopup` slides it left only as far as needed to clear the
+player cards, and it never scrolls: `overflow: hidden`, `fitInLayer` zooms it down to fit). On
+small screens (`FILL_SCREENS`: 500px tall or less, or 760px wide or less) the layer gets `.fill`:
+the pop-up fills the room (2px under the toolbar, 8px from the sides, over the player cards, 4px
+above the action bar) and the layer behind it is a 25% navy wash with a 6px backdrop blur; the
+toolbar and the action bar get `z-index: 5` so they stay sharp above it. The district table then
+shows as many rows as fit (`marketView` measures them, a `ResizeObserver` re-counts) as a looping
+window onto the list (`holdingsGrid(..., order)`): the selection moving past either end shifts it
+by one, wrapping from the last district to the first. Tall narrow screens (760px wide or less,
+600px tall or more) bring back the title, map and shop cards above the table. The live auction
+uses the same frame, and the decision is in the action bar (`.stock-bar`):
 the summary card (`.m-card`, compact), the digit picker, then `.tb-btns` with the gold Buy/Sell
 (or the district button) over a ghost Skip/Cancel. Changing district in the pop-up redraws the bar
 in place (no new prompt, so the bar doesn't morph). The summary card has two groups split by an `hr.m-divider` (market price + shares held; price per share + cash). The toolbar's **View board** chip (`.view-chip`, `hud.offerViewBoard(el)`; while on offer it
@@ -1004,12 +1014,21 @@ A count on a picture card (the build bar's "2 left") is a small navy pill in the
 corner (`.bp-left`: 9px bold, `--text`; red when 0). On phones it shows the number only, so it
 doesn't cover the picture.
 
-### UI Lab tabs
+### UI Lab
 
-The Lab's control panel has a row of small `.seg` pills (`.lab-tabs`) under the search box:
-**New** (only the glowing `RECENT` controls, from every section), then one tab per group of
-sections (`LAB_TABS` in `lab.ts`). A gold dot marks tabs that hold glowing controls. Search looks
-through every tab. The Target player picker stays above every tab.
+The Lab's controls live in a pop-up (`.lab-panel`, glass, 14px radius, up to 580px wide, under
+the top-left chips, a 180ms pop-in from the top left) that the version chip opens and closes
+(`.lab-ver`: a gold "UI Lab" `.lab-ver-tag` and the build, gold outline while open; Escape and the
+pop-up's round × close it too; the open state is remembered on the device). It overlays the
+screen (it doesn't take room from the board or pop-ups). Inside: a header (Lilita gold "UI Lab",
+a pill search field, ×), the target player as pills in each player's color (filled when chosen),
+then two panes. Left, the categories (`.lab-rail`, `LAB_TABS`): **New** (only the glowing
+`RECENT` controls, from every section) first, then one per group of sections, each with its number
+of controls; the chosen one is gold on a gold 16% fill, and a gold dot marks categories with
+glowing controls. Right, the controls (only this pane scrolls): each section has a small muted
+uppercase heading and note, then its controls as even tiles in a grid (`.lab-row`, min 150px,
+left-aligned 12.5px bold text on white 6%, a gold outline on hover). Search looks through every
+category; "No controls match." shows when nothing does.
 
 ### Arcade games (board + action bar)
 

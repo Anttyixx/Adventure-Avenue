@@ -107,9 +107,14 @@ export function fitInLayer(box: HTMLElement, min = 0.55): () => void {
   };
 }
 
+/** Screens small enough that the stock market and the auction fill the screen. */
+const FILL_SCREENS = '(max-height: 500px), (max-width: 760px)';
+
 /**
  * A pop-up in the middle of the screen whose choices sit in the action bar below it (the stock
- * market, the auction). `cls` replaces the stock market's size classes.
+ * market, the auction). It never scrolls: it shrinks to fit (`fit`). On small screens it fills the
+ * room between the toolbar (so View board stays in reach) and the action bar, with the board
+ * blurred behind it. `cls` replaces the stock market's size classes.
  */
 export function stockPopup(hud: Hud, title: string, content: Node, cls = 'wide xl') {
   const box = h(
@@ -119,6 +124,10 @@ export function stockPopup(hud: Hud, title: string, content: Node, cls = 'wide x
     content,
   );
   const layer = h('div', { class: 'stock-layer' }, box);
+  const small = matchMedia(FILL_SCREENS);
+  const fill = () => layer.classList.toggle('fill', small.matches);
+  fill();
+  small.addEventListener('change', fill);
   hud.root.append(layer);
   const unplace = keepClearOfCards(hud, box);
   let release = () => {};
@@ -133,6 +142,7 @@ export function stockPopup(hud: Hud, title: string, content: Node, cls = 'wide x
       release = hud.offerViewBoard(layer, onPeek);
     },
     close: () => {
+      small.removeEventListener('change', fill);
       release();
       unplace();
       unfit();
@@ -287,6 +297,7 @@ export async function stockModal(
     peeking = on;
     draw();
   });
+  pop.fit();
   draw();
   try {
     return await hud.prompt<{ d: number; n: number } | null>(bar, [], p.color);
@@ -414,6 +425,7 @@ export async function districtStockModal(
     peeking = on;
     draw();
   });
+  pop.fit();
   draw();
   try {
     return await hud.prompt<number>(bar, [], p.color);

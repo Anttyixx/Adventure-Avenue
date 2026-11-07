@@ -26,6 +26,19 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: '2026-11-07-stock-popup-fit',
+    date: 'Nov 7, 2026',
+    title: 'A steadier stock market',
+    features: [
+      {
+        tag: 'better',
+        title: 'The stock market stays put',
+        text: 'The buy and sell pop-up never scrolls: it fits the room between the toolbar and the action bar. On small screens it fills that room with the board blurred behind it, and View board is still there. The district list shows as many districts as fit and loops round: after the last district comes the first again.',
+      },
+    ],
+    extras: ['The live auction fills small screens the same way'],
+  },
+  {
     id: '2026-11-07-map-carousel',
     date: 'Nov 7, 2026',
     title: 'Map carousel',

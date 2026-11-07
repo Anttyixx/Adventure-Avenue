@@ -102,6 +102,8 @@ const LAB_TABS: { id: string; title: string; sections: string[] }[] = [
   { id: 'screens', title: 'Menus', sections: ['screens'] },
 ];
 const LAB_TAB_KEY = 'aa-lab-tab';
+/** Whether the controls pop-up was open (opened and closed with the version chip). */
+const LAB_OPEN_KEY = 'aa-lab-open';
 
 const rnd = (n: number) => Math.floor(Math.random() * n);
 
@@ -110,11 +112,15 @@ const rnd = (n: number) => Math.floor(Math.random() * n);
  * are easy to find. Update this list with each change.
  */
 const RECENT = new Set([
-  'Game setup',
-  'Game setup (friend joined)',
-  'Game setup (offline)',
-  'Joined game (locked setup)',
-  'Online: continue saved game',
+  'Buy stock',
+  'Buy stock (shaken district)',
+  'Buy stock (10% off)',
+  'Sell stock',
+  'Sell stock (20% above)',
+  'Gift shares (venture card)',
+  'Bull market (venture card)',
+  'Bear market (venture card)',
+  'Live auction',
 ]);
 
 /** Which board the lab plays on: Town (square) or Twin Lakes (hex), remembered per browser. */
@@ -215,14 +221,20 @@ export async function openLab(app: HTMLElement, section?: string) {
   });
   board.zoomOut = 1;
   hud.setFastLabel(false);
-  // The build being tested, in its own chip right of the info chip.
-  hud.infoChip.after(
-    h(
-      'span',
-      { class: 'lab-ver glass', title: `Build ${BUILD.sha} from ${BUILD.branch}` },
-      `${VERSION_LABEL} ${BUILD.branch} ${BUILD.sha}`,
-    ),
-  );
+  // The build being tested, in its own chip right of the info chip. It opens and closes the
+  // controls pop-up.
+  const verChip = h(
+    'button',
+    {
+      class: 'lab-ver glass',
+      title: `Build ${BUILD.sha} from ${BUILD.branch}. Tap to open or close the UI Lab.`,
+      'aria-haspopup': 'dialog',
+      'aria-expanded': 'false',
+    },
+    h('span', { class: 'lab-ver-tag' }, 'UI Lab'),
+    `${VERSION_LABEL} ${BUILD.branch} ${BUILD.sha}`,
+  ) as HTMLButtonElement;
+  hud.infoChip.after(verChip);
 
   let target = 0;
   const cur = (): Player => G.players[target];
@@ -239,7 +251,7 @@ export async function openLab(app: HTMLElement, section?: string) {
   };
   board.setState(G);
   setActive(G.order[G.turn]);
-  hud.tick('UI Lab: pick a control on the left to try an element.');
+  hud.tick('UI Lab: tap the version chip (top left) to open or close the controls.');
 
   const pick = { hud, board, G };
   const result = (label: string, v: unknown) => {
@@ -249,28 +261,32 @@ export async function openLab(app: HTMLElement, section?: string) {
 
   // ------------------------------------------------------------ control panel
 
-  const panel = h('div', { class: 'lab-panel glass' });
+  const panel = h('div', { class: 'lab-panel glass', role: 'dialog', 'aria-label': 'UI Lab' });
   const body = h('div', { class: 'lab-body' });
-  const toggle = h('button', { class: 'btn small ghost' }, 'Hide');
-  // Frame the board beside the panel; it gets the full width back when the panel is hidden.
-  const fitBoard = () => {
-    hud.leftInset = panel.classList.contains('collapsed') ? 0 : panel.getBoundingClientRect().right + 6;
-    hud.updateInsets();
+  /** Open or close the controls pop-up (remembered on this device). */
+  const setOpen = (on: boolean) => {
+    panel.hidden = !on;
+    verChip.classList.toggle('on', on);
+    verChip.setAttribute('aria-expanded', String(on));
+    try {
+      localStorage.setItem(LAB_OPEN_KEY, on ? '1' : '0');
+    } catch {
+      /* not remembered */
+    }
   };
-  toggle.onclick = () => {
-    panel.classList.toggle('collapsed');
-    toggle.textContent = panel.classList.contains('collapsed') ? 'Show' : 'Hide';
-    fitBoard();
-  };
-  // Search: shows only the controls (or sections) whose names match.
+  verChip.onclick = () => setOpen(panel.hidden);
+  window.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && !panel.hidden && !document.querySelector('.modal-wrap')) setOpen(false);
+  });
+  // Search: shows only the controls (or sections) whose names match, across every category.
   const search = h('input', {
     class: 'lab-search',
     type: 'search',
     placeholder: 'Search controls...',
     'aria-label': 'Search controls',
   }) as HTMLInputElement;
-  // Tabs: each shows a few sections; "New" shows only the glowing (recently changed) controls.
-  // A search looks through every tab.
+  // Categories, down the left side: each shows a few sections; "New" shows only the glowing
+  // (recently changed) controls.
   let tab = 'new';
   try {
     const saved = localStorage.getItem(LAB_TAB_KEY);
@@ -278,43 +294,46 @@ export async function openLab(app: HTMLElement, section?: string) {
   } catch {
     /* private mode: start on New */
   }
-  const tabBar = h('div', { class: 'seg lab-tabs', role: 'tablist' });
+  const rail = h('nav', { class: 'lab-rail', role: 'tablist', 'aria-orientation': 'vertical' });
   const filter = () => {
     const q = search.value.trim().toLowerCase();
     const shown = LAB_TABS.find((t) => t.id === tab)!;
-    for (const b of tabBar.querySelectorAll<HTMLElement>('.seg-btn')) {
+    for (const b of rail.querySelectorAll<HTMLElement>('.lab-cat')) {
       const on = b.dataset.tab === tab && !q;
       b.classList.toggle('on', on);
       b.setAttribute('aria-selected', String(on));
     }
+    let hits = 0;
     for (const sec of body.querySelectorAll<HTMLElement>('.lab-sec')) {
-      if (sec.classList.contains('lab-pinned')) continue;
       const title = sec.querySelector('h4')?.textContent?.toLowerCase() ?? '';
       const inTab = tab === 'new' || shown.sections.includes(sec.dataset.sec ?? '');
       const whole = q ? title.includes(q) : tab !== 'new';
       let any = false;
-      for (const b of sec.querySelectorAll<HTMLElement>('.lab-row:not(.lab-players) > button')) {
+      for (const b of sec.querySelectorAll<HTMLElement>('.lab-row > button')) {
         const hit = q
           ? whole || (b.textContent ?? '').toLowerCase().includes(q)
           : inTab && (whole || b.classList.contains('lab-new'));
         b.hidden = !hit;
         any ||= hit;
+        if (hit) hits++;
       }
-      // Sections without buttons (e.g. the sound sliders) show with their tab.
+      // Sections without buttons (e.g. the sound sliders) show with their category.
       sec.hidden = q ? !any && !whole : !inTab || (tab === 'new' ? !any : false);
       // Rows left empty by the filter take no space.
-      for (const r of sec.querySelectorAll<HTMLElement>('.lab-row:not(.lab-players)')) {
+      for (const r of sec.querySelectorAll<HTMLElement>('.lab-row')) {
         const btns = [...r.children].filter((c) => c.tagName === 'BUTTON') as HTMLElement[];
         r.hidden = btns.length > 0 && btns.every((b) => b.hidden);
       }
     }
+    empty.hidden = hits > 0 || [...body.querySelectorAll('.lab-sec')].some((x) => !(x as HTMLElement).hidden);
   };
+  const empty = h('p', { class: 'lab-empty hint', hidden: true }, 'No controls match.');
   for (const t of LAB_TABS)
-    tabBar.append(
+    rail.append(
       h(
         'button',
         {
-          class: 'seg-btn',
+          class: 'lab-cat',
           role: 'tab',
           'data-tab': t.id,
           onclick: () => {
@@ -329,14 +348,36 @@ export async function openLab(app: HTMLElement, section?: string) {
             body.scrollTop = 0;
           },
         },
-        t.title,
+        h('span', { class: 'lab-cat-name' }, t.title),
+        h('span', { class: 'lab-cat-n' }),
       ),
     );
   search.oninput = filter;
-  panel.append(h('div', { class: 'lab-head' }, h('h3', null, 'UI Lab'), toggle), search, tabBar, body);
+  // The target player: the one player-related controls act on.
+  const pickerRow = h('div', { class: 'lab-players', role: 'group', 'aria-label': 'Target player' });
+  panel.append(
+    h(
+      'div',
+      { class: 'lab-head' },
+      h('h3', null, 'UI Lab'),
+      search,
+      h(
+        'button',
+        { class: 'lab-close', 'aria-label': 'Close the UI Lab', onclick: () => setOpen(false) },
+        '×',
+      ),
+    ),
+    h('div', { class: 'lab-target' }, h('span', { class: 'lab-target-label' }, 'Player'), pickerRow),
+    h('div', { class: 'lab-main' }, rail, h('div', { class: 'lab-body-wrap' }, body, empty)),
+  );
   root.append(panel);
-  window.addEventListener('resize', fitBoard);
-  requestAnimationFrame(fitBoard);
+  let startOpen = true;
+  try {
+    startOpen = localStorage.getItem(LAB_OPEN_KEY) !== '0';
+  } catch {
+    /* open */
+  }
+  setOpen(startOpen || !!section);
 
   const sections = new Map<string, HTMLElement>();
   const addSection = (id: string, title: string, note?: string) => {
@@ -371,8 +412,7 @@ export async function openLab(app: HTMLElement, section?: string) {
       label,
     );
 
-  // Player picker shared by the sections.
-  const pickerRow = h('div', { class: 'lab-row lab-players' });
+  // Player picker shared by the sections (in the pop-up's header).
   const drawPicker = () => {
     clear(pickerRow);
     G.players.forEach((p, i) =>
@@ -380,8 +420,9 @@ export async function openLab(app: HTMLElement, section?: string) {
         h(
           'button',
           {
-            class: `btn small ${i === target ? 'on' : 'ghost'}`,
+            class: `lab-player ${i === target ? 'on' : ''}`,
             style: `--pc:${PLAYER_COLORS[p.color]}`,
+            'aria-pressed': String(i === target),
             onclick: () => {
               target = i;
               drawPicker();
@@ -393,7 +434,6 @@ export async function openLab(app: HTMLElement, section?: string) {
     );
   };
   drawPicker();
-  body.append(h('div', { class: 'lab-sec lab-pinned' }, h('h4', null, 'Target player'), pickerRow));
 
   // Player cards
   {
@@ -1801,10 +1841,16 @@ export async function openLab(app: HTMLElement, section?: string) {
   // A link to a section (from the dev menu) opens its tab.
   const linked = section ? LAB_TABS.find((t) => t.sections.includes(section)) : undefined;
   if (linked) tab = linked.id;
-  // Tabs with recently changed controls get a dot.
-  for (const b of tabBar.querySelectorAll<HTMLElement>('.seg-btn')) {
+  // Each category shows how many controls it has; ones with recently changed controls get a dot.
+  for (const b of rail.querySelectorAll<HTMLElement>('.lab-cat')) {
     const t = LAB_TABS.find((x) => x.id === b.dataset.tab)!;
-    const fresh = t.sections.some((id) => sections.get(id)?.querySelector('.lab-new'));
+    const secs = t.sections.map((id) => sections.get(id)).filter((x): x is HTMLElement => !!x);
+    const n =
+      t.id === 'new'
+        ? body.querySelectorAll('.lab-row > .lab-new').length
+        : secs.reduce((sum, x) => sum + x.querySelectorAll('.lab-row > button').length, 0);
+    b.querySelector('.lab-cat-n')!.textContent = n ? String(n) : '';
+    const fresh = secs.some((x) => x.querySelector('.lab-new'));
     b.classList.toggle('has-new', fresh || t.id === 'new');
   }
   filter();

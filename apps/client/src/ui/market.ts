@@ -33,9 +33,6 @@ import { clear, fmt, h } from './dom';
 const UNOWNED = '#d5dae6';
 const UNOWNED_ICON = '#9aa3b8';
 
-/** How many districts the table shows at once on short screens. */
-const MAX_ROWS_SHORT = 6;
-
 /** Remember the last district viewed so the drawer keeps it when it refreshes mid-turn. */
 let lastSelected = 0;
 
@@ -57,9 +54,11 @@ export function marketView(
   const shops = h('div', { class: 'm-shops' });
   if (split) root.append(h('div', { class: 'm-left' }, mapWrap, shops), h('div', { class: 'm-right' }, grid));
   else root.append(h('div', { class: 'm-top' }, mapWrap, h('div', { class: 'm-right' }, grid)), shops);
-  // Short (phone) screens show 6 districts at a time; the list shifts by one when the selection
-  // moves past either end.
+  // When the pop-up fills a small screen, the table shows as many districts as fit. The rows are a
+  // window onto the list that loops: moving past the last shown district shifts it by one, and
+  // past the end of the list it carries on from the first district.
   let first = 0;
+  let shown = G.districts.length;
 
   const select = (d: number) => {
     sound.play('click');
@@ -69,18 +68,45 @@ export function marketView(
     draw();
   };
 
+  /** How many district rows fit the table's room (all of them unless the pop-up fills a small screen). */
+  const rowsThatFit = () => {
+    const n = G.districts.length;
+    if (!root.closest('.stock-layer.fill') || !grid.clientHeight) return n;
+    const table = grid.querySelector('table');
+    const row = table?.querySelector<HTMLElement>('tbody tr:not(.m-arrow-row)');
+    if (!table || !row) return n;
+    const head = table.querySelector<HTMLElement>('thead')?.offsetHeight ?? 0;
+    const foot = table.querySelector<HTMLElement>('.m-arrow-row')?.offsetHeight ?? 0;
+    return Math.max(1, Math.min(n, Math.floor((grid.clientHeight - head - foot) / row.offsetHeight)));
+  };
+  const drawTable = () => {
+    const n = G.districts.length;
+    if (shown >= n) first = 0;
+    else {
+      // Keep the selection in the window, moving it the shorter way round the loop.
+      const at = (sel - first + n) % n;
+      if (at >= shown) first = at - shown < n - at ? (sel - shown + 1 + n) % n : sel;
+    }
+    const order = Array.from({ length: Math.min(shown, n) }, (_, k) => (first + k) % n);
+    clear(grid);
+    grid.append(holdingsGrid(G, sel, select, order));
+  };
   const draw = () => {
     clear(mapWrap);
     mapWrap.append(miniMap(G, sel, select, split ? 1.6 : 1));
-    clear(grid);
-    const shown = matchMedia('(max-height: 500px)').matches ? MAX_ROWS_SHORT : G.districts.length;
-    if (sel < first) first = sel;
-    if (sel >= first + shown) first = sel - shown + 1;
-    first = Math.max(0, Math.min(first, G.districts.length - shown));
-    grid.append(holdingsGrid(G, sel, select, first, shown));
+    drawTable();
     clear(shops);
     shops.append(shopStrip(G, sel));
   };
+  // The room can change (the pop-up opening, a phone turning): show as many rows as now fit.
+  new ResizeObserver(() => {
+    if (!root.isConnected) return;
+    const fit = rowsThatFit();
+    if (fit !== shown) {
+      shown = fit;
+      drawTable();
+    }
+  }).observe(grid);
 
   // Up/down arrow keys move between districts while the screen is open.
   root.tabIndex = 0;
@@ -245,12 +271,12 @@ function shakenIcon(G: GameState, d: number): HTMLElement {
   return el;
 }
 
+/** `order`: the districts to show, top to bottom (a window onto the list that may wrap round). */
 function holdingsGrid(
   G: GameState,
   sel: number,
   select: (d: number) => void,
-  first = 0,
-  shown = G.districts.length,
+  order: number[] = G.districts.map((_, d) => d),
 ): HTMLElement {
   const players = G.players;
   const head = h(
@@ -270,12 +296,12 @@ function holdingsGrid(
       ),
     ),
   );
-  const rows = G.districts.map((dist, d) =>
-    h(
+  const rows = order.map((d) => {
+    const dist = G.districts[d];
+    return h(
       'tr',
       {
         class: d === sel ? 'sel' : '',
-        hidden: d < first || d >= first + shown,
         onclick: () => select(d),
       },
       h(
@@ -293,8 +319,8 @@ function holdingsGrid(
           p.shares[d] ? String(p.shares[d]) : '–',
         ),
       ),
-    ),
-  );
+    );
+  });
   const foot = h(
     'tr',
     { class: 'm-arrow-row' },

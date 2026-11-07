@@ -2160,9 +2160,9 @@ input[type='range'] {
   display: grid;
   place-items: center;
   box-sizing: border-box;
-  /* The same space on opposite sides, so the pop-up sits in the middle of the screen while
-     staying clear of the toolbar, the player cards and the action bar. */
-  padding: 170px 12px;
+  /* The room between the toolbar and the action bar (the pop-up shrinks to fit it rather than
+     scroll, modals.ts fitInLayer), clear of the player cards. */
+  padding: calc(var(--top-free, 50px) + 8px) 12px calc(var(--ask-free, 120px) + 8px);
   pointer-events: none;
 }
 .hud > .stock-layer[hidden],
@@ -2190,6 +2190,8 @@ input[type='range'] {
   pointer-events: auto;
   box-sizing: border-box;
   max-height: 100%;
+  /* Never scrolls: it shrinks to fit, or (small screens) fills the room and shows fewer rows. */
+  overflow: hidden;
   /* Never wider than the space left of the player cards, with a gap before them (CARD_GAP). */
   max-width: calc(100vw - var(--free-right, 0px) - 40px) !important;
 }
@@ -2855,74 +2857,277 @@ input[type='range'] {
 
 /* ------------------------------------------------------------ UI Lab */
 
+/* The version chip (right of the info chip) opens and closes the UI Lab pop-up: a gold "UI Lab"
+   tag and the build, outlined in gold while the pop-up is open. */
+.lab-ver {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 3px 11px 3px 3px;
+  border-radius: 999px;
+  color: var(--muted);
+  font: 600 12px var(--body);
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    border-color 0.15s,
+    color 0.15s;
+}
+.lab-ver:hover,
+.lab-ver.on {
+  border-color: var(--accent);
+  color: var(--text);
+}
+.lab-ver-tag {
+  padding: 2px 9px;
+  border-radius: 999px;
+  background: var(--accent);
+  color: #3b2a00;
+  font: 400 13px/16px var(--head);
+}
+/* The pop-up, under the top-left chips: a header (title, search, close), the target player, then
+   the categories down the left and their controls on the right in tidy rows, grouped by section.
+   Only the controls list scrolls. */
 .lab-panel {
   position: absolute;
-  top: 10px;
+  top: 54px;
   left: 10px;
-  width: 310px;
-  max-height: calc(100% - 200px);
+  z-index: 6;
+  width: min(580px, calc(100vw - 20px));
+  max-height: calc(100dvh - 66px);
   display: flex;
   flex-direction: column;
-  z-index: 6;
-  background: rgba(16, 26, 51, 0.92);
+  overflow: hidden;
+  border-radius: 14px;
+  background: rgba(16, 26, 51, 0.96);
+  transform-origin: top left;
+  animation: lab-pop 0.18s ease-out;
 }
-.lab-panel.collapsed .lab-body {
-  display: none;
+@keyframes lab-pop {
+  from {
+    opacity: 0;
+    transform: translateY(-6px) scale(0.97);
+  }
+}
+.lab-panel[hidden],
+.lab-panel [hidden] {
+  display: none !important;
 }
 .lab-head {
+  flex: none;
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  padding: 8px 10px;
-  border-bottom: 1px solid var(--glass-line);
+  gap: 10px;
+  padding: 10px 10px 8px 14px;
 }
 .lab-head h3 {
   margin: 0;
-  font-family: var(--head);
-  font-weight: 400;
+  font: 400 20px var(--head);
+  color: var(--accent);
+  white-space: nowrap;
+}
+.lab-search {
+  flex: 1;
+  min-width: 0;
+  padding: 7px 12px;
+  border: 1px solid var(--glass-line);
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.25);
+  color: var(--text);
+  font: 500 13px var(--body);
+}
+.lab-search:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+.lab-close {
+  flex: none;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text);
+  font: 700 16px/28px var(--body);
+  cursor: pointer;
+}
+.lab-close:hover {
+  background: rgba(255, 255, 255, 0.16);
+}
+/* The target player: one pill per player in their color, filled when chosen. */
+.lab-target {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 14px 10px;
+  border-bottom: 1px solid var(--glass-line);
+}
+.lab-target-label {
+  color: var(--muted);
+  font: 700 11px var(--body);
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+.lab-players {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.lab-player {
+  padding: 2px 10px;
+  border: 2px solid var(--pc);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--text);
+  font: 700 12px/16px var(--body);
+  cursor: pointer;
+}
+.lab-player.on {
+  background: var(--pc);
+  color: #fff;
+}
+.lab-main {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+}
+/* Categories: a list down the left, each with its number of controls; gold when chosen, a gold
+   dot when it has recently changed controls. */
+.lab-rail {
+  flex: none;
+  width: 136px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px 6px;
+  overflow-y: auto;
+  border-right: 1px solid var(--glass-line);
+}
+.lab-cat {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  padding: 7px 10px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: #d4dced;
+  font: 600 13px var(--body);
+  text-align: left;
+  cursor: pointer;
+}
+.lab-cat:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+.lab-cat.on {
+  background: rgba(255, 209, 102, 0.16);
   color: var(--accent);
 }
-.lab-body {
-  overflow: auto;
-  padding: 4px 10px 10px;
+.lab-cat-n {
+  color: var(--muted);
+  font-size: 11px;
 }
+.lab-cat.has-new .lab-cat-name::after {
+  content: '';
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  margin-left: 6px;
+  vertical-align: 2px;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 6px rgba(255, 209, 102, 0.9);
+}
+.lab-body-wrap {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+.lab-body {
+  padding: 2px 12px 12px;
+}
+.lab-empty {
+  margin: 0;
+  padding: 16px;
+}
+/* A section: a small muted heading and note, then its controls as even tiles in a grid. */
 .lab-sec {
-  padding: 6px 0 8px;
+  padding: 10px 0 12px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.06);
 }
+.lab-sec:last-child {
+  border-bottom: 0;
+}
 .lab-sec h4 {
-  margin: 4px 0;
-  font-family: var(--head);
-  font-weight: 400;
+  margin: 0 0 2px;
+  color: var(--muted);
+  font: 700 11px var(--body);
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
 }
 .lab-sec .hint {
-  margin: 0 0 4px;
+  margin: 0 0 6px;
+  font-size: 12px;
 }
 .lab-sec.flash {
   animation: labflash 1.6s ease-out;
   border-radius: 8px;
 }
+.lab-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 4px;
+  margin-top: 4px;
+}
+.lab-row > .btn.small {
+  padding: 7px 10px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text);
+  font: 600 12.5px/1.25 var(--body);
+  letter-spacing: 0;
+  text-align: left;
+}
+.lab-row > .btn.small:hover {
+  border-color: rgba(255, 209, 102, 0.45);
+  background: rgba(255, 255, 255, 0.11);
+}
+@media (max-height: 500px), (max-width: 760px) {
+  .lab-panel {
+    top: 40px;
+    left: 6px;
+    width: min(540px, calc(100vw - 12px));
+    max-height: calc(100dvh - 46px);
+  }
+  .lab-head {
+    padding: 8px 8px 6px 12px;
+  }
+  .lab-head h3 {
+    font-size: 17px;
+  }
+  .lab-target {
+    padding: 0 12px 8px;
+  }
+  .lab-rail {
+    width: 112px;
+  }
+  .lab-cat {
+    padding: 6px 8px;
+    font-size: 12px;
+  }
+  .lab-row {
+    grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+  }
+}
 @keyframes labflash {
   0%,
   40% {
     background: rgba(255, 209, 102, 0.18);
-  }
-}
-.lab-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
-  margin-top: 4px;
-}
-.lab-row .btn.small {
-  font-size: 12px;
-  padding: 5px 8px;
-}
-@media (max-height: 500px), (max-width: 760px) {
-  .lab-panel {
-    width: 250px;
-    top: 44px;
-    max-height: calc(100% - 120px);
   }
 }
 
@@ -5189,14 +5394,7 @@ input[type='range'] {
     box-shadow: 0 0 8px rgba(255, 209, 102, 0.5);
   }
 }
-/* UI Lab: the build being tested, right of the info chip. */
-.lab-ver {
-  padding: 5px 10px;
-  border-radius: 999px;
-  font-size: 12px;
-  color: var(--muted);
-  white-space: nowrap;
-}
+
 /* The border shows the zoom mode: grey free (the player's), blue auto (the game framed part of
    the board; the player may still zoom), red locked (only the game moves the zoom). */
 .zoom-chip {
@@ -5763,53 +5961,6 @@ button.tb-chip:hover {
   color: var(--text);
 }
 
-/* UI Lab: search, and controls for recently changed elements */
-.lab-search {
-  display: block;
-  width: calc(100% - 4px);
-  margin: 0 2px 8px;
-  padding: 7px 10px;
-  border: 1px solid var(--glass-line);
-  border-radius: 10px;
-  background: rgba(0, 0, 0, 0.25);
-  color: var(--text);
-  font: inherit;
-  font-size: 13px;
-}
-.lab-panel.collapsed .lab-search,
-.lab-panel.collapsed .lab-tabs {
-  display: none;
-}
-/* UI Lab tabs: small pills under the search; a gold dot marks tabs with recently changed controls. */
-.lab-tabs {
-  gap: 4px;
-  padding: 0 2px 8px;
-  border-bottom: 1px solid var(--glass-line);
-  margin: 0 8px;
-}
-.lab-tabs .seg-btn {
-  position: relative;
-  padding: 4px 9px;
-  font-size: 12px;
-  color: var(--text);
-}
-.lab-tabs .seg-btn.on {
-  color: #3b2a00;
-}
-.lab-tabs .seg-btn.has-new::after {
-  content: '';
-  position: absolute;
-  top: -2px;
-  right: -2px;
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: var(--accent);
-  box-shadow: 0 0 6px rgba(255, 209, 102, 0.9);
-}
-.lab-tabs .seg-btn.on.has-new::after {
-  background: #fff;
-}
 .btn.lab-new {
   box-shadow:
     0 0 0 2px #ffd166,
@@ -10810,5 +10961,62 @@ button.char-btn:hover img {
   }
   .su-top .su-code-act {
     display: none;
+  }
+}
+/* Small screens: the stock market and the auction fill the room between the toolbar and the
+   action bar (over the player cards), with the board blurred behind so the focus is on the
+   pop-up. The toolbar (View board) and the action bar stay sharp above the blur. The district
+   table shows as many rows as fit (market.ts). */
+.hud > .stock-layer.fill {
+  padding: calc(var(--top-free, 40px) + 2px) 8px calc(var(--ask-free, 120px) + 4px);
+  place-items: stretch;
+  justify-items: stretch;
+  background: rgba(16, 26, 51, 0.25);
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+}
+.hud > .stock-layer.fill > .stock-pop {
+  width: 100% !important;
+  max-width: none !important;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  translate: none !important;
+}
+.stock-layer.fill .stock-pop > .market,
+.stock-layer.fill .stock-pop > .auction {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+.stock-layer.fill .m-split .m-right {
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 0;
+}
+.stock-layer.fill .m-split .m-grid-wrap {
+  min-height: 0;
+  overflow: hidden;
+  align-items: flex-start;
+}
+.stock-layer.fill .m-split .m-grid {
+  width: 100%;
+  height: auto;
+}
+.hud:has(> .stock-layer.fill:not([hidden])) > .toolbar,
+.hud:has(> .stock-layer.fill:not([hidden])) > .prompt-center {
+  z-index: 5;
+}
+/* Tall narrow screens (upright tablets and windows): the filled pop-up has room for the title,
+   the mini map and the shop cards again, above the district table. */
+@media (max-width: 760px) and (min-height: 600px) {
+  .stock-layer.fill .stock-pop .modal-head {
+    display: flex;
+  }
+  .stock-layer.fill .market.m-split {
+    flex-direction: column;
+  }
+  .stock-layer.fill .stock-pop .m-left {
+    display: flex;
+    flex: none;
   }
 }

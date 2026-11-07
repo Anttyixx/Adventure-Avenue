@@ -576,13 +576,18 @@ Picking a district on the map or in the table updates the bar. The pop-up puts t
 larger) in the top left, the selected district's shop cards under it, and the district table down
 the right side, its rows stretched to the same height. In the table the Price heading is just the
 word (no coin), in larger gold text; the price column is kept narrow and each player's shares
-column is at least 46px wide. It sits in the middle of the screen, the
-same distance from the top and bottom; when centering it would run under the player cards, it
-slides left just far enough to clear them (narrower screens shrink the map and let the shop cards
-scroll sideways). On short (phone) screens the
-pop-up keeps only the district table, showing 6 districts at a time: moving the selection past the
-bottom (or top) shifts the list by one. The counter is smaller and the "shares you hold" line is
-left out. The pop-up's panels:
+column is at least 46px wide. **It never scrolls.** It sits in the middle of the room between
+the toolbar and the action bar; when centering it would run under the player cards, it slides left
+just far enough to clear them, and when it is still too big for the room it shrinks to fit.
+**Small screens** (phones, windows 760px wide or less): the pop-up fills the room between the
+toolbar (so **View board** stays in reach) and the action bar, over the player cards, and the board
+behind it is blurred so the focus is on the pop-up (the toolbar and the action bar stay sharp).
+On short (phone) screens it keeps only the district table; tall narrow screens also show the
+title, the mini map and the shop cards above it. The table shows as many districts as fit; moving
+the selection past the last one shown shifts the list by one, and past the end of the list it
+carries on from the first district (and the other way going up), so the list loops. The counter
+is smaller and the "shares you hold" line is left out. The live auction fills small screens the
+same way. The pop-up's panels:
 
 - **Mini map** of the whole board. Squares in that district are filled with the district color. An
   owned square gets a ring in the owner's color plus their initial; no ring means it's for sale; a
