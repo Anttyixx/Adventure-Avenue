@@ -132,9 +132,19 @@ export class Hud {
   cardsModes = h('div', { class: 'cards-modes', role: 'radiogroup', 'aria-label': 'Player cards' });
   /** How the player cards are shown (remembered on this device). */
   cardsMode: CardsMode = loadCardsMode();
-  /** Whether the player cards are folded into a stack (Stack or Smart). */
+  /** Whether the player cards are set to fold into a stack (Stack or Smart). */
   get cardsCollapsed() {
     return this.cardsMode !== 'list';
+  }
+  /**
+   * A stack opened into a list for a moment: by the mouse resting on it (until it leaves) or by a
+   * tap (for `T.stackOpen`). While open, tapping a card opens that player's info.
+   */
+  private opened: 'hover' | 'tap' | null = null;
+  private openTimer = 0;
+  /** Whether the cards are folded into a stack right now. */
+  get stacked() {
+    return this.cardsCollapsed && !this.opened;
   }
   /** Smart mode: cards out of the stack for a moment, with the timer that puts each back. */
   private popped = new Map<number, number>();
@@ -214,6 +224,17 @@ export class Hud {
       );
     }
     this.cardsWrap.append(this.cardsModes, this.cards);
+    // Clicking or tapping the stack (its front card or the strips behind) opens it into a list
+    // for a moment; a mouse resting on it keeps it open until it leaves.
+    this.cards.addEventListener('click', () => {
+      if (this.stacked) this.openStack('tap');
+    });
+    this.cards.addEventListener('pointerenter', (e) => {
+      if (e.pointerType === 'mouse') this.openStack('hover');
+    });
+    this.cards.addEventListener('pointerleave', (e) => {
+      if (e.pointerType === 'mouse' && this.opened === 'hover') this.closeStack();
+    });
     this.setCardsMode(this.cardsMode);
     // The info chip: the game's name, the goal, the Room button online and the Info button.
     this.infoChip.append(
@@ -514,12 +535,17 @@ export class Hud {
       if (!el) {
         const pid = p.id;
         el = h('div', { class: 'pcard', role: 'button', tabindex: '0' });
-        el.onclick = () => this.toggleInfo(this.infoPage === pid ? null : pid);
+        // A folded stack opens into a list first (the click goes on to this.cards); once open,
+        // a card opens that player's info.
+        el.onclick = () => {
+          if (!this.stacked) this.toggleInfo(this.infoPage === pid ? null : pid);
+        };
         el.onkeydown = (e) => {
           if (e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) {
             e.preventDefault();
             e.stopPropagation();
-            this.toggleInfo(this.infoPage === pid ? null : pid);
+            if (this.stacked) this.openStack('tap');
+            else this.toggleInfo(this.infoPage === pid ? null : pid);
           }
         };
         this.cardEls.set(p.id, el);
@@ -545,8 +571,10 @@ export class Hud {
   setCardsMode(mode: CardsMode) {
     const on = mode !== 'list';
     const els = [...this.cardEls.values()];
-    const flip =
-      !!this.G && on !== this.cardsCollapsed && !matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const flip = !!this.G && on !== this.stacked && !matchMedia('(prefers-reduced-motion: reduce)').matches;
+    // A stack opened for a moment closes with the change.
+    clearTimeout(this.openTimer);
+    this.opened = null;
     // Where every card is on screen now (mid-animation too), so each can glide from there.
     const before = flip ? els.map((el) => el.getBoundingClientRect()) : [];
     if (flip) {
@@ -608,7 +636,7 @@ export class Hud {
         : ids[0];
     const prev = this.stackFront;
     this.stackFront = front;
-    const on = this.cardsCollapsed;
+    const on = this.stacked;
     // Smart stack: cards lifted out sit in a list above the stack, in turn order; the rest
     // stay in the stack, the active player's in front.
     const lifted = on ? ids.filter((id) => this.popped.has(id) && id !== front) : [];
@@ -656,6 +684,36 @@ export class Hud {
         { duration: T.cardCycle },
       );
     }
+  }
+
+  /**
+   * Open a folded stack into a list for a moment (the chosen layout stays): `hover` until the
+   * mouse leaves, `tap` for `T.stackOpen`. A hover takes over a tap's timer.
+   */
+  private openStack(how: 'hover' | 'tap') {
+    if (!this.cardsCollapsed) return;
+    clearTimeout(this.openTimer);
+    if (how === 'tap' && this.opened !== 'hover')
+      this.openTimer = window.setTimeout(() => this.closeStack(), T.stackOpen);
+    const was = this.opened;
+    if (how === 'hover' || !was) this.opened = how;
+    if (was) return;
+    this.glide(() => {
+      this.cardsWrap.classList.remove('collapsed');
+      this.stackCards(false);
+    });
+  }
+
+  /** Fold an opened stack back up. */
+  private closeStack() {
+    if (!this.opened) return;
+    clearTimeout(this.openTimer);
+    this.opened = null;
+    if (!this.cardsCollapsed) return;
+    this.glide(() => {
+      this.cardsWrap.classList.add('collapsed');
+      this.stackCards(false);
+    });
   }
 
   /**
@@ -751,7 +809,11 @@ export class Hud {
     // Never the active player's card (it is, or is about to be, in front; the stack's front only
     // moves to them once every card is filled in).
     const rising =
-      moneyMoved && this.cardsMode === 'smart' && p.id !== this.stackFront && p.id !== this.activePid
+      moneyMoved &&
+      this.cardsMode === 'smart' &&
+      this.stacked &&
+      p.id !== this.stackFront &&
+      p.id !== this.activePid
         ? this.popCard(p.id)
         : false;
     this.cardSigs.set(p.id, sig);

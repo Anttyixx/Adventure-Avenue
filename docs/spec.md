@@ -1059,6 +1059,11 @@ from the board. The choice is remembered on that device (an older "folded" choic
   active player's card never rises out. Several cards can be out at once, in turn order. A card
   rising out never knocks the old front card out of line as it drops to the back.
 
+**Opening a stack:** in Stack and Smart, tapping a card doesn't open the player's info; tapping or
+clicking the stack opens it into a list for 3 seconds, then it folds back. With a mouse, resting
+on the stack opens it until the mouse moves off the cards. While it is open, tapping a player's
+card opens their info. The chosen layout doesn't change.
+
 Switching between List and a stack is animated: the cards glide together into the stack (or fan
 back out to their places) one just after another; cards rising out of a smart stack and going
 back glide the same way.

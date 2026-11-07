@@ -589,6 +589,10 @@ if (!(await ask(`Delete ${d.name}?`, 'Its 4 properties will be removed from the 
   transform transitions off meanwhile (`.cards-wrap.stacking`). Turn change: the old front card
   drops 55% of its height (ease-in), goes behind the stack, then rises into its back place
   (ease-out; `T.cardCycle` 750ms, Web Animations), while the rest ease forward (0.4s). Behind cards are `inert`.
+  Opening a stack (`openStack` / `closeStack`, `hud.stacked`): a click or tap on `.cards` (the
+  front card or the strips) unfolds it to the list with the same glide for `T.stackOpen` (3s); a
+  mouse `pointerenter` keeps it open until `pointerleave` (taking over a tap's timer). Cards open
+  the info pop-up only while the cards aren't stacked; the layout buttons don't change.
   Smart: a card behind the front one (never the active player's) whose cash or net worth changes
   gets `.popped`
   (`popCard`): it takes a row of its own above the stack (`--row` 1, 2... in turn order, the stack

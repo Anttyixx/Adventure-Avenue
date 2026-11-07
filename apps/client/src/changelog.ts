@@ -26,6 +26,18 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: '2026-11-07-open-stack',
+    date: 'Nov 7, 2026',
+    title: 'Peek at the stack',
+    features: [
+      {
+        tag: 'better',
+        title: 'Open the card stack',
+        text: "In the Stack and Smart layouts, tap the stack to open it into a list for 3 seconds, or rest the mouse on it to keep it open. Tap a player's card while it is open to see their info.",
+      },
+    ],
+  },
+  {
     id: '2026-11-07-takeover-pick',
     date: 'Nov 7, 2026',
     title: 'Pick, then buy',
