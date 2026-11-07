@@ -60,7 +60,9 @@ export const TIMING = {
   /** Collapsed player cards: the old front card dropping down and rising in at the back. */
   cardCycle: 750,
   /** Player cards gathering into a stack (collapse) or fanning back out (expand). */
-  cardStack: 480,
+  cardStack: 504,
+  /** The wait between one card and the next as they gather or fan out (a ripple). */
+  cardStackStagger: 26,
   /** A stack tapped open into a list: how long it stays open. */
   stackOpen: 3000,
   /** Smart stack: how long a card that changed stays out of the stack after its last change. */

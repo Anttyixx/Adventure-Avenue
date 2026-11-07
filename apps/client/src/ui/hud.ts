@@ -570,55 +570,27 @@ export class Hud {
    */
   setCardsMode(mode: CardsMode) {
     const on = mode !== 'list';
-    const els = [...this.cardEls.values()];
-    const flip = !!this.G && on !== this.stacked && !matchMedia('(prefers-reduced-motion: reduce)').matches;
-    // A stack opened for a moment closes with the change.
-    clearTimeout(this.openTimer);
-    this.opened = null;
-    // Where every card is on screen now (mid-animation too), so each can glide from there.
-    const before = flip ? els.map((el) => el.getBoundingClientRect()) : [];
-    if (flip) {
-      for (const el of els) for (const a of el.getAnimations()) a.cancel();
-      // The cards' own transform transitions would fight the glide: off until it ends.
-      this.cardsWrap.classList.add('stacking');
-    }
-    // Cards lifted out of a smart stack go back first.
-    for (const t of this.popped.values()) clearTimeout(t);
-    this.popped.clear();
-    this.cardsMode = mode;
-    saveCardsMode(mode);
-    this.cardsWrap.classList.toggle('collapsed', on);
-    this.cardsWrap.dataset.mode = mode;
-    for (const b of this.cardsModes.querySelectorAll<HTMLElement>('.cards-mode')) {
-      const lit = b.dataset.mode === mode;
-      b.classList.toggle('on', lit);
-      b.setAttribute('aria-checked', String(lit));
-    }
-    if (this.G) this.stackCards(false);
-    if (!flip) return;
-    // The cards' new size can change their fit-to-screen zoom: settle it before measuring.
-    this.updateInsets();
-    const wrap = this.cardsWrap;
-    const zoom = wrap.getBoundingClientRect().width / (wrap.offsetWidth || 1) || 1;
-    let left = els.length;
-    const done = () => {
-      if (--left <= 0) wrap.classList.remove('stacking');
+    const unfold = on !== this.stacked;
+    const change = () => {
+      // A stack opened for a moment, and cards lifted out of a smart stack, go back first.
+      clearTimeout(this.openTimer);
+      this.opened = null;
+      for (const t of this.popped.values()) clearTimeout(t);
+      this.popped.clear();
+      this.cardsMode = mode;
+      saveCardsMode(mode);
+      this.cardsWrap.classList.toggle('collapsed', on);
+      this.cardsWrap.dataset.mode = mode;
+      for (const b of this.cardsModes.querySelectorAll<HTMLElement>('.cards-mode')) {
+        const lit = b.dataset.mode === mode;
+        b.classList.toggle('on', lit);
+        b.setAttribute('aria-checked', String(lit));
+      }
+      if (this.G) this.stackCards(false);
     };
-    els.forEach((el, i) => {
-      const a = before[i];
-      const b = el.getBoundingClientRect();
-      const end = getComputedStyle(el).transform;
-      const final = end === 'none' ? '' : end;
-      // Cards scale around their top middle (transform-origin 50% 0), so match that point.
-      const dx = (a.left + a.width / 2 - (b.left + b.width / 2)) / zoom;
-      const dy = (a.top - b.top) / zoom;
-      const k = b.width ? a.width / b.width : 1;
-      el.animate(
-        [{ transform: `translate(${dx}px, ${dy}px) ${final} scale(${k})` }, { transform: end }],
-        // Front to back, one after another, so the stack gathers (or fans out) in a ripple.
-        { duration: T.cardStack, delay: i * 25, easing: 'cubic-bezier(0.2, 0.8, 0.2, 1)', fill: 'backwards' },
-      ).finished.then(done, done);
-    });
+    // Folding or unfolding glides every card from where it was; Stack <-> Smart just relights.
+    if (unfold) this.glide(change);
+    else change();
   }
 
   /**
@@ -736,7 +708,11 @@ export class Hud {
   /** Set when a card rose out of the smart stack during this update (see renderCards). */
   private popPending = false;
 
-  /** Change the cards' layout with `change`, gliding every card from where it was to its new place. */
+  /**
+   * Change the cards' layout with `change`, gliding every card from where it was to its new place:
+   * the one motion for folding and unfolding (the layout buttons, opening a stack for a moment)
+   * and for cards rising out of a smart stack. Front to back, one just after another.
+   */
   private glide(change: () => void) {
     const els = [...this.cardEls.values()];
     if (!this.G || matchMedia('(prefers-reduced-motion: reduce)').matches) return change();
@@ -754,7 +730,8 @@ export class Hud {
     els.forEach((el, i) => {
       // A card the change set moving itself (the old front card dropping to the back when the
       // turn passes) keeps its own move: gliding it too would pull it out of line.
-      if (el.getAnimations().length) return done();
+      // (The cards' own colour and fade transitions don't count.)
+      if (el.getAnimations().some((x) => !(x instanceof CSSTransition))) return done();
       const a = before[i];
       const b = el.getBoundingClientRect();
       const end = getComputedStyle(el).transform;
@@ -763,9 +740,12 @@ export class Hud {
       const dy = (a.top - b.top) / zoom;
       const k = b.width ? a.width / b.width : 1;
       if (Math.abs(dx) < 0.5 && Math.abs(dy) < 0.5 && Math.abs(k - 1) < 0.01) return done();
+      // Cards scale around their top middle (transform-origin 50% 0), matched above.
       el.animate([{ transform: `translate(${dx}px, ${dy}px) ${final} scale(${k})` }, { transform: end }], {
         duration: T.cardStack,
+        delay: i * T.cardStackStagger,
         easing: 'cubic-bezier(0.2, 0.8, 0.2, 1)',
+        fill: 'backwards',
       }).finished.then(done, done);
     });
   }

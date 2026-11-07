@@ -26,6 +26,19 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: '2026-11-07-smooth-stack',
+    date: 'Nov 7, 2026',
+    title: 'Smoother cards',
+    features: [
+      {
+        tag: 'fix',
+        title: 'The stack opens smoothly',
+        text: 'Opening the card stack into a list (and folding it back) now glides the same way as switching the card layout, and that glide is a touch slower.',
+      },
+    ],
+    extras: ["The info screen shows players by their picture only when their names don't all fit"],
+  },
+  {
     id: '2026-11-07-continue-panel',
     date: 'Nov 7, 2026',
     title: 'A simpler Continue screen',

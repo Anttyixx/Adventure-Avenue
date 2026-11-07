@@ -56,6 +56,19 @@ export class InfoPopup {
     this.back.onclick = () => hud.toggleInfo(null);
     this.layer.append(this.box);
     hud.root.append(this.layer, this.bar);
+    // The page chips get room checks as the window (or the bar) changes size.
+    new ResizeObserver(() => this.fitTabs()).observe(this.bar);
+  }
+
+  /**
+   * When the page chips don't all fit the action bar's widest size, the player chips show just
+   * the player's sprite (no name; it stays as the chip's title).
+   */
+  private fitTabs() {
+    const tabs = this.bar.querySelector<HTMLElement>('.info-tabs');
+    if (!tabs || this.bar.hidden) return;
+    tabs.classList.remove('compact');
+    if (tabs.scrollWidth > tabs.clientWidth + 1) tabs.classList.add('compact');
   }
 
   open() {
@@ -414,6 +427,7 @@ export class InfoPopup {
         }),
       ),
     );
+    this.fitTabs();
   }
 }
 

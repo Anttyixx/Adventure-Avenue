@@ -9704,6 +9704,13 @@ div.sl-inline label {
   border-color: var(--pc);
   color: #fff;
 }
+/* Too many chips for the bar (info.ts fitTabs): players by sprite only, as on phones. */
+.info-tabs.compact .ib-player {
+  padding: 2px;
+}
+.info-tabs.compact .ib-player .ib-name {
+  display: none;
+}
 .ib-sep {
   width: 1px;
   align-self: stretch;

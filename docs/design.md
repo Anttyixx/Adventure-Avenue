@@ -585,7 +585,8 @@ if (!(await ask(`Delete ${d.name}?`, 'Its 4 properties will be removed from the 
   and the others sit behind by turn order (`--d` = depth), each 7px higher and 5% narrower, filled
   with their `--pc` and their contents hidden (3 show, deeper ones fade out). Folding/unfolding (`setCardsCollapsed`): each card glides from
   where it was to its new place, matched at its top middle (`.pcard` `transform-origin: 50% 0`,
-  `T.cardStack` 480ms, 25ms stagger, `cubic-bezier(0.2, 0.8, 0.2, 1)`), with the cards' own
+  `T.cardStack` 504ms, `T.cardStackStagger` 26ms, `cubic-bezier(0.2, 0.8, 0.2, 1)`; `hud.glide`, the
+  one motion for the layout buttons, opening a stack for a moment and smart pop-outs), with the cards' own
   transform transitions off meanwhile (`.cards-wrap.stacking`). Turn change: the old front card
   drops 55% of its height (ease-in), goes behind the stack, then rises into its back place
   (ease-out; `T.cardCycle` 750ms, Web Animations), while the rest ease forward (0.4s). Behind cards are `inert`.
@@ -624,7 +625,8 @@ if (!(await ask(`Delete ${d.name}?`, 'Its 4 properties will be removed from the 
 - **Action bar:** a stand-in `.prompt-center.info-bar` over the real bar (`.hud.info-open` hides
   the real one and any stock/venture/arcade layer): pill tabs (`.ib-tab`, 2px border, gold when on) Game,
   Stocks, a divider, one per player (`.ib-player`: portrait + name, border and fill in `--pc`;
-  portrait only on phones). It morphs out of the real bar's size on opening (300ms, tabs fade in
+  portrait only on phones, and anywhere the chips don't all fit the bar's widest size:
+  `info.ts` `fitTabs` adds `.compact`, rechecked as the bar resizes). It morphs out of the real bar's size on opening (300ms, tabs fade in
   after 120ms) and back into it on closing (tabs fade out first; then the real bar shows underneath while the
   stand-in fades out over it, and the pop-up stays hidden once its closing motion ends, so nothing
   blinks).
