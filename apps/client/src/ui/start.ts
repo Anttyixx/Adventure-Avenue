@@ -56,7 +56,8 @@ export function randomName(): string {
   return NAMES[Math.floor(Math.random() * NAMES.length)];
 }
 
-const PLOT_LABEL: Record<PlotSetting, string> = {
+/** What each vacant plot amount is called on screen. */
+export const PLOT_LABEL: Record<PlotSetting, string> = {
   none: 'None',
   few: 'A few',
   some: 'Some',
@@ -645,9 +646,18 @@ export function setupFrame() {
       board.classList.toggle('shown', tab === 'board');
       rules.classList.toggle('shown', tab === 'rules');
     };
+    solo = false;
     clear(wrap);
     wrap.append(h('div', { class: 'su-tabs', role: 'tablist' }, chips.board, chips.rules), board, rules);
     paint();
+    fit();
+  };
+  /** One panel in the middle instead of two (the Continue game screen: nothing to change). */
+  let solo = false;
+  const single = (panel: HTMLElement) => {
+    solo = true;
+    clear(wrap);
+    wrap.append(panel);
     fit();
   };
   const el = h(
@@ -686,9 +696,23 @@ export function setupFrame() {
     wrap.style.zoom = wrap.style.width = wrap.style.height = '';
     const roomW = scroll.clientWidth;
     const roomH = scroll.clientHeight;
-    const layout = (mode: 'side' | 'stack' | 'tabs') => {
-      for (const m of ['side', 'stack', 'tabs']) el.classList.toggle(`layout-${m}`, m === mode);
+    const layout = (mode: 'side' | 'stack' | 'tabs' | 'solo') => {
+      for (const m of ['side', 'stack', 'tabs', 'solo']) el.classList.toggle(`layout-${m}`, m === mode);
     };
+    if (solo) {
+      // One panel: as wide as it likes (up to SOLO_MAX), scaled down if the room is too small.
+      layout('solo');
+      let z = upright ? Math.min(sc, roomW / SOLO_MIN) : sc;
+      const width = (k: number) => `${Math.min(SOLO_MAX, roomW / k)}px`;
+      wrap.style.width = width(z);
+      const hgt = wrap.offsetHeight;
+      if (hgt * z > roomH) {
+        z = Math.max(0.5, roomH / hgt);
+        wrap.style.width = width(z);
+      }
+      wrap.style.zoom = String(z);
+      return;
+    }
     /** Try a layout at zoom `z` and width `w` (CSS px); true if its height fits the room. */
     const tryLayout = (mode: 'side' | 'stack', z: number, w: number) => {
       layout(mode);
@@ -725,6 +749,7 @@ export function setupFrame() {
     wrap,
     side,
     panels,
+    single,
     close: () => {
       resize.disconnect();
       closeSoundPopover();
@@ -736,6 +761,9 @@ export function setupFrame() {
 
 /** How wide (CSS px) the panels need to be in an upright window before they are scaled down. */
 const UPRIGHT_WIDTH = 540;
+/** The widest (and, upright, the narrowest before scaling down) a single panel gets (CSS px). */
+const SOLO_MAX = 720;
+const SOLO_MIN = 460;
 /** The room (CSS px, before scaling) both panels need side by side, with the settings' two columns. */
 const SIDE_WIDTH = 950;
 /** The widest the two panels side by side get (CSS px, before scaling). */

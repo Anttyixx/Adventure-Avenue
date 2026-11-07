@@ -11141,3 +11141,83 @@ button.char-btn:hover img {
     animation: none;
   }
 }
+/* Continue game (online.ts resumeLobby): one panel in the middle with the saved board (picture
+   and name) beside the settings that were chosen, then the rejoin notes and Resume. */
+.su.layout-solo .su-main {
+  grid-template-columns: minmax(0, 1fr);
+}
+.su-saved {
+  gap: 12px;
+}
+.su-saved-body {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 14px 22px;
+}
+.su-saved-board {
+  flex: 1 1 280px;
+  min-width: 0;
+}
+.su-saved-facts {
+  flex: 1 1 190px;
+  margin: 0;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-content: center;
+  gap: 8px 16px;
+}
+.su-saved-facts dt {
+  color: #d4dced;
+  font: 600 13px var(--body);
+}
+.su-saved-facts dd {
+  margin: 0;
+  color: #fff;
+  font: 700 15px var(--body);
+}
+.su-saved-foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px 16px;
+  padding-top: 12px;
+  border-top: 1px solid var(--glass-line);
+}
+.su-saved-notes {
+  flex: 1 1 220px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.su-saved-notes .hint {
+  margin: 0;
+}
+.su-saved-foot .btn.big {
+  flex: none;
+}
+@media (max-height: 500px) {
+  .su-saved {
+    gap: 8px;
+  }
+  .su-saved-facts {
+    gap: 4px 12px;
+  }
+  .su-saved-facts dt {
+    font-size: 11px;
+  }
+  .su-saved-facts dd {
+    font-size: 13px;
+  }
+  .su-saved-foot {
+    padding-top: 8px;
+  }
+  .su-saved-foot .btn.big {
+    padding: 8px 14px;
+    font-size: 17px;
+  }
+  .su-saved-notes .hint {
+    font-size: 11px;
+  }
+}

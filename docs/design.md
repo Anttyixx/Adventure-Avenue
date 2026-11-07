@@ -770,10 +770,13 @@ if (!(await ask(`Delete ${d.name}?`, 'Its 4 properties will be removed from the 
 ### 5.17d Continue game
 
 - `online.ts` `resumeLobby` builds the game setup frame (`setupFrame`, `setupHead`, exported from
-  `start.ts`) so continuing looks like starting: the code chip in the top bar, the Map panel with
-  the saved board locked (`boardStage()`: `.mapcar.locked`, the board and its name only) and a muted "Saved in round N" pill (`.su-round`) in
-  its top right, the locked settings panel (`rulesPanel` without `edit`), and the players column
-  with seat cards (no remove buttons) and a `.su-start` tile with what is resumed and Resume. A
+  `start.ts`) so continuing looks like starting: the code chip in the top bar and the players
+  column with seat cards (no remove buttons). One panel (`setupFrame().single()`, `layout-solo`:
+  up to 720px wide before scaling, scaled down to fit) replaces Board and Game Settings:
+  `.su-saved` with the head "Saved Game" and the muted "Saved in round N" pill (`.su-round`), a body
+  with the board (`boardStage()`: `.mapcar.locked`, picture and name) beside a `dl.su-saved-facts`
+  of the chosen settings (muted 13px labels, bold white 15px values; wraps under the board when
+  narrow), and a foot (a hairline above) with the rejoin hints and the gold **Resume Game**. A
   player not back yet: seat faded to 50% with a red "AWAY" pill (`.seat-away`) beside the tag.
 
 ### 5.18 Game log

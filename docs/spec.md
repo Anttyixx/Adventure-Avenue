@@ -1469,10 +1469,13 @@ the host's device, and a friend who joins (before the host resumes) with that pl
 takes the seat over, before or after the host resumes. Without a connection, such a game simply
 continues on the device.
 
-**Continue game screen.** It looks like game setup: the top bar (Back, "Continue game", the code
-chip that shares or copies the invite, Sound), the saved game's map with "Saved in round N" and
-its settings (shown, but locked), and the players column with a seat card per player and **Resume
-game** in a tile under them. Each seat says who it is ("You · host", "On this device", "Back online", "Not back yet",
+**Continue game screen.** It looks like game setup: the top bar (Back, "Continue Game", the code
+chip that shares or copies the invite, Sound) and the players column in the bottom right corner
+with a seat card per player. The board and settings can't be changed, so instead of the Board and
+Game Settings panels there is one **Saved Game** panel in the middle of the room: "Saved in
+round N" in its corner, the board's picture and name beside the settings that were chosen (Rule
+Set, Winning Goal, Stocks, Vacant Plots, and a Round Limit for older saves that had one), then a
+line on how friends rejoin and the **Resume Game** button. It scales with the window like setup. Each seat says who it is ("You · host", "On this device", "Back online", "Not back yet",
 "Bot"); players who haven't rejoined are faded with a red "Away" badge, and the button reads
 "Resume (N away)" until they are back.
 

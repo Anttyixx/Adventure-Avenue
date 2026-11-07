@@ -12,7 +12,7 @@ import {
   lobbyRows,
   morphSide,
   playersColumn,
-  rulesPanel,
+  PLOT_LABEL,
   seatCard,
   setupFrame,
   setupHead,
@@ -45,8 +45,8 @@ export interface ResumeHandlers {
 
 /**
  * Continuing a saved game. It looks like game setup (start.ts): the top bar with the room code
- * chip, the saved game's board and settings (locked, as a joined player sees them), and the
- * players column in the bottom right corner with Resume under it. The room is open again and friends rejoin with the code
+ * chip, one panel showing the saved game's board and settings with Resume, and the players
+ * column in the bottom right corner. The room is open again and friends rejoin with the code
  * (and the same name); the host resumes when ready, and anyone not back yet is played by a CPU.
  * `round` is the round the game was saved in.
  */
@@ -129,26 +129,65 @@ export function resumeLobby(
         ),
       ),
     );
-    clear(f.wrap);
-    f.panels(
+    // Nothing can change here, so one panel shows what was saved: the board, the settings
+    // chosen, and Resume.
+    const standard = lobby.rules === 'standard';
+    const fact = (k: string, v: string | Node) => [h('dt', null, k), h('dd', null, v)];
+    f.single(
       h(
         'section',
-        { class: 'setup-panel glass board-panel' },
+        { class: 'setup-panel glass su-saved' },
         h(
           'div',
           { class: 'panel-head' },
-          h('h3', null, 'Board'),
+          h('h3', null, 'Saved Game'),
           round ? h('span', { class: 'su-round' }, `Saved in round ${round}`) : null,
         ),
-        board ? boardStage(board, false) : h('p', { class: 'hint' }, lobby.boardName),
+        h(
+          'div',
+          { class: 'su-saved-body' },
+          h(
+            'div',
+            { class: 'su-saved-board' },
+            board ? boardStage(board, false) : h('p', { class: 'hint' }, lobby.boardName),
+          ),
+          h(
+            'dl',
+            { class: 'su-saved-facts' },
+            ...fact('Rule Set', standard ? 'Standard' : 'Easy'),
+            ...fact('Winning Goal', fmt(lobby.target)),
+            ...(standard
+              ? fact('Stocks', (lobby.stocks ?? 'dynamic') === 'dynamic' ? 'Dynamic' : 'Classic')
+              : []),
+            ...(standard ? fact('Vacant Plots', PLOT_LABEL[lobby.plots ?? 'few']) : []),
+            // Games saved before the round limit option was removed may still have one.
+            ...(lobby.roundCap ? fact('Round Limit', String(lobby.roundCap)) : []),
+          ),
+        ),
+        h(
+          'div',
+          { class: 'su-saved-foot' },
+          h(
+            'div',
+            { class: 'su-saved-notes' },
+            h(
+              'span',
+              { class: 'hint' },
+              !oldCode || room.code === oldCode
+                ? 'Friends rejoin with the code and the same name.'
+                : `The old code ${oldCode} was taken: friends use the new one.`,
+            ),
+            missing
+              ? h('span', { class: 'hint' }, `${missing} not back yet: a CPU plays for them until they join.`)
+              : null,
+          ),
+          h(
+            'button',
+            { class: 'btn main big', onclick: () => handlers.onResume() },
+            missing ? `Resume (${missing} away)` : 'Resume Game',
+          ),
+        ),
       ),
-      rulesPanel({
-        rules: lobby.rules,
-        target: lobby.target,
-        roundCap: lobby.roundCap,
-        plots: lobby.plots ?? 'few',
-        stocks: lobby.stocks ?? 'dynamic',
-      }),
     );
     morphSide(f.side, () => {
       clear(f.side);
@@ -159,35 +198,6 @@ export function resumeLobby(
             seen,
             lobbyRows(lobby.seats, (x) => x.kind === 'host' || x.kind === 'local'),
           ).map(({ x, i, key }) => seat(x, i, key)),
-          h(
-            'div',
-            { class: 'su-start glass' },
-            h(
-              'div',
-              { class: 'setup-summary' },
-              h('strong', null, lobby.boardName),
-              h('span', null, `${round ? `Round ${round} · ` : ''}${fmt(lobby.target)} goal`),
-              h(
-                'small',
-                { class: 'hint' },
-                !oldCode || room.code === oldCode
-                  ? 'Friends rejoin with the code and the same name.'
-                  : `The old code ${oldCode} was taken: friends use the new one.`,
-              ),
-              missing
-                ? h(
-                    'small',
-                    { class: 'hint' },
-                    `${missing} not back yet: a CPU plays for them until they join.`,
-                  )
-                : null,
-            ),
-            h(
-              'button',
-              { class: 'btn main big', onclick: () => handlers.onResume() },
-              missing ? `Resume (${missing} away)` : 'Resume game',
-            ),
-          ),
         ),
       );
     });

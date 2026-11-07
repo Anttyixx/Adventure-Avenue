@@ -26,6 +26,18 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: '2026-11-07-continue-panel',
+    date: 'Nov 7, 2026',
+    title: 'A simpler Continue screen',
+    features: [
+      {
+        tag: 'better',
+        title: 'Your saved game at a glance',
+        text: 'Continuing a game shows one panel with the board and the settings you picked, and the Resume button right under them. The players stay in the bottom right corner.',
+      },
+    ],
+  },
+  {
     id: '2026-11-07-open-stack',
     date: 'Nov 7, 2026',
     title: 'Peek at the stack',
