@@ -130,7 +130,7 @@ export function resumeLobby(
       ),
     );
     clear(f.wrap);
-    f.wrap.append(
+    f.panels(
       h(
         'section',
         { class: 'setup-panel glass board-panel' },

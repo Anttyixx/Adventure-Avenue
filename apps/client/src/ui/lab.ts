@@ -1479,7 +1479,6 @@ export async function openLab(app: HTMLElement, section?: string) {
                 `Setup: start ${online ? 'online' : 'on this device'} on ${o.board?.name} with ${o.seats.length || seats.length} players.`,
               ),
             onBack: () => done('Setup: back to menu.'),
-            onEditor: () => done('Setup: board editor pressed.'),
           },
           async () => {
             await wait(700);

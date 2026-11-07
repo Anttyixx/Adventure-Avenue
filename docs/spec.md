@@ -882,11 +882,13 @@ what was used, the license and links to their pages.
 screen: **Back** (to the main menu, as tall as Sound) and the "New Game" title in the top left
 corner with the join code chip right of the title, and **Sound** (the same button as on the main
 menu) in the top right corner. The **players column** sits in the bottom right corner, where the
-player cards sit in the game. Under the top bar: the **Board** panel on the left (a little wider)
-and the **Game Settings** panel on the right (one under the other on windows narrower than
-1100px), each as tall as its contents, centered across and up and down in the room between the
-left edge of the screen and the player cards (short phone screens start them at the top and give
-them the full height). On big monitors the panels scale up to fill more of that room (1600 x 860
+player cards sit in the game. Under the top bar: the **Board** panel on the left and the **Game
+Settings** panel on the right, the same width and height, centered across and up and down in the
+room between the left edge of the screen and the player cards. **Smaller screens** (narrower than
+1300px, and phones): only one panel shows at a time, full width, with two chips above it on the
+left, **Board** and **Game Settings** (gold when chosen); tapping one shows that panel. Board
+shows first; the choice stays while the screen is open. Joined and continued games work the
+same way. On big monitors the panels scale up to fill more of that room (1600 x 860
 and up, more at 1900 x 1000 and 2400 x 1300), but never reach the player cards. On bigger screens
 (1180 x 820 and up) everything fits without scrolling; on smaller ones the panels scroll, with no
 scroll bar. Headings capitalize every word. There is no Start button (see **Ready up**).
@@ -911,9 +913,9 @@ scroll bar. Headings capitalize every word. There is no Start button (see **Read
   smaller and faded, on both sides. Tapping a side board, swiping or the arrow keys move it: the
   row slides over while the new board grows into the middle. Under it a thin line shows where in
   the list the board is: a gold bar (one board's share of the line) slides along it, so any
-  number of boards fits; tapping the line jumps there. **Import board** and **Board editor** (Edit
-  this board for a saved one) are small chips in the panel's top right corner. The Map and Game
-  settings headings are large.
+  number of boards fits; tapping the line jumps there. There are no board tool chips here: boards
+  are imported and edited in the board editor (main menu, Menu). The Board and Game Settings
+  headings are large.
 - **Players** (in the players column): setup starts with only the host ("You · host"); bots and
   other players on this device are added by hand, and friends join with the code (the board and
   settings are remembered from the last game, the players are not). Each seat is a card like a
@@ -941,8 +943,8 @@ scroll bar. Headings capitalize every word. There is no Start button (see **Read
   the game is played on this device.
 - **Target net worth:** 5,000G by default; arrows on each digit set any amount in 1,000G steps from
   1,000G to 90,000G (like the share picker); no Min or Max buttons.
-- **Game settings** are all shown at once, in one column: Rule Set, Winning Goal, Stocks and
-  Vacant Plots, each with a one-line hint. Their choice pills have a slightly thicker outline.
+- **Game settings** are all shown at once, in two columns: Rule Set and Stocks, then Winning Goal
+  and Vacant Plots, each with a one-line hint. Their choice pills have a slightly thicker outline.
 - **Vacant Plots:** the amount (None, A few, Some, A lot, All) between two gold arrows that cycle
   through them, looping. Joined players see the amount only.
 - **Round limit:** no longer offered: games have no round limit (older saved options with one are

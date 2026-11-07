@@ -9965,11 +9965,10 @@ div.sl-inline label {
   box-sizing: border-box;
   margin: auto;
   padding: 4px 16px 12px;
-  /* The board picker on the left (a little wider) and the one-column settings on the right, each
-     as tall as its contents, centered beside each other. */
+  /* The board picker on the left and the settings on the right, the same width and height. */
   display: grid;
-  grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr);
-  align-items: center;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  align-items: stretch;
   gap: 12px;
 }
 .su-main > .setup-panel {
@@ -10124,7 +10123,7 @@ div.sl-inline label {
 .seat-ready {
   align-self: stretch;
   padding: 3px 8px;
-  border: 1px solid var(--glass-line);
+  border: 2px solid var(--glass-line);
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.08);
   color: var(--text);
@@ -10192,37 +10191,15 @@ button.seat-ready.on {
   white-space: nowrap;
 }
 
-/* Small pill buttons: the board tools in the Map panel's top right, Shuffle in the dock. */
-.su-chips {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: flex-end;
-  gap: 6px;
-}
-.su-chip {
-  padding: 4px 11px;
-  border: 2px solid var(--glass-line);
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.07);
-  color: var(--text);
-  font: 700 12px var(--body);
-  white-space: nowrap;
-  cursor: pointer;
-  transition:
-    border-color 0.15s,
-    background 0.15s;
-}
-.su-chip:hover {
-  border-color: var(--accent);
-  background: rgba(255, 255, 255, 0.12);
-}
-/* Game settings: every option shown at once, in one column: rule set, winning goal, stocks and
-   vacant plots. */
+/* Game settings: every option shown at once, in two columns: rule set and stocks, then the
+   winning goal and vacant plots. */
 .su-rules {
   display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  grid-template-areas: 'rules' 'goal' 'stocks' 'plots';
-  gap: 12px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-areas:
+    'rules stocks'
+    'goal plots';
+  gap: 14px 16px;
 }
 .su-r-rules {
   grid-area: rules;
@@ -10545,11 +10522,53 @@ button.char-btn:hover img {
   min-width: 0;
 }
 
-/* Narrow windows: the board picker, then the settings, one under the other (the players column
-   takes ~340px of the width). */
-@media (max-width: 1100px) {
+/* The chips that pick the Board or Game Settings panel on smaller screens (hidden on bigger
+   ones, where both panels show side by side): outlined pills, gold when chosen. */
+.su-tabs {
+  display: none;
+  grid-column: 1 / -1;
+  gap: 6px;
+  justify-content: flex-start;
+}
+.su-tab {
+  padding: 5px 14px;
+  border: 2px solid var(--glass-line);
+  border-radius: 999px;
+  background: rgba(16, 26, 51, 0.88);
+  color: var(--text);
+  font: 400 15px/18px var(--head);
+  white-space: nowrap;
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+  transition:
+    background 0.15s,
+    border-color 0.15s,
+    transform 0.15s;
+}
+.su-tab:hover {
+  border-color: var(--accent);
+}
+.su-tab.on {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: #3b2a00;
+}
+.su-tab:active {
+  transform: scale(0.95);
+}
+/* Smaller screens (narrow windows and phones): only one panel at a time, full width, with the
+   chips above it. Below 1300px wide the two panels and the players column don't fit side by side
+   with room for the settings' two columns. */
+@media (max-width: 1299px), (max-height: 500px) {
   .su-main {
     grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto minmax(0, 1fr);
+  }
+  .su-tabs {
+    display: flex;
+  }
+  .su-main > .setup-panel:not(.shown) {
+    display: none;
   }
 }
 /* Phones and small windows: the players column is as compact as the game's player cards there
@@ -10674,8 +10693,8 @@ button.char-btn:hover img {
   .su-main {
     height: 100%;
     align-items: stretch;
-    grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr);
-    grid-template-rows: minmax(0, 1fr);
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto minmax(0, 1fr);
     padding: 2px 8px 6px;
   }
   .su-main .setup-panel {
@@ -10693,10 +10712,6 @@ button.char-btn:hover img {
   }
   .su-main .board-panel {
     overflow: hidden;
-  }
-  .su-main .board-panel .su-chip {
-    padding: 3px 8px;
-    font-size: 10px;
   }
 
   .su .car-thumb {

@@ -79,10 +79,6 @@ function showSetup() {
         close();
         showStart();
       },
-      onEditor(board) {
-        close();
-        showEditor(board);
-      },
     },
     async () => {
       try {

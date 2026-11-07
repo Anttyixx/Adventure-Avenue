@@ -37,7 +37,11 @@ export const CHANGELOG: ChangelogEntry[] = [
       },
     ],
     extras: [
-      'Settings in one column; Vacant Plots cycles with arrows',
+      'Smaller screens show Board or Game Settings, picked with two chips',
+      'Board and Game Settings are the same size, with settings in two columns',
+      'Vacant Plots cycles with arrows',
+      'Boards are imported and edited from the board editor in the main menu',
+      'Thicker Ready chips',
       'No more round limit option',
       'The board and settings sit in the middle of the room and grow on big monitors',
       'Add local player is blue, Add bot is gold',

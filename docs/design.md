@@ -659,14 +659,17 @@ if (!(await ask(`Delete ${d.name}?`, 'Its 4 properties will be removed from the 
   title, then the main menu's Sound button in the top right corner; Back and Sound are both 40px
   tall (32px on phones). The status line is a screen-reader-only live region (`.sr-only`). Under
   it `.su-body` (a row): a scrolling `.su-scroll` (scroll bar hidden, stretched to the full height
-  left of the players column) with the board panel (left, 1.15fr) and the settings panel (right,
-  0.85fr) in a grid, each its own height and centered beside each other (max 1120px; one column
-  under 1100px), the grid centered across and up and down by `margin: auto` (top-aligned and
-  stretched on short phones). On big monitors `.su-main` zooms 1.15 (1600 x 860+), 1.35 (1900 x
+  left of the players column) with the board panel (left) and the settings panel (right) in a
+  1fr : 1fr grid, equal heights (max 1120px), the grid centered across and up and down by
+  `margin: auto`. **Smaller screens** (under 1300px wide, or 500px tall or less): one panel at a
+  time (`setupFrame().panels()`; the hidden one has no `.shown`), full width, under `.su-tabs`, two
+  `.su-tab` chips on the left ("Board", "Game Settings"; Lilita 15px pills, navy 88% fill, 2px
+  `--glass-line` border, gold border on hover, solid gold with dark text when chosen, soft shadow,
+  `role="tab"`); the choice is kept between redraws. On phones the shown panel fills the height. On big monitors `.su-main` zooms 1.15 (1600 x 860+), 1.35 (1900 x
   1000+) or 1.7 (2400 x 1300+); its `width: min(1120px, 100%)` stays within the room on screen, so it
   never reaches the players column. Panel headings are title case, Lilita 28px (21px on phones):
-  "Board" and "Game Settings"; screen titles too ("New Game"). Board tools (`.su-chip`) and the
-  settings' `.seg-btn` pills have 2px borders (one step up from 1px). On the right, the players column
+  "Board" and "Game Settings"; screen titles too ("New Game"). The settings' `.seg-btn` pills have
+  2px borders (one step up from 1px). The Board panel has no tool chips. On the right, the players column
   `.su-side` (`setupFrame().side`) sits against the bottom right corner like the game's
   `.cards-wrap`: 300px at zoom 1.1 (phones 215px, 176px when 500px tall or less, zoom 1), 10px from
   the edges, `justify-content: flex-end` so it grows upward. Every redraw goes through
@@ -674,9 +677,8 @@ if (!(await ask(`Delete ${d.name}?`, 'Its 4 properties will be removed from the 
   matched by `data-key` (a lasting seat id, or a joined player's name: never the character, which
   can change) slide from their old place (measured from the column's
   bottom edge, divided by its zoom), new seats pop in (fade + scale from 0.85) and removed seats
-  leave a fading ghost copy; an interrupted change starts from what is on screen. Board tools are
-  `.su-chip` pills in the Board panel's top right. Settings are one column (`.su-rules`): rule
-  set, goal, stocks, vacant plots. Vacant plots is a cycler (`cycler()`, `.su-cycle`): the value
+  leave a fading ghost copy; an interrupted change starts from what is on screen. Settings are two
+  columns (`.su-rules`, 14/16px gaps): rule set and stocks, then goal and vacant plots. Vacant plots is a cycler (`cycler()`, `.su-cycle`): the value
   in a gold-outlined pill (2px, gold 12% fill, min 96px) between two 32px gold round arrow buttons
   (`.su-cycle-btn`, 3px drop shadow, pressed 2px down) that loop through the amounts; read-only
   shows the pill alone.
@@ -692,9 +694,8 @@ if (!(await ask(`Delete ${d.name}?`, 'Its 4 properties will be removed from the 
   taller hit area) holds `.mapcar-pos`, a gold bar one board's share wide (min 18px) with a soft
   glow, whose `left` eases along with the move. Board pictures are drawn once per board and
   copied (`thumbOf`).
-- **Landscape phones** (500px tall or less, 540px wide or more): the map and settings panels
-  stay side by side (0.85 : 1.15) and fill the room between the bars instead of scrolling: the map
-  picture shrinks to fit (board names 17px), settings drop their hints and use 26px
+- **Landscape phones** (500px tall or less, 540px wide or more): the chosen panel fills the room
+  under the chips instead of scrolling: the map picture shrinks to fit (board names 17px), settings drop their hints and use 26px
   buttons and a smaller digit picker; only the settings panel scrolls (thin bar) if a phone is too
   short.
 - **Players column** (`playersColumn()`): no heading and no empty seats. Top to bottom: the add
@@ -717,8 +718,8 @@ if (!(await ask(`Delete ${d.name}?`, 'Its 4 properties will be removed from the 
   phones) with a dark navy halo and a soft gold glow (`text-shadow`) so it reads on any sprite. Top row: the name
   (`.pname`, Lilita 16px) and, at the row's end, a round 18px remove button (`.seat-kick`, faint
   white, red on hover; never on the host). Bottom row (`.su-seat-foot`): a muted bold tag ("You ·
-  host", "On this device", "Joined online", "Bot") and, at the end, the `.seat-ready` chip (gold
-  outline "Ready", green with a tick when ready; joined players' state as the same chip without a
+  host", "On this device", "Joined online", "Bot") and, at the end, the `.seat-ready` chip (2px
+  border; gold outline "Ready", green with a tick when ready; joined players' state as the same chip without a
   button, `.badge`; bots have none). An open seat shows a dashed "?" box and "Open"; a player not
   back yet is faded with a red "AWAY" pill (`.seat-away`) beside the tag. Open seats (a CPU
   plays them unless a friend joins) are not shown.

@@ -18,7 +18,7 @@ import {
   type RuleSet,
 } from '@aa/engine';
 import { boardThumb } from './thumb';
-import { BUILT_IN, getBoard, listBoards, pickBoardFile, readBoardFile, saveBoard } from '../boardstore';
+import { BUILT_IN, getBoard, listBoards } from '../boardstore';
 import { freeCharacter } from '../sprites';
 import { cleanName, loadProfile } from '../profile';
 import { charButton, pickCharacter } from './charpick';
@@ -88,8 +88,6 @@ export interface SetupHandlers {
   /** `online`: friends joined, so the room stays open and the game is played online. */
   onStart(opts: MatchOptions, online: boolean): void;
   onBack(): void;
-  /** Open the board editor, optionally on an existing board. */
-  onEditor(board: BoardDef | null): void;
 }
 
 /** What game setup uses of the host's room (a HostRoom; the UI Lab passes a stand-in). */
@@ -562,6 +560,29 @@ export function setupFrame() {
   const top = h('header', { class: 'su-top' });
   const wrap = h('div', { class: 'su-main' });
   const side = h('aside', { class: 'su-side', 'aria-label': 'Players' });
+  /** Which panel shows on smaller screens, where only one fits (kept between redraws). */
+  let tab: 'board' | 'rules' = 'board';
+  /**
+   * Put the Board and Game Settings panels in the middle. On smaller screens only one shows at a
+   * time: two chips above it, on the left, pick which (CSS hides them on bigger screens, where
+   * the panels sit side by side).
+   */
+  const panels = (board: HTMLElement, rules: HTMLElement) => {
+    const chip = (t: 'board' | 'rules', label: string) =>
+      h('button', { class: 'su-tab', role: 'tab', onclick: () => ((tab = t), paint()) }, label);
+    const chips = { board: chip('board', 'Board'), rules: chip('rules', 'Game Settings') };
+    const paint = () => {
+      for (const t of ['board', 'rules'] as const) {
+        chips[t].classList.toggle('on', tab === t);
+        chips[t].setAttribute('aria-selected', String(tab === t));
+      }
+      board.classList.toggle('shown', tab === 'board');
+      rules.classList.toggle('shown', tab === 'rules');
+    };
+    clear(wrap);
+    wrap.append(h('div', { class: 'su-tabs', role: 'tablist' }, chips.board, chips.rules), board, rules);
+    paint();
+  };
   const el = h(
     'div',
     { class: 'setup su' },
@@ -576,6 +597,7 @@ export function setupFrame() {
     top,
     wrap,
     side,
+    panels,
     close: () => {
       closeSoundPopover();
       scene.stop();
@@ -735,7 +757,6 @@ export function setupScreen(
     rules: saved.rules,
   };
   let boardId: string = getBoard(saved.boardId) ? saved.boardId : 'town';
-  let notice = '';
   /** The board shown before the last carousel move (its index), so only that redraw slides. */
   let mapFrom = -1;
   /** The board and settings the Ready taps were for: changing them asks everyone again. */
@@ -877,7 +898,6 @@ export function setupScreen(
   const pickBoard = (list: { board: BoardDef }[], from: number, to: number) => {
     if (from === to) return;
     boardId = list[to].board.id;
-    notice = '';
     mapFrom = from;
     draw();
   };
@@ -888,59 +908,18 @@ export function setupScreen(
   };
   document.addEventListener('keydown', onKey);
 
-  /** Board choice: a looping carousel, plus importing a file and the editor. */
+  /** Board choice: a looping carousel of the built-in and saved boards. */
   const boardPanel = () => {
     const list = boards();
     const index = Math.max(
       0,
       list.findIndex((b) => b.board.id === boardId),
     );
-    const { board, mine } = list[index];
-    const importBtn = h('button', { class: 'su-chip' }, 'Import board');
-    importBtn.onclick = async () => {
-      const file = await pickBoardFile();
-      if (!file) return;
-      const res = await readBoardFile(file);
-      if (!res.board) {
-        notice = res.error ?? 'Could not read that file.';
-      } else if (res.check?.errors.length) {
-        saveBoard(res.board);
-        boardId = res.board.id;
-        notice = `Imported "${res.board.name}", but it needs fixing before it can be played: ${res.check.errors[0]} Open it in the board editor.`;
-      } else {
-        saveBoard(res.board);
-        boardId = res.board.id;
-        notice = `Imported "${res.board.name}" and saved it to My boards.`;
-      }
-      draw();
-    };
     return h(
       'section',
       { class: 'setup-panel glass board-panel' },
-      // The board tools sit as chips in the panel's top right corner.
-      h(
-        'div',
-        { class: 'panel-head' },
-        h('h3', null, 'Board'),
-        h(
-          'div',
-          { class: 'su-chips' },
-          importBtn,
-          h(
-            'button',
-            {
-              class: 'su-chip',
-              onclick: () => {
-                leaveRoom();
-                handlers.onEditor(mine ? board : null);
-              },
-            },
-            mine ? 'Edit this board' : 'Board editor',
-          ),
-        ),
-      ),
+      h('h3', null, 'Board'),
       mapCarousel(list, index, mapFrom, (to) => pickBoard(list, index, to)),
-      notice ? h('p', { class: 'hint board-notice' }, notice) : null,
     );
   };
 
@@ -1134,7 +1113,7 @@ export function setupScreen(
       codeChip(),
       statusEl,
     );
-    wrap.append(
+    frame.panels(
       boardPanel(),
       rulesPanel(st, (patch) => {
         Object.assign(st, patch);
@@ -1299,7 +1278,7 @@ export function guestSetup(root: HTMLElement, room: GuestSetupRoom, handlers: Gu
       ),
       h('span', { class: 'su-status', role: 'status' }, status),
     );
-    frame.wrap.append(
+    frame.panels(
       h(
         'section',
         { class: 'setup-panel glass board-panel' },
