@@ -884,20 +884,28 @@ corner with the join code chip right of the title, and **Sound** (the same butto
 menu) in the top right corner. The **players column** sits in the bottom right corner, where the
 player cards sit in the game. Under the top bar: the **Board** panel on the left and the **Game
 Settings** panel on the right, the same width and height, centered across and up and down in the
-room between the left edge of the screen and the player cards. **Sideways windows** without room
-for both (narrower than 1300px, or 500px tall or less, as on phones): only one panel shows at a
-time, with two chips under the "New Game" title, **Board** and **Game Settings** (gold when
-chosen); tapping one shows that panel. The panel fills the room from the chips to the bottom of
-the screen and from the left edge to the player cards, so both panels are the same size. Board
-shows first; the choice stays while the screen is open. **Upright windows** (taller than wide):
-the panels span the room left of the player cards, Board on top of Game Settings when both fit
-in the height, else one at a time with the chips; when that room is narrower than the panels
-need, the panels and everything in them scale down to fit (on a phone held upright they get very
-small). On very narrow windows the title is smaller and Sound shows only its icon. Joined and
-continued games work the same way. On big monitors the panels scale up to fill more of that room (1600 x 860
-and up, more at 1900 x 1000 and 2400 x 1300), but never reach the player cards. On bigger screens
-(1180 x 820 and up) everything fits without scrolling; on smaller ones the panels scroll, with no
-scroll bar. Headings capitalize every word. There is no Start button (see **Ready up**).
+room between the left edge of the screen and the player cards.
+
+**Fitting the window.** The whole screen scales with the window: the top bar, the panels and the
+player cards grow together on bigger windows (normal size at 1366 x 768 sideways or 820 x 1180
+upright, up to twice that on big monitors; never smaller than normal, as phones have their own
+compact sizes). Then the panels take whichever of three layouts fits, so nothing ever scrolls:
+
+| Window                      | Examples                       | Layout                                        |
+| --------------------------- | ------------------------------ | --------------------------------------------- |
+| Sideways, room for both     | 1366 x 768, 1920 x 1080, 4K    | Side by side, centered, scaled up on big ones |
+| Sideways, not enough room   | phones, 1024 x 768, 1280 x 720 | One at a time with the chips                  |
+| Upright, both fit in height | tablets, tall windows          | Board on top of Game Settings                 |
+| Upright, too short for both | very short upright windows     | One at a time with the chips                  |
+
+One at a time: two chips under the "New Game" title, **Board** and **Game Settings** (gold when
+chosen), pick the panel; it fills the room from the chips to the bottom of the screen and from the
+left edge to the player cards, so both panels are the same size. Board shows first; the choice
+stays while the screen is open. Upright windows span the panels across the room left of the
+player cards, scaling them and everything in them down when that room is narrower than they need
+(on a phone held upright they get very small). On very narrow windows the title is smaller and
+Sound shows only its icon. Joined and continued games work the same way. Panel shadows fade out
+softly at every size (nothing clips them). Headings capitalize every word. There is no Start button (see **Ready up**).
 
 - **Players column:** the seats stacked like the player cards in the game (as wide, the same
   tiles with the player's color down the left edge). There is no heading and no empty seats.

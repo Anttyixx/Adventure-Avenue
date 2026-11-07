@@ -9950,12 +9950,11 @@ div.sl-inline label {
   z-index: 1;
   flex: 1 1 auto;
   min-height: 0;
-  /* The panels sit in the middle of the room between the top bar and the bottom bar. */
+  /* The panels sit in the middle of the room. start.ts fit picks a layout that always fits, so
+     nothing here scrolls or clips (a clipped panel shadow would show a hard edge). */
   display: flex;
   flex-direction: column;
-  overflow: auto;
-  overscroll-behavior: contain;
-  scrollbar-width: none;
+  overflow: visible;
 }
 .su-scroll::-webkit-scrollbar {
   display: none;
@@ -10291,7 +10290,8 @@ span.su-code {
   position: relative;
   flex: none;
   width: 300px;
-  zoom: 1.1;
+  /* start.ts fit sets the zoom: 1.2 times the screen's scale (1 on phones). */
+  zoom: 1.2;
   max-height: 100%;
   box-sizing: border-box;
   margin: 0 10px 10px 0;
@@ -10562,12 +10562,7 @@ button.char-btn:hover img {
 /* One at a time: the chips under the title, then the chosen panel filling the room from the chips
    down to the bottom of the screen, both panels the same size; the room spans from the left edge
    to the player cards. */
-.su.layout-tabs .su-scroll {
-  overflow: hidden;
-}
 .su.layout-tabs .su-main {
-  width: 100%;
-  height: 100%;
   margin: 0;
   padding: 0 10px 10px;
   grid-template-columns: minmax(0, 1fr);
@@ -10595,14 +10590,13 @@ button.char-btn:hover img {
    the player cards (start.ts scales the panels down when that room is narrow), centered up and
    down. */
 .su.layout-stack .su-main {
-  width: 100%;
   grid-template-columns: minmax(0, 1fr);
 }
 /* Phones and small windows: the players column is as compact as the game's player cards there
    (hud.ts uses the same sizes), at its normal zoom. */
 @media (max-height: 500px), (max-width: 760px) {
   .su-side {
-    width: 215px;
+    width: 232px;
     zoom: 1;
     margin: 0 6px 6px 0;
     gap: 4px;
@@ -10686,7 +10680,7 @@ button.char-btn:hover img {
     gap: 8px 14px;
   }
   .su-side {
-    width: 176px;
+    width: 190px;
   }
   .su-seat .char-btn {
     width: 22px;
@@ -10714,9 +10708,6 @@ button.char-btn:hover img {
    the settings drop their hints and use smaller buttons, and only scroll inside their own panel
    if a very short phone still can't fit them. */
 @media (max-height: 500px) and (min-width: 540px) {
-  .su-scroll {
-    overflow: hidden;
-  }
   .su-main {
     padding: 2px 8px 6px;
   }
@@ -10796,23 +10787,6 @@ button.char-btn:hover img {
   .su-rule .seg-btn {
     padding: 2px 7px;
     font-size: 11px;
-  }
-}
-/* Bigger monitors: the map and settings panels scale up to fill more of the room beside the
-   players column (their width stays within it, so they never reach the player cards). */
-@media (min-width: 1600px) and (min-height: 860px) {
-  .su-main {
-    zoom: 1.15;
-  }
-}
-@media (min-width: 1900px) and (min-height: 1000px) {
-  .su-main {
-    zoom: 1.35;
-  }
-}
-@media (min-width: 2400px) and (min-height: 1300px) {
-  .su-main {
-    zoom: 1.7;
   }
 }
 /* One panel at a time: the board picture may use the extra height (its width still limits it;

@@ -594,33 +594,65 @@ export function setupFrame() {
     h('div', { class: 'su-body' }, scroll, side),
   );
   /**
-   * Lay the panels out for the window (a class on the screen, `layout-side`, `layout-stack` or
-   * `layout-tabs`):
-   * - Sideways windows: side by side when there is room (1300px wide and more than 500px tall),
-   *   otherwise one at a time with the chips, filling the room from the chips to the bottom.
-   * - Upright windows: the panels span the room left of the player cards, their contents scaled
-   *   down to fit its width if needed (with blank space around them otherwise); the Board panel
-   *   on top of Game Settings when both fit in the height, else one at a time with the chips.
+   * Fit the screen to the window. One scale (`--s`, at least 1, at most 2) grows the top bar,
+   * the panels and the player cards together on bigger windows: 1 at 1366 x 768 sideways or
+   * 820 x 1180 upright (phones keep their own compact sizes at 1). Then the panels get one of three
+   * layouts (a class on the screen), whichever fits, so nothing ever needs scrolling:
+   * - `layout-side`: sideways windows with room for both panels side by side.
+   * - `layout-stack`: upright windows where Board fits on top of Game Settings.
+   * - `layout-tabs`: otherwise one panel at a time, picked with the chips under the title, filling
+   *   the room from the chips to the bottom of the screen.
+   * Upright windows span the panels across the room left of the player cards and scale them down
+   * if that room is narrower than they need. Sizes are set in pixels (not percentages), so zoom
+   * works the same in every browser.
    */
   const fit = () => {
     if (!el.isConnected) return;
-    const upright = innerHeight > innerWidth;
+    const W = innerWidth;
+    const H = innerHeight;
+    const upright = H > W;
+    const sc = Math.min(2, Math.max(1, upright ? Math.min(W / 820, H / 1180) : Math.min(W / 1366, H / 768)));
+    const compact = matchMedia('(max-height: 500px), (max-width: 760px)').matches;
+    el.style.setProperty('--s', String(sc));
+    top.style.zoom = String(sc);
+    side.style.zoom = String((compact ? 1 : CARDS_ZOOM) * sc);
+    // The room for the panels (left of the player cards, under the top bar), on screen.
+    wrap.style.zoom = wrap.style.width = wrap.style.height = '';
+    const roomW = scroll.clientWidth;
+    const roomH = scroll.clientHeight;
     const layout = (mode: 'side' | 'stack' | 'tabs') => {
       for (const m of ['side', 'stack', 'tabs']) el.classList.toggle(`layout-${m}`, m === mode);
     };
-    wrap.style.zoom = '';
+    /** Try a layout at zoom `z` and width `w` (CSS px); true if its height fits the room. */
+    const tryLayout = (mode: 'side' | 'stack', z: number, w: number) => {
+      layout(mode);
+      wrap.style.zoom = '';
+      wrap.style.width = `${w}px`;
+      // Measured without zoom (browsers report zoomed sizes differently), then scaled.
+      const fits = wrap.offsetHeight * z <= roomH + 1;
+      wrap.style.zoom = String(z);
+      return fits;
+    };
+    const tabs = (z: number) => {
+      layout('tabs');
+      wrap.style.zoom = String(z);
+      wrap.style.width = `${roomW / z}px`;
+      wrap.style.height = `${roomH / z}px`;
+    };
     if (!upright) {
-      layout(innerWidth >= 1300 && innerHeight > 500 ? 'side' : 'tabs');
+      const w = roomW / sc;
+      if (w >= SIDE_WIDTH && tryLayout('side', sc, Math.min(SIDE_MAX, w))) return;
+      tabs(sc);
       return;
     }
-    // The settings' two columns need about this much room; narrower rooms scale everything down.
-    const z = Math.min(1, scroll.clientWidth / UPRIGHT_WIDTH);
-    wrap.style.zoom = String(z);
-    layout('stack');
-    if (wrap.getBoundingClientRect().height > scroll.clientHeight + 1) layout('tabs');
+    // Upright: as wide as the room, scaled down when the room is narrower than the panels need.
+    const z = Math.min(sc, roomW / UPRIGHT_WIDTH);
+    if (!tryLayout('stack', z, roomW / z)) tabs(z);
   };
   const resize = new ResizeObserver(fit);
   resize.observe(el);
+  // Web fonts change the panels' heights once they load.
+  void document.fonts?.ready.then(fit);
   return {
     el,
     top,
@@ -638,6 +670,12 @@ export function setupFrame() {
 
 /** How wide (CSS px) the panels need to be in an upright window before they are scaled down. */
 const UPRIGHT_WIDTH = 540;
+/** The room (CSS px, before scaling) both panels need side by side, with the settings' two columns. */
+const SIDE_WIDTH = 950;
+/** The widest the two panels side by side get (CSS px, before scaling). */
+const SIDE_MAX = 1120;
+/** The player cards' size on bigger screens (times the screen's scale); phones use 1. */
+const CARDS_ZOOM = 1.2;
 
 /** How long the players column takes to grow, shrink and move its seats (ms). */
 const DOCK_MS = 320;

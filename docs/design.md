@@ -658,27 +658,29 @@ if (!(await ask(`Delete ${d.name}?`, 'Its 4 properties will be removed from the 
   chip `.su-code` (dashed gold pill: "Code", the code in Lilita gold, "Copy link") right of the
   title, then the main menu's Sound button in the top right corner; Back and Sound are both 40px
   tall (32px on phones). The status line is a screen-reader-only live region (`.sr-only`). Under
-  it `.su-body` (a row): a scrolling `.su-scroll` (scroll bar hidden, stretched to the full height
-  left of the players column) with the board panel (left) and the settings panel (right) in a
-  1fr : 1fr grid, equal heights (max 1120px), the grid centered across and up and down by
-  `margin: auto`. `setupFrame` `fit` (on every redraw and resize) puts one class on the screen:
-  `layout-side` (sideways, 1300px+ wide and over 500px tall: as above), `layout-tabs` (one panel
-  at a time: `.su-main` 100% wide and tall with 0/10/10px padding, `.su-tabs` under the title,
-  two `.su-tab` chips on the left ("Board", "Game Settings"; Lilita 15px pills, navy 88% fill, 2px
-  `--glass-line` border, gold border on hover, solid gold with dark text when chosen, soft shadow,
-  `role="tab"`), the shown panel stretched to the bottom (settings scroll inside if needed, the
-  map picture up to 100dvh - 300px tall above 500px high), the hidden one without `.shown`) or
-  `layout-stack` (upright windows when both fit: Board over Game Settings, full width). Upright
-  windows set `.su-main` zoom to min(1, room width / 540px), so narrow rooms scale the panels
-  down; if the stack is then taller than the room it switches to `layout-tabs`. The tab choice is
-  kept between redraws. Under 520px wide the title is 22px, Sound is icon-only and the code chip
-  drops its "Copy link" text. On big monitors `.su-main` zooms 1.15 (1600 x 860+), 1.35 (1900 x
-  1000+) or 1.7 (2400 x 1300+); its `width: min(1120px, 100%)` stays within the room on screen, so it
-  never reaches the players column. Panel headings are title case, Lilita 28px (21px on phones):
+  it `.su-body` (a row): `.su-scroll` (stretched to the full height left of the players column;
+  `overflow: visible`, since every layout fits and a clipping box would cut the panels' shadows
+  off in a hard line) with the board panel (left) and the settings panel (right) in a 1fr : 1fr
+  grid, equal heights (up to 1120px before scaling), the grid centered across and up and down by
+  `margin: auto`. **Fitting** (`setupFrame` `fit`, on every redraw, resize and once the fonts
+  load): a scale `--s` = min(window / reference) clamped to 1..2 (reference 1366 x 768 sideways,
+  820 x 1180 upright) zooms the top bar, the players column (`CARDS_ZOOM` 1.2 x s; 1 x s on
+  phones) and the panels together. Then one class on the screen: `layout-side` (sideways, when the
+  room is at least `SIDE_WIDTH` 950px before scaling and the panels' height fits), `layout-stack`
+  (upright, when Board over Game Settings fits: full width, zoom min(s, room / `UPRIGHT_WIDTH`
+  540px)), else `layout-tabs` (one panel at a time at that zoom, `.su-main` exactly the room's
+  size with 0/10/10px padding, `.su-tabs` under the title: two `.su-tab` chips on the left
+  ("Board", "Game Settings"; Lilita 15px pills, navy 88% fill, 2px `--glass-line` border, gold
+  border on hover, solid gold with dark text when chosen, soft shadow, `role="tab"`), the shown
+  panel stretched to the bottom (settings scroll inside if needed, the map picture up to 100dvh -
+  300px tall above 500px high), the hidden one without `.shown`). Widths and heights are set in
+  pixels and heights measured unzoomed, so the browsers' different zoom handling can't push the
+  panels under the player cards. The tab choice is kept between redraws. Under 520px wide the
+  title is 22px, Sound is icon-only and the code chip drops its "Copy link" text. Panel headings are title case, Lilita 28px (21px on phones):
   "Board" and "Game Settings"; screen titles too ("New Game"). The settings' `.seg-btn` pills have
   2px borders (one step up from 1px). The Board panel has no tool chips. On the right, the players column
   `.su-side` (`setupFrame().side`) sits against the bottom right corner like the game's
-  `.cards-wrap`: 300px at zoom 1.1 (phones 215px, 176px when 500px tall or less, zoom 1), 10px from
+  `.cards-wrap`: 300px at zoom 1.2 x s (phones 232px, 190px when 500px tall or less, zoom 1), 10px from
   the edges, `justify-content: flex-end` so it grows upward. Every redraw goes through
   `morphSide`: the column eases its height (320ms, `cubic-bezier(0.2, 0.8, 0.2, 1)`), seats
   matched by `data-key` (a lasting seat id, or a joined player's name: never the character, which
