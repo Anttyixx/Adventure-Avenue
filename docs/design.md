@@ -729,6 +729,17 @@ if (!(await ask(`Delete ${d.name}?`, 'Its 4 properties will be removed from the 
   `.seat-add` "Add bot" in gold (`--accent` outline and text);
   both 999px pills, 12px bold, 4/12px padding (phones 11px, 2/9px), a soft shadow so they read over
   the scene, scale .95 on press.
+- **Long names** (`marquee.ts` `nameText`, `.name-fit`): any player name that may not fit (player
+  cards, seat cards) is an inner `.name-run` in a clipping box. When it overflows (rechecked by a
+  `ResizeObserver`), `.name-long` fades its last part to 30% (a mask twice the box's width, so
+  the fade can move) and slides it to its end and back (`--name-shift`; pauses at both ends; 5s
+  plus 1s per 12px of overflow), the fade moving to the start while the end shows. Reduced motion:
+  no slide, the end stays faded. Never an ellipsis (it would hide the sliding text).
+- **Renaming in setup** (`NameEdit`, `.su-rename` / `.su-name-input`): on seats that may rename
+  (players on the host's device, a friend's own seat) the name is a button (dotted underline on
+  hover, gold focus ring); tapping it swaps in a box in the name's font (Lilita 16px, 1.5px gold
+  outline, dark fill, a soft gold ring when focused, `maxlength` 12). The screen keeps the draft,
+  so redraws (someone joining) keep the text and the cursor (`refocusName`).
 - **Seat cards** (`seatCard()`, `.pcard.su-seat`): the game's player card tile (glass, 5px
   `--pc` left edge, 12px radius, same paddings and phone sizes) so setup and game read as one. Left
   (`.pc-side`): the character trimmed to its pixels (`charButton(look, 'body', ...)`, 34 x 52 like

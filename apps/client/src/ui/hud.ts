@@ -25,6 +25,7 @@ import { soundControls } from './soundpanel';
 import { motelFee, squareInfo, squareName } from '../names';
 import { boonIconURL, suitIconURL, wildIconURL } from '../icons';
 import { bodyURL, portraitURL } from '../sprites';
+import { nameText } from './marquee';
 import { clear, fmt, h } from './dom';
 import { TIMING as T } from '../timing';
 import { kindIcon, logView, namesInColor, type IconKind } from './log';
@@ -757,7 +758,7 @@ export class Hud {
           'div',
           { class: 'pc-row pc-top' },
           h('span', { class: 'lvl', title: `Level ${p.level}` }, `Lv ${p.level}`),
-          h('span', { class: `pname ${p.name.length > 7 ? 'long' : ''}` }, p.name),
+          nameText(p.name, `pname ${p.name.length > 7 ? 'long' : ''}`),
           // An active Boon or Boom shows as its symbol, like on the board.
           p.boon > 0
             ? h('img', {

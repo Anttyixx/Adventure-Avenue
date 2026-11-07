@@ -26,6 +26,18 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: '2026-11-07-rename-in-setup',
+    date: 'Nov 7, 2026',
+    title: 'Rename in game setup',
+    features: [
+      {
+        tag: 'better',
+        title: 'Change names before the game',
+        text: "Tap a name on the new game screen to change it: yours, other players on this device, or your own seat when you've joined a friend's game. Names can now be up to 12 letters. A name too long for its card fades at the end and slides slowly back and forth so you can read all of it.",
+      },
+    ],
+  },
+  {
     id: '2026-11-07-smart-cards',
     date: 'Nov 7, 2026',
     title: 'Smart player cards',

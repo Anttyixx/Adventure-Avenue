@@ -38,7 +38,7 @@ export function saveProfile(patch: Partial<Profile>) {
 }
 
 /** The longest a player's name can be, so it fits on the player cards next to the suits. */
-export const NAME_MAX = 10;
+export const NAME_MAX = 12;
 
 /** A player's name as typed, made safe and short: no markup characters, trimmed, at most NAME_MAX. */
 export function cleanName(s: unknown): string {

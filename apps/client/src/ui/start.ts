@@ -20,7 +20,8 @@ import {
 import { boardThumb } from './thumb';
 import { BUILT_IN, getBoard, listBoards } from '../boardstore';
 import { freeCharacter } from '../sprites';
-import { cleanName, loadProfile } from '../profile';
+import { NAME_MAX, cleanName, loadProfile } from '../profile';
+import { nameText } from './marquee';
 import { charButton, pickCharacter } from './charpick';
 import { loadSave } from '../save';
 import { titleScene } from './menu';
@@ -106,7 +107,10 @@ export type SetupRoom = Pick<
 >;
 
 /** What the locked setup a joined player sees uses of their room. */
-export type GuestSetupRoom = Pick<GuestRoom, 'code' | 'seat' | 'lobby' | 'setLook' | 'setReady' | 'leave'>;
+export type GuestSetupRoom = Pick<
+  GuestRoom,
+  'code' | 'seat' | 'lobby' | 'setLook' | 'setName' | 'setReady' | 'leave'
+>;
 
 /** Seconds between everyone being ready and the game starting (to change their mind). */
 const START_COUNTDOWN = 3;
@@ -136,6 +140,67 @@ export interface SeatView {
   /** A player who hasn't come back to a continued game yet: faded, with an "Away" chip. */
   away?: boolean;
   title?: string | null;
+  /** Players who may rename themselves here: tapping the name edits it (see `NameEdit`). */
+  rename?: NameEdit;
+}
+
+/** Renaming a seat in game setup: the screen keeps the draft, so a redraw doesn't lose it. */
+export interface NameEdit {
+  /** The name being typed, or null while not editing. */
+  draft: string | null;
+  start(): void;
+  input(v: string): void;
+  /** Done typing: `save` keeps the new name (an empty one keeps the old). */
+  done(save: boolean): void;
+}
+
+/** The seat's name: plain, a button that starts renaming, or the box while renaming. */
+function seatNameEl(s: SeatView): HTMLElement {
+  const cls = `pname ${s.name.length > 7 ? 'long' : ''}`;
+  const r = s.rename;
+  if (!r) return nameText(s.name, cls);
+  if (r.draft == null)
+    return h(
+      'button',
+      {
+        class: 'su-rename',
+        title: 'Tap to change the name',
+        'aria-label': `Rename ${s.name}`,
+        onclick: r.start,
+      },
+      nameText(s.name, cls),
+    );
+  const box = h('input', {
+    class: 'su-name-input',
+    maxlength: String(NAME_MAX),
+    value: r.draft,
+    'aria-label': 'Name',
+    autocomplete: 'off',
+    spellcheck: 'false',
+  }) as HTMLInputElement;
+  box.oninput = () => r.input(box.value);
+  box.onkeydown = (e) => {
+    if (e.key === 'Enter') r.done(true);
+    else if (e.key === 'Escape') {
+      e.stopPropagation();
+      r.done(false);
+    }
+  };
+  // A redraw replaces the box (removing it blurs it) and focuses the new one, so wait a moment
+  // and only finish for a box that is still there and really lost the cursor.
+  box.onblur = () =>
+    setTimeout(() => {
+      if (box.isConnected && document.activeElement !== box) r.done(true);
+    });
+  return box;
+}
+
+/** After a redraw, put the cursor back in the name box being typed in (if any), at the end. */
+export function refocusName(scope: HTMLElement) {
+  const box = scope.querySelector<HTMLInputElement>('.su-name-input');
+  if (!box || document.activeElement === box) return;
+  box.focus();
+  box.setSelectionRange(box.value.length, box.value.length);
 }
 
 /**
@@ -163,7 +228,7 @@ export function seatCard(s: SeatView): HTMLElement {
       h(
         'div',
         { class: 'pc-row pc-top' },
-        h('span', { class: `pname ${s.name.length > 7 ? 'long' : ''}` }, s.name),
+        seatNameEl(s),
         s.remove
           ? h(
               'button',
@@ -221,7 +286,8 @@ export function lobbyRows(seats: LobbySeat[], mine: (x: LobbySeat, i: number) =>
   const used = new Map<string, number>();
   return seats.flatMap((x, i) => {
     if (x.kind === 'open') return [];
-    let key = `${x.kind === 'cpu' ? 'b' : 'p'}:${x.name}`;
+    // This device's own seat and the host keep their key when renamed; others go by name.
+    let key = mine(x, i) ? 'me' : x.kind === 'host' ? 'host' : `${x.kind === 'cpu' ? 'b' : 'p'}:${x.name}`;
     const n = used.get(key) ?? 0;
     used.set(key, n + 1);
     if (n) key += `#${n}`;
@@ -839,6 +905,8 @@ export function setupScreen(
   const statusEl = h('span', { class: 'su-status', role: 'status', 'aria-live': 'polite' });
   /** Arrival order of the seats for the players column (see `byArrival`). */
   const seen: string[] = [];
+  /** The player on this device being renamed, with what has been typed so far. */
+  let renaming: { id: number; draft: string } | null = null;
   // The host sits down as their player card (set on the main menu).
   const card = loadProfile();
 
@@ -1051,9 +1119,28 @@ export function setupScreen(
   const total = () => people.length + joined() + bots.length;
   const room4 = () => total() < MAX_PLAYERS;
 
-  /** A player on this device: the character (tap to change), the name, remove and Ready. */
+  /** Renaming a player on this device: tap the name, type, then Enter or tap away. */
+  const renameOf = (x: Spot): NameEdit => ({
+    draft: renaming?.id === x.id ? renaming.draft : null,
+    start: () => {
+      renaming = { id: x.id, draft: x.name };
+      draw();
+    },
+    input: (v) => {
+      if (renaming?.id === x.id) renaming.draft = v;
+    },
+    done: (save) => {
+      if (renaming?.id !== x.id) return;
+      if (save) x.name = cleanName(renaming.draft) || x.name;
+      renaming = null;
+      draw();
+    },
+  });
+
+  /** A player on this device: the character (tap to change), the name (tap to change), remove and Ready. */
   const personCard = (x: Spot) =>
     seatCard({
+      rename: renameOf(x),
       key: `s${x.id}`,
       color: PLAYER_COLORS[seatOf(x)],
       look: x.look,
@@ -1198,6 +1285,7 @@ export function setupScreen(
       // The status line's new text is part of the column's new size, so set it before measuring.
       checkReady();
     });
+    refocusName(frame.side);
     mapFrom = -1;
   };
 
@@ -1321,6 +1409,25 @@ export function guestSetup(root: HTMLElement, room: GuestSetupRoom, handlers: Gu
   };
   /** Arrival order of the seats for the players column (see `byArrival`). */
   const seen: string[] = [];
+  /** What this player has typed while renaming themselves (null while not renaming). */
+  let draft: string | null = null;
+  const rename = (name: string): NameEdit => ({
+    draft,
+    start: () => {
+      draft = name;
+      draw();
+    },
+    input: (v) => {
+      if (draft != null) draft = v;
+    },
+    done: (save) => {
+      if (draft == null) return;
+      const clean = cleanName(draft);
+      draft = null;
+      if (save && clean && clean !== name) room.setName(clean);
+      draw();
+    },
+  });
 
   const draw = () => {
     const lobby = room.lobby;
@@ -1386,6 +1493,7 @@ export function guestSetup(root: HTMLElement, room: GuestSetupRoom, handlers: Gu
               color: PLAYER_COLORS[i],
               look: x.look ?? null,
               pick: mine ? () => pick(lobby!, i) : null,
+              rename: mine ? rename(x.name) : undefined,
               name: x.name,
               tag: mine
                 ? 'You'
@@ -1418,6 +1526,7 @@ export function guestSetup(root: HTMLElement, room: GuestSetupRoom, handlers: Gu
         ),
       );
     });
+    refocusName(frame.side);
   };
   draw();
   return {

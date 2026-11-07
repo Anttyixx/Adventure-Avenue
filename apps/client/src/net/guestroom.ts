@@ -117,6 +117,11 @@ export class GuestRoom implements GameLink {
     this.send({ t: 'look', look });
   }
 
+  /** Rename this player (lobby only; the host cleans the name up). */
+  setName(name: string) {
+    this.send({ t: 'name', name });
+  }
+
   /** Say this player is ready to start, or not any more (lobby only). */
   setReady(ready: boolean) {
     this.send({ t: 'ready', ready });

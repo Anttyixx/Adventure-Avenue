@@ -1142,7 +1142,8 @@ input[type='range'] {
   white-space: nowrap;
 }
 .pname {
-  /* Names are short (10 characters at most, profile.ts NAME_MAX), so they show in full. */
+  /* Names are up to 12 characters (profile.ts NAME_MAX); one too long for its space slides
+     back and forth (marquee.ts, .name-fit). */
   flex: none;
   font-family: var(--head);
   font-size: 16px;
@@ -2769,8 +2770,6 @@ input[type='range'] {
   .pc-top .pname {
     flex: 0 1 auto;
     min-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
   }
   .pc-top .pname.long {
     font-size: 10px;
@@ -10492,8 +10491,46 @@ span.su-code {
 .su-seat .pname {
   flex: 1 1 auto;
   min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
+}
+/* Players who may rename themselves: the name is a button (a faint dotted underline on hover);
+   tapping it swaps in a box in the same font, outlined in gold. */
+.su-rename {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  text-align: left;
+  cursor: text;
+}
+.su-rename:hover .name-run,
+.su-rename:focus-visible .name-run {
+  text-decoration: underline dotted rgba(255, 255, 255, 0.55);
+  text-underline-offset: 3px;
+}
+.su-rename:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+.su-name-input {
+  flex: 1 1 auto;
+  min-width: 0;
+  width: 100%;
+  box-sizing: border-box;
+  margin: -2px 0;
+  padding: 0 6px;
+  border: 1.5px solid var(--accent);
+  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.3);
+  color: #fff;
+  font: 400 16px/20px var(--head);
+}
+.su-name-input:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(255, 209, 102, 0.25);
 }
 .su-seat-foot {
   flex-wrap: nowrap;
@@ -11037,5 +11074,66 @@ button.char-btn:hover img {
   .stock-layer.fill .stock-pop .m-left {
     display: flex;
     flex: none;
+  }
+}
+/* A name too long for its space (marquee.ts): the end fades a little, and the name slides to its
+   end and back (pausing at each end) with the fade moving to the start while it shows the end.
+   The fade is one mask twice as wide as the name, slid across with it. */
+.name-fit {
+  display: block;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+}
+.name-run {
+  display: inline-block;
+}
+.name-fit.name-long {
+  -webkit-mask-image: linear-gradient(90deg, rgba(0, 0, 0, 0.3), #000 27.5%, #000 72.5%, rgba(0, 0, 0, 0.3));
+  mask-image: linear-gradient(90deg, rgba(0, 0, 0, 0.3), #000 27.5%, #000 72.5%, rgba(0, 0, 0, 0.3));
+  -webkit-mask-size: 200% 100%;
+  mask-size: 200% 100%;
+  -webkit-mask-position: 100% 0;
+  mask-position: 100% 0;
+  animation: name-fade var(--name-time, 6s) ease-in-out infinite;
+}
+.name-fit.name-long .name-run {
+  animation: name-slide var(--name-time, 6s) ease-in-out infinite;
+}
+@keyframes name-slide {
+  0%,
+  18% {
+    transform: none;
+  }
+  45%,
+  68% {
+    transform: translateX(var(--name-shift, 0px));
+  }
+  95%,
+  100% {
+    transform: none;
+  }
+}
+@keyframes name-fade {
+  0%,
+  18% {
+    -webkit-mask-position: 100% 0;
+    mask-position: 100% 0;
+  }
+  45%,
+  68% {
+    -webkit-mask-position: 0 0;
+    mask-position: 0 0;
+  }
+  95%,
+  100% {
+    -webkit-mask-position: 100% 0;
+    mask-position: 100% 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .name-fit.name-long,
+  .name-fit.name-long .name-run {
+    animation: none;
   }
 }

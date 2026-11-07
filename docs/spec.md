@@ -870,7 +870,7 @@ this device has an online game to go back to. In the top right corner sit the **
 button (the card's portrait and name; just the portrait on phones), the **Sound** button and, to
 its right, **Menu**. The **player card** (`profile.ts`, kept on this device) is the name and
 character this device plays as: its button opens a pop-up with the character on its colored spot
-(tap it to open the character picker) beside a name box (up to 10 characters, the same characters
+(tap it to open the character picker) beside a name box (up to 12 characters, the same characters
 removed as in setup), and a line on how it's used. Changes save as they are made; Done, Escape or
 a click outside closes it. Game setup seats the host with the card's name and character, and
 joining a game uses its name (unless one was typed for a rejoin) and asks the host for its
@@ -972,10 +972,16 @@ softly at every size (nothing clips them). Headings capitalize every word. There
   seat's character opens the character picker (all nine characters; ones other humans have are
   greyed out with their name, so no two players share one; a CPU holding the picked one switches
   to a free one). Characters cannot change once the game
-  starts. **Names can't be changed in game setup:** players set them before (the host's seat uses
-  the main menu's player card name and character; a friend joins with the name on their player
-  card or typed in the join box; other players on the host's device and bots get a suggested
-  name). In the online build, validate names on the server.
+  starts. **Names** start as before (the host's seat uses the main menu's player card name and
+  character; a friend joins with the name on their player card or typed in the join box; other
+  players on the host's device and bots get a suggested name), and **can be changed in game
+  setup**: tapping the name on a seat card (players on the host's device, and a friend's own seat)
+  turns it into a box; Enter or tapping away keeps the new name, Escape or an empty box keeps the
+  old one. Names are up to **12 characters**. Renaming in setup doesn't change the player card.
+  The host cleans every name (the same rules as the player card). **Long names:** when a name is too
+  long for its space (a seat card or a player card), the end of it fades a little and the name
+  slides slowly to its end and back, pausing at each end, so both parts can be read (it stays still,
+  faded, with reduced motion).
 
 In-game, the Menu button (top right) opens the menu as a pop-up in the middle of the screen, over
 everything; a game on this device pauses while it is open (online games carry on). It has Resume, a Fast CPU
@@ -1157,7 +1163,7 @@ active player changes, tokens ease to their new sizes (the active one larger, th
 **Phones (small screens).** On short screens (500px tall or less) and narrow ones the game
 screen packs everything so nothing overlaps: the toolbar stays on one row with short labels
 (**Log**, **☰**), the info chip drops the game's name when space is tight, and the player cards are
-narrower (176px) and two rows each; names of 8 to 10 letters are a size smaller there so the suits stay beside them (level, name and suits; cash, place and net worth) with the goal bar as a thin line
+narrower (176px) and two rows each; names of 8 to 12 letters are a size smaller there so the suits stay beside them, and one that still doesn't fit slides back and forth (level, name and suits; cash, place and net worth) with the goal bar as a thin line
 along the card's bottom edge. If five cards still would reach the toolbar, they shrink to fit
 (`hud.ts` `fitCards`). Arcade games and the live auction shrink as a whole to fit the room
 between the toolbar and the action bar instead of cutting off or scrolling (`modals.ts`
