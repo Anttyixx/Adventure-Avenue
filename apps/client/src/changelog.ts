@@ -26,6 +26,18 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: '2026-11-07-never-cut-off',
+    date: 'Nov 7, 2026',
+    title: 'Nothing cut off',
+    features: [
+      {
+        tag: 'fix',
+        title: 'Every choice stays in view',
+        text: 'When the action bar has more choices than fit beside the player cards, it spreads across the screen with the board blurred behind it, and its buttons wrap onto another line instead of hiding. Big pop-ups do the same rather than shrinking too far.',
+      },
+    ],
+  },
+  {
     id: '2026-11-07-skips-logged',
     date: 'Nov 7, 2026',
     title: 'Skips in the log',

@@ -4243,7 +4243,8 @@ input[type='range'] {
 .prompt-center .btn-row {
   flex: none;
   flex-wrap: nowrap;
-  justify-content: flex-end;
+  /* "safe": buttons that don't fit spill to the scrollable side, never out of reach on the left. */
+  justify-content: safe flex-end;
   max-width: 60vw;
   overflow-x: auto;
   overflow-y: hidden;
@@ -11227,4 +11228,62 @@ button.char-btn:hover img {
   .su-saved-notes .hint {
     font-size: 11px;
   }
+}
+/* Nothing in the action bar or a pop-up is ever cut off. When the action bar's options don't fit
+   beside the player cards (even bottom left), it spreads over them (hud.ts morphAsk, .ab-over);
+   when a pop-up would have to shrink a lot to fit beside them, or can't slide far enough left to
+   clear them, it sits over them (modals.ts fitInLayer and keepClearOfCards: .over-wide drops the
+   room kept for the cards, .over-cards blurs). Either way the board and the cards behind are
+   blurred under a light navy wash, so the focus is on what is in front; the toolbar and the action
+   bar stay sharp above. */
+.hud.ab-over > .prompt-center {
+  left: 8px;
+  right: 8px;
+  margin: 0 auto;
+  max-width: calc(100% - 16px);
+  max-height: calc(100% - var(--top-free, 50px) - 16px);
+  z-index: 6;
+  /* The question above the choices, which wrap onto more lines instead of scrolling. */
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
+  padding: 10px 14px;
+}
+.hud.ab-over > .prompt-center .prompt-text {
+  max-width: none;
+  -webkit-line-clamp: unset;
+}
+.hud.ab-over > .prompt-center .btn-row,
+.hud.ab-over > .prompt-center .tb-btns {
+  flex-wrap: wrap;
+  justify-content: center;
+  max-width: none;
+  overflow: visible;
+}
+.hud.ab-over::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  pointer-events: none;
+  background: rgba(16, 26, 51, 0.25);
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+}
+.hud > .over-wide {
+  padding-right: 8px !important;
+}
+/* Spread over the cards: the stock pop-up's limit to the room beside them no longer applies (its zoom makes it fit). */
+.hud > .over-wide > .stock-pop {
+  max-width: none !important;
+}
+.hud > .over-cards:not([hidden]) {
+  background: rgba(16, 26, 51, 0.25);
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+}
+.hud.ab-over > .toolbar,
+.hud:has(> .over-cards:not([hidden])) > .toolbar,
+.hud:has(> .over-cards:not([hidden])) > .prompt-center {
+  z-index: 6;
 }

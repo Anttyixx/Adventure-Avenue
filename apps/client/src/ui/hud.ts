@@ -1080,6 +1080,41 @@ export class Hud {
     return !!t && t.clientWidth < 140 && t.scrollWidth > t.clientWidth + 2;
   }
 
+  /**
+   * Last resort, so nothing in the action bar is ever cut off: when its options still don't fit
+   * beside the player cards (even bottom left), it spreads over them, with the board and the
+   * cards blurred behind it (`.ab-over`). Rechecked whenever the bar changes, but never while it
+   * is morphing (its size then is mid-way, not what it will be).
+   */
+  private fitAskOver() {
+    const a = this.ask;
+    if (a.classList.contains('morphing')) return;
+    const was = this.root.classList.contains('ab-over');
+    this.root.classList.remove('ab-over');
+    const need = a.classList.contains('show') && this.askOverflows();
+    this.root.classList.toggle('ab-over', need);
+    if (need || was) this.updateInsets();
+  }
+
+  /**
+   * Whether anything in the action bar is cut off or has to scroll to be seen: the bar or a button
+   * row overflowing (a row lined up on its right spills out on the left, which the browser doesn't
+   * count, so the buttons' own boxes are checked), or the question squeezed into a sliver.
+   */
+  private askOverflows(): boolean {
+    const a = this.ask;
+    if (a.scrollWidth > a.clientWidth + 2 || a.scrollHeight > a.clientHeight + 2) return true;
+    if (this.askTextSqueezed()) return true;
+    return [...a.querySelectorAll<HTMLElement>('.btn-row, .tb-btns')].some((r) => {
+      if (r.scrollWidth > r.clientWidth + 2) return true;
+      const rr = r.getBoundingClientRect();
+      return [...r.children].some((c) => {
+        const cr = c.getBoundingClientRect();
+        return cr.width > 0 && (cr.left < rr.left - 1 || cr.right > rr.right + 1);
+      });
+    });
+  }
+
   /** Measure once, then resize the shell without repeatedly rewrapping its text. */
   private morphAsk(from: { w: number; h: number } | null) {
     const a = this.ask;
@@ -1095,6 +1130,7 @@ export class Hud {
       this.abLeftAt = document.documentElement.clientWidth || window.innerWidth;
       this.updateInsets();
     }
+    this.fitAskOver();
     if (!from || !a.classList.contains('show') || matchMedia('(prefers-reduced-motion: reduce)').matches)
       return;
     const rect = a.getBoundingClientRect();
@@ -1129,6 +1165,7 @@ export class Hud {
       if (this.askAnim !== anim) return;
       this.stopAskMorph();
       this.updateInsets();
+      this.fitAskOver();
     };
     anim.onfinish = end;
     anim.oncancel = end;

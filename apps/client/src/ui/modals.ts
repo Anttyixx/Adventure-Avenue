@@ -51,11 +51,16 @@ export function keepClearOfCards(hud: Hud, box: HTMLElement): () => void {
   const place = () => {
     if (!box.isConnected || !box.offsetWidth) return;
     box.style.translate = '';
+    // Spread over the cards on purpose (fitInLayer's .over-wide): it stays centered on them.
+    if (box.parentElement?.classList.contains('over-wide')) return;
     const r = box.getBoundingClientRect();
     const freeRight = parseFloat(getComputedStyle(hud.root).getPropertyValue('--free-right')) || 0;
     const limit = window.innerWidth - freeRight - CARD_GAP;
     const shift = r.right > limit ? Math.max(12 - r.left, limit - r.right) : 0;
     if (shift) box.style.translate = `${Math.round(shift)}px 0`;
+    // Too wide to clear the cards even against the left edge: it sits over them, so the board and
+    // the cards behind it blur (the layer's `.over-cards`).
+    box.parentElement?.classList.toggle('over-cards', freeRight > 0 && r.right + shift > limit + 1);
   };
   const watch = new ResizeObserver(place);
   watch.observe(box);
@@ -71,6 +76,9 @@ export function keepClearOfCards(hud: Hud, box: HTMLElement): () => void {
  * it (small phone screens), instead of cutting them off or making them scroll. Rechecked as its
  * contents or the window change. Returns the function that stops it.
  */
+/** A pop-up that would have to shrink below this to fit beside the player cards spreads over them instead. */
+const OVER_BEFORE_SHRINK = 0.9;
+
 export function fitInLayer(box: HTMLElement, min = 0.55): () => void {
   let busy = false;
   const fit = () => {
@@ -80,13 +88,25 @@ export function fitInLayer(box: HTMLElement, min = 0.55): () => void {
     box.style.zoom = '';
     box.style.maxHeight = '';
     box.style.maxWidth = '';
+    // Start from the room beside the cards each time (and drop a blur this check put there).
+    if (layer.classList.contains('over-wide')) layer.classList.remove('over-wide', 'over-cards');
     const cs = getComputedStyle(layer);
     const roomW = layer.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
     const roomH = layer.clientHeight - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom);
     // Its natural size: everything inside it, even what would have to scroll.
     const w = Math.max(box.scrollWidth, box.offsetWidth);
     const hgt = Math.max(box.scrollHeight, box.offsetHeight);
-    const z = Math.min(1, roomW / w, roomH / hgt);
+    let z = Math.min(1, roomW / w, roomH / hgt);
+    // Before shrinking it much, let it spread over the player cards (blurred behind) if that is
+    // what it needs: the layer drops the room it keeps for them.
+    if (z < OVER_BEFORE_SHRINK && roomW / w < OVER_BEFORE_SHRINK) {
+      layer.classList.add('over-cards', 'over-wide');
+      const wide =
+        layer.clientWidth -
+        parseFloat(getComputedStyle(layer).paddingLeft) -
+        parseFloat(getComputedStyle(layer).paddingRight);
+      z = Math.min(1, wide / w, roomH / hgt);
+    }
     if (roomW > 0 && roomH > 0 && z < 0.98) {
       box.style.maxHeight = 'none';
       box.style.maxWidth = 'none';

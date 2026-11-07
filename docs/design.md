@@ -781,6 +781,22 @@ if (!(await ask(`Delete ${d.name}?`, 'Its 4 properties will be removed from the 
   narrow), and a foot (a hairline above) with the rejoin hints and the gold **Resume Game**. A
   player not back yet: seat faded to 50% with a red "AWAY" pill (`.seat-away`) beside the tag.
 
+### 5.17e Too big for the room (over the player cards)
+
+- **Action bar** (`hud.fitAskOver`, `.hud.ab-over`): checked after every change once the bar has
+  stopped morphing. If anything is cut off or has to scroll (the bar or a button row overflowing,
+  a button outside its row's box, or the question squeezed), the bar spans the screen 8px from each
+  side at `z-index: 6`, as a column: the question (no line clamp) above the choices, which wrap
+  (centered) instead of scrolling; up to the room under the toolbar tall. `.hud::after` puts a
+  full-screen navy 25% wash with a 6px backdrop blur behind it (`z-index: 5`), and the toolbar
+  rises to `z-index: 6`. Button rows otherwise line up with `justify-content: safe flex-end`, so
+  a row that overflows spills to its scrollable side, never out of reach.
+- **Pop-ups** (`modals.ts`): `fitInLayer` lets a pop-up that would shrink below 0.9 spread over the
+  cards first (`.over-wide`: the layer's right padding drops to 8px; the stock pop-up's width
+  limit lifts), then zooms if still needed; `keepClearOfCards` doesn't move a spread pop-up and
+  marks a pop-up that can't clear the cards (`.over-cards`). `.over-cards` gives the layer the same
+  wash and blur, and the toolbar and action bar sit above it.
+
 ### 5.18 Game log
 
 - **Game log:** a toolbar button (`.log-toggle`, between the zoom chip and Guide, gold `.on`

@@ -1186,6 +1186,15 @@ together beside the players column (smaller buttons, no hint lines, the map pict
 room; on narrow phones the settings are one column), and the seat cards are as compact as the
 game's player cards on a phone, so five fit.
 
+**Nothing is ever cut off.** When the action bar's options don't fit beside the player cards
+(even moved to the bottom left), the bar spreads across the screen over the player cards: the
+question goes above the choices, which wrap onto more lines instead of scrolling, and the board
+and the cards behind are blurred under a light navy wash so the focus is on the bar (the toolbar
+stays sharp). A pop-up (the stock market, the auction, the info pop-up, an arcade game) that would
+have to shrink a lot to fit beside the cards, or can't slide far enough left to clear them, does
+the same: it sits over the cards with the blur behind it. As soon as things fit again, the bar or
+pop-up goes back beside the cards and the blur goes away.
+
 **Layout.** Scrolling panels hide their scrollbars (they still scroll). The board fills the whole game screen edge to edge, and everything else floats over it
 as dark glass overlays. Top right: the zoom chip, the Game log button and the Menu button (the menu
 also shows the round, target and rule set). **Guide** (`ui/guide.ts`, in the Menu, under Resume; the

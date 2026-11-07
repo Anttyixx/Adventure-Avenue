@@ -112,7 +112,7 @@ const rnd = (n: number) => Math.floor(Math.random() * n);
  * Controls for UI elements that were just added or changed: they shake once and glow so they
  * are easy to find. Update this list with each change.
  */
-const RECENT = new Set(['Online: continue saved game']);
+const RECENT = new Set(['Action bar: too many choices', 'Buy stock']);
 
 /** Which board the lab plays on: Town (square) or Twin Lakes (hex), remembered per browser. */
 const LAB_BOARD_KEY = 'aa-lab-board';
@@ -644,6 +644,17 @@ export async function openLab(app: HTMLElement, section?: string) {
           await new Promise((resolve) => setTimeout(resolve, 100));
         }
       }),
+      // More choices than fit beside the player cards: the bar spreads over them, blurred behind.
+      btn('Action bar: too many choices', async () =>
+        result(
+          'Too many choices',
+          await hud.prompt(
+            'A long question that needs a lot of room in the action bar to show every one of its choices',
+            Array.from({ length: 12 }, (_, i) => ({ label: `Choice number ${i + 1}`, value: i + 1 })),
+            cur().color,
+          ),
+        ),
+      ),
       btn('Action bar resize test', async () => {
         // Includes updates faster than a morph, as happens during chained game events.
         const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
