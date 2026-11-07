@@ -37,7 +37,8 @@ export const CHANGELOG: ChangelogEntry[] = [
       },
     ],
     extras: [
-      'Smaller screens show Board or Game Settings, picked with two chips',
+      'Smaller screens show Board or Game Settings, picked with two chips under the title',
+      'Upright windows stack Board over Game Settings when they fit',
       'Board and Game Settings are the same size, with settings in two columns',
       'Vacant Plots cycles with arrows',
       'Boards are imported and edited from the board editor in the main menu',

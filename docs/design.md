@@ -661,11 +661,18 @@ if (!(await ask(`Delete ${d.name}?`, 'Its 4 properties will be removed from the 
   it `.su-body` (a row): a scrolling `.su-scroll` (scroll bar hidden, stretched to the full height
   left of the players column) with the board panel (left) and the settings panel (right) in a
   1fr : 1fr grid, equal heights (max 1120px), the grid centered across and up and down by
-  `margin: auto`. **Smaller screens** (under 1300px wide, or 500px tall or less): one panel at a
-  time (`setupFrame().panels()`; the hidden one has no `.shown`), full width, under `.su-tabs`, two
-  `.su-tab` chips on the left ("Board", "Game Settings"; Lilita 15px pills, navy 88% fill, 2px
+  `margin: auto`. `setupFrame` `fit` (on every redraw and resize) puts one class on the screen:
+  `layout-side` (sideways, 1300px+ wide and over 500px tall: as above), `layout-tabs` (one panel
+  at a time: `.su-main` 100% wide and tall with 0/10/10px padding, `.su-tabs` under the title,
+  two `.su-tab` chips on the left ("Board", "Game Settings"; Lilita 15px pills, navy 88% fill, 2px
   `--glass-line` border, gold border on hover, solid gold with dark text when chosen, soft shadow,
-  `role="tab"`); the choice is kept between redraws. On phones the shown panel fills the height. On big monitors `.su-main` zooms 1.15 (1600 x 860+), 1.35 (1900 x
+  `role="tab"`), the shown panel stretched to the bottom (settings scroll inside if needed, the
+  map picture up to 100dvh - 300px tall above 500px high), the hidden one without `.shown`) or
+  `layout-stack` (upright windows when both fit: Board over Game Settings, full width). Upright
+  windows set `.su-main` zoom to min(1, room width / 540px), so narrow rooms scale the panels
+  down; if the stack is then taller than the room it switches to `layout-tabs`. The tab choice is
+  kept between redraws. Under 520px wide the title is 22px, Sound is icon-only and the code chip
+  drops its "Copy link" text. On big monitors `.su-main` zooms 1.15 (1600 x 860+), 1.35 (1900 x
   1000+) or 1.7 (2400 x 1300+); its `width: min(1120px, 100%)` stays within the room on screen, so it
   never reaches the players column. Panel headings are title case, Lilita 28px (21px on phones):
   "Board" and "Game Settings"; screen titles too ("New Game"). The settings' `.seg-btn` pills have

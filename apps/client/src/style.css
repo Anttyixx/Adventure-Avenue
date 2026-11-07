@@ -10556,20 +10556,47 @@ button.char-btn:hover img {
 .su-tab:active {
   transform: scale(0.95);
 }
-/* Smaller screens (narrow windows and phones): only one panel at a time, full width, with the
-   chips above it. Below 1300px wide the two panels and the players column don't fit side by side
-   with room for the settings' two columns. */
-@media (max-width: 1299px), (max-height: 500px) {
-  .su-main {
-    grid-template-columns: minmax(0, 1fr);
-    grid-template-rows: auto minmax(0, 1fr);
-  }
-  .su-tabs {
-    display: flex;
-  }
-  .su-main > .setup-panel:not(.shown) {
-    display: none;
-  }
+/* The layout is picked for the window by start.ts setupFrame `fit` (a class on the screen):
+   side by side (layout-side, the rules above), stacked (layout-stack) or one at a time
+   (layout-tabs). */
+/* One at a time: the chips under the title, then the chosen panel filling the room from the chips
+   down to the bottom of the screen, both panels the same size; the room spans from the left edge
+   to the player cards. */
+.su.layout-tabs .su-scroll {
+  overflow: hidden;
+}
+.su.layout-tabs .su-main {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0 10px 10px;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: auto minmax(0, 1fr);
+  align-items: stretch;
+}
+.su.layout-tabs .su-tabs {
+  display: flex;
+}
+.su.layout-tabs .su-main > .setup-panel {
+  min-height: 0;
+}
+.su.layout-tabs .su-main > .setup-panel:not(.shown) {
+  display: none;
+}
+.su.layout-tabs .su-main > .board-panel {
+  overflow: hidden;
+}
+.su.layout-tabs .su-main > .rules-panel {
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+}
+/* Upright windows with room for both: Board on top of Game Settings, as wide as the room left of
+   the player cards (start.ts scales the panels down when that room is narrow), centered up and
+   down. */
+.su.layout-stack .su-main {
+  width: 100%;
+  grid-template-columns: minmax(0, 1fr);
 }
 /* Phones and small windows: the players column is as compact as the game's player cards there
    (hud.ts uses the same sizes), at its normal zoom. */
@@ -10691,10 +10718,6 @@ button.char-btn:hover img {
     overflow: hidden;
   }
   .su-main {
-    height: 100%;
-    align-items: stretch;
-    grid-template-columns: minmax(0, 1fr);
-    grid-template-rows: auto minmax(0, 1fr);
     padding: 2px 8px 6px;
   }
   .su-main .setup-panel {
@@ -10790,5 +10813,28 @@ button.char-btn:hover img {
 @media (min-width: 2400px) and (min-height: 1300px) {
   .su-main {
     zoom: 1.7;
+  }
+}
+/* One panel at a time: the board picture may use the extra height (its width still limits it;
+   phones keep their own size). */
+@media (min-height: 501px) {
+  .su.layout-tabs .car-thumb .thumb {
+    max-height: max(48px, calc(100dvh - 300px));
+  }
+}
+/* Very narrow windows (a phone held upright): a smaller title and Sound as just its icon, so the
+   top bar fits. */
+@media (max-width: 520px) {
+  .su-top {
+    gap: 8px;
+  }
+  .su-top h2 {
+    font-size: 22px;
+  }
+  .su-top .snd-btn > span:not(.snd-icon) {
+    display: none;
+  }
+  .su-top .su-code-act {
+    display: none;
   }
 }

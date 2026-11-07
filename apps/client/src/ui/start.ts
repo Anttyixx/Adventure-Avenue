@@ -560,12 +560,12 @@ export function setupFrame() {
   const top = h('header', { class: 'su-top' });
   const wrap = h('div', { class: 'su-main' });
   const side = h('aside', { class: 'su-side', 'aria-label': 'Players' });
-  /** Which panel shows on smaller screens, where only one fits (kept between redraws). */
+  const scroll = h('div', { class: 'su-scroll' }, wrap);
+  /** Which panel shows when only one fits (kept between redraws). */
   let tab: 'board' | 'rules' = 'board';
   /**
-   * Put the Board and Game Settings panels in the middle. On smaller screens only one shows at a
-   * time: two chips above it, on the left, pick which (CSS hides them on bigger screens, where
-   * the panels sit side by side).
+   * Put the Board and Game Settings panels in the middle. Where only one fits, two chips above it
+   * (under the title) pick which; see `fit` for when.
    */
   const panels = (board: HTMLElement, rules: HTMLElement) => {
     const chip = (t: 'board' | 'rules', label: string) =>
@@ -582,6 +582,7 @@ export function setupFrame() {
     clear(wrap);
     wrap.append(h('div', { class: 'su-tabs', role: 'tablist' }, chips.board, chips.rules), board, rules);
     paint();
+    fit();
   };
   const el = h(
     'div',
@@ -590,8 +591,36 @@ export function setupFrame() {
     // The top bar across the top (Back and the title in the left corner, Sound in the right),
     // the panels under it and the players column beside them.
     top,
-    h('div', { class: 'su-body' }, h('div', { class: 'su-scroll' }, wrap), side),
+    h('div', { class: 'su-body' }, scroll, side),
   );
+  /**
+   * Lay the panels out for the window (a class on the screen, `layout-side`, `layout-stack` or
+   * `layout-tabs`):
+   * - Sideways windows: side by side when there is room (1300px wide and more than 500px tall),
+   *   otherwise one at a time with the chips, filling the room from the chips to the bottom.
+   * - Upright windows: the panels span the room left of the player cards, their contents scaled
+   *   down to fit its width if needed (with blank space around them otherwise); the Board panel
+   *   on top of Game Settings when both fit in the height, else one at a time with the chips.
+   */
+  const fit = () => {
+    if (!el.isConnected) return;
+    const upright = innerHeight > innerWidth;
+    const layout = (mode: 'side' | 'stack' | 'tabs') => {
+      for (const m of ['side', 'stack', 'tabs']) el.classList.toggle(`layout-${m}`, m === mode);
+    };
+    wrap.style.zoom = '';
+    if (!upright) {
+      layout(innerWidth >= 1300 && innerHeight > 500 ? 'side' : 'tabs');
+      return;
+    }
+    // The settings' two columns need about this much room; narrower rooms scale everything down.
+    const z = Math.min(1, scroll.clientWidth / UPRIGHT_WIDTH);
+    wrap.style.zoom = String(z);
+    layout('stack');
+    if (wrap.getBoundingClientRect().height > scroll.clientHeight + 1) layout('tabs');
+  };
+  const resize = new ResizeObserver(fit);
+  resize.observe(el);
   return {
     el,
     top,
@@ -599,12 +628,16 @@ export function setupFrame() {
     side,
     panels,
     close: () => {
+      resize.disconnect();
       closeSoundPopover();
       scene.stop();
       el.remove();
     },
   };
 }
+
+/** How wide (CSS px) the panels need to be in an upright window before they are scaled down. */
+const UPRIGHT_WIDTH = 540;
 
 /** How long the players column takes to grow, shrink and move its seats (ms). */
 const DOCK_MS = 320;
