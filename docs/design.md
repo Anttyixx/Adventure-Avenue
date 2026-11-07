@@ -653,16 +653,16 @@ if (!(await ask(`Delete ${d.name}?`, 'Its 4 properties will be removed from the 
 
 ### 5.17c Game setup
 
-- **Layout** (`.setup.su` > `.su-body`, a row): on the left `.su-col` holds a fixed top bar
-  `.su-top` (ghost "‹ Back", the title in Lilita 34px, the join code chip `.su-code` (dashed gold
-  pill: "Code", the code in Lilita gold, "Copy link"), the main menu's Sound button, and right of
-  the title the status pill `.su-top-status` (navy 72%, 12px radius: `.su-status` in #d4dced,
-  green when counting down, red when blocked, and the saved-game hint under it; under 760px wide
-  it wraps onto its own line as plain white text with a dark outline)) over a
-  scrolling `.su-scroll` (scroll bar hidden) with the board panel (left, 0.9fr) and the settings
-  panel (right, 1.1fr) in a grid, equal heights (max 1120px; one column under 1100px), centered by
-  `margin: auto` (top-aligned on short screens), so the top bar and panels line up; the Map header
-  stays at the top of its panel and the carousel fills the rest. On the right, the players column
+- **Layout** (`.setup.su`): a fixed top bar `.su-top` across the screen, 10px from the edges:
+  "‹ Back" (`.btn`, navy 60%) and the title (Lilita 34px) in the top left corner, the join code
+  chip `.su-code` (dashed gold pill: "Code", the code in Lilita gold, "Copy link") right of the
+  title, then the main menu's Sound button in the top right corner; Back and Sound are both 40px
+  tall (32px on phones). The status line is a screen-reader-only live region (`.sr-only`). Under
+  it `.su-body` (a row): a scrolling `.su-scroll` (scroll bar hidden) with the board panel (left,
+  0.9fr) and the settings panel (right, 1.1fr) in a grid, equal heights (max 1120px; one column
+  under 1100px), centered by `margin: auto` (top-aligned on short screens); panel headings are
+  Lilita 28px (21px on phones). The Map header stays at the top of its panel and the carousel
+  fills the rest. On the right, the players column
   `.su-side` (`setupFrame().side`) sits against the bottom right corner like the game's
   `.cards-wrap`: 300px at zoom 1.1 (phones 215px, 176px when 500px tall or less, zoom 1), 10px from
   the edges, `justify-content: flex-end` so it grows upward. Every redraw goes through
@@ -674,9 +674,21 @@ if (!(await ask(`Delete ${d.name}?`, 'Its 4 properties will be removed from the 
   `.su-chip` pills in the Map panel's top right. Settings are a grid (`.su-rules`) in two columns:
   rule set, round limit; goal, stocks; vacant plots across (one column on phones narrower than
   760px).
+- **Map carousel** (`mapCarousel()`): `.mapcar` (overflow hidden, edges faded out with a
+  12%/88% mask) holds a `.mapcar-track` of five `.mapcar-slide`s (the board and two either side,
+  wrapping round the list), each 58% wide with a 14px gap; the middle one (`.on`) is full size,
+  the others scale to 0.8 toward it (`.before`/`.after` set the origin) at 45% opacity (70% on
+  hover) with their names hidden; tapping one moves there. Each card (`mapSlide()`) is the
+  `.car-thumb` picture and `.mapcar-name` (Lilita 24px, plus a purple "My board" `.car-tag`). A move
+  redraws the row and animates it in from one step over (`translateX(k * (58% + 14px))`, 380ms,
+  `cubic-bezier(0.2, 0.8, 0.2, 1)`), the new middle board growing from 0.8 and the old one
+  shrinking. Under it `.mapcar-line` (6px, white 14%, up to 320px / 70% wide, tappable with a
+  taller hit area) holds `.mapcar-pos`, a gold bar one board's share wide (min 18px) with a soft
+  glow, whose `left` eases along with the move. Board pictures are drawn once per board and
+  copied (`thumbOf`).
 - **Landscape phones** (500px tall or less, 540px wide or more): the map and settings panels
   stay side by side (0.85 : 1.15) and fill the room between the bars instead of scrolling: the map
-  picture shrinks to fit (dots hidden, 28px arrows), settings drop their hints and use 26px
+  picture shrinks to fit (board names 17px), settings drop their hints and use 26px
   buttons and a smaller digit picker; only the settings panel scrolls (thin bar) if a phone is too
   short.
 - **Players column** (`playersColumn()`): no heading and no empty seats. Top to bottom: the add
@@ -694,7 +706,8 @@ if (!(await ask(`Delete ${d.name}?`, 'Its 4 properties will be removed from the 
   `--pc` left edge, 12px radius, same paddings and phone sizes) so setup and game read as one. Left
   (`.pc-side`): the character trimmed to its pixels (`charButton(look, 'body', ...)`, 34 x 52 like
   `.pcard .portrait.body`; phones 24 x 38, short phones 22 x 32); a player who can change it gets a
-  15px gold pencil badge on its bottom right instead of the "Change" strip. Top row: the name
+  gold ✎ on its bottom right instead of the "Change" strip: just the icon, no badge, 15px (12px on
+  phones) with a dark navy halo and a soft gold glow (`text-shadow`) so it reads on any sprite. Top row: the name
   (`.pname`, Lilita 16px) and, at the row's end, a round 18px remove button (`.seat-kick`, faint
   white, red on hover; never on the host). Bottom row (`.su-seat-foot`): a muted bold tag ("You ·
   host", "On this device", "Joined online", "Bot") and, at the end, the `.seat-ready` chip (gold
@@ -712,7 +725,7 @@ if (!(await ask(`Delete ${d.name}?`, 'Its 4 properties will be removed from the 
 
 - `online.ts` `resumeLobby` builds the game setup frame (`setupFrame`, `setupHead`, exported from
   `start.ts`) so continuing looks like starting: the code chip in the top bar, the Map panel with
-  the saved board locked (`.carousel.locked`) and a muted "Saved in round N" pill (`.su-round`) in
+  the saved board locked (`boardStage()`: `.mapcar.locked`, the board and its name only) and a muted "Saved in round N" pill (`.su-round`) in
   its top right, the locked settings panel (`rulesPanel` without `edit`), and the players column
   with seat cards (no remove buttons) and a `.su-start` tile with what is resumed and Resume. A
   player not back yet: seat faded to 50% with a red "AWAY" pill (`.seat-away`) beside the tag.

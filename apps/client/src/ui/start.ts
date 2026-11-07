@@ -409,31 +409,126 @@ export function rulesPanel(st: RuleSettings, edit?: (patch: Partial<RuleSettings
 }
 
 /** The chosen board: its picture, name and size. */
-export function boardStage(board: BoardDef, mine: boolean, slide = ''): HTMLElement {
+export function boardStage(board: BoardDef, mine: boolean): HTMLElement {
+  return h('div', { class: 'mapcar locked' }, mapSlide(board, mine));
+}
+
+/** Board pictures already drawn, so the carousel doesn't redraw five boards on every change. */
+const thumbs = new Map<string, HTMLCanvasElement>();
+
+/** A copy of the board's picture (drawn once per board version). */
+function thumbOf(board: BoardDef): HTMLCanvasElement {
+  const key = `${board.id}|${board.name}|${JSON.stringify(board.squares).length}`;
+  let src = thumbs.get(key);
+  if (!src) {
+    src = boardThumb(board, 440, 230);
+    thumbs.set(key, src);
+  }
+  const copy = src.cloneNode() as HTMLCanvasElement;
+  copy.getContext('2d')?.drawImage(src, 0, 0);
+  return copy;
+}
+
+/** One board in the map carousel: its picture with its name under it. */
+function mapSlide(board: BoardDef, mine: boolean): HTMLElement {
   return h(
     'div',
-    { class: `car-slide ${slide}` },
-    h('div', { class: 'car-thumb' }, boardThumb(board, 440, 230)),
+    { class: 'mapcar-card' },
+    h('div', { class: 'car-thumb' }, thumbOf(board)),
     h(
       'div',
-      { class: 'car-info' },
+      { class: 'mapcar-name' },
+      h('b', null, board.name),
+      mine ? h('span', { class: 'car-tag mine' }, 'My board') : null,
+    ),
+    validateBoard(board).errors.length
+      ? h('small', { class: 'car-bad' }, 'Has problems: fix it in the board editor to play.')
+      : null,
+  );
+}
+
+/** How far a move slides the carousel: one card (58% of the width) and the gap. */
+const MAP_STEP = 'calc(58% + 14px)';
+const MAP_MS = 380;
+const MAP_EASE = 'cubic-bezier(0.2, 0.8, 0.2, 1)';
+
+/**
+ * The map carousel: the chosen board in the middle with its neighbours peeking out on both sides
+ * (it loops), and a line under it whose colored bar shows how far into the list it is (a bar,
+ * not dots, so any number of boards fits). Tap a side board, swipe, use the arrow keys or tap
+ * the line to move. `from` is the board shown before (its index), so the move slides into place.
+ */
+function mapCarousel(
+  list: { board: BoardDef; mine: boolean }[],
+  index: number,
+  from: number,
+  go: (i: number) => void,
+): HTMLElement {
+  const n = list.length;
+  const wrapAt = (k: number) => ((k % n) + n) % n;
+  const reach = n > 1 ? 2 : 0;
+  const track = h('div', { class: 'mapcar-track' });
+  for (let d = -reach; d <= reach; d++) {
+    const k = wrapAt(index + d);
+    const card = mapSlide(list[k].board, list[k].mine);
+    track.append(
       h(
         'div',
-        { class: 'car-title' },
-        h('b', null, board.name),
-        h('span', { class: 'car-tag' }, board.layout === 'hex' ? 'Hex' : 'Square'),
-        mine ? h('span', { class: 'car-tag mine' }, 'My board') : null,
+        {
+          class: `mapcar-slide ${d === 0 ? 'on' : d < 0 ? 'before' : 'after'}`,
+          'aria-hidden': d === 0 ? null : 'true',
+          onclick: d === 0 ? null : () => go(wrapAt(index + d)),
+        },
+        card,
       ),
-      h(
-        'small',
-        { class: 'hint' },
-        `${board.squares.length} squares · ${board.districts.length} districts${board.author ? ` · by ${board.author}` : ''}`,
-      ),
-      validateBoard(board).errors.length
-        ? h('small', { class: 'car-bad' }, 'Has problems: fix it in the board editor to play.')
-        : null,
-    ),
+    );
+  }
+  const view = h('div', { class: 'mapcar', role: 'group', 'aria-label': 'Boards' }, track);
+  // Swipe on touch screens (and drag with a mouse).
+  let downX: number | null = null;
+  view.addEventListener('pointerdown', (e) => (downX = e.clientX));
+  view.addEventListener('pointerup', (e) => {
+    if (downX != null && Math.abs(e.clientX - downX) > 40) go(wrapAt(index + (e.clientX < downX ? 1 : -1)));
+    downX = null;
+  });
+  // The position line: the bar is one board's share of the line (at least 18px).
+  const barW = `max(${100 / n}%, 18px)`;
+  const left = (i: number) => `calc(${n > 1 ? i / (n - 1) : 0} * (100% - ${barW}))`;
+  const bar = h('div', { class: 'mapcar-pos', style: `width: ${barW}; left: ${left(index)}` });
+  const line = h(
+    'div',
+    {
+      class: 'mapcar-line',
+      role: 'slider',
+      tabindex: '0',
+      'aria-label': 'Board',
+      'aria-valuemin': '1',
+      'aria-valuemax': String(n),
+      'aria-valuenow': String(index + 1),
+      'aria-valuetext': `${list[index].board.name}, ${index + 1} of ${n}`,
+      onclick: (e: MouseEvent) => {
+        const r = (e.currentTarget as HTMLElement).getBoundingClientRect();
+        const i = Math.round(((e.clientX - r.left) / (r.width || 1)) * (n - 1));
+        go(Math.max(0, Math.min(n - 1, i)));
+      },
+    },
+    bar,
   );
+  if (from >= 0 && from !== index && !matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    // The shortest way round the loop: one step back from the first board is the last one.
+    let step = index - from;
+    if (step > n / 2) step -= n;
+    if (step < -n / 2) step += n;
+    const k = Math.max(-reach, Math.min(reach, step));
+    const opts = { duration: MAP_MS, easing: MAP_EASE };
+    track.animate([{ transform: `translateX(calc(${k} * ${MAP_STEP}))` }, { transform: 'none' }], opts);
+    const slides = [...track.children] as HTMLElement[];
+    // The board coming to the middle grows, the one leaving shrinks back.
+    slides[reach]?.animate([{ transform: 'scale(0.8)', opacity: 0.45 }, {}], opts);
+    slides[reach - k]?.animate([{ transform: 'none', opacity: 1 }, {}], opts);
+    bar.animate([{ left: left(from) }, { left: left(index) }], opts);
+  }
+  return h('div', { class: 'mapcar-wrap' }, view, n > 1 ? line : null);
 }
 
 /**
@@ -452,13 +547,10 @@ export function setupFrame() {
     'div',
     { class: 'setup su' },
     scene.el,
-    // The top bar sits over the panels (lined up with them), the players column beside both.
-    h(
-      'div',
-      { class: 'su-body' },
-      h('div', { class: 'su-col' }, top, h('div', { class: 'su-scroll' }, wrap)),
-      side,
-    ),
+    // The top bar across the top (Back and the title in the left corner, Sound in the right),
+    // the panels under it and the players column beside them.
+    top,
+    h('div', { class: 'su-body' }, h('div', { class: 'su-scroll' }, wrap), side),
   );
   return {
     el,
@@ -564,8 +656,9 @@ export function morphSide(dock: HTMLElement, rebuild: () => void) {
 }
 
 /**
- * The top bar: Back, the title, the status line (`status`: who we wait for, the countdown...),
- * the join code chip (if any) and Sound (as on the main menu).
+ * The top bar: Back and the title in the top left corner with the join code chip (if any) beside
+ * the title, and Sound (as on the main menu) in the top right corner. `status` (who we wait for,
+ * the countdown) is only for screen readers.
  */
 export function setupHead(
   top: HTMLElement,
@@ -576,12 +669,14 @@ export function setupHead(
 ) {
   clear(top);
   top.append(
-    h('button', { class: 'btn small su-back', onclick: onBack }, '‹ Back'),
+    h('button', { class: 'btn su-back', onclick: onBack }, '‹ Back'),
     h('h2', null, title),
-    status ?? '',
-    h('span', { class: 'su-top-gap' }),
     code ?? '',
+    h('span', { class: 'su-top-gap' }),
     soundButton('btn menu-sound', 'Sound'),
+    // The status (who we wait for, the countdown) is read out by screen readers only: the Ready
+    // chips show it on screen.
+    status ? h('div', { class: 'sr-only' }, status) : '',
   );
 }
 
@@ -621,14 +716,14 @@ export function setupScreen(
   };
   let boardId: string = getBoard(saved.boardId) ? saved.boardId : 'town';
   let notice = '';
-  /** Direction of the last carousel move, so only that redraw animates the slide. */
-  let slide: 'next' | 'prev' | '' = '';
+  /** The board shown before the last carousel move (its index), so only that redraw slides. */
+  let mapFrom = -1;
   /** The board and settings the Ready taps were for: changing them asks everyone again. */
   let readyFor = '';
   /** Seconds left before the game starts once everyone is ready (0: not counting down). */
   let countdown = 0;
   let countTimer = 0;
-  /** The line in the top bar saying who we are waiting for, or the countdown. */
+  /** Who we are waiting for, or the countdown (read out by screen readers). */
   const statusEl = h('span', { class: 'su-status', role: 'status', 'aria-live': 'polite' });
   /** Arrival order of the seats for the players column (see `byArrival`). */
   const seen: string[] = [];
@@ -756,9 +851,14 @@ export function setupScreen(
       0,
       list.findIndex((b) => b.board.id === boardId),
     );
-    boardId = list[(i + step + list.length) % list.length].board.id;
+    pickBoard(list, i, (i + step + list.length) % list.length);
+  };
+  /** Show board `to` of `list` (board `from` was shown): the carousel slides over to it. */
+  const pickBoard = (list: { board: BoardDef }[], from: number, to: number) => {
+    if (from === to) return;
+    boardId = list[to].board.id;
     notice = '';
-    slide = step > 0 ? 'next' : 'prev';
+    mapFrom = from;
     draw();
   };
   const onKey = (e: KeyboardEvent) => {
@@ -794,14 +894,6 @@ export function setupScreen(
       }
       draw();
     };
-    const stage = boardStage(board, mine, slide);
-    // Swipe on touch screens.
-    let downX: number | null = null;
-    stage.addEventListener('pointerdown', (e) => (downX = e.clientX));
-    stage.addEventListener('pointerup', (e) => {
-      if (downX != null && Math.abs(e.clientX - downX) > 40) move(e.clientX < downX ? 1 : -1);
-      downX = null;
-    });
     return h(
       'section',
       { class: 'setup-panel glass board-panel' },
@@ -827,31 +919,7 @@ export function setupScreen(
           ),
         ),
       ),
-      h(
-        'div',
-        { class: 'carousel' },
-        h('button', { class: 'car-arrow', 'aria-label': 'Previous board', onclick: () => move(-1) }, '‹'),
-        stage,
-        h('button', { class: 'car-arrow', 'aria-label': 'Next board', onclick: () => move(1) }, '›'),
-      ),
-      h(
-        'div',
-        { class: 'car-dots' },
-        ...list.map((b, i) =>
-          h('button', {
-            class: `car-dot ${i === index ? 'on' : ''} ${b.mine ? 'mine' : ''}`,
-            'aria-label': b.board.name,
-            title: b.board.name,
-            onclick: () => {
-              if (i === index) return;
-              slide = i > index ? 'next' : 'prev';
-              boardId = b.board.id;
-              notice = '';
-              draw();
-            },
-          }),
-        ),
-      ),
+      mapCarousel(list, index, mapFrom, (to) => pickBoard(list, index, to)),
       notice ? h('p', { class: 'hint board-notice' }, notice) : null,
     );
   };
@@ -939,7 +1007,9 @@ export function setupScreen(
         {
           class: `seat-ready ${x.ready ? 'on' : ''}`,
           'aria-pressed': String(x.ready),
-          title: x.ready ? 'Tap if you are not ready after all' : 'Tap when you are ready to play',
+          title: x.ready
+            ? 'Tap if you are not ready after all'
+            : `Tap when you are ready to play${loadSave() ? '. Starting replaces your saved game.' : ''}`,
           onclick: () => {
             x.ready = !x.ready;
             draw();
@@ -1042,12 +1112,7 @@ export function setupScreen(
       },
       'New game',
       codeChip(),
-      h(
-        'div',
-        { class: 'su-top-status' },
-        statusEl,
-        loadSave() ? h('span', { class: 'hint' }, 'Starting replaces your saved game.') : null,
-      ),
+      statusEl,
     );
     wrap.append(
       boardPanel(),
@@ -1063,7 +1128,7 @@ export function setupScreen(
       // The status line's new text is part of the column's new size, so set it before measuring.
       checkReady();
     });
-    slide = '';
+    mapFrom = -1;
   };
 
   /** Start the game with the seats as they are now. */
@@ -1212,11 +1277,7 @@ export function guestSetup(root: HTMLElement, room: GuestSetupRoom, handlers: Gu
         h('small', null, 'Code'),
         h('b', null, room.code),
       ),
-      h(
-        'div',
-        { class: 'su-top-status' },
-        h('span', { class: `su-status ${lobby?.starting ? 'go' : ''}`, role: 'status' }, status),
-      ),
+      h('span', { class: 'su-status', role: 'status' }, status),
     );
     frame.wrap.append(
       h(
@@ -1228,9 +1289,7 @@ export function guestSetup(root: HTMLElement, room: GuestSetupRoom, handlers: Gu
           h('h3', null, 'Map'),
           h('span', { class: 'hint' }, 'The host picks the board and the rules.'),
         ),
-        board
-          ? h('div', { class: 'carousel locked' }, boardStage(board, false))
-          : h('p', { class: 'hint' }, lobby ? lobby.boardName : 'Loading...'),
+        board ? boardStage(board, false) : h('p', { class: 'hint' }, lobby ? lobby.boardName : 'Loading...'),
       ),
       lobby
         ? rulesPanel({

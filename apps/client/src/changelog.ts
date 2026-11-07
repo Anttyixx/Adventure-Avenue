@@ -26,6 +26,24 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: '2026-11-07-map-carousel',
+    date: 'Nov 7, 2026',
+    title: 'Map carousel',
+    features: [
+      {
+        tag: 'better',
+        title: 'Slide through the maps',
+        text: 'The maps on the new game screen sit in a carousel that loops: the boards before and after peek out on the sides, and the row slides over when you pick another. Tap a side board, swipe or use the arrow keys. A gold bar on the line underneath shows where you are in the list.',
+      },
+    ],
+    extras: [
+      'Back and the title sit in the top left corner, Sound in the top right',
+      'The join code sits right next to the title',
+      'Bigger Map and Game settings headings',
+      'A cleaner pencil on characters you can change',
+    ],
+  },
+  {
     id: '2026-11-07-players-column',
     date: 'Nov 7, 2026',
     title: 'Players in the corner',

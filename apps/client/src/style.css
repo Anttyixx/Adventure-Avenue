@@ -519,57 +519,6 @@ input[type='range'] {
   }
 }
 
-/* board carousel */
-
-.carousel {
-  display: grid;
-  grid-template-columns: 40px minmax(0, 1fr) 40px;
-  align-items: center;
-  gap: 8px;
-}
-.car-arrow {
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  border: 0;
-  background: var(--accent);
-  color: #3b2a00;
-  font-family: var(--head);
-  font-size: 30px;
-  line-height: 36px;
-  cursor: pointer;
-  box-shadow: 0 3px 0 #b07c00;
-}
-.car-arrow:active {
-  transform: translateY(2px);
-  box-shadow: 0 1px 0 #b07c00;
-}
-.car-slide {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 10px;
-  touch-action: pan-y;
-  user-select: none;
-}
-.car-slide.next {
-  animation: car-in-next 0.28s ease-out;
-}
-.car-slide.prev {
-  animation: car-in-prev 0.28s ease-out;
-}
-@keyframes car-in-next {
-  from {
-    opacity: 0;
-    transform: translateX(40px);
-  }
-}
-@keyframes car-in-prev {
-  from {
-    opacity: 0;
-    transform: translateX(-40px);
-  }
-}
 .car-thumb {
   width: 100%;
   min-height: 150px;
@@ -587,25 +536,7 @@ input[type='range'] {
   border: 0;
   pointer-events: none;
 }
-.car-info {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 3px;
-  text-align: center;
-}
-.car-title {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  align-items: center;
-  gap: 8px;
-}
-.car-title b {
-  font-family: var(--head);
-  font-weight: 400;
-  font-size: 24px;
-}
+
 .car-tag {
   font-size: 11px;
   font-weight: 700;
@@ -621,28 +552,7 @@ input[type='range'] {
 .car-bad {
   color: var(--bad);
 }
-.car-dots {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 6px;
-}
-.car-dot {
-  width: 10px;
-  height: 10px;
-  padding: 0;
-  border: 0;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.25);
-  cursor: pointer;
-}
-.car-dot.mine {
-  background: rgba(196, 155, 255, 0.45);
-}
-.car-dot.on {
-  background: var(--accent);
-  transform: scale(1.3);
-}
+
 .btn-row.center {
   justify-content: center;
   margin-top: 0;
@@ -651,8 +561,7 @@ input[type='range'] {
 @media (prefers-reduced-motion: reduce) {
   .cloud,
   .walker,
-  .menu-logo,
-  .car-slide {
+  .menu-logo {
     animation: none !important;
   }
 }
@@ -5183,9 +5092,7 @@ input[type='range'] {
 .digits.read-only > .btn {
   display: none;
 }
-.carousel.locked {
-  grid-template-columns: minmax(0, 1fr);
-}
+
 .setup-foot .waiting {
   margin: 0;
   padding: 8px 16px;
@@ -6917,18 +6824,7 @@ div.sl-inline label {
   min-height: 140px;
   max-height: 230px;
 }
-.setup .car-dots {
-  gap: 2px;
-}
-.setup .car-dot {
-  width: 26px;
-  height: 26px;
-  border: 8px solid transparent;
-  background-clip: content-box;
-}
-.setup .car-dot.on {
-  transform: none;
-}
+
 .setup-summary {
   display: flex;
   flex-direction: column;
@@ -9998,6 +9894,8 @@ div.sl-inline label {
   display: flex;
   flex-direction: column;
 }
+/* The top bar across the whole screen: Back and the title in the top left corner with the join
+   code beside the title, and Sound in the top right corner. Back is as tall as Sound. */
 .su-top {
   position: relative;
   z-index: 2;
@@ -10005,10 +9903,27 @@ div.sl-inline label {
   display: flex;
   align-items: center;
   gap: 12px;
-  width: min(1120px, 100%);
   box-sizing: border-box;
-  margin: 0 auto;
-  padding: 10px 20px 6px;
+  padding: 10px 10px 6px;
+}
+.su-top > .btn {
+  flex: none;
+  height: 40px;
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 16px;
+  white-space: nowrap;
+}
+/* Only for screen readers (the status line in game setup). */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
 }
 .su-top h2 {
   margin: 0;
@@ -10021,8 +9936,6 @@ div.sl-inline label {
   flex: 1;
 }
 .su-back {
-  flex: none;
-  white-space: nowrap;
   background: rgba(16, 26, 51, 0.6);
   color: #fff;
 }
@@ -10060,13 +9973,120 @@ div.sl-inline label {
 .su-main .board-panel {
   justify-content: flex-start;
 }
-/* The header stays at the top; the board picture takes the room left and centers in it. */
-.su-main .board-panel .carousel {
-  flex: 1 1 auto;
-}
+
 .su-main .setup-panel {
   padding: 12px 18px;
   gap: 8px;
+}
+.su-main .setup-panel h3 {
+  font-size: 28px;
+  line-height: 1.1;
+}
+/* The map carousel: the chosen board in the middle, its neighbours smaller and faded on both
+   sides (fading out at the panel's edges), looping. A move slides the row over by one board
+   while the boards grow and shrink into place (start.ts mapCarousel). */
+.mapcar-wrap {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 14px;
+}
+.mapcar {
+  position: relative;
+  overflow: hidden;
+  touch-action: pan-y;
+  user-select: none;
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 12%, #000 88%, transparent);
+  mask-image: linear-gradient(90deg, transparent, #000 12%, #000 88%, transparent);
+}
+.mapcar-track {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 14px;
+}
+.mapcar-slide {
+  flex: 0 0 58%;
+  min-width: 0;
+  transform: scale(0.8);
+  opacity: 0.45;
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+/* Side boards shrink toward the middle one, so they peek out beside it. */
+.mapcar-slide.before {
+  transform-origin: right center;
+}
+.mapcar-slide.after {
+  transform-origin: left center;
+}
+.mapcar-slide:hover {
+  opacity: 0.7;
+}
+/* Only the middle board's name shows. */
+.mapcar-slide:not(.on) .mapcar-name,
+.mapcar-slide:not(.on) .car-bad {
+  visibility: hidden;
+}
+.mapcar-slide.on {
+  transform: none;
+  opacity: 1;
+  cursor: default;
+}
+/* A joined or continued game: just the board, no neighbours. */
+.mapcar.locked {
+  -webkit-mask-image: none;
+  mask-image: none;
+}
+.mapcar-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  text-align: center;
+}
+.mapcar-name {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+}
+.mapcar-name b {
+  font: 400 24px var(--head);
+  color: #fff;
+  white-space: nowrap;
+}
+/* Where in the list of boards: a line with a gold bar (one board's share of it, at least 18px)
+   that slides along as the carousel moves; tap the line to jump. */
+.mapcar-line {
+  position: relative;
+  flex: none;
+  width: min(70%, 320px);
+  height: 6px;
+  margin: 0 auto;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.14);
+  cursor: pointer;
+}
+.mapcar-line::before {
+  content: '';
+  position: absolute;
+  inset: -9px 0;
+}
+.mapcar-line:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 5px;
+}
+.mapcar-pos {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  border-radius: 999px;
+  background: var(--accent);
+  box-shadow: 0 0 6px rgba(255, 209, 102, 0.6);
 }
 .su .car-thumb {
   width: auto;
@@ -10079,14 +10099,7 @@ div.sl-inline label {
   max-width: 100%;
   max-height: min(190px, 22vh);
 }
-.su .car-slide {
-  gap: 6px;
-}
-.su .car-dot {
-  width: 20px;
-  height: 20px;
-  border-width: 6px;
-}
+
 /* The winning goal's digit picker, a size smaller here. */
 .su-rule .dg-face {
   width: 34px;
@@ -10288,13 +10301,7 @@ span.su-code {
   display: flex;
   align-items: flex-end;
 }
-.su-col {
-  flex: 1 1 auto;
-  align-self: stretch;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-}
+
 /* The players column: seat cards stacked like the player cards in the game (as wide, and 10%
    bigger on computer screens), with a heading tile on top. Its contents sit against its bottom
    edge, so it grows upward as players are added (start.ts morphSide eases its height). */
@@ -10370,20 +10377,20 @@ span.su-code {
 .su-seat .char-btn-tag {
   display: none;
 }
+/* The pencil: just the icon (no badge), in gold with a dark halo and a soft gold glow, so it
+   stands out on any character. */
 .su-seat button.char-btn::after {
   content: '✎';
   position: absolute;
-  right: -5px;
-  bottom: -1px;
-  width: 15px;
-  height: 15px;
-  display: grid;
-  place-items: center;
-  border-radius: 50%;
-  background: var(--accent);
-  color: #3b2a00;
-  font-size: 9px;
-  line-height: 1;
+  right: -7px;
+  bottom: -3px;
+  color: var(--accent);
+  font: 700 15px/1 var(--body);
+  text-shadow:
+    0 0 2px rgba(16, 26, 51, 0.95),
+    0 0 4px rgba(16, 26, 51, 0.8),
+    0 0 8px rgba(255, 209, 102, 0.55);
+  pointer-events: none;
 }
 button.char-btn:hover img {
   filter: brightness(1.12);
@@ -10477,34 +10484,7 @@ button.char-btn:hover img {
 .seat-add-local:active {
   transform: scale(0.95);
 }
-/* The status line in the top bar, right of the title: who we wait for (muted), the countdown
-   (green) or why the game can't start (red), and the saved-game note under it. */
-.su-top-status {
-  flex: 0 1 auto;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  padding: 4px 12px;
-  border-radius: 12px;
-  background: rgba(16, 26, 51, 0.72);
-}
-.su-top-status .su-status {
-  overflow: hidden;
-  color: #d4dced;
-  text-align: left;
-  white-space: nowrap;
-  text-overflow: ellipsis;
-}
-.su-top-status .su-status.go {
-  color: var(--good);
-}
-.su-top-status .su-status.bad {
-  color: var(--bad);
-}
-.su-top-status .hint {
-  margin: 0;
-  font-size: 11px;
-}
+
 /* Continue game: Resume (and what is being resumed) in a tile under the seat cards. */
 .su-start {
   flex: none;
@@ -10556,9 +10536,8 @@ button.char-btn:hover img {
   }
   .su-seat button.char-btn::after {
     right: -6px;
-    width: 13px;
-    height: 13px;
-    font-size: 8px;
+    bottom: -2px;
+    font-size: 12px;
   }
   .su-seat .portrait.empty {
     width: 24px;
@@ -10579,13 +10558,7 @@ button.char-btn:hover img {
     font-size: 11px;
     line-height: 15px;
   }
-  .su-top-status {
-    padding: 2px 8px;
-    border-radius: 9px;
-  }
-  .su-top-status .hint {
-    display: none;
-  }
+
   .su-seat .seat-kick {
     width: 15px;
     height: 15px;
@@ -10602,6 +10575,11 @@ button.char-btn:hover img {
   }
   .su-top h2 {
     font-size: 22px;
+  }
+  .su-top > .btn {
+    height: 32px;
+    padding: 0 12px;
+    font-size: 14px;
   }
   .su-code b {
     font-size: 16px;
@@ -10666,7 +10644,7 @@ button.char-btn:hover img {
     gap: 6px;
   }
   .su-main .setup-panel h3 {
-    font-size: 16px;
+    font-size: 21px;
   }
   .su-main .rules-panel {
     overflow-y: auto;
@@ -10680,38 +10658,25 @@ button.char-btn:hover img {
     padding: 3px 8px;
     font-size: 10px;
   }
-  .su-main .carousel {
-    min-height: 0;
-    grid-template-columns: 28px minmax(0, 1fr) 28px;
-    gap: 4px;
-  }
-  /* Locked boards (joined or continued games) have no arrows: the picture takes the full width. */
-  .su-main .carousel.locked {
-    grid-template-columns: minmax(0, 1fr);
-  }
-  .su-main .car-arrow {
-    width: 28px;
-    height: 28px;
-    font-size: 22px;
-    line-height: 26px;
-  }
+
   .su .car-thumb {
     padding: 4px;
     border-radius: 10px;
   }
   /* The picture takes what is left of the screen's height after the top bar and labels. */
   .su .car-thumb .thumb {
-    max-height: max(48px, calc(100dvh - 170px));
+    max-height: max(48px, calc(100dvh - 200px));
   }
-  .su-main .car-title b {
+  .mapcar-wrap {
+    gap: 8px;
+  }
+  .mapcar-card {
+    gap: 4px;
+  }
+  .mapcar-name b {
     font-size: 17px;
   }
-  .su-main .car-info .hint {
-    font-size: 11px;
-  }
-  .su-main .car-dots {
-    display: none;
-  }
+
   .su-rules {
     gap: 6px 12px;
   }
@@ -10761,26 +10726,5 @@ button.char-btn:hover img {
   .su-rules {
     grid-template-columns: minmax(0, 1fr);
     grid-template-areas: 'rules' 'round' 'goal' 'stocks' 'plots';
-  }
-}
-/* Narrow screens: no room for the status line beside the title, so it gets a line of its own
-   under the top bar (plain text with a dark outline instead of the pill). */
-@media (max-width: 760px) {
-  .su-top {
-    flex-wrap: wrap;
-    row-gap: 0;
-  }
-  .su-top-status {
-    order: 10;
-    flex-basis: 100%;
-    padding: 0 2px;
-    background: none;
-  }
-  .su-top-status .su-status {
-    color: #fff;
-    font-size: 11px;
-    text-shadow:
-      0 1px 2px rgba(16, 26, 51, 0.9),
-      0 0 4px rgba(16, 26, 51, 0.7);
   }
 }

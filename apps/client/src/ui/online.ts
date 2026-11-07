@@ -140,9 +140,7 @@ export function resumeLobby(
           h('h3', null, 'Map'),
           round ? h('span', { class: 'su-round' }, `Saved in round ${round}`) : null,
         ),
-        board
-          ? h('div', { class: 'carousel locked' }, boardStage(board, false))
-          : h('p', { class: 'hint' }, lobby.boardName),
+        board ? boardStage(board, false) : h('p', { class: 'hint' }, lobby.boardName),
       ),
       rulesPanel({
         rules: lobby.rules,

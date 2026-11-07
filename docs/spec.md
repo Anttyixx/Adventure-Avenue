@@ -878,11 +878,11 @@ been read on this device, and What's new shows a "New" tag in the pop-up. **Cred
 work the game uses (art, fonts, libraries; data in `apps/client/src/credits.ts`), one card each with
 what was used, the license and links to their pages.
 
-**Game setup options.** Over the title scene, the screen has a **players column** in the bottom
-right corner, where the player cards sit in the game, and to its left a **top bar** that never
-scrolls: **Back** (to the main menu), the "New game" title, the join code chip and **Sound** (the
-same button as on the main menu), with the status line right of the title (on its own line under
-the bar on narrow screens). Under the top bar: the board selector on the left and the game
+**Game setup options.** Over the title scene, a **top bar** that never scrolls runs across the
+screen: **Back** (to the main menu, as tall as Sound) and the "New game" title in the top left
+corner with the join code chip right of the title, and **Sound** (the same button as on the main
+menu) in the top right corner. The **players column** sits in the bottom right corner, where the
+player cards sit in the game. Under the top bar: the board selector on the left and the game
 settings on the right, the two panels the same height (one under the other on windows narrower
 than 1100px), centered in the room left of the players column (short phone screens start them at
 the top). On bigger screens (1180 x 820 and up) everything fits without scrolling; on smaller ones
@@ -901,28 +901,34 @@ the panels scroll, with no scroll bar. There is no Start button (see **Ready up*
   up as each player is added; when the 5th player joins they pop out (while the new player pops
   in), and they come back when a seat frees up.
 
-- **Board:** a carousel of the built-in boards followed by the player's saved boards. Arrows,
-  swiping, the arrow keys or the dots move through it, and it loops from the last board back to
-  the first. **Import board** and **Board editor** (Edit this board for a saved one) are small
-  chips in the panel's top right corner.
+- **Board:** a horizontal carousel of the built-in boards followed by the player's saved boards,
+  looping from the last board back to the first. The chosen board's picture sits in the middle
+  with its name under it ("My board" for a saved one); the boards before and after it peek out,
+  smaller and faded, on both sides. Tapping a side board, swiping or the arrow keys move it: the
+  row slides over while the new board grows into the middle. Under it a thin line shows where in
+  the list the board is: a gold bar (one board's share of the line) slides along it, so any
+  number of boards fits; tapping the line jumps there. **Import board** and **Board editor** (Edit
+  this board for a saved one) are small chips in the panel's top right corner. The Map and Game
+  settings headings are large.
 - **Players** (in the players column): setup starts with only the host ("You · host"); bots and
   other players on this device are added by hand, and friends join with the code (the board and
   settings are remembered from the last game, the players are not). Each seat is a card like a
   player card in the game: the character on the left (tap it to change it, for players on this
-  device; a small gold pencil badge says so), the name on the top row, and what kind of player it
+  device; a small gold pencil with a soft glow on the character's bottom right says so), the name on the top row, and what kind of player it
   is with the Ready chip on the bottom row. Every seat keeps its name and character as others
   come and go. Bots, extra players on this device and joined friends have a small round remove
   button (×) at the end of the name row.
 - **Ready up:** instead of a Start button, every person taps the **Ready** chip on their own seat
   (at the end of the card's bottom row; each player on the host's device has one, and a friend
   who joined has one on their own seat). Ready turns green with a tick; tapping it again takes it back. Bots are always
-  ready. The status line in the top bar says what is needed: "Tap Ready to start", "Waiting for
-  Ada, Pip", or a reason the game can't start (fewer than 2 players, or a board with problems).
+  ready. There is no status line on screen (screen readers still hear what is needed: "Tap Ready
+  to start", "Waiting for Ada, Pip", or a reason the game can't start).
   When everyone is ready the game starts: straight away when there is only one person, otherwise
   after a 3-second countdown ("Everyone's ready! Starting in 3...") that anyone can stop by
   taking their Ready back. Changing the board or a setting un-readies everyone, so nobody starts a
   game they didn't see; a friend who joins arrives not ready. Online, joined players see "Everyone's
-  ready! Starting..." during the countdown. If a game is saved, a note says starting replaces it.
+  ready! Starting..." read out during the countdown. If a game is saved, the host's Ready chip
+  says (on hover) that starting replaces it.
 - **Join code:** setup opens a room straight away and always shows its code as a chip in the top
   bar (tap it to copy or share the invite; "Getting a code..." while opening, "Offline · Try again"
   without a connection). A friend who joins takes a free seat; when all 5 seats are full they replace the last
