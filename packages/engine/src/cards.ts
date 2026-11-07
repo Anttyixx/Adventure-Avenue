@@ -299,7 +299,8 @@ const list: Card[] = [
         options,
         optional: true,
       });
-      if (id == null || !options.includes(id)) return;
+      if (id == null) return g.log(`${p.name} passed on the hostile takeover.`, p.id, 'card');
+      if (!options.includes(id)) return;
       await g.buyout(p, g.G.nodes[id]);
     },
   },
@@ -385,6 +386,7 @@ const list: Card[] = [
       if (!p.shares.some((n) => n > 0)) return;
       const ans = await g.ask({ kind: 'sellStock', pid: p.id, premium: 0.2 });
       if (ans) await g.sellStock(p, ans.d, ans.n, 0.2);
+      else await g.log(`${p.name} passed on selling stock.`, p.id, 'stock');
     },
   },
 ];

@@ -1236,7 +1236,12 @@ zoom chip and Guide: the **Game log** button (gold while the log is open). It op
 the top right, just under the toolbar and above the player cards, as wide as the cards; it pops in
 from the top right. On short phone screens the open panel may run down over the player cards so
 enough lines show. The current turn's card ends with a waiting
-line while the game waits, and the action that answers it fades in in its place. The log's Close button, the Game log button again or Escape closes it. Bottom right: the player cards stacked vertically in turn order (online, each device
+line while the game waits, and the action that answers it fades in in its place. **Skipped
+choices are logged too** (a line each, also shown on the status line): "Rosa passed on buying a
+shop for 320G.", "Rosa passed on buying out Milo's shop for 1,600G.", "Rosa passed on buying
+stock.", "Rosa passed on selling stock.", "Rosa chose not to invest.", "Rosa passed on building on
+the vacant plot.", "Rosa passed on the 200G circus upgrade.", "Rosa passed on buying a shop."
+(Estate Agency), "Rosa passed on the hostile takeover.". The log's Close button, the Game log button again or Escape closes it. Bottom right: the player cards stacked vertically in turn order (online, each device
 turns the order round so its own player's card is at the bottom; turns still go top to bottom) (net worth, cash, level,
 suits and progress bar); they are always shown. Player cards show the character's whole sprite
 (trimmed to its drawn pixels, no fade).

@@ -586,6 +586,7 @@ export class Game {
       if (!canAfford(G, p, sq.value)) return;
       const yes = await this.ask({ kind: 'buyShop', pid: p.id, sq: sq.id, price: sq.value });
       if (yes && canAfford(G, p, sq.value)) await this.buySquare(p, sq, sq.value, null, 'bought');
+      else if (!yes) await this.log(`${p.name} passed on buying a shop for ${sq.value}G.`, p.id, 'property');
       return;
     }
     // Landing on your own shop lets you invest in any of your shops.
@@ -613,6 +614,12 @@ export class Game {
     if (price <= 0 || !canAfford(G, p, price)) return;
     const yes = await this.ask({ kind: 'buyout', pid: p.id, sq: sq.id, price });
     if (yes && canAfford(G, p, price)) await this.buyout(p, sq);
+    else if (!yes) {
+      const owner = G.players[sq.owner];
+      await this.log(`${p.name} passed on buying out ${owner.name}'s shop for ${price}G.`, p.id, 'property', [
+        owner.id,
+      ]);
+    }
   }
 
   async buyout(p: Player, sq: Square) {
@@ -662,7 +669,7 @@ export class Game {
     if (!options.length) return this.log(`${p.name} has no shops to invest in.`, p.id, 'property');
     if (max <= 0) return this.log(`${p.name} has no money to invest.`, p.id, 'property');
     const ans = await this.ask({ kind: 'invest', pid: p.id, shops: options, max });
-    if (!ans) return;
+    if (!ans) return this.log(`${p.name} chose not to invest.`, p.id, 'property');
     const opt = options.find((o) => o.sq === ans.sq);
     if (!opt) return;
     const amount = Math.floor(Math.min(ans.amount, opt.room, max));
@@ -726,7 +733,8 @@ export class Game {
       if (!options.length) return;
       const b = await this.ask({ kind: 'build', pid: p.id, sq: sq.id, options });
       const cost = b ? buildingCost(b) : 0;
-      if (!b || !canAfford(G, p, cost)) return;
+      if (!b) return this.log(`${p.name} passed on building on the vacant plot.`, p.id, 'property');
+      if (!canAfford(G, p, cost)) return;
       sq.b = b;
       sq.value = cost;
       sq.lv = 0;
@@ -779,7 +787,8 @@ export class Game {
           return this.log(`${p.name} can't afford the ${cost}G circus upgrade.`, p.id, 'property');
         }
         const yes = await this.ask({ kind: 'circusUpgrade', pid: p.id, sq: sq.id, cost, tier: sq.lv + 1 });
-        if (!yes || !canAfford(G, p, cost)) return;
+        if (!yes) return this.log(`${p.name} passed on the ${cost}G circus upgrade.`, p.id, 'property');
+        if (!canAfford(G, p, cost)) return;
         sq.lv++;
         sq.value += cost;
         await this.pay(p, null, cost, 'Circus upgrade');
@@ -837,7 +846,8 @@ export class Game {
           options,
           optional: true,
         });
-        if (id == null || !options.includes(id)) return;
+        if (id == null) return this.log(`${p.name} passed on buying a shop.`, p.id, 'property');
+        if (!options.includes(id)) return;
         const target = G.nodes[id];
         if (canAfford(G, p, target.value)) await this.buySquare(p, target, target.value, null, 'bought');
         return;
@@ -896,7 +906,7 @@ export class Game {
     const G = this.G;
     if (G.rules !== 'standard' || p.cash <= 0) return;
     const ans = await this.ask({ kind: 'buyStock', pid: p.id, discount, maxSpend: p.cash });
-    if (!ans) return;
+    if (!ans) return this.log(`${p.name} passed on buying stock.`, p.id, 'stock');
     const d = ans.d;
     if (!(d >= 0 && d < G.factor.length)) return;
     // Dynamic stocks: the price moves as the shares are bought, so they cost the average of

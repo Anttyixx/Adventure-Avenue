@@ -26,6 +26,19 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: '2026-11-07-skips-logged',
+    date: 'Nov 7, 2026',
+    title: 'Skips in the log',
+    features: [
+      {
+        tag: 'better',
+        title: 'Skipped choices show in the game log',
+        text: 'When a player passes on buying a shop, a buyout, stock, an investment, a building or a venture card offer, the game log (and the status line) says so.',
+      },
+    ],
+    extras: ['Smart stack cards rise out of the stack smoothly'],
+  },
+  {
     id: '2026-11-07-smooth-stack',
     date: 'Nov 7, 2026',
     title: 'Smoother cards',
