@@ -26,6 +26,24 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: '2026-11-08-board-viewer',
+    date: 'Nov 8, 2026',
+    title: 'View, edit and hide boards',
+    features: [
+      {
+        tag: 'new',
+        title: 'Board viewer',
+        text: 'View in the board collection opens the board full screen: drag and zoom to look around. Tap Edit to unlock the builder tools, then Done to save, save as a new board, or leave your changes.',
+      },
+      {
+        tag: 'new',
+        title: 'Hide boards',
+        text: 'Tap the eye on a board to hide it from new games without removing it. Shown boards have a gold border; hidden ones turn grey.',
+      },
+    ],
+    extras: ["Built-in boards can't be removed or saved over: use Save as to keep your own version"],
+  },
+  {
     id: '2026-11-08-board-collection',
     date: 'Nov 8, 2026',
     title: 'Your board collection',

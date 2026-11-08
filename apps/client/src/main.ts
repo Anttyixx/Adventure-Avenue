@@ -19,7 +19,7 @@ import { freeCharacter, loadCharacters, shuffledCharacters } from './sprites';
 import { loadProps } from './props';
 import { installVersionChip } from './ui/devmenu';
 import { IS_DEV_BUILD } from './build';
-import { openEditor } from './ui/editor';
+import { openEditor, type EditorOptions } from './ui/editor';
 import { openCollection } from './ui/collection';
 import { openLab } from './ui/lab';
 import { applyLiveStockSettings, openStocksLab } from './ui/stockslab';
@@ -279,37 +279,49 @@ function showCollection() {
       close();
       showStart();
     },
-    onEdit(board) {
+    onView(board) {
       close();
-      showEditor(board, showCollection);
+      showEditor(board, showCollection, { view: true });
+    },
+    onNew() {
+      close();
+      showEditor(null, showCollection);
     },
   });
 }
 
-/** The board editor; leaving it goes `back` (the main menu, or the collection it came from). */
-function showEditor(board: BoardDef | null, back: () => void = showStart) {
+/**
+ * The board builder (its viewer with `opts.view`); leaving it goes `back` (the main menu, or the
+ * collection it came from).
+ */
+function showEditor(board: BoardDef | null, back: () => void = showStart, opts: EditorOptions = {}) {
   sound.music('menu');
   history.replaceState(null, '', '#editor');
-  openEditor(app, board, {
-    onExit() {
-      history.replaceState(null, '', location.pathname + location.search);
-      back();
+  openEditor(
+    app,
+    board,
+    {
+      onExit() {
+        history.replaceState(null, '', location.pathname + location.search);
+        back();
+      },
+      onPlay(b, savedJSON) {
+        // Test play: one human against three CPUs, then back to the builder, still editing.
+        const chars = shuffledCharacters(4);
+        const seats = ['You', 'Rosa', 'Milo', 'Juno'].map((name, i) => ({
+          name,
+          cpu: i > 0,
+          ch: chars[i],
+        }));
+        play(
+          newGame({ rules: 'standard', target: K.defaultTarget, roundCap: 0, seats, board: boardForPlay(b) }),
+          () => showEditor(b, back, { savedJSON }),
+          false,
+        );
+      },
     },
-    onPlay(b) {
-      // Test play: one human against three CPUs, then back to the editor.
-      const chars = shuffledCharacters(4);
-      const seats = ['You', 'Rosa', 'Milo', 'Juno'].map((name, i) => ({
-        name,
-        cpu: i > 0,
-        ch: chars[i],
-      }));
-      play(
-        newGame({ rules: 'standard', target: K.defaultTarget, roundCap: 0, seats, board: boardForPlay(b) }),
-        () => showEditor(b, back),
-        false,
-      );
-    },
-  });
+    opts,
+  );
 }
 
 void checkForUpdate();

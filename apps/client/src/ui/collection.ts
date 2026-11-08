@@ -1,23 +1,18 @@
 /**
- * Board collection (main menu > Menu): every board the player can pick in game setup, the
- * built-in ones and their own, as cards. Each can be viewed (a big picture with its details) or
- * removed; the player's own boards can be edited and exported, built-in ones edited as a copy.
- * Boards are added by importing a file or making a new one in the board editor. Removing a
- * built-in board only hides it (it can be added back under "Removed boards"); removing an own
- * board deletes it from this device.
+ * Board collection (main menu > Menu): every board the player has, the built-in ones and their
+ * own, as cards. View opens a board in the board builder's viewer (Edit there unlocks the
+ * tools); the eye button hides a board from game setup or shows it again; Remove deletes one of
+ * the player's own boards (built-in boards can't be removed). Boards are added by importing a
+ * file or making a new one in the builder.
  */
 import { validateBoard, type BoardDef } from '@aa/engine';
 import {
-  BUILT_IN,
   collection,
-  copyBoard,
   deleteBoard,
-  exportBoard,
-  hiddenBuiltIns,
   pickBoardFile,
   readBoardFile,
   saveBoard,
-  setBuiltInHidden,
+  setBoardHidden,
   type CollectionBoard,
 } from '../boardstore';
 import { sound } from '../audio';
@@ -28,8 +23,10 @@ import { clear, h } from './dom';
 
 export interface CollectionHandlers {
   onBack(): void;
-  /** Open the board editor on one of the player's boards, or on a new board (null). */
-  onEdit(board: BoardDef | null): void;
+  /** Open a board in the builder's viewer. */
+  onView(board: BoardDef): void;
+  /** Open the builder on a new board. */
+  onNew(): void;
 }
 
 /** A small pop-up over the collection (the main menu's pop-up frame). Resolves when closed. */
@@ -66,15 +63,13 @@ function dialog(
           h('button', { class: 'btn small ghost', onclick: () => done(null) }, 'Close'),
         ),
         body,
-        buttons.length
-          ? h(
-              'div',
-              { class: 'coll-dialog-btns' },
-              ...buttons.map((b) =>
-                h('button', { class: `btn ${b.cls ?? ''}`, onclick: () => done(b.value) }, b.label),
-              ),
-            )
-          : null,
+        h(
+          'div',
+          { class: 'coll-dialog-btns' },
+          ...buttons.map((b) =>
+            h('button', { class: `btn ${b.cls ?? ''}`, onclick: () => done(b.value) }, b.label),
+          ),
+        ),
       ),
     );
     window.addEventListener('keydown', onKey);
@@ -83,17 +78,20 @@ function dialog(
   });
 }
 
-/** What a board is: built-in or the player's own (when saved), its shape and size. */
-function facts(b: CollectionBoard): [string, string][] {
-  const board = b.board;
-  return [
-    ['Kind', b.mine ? 'My board' : 'Built-in'],
-    ['Shape', board.layout === 'hex' ? 'Hex' : 'Square'],
-    ['Squares', String(board.squares.length)],
-    ['Districts', String(board.districts.length)],
-    ...(board.author ? ([['Made by', board.author]] as [string, string][]) : []),
-    ...(b.savedAt ? ([['Saved', new Date(b.savedAt).toLocaleDateString()]] as [string, string][]) : []),
-  ];
+/** An eye (shown in game setup) or a crossed-out eye (hidden). */
+function eyeIcon(open: boolean) {
+  const ns = 'http://www.w3.org/2000/svg';
+  const svg = document.createElementNS(ns, 'svg');
+  svg.setAttribute('viewBox', '0 0 24 24');
+  svg.setAttribute('aria-hidden', 'true');
+  const paths = ['M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z', 'M12 9a3 3 0 100 6 3 3 0 000-6z'];
+  if (!open) paths.push('M4 4l16 16');
+  for (const d of paths) {
+    const path = document.createElementNS(ns, 'path');
+    path.setAttribute('d', d);
+    svg.append(path);
+  }
+  return svg;
 }
 
 export function openCollection(root: HTMLElement, handlers: CollectionHandlers): () => void {
@@ -101,14 +99,13 @@ export function openCollection(root: HTMLElement, handlers: CollectionHandlers):
   const scene = titleScene(false);
   const top = h('header', { class: 'su-top coll-top' });
   const grid = h('div', { class: 'coll-grid' });
-  const removed = h('section', { class: 'coll-removed' });
   const notice = h('p', { class: 'coll-notice', role: 'status', 'aria-live': 'polite' });
   const el = h(
     'div',
     { class: 'coll' },
     scene.el,
     top,
-    h('div', { class: 'coll-scroll' }, h('div', { class: 'coll-main' }, notice, grid, removed)),
+    h('div', { class: 'coll-scroll' }, h('div', { class: 'coll-main' }, notice, grid)),
   );
   root.append(el);
 
@@ -133,40 +130,28 @@ export function openCollection(root: HTMLElement, handlers: CollectionHandlers):
     draw();
   };
 
-  /** Edit one of the player's boards, or a copy of a built-in one (saved first, as theirs). */
-  const edit = (b: CollectionBoard) => {
-    if (b.mine) return handlers.onEdit(b.board);
-    const copy = copyBoard(b.board);
-    if (!copy) return say('There is no room left to save boards on this device.', true);
-    handlers.onEdit(copy);
-  };
-
-  const view = async (b: CollectionBoard) => {
-    const body = h(
-      'div',
-      { class: 'coll-view' },
-      h('div', { class: 'car-thumb coll-view-thumb' }, boardThumb(b.board, 640, 360)),
-      h('dl', { class: 'coll-facts' }, ...facts(b).flatMap(([k, v]) => [h('dt', null, k), h('dd', null, v)])),
+  /** Hide a board from game setup or show it again; at least one board stays shown. */
+  const toggleHidden = (b: CollectionBoard) => {
+    if (!b.hidden && collection().filter((x) => !x.hidden).length <= 1)
+      return say('Keep at least one board shown for new games.', true);
+    setBoardHidden(b.board.id, !b.hidden);
+    say(
+      b.hidden
+        ? `"${b.board.name}" is back in new games.`
+        : `"${b.board.name}" is hidden from new games. It stays in your collection.`,
     );
-    const pick = await dialog(el, b.board.name, body, [
-      { label: b.mine ? 'Edit' : 'Edit a copy', cls: 'main', value: 'edit' },
-      ...(b.mine ? [{ label: 'Export', cls: 'ghost', value: 'export' }] : []),
-    ]);
-    if (pick === 'edit') edit(b);
-    if (pick === 'export') exportBoard(b.board);
+    draw();
   };
 
   const remove = async (b: CollectionBoard) => {
-    if (collection().length <= 1) return say('Your collection needs at least one board.', true);
+    if (!b.mine) return;
     const pick = await dialog(
       el,
       `Remove ${b.board.name}?`,
       h(
         'p',
         { class: 'coll-dialog-text' },
-        b.mine
-          ? 'Your board will be deleted from this device. Export it first if you want to keep a copy.'
-          : 'It leaves your collection and game setup. You can add it back under Removed boards.',
+        'It will be deleted from this device. Export it first (View, then Menu) if you want to keep a copy.',
       ),
       [
         { label: 'Remove', cls: 'danger', value: 'remove' },
@@ -174,8 +159,7 @@ export function openCollection(root: HTMLElement, handlers: CollectionHandlers):
       ],
     );
     if (pick !== 'remove') return;
-    if (b.mine) deleteBoard(b.board.id);
-    else setBuiltInHidden(b.board.id, true);
+    deleteBoard(b.board.id);
     say(`Removed "${b.board.name}".`);
     draw();
   };
@@ -184,11 +168,28 @@ export function openCollection(root: HTMLElement, handlers: CollectionHandlers):
     const bad = validateBoard(b.board).errors.length > 0;
     return h(
       'article',
-      { class: `coll-card glass ${b.mine ? 'mine' : ''}` },
+      { class: `coll-card glass ${b.hidden ? 'hidden-board' : ''}` },
       h(
         'button',
-        { class: 'car-thumb coll-thumb', 'aria-label': `View ${b.board.name}`, onclick: () => view(b) },
+        {
+          class: 'car-thumb coll-thumb',
+          'aria-label': `View ${b.board.name}`,
+          onclick: () => handlers.onView(b.board),
+        },
         boardThumb(b.board, 320, 180),
+      ),
+      h(
+        'button',
+        {
+          class: 'coll-eye',
+          'aria-pressed': String(!b.hidden),
+          'aria-label': b.hidden
+            ? `Show ${b.board.name} in new games`
+            : `Hide ${b.board.name} from new games`,
+          title: b.hidden ? 'Hidden from new games: tap to show' : 'Shown in new games: tap to hide',
+          onclick: () => toggleHidden(b),
+        },
+        eyeIcon(!b.hidden),
       ),
       h(
         'div',
@@ -198,10 +199,11 @@ export function openCollection(root: HTMLElement, handlers: CollectionHandlers):
         bad
           ? h(
               'span',
-              { class: 'car-tag bad', title: 'Has problems: fix it in the board editor to play.' },
+              { class: 'car-tag bad', title: 'Has problems: fix it in the board builder to play.' },
               'Needs fixing',
             )
           : null,
+        b.hidden ? h('span', { class: 'car-tag coll-hidden-tag' }, 'Hidden') : null,
       ),
       h(
         'small',
@@ -211,9 +213,17 @@ export function openCollection(root: HTMLElement, handlers: CollectionHandlers):
       h(
         'div',
         { class: 'coll-actions' },
-        h('button', { class: 'su-tab', onclick: () => view(b) }, 'View'),
-        h('button', { class: 'su-tab', onclick: () => edit(b) }, b.mine ? 'Edit' : 'Edit a copy'),
-        h('button', { class: 'su-tab coll-remove', onclick: () => remove(b) }, 'Remove'),
+        h('button', { class: 'su-tab', onclick: () => handlers.onView(b.board) }, 'View'),
+        h(
+          'button',
+          {
+            class: 'su-tab coll-remove',
+            disabled: !b.mine,
+            title: b.mine ? undefined : "Built-in boards can't be removed. Hide it instead.",
+            onclick: () => remove(b),
+          },
+          'Remove',
+        ),
       ),
     );
   };
@@ -221,44 +231,14 @@ export function openCollection(root: HTMLElement, handlers: CollectionHandlers):
   const draw = () => {
     clear(grid);
     grid.append(...collection().map(card));
-    clear(removed);
-    const hidden = BUILT_IN.filter((b) => hiddenBuiltIns().includes(b.id));
-    if (hidden.length)
-      removed.append(
-        h('h3', null, 'Removed boards'),
-        h(
-          'div',
-          { class: 'coll-removed-list' },
-          ...hidden.map((board) =>
-            h(
-              'div',
-              { class: 'coll-removed-item glass' },
-              h('span', null, board.name),
-              h(
-                'button',
-                {
-                  class: 'su-tab',
-                  onclick: () => {
-                    setBuiltInHidden(board.id, false);
-                    say(`Added "${board.name}" back to your collection.`);
-                    draw();
-                  },
-                },
-                'Add back',
-              ),
-            ),
-          ),
-        ),
-      );
   };
 
-  clear(top);
   top.append(
     h('button', { class: 'btn su-back', onclick: () => handlers.onBack() }, '‹ Back'),
     h('h2', null, 'Board Collection'),
     h('span', { class: 'su-top-gap' }),
     h('button', { class: 'btn coll-add', onclick: importBoard }, 'Add a board'),
-    h('button', { class: 'btn main coll-new', onclick: () => handlers.onEdit(null) }, 'New board'),
+    h('button', { class: 'btn main coll-new', onclick: () => handlers.onNew() }, 'New board'),
     soundButton('btn menu-sound', 'Sound'),
   );
   draw();

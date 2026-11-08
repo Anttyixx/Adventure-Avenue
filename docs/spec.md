@@ -161,7 +161,8 @@ Trees, ponds, flower beds and other decorative scenery stay hidden in the builde
 editing grid is clear. Roads and playable tiles remain visible. Decorations appear automatically
 when a game or test play starts; they do not affect game rules.
 The editor uses the normal game screen's full-screen board and floating HUD: the board name and
-save status sit in an info chip at top left; the zoom chip, Undo, Save, Test play and Menu sit at top right.
+save status sit in an info chip at top left; the zoom chip, Undo, Test play, Menu and Done sit at top right
+(see Board viewer for Done and saving).
 The board fills the entire canvas behind the HUD, with no space reserved beside or below it.
 The hovered cell has a tinted fill and two contrasting outlines: a dark outer stroke (6 screen
 pixels) and a bright inner stroke (3 screen pixels), gold normally and red while erasing. Their
@@ -885,21 +886,30 @@ been read on this device, and What's new shows a "New" tag in the pop-up. **Cred
 work the game uses (art, fonts, libraries; data in `apps/client/src/credits.ts`), one card each with
 what was used, the license and links to their pages.
 
-**Board collection** (main menu, Menu): every board that game setup offers, the built-in ones
-and the player's own (saved on this device), over the title scene. A top bar holds **Back** (to
-the main menu) and the "Board Collection" title in the top left, and **Add a board** (import an
-`.aaboard.json` file; hidden on very narrow screens), **New board** (opens the board editor on a
-blank board) and **Sound** in the top right. The boards are cards in a grid that scrolls: the
-board's picture in a green frame (tapping it views the board), its name with a "Built-in" or "My
-board" tag (and "Needs fixing" when it can't be played yet), a muted line with its shape, squares
-and districts, and three chips: **View** (a pop-up with a big picture, its facts: kind, shape,
-squares, districts, maker and save date, with **Edit** / **Edit a copy**, and **Export** for own
-boards), **Edit** (own boards; built-in boards say **Edit a copy**, which saves a copy named like
-"Harbor (2)" as the player's own and opens it in the editor) and **Remove** (asks first). Removing
-an own board deletes it from this device; removing a built-in board only hides it from the
-collection and game setup, and it is listed under **Removed boards** with **Add back**. The last
-board can't be removed. A short note under the top bar says what just happened (added, removed,
-or why something failed). Leaving the board editor opened from here returns to the collection.
+**Board collection** (main menu, Menu): every board the player has, the built-in ones and their
+own (saved on this device), over the title scene. A top bar holds **Back** (to the main menu) and
+the "Board Collection" title in the top left, and **Add a board** (import an `.aaboard.json`
+file; hidden on very narrow screens), **New board** (opens the board builder on a blank board)
+and **Sound** in the top right. The boards are cards in a grid that scrolls: the board's picture
+in a green frame (tapping it views the board), its name with a "Built-in" or "My board" tag
+("Needs fixing" when it can't be played yet, "Hidden" when hidden), a muted line with its shape,
+squares and districts, and two chips at the bottom, **View** and **Remove**. An **eye button** in
+the card's top right hides the board from game setup or shows it again: a hidden board stays in
+the collection with a grey border, a greyed-out picture and a crossed-out eye; a shown board has
+a gold border and a gold eye. At least one board must stay shown. **Remove** (asks first)
+deletes one of the player's own boards from this device; built-in boards can't be removed (the
+chip is faded). A short note under the top bar says what just happened (added, hidden, removed,
+or why something failed).
+
+**Board viewer.** View opens the board in the board builder with the editing turned off: only the
+board (drag, scroll or pinch to look around), the info chip ("Board viewer" and the name), and
+the zoom chip, a gold **Edit** and **Back** at top right. **Edit** turns on every builder tool
+and panel; the top right becomes Undo, Test play, Menu and a gold **Done**. Done with changes asks
+**Save** (over the player's own board), **Save as** (a new board in the collection, under a name
+the player picks, "Harbor (2)" by default) or **Don't save** (the changes are dropped); then it
+goes back to the viewer. Built-in boards can't be saved over, so they only offer Save as and
+Don't save. Menu also has Save and Save as, and Back asks the same question when there are
+unsaved changes. Leaving returns to the collection.
 
 **Game setup options.** Over the title scene, a **top bar** that never scrolls runs across the
 screen: **Back** (to the main menu, as tall as Sound) and the "New Game" title in the top left
@@ -951,7 +961,7 @@ softly at every size (nothing clips them). Headings capitalize every word. There
   row slides over while the new board grows into the middle. Under it a thin line shows where in
   the list the board is: a gold bar (one board's share of the line) slides along it, so any
   number of boards fits; tapping the line jumps there. There are no board tool chips here: boards
-  are added, removed and edited in the board collection (main menu, Menu); boards removed there
+  are added, removed, hidden and edited in the board collection (main menu, Menu); hidden boards
   are not offered here. The Board and Game Settings
   headings are large.
 - **Players** (in the players column): setup starts with only the host ("You · host"); bots and

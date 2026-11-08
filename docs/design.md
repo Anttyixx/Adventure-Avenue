@@ -796,13 +796,20 @@ if (!(await ask(`Delete ${d.name}?`, 'Its 4 properties will be removed from the 
 - `collection.ts` `openCollection`: the title scene with the setup screen's top bar (`.su-top`:
   Back and the title left; Add a board (plain), New board (gold) and Sound right). Below, a grid
   that scrolls without a scroll bar (`.coll-grid`, `auto-fill, minmax(250px, 1fr)`; 220px on
-  small screens) of dark glass cards (`.coll-card`): the carousel's green frame (`.car-thumb`) at
-  one fixed height so every card matches, the name in the heading font with `car-tag` pills, a
-  muted meta line, and outline chips (`.su-tab`) View / Edit / Remove (Remove turns red on hover).
-- Pop-ups use the menu pop-up frame (`modal-wrap menu-pop`): View shows the big picture beside a
-  `dl.coll-facts` (as on the Continue panel); Remove is a question with a red **Remove** and a
-  ghost **Cancel**. Feedback goes in a dark pill (`.coll-notice`, red text for problems) above the
-  grid, never an alert. Hidden built-ins sit in dark pills with **Add back** under "Removed boards".
+  small screens) of dark glass cards (`.coll-card`) with a 3px border: gold when the board is
+  shown in new games, grey (`#7c8597`) when hidden, which also greys out the picture. Each has the
+  carousel's green frame (`.car-thumb`) at one fixed height so every card matches, a round eye
+  button over its top right (`.coll-eye`, gold or grey with a crossed-out eye), the name in the
+  heading font with `car-tag` pills, a muted meta line, and outline chips (`.su-tab`) View /
+  Remove (Remove turns red on hover; faded and disabled on built-in boards).
+- Remove asks in the menu pop-up frame (`modal-wrap menu-pop`): a red **Remove** and a ghost
+  **Cancel**. Feedback goes in a dark pill (`.coll-notice`, red text for problems) above the grid,
+  never an alert.
+- Board viewer (`editor.ts` with `view`, `.ed-viewing`): the builder with the tool rail, Tiles
+  pane, side panels, Board settings button and save status hidden; the top right holds the zoom
+  chip, a gold Edit and Back. Editing swaps them for Undo, Test play, Menu and a gold Done. The
+  save question is the builder's `ask` pop-up with Don't save (ghost), Save as and Save (gold, the
+  last button); Save as asks for a name in an input (`.ed-saveas-name`).
 
 ### 5.17e Too big for the room (over the player cards)
 

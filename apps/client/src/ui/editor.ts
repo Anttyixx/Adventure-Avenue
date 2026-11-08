@@ -38,11 +38,13 @@ import { cellAt, cellCenter, tileShape } from '../geometry';
 import {
   deleteBoard,
   exportBoard,
+  isBuiltIn,
   listBoards,
   newBoardId,
   pickBoardFile,
   readBoardFile,
   saveBoard,
+  uniqueName,
 } from '../boardstore';
 import { clear, h, fmt } from './dom';
 import { boardThumb } from './thumb';
@@ -426,16 +428,31 @@ function drawLink(
 
 export interface EditorHandlers {
   onExit(): void;
-  onPlay(board: BoardDef): void;
+  /** Test play `board`; `savedJSON` is the last saved version, to hand back on return. */
+  onPlay(board: BoardDef, savedJSON: string): void;
 }
 
-export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers: EditorHandlers) {
+export interface EditorOptions {
+  /** Open as a viewer: look around only, until the player presses Edit. */
+  view?: boolean;
+  /** The board as last saved (from a test play), so unsaved changes still count as unsaved. */
+  savedJSON?: string;
+}
+
+export function openEditor(
+  app: HTMLElement,
+  initial: BoardDef | null,
+  handlers: EditorHandlers,
+  opts: EditorOptions = {},
+) {
   let board: BoardDef = {
     ...structuredClone(initial ?? blankBoard()),
     cols: BOARD_LIMITS.maxCols,
     rows: BOARD_LIMITS.maxRows,
   };
-  let tool: Tool = 'select';
+  /** Viewing only: the tools, panels and editing keys are off until Edit is pressed. */
+  let viewing = !!opts.view;
+  let tool: Tool = viewing ? 'pan' : 'select';
   let settings = false;
   /**
    * Where the next property goes: the first district still short of four (so gaps are filled
@@ -484,13 +501,8 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
     maxlength: String(BOARD_LIMITS.nameLength),
   }) as HTMLInputElement;
   const status = h('span', { class: 'ed-status' });
-  const info = h(
-    'div',
-    { class: 'ed-info info-chip glass' },
-    h('span', { class: 'gc-title' }, 'Board builder'),
-    nameInput,
-    status,
-  );
+  const title = h('span', { class: 'gc-title' }, 'Board builder');
+  const info = h('div', { class: 'ed-info info-chip glass' }, title, nameInput, status);
   const settingsButton = h(
     'button',
     {
@@ -526,15 +538,26 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
     },
     '300%',
   );
-  const topbar = h(
-    'div',
-    { class: 'ed-top toolbar' },
-    zoomChip,
+  // Viewing: Edit and Back. Editing: Undo, Test play, Menu and Done (save or not, then view).
+  const viewButtons = [
+    h('button', { class: 'btn small main ed-edit', onclick: () => startEditing() }, 'Edit'),
+    h('button', { class: 'btn small', onclick: () => void leave() }, 'Back'),
+  ];
+  const editButtons = [
     h('button', { class: 'btn small', onclick: () => doUndo(), title: 'Undo (Ctrl+Z)' }, 'Undo'),
-    h('button', { class: 'btn small', onclick: () => doSave() }, 'Save'),
-    h('button', { class: 'btn small main', onclick: () => doPlay() }, 'Test play'),
+    h('button', { class: 'btn small', onclick: () => doPlay() }, 'Test play'),
     h('button', { class: 'btn small', onclick: () => editorMenu() }, 'Menu'),
-  );
+    h('button', { class: 'btn small main ed-done', onclick: () => void finishEditing() }, 'Done'),
+  ];
+  const topbar = h('div', { class: 'ed-top toolbar' }, zoomChip, ...viewButtons, ...editButtons);
+  /** Show the controls for viewing or editing. */
+  const syncMode = () => {
+    root.classList.toggle('ed-viewing', viewing);
+    title.textContent = viewing ? 'Board viewer' : 'Board builder';
+    nameInput.readOnly = viewing;
+    for (const b of viewButtons) b.hidden = !viewing;
+    for (const b of editButtons) b.hidden = viewing;
+  };
   const toolBar = h('div', {
     class: 'ed-tool-bar glass',
     role: 'toolbar',
@@ -1457,7 +1480,14 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
     nameInput.value = board.name;
     const unsaved = JSON.stringify(board) !== savedJSON;
     const inList = listBoards().some((b) => b.id === board.id);
-    status.textContent = !inList ? 'Not saved yet' : unsaved ? 'Unsaved changes' : 'Saved';
+    status.textContent = isBuiltIn(board.id)
+      ? 'Built-in'
+      : !inList
+        ? 'Not saved yet'
+        : unsaved
+          ? 'Unsaved changes'
+          : 'Saved';
+    syncMode();
     status.classList.toggle('unsaved', unsaved || !inList);
 
     refreshCheck();
@@ -1476,6 +1506,7 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
         'div',
         { class: 'prompt-text', role: 'status', 'aria-live': 'polite' },
         notice ||
+          (viewing ? 'Drag to look around · scroll or pinch to zoom · Edit to change the board' : '') ||
           (choosingLink ? 'Click a tile or the bank to link to · Escape to cancel' : '') ||
           (settings
             ? check.errors.length
@@ -1939,13 +1970,143 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
 
   // ------------------------------------------------------------ actions
 
+  /** Save over the player's own board (built-in boards can only be saved as a new one). */
   const doSave = () => {
+    if (isBuiltIn(board.id)) return false;
     recompute();
-    if (!saveBoard(structuredClone(board)))
-      return say('Could not save: browser storage is full or blocked.', true);
+    if (!saveBoard(structuredClone(board))) {
+      say('Could not save: browser storage is full or blocked.', true);
+      return false;
+    }
     savedJSON = JSON.stringify(board);
     drawInspector();
-    say(`Saved "${board.name}" to My boards.`);
+    say(`Saved "${board.name}" to your collection.`);
+    return true;
+  };
+
+  /** Save as a new board in the collection, under a name the player picks. */
+  const doSaveAs = () =>
+    new Promise<boolean>((resolve) => {
+      let saved = false;
+      const input = h('input', {
+        class: 'ed-saveas-name',
+        maxlength: String(BOARD_LIMITS.nameLength),
+        'aria-label': 'Board name',
+      }) as HTMLInputElement;
+      input.value = uniqueName(board.name).slice(0, BOARD_LIMITS.nameLength);
+      const save = () => {
+        const name = input.value.trim().slice(0, BOARD_LIMITS.nameLength) || 'My board';
+        recompute();
+        const copy: BoardDef = { ...structuredClone(board), id: newBoardId(), name };
+        if (!saveBoard(copy)) return say('Could not save: browser storage is full or blocked.', true);
+        board.id = copy.id;
+        board.name = name;
+        savedJSON = JSON.stringify(board);
+        saved = true;
+        close();
+        drawInspector();
+        say(`Saved "${name}" to your collection.`);
+      };
+      input.onkeydown = (e) => {
+        if (e.key === 'Enter') save();
+      };
+      const close = modal(
+        'Save as a new board',
+        h(
+          'div',
+          { class: 'ed-ask' },
+          h('p', null, 'It is added to your board collection.'),
+          input,
+          h(
+            'div',
+            { class: 'btn-row' },
+            h('button', { class: 'btn ghost', onclick: () => close() }, 'Cancel'),
+            h('button', { class: 'btn main', onclick: save }, 'Save'),
+          ),
+        ),
+        { onClose: () => resolve(saved) },
+      );
+      input.focus();
+      input.select();
+    });
+
+  /**
+   * Unsaved changes: ask Save (not for built-in boards), Save as or Don't save. Resolves 'saved',
+   * 'discard', or null when the player cancels.
+   */
+  const askSave = () =>
+    new Promise<'saved' | 'discard' | null>((resolve) => {
+      const builtIn = isBuiltIn(board.id);
+      /** Set when a button handles the answer itself, so closing doesn't count as Cancel. */
+      let handled = false;
+      const discard = () => {
+        handled = true;
+        close();
+        resolve('discard');
+      };
+      const saveWith = (act: () => Promise<boolean> | boolean) => async () => {
+        handled = true;
+        close();
+        resolve((await act()) ? 'saved' : null);
+      };
+      const buttons = [
+        h('button', { class: 'btn ghost', onclick: discard }, "Don't save"),
+        h('button', { class: `btn ${builtIn ? 'main' : ''}`, onclick: saveWith(doSaveAs) }, 'Save as'),
+        ...(builtIn ? [] : [h('button', { class: 'btn main', onclick: saveWith(doSave) }, 'Save')]),
+      ];
+      const close = modal(
+        'Save your changes?',
+        h(
+          'div',
+          { class: 'ed-ask' },
+          h(
+            'p',
+            null,
+            builtIn
+              ? "Built-in boards can't be changed: save your changes as a new board, or leave them."
+              : 'Save over this board, save it as a new board, or leave your changes.',
+          ),
+          h('div', { class: 'btn-row' }, ...buttons),
+        ),
+        { onClose: () => !handled && resolve(null) },
+      );
+      buttons[buttons.length - 1].focus();
+    });
+
+  /** Unlock the tools (from the viewer). */
+  const startEditing = () => {
+    viewing = false;
+    tool = 'select';
+    clearSelection();
+    drawPalette();
+    drawInspector();
+    redraw();
+  };
+
+  /** Back to the viewer, after saving or dropping the changes. */
+  const finishEditing = async () => {
+    if (JSON.stringify(board) !== savedJSON) {
+      const answer = await askSave();
+      if (!answer) return;
+      if (answer === 'discard') {
+        // Nothing saved to go back to (an imported board): leave the builder.
+        if (!savedJSON) {
+          destroy();
+          return handlers.onExit();
+        }
+        board = JSON.parse(savedJSON) as BoardDef;
+        undo.length = 0;
+      }
+    }
+    viewing = true;
+    tool = 'pan';
+    settings = false;
+    clearSelection();
+    notice = '';
+    recompute();
+    drawPalette();
+    drawInspector();
+    redraw();
   };
 
   const doExport = () => {
@@ -1985,7 +2146,7 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
     const errs = validateBoard(board).errors;
     if (errs.length) return say(`Fix the problems first: ${errs[0]}`, true);
     destroy();
-    handlers.onPlay(structuredClone(board));
+    handlers.onPlay(structuredClone(board), savedJSON);
   };
 
   /** True when there is nothing unsaved to lose, or the player agrees to lose it. */
@@ -1994,7 +2155,7 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
     ask('Discard your changes?', 'This board has changes that are not saved yet.', 'Discard', true);
 
   const leave = async () => {
-    if (!(await confirmLeave())) return;
+    if (JSON.stringify(board) !== savedJSON && !(await askSave())) return;
     destroy();
     handlers.onExit();
   };
@@ -2105,7 +2266,9 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
         item('My boards', 'Open, export or delete boards saved on this device', myBoardsDialog),
         item('Import board', 'Open a .aaboard.json file', () => void doImport()),
         item('Export board', 'Save this board as a file to share', doExport),
-        item('Back to main menu', 'Leave the builder', () => void leave(), 'leave'),
+        ...(isBuiltIn(board.id) ? [] : [item('Save', 'Save over this board', () => void doSave())]),
+        item('Save as', 'Save as a new board in your collection', () => void doSaveAs()),
+        item('Back', 'Leave the board builder', () => void leave(), 'leave'),
       ),
     );
   };
@@ -2273,7 +2436,7 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
       zoomBy(e.key === '-' || e.key === '_' ? ZOOM_STEP : -ZOOM_STEP);
       return;
     }
-    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') {
+    if (!viewing && (e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') {
       e.preventDefault();
       doUndo();
     }
@@ -2311,7 +2474,7 @@ export function openEditor(app: HTMLElement, initial: BoardDef | null, handlers:
   }
 
   recompute();
-  savedJSON = JSON.stringify(board);
+  savedJSON = opts.savedJSON ?? JSON.stringify(board);
   centerOnBoard();
   drawPalette();
   drawInspector();

@@ -11325,9 +11325,9 @@ button.char-btn:hover img {
 }
 /* Board collection (collection.ts): the title scene with the setup screen's top bar (Back, the
    title, then Add a board, New board and Sound), and the boards as glass cards in a grid that
-   scrolls (no scroll bar): a green picture frame (tap to view), the name with a Built-in / My
-   board tag, a muted line on its shape and size, and View / Edit / Remove chips. Built-in boards
-   the player removed are listed under "Removed boards" with Add back. */
+   scrolls (no scroll bar): a gold border (shown in new games) or grey (hidden, with a greyed
+   picture), an eye button in the top right that toggles that, a green picture frame (tap to
+   view), the name with tags, a muted line on its shape and size, and View / Remove chips. */
 .coll {
   position: absolute;
   inset: 0;
@@ -11377,13 +11377,72 @@ button.char-btn:hover img {
   gap: 14px;
 }
 .coll-card {
+  position: relative;
   display: flex;
   flex-direction: column;
   gap: 8px;
   padding: 12px;
+  border: 3px solid var(--accent);
   border-radius: 14px;
   background: rgba(16, 26, 51, 0.94);
   box-shadow: 0 8px 28px rgba(0, 0, 0, 0.3);
+  transition: border-color 0.2s;
+}
+/* Hidden from new games: a grey border and a greyed-out picture. */
+.coll-card.hidden-board {
+  border-color: #7c8597;
+}
+.coll-card.hidden-board .coll-thumb {
+  filter: grayscale(1) brightness(0.8);
+  opacity: 0.7;
+}
+.coll-card.hidden-board .coll-thumb:hover {
+  filter: grayscale(1) brightness(0.9);
+}
+.car-tag.coll-hidden-tag {
+  background: rgba(124, 133, 151, 0.3);
+  color: #d4dced;
+}
+/* The eye in the card's top right: shown in new games (gold) or hidden (grey, crossed out). */
+.coll-eye {
+  position: absolute;
+  top: 18px;
+  right: 18px;
+  width: 38px;
+  height: 38px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 2px solid var(--accent);
+  border-radius: 50%;
+  background: rgba(16, 26, 51, 0.82);
+  color: var(--accent);
+  cursor: pointer;
+  backdrop-filter: blur(4px);
+  transition:
+    transform 0.15s,
+    border-color 0.2s,
+    color 0.2s;
+}
+.coll-eye:hover {
+  transform: scale(1.08);
+}
+.coll-eye svg {
+  width: 22px;
+  height: 22px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.coll-card.hidden-board .coll-eye {
+  border-color: #7c8597;
+  color: #c3cad8;
+}
+.su-tab.coll-remove:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
 }
 /* The picture: the carousel's green frame at one fixed height, so every card is the same size. */
 .coll-thumb {
@@ -11398,8 +11457,7 @@ button.char-btn:hover img {
 .coll-thumb:hover {
   filter: brightness(1.06);
 }
-.coll-thumb .thumb,
-.coll-view-thumb .thumb {
+.coll-thumb .thumb {
   width: auto !important;
   height: auto !important;
   max-width: 100%;
@@ -11436,39 +11494,11 @@ button.char-btn:hover img {
   padding: 4px 12px;
   font-size: 13px;
 }
-.su-tab.coll-remove:hover {
+.su-tab.coll-remove:not(:disabled):hover {
   border-color: var(--bad);
   color: #ffb4b4;
 }
-.coll-removed:empty {
-  display: none;
-}
-.coll-removed h3 {
-  margin: 4px 0 8px;
-  color: #fff;
-  font: 400 20px var(--head);
-  text-shadow: 0 2px 0 rgba(16, 26, 51, 0.45);
-}
-.coll-removed-list {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-.coll-removed-item {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 6px 6px 6px 14px;
-  border-radius: 999px;
-  background: rgba(16, 26, 51, 0.88);
-  color: #fff;
-  font: 400 15px var(--head);
-}
-.coll-removed-item .su-tab {
-  padding: 3px 12px;
-  font-size: 13px;
-}
-/* View and Remove pop-ups. */
+/* The Remove question. */
 .coll-dialog {
   width: min(680px, calc(100vw - 24px));
 }
@@ -11481,34 +11511,6 @@ button.char-btn:hover img {
   justify-content: flex-end;
   gap: 8px;
   margin-top: 14px;
-}
-.coll-view {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 14px 20px;
-  align-items: center;
-}
-.coll-view-thumb {
-  flex: 1 1 340px;
-  height: min(300px, 45vh);
-  box-sizing: border-box;
-  padding: 10px;
-}
-.coll-facts {
-  flex: 1 1 160px;
-  margin: 0;
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
-  gap: 8px 14px;
-}
-.coll-facts dt {
-  color: #d4dced;
-  font: 600 13px var(--body);
-}
-.coll-facts dd {
-  margin: 0;
-  color: #fff;
-  font: 700 15px var(--body);
 }
 @media (max-height: 500px), (max-width: 760px) {
   .coll-main {
@@ -11534,6 +11536,16 @@ button.char-btn:hover img {
     height: 104px;
     padding: 5px;
   }
+  .coll-eye {
+    top: 12px;
+    right: 12px;
+    width: 32px;
+    height: 32px;
+  }
+  .coll-eye svg {
+    width: 18px;
+    height: 18px;
+  }
   .coll-name b {
     font-size: 16px;
   }
@@ -11542,12 +11554,37 @@ button.char-btn:hover img {
     padding: 0 10px;
     font-size: 13px;
   }
-  .coll-view-thumb {
-    height: min(200px, 50vh);
-  }
 }
 @media (max-width: 520px) {
   .coll-top .coll-add {
     display: none;
   }
+}
+/* Board viewer (editor.ts, `.ed-viewing`): the builder with only the board, the zoom chip, Edit
+   and Back. The tool rail, Tiles pane, side panels and Board settings button are hidden. */
+.editor.ed-viewing .ed-tool-bar,
+.editor.ed-viewing .ed-palette,
+.editor.ed-viewing .ed-side,
+.editor.ed-viewing .ed-info > button,
+.editor.ed-viewing .ed-status {
+  display: none !important;
+}
+.editor.ed-viewing .ed-name {
+  pointer-events: none;
+}
+/* The name box in the Save as pop-up. */
+.ed-saveas-name {
+  width: 100%;
+  box-sizing: border-box;
+  margin: 4px 0 12px;
+  padding: 8px 12px;
+  border: 2px solid var(--glass-line);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+  font: 700 16px var(--body);
+}
+.ed-saveas-name:focus {
+  outline: none;
+  border-color: var(--accent);
 }

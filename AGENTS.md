@@ -113,7 +113,8 @@ Requests refer to parts of the game by these names:
   warps/portals. How it works in detail: "Board builder overview" in `docs/architecture.md`.
 - **Menus and tools:**
   - **main menu**, **game setup**, **What's new** (`changelog.ts`), **Credits**, **board
-    collection** (`ui/collection.ts`, Menu pop-up: view, add, remove and edit boards).
+    collection** (`ui/collection.ts`, Menu pop-up: view, add, hide and remove boards), **board
+    viewer** (the board builder opened read-only from the collection, with an Edit button).
   - **version chip:** bottom right of the main menu only; holding it 3 s on test builds opens the
     **dev menu**.
   - **UI Lab** (`#ui-lab`), **Stocks lab** (`#stocks-lab`), **board editor** (`#editor`).

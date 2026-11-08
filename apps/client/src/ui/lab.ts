@@ -113,7 +113,7 @@ const rnd = (n: number) => Math.floor(Math.random() * n);
  * Controls for UI elements that were just added or changed: they shake once and glow so they
  * are easy to find. Update this list with each change.
  */
-const RECENT = new Set(['Board collection', 'Main menu (no save)', 'Game setup']);
+const RECENT = new Set(['Board collection', 'Board viewer: Town', 'Board builder: Town']);
 
 /** Which board the lab plays on: Town (square) or Twin Lakes (hex), remembered per browser. */
 const LAB_BOARD_KEY = 'aa-lab-board';
@@ -1608,7 +1608,8 @@ export async function openLab(app: HTMLElement, section?: string) {
         overlay((holder, done) =>
           openCollection(holder, {
             onBack: () => done('Board collection: Back pressed.'),
-            onEdit: (b) => done(`Board collection: edit ${b ? b.name : 'a new board'}.`),
+            onView: (b) => done(`Board collection: view ${b.name}.`),
+            onNew: () => done('Board collection: New board pressed.'),
           }),
         ),
       ),
@@ -1825,6 +1826,7 @@ export async function openLab(app: HTMLElement, section?: string) {
         [
           ['Board builder', null],
           ['Board builder: Town', null],
+          ['Board viewer: Town', null],
           ['Board builder: Crossgate Gardens', null],
           ['Board builder: Prism Junction', null],
           ['Board builder: Return Ridge', null],
@@ -1843,7 +1845,7 @@ export async function openLab(app: HTMLElement, section?: string) {
               ? null
               : label.endsWith('Warps and portals')
                 ? (BUILT_IN_BOARDS.find((b) => b.squares.some((s) => s.t === 'warp')) ?? null)
-                : (BUILT_IN_BOARDS.find((b) => label === `Board builder: ${b.name}`) ?? BUILT_IN_BOARDS[0]);
+                : (BUILT_IN_BOARDS.find((b) => label.endsWith(`: ${b.name}`)) ?? BUILT_IN_BOARDS[0]);
           const preview = label.endsWith('Problems') && start ? structuredClone(start) : start;
           if (label.endsWith('Problems') && preview) {
             const property = preview.squares.find((s) => s.t === 'shop');
@@ -1857,13 +1859,18 @@ export async function openLab(app: HTMLElement, section?: string) {
               delete special.link;
             }
           }
-          const close = openEditor(holder, preview, {
-            onExit: () => holder.remove(),
-            onPlay: () => {
-              holder.remove();
-              hud.tick('Board builder test play pressed.');
+          const close = openEditor(
+            holder,
+            preview,
+            {
+              onExit: () => holder.remove(),
+              onPlay: () => {
+                holder.remove();
+                hud.tick('Board builder test play pressed.');
+              },
             },
-          });
+            { view: label.startsWith('Board viewer') },
+          );
           if (press) holder.querySelector<HTMLButtonElement>(press)?.click();
           holder.append(
             h(
