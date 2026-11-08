@@ -1,4 +1,4 @@
-import { transportColor } from '@aa/engine';
+import { nextSteps, transportColor } from '@aa/engine';
 import { motelFee } from './names';
 /**
  * The HD board: a 1300 x 800 logical canvas with 100-unit squares, scaled to the container
@@ -1375,8 +1375,7 @@ export class BoardView {
     const p = G.players[this.directionsPid];
     if (!p || p.bankrupt) return;
     const here = G.nodes[p.node];
-    let next = here.nb.filter((id) => id !== p.prev);
-    if (!next.length) next = here.nb;
+    const next = nextSteps(here, p.prev);
     const c0 = this.center(here);
     const color = PLAYER_COLORS[p.color];
     // Each arrow runs from just past the token toward the next square, three chevrons deep.
@@ -1678,6 +1677,46 @@ export function paintBoard(
   if (background) paintGrass(ctx);
   drawScenery(ctx, G, decorations);
   for (const sq of G.nodes) drawSquare(ctx, G, sq);
+  // One-way roads: an arrow badge between the two tiles, pointing the way players may go.
+  for (const sq of G.nodes)
+    for (const from of sq.noGo ?? [])
+      drawRoadArrow(ctx, squareCenter(G.nodes[from], G.layout), squareCenter(sq, G.layout));
+}
+
+/**
+ * A round navy badge halfway between two tile centers with a gold chevron pointing from `a` to
+ * `b`: the sign for a one-way road (also used by the board builder's Links tool).
+ */
+export function drawRoadArrow(
+  ctx: CanvasRenderingContext2D,
+  a: { x: number; y: number },
+  b: { x: number; y: number },
+  fill = '#16213f',
+  ink = '#ffd166',
+) {
+  const mx = (a.x + b.x) / 2;
+  const my = (a.y + b.y) / 2;
+  const angle = Math.atan2(b.y - a.y, b.x - a.x);
+  ctx.save();
+  ctx.translate(mx, my);
+  ctx.beginPath();
+  ctx.arc(0, 0, 15, 0, Math.PI * 2);
+  ctx.fillStyle = fill;
+  ctx.fill();
+  ctx.lineWidth = 3;
+  ctx.strokeStyle = '#fff';
+  ctx.stroke();
+  ctx.rotate(angle);
+  ctx.beginPath();
+  ctx.moveTo(-5, -8);
+  ctx.lineTo(4, 0);
+  ctx.lineTo(-5, 8);
+  ctx.lineWidth = 4.5;
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+  ctx.strokeStyle = ink;
+  ctx.stroke();
+  ctx.restore();
 }
 
 // ------------------------------------------------------------------ drawing helpers

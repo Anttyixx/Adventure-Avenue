@@ -26,6 +26,27 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: '2026-11-08-links-tool',
+    date: 'Nov 8, 2026',
+    title: 'One-way roads',
+    features: [
+      {
+        tag: 'new',
+        title: 'Links tool',
+        text: 'The board builder has a new Links tool. It shows every link between neighboring tiles: tap one to make it one way, the other way, remove it, or link it again.',
+      },
+      {
+        tag: 'rules',
+        title: 'One-way roads',
+        text: 'Boards can now have one-way roads, marked with a gold arrow. Players can only travel them the way the arrow points.',
+      },
+    ],
+    extras: [
+      'The board viewer and builder put the board in the middle of the grid',
+      'Cleaner board collection: no Hidden tag or status messages, and a smaller eye button',
+    ],
+  },
+  {
     id: '2026-11-08-board-viewer',
     date: 'Nov 8, 2026',
     title: 'View, edit and hide boards',

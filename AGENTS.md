@@ -109,7 +109,7 @@ Requests refer to parts of the game by these names:
   - **background:** `board.ts` `paintGrass` covers the visible camera area with world-aligned grass. Live views draw `paintBoard(..., false)` into transparent caches so no grass seam appears at board edges.
   - **auto zoom / camera:** see "Camera" in `docs/architecture.md`.
 - **Board builder** (or board editor, `ui/editor.ts`, `#editor`): the full-screen builder with the
-  left icon toolbar (Select, Place, Erase), the Tiles pane, Board settings, tile info panel and
+  left icon toolbar (Select, Pan, Place, Erase, Links), the Tiles pane, Board settings, tile info panel and
   warps/portals. How it works in detail: "Board builder overview" in `docs/architecture.md`.
 - **Menus and tools:**
   - **main menu**, **game setup**, **What's new** (`changelog.ts`), **Credits**, **board

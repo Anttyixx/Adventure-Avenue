@@ -50,6 +50,8 @@ export interface Square {
   t: SquareType;
   /** Neighbor square ids (graph edges). */
   nb: number[];
+  /** Neighbors players can't step to from here: the wrong way down a one-way road. */
+  noGo?: number[];
   /** District index 0-6 for shops and plots, else -1. */
   d: number;
   /** Group index used for expansion and domination, else -1. */
@@ -238,6 +240,8 @@ export interface BoardDef {
   squares: BoardSquareDef[];
   /** Pairs of indices into `squares` that are connected. */
   edges: [number, number][];
+  /** One-way roads: [from, to] pairs (each also in `edges`) players may only take from -> to. */
+  oneWay?: [number, number][];
   /** Index of the bank square (start position). */
   bank: number;
 }

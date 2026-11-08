@@ -33,6 +33,7 @@ import {
   lineBonus,
   linesThrough,
   netWorth,
+  nextSteps,
   ownedShops,
   ownedSquares,
   ranking,
@@ -285,9 +286,7 @@ export class Game {
         all.set(node, list);
         return;
       }
-      let nbs = G.nodes[node].nb.filter((x) => x !== prev);
-      if (!nbs.length) nbs = G.nodes[node].nb;
-      for (const nx of nbs) {
+      for (const nx of nextSteps(G.nodes[node], prev)) {
         const sq = G.nodes[nx];
         const target = sq.t === 'portal' ? G.nodes[sq.link ?? -1] : null;
         if (target && target.id !== nx) walk(target.id, -1, left - 1, [...path, nx, target.id]);

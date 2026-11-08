@@ -41,6 +41,8 @@ export function newGame(opts: MatchOptions): GameState {
     nodes[a].nb.push(b);
     nodes[b].nb.push(a);
   }
+  // One-way roads: no stepping from `to` back to `from`.
+  for (const [a, b] of board.oneWay ?? []) if (nodes[a]?.nb.includes(b)) (nodes[b].noGo ??= []).push(a);
   const players: Player[] = opts.seats.map((seat, i) => ({
     id: i,
     slot: i,

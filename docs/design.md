@@ -803,13 +803,17 @@ if (!(await ask(`Delete ${d.name}?`, 'Its 4 properties will be removed from the 
   heading font with `car-tag` pills, a muted meta line, and outline chips (`.su-tab`) View /
   Remove (Remove turns red on hover; faded and disabled on built-in boards).
 - Remove asks in the menu pop-up frame (`modal-wrap menu-pop`): a red **Remove** and a ghost
-  **Cancel**. Feedback goes in a dark pill (`.coll-notice`, red text for problems) above the grid,
-  never an alert.
+  **Cancel**. Problems (and only problems) show in the same frame with a gold OK; nothing else
+  needs a message because the cards change in place.
 - Board viewer (`editor.ts` with `view`, `.ed-viewing`): the builder with the tool rail, Tiles
   pane, side panels, Board settings button and save status hidden; the top right holds the zoom
   chip, a gold Edit and Back. Editing swaps them for Undo, Test play, Menu and a gold Done. The
   save question is the builder's `ask` pop-up with Don't save (ghost), Save as and Save (gold, the
   last button); Save as asks for a name in an input (`.ed-saveas-name`).
+- Link badges (canvas, world units, radius 15 with a 3px white ring), drawn between tile centers:
+  one way is `drawRoadArrow` in `board.ts` (navy fill, gold chevron; the same sign players see on
+  one-way roads in games); the builder's Links tool adds `drawLinkBadge`: green `#2f9e5b` with a
+  white two-headed arrow (both ways) or red `--bad` with a dashed ring and a white cross (removed).
 
 ### 5.17e Too big for the room (over the player cards)
 

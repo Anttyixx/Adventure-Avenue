@@ -140,8 +140,12 @@ code changes.
 **Custom boards (added Oct 2026).** Players build boards in the in-game board editor, save them
 in the browser, and export/import them as `.aaboard.json` files (format tag
 `adventure-avenue-board`, version 1: name, author, grid size, districts, squares and
-connections). Squares in neighboring cells always connect automatically; leave an empty cell between tiles
-to keep paths apart. Opening an old board in the builder restores any previously cut connections. A board is playable only if it has exactly one bank, every suit (or a change-of-suit
+connections, plus `oneWay`: [from, to] pairs for one-way roads, missing in older files). Squares
+in neighboring cells connect automatically; the builder's **Links** tool removes a link, adds it
+back or makes it one way (see Board viewer). On the board, a one-way road shows a navy badge with
+a gold arrow between its two tiles, pointing the way players may go. Every tile with links needs
+a way in and a way out (a tile whose one-way roads all lead in, or all lead out, is a problem to
+fix), and every one-way road must be a link. A board is playable only if it has exactly one bank, every suit (or a change-of-suit
 square), at least one district, exactly 4 properties in every declared district, a valid starting
 average for each district, every warp and portal linked (to a partner of its kind or the bank), at most five pairs of each kind, and every square reachable from the bank (by road or
 warp). Grids range from 4 x 4 to 32 x 20 (up to 320
@@ -332,8 +336,9 @@ builder and use the usual district pricing and random vacant-plot settings.
 
 1. Roll one die (1-7). The server or rules engine rolls, never the client.
 2. After the roll, the engine lists every square the player could stop on: it walks every route of
-   exactly that many steps, where each step goes to a neighbor other than `prev` (no turning back;
-   a dead end allows any neighbor).
+   exactly that many steps, where each step goes to a neighbor other than `prev` (no turning back),
+   never the wrong way down a one-way road. At a dead end the player turns around (if the road
+   back allows it).
 3. Those destination squares glow in the player's color and the player taps one (or uses the
    matching button in the action bar). Hovering or focusing a destination previews the route as a
    numbered dotted line. If two routes reach the same square, the engine takes the better one: it
@@ -892,14 +897,14 @@ the "Board Collection" title in the top left, and **Add a board** (import an `.a
 file; hidden on very narrow screens), **New board** (opens the board builder on a blank board)
 and **Sound** in the top right. The boards are cards in a grid that scrolls: the board's picture
 in a green frame (tapping it views the board), its name with a "Built-in" or "My board" tag
-("Needs fixing" when it can't be played yet, "Hidden" when hidden), a muted line with its shape,
+("Needs fixing" when it can't be played yet), a muted line with its shape,
 squares and districts, and two chips at the bottom, **View** and **Remove**. An **eye button** in
 the card's top right hides the board from game setup or shows it again: a hidden board stays in
 the collection with a grey border, a greyed-out picture and a crossed-out eye; a shown board has
 a gold border and a gold eye. At least one board must stay shown. **Remove** (asks first)
 deletes one of the player's own boards from this device; built-in boards can't be removed (the
-chip is faded). A short note under the top bar says what just happened (added, hidden, removed,
-or why something failed).
+chip is faded). The cards show every change on their own; only problems (a file that can't be
+read, no room to save, hiding the last shown board) open a small pop-up with OK.
 
 **Board viewer.** View opens the board in the board builder with the editing turned off: only the
 board (drag, scroll or pinch to look around), the info chip ("Board viewer" and the name), and
@@ -909,7 +914,15 @@ and panel; the top right becomes Undo, Test play, Menu and a gold **Done**. Done
 the player picks, "Harbor (2)" by default) or **Don't save** (the changes are dropped); then it
 goes back to the viewer. Built-in boards can't be saved over, so they only offer Save as and
 Don't save. Menu also has Save and Save as, and Back asks the same question when there are
-unsaved changes. Leaving returns to the collection.
+unsaved changes. Leaving returns to the collection. Opening a board (to view or edit) moves its tiles to the middle of the
+builder's grid; boards are trimmed to their tiles when played, so this changes nothing in games.
+
+**Links tool** (the chain icon, last in the builder's tool rail): every pair of neighboring
+tiles shows a badge between them: green with a two-headed arrow (linked both ways), the navy
+one-way badge with a gold arrow, or red with a cross (link removed; the road is gone). Tapping a
+badge cycles it: both ways, one way, the other way, removed, both ways again. Dragging elsewhere
+moves the view. Undo undoes link changes too. Links follow their tiles when a group is moved;
+erasing a tile forgets its link changes.
 
 **Game setup options.** Over the title scene, a **top bar** that never scrolls runs across the
 screen: **Back** (to the main menu, as tall as Sound) and the "New Game" title in the top left

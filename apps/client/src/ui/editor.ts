@@ -3,8 +3,8 @@ import { linkEditorTiles, unlinkEditorTile } from './editor-links';
  * Board editor (#editor): paint squares on a grid, set up districts and shop values, check the
  * board for problems, save it in this browser, export/import board files and test-play it.
  *
- * Squares in neighboring cells always connect; leave a gap to keep paths apart. The preview
- * is drawn with the same painter as the game board.
+ * Squares in neighboring cells connect on their own; the Links tool removes a link, adds it back
+ * or makes it one way. The preview is drawn with the same painter as the game board.
  */
 import {
   BOARD_LIMITS,
@@ -14,6 +14,7 @@ import {
   districtStartingValues,
   BUILT_IN_BOARDS,
   autoEdges,
+  edgeKey,
   newGame,
   validateBoard,
   type BoardCheck,
@@ -23,7 +24,15 @@ import {
   type BoardSquareDef,
   type SquareType,
 } from '@aa/engine';
-import { drawRingBurst, drawTileGlow, paintBoard, paintGrass, paintSquare, worldSize } from '../board';
+import {
+  drawRingBurst,
+  drawRoadArrow,
+  drawTileGlow,
+  paintBoard,
+  paintGrass,
+  paintSquare,
+  worldSize,
+} from '../board';
 import {
   EDITOR_ZOOM_MIN_OUT,
   editorZoomPercent,
@@ -58,7 +67,7 @@ import {
 } from './editor-districts';
 import { moveSelection, selectionPositions, selectionAnchor, ensureEditorBank } from './editor-selection';
 
-type Tool = Exclude<SquareType, 'plot'> | 'select' | 'pan' | 'place' | 'erase';
+type Tool = Exclude<SquareType, 'plot'> | 'select' | 'pan' | 'place' | 'erase' | 'links';
 
 const PALETTE: { group: string; items: { tool: Tool; label: string; hint: string }[] }[] = [
   {
@@ -68,6 +77,7 @@ const PALETTE: { group: string; items: { tool: Tool; label: string; hint: string
       { tool: 'pan', label: 'Pan', hint: 'Drag to move around the board.' },
       { tool: 'place', label: 'Place', hint: 'Choose tiles to place on the board.' },
       { tool: 'erase', label: 'Erase', hint: 'Remove squares (click or drag).' },
+      { tool: 'links', label: 'Links', hint: 'Show the links between tiles and change them.' },
     ],
   },
   {
@@ -426,6 +436,70 @@ function drawLink(
   ctx.restore();
 }
 
+/**
+ * The Links tool's badge between two linked tiles: green with a two-headed arrow (both ways), or
+ * red with a cross (removed: tap to link again).
+ */
+function drawLinkBadge(
+  ctx: CanvasRenderingContext2D,
+  a: { x: number; y: number },
+  b: { x: number; y: number },
+  off: boolean,
+) {
+  ctx.save();
+  ctx.translate((a.x + b.x) / 2, (a.y + b.y) / 2);
+  ctx.beginPath();
+  ctx.arc(0, 0, 15, 0, Math.PI * 2);
+  ctx.fillStyle = off ? '#e5484d' : '#2f9e5b';
+  ctx.fill();
+  ctx.lineWidth = 3;
+  ctx.strokeStyle = '#fff';
+  if (off) ctx.setLineDash([5, 4]);
+  ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.rotate(Math.atan2(b.y - a.y, b.x - a.x));
+  ctx.beginPath();
+  if (off) {
+    ctx.moveTo(-5, -5);
+    ctx.lineTo(5, 5);
+    ctx.moveTo(5, -5);
+    ctx.lineTo(-5, 5);
+  } else {
+    ctx.moveTo(-8, 0);
+    ctx.lineTo(8, 0);
+    ctx.moveTo(-4, -4);
+    ctx.lineTo(-8, 0);
+    ctx.lineTo(-4, 4);
+    ctx.moveTo(4, -4);
+    ctx.lineTo(8, 0);
+    ctx.lineTo(4, 4);
+  }
+  ctx.lineWidth = 3;
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+  ctx.strokeStyle = '#fff';
+  ctx.stroke();
+  ctx.restore();
+}
+
+/**
+ * Move a board's tiles to the middle of the builder's grid (boards are saved trimmed to the top
+ * left). Hex boards move by whole row pairs so the rows keep their stagger.
+ */
+function centerInGrid(b: BoardDef) {
+  if (!b.squares.length) return b;
+  const xs = b.squares.map((s) => s.x);
+  const ys = b.squares.map((s) => s.y);
+  const dx = Math.floor((b.cols - (Math.max(...xs) - Math.min(...xs) + 1)) / 2) - Math.min(...xs);
+  let dy = Math.floor((b.rows - (Math.max(...ys) - Math.min(...ys) + 1)) / 2) - Math.min(...ys);
+  if (b.layout === 'hex') dy -= ((dy % 2) + 2) % 2;
+  for (const s of b.squares) {
+    s.x += dx;
+    s.y += dy;
+  }
+  return b;
+}
+
 export interface EditorHandlers {
   onExit(): void;
   /** Test play `board`; `savedJSON` is the last saved version, to hand back on return. */
@@ -445,11 +519,11 @@ export function openEditor(
   handlers: EditorHandlers,
   opts: EditorOptions = {},
 ) {
-  let board: BoardDef = {
+  let board: BoardDef = centerInGrid({
     ...structuredClone(initial ?? blankBoard()),
     cols: BOARD_LIMITS.maxCols,
     rows: BOARD_LIMITS.maxRows,
-  };
+  });
   /** Viewing only: the tools, panels and editing keys are off until Edit is pressed. */
   let viewing = !!opts.view;
   let tool: Tool = viewing ? 'pan' : 'select';
@@ -468,7 +542,7 @@ export function openEditor(
   let moving: { anchor: { x: number; y: number }; target: { x: number; y: number } } | null = null;
   let marquee: { start: { x: number; y: number }; end: { x: number; y: number } } | null = null;
   let placeTool: Tool = 'shop';
-  const isPlacing = () => tool !== 'select' && tool !== 'pan' && tool !== 'erase';
+  const isPlacing = () => tool !== 'select' && tool !== 'pan' && tool !== 'erase' && tool !== 'links';
   const clearSelection = () => {
     choosingLink = false;
     selected = null;
@@ -490,6 +564,29 @@ export function openEditor(
   let tileFx: { x: number; y: number; t0: number; erased: boolean }[] = [];
   let savedJSON = JSON.stringify(board);
   const undo: string[] = [];
+  /**
+   * The Links tool's changes, by grid position so they survive tiles being added, erased or
+   * moved: removed links (`edgeKey`) and one-way links ("x,y>x,y", from > to).
+   */
+  let cuts = new Set<string>();
+  let oneWays = new Set<string>();
+  const cellKey = (c: { x: number; y: number }) => `${c.x},${c.y}`;
+  /** Read the removed and one-way links from the board (on opening it, undo or revert). */
+  const readLinks = () => {
+    const pair = (a: number, b: number) => (a < b ? `${a}-${b}` : `${b}-${a}`);
+    const linked = new Set(board.edges.map(([a, b]) => pair(a, b)));
+    cuts = new Set(
+      autoEdges(board.squares, new Set(), board.layout)
+        .filter(([a, b]) => !linked.has(pair(a, b)))
+        .map(([a, b]) => edgeKey(board.squares[a], board.squares[b])),
+    );
+    oneWays = new Set(
+      (board.oneWay ?? [])
+        .filter(([a, b]) => board.squares[a] && board.squares[b])
+        .map(([a, b]) => `${cellKey(board.squares[a])}>${cellKey(board.squares[b])}`),
+    );
+  };
+  readLinks();
 
   const root = h('div', { class: 'editor' });
   app.append(root);
@@ -698,7 +795,19 @@ export function openEditor(
   const recompute = () => {
     board = ensureEditorBank(board);
     for (const sq of board.squares) if (sq.t === 'shop') delete sq.plot;
-    board.edges = autoEdges(board.squares, new Set(), board.layout);
+    // Links: neighbors connect unless removed; forget changes to links whose tiles are gone.
+    const at = new Map(board.squares.map((sq, i) => [cellKey(sq), i]));
+    for (const key of cuts) if (!key.split('|').every((c) => at.has(c))) cuts.delete(key);
+    board.edges = autoEdges(board.squares, cuts, board.layout);
+    const linked = new Set(board.edges.map(([a, b]) => `${Math.min(a, b)}-${Math.max(a, b)}`));
+    const oneWay: [number, number][] = [];
+    for (const key of oneWays) {
+      const [a, b] = key.split('>').map((c) => at.get(c));
+      if (a == null || b == null || !linked.has(`${Math.min(a, b)}-${Math.max(a, b)}`)) oneWays.delete(key);
+      else oneWay.push([a, b]);
+    }
+    if (oneWay.length) board.oneWay = oneWay.sort((p, q) => p[0] - q[0] || p[1] - q[1]);
+    else delete board.oneWay;
     board.bank = board.squares.findIndex((s) => s.t === 'bank');
     connectTransports(board);
     refreshCheck();
@@ -733,9 +842,80 @@ export function openEditor(
     const last = undo.pop();
     if (!last) return say('Nothing to undo.');
     board = JSON.parse(last) as BoardDef;
+    readLinks();
     clearSelection();
     nameInput.value = board.name;
     changed();
+  };
+  /** After a group moves: links within it move along; links to tiles left behind are dropped. */
+  const remapLinks = (from: ReadonlySet<number>, next: BoardDef, to: ReadonlySet<number>) => {
+    const newIds = [...to];
+    const moved = new Map(
+      [...from].map((i, k) => [cellKey(board.squares[i]), cellKey(next.squares[newIds[k]])]),
+    );
+    const landed = new Set(moved.values());
+    const move = (cells: string[]) => {
+      const n = cells.filter((c) => moved.has(c)).length;
+      if (n === 1 || (n === 0 && cells.some((c) => landed.has(c)))) return null;
+      return cells.map((c) => moved.get(c) ?? c);
+    };
+    const toCell = (c: string) => {
+      const [x, y] = c.split(',').map(Number);
+      return { x, y };
+    };
+    cuts = new Set(
+      [...cuts].flatMap((key) => {
+        const cells = move(key.split('|'));
+        return cells ? [edgeKey(toCell(cells[0]), toCell(cells[1]))] : [];
+      }),
+    );
+    oneWays = new Set(
+      [...oneWays].flatMap((key) => {
+        const cells = move(key.split('>'));
+        return cells ? [cells.join('>')] : [];
+      }),
+    );
+  };
+  /** Neighboring tiles' pairs (linked or not), for the Links tool. */
+  const neighborPairs = () => autoEdges(board.squares, new Set(), board.layout);
+  type LinkState = 'both' | 'ab' | 'ba' | 'off';
+  const linkState = (a: number, b: number): LinkState => {
+    const p = board.squares[a];
+    const q = board.squares[b];
+    if (cuts.has(edgeKey(p, q))) return 'off';
+    if (oneWays.has(`${cellKey(p)}>${cellKey(q)}`)) return 'ab';
+    if (oneWays.has(`${cellKey(q)}>${cellKey(p)}`)) return 'ba';
+    return 'both';
+  };
+  /** The link badge under a world point, if any. */
+  const linkAt = (w: { x: number; y: number }) =>
+    neighborPairs().find(([a, b]) => {
+      const p = center(board.squares[a]);
+      const q = center(board.squares[b]);
+      return Math.hypot((p.x + q.x) / 2 - w.x, (p.y + q.y) / 2 - w.y) < 26;
+    }) ?? null;
+  const LINK_TEXT: Record<LinkState, string> = {
+    both: 'Linked both ways',
+    ab: 'One way',
+    ba: 'One way (the other way)',
+    off: 'Link removed',
+  };
+  /** Tap a link: both ways > one way > the other way > removed > both ways. */
+  const cycleLink = (a: number, b: number) => {
+    const p = board.squares[a];
+    const q = board.squares[b];
+    const ab = `${cellKey(p)}>${cellKey(q)}`;
+    const ba = `${cellKey(q)}>${cellKey(p)}`;
+    const next: LinkState = ({ both: 'ab', ab: 'ba', ba: 'off', off: 'both' } as const)[linkState(a, b)];
+    snapshot();
+    oneWays.delete(ab);
+    oneWays.delete(ba);
+    cuts.delete(edgeKey(p, q));
+    if (next === 'ab') oneWays.add(ab);
+    if (next === 'ba') oneWays.add(ba);
+    if (next === 'off') cuts.add(edgeKey(p, q));
+    changed();
+    say(LINK_TEXT[next]);
   };
   const indexAt = (x: number, y: number) => board.squares.findIndex((s) => s.x === x && s.y === y);
   const center = (c: { x: number; y: number }) => cellCenter(board.layout, c.x, c.y);
@@ -751,7 +931,7 @@ export function openEditor(
       else if (selected != null && selected > i) selected--;
       return true;
     }
-    if (tool === 'select' || tool === 'pan' || tool === 'place') return false;
+    if (tool === 'select' || tool === 'pan' || tool === 'place' || tool === 'links') return false;
     const t: SquareType = tool;
     let d = -1;
     if (t === 'shop') {
@@ -982,8 +1162,19 @@ export function openEditor(
       drawLink(ctx, center(source), center(linked), transportColor(source), scale, reduced);
       if (!reduced && !zoomFrame) zoomFrame = requestAnimationFrame(redraw);
     }
+    // Links tool: a badge on every pair of neighboring tiles.
+    if (tool === 'links' && !viewing && !settings) {
+      for (const [a, b] of neighborPairs()) {
+        const p = center(board.squares[a]);
+        const q = center(board.squares[b]);
+        const state = linkState(a, b);
+        if (state === 'ab') drawRoadArrow(ctx, p, q);
+        else if (state === 'ba') drawRoadArrow(ctx, q, p);
+        else drawLinkBadge(ctx, p, q, state === 'off');
+      }
+    }
     // Hover and selection
-    if (hover && !moving) {
+    if (hover && !moving && tool !== 'links') {
       const c = center(hover);
       ctx.save();
       tileShape(ctx, board.layout, c.x, c.y, 46, 14);
@@ -1119,6 +1310,7 @@ export function openEditor(
       const result = moveSelection(board, selection, moving.anchor, target);
       if (!result) return say('Keep the group inside the board and clear of the bank.', true);
       snapshot();
+      remapLinks(selection, result.board, result.selection);
       board = result.board;
       selection = result.selection;
       moving = null;
@@ -1148,7 +1340,12 @@ export function openEditor(
       changed();
       return;
     }
-    if (tool === 'pan') {
+    if (tool === 'links') {
+      // Tap a link badge to change it; drag anywhere else to look around.
+      const pair = linkAt(toWorld(e));
+      if (pair) return cycleLink(pair[0], pair[1]);
+    }
+    if (tool === 'pan' || tool === 'links') {
       panning = { x: e.clientX, y: e.clientY };
       root.classList.add('ed-grabbing');
       return;
@@ -1243,7 +1440,9 @@ export function openEditor(
         return;
       }
       if (touchStart && Math.hypot(e.clientX - touchStart.clientX, e.clientY - touchStart.clientY) > 8) {
-        beginStroke(touchStart);
+        // A drag with the Links tool looks around (a tap changes a link).
+        if (tool === 'links') panning = { x: touchStart.clientX, y: touchStart.clientY };
+        else beginStroke(touchStart);
         touchStart = null;
       }
     }
@@ -1328,6 +1527,7 @@ export function openEditor(
     pan: 'M12 3v18M3 12h18M12 3l-3 3M12 3l3 3M12 21l-3-3M12 21l3-3M3 12l3-3M3 12l3 3M21 12l-3-3M21 12l-3 3',
     place: 'M15 4l5 5M4 15L15 4a3.5 3.5 0 015 5L9 20l-6 1zM4 15l5 5',
     erase: 'M4 13l9-10 8 8-9 10H9l-5-5zM8 9l8 8M12 21h9',
+    links: 'M10 14a4 4 0 005.7 0l3-3a4 4 0 00-5.7-5.7l-1 1M14 10a4 4 0 00-5.7 0l-3 3a4 4 0 005.7 5.7l1-1',
   };
   for (const { tool: t, label } of PALETTE[0].items) {
     const icon = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
@@ -1518,13 +1718,15 @@ export function openEditor(
                 ? selection.size
                   ? `${selection.size} tile${selection.size === 1 ? '' : 's'} selected`
                   : 'Click a tile, or drag to select a group'
-                : tool === 'pan'
-                  ? 'Drag to move around the board · tap the zoom to recenter'
-                  : tool === 'shop'
-                    ? next
-                      ? `Property: goes into ${next.name} (${next.count} of ${BOARD_LIMITS.districtSize}) · click or drag to place`
-                      : 'All twelve districts have 4 properties'
-                    : `${label}: ${tool === 'erase' ? 'click or drag to remove squares' : 'click or drag to place tiles'}`),
+                : tool === 'links'
+                  ? 'Tap a link to change it: both ways, one way, the other way, removed'
+                  : tool === 'pan'
+                    ? 'Drag to move around the board · tap the zoom to recenter'
+                    : tool === 'shop'
+                      ? next
+                        ? `Property: goes into ${next.name} (${next.count} of ${BOARD_LIMITS.districtSize}) · click or drag to place`
+                        : 'All twelve districts have 4 properties'
+                      : `${label}: ${tool === 'erase' ? 'click or drag to remove squares' : 'click or drag to place tiles'}`),
       ),
       h(
         'div',
@@ -2095,6 +2297,7 @@ export function openEditor(
           return handlers.onExit();
         }
         board = JSON.parse(savedJSON) as BoardDef;
+        readLinks();
         undo.length = 0;
       }
     }
@@ -2128,7 +2331,8 @@ export function openEditor(
     if (!res.board) return say(res.error ?? 'Could not read that file.', true);
     if (!(await confirmLeave())) return;
     snapshot();
-    board = { ...res.board, cols: BOARD_LIMITS.maxCols, rows: BOARD_LIMITS.maxRows };
+    board = centerInGrid({ ...res.board, cols: BOARD_LIMITS.maxCols, rows: BOARD_LIMITS.maxRows });
+    readLinks();
     clearSelection();
     savedJSON = '';
     centerOnBoard();
@@ -2161,7 +2365,8 @@ export function openEditor(
   };
 
   const load = (b: BoardDef, saved: boolean) => {
-    board = { ...structuredClone(b), cols: BOARD_LIMITS.maxCols, rows: BOARD_LIMITS.maxRows };
+    board = centerInGrid({ ...structuredClone(b), cols: BOARD_LIMITS.maxCols, rows: BOARD_LIMITS.maxRows });
+    readLinks();
     clearSelection();
     undo.length = 0;
     savedJSON = saved ? JSON.stringify(board) : '';

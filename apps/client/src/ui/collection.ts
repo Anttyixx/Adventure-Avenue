@@ -99,47 +99,36 @@ export function openCollection(root: HTMLElement, handlers: CollectionHandlers):
   const scene = titleScene(false);
   const top = h('header', { class: 'su-top coll-top' });
   const grid = h('div', { class: 'coll-grid' });
-  const notice = h('p', { class: 'coll-notice', role: 'status', 'aria-live': 'polite' });
   const el = h(
     'div',
     { class: 'coll' },
     scene.el,
     top,
-    h('div', { class: 'coll-scroll' }, h('div', { class: 'coll-main' }, notice, grid)),
+    h('div', { class: 'coll-scroll' }, h('div', { class: 'coll-main' }, grid)),
   );
   root.append(el);
 
-  const say = (text: string, bad = false) => {
-    notice.textContent = text;
-    notice.classList.toggle('bad', bad);
-  };
+  /** Only problems need saying (the cards show everything else): a small pop-up with OK. */
+  const warn = (text: string) =>
+    void dialog(el, 'Hold on', h('p', { class: 'coll-dialog-text' }, text), [
+      { label: 'OK', cls: 'main', value: 'ok' },
+    ]);
 
   /** Add a board from a file (an exported board), saved to the player's boards. */
   const importBoard = async () => {
     const file = await pickBoardFile();
     if (!file) return;
     const res = await readBoardFile(file);
-    if (!res.board) return say(res.error ?? 'Could not read that file.', true);
-    if (!saveBoard(res.board)) return say('There is no room left to save boards on this device.', true);
-    if (res.check?.errors.length)
-      say(
-        `Added "${res.board.name}", but it needs fixing before it can be played: ${res.check.errors[0]}`,
-        true,
-      );
-    else say(`Added "${res.board.name}" to your collection.`);
+    if (!res.board) return warn(res.error ?? 'Could not read that file.');
+    if (!saveBoard(res.board)) return warn('There is no room left to save boards on this device.');
     draw();
   };
 
   /** Hide a board from game setup or show it again; at least one board stays shown. */
   const toggleHidden = (b: CollectionBoard) => {
     if (!b.hidden && collection().filter((x) => !x.hidden).length <= 1)
-      return say('Keep at least one board shown for new games.', true);
+      return warn('Keep at least one board shown for new games.');
     setBoardHidden(b.board.id, !b.hidden);
-    say(
-      b.hidden
-        ? `"${b.board.name}" is back in new games.`
-        : `"${b.board.name}" is hidden from new games. It stays in your collection.`,
-    );
     draw();
   };
 
@@ -160,7 +149,6 @@ export function openCollection(root: HTMLElement, handlers: CollectionHandlers):
     );
     if (pick !== 'remove') return;
     deleteBoard(b.board.id);
-    say(`Removed "${b.board.name}".`);
     draw();
   };
 
@@ -203,7 +191,6 @@ export function openCollection(root: HTMLElement, handlers: CollectionHandlers):
               'Needs fixing',
             )
           : null,
-        b.hidden ? h('span', { class: 'car-tag coll-hidden-tag' }, 'Hidden') : null,
       ),
       h(
         'small',

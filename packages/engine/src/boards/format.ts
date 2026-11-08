@@ -61,6 +61,8 @@ export interface BoardFile {
   districts: District[];
   squares: BoardSquareDef[];
   edges: [number, number][];
+  /** One-way roads, [from, to] (missing in older files: every road goes both ways). */
+  oneWay?: [number, number][];
 }
 
 export interface BoardCheck {
@@ -276,6 +278,28 @@ export function validateBoard(def: BoardDef): BoardCheck {
     nb[a].push(b);
     nb[b].push(a);
   }
+  // One-way roads: each must be a road, and every tile needs a way in and a way out.
+  const noGo = sq.map(() => new Set<number>());
+  for (const [a, b] of def.oneWay ?? []) {
+    if (!nb[a]?.includes(b)) {
+      error('The board has a broken one-way road.');
+      continue;
+    }
+    noGo[b].add(a);
+  }
+  sq.forEach((s, i) => {
+    if (!nb[i].length) return;
+    if (nb[i].every((j) => noGo[i].has(j)))
+      error(`Square ${where(s)} has no way out: its one-way roads all lead in.`, {
+        squares: [i],
+        tileText: 'No way out: its one-way roads all lead in.',
+      });
+    else if (nb[i].every((j) => noGo[j].has(i)))
+      error(`Square ${where(s)} has no way in: its one-way roads all lead out.`, {
+        squares: [i],
+        tileText: 'No way in: its one-way roads all lead out.',
+      });
+  });
   // Warps reach their destination too (detached areas are only reachable this way).
   const reach = nb.map((n) => n.slice());
   sq.forEach((s, i) => {
@@ -350,6 +374,7 @@ export function boardToFile(def: BoardDef): BoardFile {
       return out;
     }),
     edges: def.edges.map(([a, b]) => [a, b]),
+    ...(def.oneWay?.length ? { oneWay: def.oneWay.map(([a, b]) => [a, b] as [number, number]) } : {}),
   };
 }
 
@@ -401,6 +426,9 @@ export function boardFromFile(data: unknown, id: string): { board?: BoardDef; er
       return { error: 'The board file has a damaged connection.' };
     edges.push([Math.floor(e[0]), Math.floor(e[1])]);
   }
+  const oneWay: [number, number][] = [];
+  for (const e of Array.isArray(f.oneWay) ? (f.oneWay as unknown[]) : [])
+    if (Array.isArray(e) && isNum(e[0]) && isNum(e[1])) oneWay.push([Math.floor(e[0]), Math.floor(e[1])]);
   const districts: District[] = (f.districts as unknown[]).map((d, i) => {
     const q = d as Partial<District>;
     const color = typeof q?.color === 'string' && /^#[0-9a-f]{6}$/i.test(q.color) ? q.color : '#cccccc';
@@ -420,6 +448,7 @@ export function boardFromFile(data: unknown, id: string): { board?: BoardDef; er
       districts,
       squares,
       edges,
+      ...(oneWay.length ? { oneWay } : {}),
       bank,
     },
   };

@@ -113,7 +113,7 @@ const rnd = (n: number) => Math.floor(Math.random() * n);
  * Controls for UI elements that were just added or changed: they shake once and glow so they
  * are easy to find. Update this list with each change.
  */
-const RECENT = new Set(['Board collection', 'Board viewer: Town', 'Board builder: Town']);
+const RECENT = new Set(['Board collection', 'Board viewer: Town', 'Board builder: Links']);
 
 /** Which board the lab plays on: Town (square) or Twin Lakes (hex), remembered per browser. */
 const LAB_BOARD_KEY = 'aa-lab-board';
@@ -1834,6 +1834,7 @@ export async function openLab(app: HTMLElement, section?: string) {
           ['Board builder: Board settings', '.ed-info > button'],
           ['Board builder: Tiles pane', '.ed-tool-button[aria-label="Place"]'],
           ['Board builder: Pan', '.ed-tool-button[aria-label="Pan"]'],
+          ['Board builder: Links', '.ed-tool-button[aria-label="Links"]'],
           ['Board builder: Warps and portals', null],
         ] as const
       ).map(([label, press]) =>

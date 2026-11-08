@@ -352,6 +352,17 @@ export function canAfford(G: GameState, p: Player, price: number): boolean {
   return spendable(G, p) >= price;
 }
 
+/**
+ * Where a player on `sq` can step next, having come from `prev`: any way but back and never the
+ * wrong way down a one-way road. At a dead end they turn around; with no way out at all (a board
+ * mistake), any neighbor.
+ */
+export function nextSteps(sq: Square, prev: number): number[] {
+  const open = sq.noGo?.length ? sq.nb.filter((x) => !sq.noGo!.includes(x)) : sq.nb;
+  const ahead = open.filter((x) => x !== prev);
+  return ahead.length ? ahead : open.length ? open : sq.nb;
+}
+
 /** Row groups for Easy rules: connected runs of property squares. */
 export function computeRows(G: GameState): number[][] {
   const seen = new Set<number>();
