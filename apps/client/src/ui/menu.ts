@@ -6,12 +6,12 @@
  */
 import { PLAYER_COLORS } from '@aa/engine';
 import { propertyIconURL, SHOP_TIERS } from '../art';
-import { Facing, FRAME_H, FRAME_W, drawCharacter, portraitURL, shuffledCharacters } from '../sprites';
+import { Facing, FRAME_H, FRAME_W, bodyURL, drawCharacter, shuffledCharacters } from '../sprites';
 import { loadGuest, loadSave, type GuestSave, type SaveInfo } from '../save';
 import { sound } from '../audio';
 import { cleanCode } from '../net/protocol';
 import { clear, h } from './dom';
-import { NAME_MAX, cleanName, loadProfile, saveProfile } from '../profile';
+import { NAME_MAX, cleanName, ensureProfile, loadProfile, saveProfile } from '../profile';
 import { charButton, pickCharacter } from './charpick';
 import { hasUnseenUpdate } from '../changelog';
 import { openCredits } from './credits';
@@ -401,14 +401,14 @@ export function mainMenu(
     'aria-haspopup': 'dialog',
     title: 'Your player card',
   }) as HTMLButtonElement;
+  // Shaped like Sound and Menu: the whole character standing on the left, the name beside it.
+  // A first visit gets a friendly name and character (ensureProfile), so it is never blank.
   const paintCard = () => {
-    const card = loadProfile();
+    const card = ensureProfile();
     clear(cardBtn);
     cardBtn.append(
-      card.look
-        ? h('img', { src: portraitURL(card.look, 4), alt: '' })
-        : h('span', { class: 'menu-card-blank', 'aria-hidden': 'true' }, '?'),
-      h('span', null, card.name || 'Player card'),
+      card.look ? h('img', { class: 'menu-card-sprite', src: bodyURL(card.look, 4), alt: '' }) : '',
+      h('span', { class: 'menu-card-name' }, card.name),
     );
   };
   paintCard();

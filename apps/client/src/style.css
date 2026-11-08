@@ -3728,6 +3728,18 @@ input[type='range'] {
 .menu-sound {
   background: rgba(16, 26, 51, 0.6);
 }
+/* The top-right buttons (player card, Sound, Menu) are one height, so they line up. */
+.menu-top > .btn {
+  height: 37px;
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+}
+@media (max-height: 500px) {
+  .menu-top > .btn {
+    height: 32px;
+  }
+}
 .menu-more {
   position: relative;
 }
@@ -3740,28 +3752,25 @@ input[type='range'] {
   z-index: 20;
 }
 /* The player card button (top right): the card's portrait and name. */
+/* The player card button: the same shape and padding as Sound and Menu beside it, with the whole
+   character standing on the left (not cropped to a circle) and the name to its right. */
 .menu-card {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  max-width: 180px;
+  gap: 8px;
+  max-width: 200px;
 }
-.menu-card img,
-.menu-card-blank {
+.menu-card-sprite {
   flex: none;
-  width: 22px;
-  height: 22px;
-  margin: -4px 0 -4px -4px;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.12);
+  width: auto;
+  height: 26px;
+  /* Taller than the text, so it reaches into the padding without making the button taller. */
+  margin: -4px 0;
+  object-fit: contain;
   image-rendering: pixelated;
 }
-.menu-card-blank {
-  display: grid;
-  place-items: center;
-  font: 400 13px var(--head);
-}
-.menu-card span:last-child {
+.menu-card-name {
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -3831,8 +3840,11 @@ input[type='range'] {
   line-height: 1.35;
 }
 @media (max-height: 500px) {
-  .menu-card span:last-child {
-    display: none;
+  .menu-card {
+    max-width: 160px;
+  }
+  .menu-card-sprite {
+    height: 22px;
   }
   .pc-stage {
     width: 96px;

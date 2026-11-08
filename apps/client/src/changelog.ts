@@ -26,6 +26,19 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: '2026-11-08-card-button',
+    date: 'Nov 8, 2026',
+    title: 'Your player card button',
+    features: [
+      {
+        tag: 'better',
+        title: 'Your character on the title screen',
+        text: 'The player card button on the title screen matches Sound and Menu and shows your whole character with your name. New players start with a friendly name and character, which they can change any time.',
+      },
+    ],
+    extras: ["When the round chip leaves, the player's turn chip glides up into its place"],
+  },
+  {
     id: '2026-11-08-bar-blur-fix',
     date: 'Nov 8, 2026',
     title: 'Fewer blurs',

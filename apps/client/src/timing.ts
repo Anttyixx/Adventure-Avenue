@@ -63,6 +63,8 @@ export const TIMING = {
   cardStack: 504,
   /** The wait between one card and the next as they gather or fan out (a ripple). */
   cardStackStagger: 26,
+  /** Banners (the round chip, whose turn it is) gliding up when the one above them leaves. */
+  bannerShift: 360,
   /** A stack tapped open into a list: how long it stays open. */
   stackOpen: 3000,
   /** Smart stack: how long a card that changed stays out of the stack after its last change. */

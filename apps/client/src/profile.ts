@@ -28,6 +28,39 @@ export function loadProfile(): Profile {
   }
 }
 
+/** Friendly names for players who haven't picked one (bots, extra players, a new player card). */
+export const PLAYER_NAMES = [
+  'Rosa',
+  'Milo',
+  'Juno',
+  'Pip',
+  'Kai',
+  'Nell',
+  'Otto',
+  'Ivy',
+  'Bram',
+  'Wren',
+  'Theo',
+  'Luz',
+  'Remy',
+  'Ada',
+  'Finn',
+  'Suki',
+];
+
+/**
+ * The player card, with a name and a character always set: the first time (nothing chosen yet)
+ * it gets a random friendly name and character, saved so they stay the same until changed.
+ */
+export function ensureProfile(): Profile {
+  const card = loadProfile();
+  const patch: Partial<Profile> = {};
+  if (!card.name) patch.name = PLAYER_NAMES[Math.floor(Math.random() * PLAYER_NAMES.length)];
+  if (!card.look) patch.look = CHARACTERS[Math.floor(Math.random() * CHARACTERS.length)].id;
+  if (patch.name || patch.look) saveProfile(patch);
+  return { ...card, ...patch };
+}
+
 /** Change part of the player card. */
 export function saveProfile(patch: Partial<Profile>) {
   try {

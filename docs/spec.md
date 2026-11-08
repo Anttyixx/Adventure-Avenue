@@ -867,7 +867,9 @@ the button holds the name field and the reason. **Continue** (only with a saved 
 green row centered under it (narrower and shorter than Play) showing the round, board and how long ago it was saved, with a colored dot per
 player. **Rejoin** is a small chip in the top left corner ("Rejoin KQZD, as Milo, 5 min ago") while
 this device has an online game to go back to. In the top right corner sit the **player card**
-button (the card's portrait and name; just the portrait on phones), the **Sound** button and, to
+button (the same shape as Sound and Menu: the card's whole character on the left, its name on the
+right; the first time the game opens it gets a random friendly name and character, saved until
+changed), the **Sound** button and, to
 its right, **Menu**. The **player card** (`profile.ts`, kept on this device) is the name and
 character this device plays as: its button opens a pop-up with the character on its colored spot
 (tap it to open the character picker) beside a name box (up to 12 characters, the same characters

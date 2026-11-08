@@ -1577,7 +1577,26 @@ export class Hud {
     const el = h('div', { class: 'banner', style: color ? `--bc:${color}` : '' }, text);
     this.bannerLayer.append(el);
     setTimeout(() => el.classList.add('out'), ms);
-    setTimeout(() => el.remove(), ms + 500);
+    setTimeout(() => this.dropBanner(el), ms + 500);
+  }
+
+  /**
+   * Take a faded banner out of the column. The banners still showing (the player's turn chip
+   * under the round chip, say) glide up into the space it leaves instead of jumping there.
+   */
+  private dropBanner(el: HTMLElement) {
+    const rest = [...this.bannerLayer.children].filter((x) => x !== el) as HTMLElement[];
+    const before = rest.map((x) => x.getBoundingClientRect().top);
+    el.remove();
+    if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    rest.forEach((x, i) => {
+      const dy = before[i] - x.getBoundingClientRect().top;
+      if (Math.abs(dy) > 0.5)
+        x.animate([{ translate: `0 ${dy}px` }, { translate: '0 0' }], {
+          duration: T.bannerShift,
+          easing: 'cubic-bezier(0.2, 0.8, 0.2, 1)',
+        });
+    });
   }
 }
 

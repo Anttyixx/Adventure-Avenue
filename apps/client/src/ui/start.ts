@@ -20,7 +20,7 @@ import {
 import { boardThumb } from './thumb';
 import { BUILT_IN, getBoard, listBoards } from '../boardstore';
 import { freeCharacter } from '../sprites';
-import { NAME_MAX, cleanName, loadProfile } from '../profile';
+import { NAME_MAX, PLAYER_NAMES, cleanName, loadProfile } from '../profile';
 import { nameText } from './marquee';
 import { charButton, pickCharacter } from './charpick';
 import { loadSave } from '../save';
@@ -33,24 +33,7 @@ import { closeSoundPopover, soundButton } from './soundpanel';
 import { sound } from '../audio';
 import { clear, h } from './dom';
 
-const NAMES = [
-  'Rosa',
-  'Milo',
-  'Juno',
-  'Pip',
-  'Kai',
-  'Nell',
-  'Otto',
-  'Ivy',
-  'Bram',
-  'Wren',
-  'Theo',
-  'Luz',
-  'Remy',
-  'Ada',
-  'Finn',
-  'Suki',
-];
+const NAMES = PLAYER_NAMES;
 /** A friendly random name (for joining before a name has been typed). */
 export function randomName(): string {
   return NAMES[Math.floor(Math.random() * NAMES.length)];

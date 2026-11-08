@@ -655,6 +655,9 @@ if (!(await ask(`Delete ${d.name}?`, 'Its 4 properties will be removed from the 
 
 - A pill near the top center: Lilita 26px, glass, 3px border in the meaning color. Rises in, fades
   up and out. One short line: "Round 5", "Rosa's turn", "Bay Market stock up! 12G → 14G".
+- Banners stack in a column (8px apart). When one leaves, the ones still showing glide up into
+  its place (`hud.dropBanner`: `T.bannerShift` 360ms, `cubic-bezier(0.2, 0.8, 0.2, 1)`, on
+  `translate` so it doesn't fight the rise-in or fade-out) instead of jumping there.
 
 ### 5.17 Tooltip
 
@@ -764,7 +767,10 @@ if (!(await ask(`Delete ${d.name}?`, 'Its 4 properties will be removed from the 
   back yet is faded with a red "AWAY" pill (`.seat-away`) beside the tag. Open seats (a CPU
   plays them unless a friend joins) are not shown.
 - **Player card** (main menu, `.menu-card` + `openPlayerCard`): a `.menu-sound` button in the top
-  right beside Sound (round 22px portrait + name; portrait only on phones). Its pop-up is a
+  right beside Sound, the same shape and height as Sound and Menu (37px, 32px on phones; all three
+  `.menu-top > .btn`): the whole character (`bodyURL`, 26px tall, 22px on phones, never cropped
+  to a circle) then the name (ellipsis past 200px). Never blank: `ensureProfile` gives a first
+  visit a random friendly name and character. Its pop-up is a
   `.modal.player-card` (same frame as the Menu pop-up): the character on a spot in a tile like a
   seat card (`.pc-stage`, gold-free, the seat color's top edge) beside a labeled name input and a
   muted hint; Done in the head. No Save button: changes save as they are made.

@@ -112,7 +112,7 @@ const rnd = (n: number) => Math.floor(Math.random() * n);
  * Controls for UI elements that were just added or changed: they shake once and glow so they
  * are easy to find. Update this list with each change.
  */
-const RECENT = new Set(['Action bar: too many choices', 'Buy stock']);
+const RECENT = new Set(['Round then turn banners', 'Main menu (no save)', 'Player card']);
 
 /** Which board the lab plays on: Town (square) or Twin Lakes (hex), remembered per browser. */
 const LAB_BOARD_KEY = 'aa-lab-board';
@@ -842,6 +842,11 @@ export async function openLab(app: HTMLElement, section?: string) {
       s,
       btn('Turn banner', () => hud.banner(`${cur().name}'s turn`, PLAYER_COLORS[cur().color], 1300)),
       btn('Round banner', () => hud.banner(`Round ${G.round}`, '#ffd166', 1400)),
+      // The round chip leaves first: the turn chip under it glides up into its place.
+      btn('Round then turn banners', () => {
+        hud.banner(`Round ${G.round}`, '#ffd166', 900);
+        hud.banner(`${cur().name}'s turn`, PLAYER_COLORS[cur().color], 2600);
+      }),
       btn('Promotion banner', () => {
         board.confetti(cur().id);
         hud.banner(
