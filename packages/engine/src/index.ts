@@ -17,6 +17,7 @@ export { CORAL_ISLE, CROSSROADS, HARBOR, TWIN_LAKES } from './boards/maps';
 
 export * from './headless';
 export * from './boards/format';
+export { convertPortalTiles } from './boards/portal-tiles';
 
 export * from './transport';
 

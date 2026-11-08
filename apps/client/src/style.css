@@ -11569,3 +11569,37 @@ button.char-btn:hover img {
   outline: none;
   border-color: var(--accent);
 }
+/* Board builder portal panel (editor.ts `gatePanel`): the portals a portal links to, as rows
+   that select that portal (a gold dot, the tile and its place, the side on the right). */
+.ed-gate-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.ed-gate-row {
+  --lc: var(--accent);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid var(--glass-line);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.05);
+  color: #fff;
+  font: 700 13px var(--body);
+  text-align: left;
+  cursor: pointer;
+}
+.ed-gate-row:hover {
+  border-color: var(--accent);
+}
+.ed-gate-row span {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.ed-gate-row small {
+  flex: none;
+  color: var(--muted);
+  font-weight: 600;
+}

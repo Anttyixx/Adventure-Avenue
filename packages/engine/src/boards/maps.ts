@@ -1,6 +1,7 @@
 import { connectTransports } from '../transport';
 import type { BoardDef, BoardLayout, BoardSquareDef, District, SquareType } from '../types';
 import { autoEdges } from './format';
+import { convertPortalTiles } from './portal-tiles';
 
 /**
  * Built-in boards drawn as text maps, one character per grid cell. Neighboring cells are linked
@@ -125,7 +126,8 @@ export function fromMap({ id, name, layout, districts, map, warps = [], portals 
   });
   connectTransports({ squares } as BoardDef);
 
-  return {
+  // Built-in maps still mark portals as tiles; they become portal links.
+  return convertPortalTiles({
     id,
     name,
     layout,
@@ -135,7 +137,7 @@ export function fromMap({ id, name, layout, districts, map, warps = [], portals 
     squares,
     edges: autoEdges(squares, new Set(), layout),
     bank: squares.findIndex((s) => s.t === 'bank'),
-  };
+  });
 }
 
 /** The original board, grown: a ring of shops with the bank on the main road through the middle. */

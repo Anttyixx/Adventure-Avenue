@@ -5,6 +5,22 @@ import { boardFromFile, boardToFile, validateBoard } from '../src/boards/format'
 import { Game } from '../src/engine';
 import { cpuIO, cpuSeats, simulate } from '../src/headless';
 import { newGame } from '../src/setup';
+import type { BoardDef } from '../src/types';
+
+/** Steps by road (portal links left out) from `start` to every tile it can reach. */
+function roadDistances(board: BoardDef, start: number) {
+  const dist = new Map([[start, 0]]);
+  const queue = [start];
+  for (const id of queue)
+    for (const [a, b] of board.edges) {
+      const next = a === id ? b : b === id ? a : -1;
+      if (next >= 0 && !dist.has(next)) {
+        dist.set(next, dist.get(id)! + 1);
+        queue.push(next);
+      }
+    }
+  return dist;
+}
 
 for (const board of [CROSSGATE_GARDENS, PRISM_JUNCTION, RETURN_RIDGE])
   describe(board.name, () => {
@@ -48,28 +64,18 @@ for (const board of [CROSSGATE_GARDENS, PRISM_JUNCTION, RETURN_RIDGE])
       }
     });
 
-    it('makes each portal a substantial shortcut, with reciprocal links surviving export', () => {
-      const G = state();
-      const portals = G.nodes.filter((s) => s.t === 'portal');
-      expect(portals).toHaveLength(8);
-      for (const portal of portals) {
-        expect(G.nodes[portal.link!].link).toBe(portal.id);
-        const dist = new Map([[portal.id, 0]]),
-          queue = [portal.id];
-        for (const id of queue)
-          for (const next of G.nodes[id].nb)
-            if (!dist.has(next)) {
-              dist.set(next, dist.get(id)! + 1);
-              queue.push(next);
-            }
-        expect(dist.get(portal.link!)).toBeGreaterThanOrEqual(8);
-        expect(dist.size).toBe(G.nodes.length); // Roads remain connected independently of the gimmick.
+    it('makes each portal link a substantial shortcut that survives export', () => {
+      const links = board.portalLinks ?? [];
+      expect(links).toHaveLength(4);
+      expect(board.squares.some((s) => s.t === 'portal')).toBe(false);
+      for (const link of links) {
+        const dist = roadDistances(board, link.a);
+        expect(dist.get(link.b)).toBeGreaterThanOrEqual(6);
+        expect(dist.size).toBe(board.squares.length); // Roads stay connected without the portals.
       }
       const restored = boardFromFile(JSON.parse(JSON.stringify(boardToFile(board))), 'copy').board!;
       expect(validateBoard(restored).errors).toEqual([]);
-      expect(restored.squares.filter((s) => s.t === 'portal')).toEqual(
-        board.squares.filter((s) => s.t === 'portal'),
-      );
+      expect(restored.portalLinks).toEqual(board.portalLinks);
     });
 
     it('can visit every tile and return to the bank under automatic portal/no-turn-back rules', () => {
@@ -108,22 +114,22 @@ for (const board of [CROSSGATE_GARDENS, PRISM_JUNCTION, RETURN_RIDGE])
       expect(returns.size).toBe(seen.size);
     });
 
-    it('offers routes that continue walking after a portal jump', () => {
+    it('offers routes that continue walking after going through a portal', () => {
       const G = state(),
         game = new Game(
           G,
           cpuIO(() => G),
         ),
         p = G.players[0];
-      for (const portal of G.nodes.filter((s) => s.t === 'portal')) {
-        p.node = portal.nb[0];
-        p.prev = -1;
-        expect(
-          game
-            .destinations(p, 2)
-            .some((r) => r.path[0] === portal.id && r.path[1] === portal.link && r.path.length === 3),
-        ).toBe(true);
-      }
+      for (const link of board.portalLinks ?? [])
+        for (const [from, to] of [
+          [link.a, link.b],
+          [link.b, link.a],
+        ]) {
+          p.node = from;
+          p.prev = -1;
+          expect(game.destinations(p, 2).some((r) => r.path[0] === to && r.path.length === 2)).toBe(true);
+        }
     });
 
     it('finishes matches at the default goal with 2–5 players and both rule sets', async () => {
@@ -167,33 +173,15 @@ it('rejects mistyped or reused portal endpoints in authored maps', () => {
   ).toThrow(/invalid portal pair/);
 });
 
-it('has eight districts on Prism Junction and returns dead-end portals two steps before the bank', () => {
+it('has eight districts on Prism Junction and portals from Return Ridge branch tips to the bank', () => {
   expect(PRISM_JUNCTION.districts).toHaveLength(8);
-  const G = newGame({
-    rules: 'standard',
-    target: 10000,
-    roundCap: 0,
-    seats: cpuSeats(),
-    seed: 42,
-    board: RETURN_RIDGE,
-  });
-  const bank = G.nodes.find((n) => n.t === 'bank')!;
-  const distance = (start: number) => {
-    const dist = new Map([[start, 0]]),
-      queue = [start];
-    for (const id of queue)
-      for (const next of G.nodes[id].nb)
-        if (!dist.has(next)) {
-          dist.set(next, dist.get(id)! + 1);
-          queue.push(next);
-        }
-    return dist.get(bank.id)!;
-  };
-  const ends = G.nodes.filter((n) => n.nb.length === 1 && distance(n.id) > 3);
-  expect(ends).toHaveLength(4);
-  for (const end of ends) {
-    expect(end.t).toBe('portal');
-    expect(distance(end.link!)).toBe(2);
+  const links = RETURN_RIDGE.portalLinks ?? [];
+  expect(links).toHaveLength(4);
+  const fromBank = roadDistances(RETURN_RIDGE, RETURN_RIDGE.bank);
+  for (const link of links) {
+    const [near, far] = [link.a, link.b].sort((x, y) => fromBank.get(x)! - fromBank.get(y)!);
+    expect(fromBank.get(near)).toBeLessThanOrEqual(2);
+    expect(fromBank.get(far)).toBeGreaterThan(3);
   }
 });
 
@@ -211,13 +199,7 @@ it('keeps Return Ridge compact, with no change suits, eight roll-ons and suits a
   expect(suits).toHaveLength(4);
   for (const suit of suits) {
     const id = RETURN_RIDGE.squares.indexOf(suit);
-    expect(
-      RETURN_RIDGE.edges.some(
-        ([a, b]) =>
-          (a === id && RETURN_RIDGE.squares[b].t === 'portal') ||
-          (b === id && RETURN_RIDGE.squares[a].t === 'portal'),
-      ),
-    ).toBe(true);
+    expect((RETURN_RIDGE.portalLinks ?? []).some((l) => l.a === id || l.b === id)).toBe(true);
   }
 });
 

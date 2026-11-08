@@ -1,4 +1,4 @@
-import { nextSteps, transportColor } from '@aa/engine';
+import { neighborCells, nextSteps, transportColor, type PortalWay } from '@aa/engine';
 import { motelFee } from './names';
 /**
  * The HD board: a 1300 x 800 logical canvas with 100-unit squares, scaled to the container
@@ -1728,10 +1728,11 @@ export function paintBoard(
   if (background) paintGrass(ctx);
   drawScenery(ctx, G, decorations);
   for (const sq of G.nodes) drawSquare(ctx, G, sq);
-  // Portal links: a swirling ring on each end's side, both ends in the pair's color.
-  for (const link of portalPairs(G)) {
-    drawPortalRing(ctx, portalPoint(G, G.nodes[link.a], link.sa), link.color);
-    drawPortalRing(ctx, portalPoint(G, G.nodes[link.b], link.sb), link.color);
+  // Portals: a ring beside each tile side with a portal link, colored by the portals it joins.
+  for (const gate of portalGates(G)) {
+    const sq = G.nodes[gate.node];
+    const v = sideVector(G.layout, sq.x, sq.y, gate.side);
+    drawPortalRing(ctx, portalPoint(G, sq, gate.side), gate.color, gate.way, Math.atan2(v.y, v.x));
   }
 }
 
@@ -1753,23 +1754,39 @@ export function portalPoint(
   return { x: c.x + v.x * k, y: c.y + v.y * k };
 }
 
-/** Every portal link once: its two squares, their sides and the pair's ring color. */
-export function portalPairs(G: GameState) {
-  const out: { a: number; b: number; sa: number; sb: number; color: string }[] = [];
+/**
+ * Every portal once (a tile side with portal links): what it lets players do, the tiles it
+ * leads to, and its color, shared by every portal it joins (an exit and all its entrances).
+ */
+export function portalGates(G: GameState) {
+  type Gate = { node: number; side: number; way: PortalWay; to: number[]; group: string };
+  const gates = new Map<string, Gate>();
+  const keyOf = (node: number, side: number) => `${node}:${side}`;
   for (const sq of G.nodes)
     for (const p of sq.portals ?? []) {
-      if (p.to < sq.id) continue;
-      const back = G.nodes[p.to]?.portals?.find((q) => q.to === sq.id);
-      if (!back) continue;
-      out.push({
-        a: sq.id,
-        b: p.to,
-        sa: p.side,
-        sb: back.side,
-        color: PORTAL_LINK_COLORS[out.length % PORTAL_LINK_COLORS.length],
-      });
+      const key = keyOf(sq.id, p.side);
+      const gate = gates.get(key) ?? { node: sq.id, side: p.side, way: p.way ?? 'both', to: [], group: key };
+      gate.to.push(p.to);
+      gates.set(key, gate);
     }
-  return out;
+  // Join each portal with the ones it links to, so a whole group shares one color.
+  const root = (key: string): string => {
+    const g = gates.get(key)!;
+    return g.group === key ? key : (g.group = root(g.group));
+  };
+  for (const gate of gates.values())
+    for (const to of gate.to) {
+      const back = G.nodes[to]?.portals?.find((q) => q.to === gate.node);
+      if (!back || !gates.has(keyOf(to, back.side))) continue;
+      const [x, y] = [root(keyOf(gate.node, gate.side)), root(keyOf(to, back.side))];
+      if (x !== y) gates.get(y)!.group = x;
+    }
+  const colors = new Map<string, string>();
+  return [...gates.values()].map((g) => {
+    const group = root(keyOf(g.node, g.side));
+    if (!colors.has(group)) colors.set(group, PORTAL_LINK_COLORS[colors.size % PORTAL_LINK_COLORS.length]);
+    return { node: g.node, side: g.side, way: g.way, to: g.to, color: colors.get(group)! };
+  });
 }
 
 /** True when `a` and `b` are joined by a portal link rather than a road. */
@@ -1777,10 +1794,17 @@ export const isPortalLink = (G: GameState, a: number, b: number) =>
   !!G.nodes[a]?.portals?.some((p) => p.to === b);
 
 /**
- * A portal link's ring: a colored disc with a dark core and two white swirl arcs, ringed in
- * white so it reads on grass and roads.
+ * A portal's ring: a colored disc with a 3px white edge and a navy core. The core shows what the
+ * portal does: two white swirl arcs (two-way), or a white arrow pointing into the portal
+ * (entrance) or out of it toward its tile (exit). `angle` points from the tile out to the ring.
  */
-export function drawPortalRing(ctx: CanvasRenderingContext2D, at: { x: number; y: number }, color: string) {
+export function drawPortalRing(
+  ctx: CanvasRenderingContext2D,
+  at: { x: number; y: number },
+  color: string,
+  way: PortalWay = 'both',
+  angle = 0,
+) {
   ctx.save();
   ctx.translate(at.x, at.y);
   ctx.beginPath();
@@ -1791,16 +1815,27 @@ export function drawPortalRing(ctx: CanvasRenderingContext2D, at: { x: number; y
   ctx.strokeStyle = '#fff';
   ctx.stroke();
   ctx.beginPath();
-  ctx.arc(0, 0, 10, 0, Math.PI * 2);
+  ctx.arc(0, 0, 10.5, 0, Math.PI * 2);
   ctx.fillStyle = '#16213f';
   ctx.fill();
-  ctx.lineWidth = 2.5;
   ctx.lineCap = 'round';
-  ctx.strokeStyle = 'rgba(255,255,255,0.9)';
-  for (const start of [0, Math.PI]) {
+  ctx.strokeStyle = 'rgba(255,255,255,0.95)';
+  if (way === 'both') {
+    ctx.lineWidth = 2.5;
+    for (const start of [0, Math.PI]) {
+      ctx.beginPath();
+      ctx.arc(0, 0, 6.5, start, start + Math.PI * 0.75);
+      ctx.stroke();
+    }
+  } else {
+    ctx.rotate(way === 'in' ? angle : angle + Math.PI);
+    ctx.fillStyle = '#fff';
     ctx.beginPath();
-    ctx.arc(0, 0, 6.5, start, start + Math.PI * 0.75);
-    ctx.stroke();
+    ctx.moveTo(6, 0);
+    ctx.lineTo(-3.5, -6.5);
+    ctx.lineTo(-3.5, 6.5);
+    ctx.closePath();
+    ctx.fill();
   }
   ctx.restore();
 }
@@ -1899,12 +1934,26 @@ function drawBed(ctx: CanvasRenderingContext2D, x: number, y: number, w: number,
 /** Custom boards: trees, flower beds and small ponds in the empty cells, the same every time. */
 function drawCustomDecor(ctx: CanvasRenderingContext2D, G: GameState) {
   const used = new Set(G.nodes.map((n) => `${n.x},${n.y}`));
+  // Cells a portal opens onto stay clear, so nothing grows over the portal.
+  const portalCells = new Set(
+    G.nodes.flatMap((n) =>
+      (n.portals ?? []).map((p) => {
+        const [x, y] = neighborCells(G.layout, n.x, n.y)[p.side] ?? [n.x, n.y];
+        return `${x},${y}`;
+      }),
+    ),
+  );
   const r = seeded(97 + (G.cols ?? 12) * 31 + (G.rows ?? 7) * 17 + G.nodes.length);
   for (let y = 0; y < (G.rows ?? 7); y++) {
     for (let x = 0; x < (G.cols ?? 12); x++) {
       if (used.has(`${x},${y}`)) continue;
       const { x: cx, y: cy } = cellCenter(G.layout, x, y);
       const roll = r();
+      if (portalCells.has(`${x},${y}`)) {
+        // Draw nothing, but use the same random numbers so the rest of the scenery stays put.
+        if (roll >= 0.13 && roll < 0.5) for (let k = 0; k < 3; k++) r();
+        continue;
+      }
       if (roll < 0.05) {
         ctx.fillStyle = '#5aa0d8';
         ctx.beginPath();
@@ -1971,71 +2020,73 @@ export function paintGrass(ctx: CanvasRenderingContext2D) {
   ctx.restore();
 }
 
-/** Road colors: border and paving for two-way roads, and for one-way roads (blue paving). */
-const ROAD = { edge: '#c9b07a', fill: '#efe0b6' };
-const ONE_WAY_ROAD = { edge: '#3d5f8f', fill: '#7fa8dc', marks: '#ffffff' };
+/** Road colors: the border, the paving and the arrow painted on one-way roads. */
+const ROAD = { edge: '#c9b07a', fill: '#efe0b6', arrow: '#a07b3f' };
 
 /**
- * Every road piece: between neighboring tiles, and from a tile out to each of its portal rings.
- * `dir` is 1 when players may only go from -> to, -1 for only to -> from, 0 for both ways.
+ * Every road piece: between neighboring tiles, and from a tile out to each of its portals.
+ * `dir` is 1 when players may only go from -> to, -1 for only to -> from, 0 for both ways;
+ * `at` is where along the piece a one-way arrow goes (the middle of the part that shows).
  */
 function roadPieces(G: GameState) {
-  const pieces: { from: { x: number; y: number }; to: { x: number; y: number }; dir: number }[] = [];
-  const only = (a: number, b: number) =>
-    G.nodes[b]?.noGo?.includes(a) ? -1 : G.nodes[a]?.noGo?.includes(b) ? 1 : 0;
+  type Piece = { from: { x: number; y: number }; to: { x: number; y: number }; dir: number; at: number };
+  const pieces: Piece[] = [];
+  const blocked = (a: number, b: number) => !!G.nodes[a]?.noGo?.includes(b);
   for (const sq of G.nodes) {
     const a = squareCenter(sq, G.layout);
     for (const n of sq.nb) {
       if (n < sq.id || isPortalLink(G, sq.id, n)) continue;
-      // only(sq, n) is 1 when sq can't go to n, so the way is n -> sq.
-      pieces.push({ from: a, to: squareCenter(G.nodes[n], G.layout), dir: -only(sq.id, n) });
+      const dir = blocked(n, sq.id) ? 1 : blocked(sq.id, n) ? -1 : 0;
+      pieces.push({ from: a, to: squareCenter(G.nodes[n], G.layout), dir, at: 0.5 });
     }
-    for (const p of sq.portals ?? [])
-      pieces.push({ from: a, to: portalPoint(G, sq, p.side), dir: -only(sq.id, p.to) });
+    // A portal's short road: from the tile's edge to the ring's edge it shows, about 2/3 out.
+    const seen = new Set<number>();
+    for (const p of sq.portals ?? []) {
+      if (seen.has(p.side)) continue;
+      seen.add(p.side);
+      const dir = p.way === 'in' ? 1 : p.way === 'out' ? -1 : 0;
+      pieces.push({ from: a, to: portalPoint(G, sq, p.side), dir, at: 0.68 });
+    }
   }
   return pieces;
 }
 
 /**
- * Roads: a sandy two-way road, or a blue one-way road with white chevrons painted along it,
- * pointing the way players may go (centered on the gap between tiles, where it shows).
+ * Roads: sandy, with an edge. A one-way road is the same road with a darker arrow painted on it
+ * (in the gap between the tiles, where the road shows), pointing the way players may go.
  */
 function drawRoads(ctx: CanvasRenderingContext2D, G: GameState) {
   const pieces = roadPieces(G);
   ctx.save();
   ctx.lineCap = 'round';
-  for (const [w, key] of [
-    [44, 'edge'],
-    [36, 'fill'],
+  for (const [w, color] of [
+    [44, ROAD.edge],
+    [36, ROAD.fill],
   ] as const)
     for (const p of pieces) {
-      ctx.strokeStyle = (p.dir ? ONE_WAY_ROAD : ROAD)[key];
+      ctx.strokeStyle = color;
       ctx.lineWidth = w;
       ctx.beginPath();
       ctx.moveTo(p.from.x, p.from.y);
       ctx.lineTo(p.to.x, p.to.y);
       ctx.stroke();
     }
-  ctx.strokeStyle = ONE_WAY_ROAD.marks;
-  ctx.lineWidth = 5;
-  ctx.lineJoin = 'round';
+  ctx.fillStyle = ROAD.arrow;
   for (const p of pieces) {
     if (!p.dir) continue;
-    const [from, to] = p.dir > 0 ? [p.from, p.to] : [p.to, p.from];
-    const len = Math.hypot(to.x - from.x, to.y - from.y);
+    const x = p.from.x + (p.to.x - p.from.x) * p.at;
+    const y = p.from.y + (p.to.y - p.from.y) * p.at;
+    const angle = Math.atan2(p.to.y - p.from.y, p.to.x - p.from.x) + (p.dir < 0 ? Math.PI : 0);
     ctx.save();
-    ctx.translate(from.x, from.y);
-    ctx.rotate(Math.atan2(to.y - from.y, to.x - from.x));
-    // Chevrons every 18 units, one always in the middle of the gap between two tiles.
-    const mid = p.to === p.from ? 0 : len / 2;
-    for (let x = mid - 36; x <= mid + 36; x += 18) {
-      if (x < 6 || x > len - 6) continue;
-      ctx.beginPath();
-      ctx.moveTo(x - 4, -8);
-      ctx.lineTo(x + 4, 0);
-      ctx.lineTo(x - 4, 8);
-      ctx.stroke();
-    }
+    ctx.translate(x, y);
+    ctx.rotate(angle);
+    ctx.beginPath();
+    ctx.moveTo(7, 0);
+    ctx.lineTo(-6, -12);
+    ctx.lineTo(-2, 0);
+    ctx.lineTo(-6, 12);
+    ctx.closePath();
+    ctx.fill();
     ctx.restore();
   }
   ctx.restore();

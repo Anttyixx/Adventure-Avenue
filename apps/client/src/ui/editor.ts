@@ -16,6 +16,7 @@ import {
   autoEdges,
   edgeKey,
   neighborCells,
+  type PortalWay,
   newGame,
   validateBoard,
   type BoardCheck,
@@ -26,7 +27,6 @@ import {
   type SquareType,
 } from '@aa/engine';
 import {
-  drawPortalRing,
   drawRingBurst,
   drawRoadArrow,
   drawTileGlow,
@@ -122,11 +122,6 @@ const PALETTE: { group: string; items: { tool: Tool; label: string; hint: string
       { tool: 'warp', label: 'Warp', hint: 'Landing here warps you to its partner. Use them in pairs.' },
       { tool: 'cannon', label: 'Cannon', hint: 'Fires you to another player.' },
       { tool: 'taxi', label: 'Taxi', hint: 'Ride to any special square and use it.' },
-      {
-        tool: 'portal',
-        label: 'Portal',
-        hint: 'Teleport on passing, then keep moving. Link to a matching portal or the bank.',
-      },
     ],
   },
 ];
@@ -502,26 +497,30 @@ function centerInGrid(b: BoardDef) {
   return b;
 }
 
-/** A free tile side the Links tool can put a portal on: a dashed gold ring with a plus. */
-function drawSideMarker(ctx: CanvasRenderingContext2D, at: { x: number; y: number }) {
+/**
+ * A free tile side in the Links tool, where a portal can go: a faint portal (a see-through purple
+ * disc with a dashed white ring and white swirls), or a gold one when it's the picked start.
+ */
+function drawSideMarker(ctx: CanvasRenderingContext2D, at: { x: number; y: number }, picked = false) {
   ctx.save();
   ctx.translate(at.x, at.y);
   ctx.beginPath();
   ctx.arc(0, 0, 15, 0, Math.PI * 2);
-  ctx.fillStyle = 'rgba(22, 33, 63, 0.75)';
+  ctx.fillStyle = picked ? '#ffd166' : 'rgba(139, 92, 246, 0.75)';
   ctx.fill();
-  ctx.setLineDash([5, 4]);
-  ctx.lineWidth = 3;
-  ctx.strokeStyle = '#ffd166';
+  if (!picked) ctx.setLineDash([5, 4]);
+  ctx.lineWidth = 2.5;
+  ctx.strokeStyle = '#fff';
   ctx.stroke();
   ctx.setLineDash([]);
-  ctx.beginPath();
-  ctx.moveTo(-6, 0);
-  ctx.lineTo(6, 0);
-  ctx.moveTo(0, -6);
-  ctx.lineTo(0, 6);
   ctx.lineCap = 'round';
-  ctx.stroke();
+  ctx.lineWidth = 2.5;
+  ctx.strokeStyle = picked ? '#16213f' : 'rgba(255, 255, 255, 0.9)';
+  for (const start of [0, Math.PI]) {
+    ctx.beginPath();
+    ctx.arc(0, 0, 6.5, start, start + Math.PI * 0.75);
+    ctx.stroke();
+  }
   ctx.restore();
 }
 
@@ -570,6 +569,7 @@ export function openEditor(
   const isPlacing = () => tool !== 'select' && tool !== 'pan' && tool !== 'erase' && tool !== 'links';
   const clearSelection = () => {
     portalPick = null;
+    selectedGate = null;
     choosingLink = false;
     selected = null;
     selection.clear();
@@ -596,10 +596,15 @@ export function openEditor(
    */
   let cuts = new Set<string>();
   let oneWays = new Set<string>();
-  /** Portal links by grid position: tile `a`'s side `sa` opens onto tile `b`'s side `sb`. */
-  let gates: { a: string; sa: number; b: string; sb: number }[] = [];
-  /** Adding a portal link: the tile tapped first, then the side picked on it. */
-  let portalPick: { cell: string; side: number | null } | null = null;
+  /**
+   * Portal links by grid position: tile `a`'s side `sa` opens onto tile `b`'s side `sb`; one way
+   * means `a` is an entrance and `b` an exit.
+   */
+  let gates: { a: string; sa: number; b: string; sb: number; oneWay?: boolean }[] = [];
+  /** A portal (a tile side): where a new portal link starts, and the one shown in the side panel. */
+  type GateSpot = { cell: string; side: number };
+  let portalPick: GateSpot | null = null;
+  let selectedGate: GateSpot | null = null;
   const cellKey = (c: { x: number; y: number }) => `${c.x},${c.y}`;
   /** Read the removed and one-way links from the board (on opening it, undo or revert). */
   const readLinks = () => {
@@ -617,7 +622,15 @@ export function openEditor(
     );
     gates = (board.portalLinks ?? [])
       .filter((l) => board.squares[l.a] && board.squares[l.b])
-      .map((l) => ({ a: cellKey(board.squares[l.a]), sa: l.sa, b: cellKey(board.squares[l.b]), sb: l.sb }));
+      .map((l) => {
+        const a = cellKey(board.squares[l.a]);
+        const b = cellKey(board.squares[l.b]);
+        // Boards from before portal kinds kept one-way portals in `oneWay`.
+        if (oneWays.delete(`${b}>${a}`)) return { a: b, sa: l.sb, b: a, sb: l.sa, oneWay: true };
+        if (oneWays.delete(`${a}>${b}`)) return { a, sa: l.sa, b, sb: l.sb, oneWay: true };
+        return { a, sa: l.sa, b, sb: l.sb, ...(l.oneWay ? { oneWay: true } : {}) };
+      });
+    if (selectedGate && !gateLinks(selectedGate).length) selectedGate = null;
   };
   readLinks();
 
@@ -832,16 +845,26 @@ export function openEditor(
     const at = new Map(board.squares.map((sq, i) => [cellKey(sq), i]));
     for (const key of cuts) if (!key.split('|').every((c) => at.has(c))) cuts.delete(key);
     board.edges = autoEdges(board.squares, cuts, board.layout);
-    // Portal links whose tiles are gone go too.
-    gates = gates.filter((g) => at.has(g.a) && at.has(g.b));
-    const portalLinks = gates.map((g) => ({ a: at.get(g.a)!, b: at.get(g.b)!, sa: g.sa, sb: g.sb }));
+    // Portal links go when a tile is gone, or a tile is placed where a portal opens.
+    const opensOnTile = (cell: string, side: number) => {
+      const c = cellOf(cell);
+      const [x, y] = neighborCells(board.layout, c.x, c.y)[side] ?? [c.x, c.y];
+      return at.has(`${x},${y}`);
+    };
+    gates = gates.filter(
+      (g) => at.has(g.a) && at.has(g.b) && !opensOnTile(g.a, g.sa) && !opensOnTile(g.b, g.sb),
+    );
+    if (selectedGate && !gateLinks(selectedGate).length) selectedGate = null;
+    const portalLinks = gates.map((g) => ({
+      a: at.get(g.a)!,
+      b: at.get(g.b)!,
+      sa: g.sa,
+      sb: g.sb,
+      ...(g.oneWay ? { oneWay: true } : {}),
+    }));
     if (portalLinks.length) board.portalLinks = portalLinks;
     else delete board.portalLinks;
-    const linked = new Set(
-      [...board.edges, ...portalLinks.map((l) => [l.a, l.b])].map(
-        ([a, b]) => `${Math.min(a, b)}-${Math.max(a, b)}`,
-      ),
-    );
+    const linked = new Set(board.edges.map(([a, b]) => `${Math.min(a, b)}-${Math.max(a, b)}`));
     const oneWay: [number, number][] = [];
     for (const key of oneWays) {
       const [a, b] = key.split('>').map((c) => at.get(c));
@@ -914,13 +937,9 @@ export function openEditor(
         return cells ? [edgeKey(toCell(cells[0]), toCell(cells[1]))] : [];
       }),
     );
-    // One-way portal links keep their direction even when only one end moves.
-    const isGate = (cells: string[]) =>
-      gates.some((g) => (g.a === cells[0] && g.b === cells[1]) || (g.a === cells[1] && g.b === cells[0]));
     oneWays = new Set(
       [...oneWays].flatMap((key) => {
-        const parts = key.split('>');
-        const cells = isGate(parts) ? moveEach(parts) : move(parts);
+        const cells = move(key.split('>'));
         return cells ? [cells.join('>')] : [];
       }),
     );
@@ -929,6 +948,8 @@ export function openEditor(
       const ends = moveEach([g.a, g.b]);
       return ends ? [{ ...g, a: ends[0], b: ends[1] }] : [];
     });
+    portalPick = null;
+    selectedGate = null;
   };
   /** Neighboring tiles' pairs (linked or not), for the Links tool. */
   const neighborPairs = () => autoEdges(board.squares, new Set(), board.layout);
@@ -954,88 +975,273 @@ export function openEditor(
     ba: 'One way (the other way)',
     off: 'Link removed',
   };
-  // ---- portal links (Links tool)
+  // ---- portals and portal links
   const cellOf = (key: string) => {
     const [x, y] = key.split(',').map(Number);
     return { x, y };
   };
-  /** Sides of a tile a portal link could use: facing an empty cell, not already a portal. */
-  const freeSides = (cell: string) => {
-    const c = cellOf(cell);
-    if (indexAt(c.x, c.y) < 0) return [];
-    const taken = new Set(board.squares.map(cellKey));
-    return neighborCells(board.layout, c.x, c.y)
-      .map(([x, y], side) => ({ x, y, side }))
-      .filter(
-        ({ x, y, side }) =>
-          !taken.has(`${x},${y}`) &&
-          !gates.some((g) => (g.a === cell && g.sa === side) || (g.b === cell && g.sb === side)),
-      )
-      .map(({ side }) => side);
-  };
-  /** Where a portal ring (or a free side's marker) sits beside a tile. */
+  /** Where a portal (or a free side's faint portal) sits beside a tile. */
   const sidePoint = (cell: string, side: number) => {
     const c = cellOf(cell);
     const at = center(c);
     const v = sideVector(board.layout, c.x, c.y, side);
     return { x: at.x + v.x * 0.72, y: at.y + v.y * 0.72 };
   };
-  /** Free-side markers on show: the picked tile's, or every other tile's once a side is picked. */
-  const sideMarkers = () => {
-    const pick = portalPick;
-    if (!pick) return [];
-    const cells = pick.side == null ? [pick.cell] : board.squares.map(cellKey).filter((c) => c !== pick.cell);
-    return cells.flatMap((cell) =>
-      freeSides(cell).map((side) => ({ cell, side, at: sidePoint(cell, side) })),
-    );
-  };
-  const isNear = (w: { x: number; y: number }, p: { x: number; y: number }, r = 24) =>
+  const isNear = (w: { x: number; y: number }, p: { x: number; y: number }, r = 22) =>
     Math.hypot(p.x - w.x, p.y - w.y) < r;
-  /** The portal ring under a world point, if any. */
-  const gateAt = (w: { x: number; y: number }) =>
-    gates.find((g) => isNear(w, sidePoint(g.a, g.sa)) || isNear(w, sidePoint(g.b, g.sb))) ?? null;
-  /** Tap a portal ring: both ways > one way > the other way > removed (the link is deleted). */
-  const cycleGate = (g: (typeof gates)[number]) => {
-    const ab = `${g.a}>${g.b}`;
-    const ba = `${g.b}>${g.a}`;
-    snapshot();
-    if (oneWays.has(ab)) {
-      oneWays.delete(ab);
-      oneWays.add(ba);
-      say('Portal: one way (the other way)');
-    } else if (oneWays.has(ba)) {
-      oneWays.delete(ba);
-      gates = gates.filter((x) => x !== g);
-      say('Portal removed');
-    } else {
-      oneWays.add(ab);
-      say('Portal: one way');
-    }
-    changed();
+  const sameSpot = (a: GateSpot | null, b: GateSpot | null) =>
+    !!a && !!b && a.cell === b.cell && a.side === b.side;
+  /** The portal links at a portal. */
+  function gateLinks(spot: GateSpot) {
+    return gates.filter(
+      (g) => (g.a === spot.cell && g.sa === spot.side) || (g.b === spot.cell && g.sb === spot.side),
+    );
+  }
+  /** The portal at a link's other end. */
+  const otherEnd = (g: (typeof gates)[number], spot: GateSpot): GateSpot =>
+    g.a === spot.cell && g.sa === spot.side ? { cell: g.b, side: g.sb } : { cell: g.a, side: g.sa };
+  /** What a portal lets players do: enter and exit, enter only, or exit only. */
+  const wayOf = (spot: GateSpot): PortalWay => {
+    const links = gateLinks(spot);
+    if (links.some((g) => !g.oneWay)) return 'both';
+    return links.some((g) => g.a === spot.cell && g.sa === spot.side) ? 'in' : 'out';
   };
+  /** Every portal on the board, once each. */
+  const allGates = () => {
+    const out: GateSpot[] = [];
+    for (const g of gates)
+      for (const spot of [
+        { cell: g.a, side: g.sa },
+        { cell: g.b, side: g.sb },
+      ])
+        if (!out.some((o) => sameSpot(o, spot))) out.push(spot);
+    return out;
+  };
+  /** Sides of a tile that could take a portal: facing an empty cell, without a portal yet. */
+  const freeSides = (cell: string) => {
+    const c = cellOf(cell);
+    if (indexAt(c.x, c.y) < 0) return [];
+    const taken = new Set(board.squares.map(cellKey));
+    return neighborCells(board.layout, c.x, c.y)
+      .map(([x, y], side) => ({ x, y, side }))
+      .filter(({ x, y, side }) => !taken.has(`${x},${y}`) && !gateLinks({ cell, side }).length)
+      .map(({ side }) => side);
+  };
+  /** Every free side's faint portal, for the Links tool. */
+  const freeMarkers = () =>
+    board.squares.flatMap((sq) => {
+      const cell = cellKey(sq);
+      return freeSides(cell).map((side) => ({ cell, side, at: sidePoint(cell, side) }));
+    });
+  /** The portal under a world point, if any. */
+  const gateAt = (w: { x: number; y: number }) =>
+    allGates().find((g) => isNear(w, sidePoint(g.cell, g.side))) ?? null;
+  /** A tile's name and place, for the portal panel. */
+  const placeName = (cell: string) => {
+    const c = cellOf(cell);
+    const sq = board.squares[indexAt(c.x, c.y)];
+    const name =
+      sq?.t === 'bank'
+        ? 'Bank'
+        : (PALETTE.flatMap((g) => g.items).find((it) => it.tool === sq?.t)?.label ?? 'Tile');
+    return `${name} · column ${c.x + 1}, row ${c.y + 1}`;
+  };
+  const SIDE_NAMES: Record<'square' | 'hex', string[]> = {
+    square: ['right', 'left', 'bottom', 'top'],
+    hex: ['right', 'left', 'top left', 'top right', 'bottom left', 'bottom right'],
+  };
+  const sideName = (side: number) => SIDE_NAMES[board.layout === 'hex' ? 'hex' : 'square'][side] ?? 'side';
+
   /**
-   * Links tool taps that aren't on a link: pick a tile, then one of its free sides, then another
-   * tile's free side. Returns false when the tap did nothing (so a drag can look around).
+   * Links tool taps: a road link's badge changes it; a portal opens it in the side panel; a faint
+   * portal starts a portal link, and a second tap (another tile's faint portal, or an exit) ends
+   * it. Returns false when the tap hit nothing, so a drag can look around.
    */
-  const pickPortal = (w: { x: number; y: number }, cell: { x: number; y: number } | null) => {
-    const marker = sideMarkers().find((m) => isNear(w, m.at, 20));
-    if (marker && portalPick?.side == null) portalPick = { cell: marker.cell, side: marker.side };
-    else if (marker && portalPick && portalPick.side != null) {
-      snapshot();
-      gates.push({ a: portalPick.cell, sa: portalPick.side, b: marker.cell, sb: marker.side });
+  const linksTap = (w: { x: number; y: number }) => {
+    const gate = gateAt(w);
+    const free = freeMarkers().find((m) => isNear(w, m.at));
+    if (portalPick) {
+      const from = portalPick;
       portalPick = null;
-      changed();
-      say('Portal added');
+      if (free && free.cell === from.cell) {
+        if (free.side !== from.side) portalPick = { cell: free.cell, side: free.side };
+        else say('Pick a side of another tile.', true);
+      } else if (free) {
+        snapshot();
+        gates.push({ a: from.cell, sa: from.side, b: free.cell, sb: free.side });
+        selectedGate = { cell: free.cell, side: free.side };
+        changed();
+        say('Portal link added');
+        return true;
+      } else if (gate && wayOf(gate) === 'out' && gate.cell !== from.cell) {
+        // Another entrance into an existing exit.
+        snapshot();
+        gates.push({ a: from.cell, sa: from.side, b: gate.cell, sb: gate.side, oneWay: true });
+        selectedGate = { cell: from.cell, side: from.side };
+        changed();
+        say('Entrance added');
+        return true;
+      } else if (gate) {
+        portalPick = from;
+        say('That portal is already linked. Pick a faint portal, or an exit portal.', true);
+      }
+      drawInspector();
+      redraw();
       return true;
-    } else if (cell && indexAt(cell.x, cell.y) >= 0 && portalPick?.side == null) {
-      const key = cellKey(cell);
-      portalPick = freeSides(key).length ? { cell: key, side: null } : null;
-      if (!portalPick) say('That tile has no free side for a portal.', true);
-    } else if (portalPick) portalPick = null;
-    else return false;
+    }
+    if (gate) {
+      selectedGate = gate;
+    } else if (free) {
+      portalPick = { cell: free.cell, side: free.side };
+      selectedGate = null;
+    } else {
+      const pair = linkAt(w);
+      if (pair) {
+        cycleLink(pair[0], pair[1]);
+        return true;
+      }
+      if (!selectedGate) return false;
+      selectedGate = null;
+    }
     drawInspector();
     redraw();
     return true;
+  };
+  /** Select tool taps on a portal open it in the side panel. */
+  const selectTap = (w: { x: number; y: number }) => {
+    const gate = gateAt(w);
+    if (!gate) {
+      if (selectedGate) {
+        selectedGate = null;
+        drawInspector();
+      }
+      return false;
+    }
+    clearSelection();
+    selectedGate = gate;
+    drawInspector();
+    redraw();
+    return true;
+  };
+
+  /** Why a portal can't become `way` (null when it can). */
+  const wayBlocked = (spot: GateSpot, way: PortalWay): string | null => {
+    const links = gateLinks(spot);
+    const others = links.map((g) => gateLinks(otherEnd(g, spot)).length);
+    if (way === 'both' && (links.length !== 1 || others[0] !== 1))
+      return 'An exit with more than one entrance can’t be two-way.';
+    if (way === 'in' && links.length !== 1)
+      return 'An entrance leads to one exit; this portal has more links.';
+    if (way === 'out' && others.some((n) => n !== 1))
+      return 'The portal at the other end is an exit for other entrances too.';
+    return null;
+  };
+  /** Make a portal two-way, an entrance or an exit (its other ends change to match). */
+  const setWay = (spot: GateSpot, way: PortalWay) => {
+    if (wayOf(spot) === way || wayBlocked(spot, way)) return;
+    snapshot();
+    gates = gates.map((g) => {
+      if (!gateLinks(spot).includes(g)) return g;
+      const other = otherEnd(g, spot);
+      if (way === 'both') return { a: spot.cell, sa: spot.side, b: other.cell, sb: other.side };
+      if (way === 'in') return { a: spot.cell, sa: spot.side, b: other.cell, sb: other.side, oneWay: true };
+      return { a: other.cell, sa: other.side, b: spot.cell, sb: spot.side, oneWay: true };
+    });
+    changed();
+  };
+  /** Remove a portal and every portal link at it. */
+  const removeGate = (spot: GateSpot) => {
+    snapshot();
+    const links = gateLinks(spot);
+    gates = gates.filter((g) => !links.includes(g));
+    selectedGate = null;
+    changed();
+    say('Portal removed');
+  };
+
+  /** The side panel for a portal: its kind, where it leads (or comes from), and Remove. */
+  const gatePanel = (spot: GateSpot): Node[] => {
+    const way = wayOf(spot);
+    const c = cellOf(spot.cell);
+    const kindButton = (w: PortalWay, label: string) => {
+      const blocked = way === w ? null : wayBlocked(spot, w);
+      return h(
+        'button',
+        {
+          class: `seg-btn ${way === w ? 'on' : ''}`,
+          'aria-pressed': String(way === w),
+          disabled: !!blocked,
+          title: blocked ?? undefined,
+          onclick: () => setWay(spot, w),
+        },
+        label,
+      );
+    };
+    const others = gateLinks(spot).map((g) => otherEnd(g, spot));
+    const body = h(
+      'div',
+      { class: 'ed-side-body' },
+      sideSection(
+        'Kind',
+        null,
+        h(
+          'div',
+          { class: 'seg' },
+          kindButton('both', 'Two-way'),
+          kindButton('in', 'Entrance'),
+          kindButton('out', 'Exit'),
+        ),
+        h(
+          'p',
+          { class: 'hint' },
+          way === 'both'
+            ? 'Players can go in here and come out here.'
+            : way === 'in'
+              ? 'Players can only go in here. They come out at its exit.'
+              : 'Players only come out here, from its entrances. They can’t go in.',
+        ),
+      ),
+      sideSection(
+        way === 'out' ? 'Comes from' : 'Leads to',
+        others.length > 1 ? `${others.length} entrances` : null,
+        h(
+          'div',
+          { class: 'ed-gate-list' },
+          ...others.map((o) =>
+            h(
+              'button',
+              {
+                class: 'ed-gate-row',
+                onclick: () => {
+                  selectedGate = o;
+                  drawInspector();
+                  redraw();
+                },
+              },
+              h('i', { class: 'ed-link-dot' }),
+              h('span', null, placeName(o.cell)),
+              h('small', null, `${sideName(o.side)} side →`),
+            ),
+          ),
+        ),
+        way === 'out'
+          ? h('p', { class: 'hint' }, 'To add an entrance, use Links: tap a faint portal, then this exit.')
+          : null,
+      ),
+      h(
+        'div',
+        { class: 'ed-row' },
+        h('button', { class: 'btn small danger', onclick: () => removeGate(spot) }, 'Remove portal'),
+      ),
+    );
+    return [
+      sideHead('Portal', `Column ${c.x + 1} · Row ${c.y + 1} · ${sideName(spot.side)} side`, () => {
+        selectedGate = null;
+        drawInspector();
+        redraw();
+      }),
+      body,
+    ];
   };
   /** Tap a link: both ways > one way > the other way > removed > both ways. */
   const cycleLink = (a: number, b: number) => {
@@ -1312,22 +1518,27 @@ export function openEditor(
         else if (state === 'ba') drawRoadArrow(ctx, q, p);
         else drawLinkBadge(ctx, p, q, state === 'off');
       }
-      // Adding a portal: the picked tile is outlined; free sides show a dashed gold ring.
-      if (portalPick) {
-        const c = center(cellOf(portalPick.cell));
-        ctx.save();
-        tileShape(ctx, board.layout, c.x, c.y, 47, 14);
-        ctx.lineWidth = 4 / scale;
-        ctx.strokeStyle = '#ffd166';
-        ctx.stroke();
-        ctx.restore();
-        if (portalPick.side != null)
-          drawPortalRing(ctx, sidePoint(portalPick.cell, portalPick.side), '#ffd166');
-        for (const m of sideMarkers()) drawSideMarker(ctx, m.at);
-      }
+      // Every free side shows a faint portal to start a portal link from (gold once picked).
+      for (const m of freeMarkers())
+        drawSideMarker(ctx, m.at, !!portalPick && m.cell === portalPick.cell && m.side === portalPick.side);
+    }
+    // The portal in the side panel: a gold ring around it and a line to each portal it links to.
+    if (selectedGate && !viewing) {
+      const from = sidePoint(selectedGate.cell, selectedGate.side);
+      for (const other of gateLinks(selectedGate).map((g) => otherEnd(g, selectedGate!)))
+        drawLink(ctx, from, sidePoint(other.cell, other.side), '#ffd166', scale, reduced);
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(from.x, from.y, 23, 0, Math.PI * 2);
+      ctx.lineWidth = 4 / scale + 2;
+      ctx.strokeStyle = '#ffd166';
+      ctx.stroke();
+      ctx.restore();
+      if (!reduced && !zoomFrame) zoomFrame = requestAnimationFrame(redraw);
     }
     // Hover and selection
-    if (hover && !moving && tool !== 'links') {
+    // No cell highlight in the Links tool or over a selected portal (it sits in an empty cell).
+    if (hover && !moving && tool !== 'links' && !selectedGate) {
       const c = center(hover);
       ctx.save();
       tileShape(ctx, board.layout, c.x, c.y, 46, 14);
@@ -1471,6 +1682,11 @@ export function openEditor(
       changed();
       return;
     }
+    // Portals sit beside tiles (maybe off the grid), so they're checked before the cell.
+    if (!viewing && !settings && (tool === 'links' || tool === 'select')) {
+      const w = toWorld(e);
+      if (tool === 'links' ? linksTap(w) : selectTap(w)) return;
+    }
     const cell = toCell(e);
     if (!cell) return;
     if (choosingLink && selected != null) {
@@ -1492,18 +1708,6 @@ export function openEditor(
       notice = '';
       changed();
       return;
-    }
-    if (tool === 'links') {
-      // Tap a link badge or portal ring to change it, or a tile (then a side, then another
-      // tile's side) to add a portal link; drag anywhere else to look around.
-      const w = toWorld(e);
-      if (!portalPick) {
-        const pair = linkAt(w);
-        if (pair) return cycleLink(pair[0], pair[1]);
-        const gate = gateAt(w);
-        if (gate) return cycleGate(gate);
-      }
-      if (pickPortal(w, cell) && e.pointerType === 'touch') return;
     }
     if (tool === 'pan' || tool === 'links') {
       panning = { x: e.clientX, y: e.clientY };
@@ -1874,23 +2078,23 @@ export function openEditor(
               : 'Board settings · ready to play'
             : moving
               ? 'Move the group, then click to place · Esc to cancel'
-              : tool === 'select'
-                ? selection.size
-                  ? `${selection.size} tile${selection.size === 1 ? '' : 's'} selected`
-                  : 'Click a tile, or drag to select a group'
-                : tool === 'links'
-                  ? portalPick?.side != null
-                    ? 'Now tap a free side of another tile: the portal comes out there · Esc to cancel'
-                    : portalPick
-                      ? 'Tap a side of this tile to put a portal there · Esc to cancel'
-                      : 'Tap a link or portal to change it · tap a tile to add a portal'
-                  : tool === 'pan'
-                    ? 'Drag to move around the board · tap the zoom to recenter'
-                    : tool === 'shop'
-                      ? next
-                        ? `Property: goes into ${next.name} (${next.count} of ${BOARD_LIMITS.districtSize}) · click or drag to place`
-                        : 'All twelve districts have 4 properties'
-                      : `${label}: ${tool === 'erase' ? 'click or drag to remove squares' : 'click or drag to place tiles'}`),
+              : tool === 'select' && selectedGate
+                ? 'Portal selected: change it in the side panel'
+                : tool === 'select'
+                  ? selection.size
+                    ? `${selection.size} tile${selection.size === 1 ? '' : 's'} selected`
+                    : 'Click a tile, or drag to select a group'
+                  : tool === 'links'
+                    ? portalPick
+                      ? 'Now tap a free side of another tile, or an exit portal · Esc to cancel'
+                      : 'Tap a link to change it · tap a faint portal to start a portal link'
+                    : tool === 'pan'
+                      ? 'Drag to move around the board · tap the zoom to recenter'
+                      : tool === 'shop'
+                        ? next
+                          ? `Property: goes into ${next.name} (${next.count} of ${BOARD_LIMITS.districtSize}) · click or drag to place`
+                          : 'All twelve districts have 4 properties'
+                        : `${label}: ${tool === 'erase' ? 'click or drag to remove squares' : 'click or drag to place tiles'}`),
       ),
       h(
         'div',
@@ -2315,6 +2519,12 @@ export function openEditor(
           h('p', { class: 'hint ed-tile-note' }, 'Set the district’s average in Board settings.'),
         );
       }
+    }
+
+    if (selectedGate && !settings && !viewing && (tool === 'select' || tool === 'links')) {
+      clear(tileInspector);
+      tileInspector.hidden = false;
+      tileInspector.append(...gatePanel(selectedGate));
     }
 
     controls.hidden = true;
@@ -2793,6 +3003,7 @@ export function openEditor(
     }
     if (e.key === 'Escape') {
       if (portalPick) portalPick = null;
+      else if (selectedGate) selectedGate = null;
       else if (choosingLink) choosingLink = false;
       else if (moving) moving = null;
       else if (settings) settings = false;

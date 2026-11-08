@@ -32,22 +32,56 @@ describe('portal links', () => {
     const one = game.destinations(p, 1).map((r) => r.node);
     expect(one).toContain(at(G, 5, 6).id);
     expect(one).toContain(at(G, 6, 0).id);
-    expect(at(G, 5, 0).portals).toEqual([{ to: at(G, 5, 6).id, side: 2 }]);
+    expect(at(G, 5, 0).portals).toEqual([{ to: at(G, 5, 6).id, side: 2, way: 'both' }]);
     // Coming back through the portal counts as turning back.
     p.node = at(G, 5, 6).id;
     p.prev = at(G, 5, 0).id;
     expect(game.destinations(p, 1).map((r) => r.node)).not.toContain(at(G, 5, 0).id);
   });
 
-  it('can be one way', () => {
+  it('can be one way: an entrance leads to an exit, with no way back', () => {
     const b = portalTown();
-    b.oneWay = [[idx(b, 5, 6), idx(b, 5, 0)]];
+    b.portalLinks![0].oneWay = true;
     const { G, game } = play(b);
     const p = G.players[0];
+    expect(at(G, 5, 0).portals).toEqual([{ to: at(G, 5, 6).id, side: 2, way: 'in' }]);
+    expect(at(G, 5, 6).portals).toEqual([{ to: at(G, 5, 0).id, side: 3, way: 'out' }]);
     p.node = at(G, 5, 0).id;
     p.prev = at(G, 4, 0).id;
-    expect(game.destinations(p, 1).map((r) => r.node)).not.toContain(at(G, 5, 6).id);
+    expect(game.destinations(p, 1).map((r) => r.node)).toContain(at(G, 5, 6).id);
+    p.node = at(G, 5, 6).id;
+    p.prev = at(G, 4, 6).id;
+    expect(game.destinations(p, 1).map((r) => r.node)).not.toContain(at(G, 5, 0).id);
     expect(validateBoard(b).errors).toEqual([]);
+  });
+
+  it('lets several entrances lead to one exit, but an entrance to only one exit', () => {
+    const b = portalTown();
+    // A second entrance: the bottom of (6,0) also leads out of (5,6)'s top.
+    b.portalLinks = [
+      { a: idx(b, 5, 0), b: idx(b, 5, 6), sa: 2, sb: 3, oneWay: true },
+      { a: idx(b, 6, 0), b: idx(b, 5, 6), sa: 2, sb: 3, oneWay: true },
+    ];
+    expect(validateBoard(b).errors).toEqual([]);
+    const { G, game } = play(b);
+    const p = G.players[0];
+    p.node = at(G, 6, 0).id;
+    p.prev = at(G, 7, 0).id;
+    expect(game.destinations(p, 1).map((r) => r.node)).toContain(at(G, 5, 6).id);
+    // One entrance to two exits is a problem.
+    const two = structuredClone(TEST_TOWN);
+    two.portalLinks = [
+      { a: idx(two, 5, 0), b: idx(two, 5, 6), sa: 2, sb: 3, oneWay: true },
+      { a: idx(two, 5, 0), b: idx(two, 6, 6), sa: 2, sb: 3, oneWay: true },
+    ];
+    expect(validateBoard(two).errors.some((e) => e.includes('more than one exit'))).toBe(true);
+    // A two-way portal can't share its side with another link.
+    const shared = structuredClone(TEST_TOWN);
+    shared.portalLinks = [
+      { a: idx(shared, 5, 0), b: idx(shared, 5, 6), sa: 2, sb: 3 },
+      { a: idx(shared, 6, 0), b: idx(shared, 5, 6), sa: 2, sb: 3, oneWay: true },
+    ];
+    expect(validateBoard(shared).errors.some((e) => e.includes('more than one portal link'))).toBe(true);
   });
 
   it("doesn't join rows of properties", () => {

@@ -52,8 +52,11 @@ export interface Square {
   nb: number[];
   /** Neighbors players can't step to from here: the wrong way down a one-way road. */
   noGo?: number[];
-  /** Portal links leaving this square: the neighbor `to`, reached through this tile's `side`. */
-  portals?: { to: number; side: number }[];
+  /**
+   * Portal links at this square: the neighbor `to`, reached through this tile's `side`, and what
+   * the portal on that side lets players do (missing in older saves: both).
+   */
+  portals?: { to: number; side: number; way?: PortalWay }[];
   /** District index 0-6 for shops and plots, else -1. */
   d: number;
   /** Group index used for expansion and domination, else -1. */
@@ -234,13 +237,22 @@ export type BoardLayout = 'square' | 'hex';
  * out of `b`'s side `sb` (and back the same way), as if the tiles were neighbors. A side is an
  * index into `neighborCells` (square: right, left, down, up; hex: right, left, up-left, up-right,
  * down-left, down-right) and must face an empty cell.
+ *
+ * Each end is a portal: two-way (players enter and exit there), an entrance (enter only) or an
+ * exit (exit only). A two-way link joins two two-way portals; a one-way link joins an entrance
+ * (`a`) to an exit (`b`), and several entrances may lead to one exit.
  */
 export interface PortalLink {
   a: number;
   b: number;
   sa: number;
   sb: number;
+  /** One way: `a`'s side is an entrance and `b`'s an exit. */
+  oneWay?: boolean;
 }
+
+/** What a portal lets players do: enter and exit, enter only, or exit only. */
+export type PortalWay = 'both' | 'in' | 'out';
 /** A board as data: squares on a grid, districts and the connections between squares. */
 export interface BoardDef {
   id: string;

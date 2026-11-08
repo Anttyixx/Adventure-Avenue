@@ -42,12 +42,14 @@ export function newGame(opts: MatchOptions): GameState {
     nodes[b].nb.push(a);
   }
   // Portal links: neighbors through a tile side, wherever they are on the board.
-  for (const { a, b, sa, sb } of board.portalLinks ?? []) {
+  for (const { a, b, sa, sb, oneWay } of board.portalLinks ?? []) {
     if (!nodes[a] || !nodes[b] || a === b || nodes[a].nb.includes(b)) continue;
     nodes[a].nb.push(b);
     nodes[b].nb.push(a);
-    (nodes[a].portals ??= []).push({ to: b, side: sa });
-    (nodes[b].portals ??= []).push({ to: a, side: sb });
+    (nodes[a].portals ??= []).push({ to: b, side: sa, way: oneWay ? 'in' : 'both' });
+    (nodes[b].portals ??= []).push({ to: a, side: sb, way: oneWay ? 'out' : 'both' });
+    // Out of an exit there's no way back in.
+    if (oneWay) (nodes[b].noGo ??= []).push(a);
   }
   // One-way links: no stepping from `to` back to `from`.
   for (const [a, b] of board.oneWay ?? []) if (nodes[a]?.nb.includes(b)) (nodes[b].noGo ??= []).push(a);

@@ -46,7 +46,13 @@ describe('paired transport', () => {
     expect(b.squares[n - 3].channel).toBeUndefined();
     expect(b.squares[n - 2]).toMatchObject({ link: b.bank, toBank: true });
     expect(b.squares[n - 1].link).toBeUndefined();
-    expect(boardFromFile(boardToFile(b), 'copy').board?.squares).toEqual(boardToFile(b).squares);
+    // Files round-trip, except that retired portal tiles come back as portal links.
+    const back = boardFromFile(boardToFile(b), 'copy').board!;
+    expect(back.squares.some((s) => s.t === 'portal')).toBe(false);
+    expect(back.portalLinks?.length).toBeGreaterThan(0);
+    const warps = (list: typeof b.squares) =>
+      list.filter((s) => s.t === 'warp').map(({ x, y, toBank }) => ({ x, y, toBank }));
+    expect(warps(back.squares)).toEqual(warps(boardToFile(b).squares));
   });
   it('rejects unlinked tiles and more than two tiles of a color', () => {
     const b = board();

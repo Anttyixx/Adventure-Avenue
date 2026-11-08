@@ -26,6 +26,33 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: '2026-11-08-portal-kinds',
+    date: 'Nov 8, 2026',
+    title: 'Portals beside tiles',
+    features: [
+      {
+        tag: 'new',
+        title: 'Portal links replace portal tiles',
+        text: 'Portals now sit beside tiles instead of taking a space, so you can see where you step in and where you come out. Built-in and saved boards switch over on their own.',
+      },
+      {
+        tag: 'new',
+        title: 'Two-way, entrance and exit portals',
+        text: 'A two-way portal lets you go in and come out. An entrance only lets you in, and an exit only lets you out. Several entrances can lead to one exit. Arrows on the rings show which is which.',
+      },
+      {
+        tag: 'better',
+        title: 'Easier portal building',
+        text: 'With the Links tool, every free tile side shows a faint portal: tap one, then another to link them. Tap a portal (with Links or Select) to change its kind or remove it in the side panel.',
+      },
+    ],
+    extras: [
+      'One-way roads are back to the normal road look, with an arrow painted on them',
+      'Trees and ponds no longer grow over portals',
+      'Placing a tile in front of a portal breaks its link',
+    ],
+  },
+  {
     id: '2026-11-08-portal-links',
     date: 'Nov 8, 2026',
     title: 'Portal links',

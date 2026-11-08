@@ -140,22 +140,39 @@ code changes.
 **Custom boards (added Oct 2026).** Players build boards in the in-game board editor, save them
 in the browser, and export/import them as `.aaboard.json` files (format tag
 `adventure-avenue-board`, version 1: name, author, grid size, districts, squares and
-connections, plus `oneWay`: [from, to] pairs for one-way links, and `portalLinks`: {a, b, sa, sb}
-for portal links; both missing in older files). Squares
-in neighboring cells connect automatically; the builder's **Links** tool removes a link, adds it
-back or makes it one way, and adds **portal links** (see Board viewer). Roads have two looks: a
-two-way road is sandy; a **one-way road** is blue paving with white chevrons painted along it,
-pointing the way players may go (no sign is drawn on top of it). A **portal link** joins a side of
-one tile to a side of another tile anywhere on the board, without taking a tile space: a short
-road leaves each tile through that side and ends in a swirling ring in the pair's color (purple,
-cyan, pink, amber, green, blue, in board order). Players step through it as if the two tiles were
-neighbors: it costs one step, counts as the way they came (no turning back through it), and can
-be one way too (its short roads then show the one-way look). The token walks into one ring and
-comes out of the other; the route preview's dotted line does the same, and the direction arrow
-points out through the portal's side. Portal links don't join Easy-rule rows. Every tile with
-links needs a way in and a way out (a tile whose one-way links all lead in, or all lead out, is
-a problem to fix), every one-way link must be a road or portal link, and every portal must face
-an empty cell, one portal per side. A board is playable only if it has exactly one bank, every suit (or a change-of-suit
+connections, plus `oneWay`: [from, to] pairs for one-way roads, and `portalLinks`: {a, b, sa, sb,
+oneWay} for portal links; both missing in older files). Squares in neighboring cells connect
+automatically; the builder's **Links** tool removes a link, adds it back or makes it one way, and
+adds **portal links** (see Board viewer). A **one-way road** is the normal sandy road with a darker
+arrow painted on it, in the gap between the two tiles, pointing the way players may go.
+
+A **portal link** joins a side of one tile to a side of another tile anywhere on the board,
+without taking a tile space. Each end is a **portal**: a ring beside the tile's side, at the end
+of a short road. Players can't stop on a portal; they step through it as if the two tiles were
+neighbors (one step, and it counts as the way they came, so no turning back through it). There
+are three kinds:
+
+- **Two-way**: players go in and come out there. Its ring shows two white swirls. A two-way
+  portal links to one other two-way portal.
+- **Entrance**: players can only go in there. Its ring shows a white arrow pointing into it, and
+  its short road has the one-way arrow. An entrance leads to one exit.
+- **Exit**: players only come out there. Its ring shows a white arrow pointing out toward its
+  tile. Several entrances may lead to one exit.
+
+Rings share a color per group (a pair, or an exit and all its entrances): purple, cyan, pink,
+amber, green, blue, in board order. The token walks into one ring and comes out of the other; the
+route preview's dotted line does the same, and the direction arrow points out through the
+portal's side. Scenery never grows on the cell a portal opens onto. Portal links don't join
+Easy-rule rows.
+
+**Portal tiles are retired.** Boards (built-in, saved and imported) turn their portal tiles into
+portal links: a portal at a dead end is removed and the link goes on the side of the tile that
+led to it; a portal in the middle of a road becomes a venture square with the link on its first
+free side; a portal that led to the bank links to a free side of the bank. Saved games keep
+their portal tiles and still play them. Every tile with links needs a way in and a way out (a
+tile whose one-way links all lead in, or all lead out, is a problem to fix), every portal must
+face an empty cell, a side holds one two-way portal, one entrance, or one exit (with any number
+of entrances), and an entrance can't lead to two exits. A board is playable only if it has exactly one bank, every suit (or a change-of-suit
 square), at least one district, exactly 4 properties in every declared district, a valid starting
 average for each district, every warp and portal linked (to a partner of its kind or the bank), at most five pairs of each kind, and every square reachable from the bank (by road or
 warp). Grids range from 4 x 4 to 32 x 20 (up to 320
@@ -215,7 +232,7 @@ Accessible button names and hints remain available. Selection uses a glow, with 
 and keyboard focus kept after picking a tile.
 The categories are Properties (Property), Suits (Spade, Heart, Diamond, Club, Change suit),
 Specials (Venture, Roll-on, Take-a-break, Boon, Boom, Stockbroker, Arcade), and Transport
-(Warp, Cannon, Portal).
+(Warp, Cannon, Taxi).
 Choosing a tile keeps Place active; clicking or dragging on the board places it. Returning to
 Place remembers the last chosen tile. The pane is hidden for every other tool and board settings.
 **Districts are automatic.** There is no color picker: each new property goes into the first
@@ -315,32 +332,27 @@ only by warp: a warp square on the main board sends you to an island, and every 
 island sends you back. Each island has all four suits and one or two districts. Each board can be
 copied into the editor to remix.
 
-Two portal-focused boards extend the built-in selection:
+Three portal boards extend the built-in selection (their portals are two-way portal links):
 
-- **Crossgate Gardens** (square, 13 × 13, 77 tiles, 8 districts / 32 properties): four courtyard
-  rings around a central bank promenade. Each half-courtyard holds one district. Four portal
-  pairs exchange distant courtyard corners as soon as a player steps on them, letting the same
-  roll continue into another quarter. Inward roads offer a route home through the bank.
+- **Crossgate Gardens** (square, 13 × 13, 8 districts / 32 properties): four courtyard rings
+  around a central bank promenade. Each half-courtyard holds one district. The courtyard corners
+  are venture squares, and four portal links join distant corners through their outer sides,
+  letting the same roll continue into another quarter. Inward roads offer a route home.
 - **Prism Junction** (hex): four hexagonal petals, eight districts / 32 properties and four
-  portal pairs between their outer rims. Inner spokes lead back to the bank.
+  portal links between their outer rims. Inner spokes lead back to the bank.
 - **Return Ridge** (square): four winding dead-end branches, twelve districts / 48 properties on a 23 × 13 grid, including districts above and below the bank.
   Special tiles use different orders on each branch and varied distances from the bank, rather
   than mirrored placements. Only four venture squares remain; other relief stops include suits, arcades, stockbrokers,
   Boon, Boom and Take-a-break tiles. There are no change-of-suit tiles and exactly eight Roll-on tiles, four of which replace Boon tiles. Only six Boon tiles remain.
-  Each of the four suit tiles sits one step before a branch-end portal. Each branch ends in a portal paired with a return tile exactly two road steps from the bank.
-  Players teleport on entry and use any remaining movement normally. The return portals are
-  reciprocal, so entering one near the bank also offers a shortcut out to its branch tip.
-  Linked portal endpoints do not receive dead-end warnings: entering them teleports the player.
+  Each branch ends at a suit tile with a portal on its far side, linked to a tile one road step
+  from the bank. The links are two-way, so the tile near the bank also offers a shortcut out to
+  its branch tip.
 
 Crossgate Gardens and Prism Junction alternate properties with non-property relief stops.
 Return Ridge groups each district into two touching pairs, separated by relief tiles, so all
-four never form a continuous run. Relief stops include suits, venture, Boon, Take-a-break and
-Stockbroker tiles. All four properties of a
-district are within six walking steps of one another without crossing a different district or
-using a portal. The bank and suits remain reachable under automatic portal entry and the
-no-turn-back movement rule. Ordinary roads also connect the complete board; portals are meaningful
-shortcuts rather than a requirement to land on an exact tile. Both layouts can be remixed in the
-builder and use the usual district pricing and random vacant-plot settings.
+four never form a continuous run. All four properties of a district are within six walking
+steps of one another without crossing a different district or using a portal. Ordinary roads
+connect the complete board; portals are shortcuts. All three can be remixed in the builder.
 
 **Movement rules:**
 
@@ -699,22 +711,22 @@ commissions, and leader-targeting cards act as catch-up.
 Every non-property square has one landing effect; temporary effects last until the affected
 player's next turn begins.
 
-| Square         | Landing effect                                                                                    | Interacts with                                                |
-| -------------- | ------------------------------------------------------------------------------------------------- | ------------------------------------------------------------- |
-| Roll-on        | Roll again and keep moving (max chain depth 3)                                                    | Can reach another venture, bank or roll-on                    |
-| Take-a-break   | Your shops and buildings close: rivals pay nothing there                                          | Fees, tolls, dividends and commissions from your squares stop |
-| Boon           | 20% commission: the bank pays you 20% of every fee anyone else pays                               | Stacks with nothing; the higher rate wins                     |
-| Boom           | Same, at 50%                                                                                      | Same as Boon                                                  |
-| Stockbroker    | Buy stock (Standard). Becomes a Venture square in Easy rules                                      | Stock market                                                  |
-| Portal         | Stepping on it jumps to its partner portal or the bank, then keep moving; bank arrivals visit it  | Up to five pairs (auto colors) plus any number to the bank    |
-| Warp           | Stopping on it jumps to its partner warp or the bank; arrival does not teleport again             | Up to five pairs (auto colors) plus any number to the bank    |
-| Cannon         | Pick another player and warp to their square. Suits and bank still apply there; nothing else does | Suits, bank, promotion, win                                   |
-| Price Up       | Your fees are 10% higher until your next turn (`K.hike`, multiplies any other boost)              | Shop and building fees you charge                             |
-| Taxi           | Pick any special square (not the bank, a taxi, a portal or a warp), ride there and use it         | Every special square's effect                                 |
-| Swap           | Pick another player and trade places. You pick up a suit or visit the bank where you arrive       | Suits, bank, promotion, win                                   |
-| Arcade         | Play one random minigame (see Arcade minigames)                                                   | Cash, shop values, wild suit cards, stock                     |
-| Venture        | Venture grid                                                                                      | See Venture cards                                             |
-| Change-of-suit | Gives the current suit, then rotates                                                              | Promotion                                                     |
+| Square           | Landing effect                                                                                    | Interacts with                                                |
+| ---------------- | ------------------------------------------------------------------------------------------------- | ------------------------------------------------------------- |
+| Roll-on          | Roll again and keep moving (max chain depth 3)                                                    | Can reach another venture, bank or roll-on                    |
+| Take-a-break     | Your shops and buildings close: rivals pay nothing there                                          | Fees, tolls, dividends and commissions from your squares stop |
+| Boon             | 20% commission: the bank pays you 20% of every fee anyone else pays                               | Stacks with nothing; the higher rate wins                     |
+| Boom             | Same, at 50%                                                                                      | Same as Boon                                                  |
+| Stockbroker      | Buy stock (Standard). Becomes a Venture square in Easy rules                                      | Stock market                                                  |
+| Portal (retired) | Only in saved games: stepping on it jumps to its partner portal or the bank, then keep moving     | Boards now use portal links instead (see Custom boards)       |
+| Warp             | Stopping on it jumps to its partner warp or the bank; arrival does not teleport again             | Up to five pairs (auto colors) plus any number to the bank    |
+| Cannon           | Pick another player and warp to their square. Suits and bank still apply there; nothing else does | Suits, bank, promotion, win                                   |
+| Price Up         | Your fees are 10% higher until your next turn (`K.hike`, multiplies any other boost)              | Shop and building fees you charge                             |
+| Taxi             | Pick any special square (not the bank, a taxi, a portal or a warp), ride there and use it         | Every special square's effect                                 |
+| Swap             | Pick another player and trade places. You pick up a suit or visit the bank where you arrive       | Suits, bank, promotion, win                                   |
+| Arcade           | Play one random minigame (see Arcade minigames)                                                   | Cash, shop values, wild suit cards, stock                     |
+| Venture          | Venture grid                                                                                      | See Venture cards                                             |
+| Change-of-suit   | Gives the current suit, then rotates                                                              | Promotion                                                     |
 
 **Turn-start reset:** when a player's turn starts, their `onBreak`, `closed`, `boon` and `boost` are
 cleared. This is what makes "until your next turn" effects expire.
@@ -930,13 +942,20 @@ builder's grid; boards are trimmed to their tiles when played, so this changes n
 **Links tool** (the chain icon, last in the builder's tool rail): every pair of neighboring
 tiles shows a badge between them: green with a two-headed arrow (linked both ways), a navy badge
 with a gold arrow (one way), or red with a cross (link removed; the road is gone). Tapping a badge
-cycles it: both ways, one way, the other way, removed, both ways again. Tapping a portal ring
-cycles it the same way, except that "removed" deletes the portal link. To add a portal link, tap a
-tile: its free sides (facing an empty cell, without a portal) show dashed gold rings with a plus;
-tap one, then tap a free side of any other tile (they all show their free sides now) and the
-portal is added. Tapping elsewhere or Escape cancels. Dragging elsewhere moves the view. Undo
-undoes link changes too. Links follow their tiles when a group is moved (each end of a portal
-link follows its own tile); erasing a tile forgets its link changes and its portal links.
+cycles it: both ways, one way, the other way, removed, both ways again. Every free tile side
+(facing an empty cell, without a portal) shows a **faint portal** (a see-through purple disc with
+a dashed white ring and swirls). Tap one to start a portal link (it turns gold), then tap a faint
+portal on another tile to make a two-way link, or an exit portal to add another entrance to it.
+Tapping elsewhere or Escape cancels. Tapping an existing portal (with Links or Select) selects it:
+a gold ring around it, gold link lines to the portals it joins, and the **portal panel** on the
+right: its place and side, **Kind** (Two-way / Entrance / Exit pills; kinds that can't apply are
+faded with the reason on hover: an exit with more than one entrance can't become two-way or an
+entrance), **Leads to** / **Comes from** with a row per linked portal (tap to select that one),
+and **Remove portal**. Changing one end's kind changes the other end to match (an entrance's other
+end becomes its exit). Placing a tile on the cell a portal opens onto breaks that portal link.
+Dragging elsewhere moves the view; Undo undoes link changes too. Links follow their tiles when a
+group is moved (each end of a portal link follows its own tile); erasing a tile removes its
+portal links. The Tiles pane no longer has a Portal tile.
 
 **Game setup options.** Over the title scene, a **top bar** that never scrolls runs across the
 screen: **Back** (to the main menu, as tall as Sound) and the "New Game" title in the top left
@@ -1699,8 +1718,9 @@ column, where they tap the Ready chip on their own seat.
 
 ### Warps and portals
 
-Warps (four-pointed stars) and portals (round swirls) work the same way except for what sets
-them off:
+Portal tiles are retired (boards turn them into portal links, see Custom boards); this section
+still describes how they play in saved games. Warps (four-pointed stars) and portals (round
+swirls) work the same way except for what sets them off:
 
 - **A warp** sends a player who **stops** on it (passing over one does nothing).
 - **A portal** sends a player who **steps** on it during a walk, including on the last step. The

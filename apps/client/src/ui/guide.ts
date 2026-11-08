@@ -141,7 +141,7 @@ function basics(G: GameState | null): Node[] {
           'Venture (and suit squares): flip a venture card.',
           'Roll on: roll again. Take a break: your shops close until your next turn.',
           'Boon and Boom: earn a share of the fees others pay.',
-          'Warp (stop on it) or portal (just step on it): jump to its partner, or gold ones to the bank.',
+          'Warp: stop on it to jump to its partner, or gold ones to the bank. Portals beside tiles: step through to the matching portal (arrows show one-way ones).',
           'Cannon: fire to another player. Arcade: play a game (see the Arcade games tab).',
           'Price Up: your fees are 10% higher until your next turn. Taxi: ride to any special square and use it. Swap: trade places with any player.',
         ),

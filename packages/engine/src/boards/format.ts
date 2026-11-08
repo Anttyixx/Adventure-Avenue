@@ -1,4 +1,5 @@
 import { connectTransports } from '../transport';
+import { convertPortalTiles } from './portal-tiles';
 /**
  * Custom boards: the file format players export and import, the rules a board must follow to
  * be playable, and helpers the board editor uses.
@@ -280,12 +281,17 @@ export function validateBoard(def: BoardDef): BoardCheck {
     nb[a].push(b);
     nb[b].push(a);
   }
-  // Portal links: two different tiles, each through a side that faces an empty cell and isn't
-  // used by another portal link.
+  // Portal links: two different tiles, each through a side that faces an empty cell. A side
+  // holds one two-way portal, or one entrance, or an exit with any number of entrances.
   const cellAt = new Map(sq.map((s, i) => [`${s.x},${s.y}`, i]));
   const sideCount = def.layout === 'hex' ? 6 : 4;
-  const usedSides = new Set<string>();
-  for (const { a, b, sa, sb } of def.portalLinks ?? []) {
+  const roles = new Map<string, { i: number; both: number; in: number; out: number }>();
+  const role = (i: number, side: number) => {
+    const key = `${i}:${side}`;
+    if (!roles.has(key)) roles.set(key, { i, both: 0, in: 0, out: 0 });
+    return roles.get(key)!;
+  };
+  for (const { a, b, sa, sb, oneWay } of def.portalLinks ?? []) {
     if (
       !sq[a] ||
       !sq[b] ||
@@ -295,32 +301,42 @@ export function validateBoard(def: BoardDef): BoardCheck {
       error('The board has a broken portal link.');
       continue;
     }
-    let ok = true;
-    for (const [i, side] of [
-      [a, sa],
-      [b, sb],
-    ]) {
-      const [x, y] = neighborCells(def.layout, sq[i].x, sq[i].y)[side];
-      if (cellAt.has(`${x},${y}`)) {
-        error(`The portal on square ${where(sq[i])} opens onto another tile.`, {
-          squares: [i],
-          tileText: 'Its portal opens onto another tile: move one of them.',
-        });
-        ok = false;
-      }
-      if (usedSides.has(`${i}:${side}`)) {
-        error(`Square ${where(sq[i])} has two portals on one side.`, { squares: [i] });
-        ok = false;
-      }
-      usedSides.add(`${i}:${side}`);
+    if (oneWay) {
+      role(a, sa).in++;
+      role(b, sb).out++;
+    } else {
+      role(a, sa).both++;
+      role(b, sb).both++;
     }
-    if (!ok || nb[a].includes(b)) continue;
+    if (nb[a].includes(b)) continue;
     nb[a].push(b);
     nb[b].push(a);
   }
+  for (const [key, r] of roles) {
+    const s = sq[r.i];
+    const side = Number(key.split(':')[1]);
+    const [x, y] = neighborCells(def.layout, s.x, s.y)[side];
+    if (cellAt.has(`${x},${y}`))
+      error(`The portal on square ${where(s)} opens onto another tile.`, {
+        squares: [r.i],
+        tileText: 'Its portal opens onto another tile: move one of them.',
+      });
+    if (r.both > 1 || (r.both && (r.in || r.out)))
+      error(`Square ${where(s)} has more than one portal link on one side.`, { squares: [r.i] });
+    else if (r.in > 1)
+      error(`An entrance portal on square ${where(s)} leads to more than one exit.`, { squares: [r.i] });
+    else if (r.in && r.out)
+      error(`A portal on square ${where(s)} is both an entrance and an exit: make it two-way.`, {
+        squares: [r.i],
+      });
+  }
+  // One-way portal links: no way back from the exit.
+  const portalNoGo = (def.portalLinks ?? [])
+    .filter((l) => l.oneWay)
+    .map((l) => [l.a, l.b] as [number, number]);
   // One-way links: each must be a road or portal link, and every tile needs a way in and out.
   const noGo = sq.map(() => new Set<number>());
-  for (const [a, b] of def.oneWay ?? []) {
+  for (const [a, b] of [...(def.oneWay ?? []), ...portalNoGo]) {
     if (!nb[a]?.includes(b)) {
       error('The board has a broken one-way road.');
       continue;
@@ -488,7 +504,8 @@ export function boardFromFile(data: unknown, id: string): { board?: BoardDef; er
   const name = typeof f.name === 'string' ? f.name.slice(0, BOARD_LIMITS.nameLength) : 'Imported board';
   const bank = squares.findIndex((s) => s.t === 'bank');
   return {
-    board: {
+    // Portal tiles are retired: they become portal links.
+    board: convertPortalTiles({
       id,
       name,
       author: typeof f.author === 'string' ? f.author.slice(0, 32) : undefined,
@@ -501,6 +518,6 @@ export function boardFromFile(data: unknown, id: string): { board?: BoardDef; er
       ...(oneWay.length ? { oneWay } : {}),
       ...(portalLinks.length ? { portalLinks } : {}),
       bank,
-    },
+    }),
   };
 }

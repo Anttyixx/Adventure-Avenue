@@ -5,6 +5,7 @@
 import {
   BUILT_IN_BOARDS,
   connectTransports,
+  convertPortalTiles,
   boardFromFile,
   boardToFile,
   validateBoard,
@@ -36,7 +37,8 @@ export function listBoards(): SavedBoard[] {
       .map((b) => {
         for (const sq of b.board.squares) if ((sq.t as string) === 'back') sq.t = 'portal';
         connectTransports(b.board);
-        return b;
+        // Portal tiles are retired: they become portal links.
+        return { ...b, board: convertPortalTiles(b.board) };
       });
   } catch {
     return [];

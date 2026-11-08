@@ -350,7 +350,13 @@ and the focused tool across rebuilds. Tile-name tooltips and selection corner ch
 accessible names/descriptions and a selected glow remain. The board hover overlay adds a tint
 and scales its two contrast stroke widths inversely with camera scale to retain 6px/3px screen widths.
 
-Portal traversal in `Game.destinations` inserts entry and exit into the route path while spending
+Portal links (`BoardDef.portalLinks`) are plain graph neighbors: `setup.ts` adds them to `nb`,
+records each end on the square (`portals`: the other tile, this tile's side, and the portal's
+kind), and a one-way link adds the entrance to the exit's `noGo`. `boards/portal-tiles.ts`
+`convertPortalTiles` turns retired portal tiles into portal links for built-in, saved and imported
+boards; saved games keep portal tiles, which still play as described next.
+
+Portal tile traversal in `Game.destinations` inserts entry and exit into the route path while spending
 only one road step. `Game.move` emits a step for entry and a warp for the exit, tracks remaining
 steps separately from path length, and resumes walking with free direction. Arrival at the exit
 does not retrigger a portal; bank passing/landing behavior follows remaining steps.
