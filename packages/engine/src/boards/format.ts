@@ -4,7 +4,7 @@ import { connectTransports } from '../transport';
  * be playable, and helpers the board editor uses.
  */
 import { K } from '../constants';
-import type { BoardDef, BoardLayout, BoardSquareDef, District, SquareType } from '../types';
+import type { BoardDef, BoardLayout, BoardSquareDef, District, PortalLink, SquareType } from '../types';
 
 export const BOARD_FILE_FORMAT = 'adventure-avenue-board';
 export const BOARD_FILE_VERSION = 1;
@@ -61,8 +61,10 @@ export interface BoardFile {
   districts: District[];
   squares: BoardSquareDef[];
   edges: [number, number][];
-  /** One-way roads, [from, to] (missing in older files: every road goes both ways). */
+  /** One-way links, [from, to] (missing in older files: every road goes both ways). */
   oneWay?: [number, number][];
+  /** Portal links between tile sides (missing in older files). */
+  portalLinks?: PortalLink[];
 }
 
 export interface BoardCheck {
@@ -278,7 +280,45 @@ export function validateBoard(def: BoardDef): BoardCheck {
     nb[a].push(b);
     nb[b].push(a);
   }
-  // One-way roads: each must be a road, and every tile needs a way in and a way out.
+  // Portal links: two different tiles, each through a side that faces an empty cell and isn't
+  // used by another portal link.
+  const cellAt = new Map(sq.map((s, i) => [`${s.x},${s.y}`, i]));
+  const sideCount = def.layout === 'hex' ? 6 : 4;
+  const usedSides = new Set<string>();
+  for (const { a, b, sa, sb } of def.portalLinks ?? []) {
+    if (
+      !sq[a] ||
+      !sq[b] ||
+      a === b ||
+      ![sa, sb].every((s) => Number.isInteger(s) && s >= 0 && s < sideCount)
+    ) {
+      error('The board has a broken portal link.');
+      continue;
+    }
+    let ok = true;
+    for (const [i, side] of [
+      [a, sa],
+      [b, sb],
+    ]) {
+      const [x, y] = neighborCells(def.layout, sq[i].x, sq[i].y)[side];
+      if (cellAt.has(`${x},${y}`)) {
+        error(`The portal on square ${where(sq[i])} opens onto another tile.`, {
+          squares: [i],
+          tileText: 'Its portal opens onto another tile: move one of them.',
+        });
+        ok = false;
+      }
+      if (usedSides.has(`${i}:${side}`)) {
+        error(`Square ${where(sq[i])} has two portals on one side.`, { squares: [i] });
+        ok = false;
+      }
+      usedSides.add(`${i}:${side}`);
+    }
+    if (!ok || nb[a].includes(b)) continue;
+    nb[a].push(b);
+    nb[b].push(a);
+  }
+  // One-way links: each must be a road or portal link, and every tile needs a way in and out.
   const noGo = sq.map(() => new Set<number>());
   for (const [a, b] of def.oneWay ?? []) {
     if (!nb[a]?.includes(b)) {
@@ -375,6 +415,7 @@ export function boardToFile(def: BoardDef): BoardFile {
     }),
     edges: def.edges.map(([a, b]) => [a, b]),
     ...(def.oneWay?.length ? { oneWay: def.oneWay.map(([a, b]) => [a, b] as [number, number]) } : {}),
+    ...(def.portalLinks?.length ? { portalLinks: def.portalLinks.map((l) => ({ ...l })) } : {}),
   };
 }
 
@@ -429,6 +470,15 @@ export function boardFromFile(data: unknown, id: string): { board?: BoardDef; er
   const oneWay: [number, number][] = [];
   for (const e of Array.isArray(f.oneWay) ? (f.oneWay as unknown[]) : [])
     if (Array.isArray(e) && isNum(e[0]) && isNum(e[1])) oneWay.push([Math.floor(e[0]), Math.floor(e[1])]);
+  const portalLinks: PortalLink[] = [];
+  for (const l of Array.isArray(f.portalLinks) ? (f.portalLinks as Partial<PortalLink>[]) : [])
+    if (l && isNum(l.a) && isNum(l.b) && isNum(l.sa) && isNum(l.sb))
+      portalLinks.push({
+        a: Math.floor(l.a),
+        b: Math.floor(l.b),
+        sa: Math.floor(l.sa),
+        sb: Math.floor(l.sb),
+      });
   const districts: District[] = (f.districts as unknown[]).map((d, i) => {
     const q = d as Partial<District>;
     const color = typeof q?.color === 'string' && /^#[0-9a-f]{6}$/i.test(q.color) ? q.color : '#cccccc';
@@ -449,6 +499,7 @@ export function boardFromFile(data: unknown, id: string): { board?: BoardDef; er
       squares,
       edges,
       ...(oneWay.length ? { oneWay } : {}),
+      ...(portalLinks.length ? { portalLinks } : {}),
       bank,
     },
   };

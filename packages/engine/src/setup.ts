@@ -41,7 +41,15 @@ export function newGame(opts: MatchOptions): GameState {
     nodes[a].nb.push(b);
     nodes[b].nb.push(a);
   }
-  // One-way roads: no stepping from `to` back to `from`.
+  // Portal links: neighbors through a tile side, wherever they are on the board.
+  for (const { a, b, sa, sb } of board.portalLinks ?? []) {
+    if (!nodes[a] || !nodes[b] || a === b || nodes[a].nb.includes(b)) continue;
+    nodes[a].nb.push(b);
+    nodes[b].nb.push(a);
+    (nodes[a].portals ??= []).push({ to: b, side: sa });
+    (nodes[b].portals ??= []).push({ to: a, side: sb });
+  }
+  // One-way links: no stepping from `to` back to `from`.
   for (const [a, b] of board.oneWay ?? []) if (nodes[a]?.nb.includes(b)) (nodes[b].noGo ??= []).push(a);
   const players: Player[] = opts.seats.map((seat, i) => ({
     id: i,

@@ -375,7 +375,9 @@ export function computeRows(G: GameState): number[][] {
     while (stack.length) {
       const id = stack.pop()!;
       grp.push(id);
+      // Rows follow roads only: a portal link doesn't join two runs.
       for (const n of G.nodes[id].nb) {
+        if (G.nodes[id].portals?.some((q) => q.to === n)) continue;
         if (!seen.has(n) && isProperty(G.nodes[n])) {
           seen.add(n);
           stack.push(n);

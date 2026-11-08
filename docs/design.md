@@ -810,10 +810,19 @@ if (!(await ask(`Delete ${d.name}?`, 'Its 4 properties will be removed from the 
   chip, a gold Edit and Back. Editing swaps them for Undo, Test play, Menu and a gold Done. The
   save question is the builder's `ask` pop-up with Don't save (ghost), Save as and Save (gold, the
   last button); Save as asks for a name in an input (`.ed-saveas-name`).
-- Link badges (canvas, world units, radius 15 with a 3px white ring), drawn between tile centers:
-  one way is `drawRoadArrow` in `board.ts` (navy fill, gold chevron; the same sign players see on
-  one-way roads in games); the builder's Links tool adds `drawLinkBadge`: green `#2f9e5b` with a
-  white two-headed arrow (both ways) or red `--bad` with a dashed ring and a white cross (removed).
+- Roads (`board.ts` `drawRoads`): two-way roads are sandy (`#c9b07a` edge, `#efe0b6` paving, 44 and
+  36 wide). One-way roads are their own design, never a sign on top: blue paving (`#3d5f8f` edge,
+  `#7fa8dc` paving) with white chevrons (5 wide) every 18 units, centered on the gap between tiles,
+  pointing the way players may go.
+- Portal links: a short road from the tile out through its side to a ring 0.72 of a cell step from
+  the tile's center (`portalPoint`). The ring (`drawPortalRing`, radius 17): the pair's color
+  (`PORTAL_LINK_COLORS`), a 3px white edge, a navy core and two white swirl arcs.
+- Link badges in the builder's Links tool (canvas, world units, radius 15 with a 3px white ring),
+  drawn between tile centers: one way is `drawRoadArrow` (navy fill, gold chevron);
+  `drawLinkBadge` is green `#2f9e5b` with a white two-headed arrow (both ways) or red `--bad` with a
+  dashed ring and a white cross (removed). Free sides for a new portal: `drawSideMarker`, a navy
+  disc with a dashed gold ring and a gold plus; the picked tile gets a gold outline and its picked
+  side a gold portal ring.
 
 ### 5.17e Too big for the room (over the player cards)
 

@@ -936,7 +936,11 @@ export class HotSeat implements GameIO {
         // The step sounds as the token lands on the square. (The 'hop' sound as it lifts off is
         // turned off for now, as a test; it stays in audio.ts.)
         hud.action('moving', `${G.players[e.pid].name} is moving...`, 'move');
-        await board.step(e.pid, e.to, e.left);
+        if (G.nodes[e.from]?.portals?.some((q) => q.to === e.to)) {
+          // Through a portal link: into one ring, out of the other.
+          sound.play('warp');
+          await board.portalStep(e.pid, e.from, e.to, e.left);
+        } else await board.step(e.pid, e.to, e.left);
         sound.play('step');
         // Mid-walk, tolls and value bumps play as the token passes without stopping it.
         this.passing = e.left > 0;

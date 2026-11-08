@@ -140,12 +140,22 @@ code changes.
 **Custom boards (added Oct 2026).** Players build boards in the in-game board editor, save them
 in the browser, and export/import them as `.aaboard.json` files (format tag
 `adventure-avenue-board`, version 1: name, author, grid size, districts, squares and
-connections, plus `oneWay`: [from, to] pairs for one-way roads, missing in older files). Squares
+connections, plus `oneWay`: [from, to] pairs for one-way links, and `portalLinks`: {a, b, sa, sb}
+for portal links; both missing in older files). Squares
 in neighboring cells connect automatically; the builder's **Links** tool removes a link, adds it
-back or makes it one way (see Board viewer). On the board, a one-way road shows a navy badge with
-a gold arrow between its two tiles, pointing the way players may go. Every tile with links needs
-a way in and a way out (a tile whose one-way roads all lead in, or all lead out, is a problem to
-fix), and every one-way road must be a link. A board is playable only if it has exactly one bank, every suit (or a change-of-suit
+back or makes it one way, and adds **portal links** (see Board viewer). Roads have two looks: a
+two-way road is sandy; a **one-way road** is blue paving with white chevrons painted along it,
+pointing the way players may go (no sign is drawn on top of it). A **portal link** joins a side of
+one tile to a side of another tile anywhere on the board, without taking a tile space: a short
+road leaves each tile through that side and ends in a swirling ring in the pair's color (purple,
+cyan, pink, amber, green, blue, in board order). Players step through it as if the two tiles were
+neighbors: it costs one step, counts as the way they came (no turning back through it), and can
+be one way too (its short roads then show the one-way look). The token walks into one ring and
+comes out of the other; the route preview's dotted line does the same, and the direction arrow
+points out through the portal's side. Portal links don't join Easy-rule rows. Every tile with
+links needs a way in and a way out (a tile whose one-way links all lead in, or all lead out, is
+a problem to fix), every one-way link must be a road or portal link, and every portal must face
+an empty cell, one portal per side. A board is playable only if it has exactly one bank, every suit (or a change-of-suit
 square), at least one district, exactly 4 properties in every declared district, a valid starting
 average for each district, every warp and portal linked (to a partner of its kind or the bank), at most five pairs of each kind, and every square reachable from the bank (by road or
 warp). Grids range from 4 x 4 to 32 x 20 (up to 320
@@ -918,11 +928,15 @@ unsaved changes. Leaving returns to the collection. Opening a board (to view or 
 builder's grid; boards are trimmed to their tiles when played, so this changes nothing in games.
 
 **Links tool** (the chain icon, last in the builder's tool rail): every pair of neighboring
-tiles shows a badge between them: green with a two-headed arrow (linked both ways), the navy
-one-way badge with a gold arrow, or red with a cross (link removed; the road is gone). Tapping a
-badge cycles it: both ways, one way, the other way, removed, both ways again. Dragging elsewhere
-moves the view. Undo undoes link changes too. Links follow their tiles when a group is moved;
-erasing a tile forgets its link changes.
+tiles shows a badge between them: green with a two-headed arrow (linked both ways), a navy badge
+with a gold arrow (one way), or red with a cross (link removed; the road is gone). Tapping a badge
+cycles it: both ways, one way, the other way, removed, both ways again. Tapping a portal ring
+cycles it the same way, except that "removed" deletes the portal link. To add a portal link, tap a
+tile: its free sides (facing an empty cell, without a portal) show dashed gold rings with a plus;
+tap one, then tap a free side of any other tile (they all show their free sides now) and the
+portal is added. Tapping elsewhere or Escape cancels. Dragging elsewhere moves the view. Undo
+undoes link changes too. Links follow their tiles when a group is moved (each end of a portal
+link follows its own tile); erasing a tile forgets its link changes and its portal links.
 
 **Game setup options.** Over the title scene, a **top bar** that never scrolls runs across the
 screen: **Back** (to the main menu, as tall as Sound) and the "New Game" title in the top left

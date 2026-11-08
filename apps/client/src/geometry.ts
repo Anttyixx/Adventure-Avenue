@@ -3,7 +3,7 @@
  * cells are pointy-top hexagons 100 units wide; rows are 86.6 units apart and every odd row is
  * shifted half a cell right. Every board has a 50-unit margin all round.
  */
-import type { BoardLayout } from '@aa/engine';
+import { neighborCells, type BoardLayout } from '@aa/engine';
 
 export const CELL = 100;
 const HEX_ROW = (CELL * Math.sqrt(3)) / 2; // 86.6
@@ -100,3 +100,14 @@ export function tileShape(
 /** Height of a tile's top edge above its center (the point of a hex is higher). */
 export const tileTop = (layout: BoardLayout | undefined, half: number) =>
   layout === 'hex' ? (half * 2) / Math.sqrt(3) : half;
+
+/**
+ * The step from a cell's center to the center of the cell past its `side` (an index into the
+ * engine's `neighborCells`): where a portal link on that side sits, scaled down.
+ */
+export function sideVector(layout: BoardLayout | undefined, x: number, y: number, side: number) {
+  const [nx, ny] = neighborCells(layout, x, y)[side] ?? [x, y];
+  const a = cellCenter(layout, x, y);
+  const b = cellCenter(layout, nx, ny);
+  return { x: b.x - a.x, y: b.y - a.y };
+}

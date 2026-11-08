@@ -52,6 +52,8 @@ export interface Square {
   nb: number[];
   /** Neighbors players can't step to from here: the wrong way down a one-way road. */
   noGo?: number[];
+  /** Portal links leaving this square: the neighbor `to`, reached through this tile's `side`. */
+  portals?: { to: number; side: number }[];
   /** District index 0-6 for shops and plots, else -1. */
   d: number;
   /** Group index used for expansion and domination, else -1. */
@@ -227,6 +229,18 @@ export interface BoardSquareDef {
  */
 export type BoardLayout = 'square' | 'hex';
 
+/**
+ * A portal link between squares `a` and `b`: players leave `a` through its side `sa` and come
+ * out of `b`'s side `sb` (and back the same way), as if the tiles were neighbors. A side is an
+ * index into `neighborCells` (square: right, left, down, up; hex: right, left, up-left, up-right,
+ * down-left, down-right) and must face an empty cell.
+ */
+export interface PortalLink {
+  a: number;
+  b: number;
+  sa: number;
+  sb: number;
+}
 /** A board as data: squares on a grid, districts and the connections between squares. */
 export interface BoardDef {
   id: string;
@@ -240,8 +254,13 @@ export interface BoardDef {
   squares: BoardSquareDef[];
   /** Pairs of indices into `squares` that are connected. */
   edges: [number, number][];
-  /** One-way roads: [from, to] pairs (each also in `edges`) players may only take from -> to. */
+  /**
+   * One-way links: [from, to] pairs (each a road in `edges` or a portal link) players may only
+   * take from -> to.
+   */
   oneWay?: [number, number][];
+  /** Portal links: a side of one tile opening onto a side of a tile elsewhere on the board. */
+  portalLinks?: PortalLink[];
   /** Index of the bank square (start position). */
   bank: number;
 }

@@ -156,7 +156,8 @@ function miniMap(G: GameState, d: number, select: (d: number) => void, scale = 1
     ctx.lineWidth = 4;
     for (const sq of G.nodes) {
       for (const n of sq.nb) {
-        if (n < sq.id) continue;
+        // Portal links aren't roads: no line across the map.
+        if (n < sq.id || sq.portals?.some((q) => q.to === n)) continue;
         const a = pos(sq);
         const b = pos(G.nodes[n]);
         ctx.beginPath();

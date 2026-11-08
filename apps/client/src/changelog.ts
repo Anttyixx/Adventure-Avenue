@@ -26,6 +26,23 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: '2026-11-08-portal-links',
+    date: 'Nov 8, 2026',
+    title: 'Portal links',
+    features: [
+      {
+        tag: 'new',
+        title: 'Portal links',
+        text: 'A new kind of connection: link the side of one tile to the side of another anywhere on the board, without using a tile. Players step through the swirling rings as if the tiles were next to each other. Add them with the Links tool: tap a tile, pick a side, then pick where it comes out.',
+      },
+      {
+        tag: 'better',
+        title: 'One-way roads look different',
+        text: 'One-way roads are now blue with white chevrons painted along them, pointing the way you can go, instead of a sign on top of the road.',
+      },
+    ],
+  },
+  {
     id: '2026-11-08-links-tool',
     date: 'Nov 8, 2026',
     title: 'One-way roads',

@@ -15,7 +15,7 @@ import {
   type GameState,
   type Square,
 } from '@aa/engine';
-import { cellCenter, tileShape, tileTop, worldSize } from './geometry';
+import { cellCenter, sideVector, tileShape, tileTop, worldSize } from './geometry';
 import { SHOP_TIERS, STAR3_TIERS, badge, darken, drawShop, drawStar3, tierFor, tint } from './art';
 import { drawProp, type PropKey } from './props';
 import { drawBoonIcon, drawCoin, drawSparkle, SUIT_CHARS } from './icons';
@@ -369,6 +369,41 @@ export class BoardView {
       t.facing = Facing.Down;
       this.snapTokens();
     }
+  }
+
+  /**
+   * A step through a portal link: walk into the ring beside `from`, pop out of the ring beside
+   * `to`, then walk onto that tile.
+   */
+  async portalStep(pid: number, from: number, to: number, left: number) {
+    const G = this.G!;
+    const t = this.tokens.get(pid)!;
+    const gate = G.nodes[from].portals?.find((q) => q.to === to);
+    const back = G.nodes[to].portals?.find((q) => q.to === from);
+    if (!gate || !back) return this.step(pid, to, left);
+    const into = portalPoint(G, G.nodes[from], gate.side);
+    const start = { x: t.x, y: t.y };
+    t.walking = true;
+    t.facing = facingFor(into.x - start.x, into.y - start.y);
+    const dur = (T.step / 2) * this.speed;
+    const t0 = performance.now();
+    await new Promise<void>((resolve) => {
+      const tick = () => {
+        const k = Math.min(1, (performance.now() - t0) / dur);
+        const e = ease(k);
+        t.x = start.x + (into.x - start.x) * e;
+        t.y = start.y + (into.y - 12 - start.y) * e;
+        if (k < 1 && this.alive) requestAnimationFrame(tick);
+        else resolve();
+      };
+      tick();
+    });
+    this.ring(from, '#ffffff');
+    const out = portalPoint(G, G.nodes[to], back.side);
+    t.x = out.x;
+    t.y = out.y - 12;
+    this.ring(to, '#ffffff');
+    await this.step(pid, to, left);
   }
 
   async warp(pid: number, to: number) {
@@ -1327,9 +1362,20 @@ export class BoardView {
       ctx.lineWidth = 5;
       ctx.beginPath();
       ctx.moveTo(start.x, start.y);
+      // Through a portal link the line goes into one ring and comes out of the other.
+      let last = G.players[this.followPid].node;
       for (const id of path) {
+        const gate = G.nodes[last].portals?.find((q) => q.to === id);
+        const back = G.nodes[id].portals?.find((q) => q.to === last);
+        if (gate && back) {
+          const out = portalPoint(G, G.nodes[last], gate.side);
+          const into = portalPoint(G, G.nodes[id], back.side);
+          ctx.lineTo(out.x, out.y);
+          ctx.moveTo(into.x, into.y);
+        }
         const c = this.center(G.nodes[id]);
         ctx.lineTo(c.x, c.y);
+        last = id;
       }
       ctx.stroke();
       ctx.setLineDash([]);
@@ -1376,6 +1422,11 @@ export class BoardView {
     if (!p || p.bankrupt) return;
     const here = G.nodes[p.node];
     const next = nextSteps(here, p.prev);
+    // A portal link's arrow points out through its side, toward the ring.
+    const toward = (id: number) => {
+      const gate = here.portals?.find((q) => q.to === id);
+      return gate ? portalPoint(G, here, gate.side, 1) : this.center(G.nodes[id]);
+    };
     const c0 = this.center(here);
     const color = PLAYER_COLORS[p.color];
     // Each arrow runs from just past the token toward the next square, three chevrons deep.
@@ -1384,7 +1435,7 @@ export class BoardView {
     ctx.lineJoin = 'round';
     ctx.lineCap = 'round';
     for (const id of next) {
-      const c1 = this.center(G.nodes[id]);
+      const c1 = toward(id);
       const dx = c1.x - c0.x;
       const dy = c1.y - c0.y;
       const len = Math.hypot(dx, dy) || 1;
@@ -1677,10 +1728,81 @@ export function paintBoard(
   if (background) paintGrass(ctx);
   drawScenery(ctx, G, decorations);
   for (const sq of G.nodes) drawSquare(ctx, G, sq);
-  // One-way roads: an arrow badge between the two tiles, pointing the way players may go.
+  // Portal links: a swirling ring on each end's side, both ends in the pair's color.
+  for (const link of portalPairs(G)) {
+    drawPortalRing(ctx, portalPoint(G, G.nodes[link.a], link.sa), link.color);
+    drawPortalRing(ctx, portalPoint(G, G.nodes[link.b], link.sb), link.color);
+  }
+}
+
+/** Ring colors for portal links, one per pair in board order. */
+export const PORTAL_LINK_COLORS = ['#8b5cf6', '#06b6d4', '#ec4899', '#f59e0b', '#22c55e', '#3b82f6'];
+
+/** How far out from its tile's center a portal ring sits, as a share of a cell step. */
+const PORTAL_OUT = 0.72;
+
+/** Where a portal link's ring sits beside a tile: out from its `side`. */
+export function portalPoint(
+  G: { layout?: BoardLayout },
+  sq: { x: number; y: number },
+  side: number,
+  k = PORTAL_OUT,
+) {
+  const c = squareCenter(sq, G.layout);
+  const v = sideVector(G.layout, sq.x, sq.y, side);
+  return { x: c.x + v.x * k, y: c.y + v.y * k };
+}
+
+/** Every portal link once: its two squares, their sides and the pair's ring color. */
+export function portalPairs(G: GameState) {
+  const out: { a: number; b: number; sa: number; sb: number; color: string }[] = [];
   for (const sq of G.nodes)
-    for (const from of sq.noGo ?? [])
-      drawRoadArrow(ctx, squareCenter(G.nodes[from], G.layout), squareCenter(sq, G.layout));
+    for (const p of sq.portals ?? []) {
+      if (p.to < sq.id) continue;
+      const back = G.nodes[p.to]?.portals?.find((q) => q.to === sq.id);
+      if (!back) continue;
+      out.push({
+        a: sq.id,
+        b: p.to,
+        sa: p.side,
+        sb: back.side,
+        color: PORTAL_LINK_COLORS[out.length % PORTAL_LINK_COLORS.length],
+      });
+    }
+  return out;
+}
+
+/** True when `a` and `b` are joined by a portal link rather than a road. */
+export const isPortalLink = (G: GameState, a: number, b: number) =>
+  !!G.nodes[a]?.portals?.some((p) => p.to === b);
+
+/**
+ * A portal link's ring: a colored disc with a dark core and two white swirl arcs, ringed in
+ * white so it reads on grass and roads.
+ */
+export function drawPortalRing(ctx: CanvasRenderingContext2D, at: { x: number; y: number }, color: string) {
+  ctx.save();
+  ctx.translate(at.x, at.y);
+  ctx.beginPath();
+  ctx.arc(0, 0, 17, 0, Math.PI * 2);
+  ctx.fillStyle = color;
+  ctx.fill();
+  ctx.lineWidth = 3;
+  ctx.strokeStyle = '#fff';
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.arc(0, 0, 10, 0, Math.PI * 2);
+  ctx.fillStyle = '#16213f';
+  ctx.fill();
+  ctx.lineWidth = 2.5;
+  ctx.lineCap = 'round';
+  ctx.strokeStyle = 'rgba(255,255,255,0.9)';
+  for (const start of [0, Math.PI]) {
+    ctx.beginPath();
+    ctx.arc(0, 0, 6.5, start, start + Math.PI * 0.75);
+    ctx.stroke();
+  }
+  ctx.restore();
 }
 
 /**
@@ -1849,27 +1971,78 @@ export function paintGrass(ctx: CanvasRenderingContext2D) {
   ctx.restore();
 }
 
-function drawScenery(ctx: CanvasRenderingContext2D, G: GameState, decorations: boolean) {
-  // Roads along every edge
-  ctx.lineCap = 'round';
-  for (const [w, c] of [
-    [44, '#c9b07a'],
-    [36, '#efe0b6'],
-  ] as [number, string][]) {
-    ctx.strokeStyle = c;
-    ctx.lineWidth = w;
-    for (const sq of G.nodes) {
-      const a = squareCenter(sq, G.layout);
-      for (const n of sq.nb) {
-        if (n < sq.id) continue;
-        const b = squareCenter(G.nodes[n], G.layout);
-        ctx.beginPath();
-        ctx.moveTo(a.x, a.y);
-        ctx.lineTo(b.x, b.y);
-        ctx.stroke();
-      }
+/** Road colors: border and paving for two-way roads, and for one-way roads (blue paving). */
+const ROAD = { edge: '#c9b07a', fill: '#efe0b6' };
+const ONE_WAY_ROAD = { edge: '#3d5f8f', fill: '#7fa8dc', marks: '#ffffff' };
+
+/**
+ * Every road piece: between neighboring tiles, and from a tile out to each of its portal rings.
+ * `dir` is 1 when players may only go from -> to, -1 for only to -> from, 0 for both ways.
+ */
+function roadPieces(G: GameState) {
+  const pieces: { from: { x: number; y: number }; to: { x: number; y: number }; dir: number }[] = [];
+  const only = (a: number, b: number) =>
+    G.nodes[b]?.noGo?.includes(a) ? -1 : G.nodes[a]?.noGo?.includes(b) ? 1 : 0;
+  for (const sq of G.nodes) {
+    const a = squareCenter(sq, G.layout);
+    for (const n of sq.nb) {
+      if (n < sq.id || isPortalLink(G, sq.id, n)) continue;
+      // only(sq, n) is 1 when sq can't go to n, so the way is n -> sq.
+      pieces.push({ from: a, to: squareCenter(G.nodes[n], G.layout), dir: -only(sq.id, n) });
     }
+    for (const p of sq.portals ?? [])
+      pieces.push({ from: a, to: portalPoint(G, sq, p.side), dir: -only(sq.id, p.to) });
   }
+  return pieces;
+}
+
+/**
+ * Roads: a sandy two-way road, or a blue one-way road with white chevrons painted along it,
+ * pointing the way players may go (centered on the gap between tiles, where it shows).
+ */
+function drawRoads(ctx: CanvasRenderingContext2D, G: GameState) {
+  const pieces = roadPieces(G);
+  ctx.save();
+  ctx.lineCap = 'round';
+  for (const [w, key] of [
+    [44, 'edge'],
+    [36, 'fill'],
+  ] as const)
+    for (const p of pieces) {
+      ctx.strokeStyle = (p.dir ? ONE_WAY_ROAD : ROAD)[key];
+      ctx.lineWidth = w;
+      ctx.beginPath();
+      ctx.moveTo(p.from.x, p.from.y);
+      ctx.lineTo(p.to.x, p.to.y);
+      ctx.stroke();
+    }
+  ctx.strokeStyle = ONE_WAY_ROAD.marks;
+  ctx.lineWidth = 5;
+  ctx.lineJoin = 'round';
+  for (const p of pieces) {
+    if (!p.dir) continue;
+    const [from, to] = p.dir > 0 ? [p.from, p.to] : [p.to, p.from];
+    const len = Math.hypot(to.x - from.x, to.y - from.y);
+    ctx.save();
+    ctx.translate(from.x, from.y);
+    ctx.rotate(Math.atan2(to.y - from.y, to.x - from.x));
+    // Chevrons every 18 units, one always in the middle of the gap between two tiles.
+    const mid = p.to === p.from ? 0 : len / 2;
+    for (let x = mid - 36; x <= mid + 36; x += 18) {
+      if (x < 6 || x > len - 6) continue;
+      ctx.beginPath();
+      ctx.moveTo(x - 4, -8);
+      ctx.lineTo(x + 4, 0);
+      ctx.lineTo(x - 4, 8);
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+  ctx.restore();
+}
+
+function drawScenery(ctx: CanvasRenderingContext2D, G: GameState, decorations: boolean) {
+  drawRoads(ctx, G);
 
   // Keep roads visible while the builder hides purely decorative scenery.
   if (!decorations) return;
