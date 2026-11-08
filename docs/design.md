@@ -719,7 +719,11 @@ if (!(await ask(`Delete ${d.name}?`, 'Its 4 properties will be removed from the 
   wrapping round the list), each 62% wide with a 14px gap; the middle one (`.on`) is full size,
   the others scale to 0.8 toward it (`.before`/`.after` set the origin) at 45% opacity (70% on
   hover) with their names hidden; tapping one moves there. Each card (`mapSlide()`) is the
-  `.car-thumb` picture (up to 250px / 30vh tall) and `.mapcar-name` (Lilita 24px, plus a purple "My board" `.car-tag`). A move
+  `.car-thumb` picture in a frame of one fixed size whichever board shows (full card width,
+  `--thumb-h` tall: min(250px, 30vh), 96px or the room left on phones, more in `layout-tabs`;
+  the picture scales to fit inside, centered), so the panels never resize as the carousel moves,
+  and `.mapcar-name` (one line, the name ellipsized; a red "Needs fixing" `.car-tag.bad` for a
+  board with problems) (Lilita 24px, plus a purple "My board" `.car-tag`). A move
   redraws the row and animates it in from one step over (`translateX(k * (62% + 14px))`, 380ms,
   `cubic-bezier(0.2, 0.8, 0.2, 1)`), the new middle board growing from 0.8 and the old one
   shrinking. Under it `.mapcar-line` (6px, white 14%, up to 320px / 70% wide, tappable with a

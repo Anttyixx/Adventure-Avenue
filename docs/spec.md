@@ -930,7 +930,7 @@ softly at every size (nothing clips them). Headings capitalize every word. There
 
 - **Board:** a horizontal carousel of the built-in boards followed by the player's saved boards,
   looping from the last board back to the first. The chosen board's picture sits in the middle
-  with its name under it ("My board" for a saved one); the boards before and after it peek out,
+  with its name under it ("My board" for a saved one, a red "Needs fixing" tag for one with problems), always in a frame of the same size so the panels never change size from board to board; the boards before and after it peek out,
   smaller and faded, on both sides. Tapping a side board, swiping or the arrow keys move it: the
   row slides over while the new board grows into the middle. Under it a thin line shows where in
   the list the board is: a gold bar (one board's share of the line) slides along it, so any

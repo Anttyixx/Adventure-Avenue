@@ -507,10 +507,15 @@ function mapSlide(board: BoardDef, mine: boolean): HTMLElement {
       { class: 'mapcar-name' },
       h('b', null, board.name),
       mine ? h('span', { class: 'car-tag mine' }, 'My board') : null,
+      // In the name row (not a line of its own), so the card stays the same height.
+      validateBoard(board).errors.length
+        ? h(
+            'span',
+            { class: 'car-tag bad', title: 'Has problems: fix it in the board editor to play.' },
+            'Needs fixing',
+          )
+        : null,
     ),
-    validateBoard(board).errors.length
-      ? h('small', { class: 'car-bad' }, 'Has problems: fix it in the board editor to play.')
-      : null,
   );
 }
 

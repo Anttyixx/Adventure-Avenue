@@ -26,6 +26,18 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: '2026-11-08-steady-board-panel',
+    date: 'Nov 8, 2026',
+    title: 'A steady board picker',
+    features: [
+      {
+        tag: 'fix',
+        title: 'The panels keep their size',
+        text: 'On the new game screen, the Board and Game Settings panels stay the same size as you flip through the boards: each board fits inside one fixed frame, tall or wide.',
+      },
+    ],
+  },
+  {
     id: '2026-11-08-card-button',
     date: 'Nov 8, 2026',
     title: 'Your player card button',

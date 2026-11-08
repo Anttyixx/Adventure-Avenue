@@ -10246,16 +10246,30 @@ div.sl-inline label {
   text-align: center;
 }
 .mapcar-name {
+  /* One line whatever the board, so the card's height never changes. */
+  max-width: 100%;
+  min-width: 0;
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   justify-content: center;
   align-items: center;
   gap: 8px;
 }
 .mapcar-name b {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
   font: 400 24px var(--head);
   color: #fff;
   white-space: nowrap;
+}
+.mapcar-name .car-tag {
+  flex: none;
+}
+/* A board with problems: a short red tag in the name row (the reason is its title). */
+.car-tag.bad {
+  background: var(--bad);
+  color: #fff;
 }
 /* Where in the list of boards: a line with a gold bar (one board's share of it, at least 18px)
    that slides along as the carousel moves; tap the line to jump. */
@@ -10286,16 +10300,26 @@ div.sl-inline label {
   background: var(--accent);
   box-shadow: 0 0 6px rgba(255, 209, 102, 0.6);
 }
+/* The board picture's frame is one fixed size whichever board shows (tall or wide), so the panels
+   never change size as the carousel moves; each board's picture scales to fit inside it,
+   centered. --thumb-h is the picture's room, set per layout and screen below. */
+.su {
+  --thumb-h: min(250px, 30vh);
+  --thumb-pad: 8px;
+}
 .su .car-thumb {
-  width: auto;
+  width: 100%;
+  height: calc(var(--thumb-h) + 2 * var(--thumb-pad));
   min-height: 0;
   max-height: none;
-  padding: 8px;
+  box-sizing: border-box;
+  padding: var(--thumb-pad);
 }
 .su .car-thumb .thumb {
   width: auto !important;
+  height: auto !important;
   max-width: 100%;
-  max-height: min(250px, 30vh);
+  max-height: 100%;
 }
 
 /* The winning goal's digit picker, a size smaller here. */
@@ -10904,8 +10928,8 @@ button.char-btn:hover img {
     padding: 10px 12px;
     gap: 8px;
   }
-  .su .car-thumb .thumb {
-    max-height: 96px;
+  .su {
+    --thumb-h: 96px;
   }
   .su-rules {
     gap: 8px 14px;
@@ -10959,13 +10983,13 @@ button.char-btn:hover img {
     overflow: hidden;
   }
 
-  .su .car-thumb {
-    padding: 4px;
-    border-radius: 10px;
+  .su {
+    --thumb-pad: 4px;
+    /* The picture takes what is left of the screen's height after the top bar and labels. */
+    --thumb-h: max(48px, calc(100dvh - 200px));
   }
-  /* The picture takes what is left of the screen's height after the top bar and labels. */
-  .su .car-thumb .thumb {
-    max-height: max(48px, calc(100dvh - 200px));
+  .su .car-thumb {
+    border-radius: 10px;
   }
   .mapcar-wrap {
     gap: 8px;
@@ -11023,8 +11047,8 @@ button.char-btn:hover img {
 /* One panel at a time: the board picture may use the extra height (its width still limits it;
    phones keep their own size). */
 @media (min-height: 501px) {
-  .su.layout-tabs .car-thumb .thumb {
-    max-height: max(48px, calc(100dvh - 300px));
+  .su.layout-tabs {
+    --thumb-h: max(48px, calc(100dvh - 300px));
   }
 }
 /* Very narrow windows (a phone held upright): a smaller title and Sound as just its icon, so the
