@@ -1097,22 +1097,30 @@ export class Hud {
   }
 
   /**
-   * Whether anything in the action bar is cut off or has to scroll to be seen: the bar or a button
-   * row overflowing (a row lined up on its right spills out on the left, which the browser doesn't
-   * count, so the buttons' own boxes are checked), or the question squeezed into a sliver.
+   * Whether anything in the action bar is cut off or has to scroll to be seen: a button, the
+   * question or one of its chips reaching outside the bar, a button row that has to scroll, or
+   * the question squeezed into a sliver. (The bar's own scroll size isn't used: button rows keep
+   * a little spare room around them for shadows and the main button's nudge, which pokes past
+   * the bar without hiding anything.)
    */
   private askOverflows(): boolean {
     const a = this.ask;
-    if (a.scrollWidth > a.clientWidth + 2 || a.scrollHeight > a.clientHeight + 2) return true;
     if (this.askTextSqueezed()) return true;
-    return [...a.querySelectorAll<HTMLElement>('.btn-row, .tb-btns')].some((r) => {
-      if (r.scrollWidth > r.clientWidth + 2) return true;
-      const rr = r.getBoundingClientRect();
-      return [...r.children].some((c) => {
-        const cr = c.getBoundingClientRect();
-        return cr.width > 0 && (cr.left < rr.left - 1 || cr.right > rr.right + 1);
-      });
-    });
+    const box = a.getBoundingClientRect();
+    for (const el of a.querySelectorAll<HTMLElement>('button, .prompt-text, .facts, .m-card, .digits')) {
+      const r = el.getBoundingClientRect();
+      if (!r.width) continue;
+      if (
+        r.left < box.left - 2 ||
+        r.right > box.right + 2 ||
+        r.top < box.top - 2 ||
+        r.bottom > box.bottom + 2
+      )
+        return true;
+    }
+    return [...a.querySelectorAll<HTMLElement>('.btn-row, .tb-btns')].some(
+      (r) => r.scrollWidth > r.clientWidth + 2,
+    );
   }
 
   /** Measure once, then resize the shell without repeatedly rewrapping its text. */

@@ -26,6 +26,18 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: '2026-11-08-bar-blur-fix',
+    date: 'Nov 8, 2026',
+    title: 'Fewer blurs',
+    features: [
+      {
+        tag: 'fix',
+        title: 'The board stays sharp on phones',
+        text: 'Questions like "Buy this shop?" no longer blur the board on phones: the action bar sits in the bottom left as before. The blur only comes when choices truly don\'t fit beside the player cards.',
+      },
+    ],
+  },
+  {
     id: '2026-11-07-never-cut-off',
     date: 'Nov 7, 2026',
     title: 'Nothing cut off',

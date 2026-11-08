@@ -784,8 +784,9 @@ if (!(await ask(`Delete ${d.name}?`, 'Its 4 properties will be removed from the 
 ### 5.17e Too big for the room (over the player cards)
 
 - **Action bar** (`hud.fitAskOver`, `.hud.ab-over`): checked after every change once the bar has
-  stopped morphing. If anything is cut off or has to scroll (the bar or a button row overflowing,
-  a button outside its row's box, or the question squeezed), the bar spans the screen 8px from each
+  stopped morphing. If anything is cut off or has to scroll (a button, the question or one of its
+  chips reaching outside the bar, a button row that has to scroll, or the question squeezed; the
+  bar's own scroll size isn't used, since button rows' spare room for shadows pokes past it), the bar spans the screen 8px from each
   side at `z-index: 6`, as a column: the question (no line clamp) above the choices, which wrap
   (centered) instead of scrolling; up to the room under the toolbar tall. `.hud::after` puts a
   full-screen navy 25% wash with a 6px backdrop blur behind it (`z-index: 5`), and the toolbar
