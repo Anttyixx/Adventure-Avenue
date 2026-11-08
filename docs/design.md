@@ -791,6 +791,19 @@ if (!(await ask(`Delete ${d.name}?`, 'Its 4 properties will be removed from the 
   narrow), and a foot (a hairline above) with the rejoin hints and the gold **Resume Game**. A
   player not back yet: seat faded to 50% with a red "AWAY" pill (`.seat-away`) beside the tag.
 
+### 5.17f Board collection
+
+- `collection.ts` `openCollection`: the title scene with the setup screen's top bar (`.su-top`:
+  Back and the title left; Add a board (plain), New board (gold) and Sound right). Below, a grid
+  that scrolls without a scroll bar (`.coll-grid`, `auto-fill, minmax(250px, 1fr)`; 220px on
+  small screens) of dark glass cards (`.coll-card`): the carousel's green frame (`.car-thumb`) at
+  one fixed height so every card matches, the name in the heading font with `car-tag` pills, a
+  muted meta line, and outline chips (`.su-tab`) View / Edit / Remove (Remove turns red on hover).
+- Pop-ups use the menu pop-up frame (`modal-wrap menu-pop`): View shows the big picture beside a
+  `dl.coll-facts` (as on the Continue panel); Remove is a question with a red **Remove** and a
+  ghost **Cancel**. Feedback goes in a dark pill (`.coll-notice`, red text for problems) above the
+  grid, never an alert. Hidden built-ins sit in dark pills with **Add back** under "Removed boards".
+
 ### 5.17e Too big for the room (over the player cards)
 
 - **Action bar** (`hud.fitAskOver`, `.hud.ab-over`): checked after every change once the bar has

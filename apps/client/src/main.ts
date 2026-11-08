@@ -20,6 +20,7 @@ import { loadProps } from './props';
 import { installVersionChip } from './ui/devmenu';
 import { IS_DEV_BUILD } from './build';
 import { openEditor } from './ui/editor';
+import { openCollection } from './ui/collection';
 import { openLab } from './ui/lab';
 import { applyLiveStockSettings, openStocksLab } from './ui/stockslab';
 import { mainMenu, type MenuOptions } from './ui/menu';
@@ -50,9 +51,9 @@ function showStart(opts: MenuOptions = {}) {
         close();
         void joinGame(g.code, g.name);
       },
-      onEditor() {
+      onCollection() {
         close();
-        showEditor(null);
+        showCollection();
       },
     },
     undefined,
@@ -271,13 +272,28 @@ function play(G: ReturnType<typeof newGame>, onExit = showStart, saving = true) 
   void host.start();
 }
 
-function showEditor(board: BoardDef | null) {
+/** The board collection: back goes to the main menu; editing opens the board editor. */
+function showCollection() {
+  const close = openCollection(app, {
+    onBack() {
+      close();
+      showStart();
+    },
+    onEdit(board) {
+      close();
+      showEditor(board, showCollection);
+    },
+  });
+}
+
+/** The board editor; leaving it goes `back` (the main menu, or the collection it came from). */
+function showEditor(board: BoardDef | null, back: () => void = showStart) {
   sound.music('menu');
   history.replaceState(null, '', '#editor');
   openEditor(app, board, {
     onExit() {
       history.replaceState(null, '', location.pathname + location.search);
-      showStart();
+      back();
     },
     onPlay(b) {
       // Test play: one human against three CPUs, then back to the editor.
@@ -289,7 +305,7 @@ function showEditor(board: BoardDef | null) {
       }));
       play(
         newGame({ rules: 'standard', target: K.defaultTarget, roundCap: 0, seats, board: boardForPlay(b) }),
-        () => showEditor(b),
+        () => showEditor(b, back),
         false,
       );
     },

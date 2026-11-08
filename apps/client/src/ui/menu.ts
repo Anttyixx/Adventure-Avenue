@@ -162,7 +162,8 @@ export interface MenuHandlers {
   onContinue(save: SaveInfo): void;
   /** Go back into the online game this device last joined as a guest. */
   onRejoin(g: GuestSave): void;
-  onEditor(): void;
+  /** The board collection (the boards in game setup; viewing, adding, removing, editing them). */
+  onCollection(): void;
 }
 
 function ago(t: number): string {
@@ -322,7 +323,7 @@ export function mainMenu(
         ),
       )
     : null;
-  // The Menu button (top right, beside Sound) holds What's new, the board editor and Credits.
+  // The Menu button (top right, beside Sound) holds What's new, the board collection and Credits.
   // It carries a "New" badge until the latest update has been read on this device.
   const menuBtn = h(
     'button',
@@ -386,7 +387,7 @@ export function mainMenu(
             () => openWhatsNew(root, badge),
             hasUnseenUpdate(),
           ),
-          item('Board editor', 'Build your own boards and play them', () => handlers.onEditor()),
+          item('Board collection', 'View, add, remove and edit your boards', () => handlers.onCollection()),
           item('Credits', 'Everyone whose art and music the game uses', () => openCredits(root)),
         ),
       ),

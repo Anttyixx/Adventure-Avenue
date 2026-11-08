@@ -879,11 +879,27 @@ joining a game uses its name (unless one was typed for a rejoin) and asks the ho
 character: if someone in that game already has it, the player gets a random free one, and can
 still change it before the game starts. Changing the name or character in a game's setup doesn't
 change the card. **Menu**: a pop-up in the middle of the screen with
-**What's new**, **Board editor** and **Credits**, each a row with a line saying what it is (Close,
+**What's new**, **Board collection** and **Credits**, each a row with a line saying what it is (Close,
 Escape or a click outside closes it). Menu carries a red "New" badge until the latest update has
 been read on this device, and What's new shows a "New" tag in the pop-up. **Credits** lists everyone whose
 work the game uses (art, fonts, libraries; data in `apps/client/src/credits.ts`), one card each with
 what was used, the license and links to their pages.
+
+**Board collection** (main menu, Menu): every board that game setup offers, the built-in ones
+and the player's own (saved on this device), over the title scene. A top bar holds **Back** (to
+the main menu) and the "Board Collection" title in the top left, and **Add a board** (import an
+`.aaboard.json` file; hidden on very narrow screens), **New board** (opens the board editor on a
+blank board) and **Sound** in the top right. The boards are cards in a grid that scrolls: the
+board's picture in a green frame (tapping it views the board), its name with a "Built-in" or "My
+board" tag (and "Needs fixing" when it can't be played yet), a muted line with its shape, squares
+and districts, and three chips: **View** (a pop-up with a big picture, its facts: kind, shape,
+squares, districts, maker and save date, with **Edit** / **Edit a copy**, and **Export** for own
+boards), **Edit** (own boards; built-in boards say **Edit a copy**, which saves a copy named like
+"Harbor (2)" as the player's own and opens it in the editor) and **Remove** (asks first). Removing
+an own board deletes it from this device; removing a built-in board only hides it from the
+collection and game setup, and it is listed under **Removed boards** with **Add back**. The last
+board can't be removed. A short note under the top bar says what just happened (added, removed,
+or why something failed). Leaving the board editor opened from here returns to the collection.
 
 **Game setup options.** Over the title scene, a **top bar** that never scrolls runs across the
 screen: **Back** (to the main menu, as tall as Sound) and the "New Game" title in the top left
@@ -935,7 +951,8 @@ softly at every size (nothing clips them). Headings capitalize every word. There
   row slides over while the new board grows into the middle. Under it a thin line shows where in
   the list the board is: a gold bar (one board's share of the line) slides along it, so any
   number of boards fits; tapping the line jumps there. There are no board tool chips here: boards
-  are imported and edited in the board editor (main menu, Menu). The Board and Game Settings
+  are added, removed and edited in the board collection (main menu, Menu); boards removed there
+  are not offered here. The Board and Game Settings
   headings are large.
 - **Players** (in the players column): setup starts with only the host ("You · host"); bots and
   other players on this device are added by hand, and friends join with the code (the board and

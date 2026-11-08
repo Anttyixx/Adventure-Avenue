@@ -11323,3 +11323,231 @@ button.char-btn:hover img {
 .hud:has(> .over-cards:not([hidden])) > .prompt-center {
   z-index: 6;
 }
+/* Board collection (collection.ts): the title scene with the setup screen's top bar (Back, the
+   title, then Add a board, New board and Sound), and the boards as glass cards in a grid that
+   scrolls (no scroll bar): a green picture frame (tap to view), the name with a Built-in / My
+   board tag, a muted line on its shape and size, and View / Edit / Remove chips. Built-in boards
+   the player removed are listed under "Removed boards" with Add back. */
+.coll {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+.coll-scroll {
+  position: relative;
+  z-index: 1;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: none;
+}
+.coll-scroll::-webkit-scrollbar {
+  display: none;
+}
+.coll-main {
+  width: min(1180px, 100%);
+  box-sizing: border-box;
+  margin: 0 auto;
+  padding: 6px 16px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.coll-notice {
+  margin: 0;
+  align-self: flex-start;
+  padding: 6px 14px;
+  border-radius: 999px;
+  background: rgba(16, 26, 51, 0.85);
+  color: #fff;
+  font: 600 13px var(--body);
+}
+.coll-notice:empty {
+  display: none;
+}
+.coll-notice.bad {
+  color: #ffb4b4;
+}
+.coll-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 14px;
+}
+.coll-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+  border-radius: 14px;
+  background: rgba(16, 26, 51, 0.94);
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.3);
+}
+/* The picture: the carousel's green frame at one fixed height, so every card is the same size. */
+.coll-thumb {
+  height: 150px;
+  min-height: 0;
+  box-sizing: border-box;
+  padding: 8px;
+  border: 0;
+  cursor: pointer;
+  transition: filter 0.15s;
+}
+.coll-thumb:hover {
+  filter: brightness(1.06);
+}
+.coll-thumb .thumb,
+.coll-view-thumb .thumb {
+  width: auto !important;
+  height: auto !important;
+  max-width: 100%;
+  max-height: 100%;
+}
+.coll-name {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.coll-name b {
+  min-width: 0;
+  overflow: hidden;
+  color: #fff;
+  font: 400 20px var(--head);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.coll-name .car-tag {
+  flex: none;
+}
+.coll-meta {
+  color: var(--muted);
+  font-size: 12px;
+}
+.coll-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: auto;
+}
+.coll-actions .su-tab {
+  padding: 4px 12px;
+  font-size: 13px;
+}
+.su-tab.coll-remove:hover {
+  border-color: var(--bad);
+  color: #ffb4b4;
+}
+.coll-removed:empty {
+  display: none;
+}
+.coll-removed h3 {
+  margin: 4px 0 8px;
+  color: #fff;
+  font: 400 20px var(--head);
+  text-shadow: 0 2px 0 rgba(16, 26, 51, 0.45);
+}
+.coll-removed-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.coll-removed-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 6px 6px 14px;
+  border-radius: 999px;
+  background: rgba(16, 26, 51, 0.88);
+  color: #fff;
+  font: 400 15px var(--head);
+}
+.coll-removed-item .su-tab {
+  padding: 3px 12px;
+  font-size: 13px;
+}
+/* View and Remove pop-ups. */
+.coll-dialog {
+  width: min(680px, calc(100vw - 24px));
+}
+.coll-dialog-text {
+  margin: 0 0 4px;
+  line-height: 1.45;
+}
+.coll-dialog-btns {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 14px;
+}
+.coll-view {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px 20px;
+  align-items: center;
+}
+.coll-view-thumb {
+  flex: 1 1 340px;
+  height: min(300px, 45vh);
+  box-sizing: border-box;
+  padding: 10px;
+}
+.coll-facts {
+  flex: 1 1 160px;
+  margin: 0;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 8px 14px;
+}
+.coll-facts dt {
+  color: #d4dced;
+  font: 600 13px var(--body);
+}
+.coll-facts dd {
+  margin: 0;
+  color: #fff;
+  font: 700 15px var(--body);
+}
+@media (max-height: 500px), (max-width: 760px) {
+  .coll-main {
+    padding: 2px 8px 16px;
+    gap: 10px;
+  }
+  .coll-grid {
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 8px;
+  }
+  .coll-actions {
+    gap: 4px;
+  }
+  .coll-actions .su-tab {
+    padding: 3px 9px;
+    font-size: 12px;
+  }
+  .coll-card {
+    padding: 8px;
+    gap: 6px;
+  }
+  .coll-thumb {
+    height: 104px;
+    padding: 5px;
+  }
+  .coll-name b {
+    font-size: 16px;
+  }
+  .coll-top .coll-add,
+  .coll-top .coll-new {
+    padding: 0 10px;
+    font-size: 13px;
+  }
+  .coll-view-thumb {
+    height: min(200px, 50vh);
+  }
+}
+@media (max-width: 520px) {
+  .coll-top .coll-add {
+    display: none;
+  }
+}

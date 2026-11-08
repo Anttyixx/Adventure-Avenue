@@ -67,6 +67,56 @@ export function deleteBoard(id: string) {
   }
 }
 
+/** Built-in boards the player removed from their collection (they can add them back). */
+const HIDDEN_KEY = 'adventure-avenue-hidden-boards';
+
+export function hiddenBuiltIns(): string[] {
+  try {
+    const list = JSON.parse(localStorage.getItem(HIDDEN_KEY) ?? '[]');
+    return Array.isArray(list) ? list.filter((id) => BUILT_IN.some((b) => b.id === id)) : [];
+  } catch {
+    return [];
+  }
+}
+
+/** Take a built-in board out of the collection, or put it back. */
+export function setBuiltInHidden(id: string, hidden: boolean) {
+  try {
+    const list = hiddenBuiltIns().filter((x) => x !== id);
+    if (hidden) list.push(id);
+    localStorage.setItem(HIDDEN_KEY, JSON.stringify(list));
+  } catch {
+    /* storage unavailable */
+  }
+}
+
+/** A board in the player's collection: built-in (`mine` false) or one they saved. */
+export interface CollectionBoard {
+  board: BoardDef;
+  mine: boolean;
+  savedAt?: number;
+}
+
+/**
+ * The player's board collection, in the order game setup shows it: the built-in boards they
+ * haven't removed, then their own boards (newest first). Never empty: with everything removed,
+ * the built-in boards come back.
+ */
+export function collection(): CollectionBoard[] {
+  const hidden = new Set(hiddenBuiltIns());
+  const list: CollectionBoard[] = [
+    ...BUILT_IN.filter((b) => !hidden.has(b.id)).map((board) => ({ board, mine: false })),
+    ...listBoards().map((b) => ({ board: b.board, mine: true, savedAt: b.savedAt })),
+  ];
+  return list.length ? list : BUILT_IN.map((board) => ({ board, mine: false }));
+}
+
+/** A copy of a board to edit as the player's own (a new id and its own name), saved. */
+export function copyBoard(board: BoardDef): BoardDef | null {
+  const copy: BoardDef = { ...structuredClone(board), id: newBoardId(), name: uniqueName(board.name) };
+  return saveBoard(copy) ? copy : null;
+}
+
 /** Find a board by id among the built-in and saved boards. */
 export function getBoard(id: string | null | undefined): BoardDef | null {
   if (!id) return null;

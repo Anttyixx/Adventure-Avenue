@@ -26,6 +26,24 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: '2026-11-08-board-collection',
+    date: 'Nov 8, 2026',
+    title: 'Your board collection',
+    features: [
+      {
+        tag: 'new',
+        title: 'Board collection',
+        text: 'Menu now has a Board collection in place of the board editor: every built-in board and every board you made, side by side. View one up close, remove the ones you never play, add boards from a file, or make a new one.',
+      },
+      {
+        tag: 'better',
+        title: 'Edit any board',
+        text: 'Edit your own boards, or make a copy of a built-in board and change it to your liking. Removed built-in boards can be added back at any time.',
+      },
+    ],
+    extras: ['Removed boards no longer show up in the new game board picker'],
+  },
+  {
     id: '2026-11-08-steady-board-panel',
     date: 'Nov 8, 2026',
     title: 'A steady board picker',

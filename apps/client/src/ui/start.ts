@@ -18,7 +18,7 @@ import {
   type RuleSet,
 } from '@aa/engine';
 import { boardThumb } from './thumb';
-import { BUILT_IN, getBoard, listBoards } from '../boardstore';
+import { BUILT_IN, collection, getBoard } from '../boardstore';
 import { freeCharacter } from '../sprites';
 import { NAME_MAX, PLAYER_NAMES, cleanName, loadProfile } from '../profile';
 import { nameText } from './marquee';
@@ -909,7 +909,10 @@ export function setupScreen(
     stocks: saved.stocks ?? 'dynamic',
     rules: saved.rules,
   };
-  let boardId: string = getBoard(saved.boardId) ? saved.boardId : 'town';
+  // The last board played, if it is still in the collection; else the collection's first.
+  let boardId: string = collection().some((b) => b.board.id === saved.boardId)
+    ? saved.boardId
+    : collection()[0].board.id;
   /** The board shown before the last carousel move (its index), so only that redraw slides. */
   let mapFrom = -1;
   /** The board and settings the Ready taps were for: changing them asks everyone again. */
@@ -1036,11 +1039,8 @@ export function setupScreen(
   root.append(frame.el);
 
   const playable = (b: BoardDef) => validateBoard(b).errors.length === 0;
-  /** Every board in carousel order: built-in first, then the player's saved boards. */
-  const boards = () => [
-    ...BUILT_IN.map((board) => ({ board, mine: false })),
-    ...listBoards().map((b) => ({ board: b.board, mine: true })),
-  ];
+  /** Every board in carousel order: the player's collection (built-in boards kept, then their own). */
+  const boards = () => [...collection()];
   const move = (step: number) => {
     const list = boards();
     const i = Math.max(

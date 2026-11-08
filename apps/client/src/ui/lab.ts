@@ -44,6 +44,7 @@ import { paymentActivity, paymentLogMatches } from './activity';
 import { clearGuest, loadGuest, saveGuest } from '../save';
 import { mainMenu, openPlayerCard } from './menu';
 import { openEditor } from './editor';
+import { openCollection } from './collection';
 import { openWhatsNew } from './whatsnew';
 import { openCredits } from './credits';
 import { pickCharacter } from './charpick';
@@ -112,7 +113,7 @@ const rnd = (n: number) => Math.floor(Math.random() * n);
  * Controls for UI elements that were just added or changed: they shake once and glow so they
  * are easy to find. Update this list with each change.
  */
-const RECENT = new Set(['Game setup', 'Joined game (locked setup)', 'Online: continue saved game']);
+const RECENT = new Set(['Board collection', 'Main menu (no save)', 'Game setup']);
 
 /** Which board the lab plays on: Town (square) or Twin Lakes (hex), remembered per browser. */
 const LAB_BOARD_KEY = 'aa-lab-board';
@@ -1589,7 +1590,7 @@ export async function openLab(app: HTMLElement, section?: string) {
             onJoin: (code) => done(`Main menu: Join ${code} pressed.`),
             onContinue: () => done('Main menu: Continue pressed.'),
             onRejoin: (g) => done(`Main menu: Rejoin room ${g.code} as ${g.name} pressed.`),
-            onEditor: () => done('Main menu: Board editor pressed.'),
+            onCollection: () => done('Main menu: Board collection pressed.'),
           },
           withSave ? { state: cloneState(G), savedAt: Date.now() - 12 * 60000 } : null,
         );
@@ -1603,6 +1604,14 @@ export async function openLab(app: HTMLElement, section?: string) {
       s,
       btn('Main menu (saved game)', () => menu(true)),
       btn('Main menu (no save)', () => menu(false)),
+      btn('Board collection', () =>
+        overlay((holder, done) =>
+          openCollection(holder, {
+            onBack: () => done('Board collection: Back pressed.'),
+            onEdit: (b) => done(`Board collection: edit ${b ? b.name : 'a new board'}.`),
+          }),
+        ),
+      ),
       btn('Main menu (rejoin offer)', () => menu(false, true)),
       btn('Main menu (save + rejoin)', () => menu(true, true)),
       btn("What's new", () => openWhatsNew(document.body)),
