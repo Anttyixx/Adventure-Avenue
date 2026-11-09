@@ -1,6 +1,6 @@
 import { StatusMessages } from './status-messages';
 /**
- * Dark-glass overlays floating over the board: info chip, toolbar (zoom chip, Guide, Menu),
+ * Dark-glass overlays floating over the board: info chip, toolbar (zoom chip, Game log, Music, Menu),
  * action bar (the status line when no options are up), Game log button (expands into the log),
  * player cards, the info pop-up (game, stocks and players), menu pop-up, tooltip, modals
  * and banners. HotSeat (host.ts) drives it; `prompt()` is how most human decisions are asked.
@@ -21,7 +21,7 @@ import {
   type Player,
 } from '@aa/engine';
 import type { BoardView, PortalGate } from '../board';
-import { soundControls } from './soundpanel';
+import { closeSoundPopover, disposeSoundControls, soundButton, soundControls } from './soundpanel';
 import { motelFee, squareInfo, squareName } from '../names';
 import { boonIconURL, suitIconURL, wildIconURL } from '../icons';
 import { bodyURL, portraitURL } from '../sprites';
@@ -72,6 +72,7 @@ const ZOOM_TITLES = {
 export class Hud {
   root: HTMLElement;
   toolbar = h('div', { class: 'toolbar' });
+  musicBtn = soundButton('btn small music-toggle', 'Music');
   /** Current zoom; tapping it zooms back in on the player. */
   zoomChip = h('button', { class: 'zoom-chip', title: 'Zoom: scroll, pinch or - / +. Tap to reset.' });
   /**
@@ -87,7 +88,7 @@ export class Hud {
   }
   /** True while the player has hidden a pop-up to look at the board. */
   peeking = false;
-  /** The Game log button in the toolbar (between the zoom chip and Guide); it opens the log panel. */
+  /** The Game log button in the toolbar, before Music and Menu; it opens the log panel. */
   logBtn = h(
     'button',
     {
@@ -269,7 +270,7 @@ export class Hud {
     };
     this.menuBtn.onclick = () => this.toggleMenu();
     this.viewChip.onclick = () => this.setPeek(!this.peeking);
-    this.toolbar.append(this.viewChip, this.zoomChip, this.logBtn, this.menuBtn);
+    this.toolbar.append(this.viewChip, this.zoomChip, this.logBtn, this.musicBtn, this.menuBtn);
     this.buildMenu();
     window.addEventListener('keydown', this.onKey);
     board.onHover = (id, x, y) => this.showTooltip(id, x, y);
@@ -298,6 +299,8 @@ export class Hud {
   }
 
   destroy() {
+    closeSoundPopover(this.musicBtn);
+    disposeSoundControls(this.menu);
     this.messages.destroy();
     this.resize.disconnect();
     this.askChanges.disconnect();
@@ -366,6 +369,7 @@ export class Hud {
     this.menuBtn.setAttribute('aria-expanded', String(open));
     this.menuBtn.classList.toggle('on', open);
     if (open) {
+      closeSoundPopover(this.musicBtn);
       const m = this.modal('Menu', this.menu, { onClose: () => this.toggleMenu(false) });
       m.el.classList.add('menu-modal');
       m.el.parentElement!.classList.add('menu-wrap');

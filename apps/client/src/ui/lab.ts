@@ -52,7 +52,7 @@ import { openWhatsNew } from './whatsnew';
 import { openCredits } from './credits';
 import { pickCharacter } from './charpick';
 import { resumeLobby } from './online';
-import { soundButton, soundControls } from './soundpanel';
+import { soundControls } from './soundpanel';
 import { SFX_NAMES, TRACK_NAMES, sound, type Track } from '../audio';
 import { guestSetup, setupScreen, type SetupRoom } from './start';
 import type { LobbyInfo, LobbySeat } from '../net/protocol';
@@ -117,9 +117,10 @@ const rnd = (n: number) => Math.floor(Math.random() * n);
  * are easy to find. Update this list with each change.
  */
 const RECENT = new Set([
-  'Painted landscape: square',
-  'Painted landscape: hex',
-  'Tile sprites and tint layers',
+  'Music pop-up',
+  'Music: Avenue Stroll (game)',
+  'Music: Jackpot Jingle (Lucky Reels)',
+  'Stop music',
 ]);
 
 /**
@@ -1626,7 +1627,10 @@ export async function openLab(app: HTMLElement, section?: string) {
       ),
       btn('Stop music', () => sound.music(null)),
     );
-    row(s, soundButton('btn small', 'Sound popover'));
+    row(
+      s,
+      btn('Music pop-up', () => hud.musicBtn.click()),
+    );
     s.append(soundControls());
   }
 

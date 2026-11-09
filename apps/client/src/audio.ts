@@ -669,7 +669,7 @@ class AudioEngine {
     this.listeners.forEach((f) => f());
   }
 
-  /** Called whenever the volume settings change (keeps mute buttons in sync). */
+  /** Called when settings, audio readiness or the current track change. */
   onChange(f: () => void) {
     this.listeners.add(f);
     return () => this.listeners.delete(f);
@@ -1010,11 +1010,13 @@ class AudioEngine {
   music(track: Track | null) {
     if (track === this.track) return;
     this.track = track;
-    if (!this.ctx) return;
-    const old = this.player;
-    this.player = null;
-    if (old) this.fadeOut(old);
-    if (track) this.startLoop(old ? CROSSFADE : 0.05);
+    if (this.ctx) {
+      const old = this.player;
+      this.player = null;
+      if (old) this.fadeOut(old);
+      if (track) this.startLoop(old ? CROSSFADE : 0.05);
+    }
+    this.listeners.forEach((f) => f());
   }
 
   get currentTrack() {

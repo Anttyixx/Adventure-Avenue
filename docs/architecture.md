@@ -174,7 +174,7 @@ room, Continue resumes the saved game, and the board editor (`ui/editor.ts`).
 ### The HUD (`ui/hud.ts`)
 
 `Hud` owns every HTML overlay on the game screen, by name (see `CLAUDE.md`/`AGENTS.md` naming):
-the info chip and Info button (top left; `toggleInfo` opens the info pop-up from `ui/info.ts`), the toolbar (zoom chip, Guide, Menu), the
+the info chip and Info button (top left; `toggleInfo` opens the info pop-up from `ui/info.ts`), the toolbar (zoom chip, Game log, Music, Menu), the
 action bar (`.prompt-center`: `prompt()` shows a question with buttons and returns a promise of
 the choice; `status()` shows what is happening; `updateInsets()` moves it bottom left with
 `.ab-left` when the window is too narrow to center it), the Game log button (in the toolbar) and the log panel it opens, the player cards
@@ -215,7 +215,12 @@ uses, implemented by `HostRoom` and `GuestRoom`.
 
 All sound is synthesized with the Web Audio API (no audio files): `sound.play('buy')` for an
 effect (`Sfx` lists them), `sound.music('game')` for a looping track. Audio starts after the
-first touch or key press, as browsers require.
+first touch or key press, as browsers require. `currentTrack` and `TRACK_NAMES` supply the
+live track title to `ui/soundpanel.ts`. `onChange` notifies settings, readiness and track changes,
+including track selection before audio unlock. Shared controls synchronize while the game menu
+is detached; `disposeSoundControls` releases their listeners when the HUD is destroyed. The
+nonmodal sound pop-up handles positioning, dismissal, focus return and its own cleanup. The
+HUD places its Music chip between Game log and Menu.
 
 ## Build and deploy
 

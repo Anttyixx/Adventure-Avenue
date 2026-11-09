@@ -387,12 +387,34 @@ Each element: **purpose**, **placement**, **anatomy**, **spec**, **behavior**, t
 - **Anatomy:** zoom chip (a pill showing "250%"; tap = reset zoom **and recenter**; its 2px border
   shows the zoom mode: grey `#8a93a8` free, blue `#4c9bff` auto, red `#e5484d` locked, via
   `data-mode`), then small
-  buttons ("Game log", "☰ Menu"; builder: Undo, Save, gold "Test play", Menu).
+  buttons ("Game log", "Music", "☰ Menu"; builder: Undo, Save, gold "Test play", Menu).
 - **Spec:** `.toolbar`, `top/right: 10px`, gap 6, buttons `.btn.small` on glass. Order: View
   board chip (only while a pop-up is up; pops in, gold "Back" while the pop-up is hidden), zoom
-  chip, Game log, Menu. The Guide is an item in the Menu pop-up (under Resume), not a toolbar
+  chip, Game log, Music, Menu. The Guide is an item in the Menu pop-up (under Resume), not a toolbar
   button.
 - **Rule:** at most one gold button here (the thing to do next, e.g. Test play).
+
+### Music and sound pop-up
+
+- **Job:** identify the current music and adjust audio without leaving the current screen.
+- **Container:** anchored nonmodal `.snd-pop.glass`, right-aligned under its chip, 336px wide
+  (up to viewport minus 16px), 14px radius, 12px padding, navy 96% background and the shared
+  glass edge/blur/shadow. Clamp within 8px of the viewport, reposition on resize and scroll
+  internally if needed. Use a 180ms pop-in; no backdrop wash or game pause.
+- **Hierarchy:** gold Lilita 20px Music & sound heading and a round 30px Close button; an inset
+  current-track card with a small muted uppercase label, Lilita 18px title and 12px scene/status.
+  Four tiny gold level bars move only while audible. Keep track titles on one line with ellipsis
+  and full title on hover. Muted/zero-volume/not-started/no-track states replace the scene line.
+- **Controls:** an inset group with Music/Effects labels, gold percentages and rounded gold-filled
+  range sliders (28px touch area, 18px thumb); a full-width navy mute toggle below. These are
+  audio levels, not money controls. All instances share live settings. Slider changes unmute;
+  Effects previews a coin sound on release. The game menu uses the same controls inline.
+- **Chip:** Music after Game log, before Menu; note icon with a desktop label, icon only on phones.
+  Open chips have a gold inset edge; muted chips have a red icon. Menus/setup retain Sound labels.
+- **Access:** dialog name, expanded/control state, labelled sliders with percentage value text,
+  visible keyboard focus and a pressed mute toggle. Escape/Close returns focus to the chip;
+  outside click and a second chip click dismiss. Audio-control keys never trigger turn shortcuts.
+  Reduced motion removes pop-in and level animation.
 
 ### 5.3 Action bar (bottom center)
 
@@ -861,7 +883,7 @@ if (!(await ask(`Delete ${d.name}?`, 'Its 4 properties will be removed from the 
 
 ### 5.18 Game log
 
-- **Game log:** a toolbar button (`.log-toggle`, between the zoom chip and Guide, gold `.on`
+- **Game log:** a toolbar button (`.log-toggle`, between the zoom chip and Music, gold `.on`
   while open) opens a glass panel (`.log-panel`) top right: `top: var(--top-free)` (just under the
   toolbar), `right: 10px`, as wide as the player cards (`--cards-w`, min 240px), max height down to
   the top of the cards (`--dock-b`); on phones (`max-height: 500px`) it may run over the cards. It

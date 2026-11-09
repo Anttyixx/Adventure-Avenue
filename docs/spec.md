@@ -1340,7 +1340,7 @@ retain fractional pixels to avoid a small text shift at the end of a resize. Rap
 bar's visible size, and changes to screen size or player-card space retarget the resize. Reduced
 motion skips the size animation. The UI Lab's “Action bar resize test” exercises short, long and
 interrupted prompts. In the toolbar, between the
-zoom chip and Guide: the **Game log** button (gold while the log is open). It opens the game log
+zoom chip and Music chip: the **Game log** button (gold while the log is open). It opens the game log
 (turn by turn, newest at the bottom, scrollable back to the start of the game) as a glass panel in
 the top right, just under the toolbar and above the player cards, as wide as the cards; it pops in
 from the top right. On short phone screens the open panel may run down over the player cards so
@@ -1516,9 +1516,19 @@ ring/silent switch does not mute the game; the in-game Mute switch still does.
 - **Effects:** a domination fanfare, venture line and full-row jingles, button clicks, dice roll, each step (a soft tap as the token touches each square; the lift-off "hop" sound is switched off for now and kept in `audio.ts`), landing, gaining and paying money, buying a
   shop, buying stock (a short register click and "ching"), selling stock (two quick falling coin clinks into a soft "ching"), buying out a rival's property (a brass stab, a rising run and a cash-register ring), a shop's value going up, collecting a suit, promotion, venture cards, a card flipping over (a paper swish and a click), slot reels ticking as they spin and clunking as each stops, warps, the start of a
   human player's turn, a new round, bankruptcy and the win fanfare.
-- **Settings:** a speaker button on the main menu and game setup (and the Sound section of the in-game menu) has Music and
-  Effects volume sliders and a Mute switch. Settings are saved per device. Audio pauses while the
-  tab is hidden.
+- **Settings:** Sound buttons on the main menu, setup and collection open a compact navy-glass
+  Music & sound pop-up. The game toolbar order is zoom, Game log, Music, Menu (with View board
+  first when offered). Music uses a note icon; phones keep just the icon with an accessible name.
+  The pop-up shows the live current track title and scene, plus a subtle level animation only
+  while audible. Muted, zero-volume, audio-not-started and no-track states are explicit. It has
+  gold-filled Music and Effects sliders with percentages and a Mute all sound / Unmute sound
+  button. Adjusting a slider unmutes audio; changing Effects previews a coin sound. Controls
+  stay synchronized with the Sound section of the game menu, including while that menu is closed.
+  The chip highlights while open. Close, Escape, a second chip click or clicking outside closes
+  the pop-up; Close/Escape restores focus to its chip. It stays inside the viewport after resizing,
+  scrolls internally on very short screens and supports keyboard/touch. Reduced motion disables
+  the entrance and level animation. Settings remain saved per device; opening it does not pause
+  gameplay. Audio pauses while the tab is hidden.
 
 ## Save and resume
 

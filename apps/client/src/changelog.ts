@@ -26,6 +26,18 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: '2026-11-09-music-controls',
+    date: 'Nov 9, 2026',
+    title: 'Music at your fingertips',
+    features: [
+      {
+        tag: 'better',
+        title: 'See what is playing',
+        text: 'The refreshed music and sound pop-up shows the current track, clearer volume controls and a mute button. Open it from the new music chip between Game log and Menu while playing.',
+      },
+    ],
+  },
+  {
     id: '2026-11-09-varied-meadow-scenery',
     date: 'Nov 9, 2026',
     title: 'A livelier landscape',
