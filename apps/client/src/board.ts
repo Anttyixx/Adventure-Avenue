@@ -1040,7 +1040,7 @@ export class BoardView {
     const ids = [gate.node, ...gate.to];
     const view = this.frameSquares(ids);
     this.lookAt = view;
-    for (const id of ids) this.ring(id, gate.color);
+    this.flashPortals(gate);
     clearTimeout(this.portalTimer);
     this.portalTimer = window.setTimeout(() => {
       // Something else may have taken the camera meanwhile: leave that alone.
@@ -1050,6 +1050,51 @@ export class BoardView {
     }, T.portalShow * this.speed);
   }
   private portalTimer = 0;
+
+  /**
+   * A portal and the portals it links to flash together, three times over `T.portalShow`: the
+   * ring lights up white and a glow in the portal's color spreads out from it.
+   */
+  private flashPortals(gate: PortalGate) {
+    const G = this.G!;
+    const spots = [
+      portalPoint(G, G.nodes[gate.node], gate.side),
+      ...gate.to.flatMap((to) => {
+        const back = G.nodes[to]?.portals?.find((q) => q.to === gate.node);
+        return back ? [portalPoint(G, G.nodes[to], back.side)] : [];
+      }),
+    ];
+    const pulses = 3;
+    this.fx.push({
+      t0: performance.now(),
+      dur: T.portalShow * this.speed,
+      draw: (ctx, k) => {
+        // Each pulse: a quick light-up, then a slower fade.
+        const t = (k * pulses) % 1;
+        const light = t < 0.2 ? t / 0.2 : Math.max(0, 1 - (t - 0.2) / 0.6);
+        ctx.save();
+        for (const at of spots) {
+          ctx.globalAlpha = light * 0.55;
+          ctx.fillStyle = gate.color;
+          ctx.beginPath();
+          ctx.arc(at.x, at.y, 17 + 14 * t, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.globalAlpha = light * 0.85;
+          ctx.fillStyle = '#ffffff';
+          ctx.beginPath();
+          ctx.arc(at.x, at.y, 17, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.globalAlpha = (1 - t) * 0.9;
+          ctx.strokeStyle = '#ffffff';
+          ctx.lineWidth = 3;
+          ctx.beginPath();
+          ctx.arc(at.x, at.y, 19 + 16 * t, 0, Math.PI * 2);
+          ctx.stroke();
+        }
+        ctx.restore();
+      },
+    });
+  }
 
   private click = (e: MouseEvent) => {
     const id = this.squareAt(e.clientX, e.clientY);

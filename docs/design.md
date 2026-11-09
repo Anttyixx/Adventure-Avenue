@@ -826,9 +826,11 @@ if (!(await ask(`Delete ${d.name}?`, 'Its 4 properties will be removed from the 
   still pictures draw them unturned. The cell a portal opens onto gets no scenery.
 - Portal pop-up (`hud.showPortalTooltip`): the tile tooltip's frame with the portal's color as
   `--dc`, a title, a `.tt-info` line and a muted `.tt-hint` line. Tapping a portal
-  (`BoardView.showPortal`) sets `lookAt` to frame its tile and its linked portals' tiles, rings
-  each tile in the portal's color, and clears it after `T.portalShow` (2 s) unless something
-  else took the camera.
+  (`BoardView.showPortal`) sets `lookAt` to frame its tile and its linked portals' tiles and
+  clears it after `T.portalShow` (2 s) unless something else took the camera. `flashPortals`
+  flashes the tapped portal and its linked portals three times over that time: each pulse lights
+  the ring white (up to 85%) in its first fifth, then fades, while a glow in the portal's color
+  (up to 55%) and a 3px white ring spread out from it.
 - Builder Links tool (canvas, world units, radius 15 with a white ring): road badges between tile
   centers: one way is `drawRoadArrow` (navy fill, gold chevron); `drawLinkBadge` is green
   `#2f9e5b` with a white two-headed arrow (both ways) or red `--bad` with a dashed ring and a white

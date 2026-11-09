@@ -33,7 +33,7 @@ export const CHANGELOG: ChangelogEntry[] = [
       {
         tag: 'new',
         title: 'Portal info',
-        text: 'Hover over a portal to see what it does and where it leads. Tap it to zoom out for a moment and see both ends.',
+        text: 'Hover over a portal to see what it does and where it leads. Tap it to zoom out for a moment: the portal and where it leads flash together.',
       },
       {
         tag: 'better',

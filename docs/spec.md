@@ -168,8 +168,9 @@ an entrance, out of it toward the tile at an exit.
 it leads ("Step through to come out next to Harbor Shop, and back the same way."; an exit names
 the tiles its entrances are next to), and a muted line "Tap it to see where it leads." Tapping
 (or clicking) a portal shows that pop-up too, and the camera frames the portal's tile and the
-tiles of every portal it links to, with a ring on each, for 2 seconds, then goes back to the
-zoom it had (and the pop-up goes away).
+tiles of every portal it links to for 2 seconds, then goes back to the zoom it had (and the
+pop-up goes away). Meanwhile the portal and the portals it links to flash together three times:
+each ring lights up white and a glow in its color spreads out (the tiles get no effect).
 
 Rings share a color per group (a pair, or an exit and all its entrances): purple, cyan, pink,
 amber, green, blue, in board order. The token walks into one ring and comes out of the other; the
