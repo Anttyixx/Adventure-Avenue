@@ -1,5 +1,5 @@
 /**
- * Property art: shops, 3-Star Shops, plot buildings and the bank as images (assets/props). The
+ * Board art uses explicit base/tint PNGs in assets/tiles-v2 and the unchanged paired legacy art. The
  * parts in the owner's color (grey when unowned) come from one of two places:
  * - a tint layer, `<name>-tint.png`: the same size as the image, holding only the parts to color,
  *   painted in grey. Each grey is colorized (its lightness kept) and drawn over the image;
@@ -17,19 +17,76 @@ export type PropKey =
   | 'home'
   | 'motel'
   | 'agency'
-  | 'bank';
+  | 'bank'
+  | 'venture'
+  | 'spade'
+  | 'heart'
+  | 'diamond'
+  | 'club'
+  | 'change-ring'
+  | 'roll'
+  | 'break'
+  | 'boon'
+  | 'boom'
+  | 'broker'
+  | 'arcade'
+  | 'cannon'
+  | 'warp'
+  | 'portal'
+  | 'vacant'
+  | 'tree'
+  | 'pond'
+  | 'flowers'
+  | 'closed'
+  | 'road'
+  | 'grass'
+  | 'fountain'
+  | 'flag'
+  | 'hike'
+  | 'taxi'
+  | 'swap'
+  | 'portal-side'
+  | 'portal-swirl'
+  | 'portal-swirl-inner'
+  | `${'square' | 'hex'}-${'tile' | 'shadow' | 'border' | 'selection'}`;
 
-const urls = import.meta.glob<string>('./assets/props/*.png', {
+/** Change to classic to restore the original PNGs and canvas artwork. */
+export const ART_SET: string = 'layered';
+const layered = import.meta.glob<string>('./assets/tiles-v2/*.png', {
   eager: true,
   query: '?url',
   import: 'default',
 });
+const legacy = import.meta.glob<string>('./assets/props/*.png', {
+  eager: true,
+  query: '?url',
+  import: 'default',
+});
+
+const urls = Object.fromEntries([
+  ...Object.entries(legacy).map(([path, url]) => [path.replace(/^.*\//, ''), { url, explicit: false }]),
+  ...(ART_SET === 'layered'
+    ? Object.entries(layered).map(([path, url]) => [
+        path.replace(/^.*\//, '').replace('-base.png', '.png'),
+        { url, explicit: true },
+      ])
+    : []),
+]) as Record<string, { url: string; explicit: boolean }>;
 
 interface Source {
   data: ImageData;
   /** Which pixels are the blue accent color. */
   blue: Uint8Array;
 }
+/** Resolved file mapping, also used by the Lab to inspect base and tint layers. */
+export const ART_SOURCES = Object.fromEntries(
+  Object.entries(urls)
+    .filter(([name]) => !name.endsWith('-tint.png'))
+    .map(([name, base]) => [
+      name.replace('.png', ''),
+      { base: base.url, tint: urls[name.replace('.png', '-tint.png')]?.url },
+    ]),
+);
 const sources = new Map<string, Source>();
 /** Tint layers by image name (see the top of the file). */
 const tintLayers = new Map<string, ImageData>();
@@ -38,7 +95,7 @@ let loading: Promise<void> | null = null;
 /** Load every property image (safe to call more than once). */
 export function loadProps(): Promise<void> {
   loading ??= Promise.all(
-    Object.entries(urls).map(async ([path, url]) => {
+    Object.entries(urls).map(async ([path, { url, explicit }]) => {
       const key = path.replace(/^.*\//, '').replace('.png', '');
       const img = new Image();
       img.src = url;
@@ -57,7 +114,7 @@ export function loadProps(): Promise<void> {
       const blue = new Uint8Array(cv.width * cv.height);
       for (let i = 0; i < blue.length; i++) {
         const [r, g, b] = [px[i * 4], px[i * 4 + 1], px[i * 4 + 2]];
-        blue[i] = b > r + 40 && b > g + 12 ? 1 : 0;
+        blue[i] = !explicit && b > r + 40 && b > g + 12 ? 1 : 0;
       }
       sources.set(key, { data, blue });
     }),
@@ -99,7 +156,7 @@ const BLUE_L = 0.55;
 const TINT_L = 0.5;
 const tinted = new Map<string, HTMLCanvasElement>();
 
-/** A property image with its blue parts in `color` (cached per color). */
+/** Composite a base PNG with its explicit tint mask (cached per color). */
 export function propCanvas(key: PropKey, color: string): HTMLCanvasElement | null {
   const ck = `${key}|${color}`;
   const hit = tinted.get(ck);
@@ -184,5 +241,21 @@ export function drawProp(
   ctx.imageSmoothingQuality = 'high';
   ctx.drawImage(cv, x - dw / 2, y + h / 2 - dh, dw, dh);
   ctx.restore();
+  return true;
+}
+
+/** Draw the complete sprite frame (tile shells, overlays, roads and scenery). */
+export function drawStamp(
+  ctx: CanvasRenderingContext2D,
+  key: PropKey,
+  color: string,
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+): boolean {
+  const sprite = propCanvas(key, color);
+  if (!sprite) return false;
+  ctx.drawImage(sprite, x - w / 2, y - h / 2, w, h);
   return true;
 }

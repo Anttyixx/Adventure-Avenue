@@ -372,3 +372,13 @@ together (`rows[].choice`, derby `score`/`previous` in spaces). On the client, `
 spectator in `spectate`, or to choose in `human`) and closed after the final result
 (`endArcade`); the action bar carries its prompts. No client animation decides anything.
 The UI Lab launches the actual engine games through an isolated, non-saving HotSeat.
+
+### PNG artwork selection
+
+`props.ts` resolves legacy images and the layered `assets/tiles-v2` set by logical sprite key.
+Layered files override matching legacy keys only when `ART_SET` is `layered`; existing paired
+Checkpoint/Circus/Motel images stay mapped to their original files. `propCanvas` composites aligned
+grey masks, and `drawStamp` renders full sprite frames for geometry and scenery. Base-only new
+assets bypass blue detection. `ART_SOURCES` supplies source URLs to the Lab inspector. Canvas
+fallbacks remain available for `classic` and initial loading. Artwork changes do not alter saves
+or engine/network outcomes.

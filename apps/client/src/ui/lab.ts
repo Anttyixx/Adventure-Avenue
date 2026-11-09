@@ -30,7 +30,7 @@ import {
   type TradeOffer,
 } from '@aa/engine';
 import { SHOP_TIERS, SHOP_TIER_NAMES, STAR3_TIERS, STAR3_TIER_NAMES, propertyIconURL } from '../art';
-import { propIconURL, type PropKey } from '../props';
+import { propIconURL, ART_SOURCES, type PropKey } from '../props';
 
 /** The grey unowned property art is drawn in (as on the board). */
 const UNOWNED_ART = '#8a94a8';
@@ -115,7 +115,7 @@ const rnd = (n: number) => Math.floor(Math.random() * n);
  * Controls for UI elements that were just added or changed: they shake once and glow so they
  * are easy to find. Update this list with each change.
  */
-const RECENT = new Set(['Show where a portal leads', 'Portal links in the builder', 'Square / hex board']);
+const RECENT = new Set(['Tile sprites and tint layers', 'Design gallery']);
 
 /**
  * Which board the lab plays on: Town with portal links (square, the default) or Twin Lakes (hex),
@@ -1442,6 +1442,28 @@ export async function openLab(app: HTMLElement, section?: string) {
     );
     row(
       s,
+      btn('Tile sprites and tint layers', () => {
+        const rows = Object.entries(ART_SOURCES).map(([key, source]) =>
+          h(
+            'div',
+            { class: 'art-row' },
+            h(
+              'div',
+              { class: 'art-name' },
+              h('b', null, key),
+              h('small', null, source.tint ? 'Base · tint · red · blue' : 'Base only'),
+            ),
+            h('img', { src: source.base, alt: `${key} base` }),
+            source.tint ? h('img', { src: source.tint, alt: `${key} tint` }) : null,
+            h('img', { src: propIconURL(key as PropKey, '#e5484d'), alt: `${key} red` }),
+            h('img', { src: propIconURL(key as PropKey, '#3e7bfa'), alt: `${key} blue` }),
+          ),
+        );
+        const m = hud.modal('Tile sprites and tint layers', h('div', { class: 'art-grid' }, ...rows), {
+          wide: true,
+          onClose: () => m.close(),
+        });
+      }),
       btn('Design gallery', () => {
         // Every player color (not just this game's players), with the owner's initial where a
         // player has that color.

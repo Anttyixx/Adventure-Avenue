@@ -255,3 +255,5 @@ debounced fallback and immediate decision interruption; tested with fake timers.
 Arcade games on screen: `apps/client/src/ui/arcade.ts` (`ArcadeStage`: the board in the middle plus action-bar prompts for all five games). Engine scoring and games live in `packages/engine/src/arcade.ts`.
 
 `packages/engine/src/boards/portal-maps.ts` defines Crossgate Gardens (square courtyards) , Prism Junction (four hex petals) and Return Ridge (square dead-end branches). `fromMap` accepts explicit reciprocal portal coordinate pairs, marked as portal tiles and turned into portal links by `convertPortalTiles`; `portal-maps.test.ts` checks district relief spacing, real movement reachability, portal links surviving export, and complete matches.
+
+`assets/tiles-v2/README.md` describes the layered board PNGs and classic rollback. `props.ts` exports `ART_SET`, `ART_SOURCES` and `drawStamp`; `tile-assets.test.ts` checks coverage and matching base/mask dimensions.

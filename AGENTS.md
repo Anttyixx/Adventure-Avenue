@@ -120,9 +120,10 @@ Requests refer to parts of the game by these names:
   - **UI Lab** (`#ui-lab`), **Stocks lab** (`#stocks-lab`), **board editor** (`#editor`).
 - **Stocks:** two systems chosen in game setup (`G.stocks`): `dynamic` (default) and `classic`
   (for old saves). See "Stock market" in the spec.
-- **Property art:** PNGs in `apps/client/src/assets/props/`. An optional `<name>-tint.png` (same
-  size, grey) holds the parts drawn in the owner's color; without one, the image's blue parts
-  are recolored.
+- **Board art:** active base/tint PNGs live in `apps/client/src/assets/tiles-v2/`, mapped in
+  `props.ts` (`ART_SET`, `ART_SOURCES`). Existing Checkpoint/Circus/Motel pairs use unchanged files
+  in `assets/props/`. Base-only sprites never auto-recolor blue pixels. New recolorable sprites
+  require an aligned grey `-tint.png`. Keep legacy assets and canvas fallbacks for rollback.
 
 ## Commands
 

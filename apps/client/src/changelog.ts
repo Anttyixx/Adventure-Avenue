@@ -26,6 +26,19 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: '2026-11-09-layered-art',
+    date: 'Nov 9, 2026',
+    title: 'A full PNG tile set',
+    features: [
+      {
+        tag: 'better',
+        title: 'Matching board sprites',
+        text: 'Special tiles, suits, portals, vacant plots and scenery now use painted PNG sprites alongside the buildings. Recolorable art has separate base and tint layers, and the original artwork is preserved.',
+      },
+    ],
+    extras: ['Inspect base layers, tint masks and color previews in the UI Lab.'],
+  },
+  {
     id: '2026-11-09-portal-info',
     date: 'Nov 9, 2026',
     title: 'Where does this portal go?',

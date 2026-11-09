@@ -1158,7 +1158,7 @@ back out to their places) one just after another; cards rising out of a smart st
 back glide the same way.
 
 One rule decides every asset: only the player character sprites are pixel art. Everything else,
-including the board, the interface, suits, wild cards, coins and effects, is HD (vector). _(Changed
+including the board, the interface, suits, wild cards, coins and effects, is HD (PNG sprites for static board art, live vectors for UI and effects). _(Changed
 by the owner on Oct 23, 2026; the original spec drew suits, coins and wild cards as pixel art.)_
 
 **Board (HD canvas).** Logical size 1300 x 800 with 100-unit squares, scaled to the container and to
@@ -1166,17 +1166,16 @@ devicePixelRatio. The static board (grass, roads, pond, fountain, flower beds, t
 is drawn into a cached offscreen canvas and redrawn only when state changes; each frame draws that
 cache, then highlights, sprites, coins, floating text and the die.
 
-- Property art is painted images (`apps/client/src/assets/props/`, drawn by `props.ts`): five
+- Property art is painted PNGs (`apps/client/src/assets/tiles-v2/` plus preserved paired art in `assets/props/`, drawn by `props.ts`): five
   shop designs by value (cottage, house, storefront, townhouse, tower), three 3-Star Shop designs
   (boutique, department store, grand mall), the circus at each of its four levels, and the
-  checkpoint, balloonport, tax office, home and estate agency. Their blue parts (windows, doors,
-  awnings, signs) are recolored: grey when unowned, the owner's color when owned, with the
+  checkpoint, balloonport, tax office, home and estate agency. Their explicit grey tint masks recolor windows, doors,
+  awnings and signs: grey when unowned, the owner's color when owned, with the
   owner's initial badge.
 - Shops: district-colored border, filled with the owner's color when owned, shop art, value
   label (unowned) or the fee as plain dark text and a pennant in the owner's color (owned). Closed
   shops get a dark overlay.
-- Plots: dashed outline and "VACANT" when empty; a vector icon per building plus its fee when
-  built.
+- Plots: vacant-land PNG and "VACANT" when empty; a building PNG plus its fee when built.
 - Hex tiles narrow to a point at the bottom, so their icon and text sit about 10px higher, in the
   full-width middle of the tile, so nothing is cut off by the edges.
 - Hover (or tap) any square for a tooltip: owner, value, fee, max value, buyout price, group
@@ -1810,3 +1809,17 @@ and Menu and the version chip reachable. The title always sits above the actions
 (phones in landscape) it shrinks and the tagline is hidden. Fit the complete center group to the
 available height when necessary, including Continue and the optional join-name field. Menu pop-ups
 and their content retain their own scrolling behavior.
+
+### Layered PNG board art
+
+All static tile artwork uses PNG sprites: property tiers, special icons, suit icons, transport,
+vacant land, square/hex shells and district borders, ownership flags, selection outlines, closed
+shop shutters, scenery, roads and grass. Buildings and transport accents use explicit base/tint
+layers; fixed-color artwork needs only a base. Change-of-suit combines a PNG ring with the
+current suit PNG. Prices, labels, initials, highlights and movement remain driven by game state.
+Existing paired Checkpoint/Circus/Motel artwork and all old art files are preserved. `ART_SET` in
+`props.ts` selects the layered set or the classic assets and vector fallbacks. The UI Lab can
+inspect bases, masks and recolored composites.
+
+Side portals use a PNG color ring and two rotating swirl PNGs, retaining the current shared
+portal appearance and tap/hover behavior. Price Up, Taxi and Swap also have base-only PNG icons.

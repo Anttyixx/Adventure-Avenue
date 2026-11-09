@@ -1169,3 +1169,12 @@ player cards) and the action bar for words and buttons. Never a pop-up.
 - **Motion:** slots not kept spin (symbols flick past blurred every 70ms, then stop left to right with a small bounce, `reelTick`/`reelStop` sounds); memory cards flip with 3D `rotateY`
   and `backface-visibility: hidden`; derby runners are the players' walking sprites (no circle), stepping one space at a time down a paved lane; the wheel spins about
   four turns and eases out; chest lids swing open. All respect reduced motion.
+
+### Board PNG layers
+
+Use the rounded, outlined toy-town PNG set in `assets/tiles-v2` for static board art. Retain
+existing paired Checkpoint/Circus/Motel art. Fixed details belong to the transparent base; owner,
+district and transport colors use a same-size grey tint mask. Base-only art keeps its colors.
+Square and hex shells share icon art; each shell has its own aligned border/shadow/selection
+sprites. Text, amounts and motion remain live. Inspect masks and red/blue composites with the
+UI Lab’s Tile sprites and tint layers control; keep original assets for reversible art changes.

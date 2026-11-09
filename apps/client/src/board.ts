@@ -17,7 +17,7 @@ import {
 } from '@aa/engine';
 import { cellCenter, sideVector, tileShape, tileTop, worldSize } from './geometry';
 import { SHOP_TIERS, STAR3_TIERS, badge, darken, drawShop, drawStar3, tierFor, tint } from './art';
-import { drawProp, type PropKey } from './props';
+import { drawProp, drawStamp, propCanvas, type PropKey } from './props';
 import { drawBoonIcon, drawCoin, drawSparkle, SUIT_CHARS } from './icons';
 import { Facing, FRAME_H, FRAME_W, drawCharacter, drawCharacterGlow, facingFor } from './sprites';
 import { TIMING as T } from './timing';
@@ -1299,6 +1299,17 @@ export class BoardView {
     const full = 2 * tileTop(G.layout, inner);
     const e = 1 - Math.pow(1 - down, 3);
     const hgt = full * e;
+    if (propCanvas('closed', '#808080')) {
+      ctx.save();
+      tileShape(ctx, G.layout, c.x, c.y, inner, 8);
+      ctx.clip();
+      ctx.beginPath();
+      ctx.rect(c.x - TILE / 2, top, TILE, hgt);
+      ctx.clip();
+      drawStamp(ctx, 'closed', '#808080', c.x, c.y, TILE - 12, full);
+      ctx.restore();
+      return;
+    }
     ctx.save();
     tileShape(ctx, G.layout, c.x, c.y, inner, 8);
     ctx.clip();
@@ -1914,6 +1925,17 @@ export function drawPortalRing(
   color: string,
   turn = 0,
 ) {
+  if (propCanvas('portal-side', color)) {
+    ctx.save();
+    ctx.translate(at.x, at.y);
+    drawStamp(ctx, 'portal-side', color, 0, 0, 40, 40);
+    ctx.rotate(turn);
+    drawStamp(ctx, 'portal-swirl', '#ffffff', 0, 0, 40, 40);
+    ctx.rotate(-turn * 2.3);
+    drawStamp(ctx, 'portal-swirl-inner', '#ffffff', 0, 0, 40, 40);
+    ctx.restore();
+    return;
+  }
   ctx.save();
   ctx.translate(at.x, at.y);
   ctx.beginPath();
@@ -2006,6 +2028,7 @@ function seeded(seed: number) {
 }
 
 function drawTree(ctx: CanvasRenderingContext2D, x: number, y: number, s = 1) {
+  if (drawStamp(ctx, 'tree', '#808080', x, y, 60 * s, 68 * s)) return;
   ctx.fillStyle = 'rgba(0,0,0,0.15)';
   ctx.beginPath();
   ctx.ellipse(x + 4, y + 22 * s, 22 * s, 8 * s, 0, 0, Math.PI * 2);
@@ -2023,6 +2046,7 @@ function drawTree(ctx: CanvasRenderingContext2D, x: number, y: number, s = 1) {
 }
 
 function drawBed(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number) {
+  if (drawStamp(ctx, 'flowers', '#808080', x + w / 2, y + h / 2, w, h * 1.6)) return;
   ctx.fillStyle = '#7a5a3a';
   roundRect(ctx, x, y, w, h, 10);
   ctx.fill();
@@ -2057,6 +2081,7 @@ function drawCustomDecor(ctx: CanvasRenderingContext2D, G: GameState) {
         continue;
       }
       if (roll < 0.05) {
+        if (drawStamp(ctx, 'pond', '#808080', cx, cy, 80, 54)) continue;
         ctx.fillStyle = '#5aa0d8';
         ctx.beginPath();
         ctx.ellipse(cx, cy, 38, 24, 0, 0, Math.PI * 2);
@@ -2100,7 +2125,7 @@ const grassPatterns = new WeakMap<CanvasRenderingContext2D, CanvasPattern>();
 export function paintGrass(ctx: CanvasRenderingContext2D) {
   let pattern = grassPatterns.get(ctx);
   if (!pattern) {
-    pattern = ctx.createPattern(grassTile(), 'repeat') ?? undefined;
+    pattern = ctx.createPattern(propCanvas('grass', '#808080') ?? grassTile(), 'repeat') ?? undefined;
     if (pattern) grassPatterns.set(ctx, pattern);
   }
   // The inverse camera transform gives the visible world, even when it lies beyond the board.
@@ -2161,18 +2186,29 @@ function drawRoads(ctx: CanvasRenderingContext2D, G: GameState) {
   const pieces = roadPieces(G);
   ctx.save();
   ctx.lineCap = 'round';
-  for (const [w, color] of [
-    [44, ROAD.edge],
-    [36, ROAD.fill],
-  ] as const)
+  const image = propCanvas('road', '#808080');
+  if (image)
     for (const p of pieces) {
-      ctx.strokeStyle = color;
-      ctx.lineWidth = w;
-      ctx.beginPath();
-      ctx.moveTo(p.from.x, p.from.y);
-      ctx.lineTo(p.to.x, p.to.y);
-      ctx.stroke();
+      ctx.save();
+      ctx.translate(p.from.x, p.from.y);
+      ctx.rotate(Math.atan2(p.to.y - p.from.y, p.to.x - p.from.x));
+      ctx.drawImage(image, 0, -22, Math.hypot(p.to.x - p.from.x, p.to.y - p.from.y), 44);
+      ctx.restore();
     }
+  else {
+    for (const [w, color] of [
+      [44, ROAD.edge],
+      [36, ROAD.fill],
+    ] as const)
+      for (const p of pieces) {
+        ctx.strokeStyle = color;
+        ctx.lineWidth = w;
+        ctx.beginPath();
+        ctx.moveTo(p.from.x, p.from.y);
+        ctx.lineTo(p.to.x, p.to.y);
+        ctx.stroke();
+      }
+  }
   ctx.fillStyle = ROAD.arrow;
   for (const p of pieces) {
     if (!p.dir) continue;
@@ -2205,40 +2241,44 @@ function drawScenery(ctx: CanvasRenderingContext2D, G: GameState, decorations: b
     return;
   }
 
-  // Pond (upper park)
-  ctx.fillStyle = '#5aa0d8';
-  ctx.beginPath();
-  ctx.ellipse(350, 250, 150, 62, 0, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.fillStyle = '#7dc0ee';
-  ctx.beginPath();
-  ctx.ellipse(340, 243, 128, 48, 0, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.fillStyle = '#4caf50';
-  for (const [x, y] of [
-    [260, 262],
-    [420, 230],
-  ]) {
+  if (propCanvas('pond', '#808080') && propCanvas('fountain', '#808080')) {
+    drawStamp(ctx, 'pond', '#808080', 350, 250, 300, 150);
+    drawStamp(ctx, 'fountain', '#808080', 650, 550, 120, 110);
+  } else {
+    // Pond (upper park)
+    ctx.fillStyle = '#5aa0d8';
     ctx.beginPath();
-    ctx.ellipse(x, y, 12, 7, 0.3, 0, Math.PI * 2);
+    ctx.ellipse(350, 250, 150, 62, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#7dc0ee';
+    ctx.beginPath();
+    ctx.ellipse(340, 243, 128, 48, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#4caf50';
+    for (const [x, y] of [
+      [260, 262],
+      [420, 230],
+    ]) {
+      ctx.beginPath();
+      ctx.ellipse(x, y, 12, 7, 0.3, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // Fountain (lower park)
+    ctx.fillStyle = '#d9d4c7';
+    ctx.beginPath();
+    ctx.arc(650, 555, 52, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#7dc0ee';
+    ctx.beginPath();
+    ctx.arc(650, 555, 40, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#bdb6a4';
+    ctx.fillRect(644, 528, 12, 30);
+    ctx.beginPath();
+    ctx.arc(650, 528, 10, 0, Math.PI * 2);
     ctx.fill();
   }
-
-  // Fountain (lower park)
-  ctx.fillStyle = '#d9d4c7';
-  ctx.beginPath();
-  ctx.arc(650, 555, 52, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.fillStyle = '#7dc0ee';
-  ctx.beginPath();
-  ctx.arc(650, 555, 40, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.fillStyle = '#bdb6a4';
-  ctx.fillRect(644, 528, 12, 30);
-  ctx.beginPath();
-  ctx.arc(650, 528, 10, 0, Math.PI * 2);
-  ctx.fill();
-
   // Flower beds
   const bed = (x: number, y: number, w: number, h: number) => drawBed(ctx, x, y, w, h);
   bed(560, 180, 150, 34);
@@ -2466,6 +2506,19 @@ function buildingIcon(
 }
 
 function specialIcon(ctx: CanvasRenderingContext2D, G: GameState, sq: Square, x: number, y: number) {
+  const key = sq.t === 'broker' && G.rules === 'easy' ? 'venture' : sq.t;
+  const col =
+    sq.t === 'portal' || sq.t === 'warp'
+      ? sq.channel == null && !sq.toBank && (sq.link ?? -1) >= 0
+        ? warpColor(G, sq)
+        : transportColor(sq)
+      : '#9aa3b8';
+  if (sq.t === 'change' && drawStamp(ctx, 'change-ring', col, x, y, 56, 56)) {
+    drawStamp(ctx, SUITS[G.changeSuit] as PropKey, col, x, y, 30, 30);
+    return;
+  }
+  if (sq.t !== 'bank' && drawProp(ctx, key as PropKey, col, x, y, 58, 56)) return;
+
   ctx.save();
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
@@ -2765,8 +2818,10 @@ export function drawTileGlow(
   ctx.shadowBlur = 10 + 20 * pulse;
   ctx.strokeStyle = '#fff';
   ctx.lineWidth = strong ? 6 + 2 * pulse : 4;
-  tileShape(ctx, layout, c.x, c.y, TILE / 2 + 4, 14);
-  ctx.stroke();
+  if (!drawStamp(ctx, `${layout === 'hex' ? 'hex' : 'square'}-selection`, '#ffffff', c.x, c.y, 110, 128)) {
+    tileShape(ctx, layout, c.x, c.y, TILE / 2 + 4, 14);
+    ctx.stroke();
+  }
   // White rings that keep spreading out and fading, to catch the eye.
   if (strong && !reducedMotion()) {
     ctx.shadowBlur = 0;
@@ -2836,12 +2891,16 @@ function drawSquare(ctx: CanvasRenderingContext2D, G: GameState, sq: Square) {
 
   // Shadow + tile
   ctx.fillStyle = 'rgba(0,0,0,0.18)';
-  tileShape(ctx, L, c.x + 2, c.y + 5, TILE / 2, 12);
-  ctx.fill();
+  if (!drawStamp(ctx, `${L === 'hex' ? 'hex' : 'square'}-shadow`, '#808080', c.x + 2, c.y + 5, 100, 116)) {
+    tileShape(ctx, L, c.x + 2, c.y + 5, TILE / 2, 12);
+    ctx.fill();
+  }
   // An owned tile is filled with its owner's color, so who owns what reads at a glance.
   ctx.fillStyle = owner ? tint(ownerColor, district ? 0.62 : 0.22) : sq.t === 'bank' ? '#fff6d6' : '#fdfbf5';
-  tileShape(ctx, L, c.x, c.y, TILE / 2, 12);
-  ctx.fill();
+  if (!drawStamp(ctx, `${L === 'hex' ? 'hex' : 'square'}-tile`, String(ctx.fillStyle), c.x, c.y, 100, 116)) {
+    tileShape(ctx, L, c.x, c.y, TILE / 2, 12);
+    ctx.fill();
+  }
 
   if (sq.t === 'shop') {
     // The design grows with the shop's value; owned shops use the owner's color, unowned ones
@@ -2851,16 +2910,20 @@ function drawSquare(ctx: CanvasRenderingContext2D, G: GameState, sq: Square) {
     amount(owner ? `${squareFee(G, sq)}G` : `${sq.value}G`);
   } else if (sq.t === 'plot') {
     if (!sq.b) {
-      ctx.save();
-      ctx.setLineDash([7, 5]);
-      ctx.strokeStyle = '#6b7590';
-      ctx.lineWidth = 2.5;
-      // Well inside the district border (whose inner edge is 5.5 in from the tile's edge), so no
-      // dash ever shows along or under it.
-      tileShape(ctx, L, c.x, c.y, TILE / 2 - 10, 7);
-      ctx.stroke();
-      ctx.restore();
-      label(ctx, c.x, ty + 4 + (L === 'hex' ? 11 : 0), 'VACANT', '#4a5470', 14);
+      if (drawProp(ctx, 'vacant', '#808080', c.x, artY, 60, 48)) {
+        label(ctx, c.x, textY, 'VACANT', '#4a5470', 10);
+      } else {
+        ctx.save();
+        ctx.setLineDash([7, 5]);
+        ctx.strokeStyle = '#6b7590';
+        ctx.lineWidth = 2.5;
+        // Well inside the district border (whose inner edge is 5.5 in from the tile's edge), so no
+        // dash ever shows along or under it.
+        tileShape(ctx, L, c.x, c.y, TILE / 2 - 10, 7);
+        ctx.stroke();
+        ctx.restore();
+        label(ctx, c.x, ty + 4 + (L === 'hex' ? 11 : 0), 'VACANT', '#4a5470', 14);
+      }
     } else if (sq.b === 'star3') {
       // The 3-Star Shop has its own designs that grow with its value.
       const tier = tierFor(sq.value, STAR3_TIERS);
@@ -2900,8 +2963,10 @@ function drawSquare(ctx: CanvasRenderingContext2D, G: GameState, sq: Square) {
     // so neither the fill's corners nor its soft edge show around it.
     ctx.strokeStyle = district.color;
     ctx.lineWidth = 6;
-    tileShape(ctx, L, c.x, c.y, TILE / 2 - 2.5, 9.5);
-    ctx.stroke();
+    if (!drawStamp(ctx, `${L === 'hex' ? 'hex' : 'square'}-border`, district.color, c.x, c.y, 100, 116)) {
+      tileShape(ctx, L, c.x, c.y, TILE / 2 - 2.5, 9.5);
+      ctx.stroke();
+    }
   }
   if (owner) {
     if (!district) {
@@ -2910,15 +2975,17 @@ function drawSquare(ctx: CanvasRenderingContext2D, G: GameState, sq: Square) {
       tileShape(ctx, L, c.x, c.y, TILE / 2 - 1.5, 11);
       ctx.stroke();
     }
-    ctx.fillStyle = '#5b6478';
-    const py = L === 'hex' ? top + 12 : y;
-    ctx.fillRect(x + TILE - 12, py - 14, 3, 24);
-    ctx.fillStyle = ownerColor;
-    ctx.beginPath();
-    ctx.moveTo(x + TILE - 9, py - 14);
-    ctx.lineTo(x + TILE + 8, py - 8);
-    ctx.lineTo(x + TILE - 9, py - 2);
-    ctx.fill();
+    if (!drawStamp(ctx, 'flag', ownerColor, x + TILE - 3, (L === 'hex' ? top + 12 : y) - 1, 25, 32)) {
+      ctx.fillStyle = '#5b6478';
+      const py = L === 'hex' ? top + 12 : y;
+      ctx.fillRect(x + TILE - 12, py - 14, 3, 24);
+      ctx.fillStyle = ownerColor;
+      ctx.beginPath();
+      ctx.moveTo(x + TILE - 9, py - 14);
+      ctx.lineTo(x + TILE + 8, py - 8);
+      ctx.lineTo(x + TILE - 9, py - 2);
+      ctx.fill();
+    }
   } else if (!district) {
     ctx.strokeStyle = 'rgba(38,49,79,0.18)';
     ctx.lineWidth = 2;
