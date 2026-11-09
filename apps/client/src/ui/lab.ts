@@ -115,7 +115,11 @@ const rnd = (n: number) => Math.floor(Math.random() * n);
  * Controls for UI elements that were just added or changed: they shake once and glow so they
  * are easy to find. Update this list with each change.
  */
-const RECENT = new Set(['Board with portal links', 'Cards: open the stack']);
+const RECENT = new Set([
+  'Portal links on the board',
+  'Portal links in the builder',
+  'Back to the plain board',
+]);
 
 /**
  * Which board the lab plays on: Town (square), Twin Lakes (hex) or Town with portal links,
@@ -155,6 +159,36 @@ function portalTown(): BoardDef {
     { a: top[6], sa: 2, b: bottom[5], sb: 3, oneWay: true },
   ];
   return b;
+}
+
+/**
+ * The board builder opened over the Lab on `start`, with the control `press` (a CSS selector)
+ * pressed once it's open, and a Back to UI Lab button.
+ */
+function openLabBuilder(root: HTMLElement, start: BoardDef | null, press: string | null, onPlay: () => void) {
+  const holder = h('div', { class: 'lab-screen' });
+  root.append(holder);
+  const close = openEditor(holder, start, {
+    onExit: () => holder.remove(),
+    onPlay: () => {
+      holder.remove();
+      onPlay();
+    },
+  });
+  if (press) holder.querySelector<HTMLButtonElement>(press)?.click();
+  holder.append(
+    h(
+      'button',
+      {
+        class: 'btn small lab-back',
+        onclick: () => {
+          close();
+          holder.remove();
+        },
+      },
+      'Back to UI Lab',
+    ),
+  );
 }
 
 /** A sample match; `playSample` then plays a few rounds so cards, the board and the log have content. */
@@ -903,6 +937,37 @@ export async function openLab(app: HTMLElement, section?: string) {
   {
     const s = addSection('board', 'Board effects', 'Effects play on the target player.');
     const pos = () => board.tokenPos(cur().id);
+    // Portal links: the Lab's game on Town with every kind (a two-way pair, and two entrances
+    // leading to one exit), and the same board in the builder with the Links tool.
+    row(
+      s,
+      btn('Portal links on the board', () => {
+        if (labBoard() === 'portals')
+          return hud.tick(
+            'Portal links are on the board: a purple two-way pair, and two entrances leading to one exit.',
+          );
+        try {
+          localStorage.setItem(LAB_BOARD_KEY, 'portals');
+        } catch {
+          return hud.tick('Browser storage is blocked, so the board can’t change.');
+        }
+        location.reload();
+      }),
+      btn('Portal links in the builder', () =>
+        openLabBuilder(root, portalTown(), '.ed-tool-button[aria-label="Links"]', () =>
+          hud.tick('Board builder test play pressed.'),
+        ),
+      ),
+      btn('Back to the plain board', () => {
+        if (labBoard() !== 'portals') return hud.tick('The board has no portal links already.');
+        try {
+          localStorage.setItem(LAB_BOARD_KEY, 'square');
+        } catch {
+          // Storage blocked: stay on this board.
+        }
+        location.reload();
+      }),
+    );
     row(
       s,
       btn('Roll die', async () => {
@@ -1855,15 +1920,6 @@ export async function openLab(app: HTMLElement, section?: string) {
       btn('Square / hex board', () => {
         try {
           localStorage.setItem(LAB_BOARD_KEY, labBoard() === 'town' ? 'hex' : 'square');
-        } catch {
-          // Storage blocked: stay on this board.
-        }
-        location.reload();
-      }),
-      // Town with a two-way portal pair and two entrances leading to one exit.
-      btn('Board with portal links', () => {
-        try {
-          localStorage.setItem(LAB_BOARD_KEY, 'portals');
         } catch {
           // Storage blocked: stay on this board.
         }
