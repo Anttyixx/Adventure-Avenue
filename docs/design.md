@@ -925,11 +925,15 @@ animation has a `prefers-reduced-motion` path (CSS media query, or `matchMedia(.
 
 Bright and physical, unlike the dark HUD:
 
-- **World:** a seamless painted meadow with soft grass, clover and tiny flowers, matching the
-  painted toy-town sprites. Keep its contrast below the cream tiles and district colors. Paint
-  in world coordinates under transparent board caches. Use trees, ponds and flower beds
-  sparingly in games; keep them hidden in the builder. Cloud shadows are faint. The original
-  grass (`GRASS #92d268`) and denser scenery remain available as a fallback.
+- **World:** a painted meadow with soft grass, clover and tiny flowers, matching the
+  painted toy-town sprites. Blend coordinate-seeded grass patches with soft edges so zooming
+  out shows variation rather than mirrored repeats. Keep grass contrast below cream tiles and
+  district colors. Paint in world coordinates under transparent board caches. Small painted
+  scenery (benches, shrubs, rocks, planters, fences, saplings, mushrooms, lily ponds and picnic
+  tables) fills free spaces and continues beyond the board, thinning farther out. Keep tiles,
+  roads, portal rings and portal landing cells clear. Use no playable tile frames or labels on
+  scenery. Hide decorations in the builder. Cloud shadows are faint. Original assets remain
+  available for rollback.
 - **Tiles** (86 units on a 100 grid): cream `#fdfbf5` (bank `#fff6d6`), radius 12, soft shadow
   down-right. Owned: tint of the owner's color. Properties: 6px district-color border. Vacant
   plots: dashed grey outline + "VACANT".

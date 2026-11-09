@@ -6,6 +6,7 @@
  * - otherwise the image's own blue parts (windows, doors, awnings, signs) are recolored.
  * Call `loadProps()` once before drawing; until then callers fall back to the vector art.
  */
+import type { SceneryStamp } from './scenery';
 
 export type PropKey =
   | `shop${0 | 1 | 2 | 3 | 4}`
@@ -41,6 +42,7 @@ export type PropKey =
   | 'road'
   | 'grass'
   | 'meadow'
+  | SceneryStamp['key']
   | 'fountain'
   | 'flag'
   | 'hike'
@@ -59,6 +61,11 @@ export const PROPERTY_SET: string = 'painted';
 export const LANDSCAPE_SET: string = 'painted';
 export const PAINTED_LANDSCAPE = ART_SET === 'layered' && LANDSCAPE_SET === 'painted';
 const landscape = import.meta.glob<string>('./assets/landscape-v4/*.png', {
+  eager: true,
+  query: '?url',
+  import: 'default',
+});
+const scenery = import.meta.glob<string>('./assets/scenery-v5/*.png', {
   eager: true,
   query: '?url',
   import: 'default',
@@ -94,7 +101,7 @@ const urls = Object.fromEntries([
       ])
     : []),
   ...(PAINTED_LANDSCAPE
-    ? Object.entries(landscape).map(([path, url]) => [
+    ? Object.entries({ ...landscape, ...scenery }).map(([path, url]) => [
         path.replace(/^.*\//, '').replace('-base.png', '.png'),
         { url, explicit: true },
       ])

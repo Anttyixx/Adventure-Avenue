@@ -212,14 +212,21 @@ The hovered cell has a tinted fill and two contrasting outlines: a dark outer st
 pixels) and a bright inner stroke (3 screen pixels), gold normally and red while erasing. Their
 screen size stays constant at every zoom.
 The default landscape is a soft painted meadow with grass, clover and tiny flowers, matching
-the painted tile sprites. Larger decorations are occasional accents: custom boards decorate
-about 16% of empty cells, with smaller ponds and flower beds. Portal landing cells stay clear.
-Town keeps its pond and fountain but has fewer trees and flower beds. Cloud shadows are subtle.
-All previous landscape artwork is preserved for rollback.
-Grass is a separate, repeating background beneath the tiles and scenery. Both the builder and
-normal games fill the entire visible camera area, including outside the board, at every zoom
-and screen size. The pattern is anchored in board coordinates and scales with the tiles;
-there is no finite background border or texture seam where the board layer ends.
+the painted tile sprites. Its grass uses coordinate-seeded crops, turns and reflections of the
+original painted grass, blended with smooth complementary weights. It never repeats the entire
+mirrored texture, and patch edges have no hard joins. Each world location stays fixed while
+panning and zooming. Cached chunks keep repeated frames inexpensive.
+Nine base-only decorative PNGs add benches, flowering shrubs, garden rocks, planters, short
+fences, saplings, mushrooms, lily ponds and picnic tables. Pieces appear automatically in free
+cells, along the margin and in the meadow beyond the board, thinning farther away. Positions
+and sizes vary but remain stable. They have no game effects. Playable tiles, roads, portal rings
+and their landing cells stay clear. Town keeps its landmark pond and fountain. Cloud shadows
+are subtle. All decorative pieces, including those beyond the board, stay hidden in the builder.
+Previous landscape artwork and the original grass/scenery mode remain available for rollback.
+Grass is a separate background beneath tiles and scenery. Both builder and games fill the
+entire visible camera area, including outside the board, at every zoom and screen size. The
+landscape is anchored in board coordinates and scales with the tiles; there is no finite
+background border or texture seam where the board layer ends.
 **Panning.** The view can be moved around the grid: drag with the Pan tool (the four-arrow icon
 in the left toolbar), drag with the middle or right mouse button or with Space held (any tool),
 drag with two fingers on touch screens (the spread still zooms), or press the arrow keys to glide

@@ -26,6 +26,23 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: '2026-11-09-varied-meadow-scenery',
+    date: 'Nov 9, 2026',
+    title: 'A livelier landscape',
+    features: [
+      {
+        tag: 'better',
+        title: 'Grass with natural variation',
+        text: 'The painted meadow now blends varied grass patches with soft edges, breaking up visible repeats when zoomed out.',
+      },
+      {
+        tag: 'new',
+        title: 'Little details around town',
+        text: 'Nine new painted scenery pieces add benches, shrubs, rocks, flowers, fences, saplings, mushrooms, lily ponds and picnic tables in empty spaces and around the board. Tiles, roads and portals stay clear; decorations remain hidden while building.',
+      },
+    ],
+  },
+  {
     id: '2026-11-09-painted-landscape',
     date: 'Nov 9, 2026',
     title: 'A painted landscape',

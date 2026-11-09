@@ -5,10 +5,13 @@ matches the soft painted toy-town board sprites, with clover and tiny flowers.
 Four mirrored quadrants produce identical opposite edges for seamless repetition.
 The generated meadow is softened over a muted green ground before export.
 
-`paintGrass` anchors the repeating texture in world coordinates, covering the whole
-visible camera area on square and hex boards, including the board builder.
-Larger scenery is sparse; portal landing cells remain clear. Builder decorations
-remain hidden. Existing scenery PNGs are reused without modification.
+The original file is preserved. `meadow.ts` now samples only its unmirrored first
+quarter with coordinate-seeded crops/turns/reflections, blended with complementary
+smoothstep weights. Grass patches span 256 world units and are cached in 768-unit
+chunks (384px each, up to 96 chunks). No whole-image repetition or mirrored joins
+are drawn. `paintGrass` covers the entire visible area on square/hex boards and
+in the builder. Coordinates stay fixed when panning/zooming. New small scenery
+comes from `scenery-v5/`; the builder continues to hide all decorative props.
 
 Set `LANDSCAPE_SET` in `props.ts` to `previous` to restore the old grass and scenery
 density independently of the property artwork. `ART_SET = classic` also restores

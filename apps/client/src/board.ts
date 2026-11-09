@@ -18,6 +18,8 @@ import {
 import { cellCenter, sideVector, tileShape, tileTop, worldSize } from './geometry';
 import { SHOP_TIERS, STAR3_TIERS, badge, darken, drawShop, drawStar3, tierFor, tint } from './art';
 import { drawProp, drawStamp, propCanvas, PAINTED_LANDSCAPE, type PropKey } from './props';
+import { paintMeadow } from './meadow';
+import { sceneryBeyondBoard, sceneryForBoard } from './scenery';
 import { drawBoonIcon, drawCoin, drawSparkle, SUIT_CHARS } from './icons';
 import { Facing, FRAME_H, FRAME_W, drawCharacter, drawCharacterGlow, facingFor } from './sprites';
 import { TIMING as T } from './timing';
@@ -1159,7 +1161,7 @@ export class BoardView {
     );
     ctx.imageSmoothingEnabled = true;
     // Paint the visible world, rather than a fixed rectangle around the board.
-    paintGrass(ctx);
+    paintGrass(ctx, this.G);
     ctx.drawImage(this.cache, 0, 0, this.ww, this.wh);
 
     const motion = !reducedMotion();
@@ -1829,7 +1831,7 @@ export function paintBoard(
   decorations = true,
   portals = true,
 ) {
-  if (background) paintGrass(ctx);
+  if (background) paintGrass(ctx, decorations ? G : undefined);
   drawScenery(ctx, G, decorations);
   for (const sq of G.nodes) drawSquare(ctx, G, sq);
   // Still pictures draw portals here; live views spin them each frame with drawPortals.
@@ -2134,17 +2136,8 @@ export function grassTile(): HTMLCanvasElement {
 
 const grassPatterns = new WeakMap<CanvasRenderingContext2D, CanvasPattern>();
 
-/** Fill the entire visible canvas with world-aligned grass at the board's current zoom. */
-export function paintGrass(ctx: CanvasRenderingContext2D) {
-  let pattern = grassPatterns.get(ctx);
-  if (!pattern) {
-    pattern =
-      ctx.createPattern(
-        propCanvas('meadow', '#808080') ?? propCanvas('grass', '#808080') ?? grassTile(),
-        'repeat',
-      ) ?? undefined;
-    if (pattern) grassPatterns.set(ctx, pattern);
-  }
+/** World-aligned grass; games may also add scenery beyond the board, builders omit `G`. */
+export function paintGrass(ctx: CanvasRenderingContext2D, G?: GameState) {
   // The inverse camera transform gives the visible world, even when it lies beyond the board.
   // A small overscan covers edge pixels at fractional zoom and on high-density screens.
   const inverse = ctx.getTransform().inverse();
@@ -2159,8 +2152,20 @@ export function paintGrass(ctx: CanvasRenderingContext2D) {
   const right = Math.ceil(Math.max(...corners.map((p) => p.x))) + 1;
   const bottom = Math.ceil(Math.max(...corners.map((p) => p.y))) + 1;
   ctx.save();
-  ctx.fillStyle = pattern ?? GRASS;
-  ctx.fillRect(left, top, right - left, bottom - top);
+  const meadow = propCanvas('meadow', '#808080');
+  if (PAINTED_LANDSCAPE && meadow) paintMeadow(ctx, meadow, left, top, right, bottom);
+  else {
+    let pattern = grassPatterns.get(ctx);
+    if (!pattern) {
+      pattern = ctx.createPattern(propCanvas('grass', '#808080') ?? grassTile(), 'repeat') ?? undefined;
+      if (pattern) grassPatterns.set(ctx, pattern);
+    }
+    ctx.fillStyle = pattern ?? GRASS;
+    ctx.fillRect(left, top, right - left, bottom - top);
+  }
+  if (PAINTED_LANDSCAPE && G)
+    for (const p of sceneryBeyondBoard(G, left, top, right, bottom))
+      drawStamp(ctx, p.key, '#808080', p.x, p.y, p.size, p.size);
   ctx.restore();
 }
 
@@ -2254,7 +2259,8 @@ function drawScenery(ctx: CanvasRenderingContext2D, G: GameState, decorations: b
   if (!decorations) return;
 
   if (!isTown(G)) {
-    drawCustomDecor(ctx, G);
+    if (PAINTED_LANDSCAPE) drawPaintedDecor(ctx, G);
+    else drawCustomDecor(ctx, G);
     return;
   }
 
@@ -2296,6 +2302,10 @@ function drawScenery(ctx: CanvasRenderingContext2D, G: GameState, decorations: b
     ctx.arc(650, 528, 10, 0, Math.PI * 2);
     ctx.fill();
   }
+  if (PAINTED_LANDSCAPE) {
+    drawPaintedDecor(ctx, G);
+    return;
+  }
   // Flower beds
   const bed = (x: number, y: number, w: number, h: number) => drawBed(ctx, x, y, w, h);
   bed(560, 180, 150, 34);
@@ -2321,6 +2331,10 @@ function drawScenery(ctx: CanvasRenderingContext2D, G: GameState, decorations: b
     [760, 300, 0.8],
   ].filter((_, i) => !PAINTED_LANDSCAPE || i % 3 !== 0))
     tree(x, y, s);
+}
+
+function drawPaintedDecor(ctx: CanvasRenderingContext2D, G: GameState) {
+  for (const p of sceneryForBoard(G)) drawStamp(ctx, p.key, '#808080', p.x, p.y, p.size, p.size);
 }
 
 const SPECIAL_LABEL: Record<string, string> = {

@@ -138,10 +138,17 @@ room, Continue resumes the saved game, and the board editor (`ui/editor.ts`).
 `BoardView` draws everything on one `<canvas>`:
 
 - **Background:** `paintGrass` fills the visible world through the inverse camera transform.
-  The default `landscape-v4/meadow-base.png` is a seamless 1024px painted texture.
-  The repeating texture stays anchored to the board and scales with zoom, with no finite edge.
-  `LANDSCAPE_SET` in `props.ts` restores previous grass and scenery density; old assets remain.
-  The game and editor draw it beneath a transparent board cache.
+  `meadow.ts` uses the unmirrored quarter of `landscape-v4/meadow-base.png` to build
+  coordinate-seeded, smoothly blended grass patches (256 world units), cached in 768-unit
+  chunks rendered at 384px. Four complementary smoothstep weights share their boundary
+  samples, avoiding hard joins. The 96-entry LRU cache bounds memory. Panning/zooming never
+  changes the grass at a world coordinate; the builder uses the same ground.
+  Games pass `G` to `paintGrass` to add the visible outer scenery from `sceneryBeyondBoard`;
+  builders omit `G`, leaving decorations hidden. `sceneryForBoard` supplies smaller sprites
+  inside the static board cache. Both use an independent coordinate hash, avoid gameplay
+  geometry and leave engine state/randomness unchanged. `props.ts` maps base-only scenery
+  PNGs in `assets/scenery-v5/`. `LANDSCAPE_SET` restores original grass and scenery density.
+  All previous artwork remains available. The game/editor board caches stay transparent.
 - **Static layer:** scenery and tiles are painted once into an offscreen cache
   (`renderStatic` → `paintBoard`) and redrawn only when `dirty` (state changed) or the zoom needs
   a sharper copy. Property images come from `props.ts` (PNG art in `assets/props`, recolored to

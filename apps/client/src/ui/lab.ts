@@ -35,6 +35,7 @@ import { propIconURL, ART_SOURCES, type PropKey } from '../props';
 /** The grey unowned property art is drawn in (as on the board). */
 const UNOWNED_ART = '#8a94a8';
 import { BoardView, ZOOM_STEP, portalGates } from '../board';
+import { ZOOM_MAX_OUT } from '../zoom';
 import { CHARACTERS, shuffledCharacters } from '../sprites';
 import { clear, fmt, h } from './dom';
 import { shortName } from '../names';
@@ -1437,12 +1438,12 @@ export async function openLab(app: HTMLElement, section?: string) {
       );
   }
 
-  // Property designs
+  // Landscape previews
   {
     const s = addSection(
       'art',
-      'Property designs',
-      'Every property design: shops and the 3-Star Shop change as their value grows; then the buildings and the bank.',
+      'Landscape',
+      'Blended meadow and small scenery, including outside the board. Use the zoom chip to check both scales.',
     );
     row(
       s,
@@ -1458,7 +1459,8 @@ export async function openLab(app: HTMLElement, section?: string) {
             seats: G.players.map((p) => ({ name: p.name, cpu: true, ch: p.ch })),
           });
           const preview = new HotSeat(mount, sample, () => mount.remove(), false);
-          preview.board.peekWhole = true;
+          preview.board.followPid = 0;
+          preview.board.zoomOut = ZOOM_MAX_OUT;
           mount.append(
             h(
               'button',
@@ -1474,6 +1476,18 @@ export async function openLab(app: HTMLElement, section?: string) {
           );
         }),
       ),
+    );
+  }
+
+  // Property designs
+  {
+    const s = addSection(
+      'art',
+      'Property designs',
+      'Every property design: shops and the 3-Star Shop change as their value grows; then the buildings and the bank.',
+    );
+    row(
+      s,
       btn('Tile sprites and tint layers', () => {
         const rows = Object.entries(ART_SOURCES).map(([key, source]) =>
           h(
