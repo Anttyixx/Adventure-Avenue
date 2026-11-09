@@ -115,7 +115,11 @@ const rnd = (n: number) => Math.floor(Math.random() * n);
  * Controls for UI elements that were just added or changed: they shake once and glow so they
  * are easy to find. Update this list with each change.
  */
-const RECENT = new Set(['Tile sprites and tint layers', 'Design gallery']);
+const RECENT = new Set([
+  'Painted landscape: square',
+  'Painted landscape: hex',
+  'Tile sprites and tint layers',
+]);
 
 /**
  * Which board the lab plays on: Town with portal links (square, the default) or Twin Lakes (hex),
@@ -1442,6 +1446,34 @@ export async function openLab(app: HTMLElement, section?: string) {
     );
     row(
       s,
+      ...(['square', 'hex'] as const).map((layout) =>
+        btn(`Painted landscape: ${layout}`, () => {
+          const mount = h('div', { class: 'lab-screen' });
+          root.append(mount);
+          const sample = newGame({
+            rules: 'standard',
+            target: 10000,
+            roundCap: 0,
+            boardId: layout === 'hex' ? 'prism-junction' : 'town',
+            seats: G.players.map((p) => ({ name: p.name, cpu: true, ch: p.ch })),
+          });
+          const preview = new HotSeat(mount, sample, () => mount.remove(), false);
+          preview.board.peekWhole = true;
+          mount.append(
+            h(
+              'button',
+              {
+                class: 'btn small lab-back',
+                onclick: () => {
+                  preview.destroy();
+                  mount.remove();
+                },
+              },
+              'Back to UI Lab',
+            ),
+          );
+        }),
+      ),
       btn('Tile sprites and tint layers', () => {
         const rows = Object.entries(ART_SOURCES).map(([key, source]) =>
           h(

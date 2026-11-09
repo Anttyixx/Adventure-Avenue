@@ -106,7 +106,7 @@ Requests refer to parts of the game by these names:
 - **Board** (`apps/client/src/board.ts`):
   - **tiles/squares**, **districts** (color groups of shops), **vacant plots** (empty properties
     that get a building).
-  - **background:** `board.ts` `paintGrass` covers the visible camera area with world-aligned grass. Live views draw `paintBoard(..., false)` into transparent caches so no grass seam appears at board edges.
+  - **background:** `board.ts` `paintGrass` covers the visible camera area with world-aligned painted meadow (`assets/landscape-v4/`). `LANDSCAPE_SET` in `props.ts` restores previous grass and scenery density. Live views draw `paintBoard(..., false)` into transparent caches so no grass seam appears at board edges.
   - **auto zoom / camera:** see "Camera" in `docs/architecture.md`.
 - **Board builder** (or board editor, `ui/editor.ts`, `#editor`): the full-screen builder with the
   left icon toolbar (Select, Pan, Place, Erase, Links), the Tiles pane, Board settings, tile info panel, the portal panel and

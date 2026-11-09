@@ -137,8 +137,10 @@ room, Continue resumes the saved game, and the board editor (`ui/editor.ts`).
 
 `BoardView` draws everything on one `<canvas>`:
 
-- **Background:** `paintGrass` fills the visible world through the inverse camera transform. Its
-  repeating texture stays anchored to the board and scales with zoom, with no finite edge.
+- **Background:** `paintGrass` fills the visible world through the inverse camera transform.
+  The default `landscape-v4/meadow-base.png` is a seamless 1024px painted texture.
+  The repeating texture stays anchored to the board and scales with zoom, with no finite edge.
+  `LANDSCAPE_SET` in `props.ts` restores previous grass and scenery density; old assets remain.
   The game and editor draw it beneath a transparent board cache.
 - **Static layer:** scenery and tiles are painted once into an offscreen cache
   (`renderStatic` → `paintBoard`) and redrawn only when `dirty` (state changed) or the zoom needs

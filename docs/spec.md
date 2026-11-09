@@ -211,6 +211,11 @@ The board fills the entire canvas behind the HUD, with no space reserved beside 
 The hovered cell has a tinted fill and two contrasting outlines: a dark outer stroke (6 screen
 pixels) and a bright inner stroke (3 screen pixels), gold normally and red while erasing. Their
 screen size stays constant at every zoom.
+The default landscape is a soft painted meadow with grass, clover and tiny flowers, matching
+the painted tile sprites. Larger decorations are occasional accents: custom boards decorate
+about 16% of empty cells, with smaller ponds and flower beds. Portal landing cells stay clear.
+Town keeps its pond and fountain but has fewer trees and flower beds. Cloud shadows are subtle.
+All previous landscape artwork is preserved for rollback.
 Grass is a separate, repeating background beneath the tiles and scenery. Both the builder and
 normal games fill the entire visible camera area, including outside the board, at every zoom
 and screen size. The pattern is anchored in board coordinates and scales with the tiles;

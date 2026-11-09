@@ -26,6 +26,18 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: '2026-11-09-painted-landscape',
+    date: 'Nov 9, 2026',
+    title: 'A painted landscape',
+    features: [
+      {
+        tag: 'better',
+        title: 'A softer setting for your town',
+        text: 'A painted meadow with grass, clover and tiny flowers now surrounds the board. Fewer trees, ponds and flower beds keep the focus on the tiles. Previous artwork is preserved.',
+      },
+    ],
+  },
+  {
     id: '2026-11-09-painted-properties',
     date: 'Nov 9, 2026',
     title: 'New painted property sprites',

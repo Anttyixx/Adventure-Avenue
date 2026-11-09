@@ -17,7 +17,7 @@ import {
 } from '@aa/engine';
 import { cellCenter, sideVector, tileShape, tileTop, worldSize } from './geometry';
 import { SHOP_TIERS, STAR3_TIERS, badge, darken, drawShop, drawStar3, tierFor, tint } from './art';
-import { drawProp, drawStamp, propCanvas, type PropKey } from './props';
+import { drawProp, drawStamp, propCanvas, PAINTED_LANDSCAPE, type PropKey } from './props';
 import { drawBoonIcon, drawCoin, drawSparkle, SUIT_CHARS } from './icons';
 import { Facing, FRAME_H, FRAME_W, drawCharacter, drawCharacterGlow, facingFor } from './sprites';
 import { TIMING as T } from './timing';
@@ -1188,7 +1188,7 @@ export class BoardView {
     const t = now / 1000;
     // Drifting cloud shadows
     ctx.save();
-    ctx.fillStyle = 'rgba(20,40,30,0.07)';
+    ctx.fillStyle = PAINTED_LANDSCAPE ? 'rgba(20,40,30,0.018)' : 'rgba(20,40,30,0.07)';
     for (let i = 0; i < 3; i++) {
       const x = ((t * 12 + i * 520) % (this.ww + 600)) - 300;
       const y = 140 + i * 230;
@@ -2069,6 +2069,9 @@ function drawCustomDecor(ctx: CanvasRenderingContext2D, G: GameState) {
       }),
     ),
   );
+  const pondRate = PAINTED_LANDSCAPE ? 0.012 : 0.05;
+  const bedRate = PAINTED_LANDSCAPE ? 0.035 : 0.13;
+  const treeRate = PAINTED_LANDSCAPE ? 0.16 : 0.5;
   const r = seeded(97 + (G.cols ?? 12) * 31 + (G.rows ?? 7) * 17 + G.nodes.length);
   for (let y = 0; y < (G.rows ?? 7); y++) {
     for (let x = 0; x < (G.cols ?? 12); x++) {
@@ -2077,11 +2080,14 @@ function drawCustomDecor(ctx: CanvasRenderingContext2D, G: GameState) {
       const roll = r();
       if (portalCells.has(`${x},${y}`)) {
         // Draw nothing, but use the same random numbers so the rest of the scenery stays put.
-        if (roll >= 0.13 && roll < 0.5) for (let k = 0; k < 3; k++) r();
+        if (roll >= bedRate && roll < treeRate) for (let k = 0; k < 3; k++) r();
         continue;
       }
-      if (roll < 0.05) {
-        if (drawStamp(ctx, 'pond', '#808080', cx, cy, 80, 54)) continue;
+      if (roll < pondRate) {
+        if (
+          drawStamp(ctx, 'pond', '#808080', cx, cy, PAINTED_LANDSCAPE ? 68 : 80, PAINTED_LANDSCAPE ? 46 : 54)
+        )
+          continue;
         ctx.fillStyle = '#5aa0d8';
         ctx.beginPath();
         ctx.ellipse(cx, cy, 38, 24, 0, 0, Math.PI * 2);
@@ -2090,8 +2096,15 @@ function drawCustomDecor(ctx: CanvasRenderingContext2D, G: GameState) {
         ctx.beginPath();
         ctx.ellipse(cx - 3, cy - 3, 30, 17, 0, 0, Math.PI * 2);
         ctx.fill();
-      } else if (roll < 0.13) drawBed(ctx, cx - 40, cy - 14, 80, 28);
-      else if (roll < 0.5) drawTree(ctx, cx - 14 + r() * 28, cy - 8 + r() * 16, 0.75 + r() * 0.35);
+      } else if (roll < bedRate)
+        drawBed(
+          ctx,
+          cx - (PAINTED_LANDSCAPE ? 28 : 40),
+          cy - 14,
+          PAINTED_LANDSCAPE ? 56 : 80,
+          PAINTED_LANDSCAPE ? 22 : 28,
+        );
+      else if (roll < treeRate) drawTree(ctx, cx - 14 + r() * 28, cy - 8 + r() * 16, 0.75 + r() * 0.35);
     }
   }
 }
@@ -2125,7 +2138,11 @@ const grassPatterns = new WeakMap<CanvasRenderingContext2D, CanvasPattern>();
 export function paintGrass(ctx: CanvasRenderingContext2D) {
   let pattern = grassPatterns.get(ctx);
   if (!pattern) {
-    pattern = ctx.createPattern(propCanvas('grass', '#808080') ?? grassTile(), 'repeat') ?? undefined;
+    pattern =
+      ctx.createPattern(
+        propCanvas('meadow', '#808080') ?? propCanvas('grass', '#808080') ?? grassTile(),
+        'repeat',
+      ) ?? undefined;
     if (pattern) grassPatterns.set(ctx, pattern);
   }
   // The inverse camera transform gives the visible world, even when it lies beyond the board.
@@ -2282,8 +2299,10 @@ function drawScenery(ctx: CanvasRenderingContext2D, G: GameState, decorations: b
   // Flower beds
   const bed = (x: number, y: number, w: number, h: number) => drawBed(ctx, x, y, w, h);
   bed(560, 180, 150, 34);
-  bed(560, 280, 150, 34);
-  bed(800, 600, 140, 30);
+  if (!PAINTED_LANDSCAPE) {
+    bed(560, 280, 150, 34);
+    bed(800, 600, 140, 30);
+  }
   bed(380, 600, 140, 30);
 
   // Trees
@@ -2300,7 +2319,7 @@ function drawScenery(ctx: CanvasRenderingContext2D, G: GameState, decorations: b
     [1080, 600, 0.9],
     [500, 520, 0.8],
     [760, 300, 0.8],
-  ])
+  ].filter((_, i) => !PAINTED_LANDSCAPE || i % 3 !== 0))
     tree(x, y, s);
 }
 

@@ -40,6 +40,7 @@ export type PropKey =
   | 'closed'
   | 'road'
   | 'grass'
+  | 'meadow'
   | 'fountain'
   | 'flag'
   | 'hike'
@@ -54,6 +55,14 @@ export type PropKey =
 export const ART_SET: string = 'layered';
 /** Restore the previous property sprites without changing the rest of the board art. */
 export const PROPERTY_SET: string = 'painted';
+/** Restore the previous grass and scenery density independently of the building set. */
+export const LANDSCAPE_SET: string = 'painted';
+export const PAINTED_LANDSCAPE = ART_SET === 'layered' && LANDSCAPE_SET === 'painted';
+const landscape = import.meta.glob<string>('./assets/landscape-v4/*.png', {
+  eager: true,
+  query: '?url',
+  import: 'default',
+});
 const properties = import.meta.glob<string>('./assets/properties-v3/*.png', {
   eager: true,
   query: '?url',
@@ -80,6 +89,12 @@ const urls = Object.fromEntries([
     : []),
   ...(ART_SET === 'layered' && PROPERTY_SET === 'painted'
     ? Object.entries(properties).map(([path, url]) => [
+        path.replace(/^.*\//, '').replace('-base.png', '.png'),
+        { url, explicit: true },
+      ])
+    : []),
+  ...(PAINTED_LANDSCAPE
+    ? Object.entries(landscape).map(([path, url]) => [
         path.replace(/^.*\//, '').replace('-base.png', '.png'),
         { url, explicit: true },
       ])
