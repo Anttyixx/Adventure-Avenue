@@ -34,7 +34,7 @@ import { propIconURL, type PropKey } from '../props';
 
 /** The grey unowned property art is drawn in (as on the board). */
 const UNOWNED_ART = '#8a94a8';
-import { BoardView, ZOOM_STEP } from '../board';
+import { BoardView, ZOOM_STEP, portalGates } from '../board';
 import { CHARACTERS, shuffledCharacters } from '../sprites';
 import { clear, fmt, h } from './dom';
 import { shortName } from '../names';
@@ -115,23 +115,18 @@ const rnd = (n: number) => Math.floor(Math.random() * n);
  * Controls for UI elements that were just added or changed: they shake once and glow so they
  * are easy to find. Update this list with each change.
  */
-const RECENT = new Set([
-  'Portal links on the board',
-  'Portal links in the builder',
-  'Back to the plain board',
-]);
+const RECENT = new Set(['Show where a portal leads', 'Portal links in the builder', 'Square / hex board']);
 
 /**
- * Which board the lab plays on: Town (square), Twin Lakes (hex) or Town with portal links,
+ * Which board the lab plays on: Town with portal links (square, the default) or Twin Lakes (hex),
  * remembered per browser.
  */
 const LAB_BOARD_KEY = 'aa-lab-board';
-function labBoard(): 'town' | 'twin-lakes' | 'portals' {
+function labBoard(): 'twin-lakes' | 'portals' {
   try {
-    const kind = localStorage.getItem(LAB_BOARD_KEY);
-    return kind === 'hex' ? 'twin-lakes' : kind === 'portals' ? 'portals' : 'town';
+    return localStorage.getItem(LAB_BOARD_KEY) === 'hex' ? 'twin-lakes' : 'portals';
   } catch {
-    return 'town';
+    return 'portals';
   }
 }
 
@@ -199,9 +194,7 @@ function sampleState(): GameState {
     rules: 'standard',
     target: 5000,
     roundCap: 0,
-    ...(labBoard() === 'portals'
-      ? { board: portalTown() }
-      : { boardId: labBoard() as 'town' | 'twin-lakes' }),
+    ...(labBoard() === 'portals' ? { board: portalTown() } : { boardId: labBoard() }),
     seats: names.map((name, i) => ({ name, cpu: true, ch: chars[i] })),
   });
 }
@@ -937,36 +930,20 @@ export async function openLab(app: HTMLElement, section?: string) {
   {
     const s = addSection('board', 'Board effects', 'Effects play on the target player.');
     const pos = () => board.tokenPos(cur().id);
-    // Portal links: the Lab's game on Town with every kind (a two-way pair, and two entrances
-    // leading to one exit), and the same board in the builder with the Links tool.
+    // Portal links: the Lab's board (Town) has every kind (a two-way pair, and two entrances
+    // leading to one exit). Show one, as a tap does, or open the board in the builder.
     row(
       s,
-      btn('Portal links on the board', () => {
-        if (labBoard() === 'portals')
-          return hud.tick(
-            'Portal links are on the board: a purple two-way pair, and two entrances leading to one exit.',
-          );
-        try {
-          localStorage.setItem(LAB_BOARD_KEY, 'portals');
-        } catch {
-          return hud.tick('Browser storage is blocked, so the board can’t change.');
-        }
-        location.reload();
+      btn('Show where a portal leads', () => {
+        const gate = portalGates(G)[0];
+        if (!gate) return hud.tick('This board has no portals: switch back with Square / hex board.');
+        board.showPortal(gate);
       }),
       btn('Portal links in the builder', () =>
         openLabBuilder(root, portalTown(), '.ed-tool-button[aria-label="Links"]', () =>
           hud.tick('Board builder test play pressed.'),
         ),
       ),
-      btn('Back to the plain board', () => {
-        if (labBoard() !== 'portals') return hud.tick('The board has no portal links already.');
-        try {
-          localStorage.setItem(LAB_BOARD_KEY, 'square');
-        } catch {
-          // Storage blocked: stay on this board.
-        }
-        location.reload();
-      }),
     );
     row(
       s,
@@ -1919,7 +1896,7 @@ export async function openLab(app: HTMLElement, section?: string) {
       btn('New sample game', () => location.reload()),
       btn('Square / hex board', () => {
         try {
-          localStorage.setItem(LAB_BOARD_KEY, labBoard() === 'town' ? 'hex' : 'square');
+          localStorage.setItem(LAB_BOARD_KEY, labBoard() === 'portals' ? 'hex' : 'square');
         } catch {
           // Storage blocked: stay on this board.
         }

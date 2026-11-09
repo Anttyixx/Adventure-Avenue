@@ -817,15 +817,18 @@ if (!(await ask(`Delete ${d.name}?`, 'Its 4 properties will be removed from the 
   players may go.
 - Portals (`portalGates`, `drawPortals`, `drawPortalRing`): a short road from the tile out
   through its side to a ring 0.72 of a cell step from the tile's center (`portalPoint`). The ring
-  (radius 17): the group's color (`PORTAL_LINK_COLORS`), a 3px white edge and a core (radius 10.5)
-  showing the kind by how its white lines turn (one turn per `PORTAL_SPIN_MS`, 4.2 s; still with
-  reduced motion). Two-way: a navy core with an outer pair of swirl arcs (radius 6.8, 2.4 wide)
-  turning clockwise and an inner pair (radius 3.4, 1.8 wide) turning counterclockwise, a bit
-  faster. Entrance and exit: a dark radial core (black to navy to `#2a2160`) with three spiral arms
-  (2 wide) curling into a black center dot; an entrance's turn clockwise, an exit's
-  counterclockwise. No arrows. Live views draw portals every frame over the cached board
-  (`paintBoard(..., portals = false)`); still pictures draw them unturned. The cell a portal opens
-  onto gets no scenery.
+  (radius 17) is the same for every kind: the group's color (`PORTAL_LINK_COLORS`), a 3px white
+  edge and a navy core (radius 10.5) with two pairs of white swirl arcs, an outer pair (radius
+  6.8, 2.4 wide) turning clockwise and an inner pair (radius 3.4, 1.8 wide) turning
+  counterclockwise a bit faster (one turn per `PORTAL_SPIN_MS`, 4.2 s; still with reduced
+  motion). An entrance or exit is told apart only by the one-way arrow painted on its short road.
+  Live views draw portals every frame over the cached board (`paintBoard(..., portals = false)`);
+  still pictures draw them unturned. The cell a portal opens onto gets no scenery.
+- Portal pop-up (`hud.showPortalTooltip`): the tile tooltip's frame with the portal's color as
+  `--dc`, a title, a `.tt-info` line and a muted `.tt-hint` line. Tapping a portal
+  (`BoardView.showPortal`) sets `lookAt` to frame its tile and its linked portals' tiles, rings
+  each tile in the portal's color, and clears it after `T.portalShow` (2 s) unless something
+  else took the camera.
 - Builder Links tool (canvas, world units, radius 15 with a white ring): road badges between tile
   centers: one way is `drawRoadArrow` (navy fill, gold chevron); `drawLinkBadge` is green
   `#2f9e5b` with a white two-headed arrow (both ways) or red `--bad` with a dashed ring and a white

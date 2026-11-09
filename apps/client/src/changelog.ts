@@ -26,6 +26,23 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: '2026-11-09-portal-info',
+    date: 'Nov 9, 2026',
+    title: 'Where does this portal go?',
+    features: [
+      {
+        tag: 'new',
+        title: 'Portal info',
+        text: 'Hover over a portal to see what it does and where it leads. Tap it to zoom out for a moment and see both ends.',
+      },
+      {
+        tag: 'better',
+        title: 'One portal look',
+        text: 'Every portal now has the same double swirl. One-way portals have an arrow painted on their road, just like one-way roads.',
+      },
+    ],
+  },
+  {
     id: '2026-11-09-stack-buttons-glide',
     date: 'Nov 9, 2026',
     title: 'Smoother player cards',

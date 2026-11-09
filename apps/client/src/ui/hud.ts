@@ -20,7 +20,7 @@ import {
   type GameState,
   type Player,
 } from '@aa/engine';
-import type { BoardView } from '../board';
+import type { BoardView, PortalGate } from '../board';
 import { soundControls } from './soundpanel';
 import { motelFee, squareInfo, squareName } from '../names';
 import { boonIconURL, suitIconURL, wildIconURL } from '../icons';
@@ -273,6 +273,7 @@ export class Hud {
     this.buildMenu();
     window.addEventListener('keydown', this.onKey);
     board.onHover = (id, x, y) => this.showTooltip(id, x, y);
+    board.onPortalHover = (gate, x, y) => this.showPortalTooltip(gate, x, y);
     this.resize = new ResizeObserver(() => {
       // A phone rotation or changed card width can change the space available to the bar.
       const from = this.askSize();
@@ -1324,10 +1325,40 @@ export class Hud {
       ...extra,
       sq.t === 'shop' || sq.t === 'plot' ? '' : h('p', { class: 'tt-info' }, squareInfo(G, sq)),
     );
+    this.placeTooltip(x, y);
+  }
+
+  /** A portal's pop-up: its kind, where it leads (or comes from), and that a tap shows it. */
+  showPortalTooltip(gate: PortalGate, x: number, y: number) {
+    if (!this.G) return;
+    const G = this.G;
+    const names = gate.to.map((id) => squareName(G, G.nodes[id]));
+    const list =
+      names.length > 1 ? `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]}` : names[0];
+    const [title, text] =
+      gate.way === 'in'
+        ? [
+            'Entrance portal',
+            `Step in to come out next to ${list}. One way: there's no coming back through it.`,
+          ]
+        : gate.way === 'out'
+          ? ['Exit portal', `Players from ${list} come out here. One way: you can't go in.`]
+          : ['Portal', `Step through to come out next to ${list}, and back the same way.`];
+    clear(this.tooltip);
+    this.tooltip.style.setProperty('--dc', gate.color);
+    this.tooltip.append(
+      h('div', { class: 'tt-title' }, title),
+      h('p', { class: 'tt-info' }, text),
+      h('p', { class: 'tt-info tt-hint' }, 'Tap it to see where it leads.'),
+    );
+    this.placeTooltip(x, y);
+  }
+
+  /** Show the tooltip below and right of the pointer, flipped above or left near the edges. */
+  private placeTooltip(x: number, y: number) {
     const W = window.innerWidth;
     const H = window.innerHeight;
     this.tooltip.classList.add('show');
-    // Below and right of the pointer; flip above or left when it would run off the screen.
     const tw = this.tooltip.offsetWidth;
     const th = this.tooltip.offsetHeight;
     const left = x + 14 + tw > W - 8 ? x - 14 - tw : x + 14;

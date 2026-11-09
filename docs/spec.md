@@ -152,17 +152,24 @@ of a short road. Players can't stop on a portal; they step through it as if the 
 neighbors (one step, and it counts as the way they came, so no turning back through it). There
 are three kinds:
 
-- **Two-way**: players go in and come out there. Its navy core shows two sets of white swirl
-  arcs: an outer pair turning clockwise and a smaller inner pair turning the other way. A two-way
-  portal links to one other two-way portal.
-- **Entrance**: players can only go in there. Its dark core shows three white spiral arms curling
-  into a black center, turning clockwise; its short road has the one-way arrow. An entrance leads
-  to one exit.
-- **Exit**: players only come out there. The same spiral arms, turning counterclockwise. Several
-  entrances may lead to one exit.
+- **Two-way**: players go in and come out there. A two-way portal links to one other two-way
+  portal.
+- **Entrance**: players can only go in there. An entrance leads to one exit.
+- **Exit**: players only come out there. Several entrances may lead to one exit.
 
-The lines turn once every 4.2 seconds, in games and in the builder (still with reduced motion,
-and in board pictures).
+Every kind looks the same: a colored ring with a navy core holding two sets of white swirl arcs,
+an outer pair turning clockwise and a smaller inner pair turning the other way (once every 4.2
+seconds; still with reduced motion and in board pictures). The way a one-way portal works is
+shown on its short road, with the same painted arrow as a one-way road: pointing into the ring at
+an entrance, out of it toward the tile at an exit.
+
+**Portal pop-up and tap.** Hovering a portal shows a pop-up like a tile's: its title ("Portal",
+"Entrance portal" or "Exit portal", over a stripe in the portal's color), what it does and where
+it leads ("Step through to come out next to Harbor Shop, and back the same way."; an exit names
+the tiles its entrances are next to), and a muted line "Tap it to see where it leads." Tapping
+(or clicking) a portal shows that pop-up too, and the camera frames the portal's tile and the
+tiles of every portal it links to, with a ring on each, for 2 seconds, then goes back to the
+zoom it had (and the pop-up goes away).
 
 Rings share a color per group (a pair, or an exit and all its entrances): purple, cyan, pink,
 amber, green, blue, in board order. The token walks into one ring and comes out of the other; the

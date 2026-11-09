@@ -200,6 +200,8 @@ export class BoardView {
   directionsPid = -1;
   onPick: ((id: number) => void) | null = null;
   onHover: ((id: number | null, cx: number, cy: number) => void) | null = null;
+  /** The pointer is over a portal (beside a tile, so never also over a square). */
+  onPortalHover: ((gate: PortalGate, cx: number, cy: number) => void) | null = null;
   /** Called when the shown zoom changes: 250% fully zoomed in on the player, 100% fully out. */
   onZoom: ((pct: number, mode: 'free' | 'locked' | 'auto') => void) | null = null;
   private zoomPct = 0;
@@ -1010,10 +1012,44 @@ export class BoardView {
     }
     const id = this.squareAt(e.clientX, e.clientY);
     this.hoverId = id;
-    this.canvas.style.cursor = id != null && this.glow.includes(id) ? 'pointer' : 'default';
+    const gate = id == null ? this.portalAt(e.clientX, e.clientY) : null;
+    this.canvas.style.cursor = (id != null && this.glow.includes(id)) || gate ? 'pointer' : 'default';
     if (this.routes.size) this.previewRoute(id != null && this.glow.includes(id) ? id : null);
-    this.onHover?.(id, e.clientX, e.clientY);
+    if (gate && this.onPortalHover) this.onPortalHover(gate, e.clientX, e.clientY);
+    else this.onHover?.(id, e.clientX, e.clientY);
   };
+
+  /** The portal under a screen point, if any. */
+  portalAt(cx: number, cy: number): PortalGate | null {
+    if (!this.G) return null;
+    const r = this.canvas.getBoundingClientRect();
+    const w = this.screenToWorld(cx - r.left, cy - r.top);
+    return (
+      this.portalSpots.find((g) => {
+        const at = portalPoint(this.G!, this.G!.nodes[g.node], g.side);
+        return Math.hypot(at.x - w.x, at.y - w.y) <= 22;
+      }) ?? null
+    );
+  }
+
+  /**
+   * Show where a portal leads: the camera frames it and every portal it links to (with a ring on
+   * each tile) for `T.portalShow`, then goes back to where it was.
+   */
+  showPortal(gate: PortalGate) {
+    const ids = [gate.node, ...gate.to];
+    const view = this.frameSquares(ids);
+    this.lookAt = view;
+    for (const id of ids) this.ring(id, gate.color);
+    clearTimeout(this.portalTimer);
+    this.portalTimer = window.setTimeout(() => {
+      // Something else may have taken the camera meanwhile: leave that alone.
+      if (this.lookAt === view) this.lookAt = null;
+      // The portal's pop-up was for where the portal was on screen: put it away.
+      this.onHover?.(null, 0, 0);
+    }, T.portalShow * this.speed);
+  }
+  private portalTimer = 0;
 
   private click = (e: MouseEvent) => {
     const id = this.squareAt(e.clientX, e.clientY);
@@ -1022,7 +1058,13 @@ export class BoardView {
       f(id);
       return;
     }
-    if (id != null) this.onHover?.(id, e.clientX, e.clientY);
+    if (id != null) return this.onHover?.(id, e.clientX, e.clientY);
+    // A portal: show where it leads (and its info, for touch screens with no hover).
+    const gate = this.portalAt(e.clientX, e.clientY);
+    if (gate) {
+      this.onPortalHover?.(gate, e.clientX, e.clientY);
+      this.showPortal(gate);
+    }
   };
 
   private resize = () => {
@@ -1753,7 +1795,7 @@ export function drawPortals(
 ) {
   const turn = ((now % PORTAL_SPIN_MS) / PORTAL_SPIN_MS) * Math.PI * 2;
   for (const gate of gates)
-    drawPortalRing(ctx, portalPoint(G, G.nodes[gate.node], gate.side), gate.color, gate.way, turn);
+    drawPortalRing(ctx, portalPoint(G, G.nodes[gate.node], gate.side), gate.color, turn);
 }
 
 /** Ring colors for portal links, one per pair in board order. */
@@ -1778,6 +1820,9 @@ export function portalPoint(
  * Every portal once (a tile side with portal links): what it lets players do, the tiles it
  * leads to, and its color, shared by every portal it joins (an exit and all its entrances).
  */
+/** A portal on the board (see portalGates). */
+export type PortalGate = ReturnType<typeof portalGates>[number];
+
 export function portalGates(G: GameState) {
   type Gate = { node: number; side: number; way: PortalWay; to: number[]; group: string };
   const gates = new Map<string, Gate>();
@@ -1814,18 +1859,14 @@ export const isPortalLink = (G: GameState, a: number, b: number) =>
   !!G.nodes[a]?.portals?.some((p) => p.to === b);
 
 /**
- * A portal's ring: a colored disc with a 3px white edge around a dark core with white lines that
- * turn (`turn`, in radians: clockwise as it grows).
- * - Entrance and exit: three spiral arms curling into a black center. An entrance's arms turn
- *   clockwise, an exit's the other way.
- * - Two-way: two sets of swirl arcs, an outer pair turning clockwise and a smaller inner pair
- *   turning the other way.
+ * A portal's ring, the same for every kind (the one-way arrow on its short road shows the way):
+ * a colored disc with a 3px white edge around a navy core with two pairs of white swirl arcs, an
+ * outer pair turning clockwise (`turn`, in radians) and a smaller inner pair turning the other way.
  */
 export function drawPortalRing(
   ctx: CanvasRenderingContext2D,
   at: { x: number; y: number },
   color: string,
-  way: PortalWay = 'both',
   turn = 0,
 ) {
   ctx.save();
@@ -1837,48 +1878,21 @@ export function drawPortalRing(
   ctx.lineWidth = 3;
   ctx.strokeStyle = '#fff';
   ctx.stroke();
+  ctx.beginPath();
+  ctx.arc(0, 0, 10.5, 0, Math.PI * 2);
+  ctx.fillStyle = '#16213f';
+  ctx.fill();
   ctx.lineCap = 'round';
-  ctx.strokeStyle = '#fff';
-  if (way === 'both') {
-    ctx.beginPath();
-    ctx.arc(0, 0, 10.5, 0, Math.PI * 2);
-    ctx.fillStyle = '#16213f';
-    ctx.fill();
-    // Outer pair clockwise, inner pair the other way.
-    for (const [r, width, spin] of [
-      [6.8, 2.4, turn],
-      [3.4, 1.8, -turn * 1.3],
-    ] as const) {
-      ctx.lineWidth = width;
-      for (const start of [0, Math.PI]) {
-        ctx.beginPath();
-        ctx.arc(0, 0, r, start + spin, start + spin + Math.PI * 0.75);
-        ctx.stroke();
-      }
-    }
-  } else {
-    const core = ctx.createRadialGradient(0, 0, 0, 0, 0, 10.5);
-    core.addColorStop(0, '#05070f');
-    core.addColorStop(0.5, '#16213f');
-    core.addColorStop(1, '#2a2160');
-    ctx.beginPath();
-    ctx.arc(0, 0, 10.5, 0, Math.PI * 2);
-    ctx.fillStyle = core;
-    ctx.fill();
-    // Three arms curling into the middle: entrances turn clockwise, exits the other way.
-    ctx.rotate(way === 'in' ? turn : -turn);
-    ctx.lineWidth = 2;
-    for (let k = 0; k < 3; k++) {
+  for (const [r, width, spin] of [
+    [6.8, 2.4, turn],
+    [3.4, 1.8, -turn * 1.3],
+  ] as const) {
+    ctx.lineWidth = width;
+    for (const start of [0, Math.PI]) {
       ctx.beginPath();
-      ctx.moveTo(9.4, 0);
-      ctx.bezierCurveTo(9, 5, 4.5, 7, 0.8, 2.8);
+      ctx.arc(0, 0, r, start + spin, start + spin + Math.PI * 0.75);
       ctx.stroke();
-      ctx.rotate((Math.PI * 2) / 3);
     }
-    ctx.beginPath();
-    ctx.arc(0, 0, 2.2, 0, Math.PI * 2);
-    ctx.fillStyle = '#05070f';
-    ctx.fill();
   }
   ctx.restore();
 }

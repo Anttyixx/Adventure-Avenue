@@ -47,6 +47,8 @@ export const TIMING = {
   promote: 1800,
   /** A district's stock rising: the zoom to its squares (and back), then the banner and arrows. */
   stockZoom: 600,
+  /** Tapping a portal: how long the camera shows it and where it leads before going back. */
+  portalShow: 2000,
   stockRise: 1700,
   promoteBanner: 2200,
   bankrupt: 1600,

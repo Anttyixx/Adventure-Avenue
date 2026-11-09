@@ -5995,6 +5995,11 @@ button.tb-chip:hover {
   line-height: 1.35;
   color: var(--text);
 }
+/* A portal's tooltip ends with a muted line saying a tap shows where it leads. */
+.tt-info.tt-hint {
+  color: var(--muted);
+  font-size: 12px;
+}
 
 .btn.lab-new {
   box-shadow:
