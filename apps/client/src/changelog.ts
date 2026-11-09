@@ -26,6 +26,18 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: '2026-11-09-spinning-portals',
+    date: 'Nov 9, 2026',
+    title: 'Spinning portals',
+    features: [
+      {
+        tag: 'better',
+        title: 'New portal look',
+        text: 'Portals now swirl. Entrances and exits have spiral lines curling into a dark center: an entrance spins clockwise, an exit the other way. Two-way portals have two swirls spinning in opposite directions.',
+      },
+    ],
+  },
+  {
     id: '2026-11-08-portal-kinds',
     date: 'Nov 8, 2026',
     title: 'Portals beside tiles',

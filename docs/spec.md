@@ -152,12 +152,17 @@ of a short road. Players can't stop on a portal; they step through it as if the 
 neighbors (one step, and it counts as the way they came, so no turning back through it). There
 are three kinds:
 
-- **Two-way**: players go in and come out there. Its ring shows two white swirls. A two-way
+- **Two-way**: players go in and come out there. Its navy core shows two sets of white swirl
+  arcs: an outer pair turning clockwise and a smaller inner pair turning the other way. A two-way
   portal links to one other two-way portal.
-- **Entrance**: players can only go in there. Its ring shows a white arrow pointing into it, and
-  its short road has the one-way arrow. An entrance leads to one exit.
-- **Exit**: players only come out there. Its ring shows a white arrow pointing out toward its
-  tile. Several entrances may lead to one exit.
+- **Entrance**: players can only go in there. Its dark core shows three white spiral arms curling
+  into a black center, turning clockwise; its short road has the one-way arrow. An entrance leads
+  to one exit.
+- **Exit**: players only come out there. The same spiral arms, turning counterclockwise. Several
+  entrances may lead to one exit.
+
+The lines turn once every 4.2 seconds, in games and in the builder (still with reduced motion,
+and in board pictures).
 
 Rings share a color per group (a pair, or an exit and all its entrances): purple, cyan, pink,
 amber, green, blue, in board order. The token walks into one ring and comes out of the other; the

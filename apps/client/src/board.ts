@@ -100,6 +100,8 @@ export class BoardView {
   dirty = true;
   cache: HTMLCanvasElement = document.createElement('canvas');
   cacheScale = 0;
+  /** The board's portals, worked out with the cache (portals are drawn live, turning). */
+  private portalSpots: ReturnType<typeof portalGates> = [];
 
   // Camera: world point at the focus, and zoom in CSS px per world unit.
   cam = { x: 650, y: 400, z: 1 };
@@ -1074,6 +1076,7 @@ export class BoardView {
     ctx.drawImage(this.cache, 0, 0, this.ww, this.wh);
 
     const motion = !reducedMotion();
+    drawPortals(ctx, this.G!, motion ? now : 0, this.portalSpots);
     if (motion) this.drawAmbient(ctx, now);
     this.drawClosed(ctx, now, motion);
     this.drawGreyed(ctx);
@@ -1714,7 +1717,9 @@ export class BoardView {
     cv.height = Math.round(this.wh * scale);
     const ctx = cv.getContext('2d')!;
     ctx.setTransform(scale, 0, 0, scale, 0, 0);
-    paintBoard(ctx, G, false);
+    // Portals spin, so they're drawn every frame instead (drawPortals).
+    paintBoard(ctx, G, false, true, false);
+    this.portalSpots = portalGates(G);
   }
 }
 
@@ -1724,16 +1729,31 @@ export function paintBoard(
   G: GameState,
   background = true,
   decorations = true,
+  portals = true,
 ) {
   if (background) paintGrass(ctx);
   drawScenery(ctx, G, decorations);
   for (const sq of G.nodes) drawSquare(ctx, G, sq);
-  // Portals: a ring beside each tile side with a portal link, colored by the portals it joins.
-  for (const gate of portalGates(G)) {
-    const sq = G.nodes[gate.node];
-    const v = sideVector(G.layout, sq.x, sq.y, gate.side);
-    drawPortalRing(ctx, portalPoint(G, sq, gate.side), gate.color, gate.way, Math.atan2(v.y, v.x));
-  }
+  // Still pictures draw portals here; live views spin them each frame with drawPortals.
+  if (portals) drawPortals(ctx, G, 0);
+}
+
+/** How long a portal's lines take to turn once, in ms. */
+const PORTAL_SPIN_MS = 4200;
+
+/**
+ * Every portal: a ring beside each tile side with a portal link, colored by the portals it joins.
+ * `now` turns the lines (0 draws them still); `gates` can pass `portalGates(G)` worked out once.
+ */
+export function drawPortals(
+  ctx: CanvasRenderingContext2D,
+  G: GameState,
+  now: number,
+  gates: ReturnType<typeof portalGates> = portalGates(G),
+) {
+  const turn = ((now % PORTAL_SPIN_MS) / PORTAL_SPIN_MS) * Math.PI * 2;
+  for (const gate of gates)
+    drawPortalRing(ctx, portalPoint(G, G.nodes[gate.node], gate.side), gate.color, gate.way, turn);
 }
 
 /** Ring colors for portal links, one per pair in board order. */
@@ -1794,16 +1814,19 @@ export const isPortalLink = (G: GameState, a: number, b: number) =>
   !!G.nodes[a]?.portals?.some((p) => p.to === b);
 
 /**
- * A portal's ring: a colored disc with a 3px white edge and a navy core. The core shows what the
- * portal does: two white swirl arcs (two-way), or a white arrow pointing into the portal
- * (entrance) or out of it toward its tile (exit). `angle` points from the tile out to the ring.
+ * A portal's ring: a colored disc with a 3px white edge around a dark core with white lines that
+ * turn (`turn`, in radians: clockwise as it grows).
+ * - Entrance and exit: three spiral arms curling into a black center. An entrance's arms turn
+ *   clockwise, an exit's the other way.
+ * - Two-way: two sets of swirl arcs, an outer pair turning clockwise and a smaller inner pair
+ *   turning the other way.
  */
 export function drawPortalRing(
   ctx: CanvasRenderingContext2D,
   at: { x: number; y: number },
   color: string,
   way: PortalWay = 'both',
-  angle = 0,
+  turn = 0,
 ) {
   ctx.save();
   ctx.translate(at.x, at.y);
@@ -1814,27 +1837,47 @@ export function drawPortalRing(
   ctx.lineWidth = 3;
   ctx.strokeStyle = '#fff';
   ctx.stroke();
-  ctx.beginPath();
-  ctx.arc(0, 0, 10.5, 0, Math.PI * 2);
-  ctx.fillStyle = '#16213f';
-  ctx.fill();
   ctx.lineCap = 'round';
-  ctx.strokeStyle = 'rgba(255,255,255,0.95)';
+  ctx.strokeStyle = '#fff';
   if (way === 'both') {
-    ctx.lineWidth = 2.5;
-    for (const start of [0, Math.PI]) {
-      ctx.beginPath();
-      ctx.arc(0, 0, 6.5, start, start + Math.PI * 0.75);
-      ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(0, 0, 10.5, 0, Math.PI * 2);
+    ctx.fillStyle = '#16213f';
+    ctx.fill();
+    // Outer pair clockwise, inner pair the other way.
+    for (const [r, width, spin] of [
+      [6.8, 2.4, turn],
+      [3.4, 1.8, -turn * 1.3],
+    ] as const) {
+      ctx.lineWidth = width;
+      for (const start of [0, Math.PI]) {
+        ctx.beginPath();
+        ctx.arc(0, 0, r, start + spin, start + spin + Math.PI * 0.75);
+        ctx.stroke();
+      }
     }
   } else {
-    ctx.rotate(way === 'in' ? angle : angle + Math.PI);
-    ctx.fillStyle = '#fff';
+    const core = ctx.createRadialGradient(0, 0, 0, 0, 0, 10.5);
+    core.addColorStop(0, '#05070f');
+    core.addColorStop(0.5, '#16213f');
+    core.addColorStop(1, '#2a2160');
     ctx.beginPath();
-    ctx.moveTo(6, 0);
-    ctx.lineTo(-3.5, -6.5);
-    ctx.lineTo(-3.5, 6.5);
-    ctx.closePath();
+    ctx.arc(0, 0, 10.5, 0, Math.PI * 2);
+    ctx.fillStyle = core;
+    ctx.fill();
+    // Three arms curling into the middle: entrances turn clockwise, exits the other way.
+    ctx.rotate(way === 'in' ? turn : -turn);
+    ctx.lineWidth = 2;
+    for (let k = 0; k < 3; k++) {
+      ctx.beginPath();
+      ctx.moveTo(9.4, 0);
+      ctx.bezierCurveTo(9, 5, 4.5, 7, 0.8, 2.8);
+      ctx.stroke();
+      ctx.rotate((Math.PI * 2) / 3);
+    }
+    ctx.beginPath();
+    ctx.arc(0, 0, 2.2, 0, Math.PI * 2);
+    ctx.fillStyle = '#05070f';
     ctx.fill();
   }
   ctx.restore();

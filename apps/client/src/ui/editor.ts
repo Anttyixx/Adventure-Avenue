@@ -27,6 +27,7 @@ import {
   type SquareType,
 } from '@aa/engine';
 import {
+  drawPortals,
   drawRingBurst,
   drawRoadArrow,
   drawTileGlow,
@@ -1476,7 +1477,8 @@ export function openEditor(
           portals: sq.portals?.filter((q) => ids.has(q.to)).map((q) => ({ ...q, to: ids.get(q.to)! })),
         }));
       }
-      paintBoard(ctx, G, false, false);
+      // Portals turn, so they're drawn over the cache; while a group moves they stay still in it.
+      paintBoard(ctx, G, false, false, !!moving);
       // Empty cells
       const used = new Set(board.squares.map((s) => `${s.x},${s.y}`));
       ctx.setLineDash([8, 6]);
@@ -1493,6 +1495,13 @@ export function openEditor(
       boardImageKey = imageKey;
     }
     ctx.drawImage(boardImage, 0, 0, w, hh);
+    if (!moving) {
+      const G = previewGame();
+      drawPortals(ctx, G, reduced ? 0 : performance.now());
+      // Keep turning them while the board has any.
+      if (!reduced && !zoomFrame && G.nodes.some((n) => n.portals?.length))
+        zoomFrame = requestAnimationFrame(redraw);
+    }
     // Only the selected transport shows its connection, over the cached board.
     const source = selected == null ? null : board.squares[selected];
     const linked = source?.link == null ? null : board.squares[source.link];
