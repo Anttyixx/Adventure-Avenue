@@ -1178,3 +1178,12 @@ district and transport colors use a same-size grey tint mask. Base-only art keep
 Square and hex shells share icon art; each shell has its own aligned border/shadow/selection
 sprites. Text, amounts and motion remain live. Inspect masks and red/blue composites with the
 UI Lab’s Tile sprites and tint layers control; keep original assets for reversible art changes.
+
+### Painted property set
+
+`assets/properties-v3` uses the same charcoal outlines, light rim, rounded shapes and soft painted
+shading as the special-tile sprites. Cream walls, green planting and gold details remain fixed;
+roofs, awnings, banners and signs take the owner's color through explicit grey tint layers.
+Tier silhouettes grow from cottage to tower, boutique to mall and small tent to grand circus.
+Bank art keeps its gold roof. Keep all previous art files; property-only rollback uses
+`PROPERTY_SET` in `props.ts`. The existing layer inspector and Design gallery show the active set.

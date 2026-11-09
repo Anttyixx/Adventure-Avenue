@@ -382,3 +382,7 @@ grey masks, and `drawStamp` renders full sprite frames for geometry and scenery.
 assets bypass blue detection. `ART_SOURCES` supplies source URLs to the Lab inspector. Canvas
 fallbacks remain available for `classic` and initial loading. Artwork changes do not alter saves
 or engine/network outcomes.
+
+`props.ts` applies `properties-v3` overrides after the board-art mapping when `PROPERTY_SET` is
+`painted` and `ART_SET` is `layered`. Choosing `previous` skips those overrides, preserving the
+prior layered buildings and original paired art. No old image files are overwritten.

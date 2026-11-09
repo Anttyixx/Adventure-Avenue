@@ -52,6 +52,13 @@ export type PropKey =
 
 /** Change to classic to restore the original PNGs and canvas artwork. */
 export const ART_SET: string = 'layered';
+/** Restore the previous property sprites without changing the rest of the board art. */
+export const PROPERTY_SET: string = 'painted';
+const properties = import.meta.glob<string>('./assets/properties-v3/*.png', {
+  eager: true,
+  query: '?url',
+  import: 'default',
+});
 const layered = import.meta.glob<string>('./assets/tiles-v2/*.png', {
   eager: true,
   query: '?url',
@@ -67,6 +74,12 @@ const urls = Object.fromEntries([
   ...Object.entries(legacy).map(([path, url]) => [path.replace(/^.*\//, ''), { url, explicit: false }]),
   ...(ART_SET === 'layered'
     ? Object.entries(layered).map(([path, url]) => [
+        path.replace(/^.*\//, '').replace('-base.png', '.png'),
+        { url, explicit: true },
+      ])
+    : []),
+  ...(ART_SET === 'layered' && PROPERTY_SET === 'painted'
+    ? Object.entries(properties).map(([path, url]) => [
         path.replace(/^.*\//, '').replace('-base.png', '.png'),
         { url, explicit: true },
       ])

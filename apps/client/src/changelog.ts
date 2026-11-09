@@ -26,6 +26,18 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: '2026-11-09-painted-properties',
+    date: 'Nov 9, 2026',
+    title: 'New painted property sprites',
+    features: [
+      {
+        tag: 'better',
+        title: 'A matching town',
+        text: 'Every shop tier, 3-Star Shop, Circus, special property building and the Bank now has new painted artwork matching the other board sprites. Owner colors use separate tint layers. All previous art is preserved.',
+      },
+    ],
+  },
+  {
     id: '2026-11-09-layered-art',
     date: 'Nov 9, 2026',
     title: 'A full PNG tile set',

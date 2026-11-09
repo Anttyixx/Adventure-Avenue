@@ -1492,7 +1492,7 @@ export async function openLab(app: HTMLElement, section?: string) {
           );
         const CIRCUS_NAMES = ['Circus', 'Circus (level 1)', 'Circus (level 2)', 'Circus (level 3)'];
         const buildings: [PropKey, string, string][] = [
-          ['checkpoint', 'Checkpoint', 'tint layer'],
+          ['checkpoint', 'Checkpoint', 'base + tint'],
           ...[0, 1, 2, 3].map((l): [PropKey, string, string] => [
             `circus${l as 0 | 1 | 2 | 3}`,
             CIRCUS_NAMES[l],

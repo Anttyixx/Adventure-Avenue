@@ -82,3 +82,37 @@ describe('board PNG artwork contract', () => {
     }
   });
 });
+
+describe('painted property PNG set', () => {
+  const dir = resolve('apps/client/src/assets/properties-v3');
+  const keys = [
+    'shop0',
+    'shop1',
+    'shop2',
+    'shop3',
+    'shop4',
+    'star0',
+    'star1',
+    'star2',
+    'circus0',
+    'circus1',
+    'circus2',
+    'circus3',
+    'checkpoint',
+    'balloon',
+    'tax',
+    'home',
+    'agency',
+    'motel',
+    'bank',
+  ];
+  it('provides all nineteen buildings with aligned tint layers for every owned property', () => {
+    expect(readdirSync(dir).filter((f) => f.endsWith('.png'))).toHaveLength(37);
+    for (const key of keys) {
+      const base = png(resolve(dir, `${key}-base.png`));
+      expect(base).toEqual([256, 256]);
+      if (key !== 'bank') expect(png(resolve(dir, `${key}-tint.png`))).toEqual(base);
+      expect(existsSync(resolve(legacy, `${key}.png`))).toBe(true);
+    }
+  });
+});

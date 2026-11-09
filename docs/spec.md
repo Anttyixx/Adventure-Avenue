@@ -1823,3 +1823,14 @@ inspect bases, masks and recolored composites.
 
 Side portals use a PNG color ring and two rotating swirl PNGs, retaining the current shared
 portal appearance and tap/hover behavior. Price Up, Taxi and Swap also have base-only PNG icons.
+
+### Painted property buildings
+
+All nineteen property/bank designs now use new toy-town PNG art matching the special-tile set:
+five regular shops, three 3-Star Shops, four Circus tiers, Checkpoint, Balloonport, Tax Office,
+Home, Estate Agency, Motel and Bank. The eighteen ownable designs have aligned transparent
+base and grey tint layers; the fixed-color Bank has a base only. Artwork grows in scale and
+grandeur across shop and Circus tiers. Ownership colors and all game rules remain unchanged.
+Old PNGs and the earlier layered set remain intact. `PROPERTY_SET = 'previous'` restores the
+previous property art independently of other board sprites; `ART_SET = 'classic'` restores the
+original complete board artwork.
