@@ -116,12 +116,7 @@ const rnd = (n: number) => Math.floor(Math.random() * n);
  * Controls for UI elements that were just added or changed: they shake once and glow so they
  * are easy to find. Update this list with each change.
  */
-const RECENT = new Set([
-  'Music pop-up',
-  'Music: Avenue Stroll (game)',
-  'Music: Jackpot Jingle (Lucky Reels)',
-  'Stop music',
-]);
+const RECENT = new Set(['Park landscape: square', 'Park landscape: hex', 'Tile sprites and tint layers']);
 
 /**
  * Which board the lab plays on: Town with portal links (square, the default) or Twin Lakes (hex),
@@ -1444,12 +1439,12 @@ export async function openLab(app: HTMLElement, section?: string) {
     const s = addSection(
       'art',
       'Landscape',
-      'Blended meadow and small scenery, including outside the board. Use the zoom chip to check both scales.',
+      'Natural park scenery, planted groves, warm path verges and a stream beyond the board. Use the zoom chip to check both scales.',
     );
     row(
       s,
       ...(['square', 'hex'] as const).map((layout) =>
-        btn(`Painted landscape: ${layout}`, () => {
+        btn(`Park landscape: ${layout}`, () => {
           const mount = h('div', { class: 'lab-screen' });
           root.append(mount);
           const sample = newGame({

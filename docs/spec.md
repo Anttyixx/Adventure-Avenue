@@ -211,18 +211,23 @@ The board fills the entire canvas behind the HUD, with no space reserved beside 
 The hovered cell has a tinted fill and two contrasting outlines: a dark outer stroke (6 screen
 pixels) and a bright inner stroke (3 screen pixels), gold normally and red while erasing. Their
 screen size stays constant at every zoom.
-The default landscape is a soft painted meadow with grass, clover and tiny flowers, matching
-the painted tile sprites. Its grass uses coordinate-seeded crops, turns and reflections of the
-original painted grass, blended with smooth complementary weights. It never repeats the entire
-mirrored texture, and patch edges have no hard joins. Each world location stays fixed while
-panning and zooming. Cached chunks keep repeated frames inexpensive.
-Nine base-only decorative PNGs add benches, flowering shrubs, garden rocks, planters, short
-fences, saplings, mushrooms, lily ponds and picnic tables. Pieces appear automatically in free
-cells, along the margin and in the meadow beyond the board, thinning farther away. Positions
-and sizes vary but remain stable. They have no game effects. Playable tiles, roads, portal rings
-and their landing cells stay clear. Town keeps its landmark pond and fountain. Cloud shadows
-are subtle. All decorative pieces, including those beyond the board, stay hidden in the builder.
-Previous landscape artwork and the original grass/scenery mode remain available for rollback.
+The default landscape is a painted town park. Grass uses coordinate-seeded crops, turns and
+reflections blended with smooth complementary weights, avoiding mirrored repetition and hard
+patch joins. Muted grass, broad warm sun-dried clearings and cooler woodland shade break up the
+single green surface. Each world location stays fixed while panning/zooming; chunks are cached.
+Warm earth verges follow only the actual board roads and tiles, with a soft clearing around the
+bank. A blue-green stream with irregular banks and a painted water texture runs outside the
+west and south of the board rectangle, continuing beyond the visible camera. It does not cross
+playable ground, create routes or change movement. Low rocks dress its banks.
+Twelve new base-only scenery PNGs replace the outlined decoration set: benches, flowering shrubs,
+garden rocks, planters, fences, young birches, mushrooms, lily pools, picnic tables, mature oaks,
+and Town's pond and fountain. Scenery has naturally painted edges, organic soil patches and
+soft contact shadows; no white/cream sticker rims or dark contour strokes. Inside the board,
+small accents leave playable tiles, roads, portal rings and landing cells clear. Outside it,
+groves, picnic areas and garden pools grow in stable, varied-size groups rather than a regular
+scatter. Planting stays clear of the stream. The scenery has no game effects or engine randomness.
+Cloud shadows remain subtle. The builder hides all props, stream, path verges and bank clearing;
+it keeps the varied grass beneath its grid. All previous art and landscape modes remain available.
 Grass is a separate background beneath tiles and scenery. Both builder and games fill the
 entire visible camera area, including outside the board, at every zoom and screen size. The
 landscape is anchored in board coordinates and scales with the tiles; there is no finite

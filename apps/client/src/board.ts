@@ -17,9 +17,10 @@ import {
 } from '@aa/engine';
 import { cellCenter, sideVector, tileShape, tileTop, worldSize } from './geometry';
 import { SHOP_TIERS, STAR3_TIERS, badge, darken, drawShop, drawStar3, tierFor, tint } from './art';
-import { drawProp, drawStamp, propCanvas, PAINTED_LANDSCAPE, type PropKey } from './props';
+import { drawProp, drawStamp, propCanvas, PAINTED_LANDSCAPE, PARK_LANDSCAPE, type PropKey } from './props';
 import { paintMeadow } from './meadow';
-import { sceneryBeyondBoard, sceneryForBoard } from './scenery';
+import { parkSceneryBeyondBoard, sceneryBeyondBoard, sceneryForBoard } from './scenery';
+import { paintParkScenery, paintParkStream } from './park';
 import { drawBoonIcon, drawCoin, drawSparkle, SUIT_CHARS } from './icons';
 import { Facing, FRAME_H, FRAME_W, drawCharacter, drawCharacterGlow, facingFor } from './sprites';
 import { TIMING as T } from './timing';
@@ -2153,7 +2154,7 @@ export function paintGrass(ctx: CanvasRenderingContext2D, G?: GameState) {
   const bottom = Math.ceil(Math.max(...corners.map((p) => p.y))) + 1;
   ctx.save();
   const meadow = propCanvas('meadow', '#808080');
-  if (PAINTED_LANDSCAPE && meadow) paintMeadow(ctx, meadow, left, top, right, bottom);
+  if (PAINTED_LANDSCAPE && meadow) paintMeadow(ctx, meadow, left, top, right, bottom, PARK_LANDSCAPE);
   else {
     let pattern = grassPatterns.get(ctx);
     if (!pattern) {
@@ -2163,9 +2164,14 @@ export function paintGrass(ctx: CanvasRenderingContext2D, G?: GameState) {
     ctx.fillStyle = pattern ?? GRASS;
     ctx.fillRect(left, top, right - left, bottom - top);
   }
-  if (PAINTED_LANDSCAPE && G)
-    for (const p of sceneryBeyondBoard(G, left, top, right, bottom))
-      drawStamp(ctx, p.key, '#808080', p.x, p.y, p.size, p.size);
+  if (PAINTED_LANDSCAPE && G) {
+    if (PARK_LANDSCAPE) paintParkStream(ctx, G, top, right);
+    const scenery = PARK_LANDSCAPE ? parkSceneryBeyondBoard : sceneryBeyondBoard;
+    for (const p of scenery(G, left, top, right, bottom)) {
+      if (PARK_LANDSCAPE) paintParkScenery(ctx, p);
+      else drawStamp(ctx, p.key, '#808080', p.x, p.y, p.size, p.size);
+    }
+  }
   ctx.restore();
 }
 
@@ -2253,6 +2259,7 @@ function drawRoads(ctx: CanvasRenderingContext2D, G: GameState) {
 }
 
 function drawScenery(ctx: CanvasRenderingContext2D, G: GameState, decorations: boolean) {
+  if (PARK_LANDSCAPE && decorations) drawParkGround(ctx, G);
   drawRoads(ctx, G);
 
   // Keep roads visible while the builder hides purely decorative scenery.
@@ -2334,7 +2341,47 @@ function drawScenery(ctx: CanvasRenderingContext2D, G: GameState, decorations: b
 }
 
 function drawPaintedDecor(ctx: CanvasRenderingContext2D, G: GameState) {
-  for (const p of sceneryForBoard(G)) drawStamp(ctx, p.key, '#808080', p.x, p.y, p.size, p.size);
+  for (const p of sceneryForBoard(G, PARK_LANDSCAPE)) {
+    if (PARK_LANDSCAPE) paintParkScenery(ctx, p);
+    else drawStamp(ctx, p.key, '#808080', p.x, p.y, p.size, p.size);
+  }
+}
+
+/** Warm ground verges follow actual roads, connecting the tile board to its surroundings. */
+function drawParkGround(ctx: CanvasRenderingContext2D, G: GameState) {
+  const pieces = roadPieces(G);
+  ctx.save();
+  ctx.lineCap = ctx.lineJoin = 'round';
+  for (const [width, color] of [
+    [126, 'rgba(123,107,68,.07)'],
+    [118, 'rgba(150,131,88,.16)'],
+    [110, '#bdb58f'],
+    [102, '#cfc5a3'],
+  ] as const) {
+    ctx.strokeStyle = color;
+    ctx.lineWidth = width;
+    ctx.beginPath();
+    for (const p of pieces) {
+      ctx.moveTo(p.from.x, p.from.y);
+      ctx.lineTo(p.to.x, p.to.y);
+    }
+    for (const sq of G.nodes) {
+      const p = squareCenter(sq, G.layout);
+      ctx.moveTo(p.x, p.y);
+      ctx.lineTo(p.x + 0.01, p.y);
+    }
+    ctx.stroke();
+  }
+  const bank = G.nodes.find((n) => n.t === 'bank');
+  if (bank) {
+    const p = squareCenter(bank, G.layout);
+    const plaza = ctx.createRadialGradient(p.x, p.y, 42, p.x, p.y, 88);
+    plaza.addColorStop(0, 'rgba(218,207,168,.8)');
+    plaza.addColorStop(1, 'rgba(218,207,168,0)');
+    ctx.fillStyle = plaza;
+    ctx.fillRect(p.x - 88, p.y - 88, 176, 176);
+  }
+  ctx.restore();
 }
 
 const SPECIAL_LABEL: Record<string, string> = {

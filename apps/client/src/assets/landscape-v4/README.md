@@ -11,7 +11,10 @@ smoothstep weights. Grass patches span 256 world units and are cached in 768-uni
 chunks (384px each, up to 96 chunks). No whole-image repetition or mirrored joins
 are drawn. `paintGrass` covers the entire visible area on square/hex boards and
 in the builder. Coordinates stay fixed when panning/zooming. New small scenery
-comes from `scenery-v5/`; the builder continues to hide all decorative props.
+comes from `park-v6/`, with the earlier `scenery-v5/` kept for rollback. Park mode
+softens grass saturation and adds world-aligned warm clearings/cool woodland tone
+fields to the cached chunks. `SCENERY_SET = previous` restores the earlier meadow
+and outlined scenery. The builder hides all props, stream and road verges.
 
 Set `LANDSCAPE_SET` in `props.ts` to `previous` to restore the old grass and scenery
 density independently of the property artwork. `ART_SET = classic` also restores

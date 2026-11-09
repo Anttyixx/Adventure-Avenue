@@ -26,6 +26,23 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: '2026-11-09-park-landscape',
+    date: 'Nov 9, 2026',
+    title: 'A town in a living park',
+    features: [
+      {
+        tag: 'better',
+        title: 'A landscape around your board',
+        text: 'Warm path verges, shaded grass, sun-dried clearings and a painted stream give the board a richer setting. Trees and gardens grow in groups around the playable area.',
+      },
+      {
+        tag: 'better',
+        title: 'Scenery that belongs',
+        text: 'New painted plants, furniture, ponds and a fountain have natural edges and soft ground shadows instead of sticker outlines. Previous artwork is preserved.',
+      },
+    ],
+  },
+  {
     id: '2026-11-09-music-controls',
     date: 'Nov 9, 2026',
     title: 'Music at your fingertips',

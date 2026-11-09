@@ -143,11 +143,17 @@ room, Continue resumes the saved game, and the board editor (`ui/editor.ts`).
   chunks rendered at 384px. Four complementary smoothstep weights share their boundary
   samples, avoiding hard joins. The 96-entry LRU cache bounds memory. Panning/zooming never
   changes the grass at a world coordinate; the builder uses the same ground.
-  Games pass `G` to `paintGrass` to add the visible outer scenery from `sceneryBeyondBoard`;
-  builders omit `G`, leaving decorations hidden. `sceneryForBoard` supplies smaller sprites
+  Games pass `G` to `paintGrass` to add the stream (`park.ts` / `park-geometry.ts`) and grouped
+  outer scenery (`parkSceneryBeyondBoard`); builders omit `G`, leaving decorations hidden.
+  Park chunks desaturate the source and add smooth world-aligned earth/woodland color fields.
+  The stream geometry stays beyond the west/south playable rectangle; its irregular ribbon
+  clips a world-aligned water PNG and uses no engine state changes. `drawParkGround` follows
+  `roadPieces` in the static cache for warm verges, including actual portal stems, with no
+  decorative fake routes. Scenery groups avoid the water; all props use soft contact shadows. `sceneryForBoard` supplies smaller sprites
   inside the static board cache. Both use an independent coordinate hash, avoid gameplay
   geometry and leave engine state/randomness unchanged. `props.ts` maps base-only scenery
-  PNGs in `assets/scenery-v5/`. `LANDSCAPE_SET` restores original grass and scenery density.
+  PNGs in `assets/park-v6/`, overriding the preserved `scenery-v5/` files. `SCENERY_SET = previous`
+  restores the outlined meadow-only scene; `LANDSCAPE_SET` restores original grass/scenery.
   All previous artwork remains available. The game/editor board caches stay transparent.
 - **Static layer:** scenery and tiles are painted once into an offscreen cache
   (`renderStatic` → `paintBoard`) and redrawn only when `dirty` (state changed) or the zoom needs

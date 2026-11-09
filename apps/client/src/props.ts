@@ -42,6 +42,7 @@ export type PropKey =
   | 'road'
   | 'grass'
   | 'meadow'
+  | 'park-water'
   | SceneryStamp['key']
   | 'fountain'
   | 'flag'
@@ -60,12 +61,20 @@ export const PROPERTY_SET: string = 'painted';
 /** Restore the previous grass and scenery density independently of the building set. */
 export const LANDSCAPE_SET: string = 'painted';
 export const PAINTED_LANDSCAPE = ART_SET === 'layered' && LANDSCAPE_SET === 'painted';
+/** Choose previous for the outlined scenery and meadow-only landscape. Old files are retained. */
+export const SCENERY_SET: string = 'park';
+export const PARK_LANDSCAPE = PAINTED_LANDSCAPE && SCENERY_SET === 'park';
 const landscape = import.meta.glob<string>('./assets/landscape-v4/*.png', {
   eager: true,
   query: '?url',
   import: 'default',
 });
 const scenery = import.meta.glob<string>('./assets/scenery-v5/*.png', {
+  eager: true,
+  query: '?url',
+  import: 'default',
+});
+const park = import.meta.glob<string>('./assets/park-v6/*.png', {
   eager: true,
   query: '?url',
   import: 'default',
@@ -102,6 +111,12 @@ const urls = Object.fromEntries([
     : []),
   ...(PAINTED_LANDSCAPE
     ? Object.entries({ ...landscape, ...scenery }).map(([path, url]) => [
+        path.replace(/^.*\//, '').replace('-base.png', '.png'),
+        { url, explicit: true },
+      ])
+    : []),
+  ...(PARK_LANDSCAPE
+    ? Object.entries(park).map(([path, url]) => [
         path.replace(/^.*\//, '').replace('-base.png', '.png'),
         { url, explicit: true },
       ])

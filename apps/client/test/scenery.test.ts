@@ -2,8 +2,9 @@ import { describe, expect, it } from 'vitest';
 import { BUILT_IN_BOARDS } from '../../../packages/engine/src/boards/builtin';
 import { newGame } from '../../../packages/engine/src/setup';
 import { cpuSeats } from '../../../packages/engine/src/headless';
+import { parkStream, streamDistance } from '../src/park-geometry';
 import { cellCenter, sideVector, tileTop, worldSize } from '../src/geometry';
-import { sceneryBeyondBoard, sceneryForBoard } from '../src/scenery';
+import { parkSceneryBeyondBoard, sceneryBeyondBoard, sceneryForBoard } from '../src/scenery';
 
 const state = (board = BUILT_IN_BOARDS[0]) =>
   newGame({
@@ -20,9 +21,9 @@ describe('decorative scenery', () => {
     for (const board of BUILT_IN_BOARDS) {
       const G = state(board);
       const before = JSON.stringify(G);
-      const stamps = sceneryForBoard(G);
+      const stamps = sceneryForBoard(G, true);
       expect(stamps.length, board.name).toBeGreaterThan(0);
-      expect(sceneryForBoard(G)).toEqual(stamps);
+      expect(sceneryForBoard(G, true)).toEqual(stamps);
       expect(JSON.stringify(G)).toBe(before);
       const world = worldSize(G);
       for (const p of stamps) {
@@ -71,6 +72,47 @@ describe('decorative scenery', () => {
           p.x - p.size / 2 > world.w ||
           p.y - p.size / 2 > world.h,
       ).toBe(true);
+    }
+    for (const p of close) expect(wide).toContainEqual(p);
+    expect(JSON.stringify(G)).toBe(before);
+  });
+});
+
+describe('park landscape layout', () => {
+  it('keeps the stream outside every built-in board and extends it past the camera', () => {
+    for (const board of BUILT_IN_BOARDS) {
+      const G = state(board),
+        world = worldSize(G);
+      const before = JSON.stringify(G);
+      const wide = parkStream(G, -2000, world.w + 2000);
+      const close = parkStream(G, -500, world.w + 500);
+      expect(wide[0].y).toBeLessThan(-2000);
+      expect(wide.at(-1)!.x).toBeGreaterThan(world.w + 2000);
+      for (const p of wide) {
+        const clearance = Math.hypot(Math.max(0, -p.x, p.x - world.w), Math.max(0, -p.y, p.y - world.h));
+        expect(clearance).toBeGreaterThan(180);
+      }
+      for (const p of close) expect(wide).toContainEqual(p);
+      expect(JSON.stringify(G)).toBe(before);
+    }
+  });
+
+  it('plants stable groves and gardens outside playable ground and clear of the water', () => {
+    const G = state(),
+      world = worldSize(G),
+      before = JSON.stringify(G);
+    const wide = parkSceneryBeyondBoard(G, -1600, -1600, 3400, 2400);
+    const close = parkSceneryBeyondBoard(G, -900, -700, 2400, 1600);
+    expect(wide.some((p) => p.key === 'scenery-tree')).toBe(true);
+    expect(wide.some((p) => p.key === 'scenery-picnic' || p.key === 'scenery-bench')).toBe(true);
+    for (const p of wide) {
+      expect(
+        p.x + p.size / 2 < 0 ||
+          p.y + p.size / 2 < 0 ||
+          p.x - p.size / 2 > world.w ||
+          p.y - p.size / 2 > world.h,
+      ).toBe(true);
+      expect(streamDistance(G, p.x, p.y)).toBeGreaterThanOrEqual(p.size / 2 + 100);
     }
     for (const p of close) expect(wide).toContainEqual(p);
     expect(JSON.stringify(G)).toBe(before);

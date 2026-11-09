@@ -107,7 +107,10 @@ Everything is re-exported from `index.ts`, so the client imports from `'@aa/engi
 
 `meadow.ts` builds cached, coordinate-seeded grass chunks with smooth patch blending.
 `scenery.ts` owns cosmetic coordinate randomness and small scenery placement, inside the board
-(`sceneryForBoard`) and beyond it (`sceneryBeyondBoard`); it never changes engine state.
+(`sceneryForBoard`) and beyond it (`parkSceneryBeyondBoard` for grouped park scenery,
+`sceneryBeyondBoard` for the preserved earlier scatter). It never changes engine state.
+`park-geometry.ts` defines the cosmetic stream and planting clearance outside the playable map.
+`park.ts` paints its textured water, organic banks and contact shadows beneath scenery.
 
 ### Art
 

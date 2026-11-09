@@ -116,3 +116,32 @@ describe('painted property PNG set', () => {
     }
   });
 });
+
+describe('natural park PNG set', () => {
+  it('supplies every new base-only scenery sprite and preserves the previous set', () => {
+    const dir = resolve('apps/client/src/assets/park-v6');
+    const previous = resolve('apps/client/src/assets/scenery-v5');
+    const keys = [
+      'scenery-bench',
+      'scenery-shrubs',
+      'scenery-rocks',
+      'scenery-planter',
+      'scenery-fence',
+      'scenery-sapling',
+      'scenery-mushrooms',
+      'scenery-lilies',
+      'scenery-picnic',
+      'scenery-tree',
+      'pond',
+      'fountain',
+      'park-water',
+    ];
+    expect(readdirSync(dir).filter((f) => f.endsWith('.png'))).toHaveLength(keys.length);
+    for (const key of keys) {
+      expect(png(resolve(dir, `${key}-base.png`))).toEqual(key === 'park-water' ? [512, 512] : [256, 256]);
+      expect(existsSync(resolve(dir, `${key}-tint.png`))).toBe(false);
+      if (key.startsWith('scenery-') && key !== 'scenery-tree')
+        expect(existsSync(resolve(previous, `${key}-base.png`))).toBe(true);
+    }
+  });
+});

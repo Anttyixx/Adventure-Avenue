@@ -1,6 +1,7 @@
 /** Cosmetic scenery placement only; never consumes the rules engine's random stream. */
 import { neighborCells, type GameState } from '@aa/engine';
 import { cellCenter, sideVector, tileTop, worldSize } from './geometry';
+import { streamDistance } from './park-geometry';
 
 export const SCENERY_KEYS = [
   'scenery-bench',
@@ -15,7 +16,7 @@ export const SCENERY_KEYS = [
 ] as const;
 
 export interface SceneryStamp {
-  key: (typeof SCENERY_KEYS)[number];
+  key: (typeof SCENERY_KEYS)[number] | 'scenery-tree';
   x: number;
   y: number;
   size: number;
@@ -33,7 +34,7 @@ export function landscapeRandom(x: number, y: number) {
 }
 
 /** Small decorative pieces in free cells and along the margin, kept clear of gameplay. */
-export function sceneryForBoard(G: GameState): SceneryStamp[] {
+export function sceneryForBoard(G: GameState, park = false): SceneryStamp[] {
   const nodes = G.nodes.map((n) => cellCenter(G.layout, n.x, n.y));
   const used = new Set(G.nodes.map((n) => `${n.x},${n.y}`));
   const portals = new Set(
@@ -103,11 +104,12 @@ export function sceneryForBoard(G: GameState): SceneryStamp[] {
       const p = cellCenter(G.layout, x, y);
       const r = landscapeRandom(x + 71, y + 113);
       const near = nodes.some((n) => Math.hypot(n.x - p.x, n.y - p.y) < 230);
-      if (r() > (near ? 0.5 : 0.22)) continue;
+      if (r() > (park ? (near ? 0.4 : 0.22) : near ? 0.5 : 0.22)) continue;
       const key = SCENERY_KEYS[Math.floor(r() * SCENERY_KEYS.length)];
       add(p.x + (r() - 0.5) * 14, p.y + (r() - 0.5) * 14, 54 + r() * 20, key);
     }
   }
+  if (park) return result.sort((a, b) => a.y - b.y);
   // Tiny accents around the outside still fit inside the transparent board cache.
   const small = ['scenery-shrubs', 'scenery-rocks', 'scenery-mushrooms'] as const;
   const rim = (x: number, y: number) => {
@@ -121,6 +123,58 @@ export function sceneryForBoard(G: GameState): SceneryStamp[] {
   for (let y = 110; y < world.h - 50; y += 140) {
     rim(26, y);
     rim(world.w - 26, y + 20);
+  }
+  return result.sort((a, b) => a.y - b.y);
+}
+
+/** Grove and garden groups rather than evenly sprinkled individual ornaments. */
+export function parkSceneryBeyondBoard(
+  G: GameState,
+  left: number,
+  top: number,
+  right: number,
+  bottom: number,
+): SceneryStamp[] {
+  const world = worldSize(G);
+  const result: SceneryStamp[] = [];
+  const step = 420;
+  const add = (key: SceneryStamp['key'], x: number, y: number, size: number) => {
+    const half = size / 2;
+    if (!(x + half < -25 || y + half < -25 || x - half > world.w + 25 || y - half > world.h + 25)) return;
+    if (streamDistance(G, x, y) < half + 100) return;
+    result.push({ key, x, y, size });
+  };
+  for (let y = Math.floor(top / step) - 1; y <= Math.ceil(bottom / step); y++) {
+    for (let x = Math.floor(left / step) - 1; x <= Math.ceil(right / step); x++) {
+      const r = landscapeRandom(x + 811, y - 407);
+      const px = x * step + step / 2 + (r() - 0.5) * 170;
+      const py = y * step + step / 2 + (r() - 0.5) * 170;
+      const kind = r();
+      if (kind < 0.62) {
+        const count = 3 + Math.floor(r() * 3);
+        for (let i = 0; i < count; i++) {
+          const a = r() * Math.PI * 2,
+            radius = 25 + r() * 95;
+          add(
+            i === 0 ? 'scenery-sapling' : 'scenery-tree',
+            px + Math.cos(a) * radius,
+            py + Math.sin(a) * radius,
+            105 + r() * 80,
+          );
+        }
+        add('scenery-shrubs', px - 90, py + 85, 80);
+        add('scenery-mushrooms', px + 65, py + 110, 55);
+      } else if (kind < 0.88) {
+        add(kind < 0.75 ? 'scenery-picnic' : 'scenery-bench', px, py, 100);
+        add('scenery-planter', px + 85, py + 30, 65);
+        add('scenery-shrubs', px - 80, py + 45, 75);
+        add('scenery-sapling', px - 60, py - 75, 130);
+      } else {
+        add('scenery-lilies', px, py, 160);
+        add('scenery-rocks', px + 100, py + 50, 65);
+        add('scenery-shrubs', px - 90, py + 40, 75);
+      }
+    }
   }
   return result.sort((a, b) => a.y - b.y);
 }

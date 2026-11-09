@@ -947,15 +947,17 @@ animation has a `prefers-reduced-motion` path (CSS media query, or `matchMedia(.
 
 Bright and physical, unlike the dark HUD:
 
-- **World:** a painted meadow with soft grass, clover and tiny flowers, matching the
-  painted toy-town sprites. Blend coordinate-seeded grass patches with soft edges so zooming
-  out shows variation rather than mirrored repeats. Keep grass contrast below cream tiles and
-  district colors. Paint in world coordinates under transparent board caches. Small painted
-  scenery (benches, shrubs, rocks, planters, fences, saplings, mushrooms, lily ponds and picnic
-  tables) fills free spaces and continues beyond the board, thinning farther out. Keep tiles,
-  roads, portal rings and portal landing cells clear. Use no playable tile frames or labels on
-  scenery. Hide decorations in the builder. Cloud shadows are faint. Original assets remain
-  available for rollback.
+- **World:** a painted town park, with muted grass, broad sun-dried clearings, cooler woodland
+  shade and a blue-green stream outside the west/south board boundary. Blend grass patches
+  softly with no mirrored repeats or hard joins. Warm earth verges follow actual board paths;
+  the bank has a quiet clearing. Preserve cream tiles and district colors as the focal point.
+  Group outside scenery into groves, picnic areas and planted pools instead of uniform scatter.
+  Scenery uses natural painted edges, organic soil patches and soft contact shadows: **no white
+  or cream sticker rims, dark contour strokes, tile frames or labels**. The stream has textured
+  water, varying width and low bank rocks; keep it clear of playable ground and plant groups.
+  Inside the board, keep tiles, roads, portal rings and landing cells clear. The builder shows
+  varied grass but hides scenery, stream and path verges. Keep the world fixed during camera
+  movement and cloud shadows faint. Preserve previous artwork for rollback.
 - **Tiles** (86 units on a 100 grid): cream `#fdfbf5` (bank `#fff6d6`), radius 12, soft shadow
   down-right. Owned: tint of the owner's color. Properties: 6px district-color border. Vacant
   plots: dashed grey outline + "VACANT".

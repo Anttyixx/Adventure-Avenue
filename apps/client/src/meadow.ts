@@ -8,6 +8,7 @@ const PATCH_PIXELS = PIXELS / PATCHES;
 const LIMIT = 96;
 const chunks = new Map<string, HTMLCanvasElement>();
 let sourceImage: HTMLCanvasElement | null = null;
+let parkStyle = false;
 let masks: HTMLCanvasElement[] | null = null;
 
 const canvas = (size = PIXELS) =>
@@ -32,7 +33,7 @@ function weights() {
   });
 }
 
-function chunk(source: HTMLCanvasElement, x: number, y: number) {
+function chunk(source: HTMLCanvasElement, x: number, y: number, park: boolean) {
   const key = `${x},${y}`;
   const saved = chunks.get(key);
   if (saved) {
@@ -61,6 +62,7 @@ function chunk(source: HTMLCanvasElement, x: number, y: number) {
         lctx.translate(dx * PATCH_PIXELS, dy * PATCH_PIXELS);
         lctx.rotate((Math.floor(r() * 4) * Math.PI) / 2);
         lctx.scale(r() < 0.5 ? -1 : 1, 1);
+        if (park) lctx.filter = 'saturate(0.65)';
         lctx.drawImage(
           source,
           sx,
@@ -85,9 +87,48 @@ function chunk(source: HTMLCanvasElement, x: number, y: number) {
   ctx.globalCompositeOperation = 'destination-over';
   ctx.fillStyle = '#97b96f';
   ctx.fillRect(0, 0, PIXELS, PIXELS);
+  if (park) paintTones(ctx, x, y);
   chunks.set(key, cv);
   if (chunks.size > LIMIT) chunks.delete(chunks.keys().next().value!);
   return cv;
+}
+
+/** Broad sun-dried clearings and cool woodland shade, shared across chunk edges. */
+function paintTones(ctx: CanvasRenderingContext2D, x: number, y: number) {
+  ctx.save();
+  ctx.setTransform(PIXELS / WORLD, 0, 0, PIXELS / WORLD, -x * PIXELS, -y * PIXELS);
+  ctx.globalCompositeOperation = 'source-over';
+  const step = 600;
+  for (
+    let gy = Math.floor((y * WORLD - 1400) / step);
+    gy <= Math.ceil(((y + 1) * WORLD + 800) / step);
+    gy++
+  ) {
+    for (
+      let gx = Math.floor((x * WORLD - 1400) / step);
+      gx <= Math.ceil(((x + 1) * WORLD + 800) / step);
+      gx++
+    ) {
+      const r = landscapeRandom(gx - 101, gy + 337);
+      const px = gx * step + r() * step,
+        py = gy * step + r() * step;
+      const radius = 260 + r() * 260;
+      const kind = r();
+      const color = kind < 0.34 ? '191,164,111' : kind < 0.68 ? '56,99,76' : '208,199,143';
+      ctx.save();
+      ctx.translate(px, py);
+      ctx.rotate(r() * Math.PI);
+      ctx.scale(1.35, 0.75);
+      const shade = ctx.createRadialGradient(0, 0, 0, 0, 0, radius);
+      shade.addColorStop(0, `rgba(${color},0.48)`);
+      shade.addColorStop(0.45, `rgba(${color},0.25)`);
+      shade.addColorStop(1, `rgba(${color},0)`);
+      ctx.fillStyle = shade;
+      ctx.fillRect(-radius, -radius, radius * 2, radius * 2);
+      ctx.restore();
+    }
+  }
+  ctx.restore();
 }
 
 /** Draw only visible cached meadow chunks, keeping the landscape fixed while panning/zooming. */
@@ -98,16 +139,18 @@ export function paintMeadow(
   top: number,
   right: number,
   bottom: number,
+  park = false,
 ) {
-  if (source !== sourceImage) {
+  if (source !== sourceImage || park !== parkStyle) {
     chunks.clear();
     sourceImage = source;
+    parkStyle = park;
   }
   ctx.fillStyle = '#97b96f';
   ctx.fillRect(left, top, right - left, bottom - top);
   for (let y = Math.floor(top / WORLD); y < Math.ceil(bottom / WORLD); y++) {
     for (let x = Math.floor(left / WORLD); x < Math.ceil(right / WORLD); x++) {
-      ctx.drawImage(chunk(source, x, y), x * WORLD, y * WORLD, WORLD, WORLD);
+      ctx.drawImage(chunk(source, x, y, park), x * WORLD, y * WORLD, WORLD, WORLD);
     }
   }
 }
