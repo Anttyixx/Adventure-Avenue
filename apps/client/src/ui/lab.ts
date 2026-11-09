@@ -22,6 +22,8 @@ import {
   ranking,
   investRoom,
   market,
+  neighborCells,
+  type BoardDef,
   type BuildingKey,
   type GameState,
   type Player,
@@ -113,16 +115,46 @@ const rnd = (n: number) => Math.floor(Math.random() * n);
  * Controls for UI elements that were just added or changed: they shake once and glow so they
  * are easy to find. Update this list with each change.
  */
-const RECENT = new Set(['Board builder: Crossgate Gardens']);
+const RECENT = new Set(['Board with portal links', 'Cards: open the stack']);
 
-/** Which board the lab plays on: Town (square) or Twin Lakes (hex), remembered per browser. */
+/**
+ * Which board the lab plays on: Town (square), Twin Lakes (hex) or Town with portal links,
+ * remembered per browser.
+ */
 const LAB_BOARD_KEY = 'aa-lab-board';
-function labBoard(): 'town' | 'twin-lakes' {
+function labBoard(): 'town' | 'twin-lakes' | 'portals' {
   try {
-    return localStorage.getItem(LAB_BOARD_KEY) === 'hex' ? 'twin-lakes' : 'town';
+    const kind = localStorage.getItem(LAB_BOARD_KEY);
+    return kind === 'hex' ? 'twin-lakes' : kind === 'portals' ? 'portals' : 'town';
   } catch {
     return 'town';
   }
+}
+
+/**
+ * Town with every kind of portal link across its park: a two-way pair, and two entrances on the
+ * top road leading to one exit on the bottom road.
+ */
+function portalTown(): BoardDef {
+  const b = structuredClone(BUILT_IN_BOARDS.find((x) => x.id === 'town') ?? BUILT_IN_BOARDS[0]);
+  const at = (x: number, y: number) => b.squares.findIndex((s) => s.x === x && s.y === y);
+  // Tiles on the top and bottom roads whose park side (down, side 2; up, side 3) is empty.
+  const open = (y: number, side: number) =>
+    b.squares.flatMap((s, i) => {
+      const [nx, ny] = neighborCells(b.layout, s.x, s.y)[side];
+      return s.y === y && at(nx, ny) < 0 ? [i] : [];
+    });
+  const ys = b.squares.map((s) => s.y);
+  const top = open(Math.min(...ys), 2);
+  const bottom = open(Math.max(...ys), 3);
+  b.id = 'lab-portals';
+  b.name = 'Town with portals';
+  b.portalLinks = [
+    { a: top[1], sa: 2, b: bottom[1], sb: 3 },
+    { a: top[4], sa: 2, b: bottom[5], sb: 3, oneWay: true },
+    { a: top[6], sa: 2, b: bottom[5], sb: 3, oneWay: true },
+  ];
+  return b;
 }
 
 /** A sample match; `playSample` then plays a few rounds so cards, the board and the log have content. */
@@ -133,7 +165,9 @@ function sampleState(): GameState {
     rules: 'standard',
     target: 5000,
     roundCap: 0,
-    boardId: labBoard(),
+    ...(labBoard() === 'portals'
+      ? { board: portalTown() }
+      : { boardId: labBoard() as 'town' | 'twin-lakes' }),
     seats: names.map((name, i) => ({ name, cpu: true, ch: chars[i] })),
   });
 }
@@ -523,6 +557,11 @@ export async function openLab(app: HTMLElement, section?: string) {
       btn('Cards: list', () => hud.setCardsMode('list')),
       btn('Cards: stack', () => hud.setCardsMode('stack')),
       btn('Cards: smart', () => hud.setCardsMode('smart')),
+      // A folded stack opens into a list for a moment, as when tapped (the layout buttons glide up).
+      btn('Cards: open the stack', () => {
+        if (hud.cardsMode === 'list') hud.setCardsMode('stack');
+        window.setTimeout(() => hud.openStack('tap'), 600);
+      }),
       // A player who isn't up gets paid: in a smart stack their card rises out for a moment.
       btn('Smart stack: pay someone else', () => {
         if (hud.cardsMode !== 'smart') hud.setCardsMode('smart');
@@ -1816,6 +1855,15 @@ export async function openLab(app: HTMLElement, section?: string) {
       btn('Square / hex board', () => {
         try {
           localStorage.setItem(LAB_BOARD_KEY, labBoard() === 'town' ? 'hex' : 'square');
+        } catch {
+          // Storage blocked: stay on this board.
+        }
+        location.reload();
+      }),
+      // Town with a two-way portal pair and two entrances leading to one exit.
+      btn('Board with portal links', () => {
+        try {
+          localStorage.setItem(LAB_BOARD_KEY, 'portals');
         } catch {
           // Storage blocked: stay on this board.
         }

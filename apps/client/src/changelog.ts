@@ -26,6 +26,13 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: '2026-11-09-stack-buttons-glide',
+    date: 'Nov 9, 2026',
+    title: 'Smoother player cards',
+    features: [],
+    extras: ['The player card layout buttons glide up with the cards when a stack opens, instead of jumping'],
+  },
+  {
     id: '2026-11-09-spinning-portals',
     date: 'Nov 9, 2026',
     title: 'Spinning portals',

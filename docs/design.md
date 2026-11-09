@@ -587,7 +587,8 @@ if (!(await ask(`Delete ${d.name}?`, 'Its 4 properties will be removed from the 
   where it was to its new place, matched at its top middle (`.pcard` `transform-origin: 50% 0`,
   `T.cardStack` 504ms, `T.cardStackStagger` 26ms, `cubic-bezier(0.2, 0.8, 0.2, 1)`; `hud.glide`, the
   one motion for the layout buttons, opening a stack for a moment and smart pop-outs), with the cards' own
-  transform transitions off meanwhile (`.cards-wrap.stacking`). Turn change: the old front card
+  transform transitions off meanwhile (`.cards-wrap.stacking`). The layout buttons above the top
+  card glide with them (same duration and easing, no delay), never jumping to their new place. Turn change: the old front card
   drops 55% of its height (ease-in), goes behind the stack, then rises into its back place
   (ease-out; `T.cardCycle` 750ms, Web Animations), while the rest ease forward (0.4s). Behind cards are `inert`.
   Opening a stack (`openStack` / `closeStack`, `hud.stacked`): a click or tap on `.cards` (the

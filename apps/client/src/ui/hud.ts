@@ -662,7 +662,7 @@ export class Hud {
    * Open a folded stack into a list for a moment (the chosen layout stays): `hover` until the
    * mouse leaves, `tap` for `T.stackOpen`. A hover takes over a tap's timer.
    */
-  private openStack(how: 'hover' | 'tap') {
+  openStack(how: 'hover' | 'tap') {
     if (!this.cardsCollapsed) return;
     clearTimeout(this.openTimer);
     if (how === 'tap' && this.opened !== 'hover')
@@ -718,6 +718,10 @@ export class Hud {
     if (!this.G || matchMedia('(prefers-reduced-motion: reduce)').matches) return change();
     const before = els.map((el) => el.getBoundingClientRect());
     for (const el of els) for (const a of el.getAnimations()) a.cancel();
+    // The layout buttons sit above the top card, so they glide along with it.
+    const modes = this.cardsModes;
+    for (const a of modes.getAnimations()) if (!(a instanceof CSSTransition)) a.cancel();
+    const modesBefore = modes.getBoundingClientRect();
     const wrap = this.cardsWrap;
     wrap.classList.add('stacking');
     change();
@@ -727,6 +731,14 @@ export class Hud {
     const done = () => {
       if (--left <= 0) wrap.classList.remove('stacking');
     };
+    const modesAfter = modes.getBoundingClientRect();
+    const mx = (modesBefore.left - modesAfter.left) / zoom;
+    const my = (modesBefore.top - modesAfter.top) / zoom;
+    if (Math.abs(mx) >= 0.5 || Math.abs(my) >= 0.5)
+      modes.animate([{ transform: `translate(${mx}px, ${my}px)` }, { transform: 'none' }], {
+        duration: T.cardStack,
+        easing: 'cubic-bezier(0.2, 0.8, 0.2, 1)',
+      });
     els.forEach((el, i) => {
       // A card the change set moving itself (the old front card dropping to the back when the
       // turn passes) keeps its own move: gliding it too would pull it out of line.
