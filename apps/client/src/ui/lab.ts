@@ -107,6 +107,7 @@ const LAB_TABS: { id: string; title: string; sections: string[] }[] = [
   { id: 'screens', title: 'Menus', sections: ['screens'] },
 ];
 const LAB_TAB_KEY = 'aa-lab-tab';
+const STILL = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
 /** Whether the controls pop-up was open (opened and closed with the version chip). */
 const LAB_OPEN_KEY = 'aa-lab-open';
 
@@ -116,14 +117,7 @@ const rnd = (n: number) => Math.floor(Math.random() * n);
  * Controls for UI elements that were just added or changed: they shake once and glow so they
  * are easy to find. Update this list with each change.
  */
-const RECENT = new Set([
-  'Warp and portal artwork',
-  'Portal: entrance to exit',
-  'Portal: two-way flow',
-  'Travel through a portal',
-  'Portal links in the builder',
-  'Tile sprites and tint layers',
-]);
+const RECENT = new Set(['Portal: entrance to exit', 'Travel through a portal', 'Roll and walk', 'Confetti']);
 
 /**
  * Which board the lab plays on: Town with portal links (square, the default) or Twin Lakes (hex),
@@ -323,6 +317,8 @@ export async function openLab(app: HTMLElement, section?: string) {
   // ------------------------------------------------------------ control panel
 
   const panel = h('div', { class: 'lab-panel glass', role: 'dialog', 'aria-label': 'UI Lab' });
+  /** Bumped when a board control hides the pop-up, or the pop-up is opened or closed by hand. */
+  let staging = 0;
   const body = h('div', { class: 'lab-body' });
   /** Open or close the controls pop-up (remembered on this device). */
   const setOpen = (on: boolean) => {
@@ -335,7 +331,11 @@ export async function openLab(app: HTMLElement, section?: string) {
       /* not remembered */
     }
   };
-  verChip.onclick = () => setOpen(panel.hidden);
+  verChip.onclick = () => {
+    // Opening or closing by hand cancels a board button's automatic reopen.
+    staging++;
+    setOpen(panel.hidden);
+  };
   window.addEventListener('keydown', (e) => {
     if (e.key === 'Escape' && !panel.hidden && !document.querySelector('.modal-wrap')) setOpen(false);
   });
@@ -424,7 +424,14 @@ export async function openLab(app: HTMLElement, section?: string) {
       search,
       h(
         'button',
-        { class: 'lab-close', 'aria-label': 'Close the UI Lab', onclick: () => setOpen(false) },
+        {
+          class: 'lab-close',
+          'aria-label': 'Close the UI Lab',
+          onclick: () => {
+            staging++;
+            setOpen(false);
+          },
+        },
         '×',
       ),
     ),
@@ -454,24 +461,74 @@ export async function openLab(app: HTMLElement, section?: string) {
   };
   const row = (sec: HTMLElement, ...buttons: HTMLElement[]) =>
     sec.append(h('div', { class: 'lab-row' }, ...buttons));
-  const btn = (label: string, fn: () => unknown) =>
+  const run = async (fn: () => unknown) => {
+    try {
+      await fn();
+    } catch (err) {
+      console.error(err);
+      hud.tick(`Error: ${(err as Error).message}`);
+    }
+  };
+  const btn = (label: string, fn: () => unknown, onBoard = false) =>
     h(
       'button',
       {
         // Controls for things changed recently shake once and keep a soft glow.
         class: `btn small ${RECENT.has(label) ? 'lab-new' : ''}`,
         title: RECENT.has(label) ? 'Recently updated' : null,
-        onclick: async () => {
-          try {
-            await fn();
-          } catch (err) {
-            console.error(err);
-            hud.tick(`Error: ${(err as Error).message}`);
-          }
-        },
+        onclick: () => (onBoard ? playOnBoard(fn) : run(fn)),
       },
       label,
     );
+  /** A control whose effect plays on the board: the pop-up steps aside while it plays. */
+  const boardBtn = (label: string, fn: () => unknown) => btn(label, fn, true);
+  const wait = (ms: number) => new Promise((r) => window.setTimeout(r, ms));
+  /** Resolves once the board has no effects playing and the camera has come to rest (at most 8s). */
+  const boardSettled = async () => {
+    const until = performance.now() + 8000;
+    const still = () =>
+      !board.fx.length &&
+      !board.screenFx.length &&
+      !board.lookAt &&
+      Math.abs(board.cam.x - board.camTarget.x) < 1 &&
+      Math.abs(board.cam.y - board.camTarget.y) < 1 &&
+      Math.abs(board.cam.z - board.camTarget.z) < 0.002;
+    while (performance.now() < until && !still()) await wait(100);
+  };
+  /**
+   * Board controls: hide the pop-up, wait 0.5s, play the effect, wait for it (and the camera) to
+   * finish, wait 0.5s, then bring the pop-up back where it was (same tab and scroll). Opening or
+   * closing the pop-up by hand meanwhile cancels the reopen.
+   */
+  const playOnBoard = async (fn: () => unknown) => {
+    if (panel.hidden) return run(fn);
+    const token = ++staging;
+    const scroll = body.scrollTop;
+    if (!STILL())
+      await panel.animate([{ opacity: 1 }, { opacity: 0, transform: 'scale(0.97)' }], {
+        duration: 160,
+        easing: 'ease-in',
+      }).finished;
+    panel.hidden = true;
+    await wait(500);
+    await run(fn);
+    await boardSettled();
+    await wait(500);
+    if (token !== staging || !panel.hidden) return;
+    panel.hidden = false;
+    body.scrollTop = scroll;
+    if (!STILL())
+      panel.animate(
+        [
+          { opacity: 0, transform: 'scale(0.97)' },
+          { opacity: 1, transform: 'none' },
+        ],
+        {
+          duration: 200,
+          easing: 'cubic-bezier(0.2, 0.8, 0.2, 1)',
+        },
+      );
+  };
 
   // Player picker shared by the sections (in the pop-up's header).
   const drawPicker = () => {
@@ -950,13 +1007,13 @@ export async function openLab(app: HTMLElement, section?: string) {
     row(
       s,
       ...(['out', 'both'] as const).map((way) =>
-        btn(way === 'out' ? 'Portal: entrance to exit' : 'Portal: two-way flow', () => {
+        boardBtn(way === 'out' ? 'Portal: entrance to exit' : 'Portal: two-way flow', () => {
           const gate = portalGates(G).find((g) => g.way === way);
           if (!gate) return hud.tick('Switch to the square board to try its portals.');
           board.showPortal(gate);
         }),
       ),
-      btn('Travel through a portal', async () => {
+      boardBtn('Travel through a portal', async () => {
         const gate = portalGates(G).find((g) => g.way !== 'out');
         if (!gate) return hud.tick('Switch to the square board to try its portals.');
         const p = cur(),
@@ -982,13 +1039,13 @@ export async function openLab(app: HTMLElement, section?: string) {
     );
     row(
       s,
-      btn('Roll die', async () => {
+      boardBtn('Roll die', async () => {
         setActive(cur().id);
         await board.rollDie(1 + rnd(K.dieSides));
         // No walk follows here: put the shrunk die away.
         setTimeout(() => (board.die = null), 1200);
       }),
-      btn('Roll and walk', async () => {
+      boardBtn('Roll and walk', async () => {
         // The die shrinks beside the player and counts the steps down as they walk.
         const p = cur();
         setActive(p.id);
@@ -1011,7 +1068,7 @@ export async function openLab(app: HTMLElement, section?: string) {
         p.prev = -1;
         refresh();
       }),
-      btn('Walk 3 squares', async () => {
+      boardBtn('Walk 3 squares', async () => {
         const p = cur();
         setActive(p.id);
         const route = game.destinations(p, 3)[0].path;
@@ -1026,7 +1083,7 @@ export async function openLab(app: HTMLElement, section?: string) {
         p.prev = -1;
         refresh();
       }),
-      btn('Walk with a stop', async () => {
+      boardBtn('Walk with a stop', async () => {
         // A stop on the way (like a pop-up while passing): the walk cycle stops until it carries on.
         const p = cur();
         setActive(p.id);
@@ -1040,11 +1097,11 @@ export async function openLab(app: HTMLElement, section?: string) {
         p.prev = -1;
         refresh();
       }),
-      btn('Direction arrows', () => {
+      boardBtn('Direction arrows', () => {
         setActive(cur().id);
         board.directionsPid = board.directionsPid === cur().id ? -1 : cur().id;
       }),
-      btn('Warp', async () => {
+      boardBtn('Warp', async () => {
         const p = cur();
         const to = rnd(G.nodes.length);
         p.node = to;
@@ -1055,11 +1112,11 @@ export async function openLab(app: HTMLElement, section?: string) {
     );
     row(
       s,
-      btn('Coins: bank to player', () => {
+      boardBtn('Coins: bank to player', () => {
         board.coins(board.bankPos(), pos(), 6);
         board.floatText(pos().x, pos().y, '+300G', '#7cf29a');
       }),
-      btn('Coins: invest in a shop', () => {
+      boardBtn('Coins: invest in a shop', () => {
         // Investing: the coins fly from the player into one of their shops.
         const sq =
           G.nodes.find((n) => n.owner === cur().id && n.t === 'shop') ?? G.nodes.find((n) => n.t === 'shop')!;
@@ -1068,7 +1125,7 @@ export async function openLab(app: HTMLElement, section?: string) {
         board.floatText(pos().x, pos().y + 22, '-200G', '#ff8a8a');
         board.ring(sq.id, '#ffd166', true);
       }),
-      btn('Coins: player to rival', () => {
+      boardBtn('Coins: player to rival', () => {
         const q = G.players[(target + 1) % G.players.length];
         const to = board.tokenPos(q.id);
         board.coins(pos(), to, 3);
@@ -1078,16 +1135,16 @@ export async function openLab(app: HTMLElement, section?: string) {
     );
     row(
       s,
-      btn('Gold ring + sparkles', () => board.ring(cur().node, '#ffd166', true)),
-      btn('White ring', () => board.ring(cur().node, '#ffffff')),
-      btn('Confetti', () => board.confetti(cur().id)),
-      btn('Tooltip: special square', () => {
+      boardBtn('Gold ring + sparkles', () => board.ring(cur().node, '#ffd166', true)),
+      boardBtn('White ring', () => board.ring(cur().node, '#ffffff')),
+      boardBtn('Confetti', () => board.confetti(cur().id)),
+      boardBtn('Tooltip: special square', () => {
         // Hover text for a square that is not a property, in the middle of the screen.
         const sq = G.nodes.find((n) => n.t === 'cannon' || n.t === 'arcade' || n.t === 'boon') ?? G.nodes[0];
         hud.showTooltip(sq.id, window.innerWidth / 2, window.innerHeight / 2);
       }),
       ...([true, false] as const).map((up) =>
-        btn(up ? 'Stock rise' : 'Stock fall', async () => {
+        boardBtn(up ? 'Stock rise' : 'Stock fall', async () => {
           // The camera frames the district of the target player's square (or the first).
           const d = Math.max(0, G.nodes[cur().node].d);
           const ids = G.nodes.filter((n) => n.d === d).map((n) => n.id);
@@ -1105,7 +1162,7 @@ export async function openLab(app: HTMLElement, section?: string) {
           board.lookAt = null;
         }),
       ),
-      btn('Victory', async () => {
+      boardBtn('Victory', async () => {
         const p = cur();
         setActive(p.id);
         const at = board.tokenPos(p.id);
@@ -1117,11 +1174,11 @@ export async function openLab(app: HTMLElement, section?: string) {
         await new Promise((r) => setTimeout(r, T.victory));
         board.lookAt = null;
       }),
-      btn('Promotion dance', () => {
+      boardBtn('Promotion dance', () => {
         board.confetti(cur().id);
         board.dance(cur().id);
       }),
-      btn('Zoom modes', async () => {
+      boardBtn('Zoom modes', async () => {
         // The zoom chip's border: blue for auto zoom, red for locked zoom, grey for free zoom.
         const p = cur();
         setActive(p.id);
@@ -1135,14 +1192,14 @@ export async function openLab(app: HTMLElement, section?: string) {
         board.showHold = false;
         hud.tick('Free zoom (grey): your own zoom again.');
       }),
-      btn('Shops closing', async () => {
+      boardBtn('Shops closing', async () => {
         // Close the target player's shops (gates come down and stay down).
         const p = cur();
         p.closed = true;
         refresh();
         await board.closeShops(G.nodes.filter((n) => n.owner === p.id).map((n) => n.id));
       }),
-      btn('Shops reopening', async () => {
+      boardBtn('Shops reopening', async () => {
         // The gates roll back up, then the shops are open again.
         const p = cur();
         p.closed = true;
@@ -1153,24 +1210,24 @@ export async function openLab(app: HTMLElement, section?: string) {
         p.onBreak = false;
         refresh();
       }),
-      btn('Suit pickup text', () => board.floatText(pos().x, pos().y, '♥', '#ff6b6b')),
-      btn('Suit collected in passing', () => board.collectFx(cur().id, '♠', '#ffffff')),
-      btn('Shop value rises', () => {
+      boardBtn('Suit pickup text', () => board.floatText(pos().x, pos().y, '♥', '#ff6b6b')),
+      boardBtn('Suit collected in passing', () => board.collectFx(cur().id, '♠', '#ffffff')),
+      boardBtn('Shop value rises', () => {
         const sq = ownedShops(G, cur().id)[0] ?? G.nodes.find((n) => n.t === 'shop')!;
         board.valueFx(sq.id, 40);
       }),
-      btn('Shop value falls', () => {
+      boardBtn('Shop value falls', () => {
         const sq = ownedShops(G, cur().id)[0] ?? G.nodes.find((n) => n.t === 'shop')!;
         board.valueFx(sq.id, -25);
       }),
     );
     row(
       s,
-      btn('Toggle shops closed (gates)', () => {
+      boardBtn('Toggle shops closed (gates)', () => {
         cur().onBreak = !cur().onBreak;
         refresh();
       }),
-      btn('New squares and Motel', () => {
+      boardBtn('New squares and Motel', () => {
         // Price Up, Taxi and Swap squares, and a Motel, near the start of the board.
         const specials = G.nodes.filter((n) => ['venture', 'roll', 'break', 'boon'].includes(n.t));
         (['hike', 'taxi', 'swap'] as const).forEach((t, i) => {
@@ -1184,8 +1241,8 @@ export async function openLab(app: HTMLElement, section?: string) {
         }
         refresh();
       }),
-      btn('Zoom in', () => board.zoomBy(-ZOOM_STEP)),
-      btn('Zoom out', () => board.zoomBy(ZOOM_STEP)),
+      boardBtn('Zoom in', () => board.zoomBy(-ZOOM_STEP)),
+      boardBtn('Zoom out', () => board.zoomBy(ZOOM_STEP)),
     );
   }
 
