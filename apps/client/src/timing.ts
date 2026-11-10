@@ -10,8 +10,19 @@ export const TIMING = {
   portalStep: 720,
   /** Pause after a destination is chosen, before the token starts walking. */
   afterChoice: 500,
-  /** Flying to a square (warps, cannon, balloon, portal). */
+  /** Flying to a square (the old shared ride; kept for reference). */
   warp: 750,
+  /** Each ride straight to a square (`BoardView.travel`): warp beam, portal-tile vortex, cannon
+   * shot, balloon float, swap flight and venture-card star trail. A taxi's time grows with the
+   * distance, between the two limits. */
+  travelWarp: 1150,
+  travelPortal: 1050,
+  travelCannon: 1150,
+  travelTaxiMin: 950,
+  travelTaxiMax: 1900,
+  travelBalloon: 1900,
+  travelSwap: 1050,
+  travelCard: 1150,
   /** Die tumbling, then how long the result stays before moving. */
   dieRoll: 900,
   dieHold: 1000,

@@ -671,15 +671,8 @@ export class ArcadeStage {
 
   private async derbyChoose(req: DecisionRequest<'arcadeChoice'>, p: Player) {
     const D = K.derby;
-    // Pick one, then lock it in (everyone chooses at the same time; the leg starts once all have).
-    let pick = -1;
-    const go = this.btn('Pick one', 'main', () => this.hud.resolvePrompt({ choice: pick }), true);
-    const choose = (i: number) => {
-      pick = i;
-      [sprint, grab].forEach((b, k) => b.setAttribute('aria-pressed', String(k === i)));
-      go.disabled = false;
-      go.textContent = 'Lock in';
-    };
+    // Tapping an option locks it in (everyone chooses at the same time; the leg starts once all have).
+    const choose = (choice: number) => this.hud.resolvePrompt({ choice });
     const sprint = this.btn(`Sprint · ${D.sprint[0]}-${D.sprint[1]} spaces`, 'aa-pick', () => choose(0));
     const grab = this.btn(`Grab ${fmt(D.grabCoins)} · ${D.grab[0]}-${D.grab[1]} spaces`, 'aa-pick', () =>
       choose(1),
@@ -688,7 +681,7 @@ export class ArcadeStage {
       p.id,
       `${p.name}: sprint or grab coins?`,
       `Leg ${req.round} of ${D.legs}. Whoever is furthest after leg ${D.legs} wins ${fmt(D.winner * p.level)}.`,
-      [sprint, grab, go],
+      [sprint, grab],
     );
   }
 

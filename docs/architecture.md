@@ -230,6 +230,17 @@ natural height. `Hud.glide` samples current positions but uses explicit intended
 for destinations. Its generation guard prevents cancelled glides from clearing a newer glide's
 transition lock. Reduced motion cancels prior animations before applying the final layout.
 
+### Rides (jumps straight to a square)
+
+The engine's `warp(p, to, how, other)` emits `{ type: 'warp', from, how, other }`: `how` names what
+carried the player (`TravelKind`: warp, portal, cannon, taxi, balloon, swap/swapBack, card, home).
+It changes nothing in the state, so online play and saves are unaffected. `HotSeat.emit` picks the
+message and sound and calls `BoardView.travel`, which runs a per-ride animation: the token takes a
+special pose (`Token.portal`: alpha, scale, spin; no disc or name plate) while its position moves,
+and short-lived effects (`fx`, which may now start later than they are added) draw the beam,
+vortex, smoke, taxi, balloon, trails or stars from `travel-art.ts`. A swap animates both players on
+the first event; the second (`swapBack`) only snaps. `portalStep` adds sparks and a streak.
+
 ### Portal rendering and travel
 
 `newGame` registers all portal endpoints independently of graph-neighbor deduplication. Runtime

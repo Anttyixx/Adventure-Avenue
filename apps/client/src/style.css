@@ -5138,47 +5138,93 @@ input[type='range'] {
   }
 }
 
-/* Tooltip: stat boxes */
+/* Tooltip: a head with the tile's own picture, its name and owner; a big headline number (fee
+   or price); then label/amount lines, a building's sentence and the district strip. */
+.tt-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+.tt-pic {
+  flex: none;
+  width: 56px;
+  height: 56px;
+}
+.tt-head-text {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+}
+.tooltip .tt-head .tt-title {
+  margin: 0;
+  line-height: 1.15;
+}
 .tt-owner {
   display: flex;
   align-items: center;
-  gap: 6px;
-  margin-bottom: 8px;
-  padding: 3px 8px 3px 4px;
+  gap: 5px;
+  padding: 2px 9px 2px 3px;
   border-radius: 999px;
-  width: fit-content;
+  font-size: 12px;
   font-weight: 700;
   background: var(--pc, rgba(255, 255, 255, 0.12));
   color: #fff;
 }
-.tt-owner img {
-  width: 20px;
-  height: 20px;
-  image-rendering: pixelated;
-}
-.tt-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 5px;
-}
-.tt-box {
-  display: flex;
-  flex-direction: column;
-  padding: 5px 8px;
-  border-radius: 8px;
-  background: rgba(255, 255, 255, 0.07);
-}
-.tt-box span {
-  font-size: 11px;
+.tt-owner.free {
+  padding: 2px 9px;
+  background: rgba(255, 255, 255, 0.1);
   color: var(--muted);
 }
-.tt-box b {
+.tt-owner img {
+  width: 18px;
+  height: 18px;
+  image-rendering: pixelated;
+}
+.tt-hero {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 6px 10px;
+  border-radius: 10px;
+  background: rgba(255, 209, 102, 0.12);
+}
+.tt-hero span {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--muted);
+}
+.tt-hero b {
   font-family: var(--head);
   font-weight: 400;
-  font-size: 17px;
-}
-.tt-box.fee b {
+  font-size: 22px;
   color: var(--accent);
+}
+.tt-hero.off b {
+  color: var(--muted);
+  text-decoration: line-through;
+}
+.tt-lines {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-top: 6px;
+  padding: 0 2px;
+}
+.tt-line {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 13px;
+}
+.tt-line span {
+  color: var(--muted);
+}
+.tt-line b {
+  font-weight: 700;
 }
 .tt-district {
   display: flex;

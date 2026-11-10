@@ -53,7 +53,7 @@ import { openCredits } from './credits';
 import { pickCharacter } from './charpick';
 import { resumeLobby } from './online';
 import { soundControls } from './soundpanel';
-import { SFX_NAMES, TRACK_NAMES, sound, type Track } from '../audio';
+import { SFX_NAMES, TRACK_NAMES, sound, type Sfx, type Track } from '../audio';
 import { guestSetup, setupScreen, type SetupRoom } from './start';
 import type { LobbyInfo, LobbySeat } from '../net/protocol';
 import type { LocalSeat } from '../net/hostroom';
@@ -118,10 +118,22 @@ const rnd = (n: number) => Math.floor(Math.random() * n);
  * are easy to find. Update this list with each change.
  */
 const RECENT = new Set([
+  'Ride: warp beam',
+  'Ride: portal tile vortex',
+  'Ride: cannon shot',
+  'Ride: taxi',
+  'Ride: balloon',
+  'Ride: venture card stars',
+  'Ride: swap places',
+  'Travel through a portal',
+  'Coin Derby',
   'Boon and Boom artwork',
-  'Warp landing pad',
-  'Warp and portal artwork',
-  'Tile sprites and tint layers',
+  'Tooltip: special square',
+  'Tooltip: shop for sale',
+  'Tooltip: owned shop',
+  'cannon',
+  'honk',
+  'whoosh',
 ]);
 
 /**
@@ -1115,6 +1127,37 @@ export async function openLab(app: HTMLElement, section?: string) {
         refresh();
       }),
     );
+    // Every ride straight to a square, each with its own animation (BoardView.travel).
+    const ride = (how: 'warp' | 'portal' | 'cannon' | 'taxi' | 'balloon' | 'card', sfx: Sfx) => async () => {
+      const p = cur();
+      const from = p.node;
+      let to = rnd(G.nodes.length);
+      if (to === from) to = (to + 5) % G.nodes.length;
+      p.node = to;
+      p.prev = -1;
+      sound.play(sfx);
+      await board.travel(p.id, to, how, { from });
+      refresh();
+    };
+    row(
+      s,
+      boardBtn('Ride: warp beam', ride('warp', 'warp')),
+      boardBtn('Ride: portal tile vortex', ride('portal', 'warp')),
+      boardBtn('Ride: cannon shot', ride('cannon', 'cannon')),
+      boardBtn('Ride: taxi', ride('taxi', 'honk')),
+      boardBtn('Ride: balloon', ride('balloon', 'whoosh')),
+      boardBtn('Ride: venture card stars', ride('card', 'warp')),
+      boardBtn('Ride: swap places', async () => {
+        const p = cur();
+        const q = G.players[(p.id + 1) % G.players.length];
+        const [a, b] = [p.node, q.node];
+        p.node = b;
+        q.node = a;
+        sound.play('whoosh');
+        await board.travel(p.id, b, 'swap', { from: a, other: { pid: q.id, to: a } });
+        refresh();
+      }),
+    );
     row(
       s,
       boardBtn('Coins: bank to player', () => {
@@ -1146,6 +1189,14 @@ export async function openLab(app: HTMLElement, section?: string) {
       boardBtn('Tooltip: special square', () => {
         // Hover text for a square that is not a property, in the middle of the screen.
         const sq = G.nodes.find((n) => n.t === 'cannon' || n.t === 'arcade' || n.t === 'boon') ?? G.nodes[0];
+        hud.showTooltip(sq.id, window.innerWidth / 2, window.innerHeight / 2);
+      }),
+      boardBtn('Tooltip: shop for sale', () => {
+        const sq = G.nodes.find((n) => n.t === 'shop' && n.owner < 0) ?? G.nodes[0];
+        hud.showTooltip(sq.id, window.innerWidth / 2, window.innerHeight / 2);
+      }),
+      boardBtn('Tooltip: owned shop', () => {
+        const sq = G.nodes.find((n) => n.t === 'shop' && n.owner >= 0) ?? G.nodes[0];
         hud.showTooltip(sq.id, window.innerWidth / 2, window.innerHeight / 2);
       }),
       ...([true, false] as const).map((up) =>

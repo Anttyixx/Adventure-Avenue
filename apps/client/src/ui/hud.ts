@@ -19,10 +19,11 @@ import {
   stockPrice,
   type GameState,
   type Player,
+  type Square,
 } from '@aa/engine';
-import type { BoardView, PortalGate } from '../board';
+import { paintSquare, squareCenter, type BoardView, type PortalGate } from '../board';
 import { closeSoundPopover, disposeSoundControls, soundButton, soundControls } from './soundpanel';
-import { motelFee, squareInfo, squareName } from '../names';
+import { BUILDING_INFO, motelFee, shortName, squareInfo, squareName } from '../names';
 import { boonIconURL, suitIconURL, wildIconURL } from '../icons';
 import { bodyURL, portraitURL } from '../sprites';
 import { nameText } from './marquee';
@@ -1344,22 +1345,34 @@ export class Hud {
     clear(this.tooltip);
     const owner = sq.owner >= 0 ? G.players[sq.owner] : null;
     const dColor = sq.d >= 0 ? (G.districts[sq.d]?.color ?? '#ccc') : '#8a94a8';
-    const box = (label: string, value: string, cls = '') =>
-      h('div', { class: `tt-box ${cls}` }, h('span', null, label), h('b', null, value));
-    const boxes: HTMLElement[] = [];
+    const property = sq.t === 'shop' || sq.t === 'plot';
+    /** A detail line: muted label on the left, the amount on the right. */
+    const row = (label: string, value: string) =>
+      h('div', { class: 'tt-line' }, h('span', null, label), h('b', null, value));
+    let hero: HTMLElement | null = null;
+    const lines: HTMLElement[] = [];
     const extra: HTMLElement[] = [];
-    if (sq.t === 'shop' || sq.t === 'plot') {
-      if (sq.t === 'shop' || sq.b) boxes.push(box('Value', fmt(sq.value)));
-      if (owner && sq.b !== 'agency') {
-        const fee = sq.b === 'tax' ? '10% NW' : sq.b === 'motel' ? motelFee(G, sq) : fmt(squareFee(G, sq));
-        boxes.push(box(isClosed(owner) ? 'Fee (closed)' : 'Fee', fee, 'fee'));
+    if (property) {
+      const shopLike = sq.t === 'shop' || sq.b === 'star3';
+      if (owner) {
+        // Owned: what landing here costs is the headline; the shop's numbers follow.
+        if (sq.b !== 'agency') {
+          const fee = sq.b === 'tax' ? '10% NW' : sq.b === 'motel' ? motelFee(G, sq) : fmt(squareFee(G, sq));
+          hero = this.ttHero(isClosed(owner) ? 'Fee · shops closed' : 'Fee', fee, isClosed(owner));
+        }
+        if (sq.t === 'shop' || sq.b) lines.push(row('Value', fmt(sq.value)));
+        if (shopLike) {
+          lines.push(row('Max value', fmt(maxValue(G, sq))));
+          lines.push(row('Buyout (5x)', fmt(sq.value * K.buyoutX)));
+        }
+      } else if (sq.t === 'shop') {
+        // For sale: its price is its value, so one number says it.
+        hero = this.ttHero('Price', fmt(sq.value));
       }
-      if (sq.t === 'shop' || sq.b === 'star3') {
-        boxes.push(box('Max value', fmt(maxValue(G, sq))));
-        if (owner) boxes.push(box('Buyout (5x)', fmt(sq.value * K.buyoutX)));
-        else boxes.push(box('Price', fmt(sq.value), 'fee'));
-      }
-      if (G.rules === 'standard' && sq.d >= 0) boxes.push(box('Stock', `${fmt(stockPrice(G, sq.d))}/share`));
+      if (G.rules === 'standard' && sq.d >= 0)
+        lines.push(row('Stock', `${fmt(stockPrice(G, sq.d))} a share`));
+      // What a building does, in a sentence (rivals' side; its owner's is in the Guide).
+      if (sq.b && BUILDING_INFO[sq.b]) extra.push(h('p', { class: 'tt-info' }, BUILDING_INFO[sq.b].rival));
       if (sq.g >= 0) {
         // Who owns the rest of the district, as dots in the owners' colors.
         const grp = G.groups[sq.g];
@@ -1381,26 +1394,56 @@ export class Hud {
           ),
         );
       }
-    } else if (sq.t === 'change') {
-      boxes.push(box('Offers', SUITS[G.changeSuit]));
+    } else {
+      if (sq.t === 'change') lines.push(row('Offers now', SUITS[G.changeSuit]));
+      extra.push(h('p', { class: 'tt-info' }, squareInfo(G, sq)));
     }
     this.tooltip.style.setProperty('--dc', dColor);
     this.tooltip.append(
-      h('div', { class: 'tt-title' }, squareName(G, sq)),
-      sq.t === 'shop' || sq.t === 'plot'
-        ? h(
-            'div',
-            { class: 'tt-owner', style: owner ? `--pc:${PLAYER_COLORS[owner.color]}` : '' },
-            owner
-              ? [h('img', { src: portraitURL(owner.ch), alt: '' }), `Owned by ${owner.name}`]
-              : 'For sale',
-          )
-        : '',
-      boxes.length ? h('div', { class: 'tt-grid' }, ...boxes) : '',
+      h(
+        'div',
+        { class: 'tt-head' },
+        this.tilePicture(sq),
+        h(
+          'div',
+          { class: 'tt-head-text' },
+          h('div', { class: 'tt-title' }, shortName(G, sq)),
+          property
+            ? h(
+                'div',
+                {
+                  class: `tt-owner ${owner ? '' : 'free'}`,
+                  style: owner ? `--pc:${PLAYER_COLORS[owner.color]}` : '',
+                },
+                owner ? [h('img', { src: portraitURL(owner.ch), alt: '' }), owner.name] : 'For sale',
+              )
+            : null,
+        ),
+      ),
+      hero ?? '',
+      lines.length ? h('div', { class: 'tt-lines' }, ...lines) : '',
       ...extra,
-      sq.t === 'shop' || sq.t === 'plot' ? '' : h('p', { class: 'tt-info' }, squareInfo(G, sq)),
     );
     this.placeTooltip(x, y);
+  }
+
+  /** The tooltip's headline number (a fee or a price), big and gold. */
+  private ttHero(label: string, value: string, off = false) {
+    return h('div', { class: `tt-hero ${off ? 'off' : ''}` }, h('span', null, label), h('b', null, value));
+  }
+
+  /** A small picture of the tile as it looks on the board, for the tooltip's head. */
+  private tilePicture(sq: Square): HTMLCanvasElement {
+    const G = this.G!;
+    const size = 56;
+    const dpr = Math.min(3, window.devicePixelRatio || 1);
+    const cv = h('canvas', { class: 'tt-pic', width: size * dpr, height: size * dpr }) as HTMLCanvasElement;
+    const ctx = cv.getContext('2d')!;
+    const c = squareCenter(sq, G.layout);
+    const k = size / 112;
+    ctx.setTransform(k * dpr, 0, 0, k * dpr, (size / 2 - c.x * k) * dpr, (size / 2 - (c.y + 3) * k) * dpr);
+    paintSquare(ctx, G, sq);
+    return cv;
   }
 
   /** A portal's pop-up: its kind, where it leads (or comes from), and that a tap shows it. */

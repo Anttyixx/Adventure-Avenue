@@ -26,6 +26,29 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: '2026-11-11-rides-tooltips',
+    date: 'Nov 11, 2026',
+    title: 'Rides with style and clearer tile info',
+    features: [
+      {
+        tag: 'new',
+        title: 'Every ride is different',
+        text: 'Warps beam you up, portals swirl you through a vortex, the cannon fires you on a tumbling arc through smoke, the taxi drives you over, balloons float you across, swaps fly both players past each other and venture cards lift you on a trail of stars. Portal links got sparks and a streak of light too.',
+      },
+      {
+        tag: 'better',
+        title: 'A cleaner tile pop-up',
+        text: 'Hovering a tile shows its picture, its name and owner, one big number (the fee, or the price for a shop for sale) and the details below. No more repeated prices.',
+      },
+      {
+        tag: 'better',
+        title: 'Picture-only special tiles',
+        text: 'Special tiles drop their names and show a bigger picture in the middle. The Boom burst is no longer cut off at its edges.',
+      },
+    ],
+    extras: ['Coin Derby: tapping Sprint or Grab locks your choice in, no extra button'],
+  },
+  {
     id: '2026-11-10-boon-burst',
     date: 'Nov 10, 2026',
     title: 'A matching Boon badge',

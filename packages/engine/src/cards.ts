@@ -51,7 +51,7 @@ const list: Card[] = [
     text: 'Warp straight to the bank.',
     run: async (g, p) => {
       const bank = g.G.nodes.find((s) => s.t === 'bank')!;
-      await g.warp(p, bank.id);
+      await g.warp(p, bank.id, 'card');
       await g.landAfterWarp(p);
     },
   },
@@ -63,7 +63,7 @@ const list: Card[] = [
     run: async (g, p) => {
       const options = g.G.nodes.map((s) => s.id).filter((id) => id !== p.node);
       const to = await g.ask({ kind: 'pickSquare', pid: p.id, purpose: 'zoom', options, optional: false });
-      await g.warp(p, to != null && options.includes(to) ? to : options[0]);
+      await g.warp(p, to != null && options.includes(to) ? to : options[0], 'card');
       await g.landAfterWarp(p);
     },
   },

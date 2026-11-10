@@ -156,7 +156,9 @@ describe('portals during movement', () => {
       { to: entry.id, left: 1 },
       { to: finish.id, left: 0 },
     ]);
-    expect(emit).toHaveBeenCalledWith({ type: 'warp', pid: p.id, to: exit.id });
+    expect(emit).toHaveBeenCalledWith(
+      expect.objectContaining({ type: 'warp', pid: p.id, to: exit.id, how: 'portal' }),
+    );
     expect(land).toHaveBeenCalledExactlyOnceWith(p, finish);
   });
   it('stops at the exit without bouncing when the portal is the final step', async () => {

@@ -40,7 +40,10 @@ export type Sfx =
   | 'deny'
   | 'tick'
   | 'tickUrgent'
-  | 'gavel';
+  | 'gavel'
+  | 'cannon'
+  | 'honk'
+  | 'whoosh';
 
 export const SFX_NAMES: Sfx[] = [
   'click',
@@ -77,6 +80,9 @@ export const SFX_NAMES: Sfx[] = [
   'tick',
   'tickUrgent',
   'gavel',
+  'cannon',
+  'honk',
+  'whoosh',
 ];
 
 export type Track =
@@ -1059,6 +1065,24 @@ class AudioEngine {
         // The last seconds: a brighter double beep.
         this.tone(bus, 'square', 1320, t, 0.06, 0.08, { cutoff: 3000 });
         this.tone(bus, 'square', 1760, t + 0.09, 0.07, 0.08, { cutoff: 3000 });
+        break;
+      case 'cannon':
+        // The cannon going off: a deep thump and a burst of noise.
+        this.tone(bus, 'sine', 120, t, 0.45, 0.7, { to: 35 });
+        this.hiss(bus, t, 0.5, 0.35, 900, 0.7, 200);
+        this.tone(bus, 'square', 300, t, 0.08, 0.12, { to: 80, cutoff: 1200 });
+        break;
+      case 'honk':
+        // A taxi's cheerful two-note honk.
+        this.tone(bus, 'square', 523, t, 0.12, 0.09, { cutoff: 1800 });
+        this.tone(bus, 'square', 659, t, 0.12, 0.07, { cutoff: 1800 });
+        this.tone(bus, 'square', 523, t + 0.16, 0.16, 0.09, { cutoff: 1800 });
+        this.tone(bus, 'square', 659, t + 0.16, 0.16, 0.07, { cutoff: 1800 });
+        break;
+      case 'whoosh':
+        // A soft rush of air (balloon lift-off, two players swapping).
+        this.hiss(bus, t, 0.6, 0.18, 500, 1.2, 2400);
+        this.tone(bus, 'sine', 260, t, 0.5, 0.08, { to: 520 });
         break;
       case 'gavel':
         // Sold (or no sale): the auctioneer's gavel knocks down on the block.

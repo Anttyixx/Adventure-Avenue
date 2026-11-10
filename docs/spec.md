@@ -816,8 +816,8 @@ every game was last played: each game is played once before any repeats, and a n
 never starts with the game that ended the last one (`G.arcadePlayed`). Lucky Reels and Memory
 Blocks are solo games; Coin Derby, Lucky Wheel and Treasure Split include every non-bankrupt
 player. Party choices are made by **everyone at the same time**: each player picks privately and
-taps **Lock in** (Coin Derby: tap Sprint or Grab, then Lock in; Lucky Wheel and Treasure Split:
-pick on the board, then Lock in). Portraits over the game show who is still choosing and who has
+locks it in (Coin Derby: tapping Sprint or Grab locks that choice in, with no separate Lock in
+button; Lucky Wheel and Treasure Split: pick on the board, then Lock in). Portraits over the game show who is still choosing and who has
 locked in (a green check); the round starts once everyone has locked in, and the choices are
 revealed together. A player who locks in sees "Rosa locked in! Waiting for Milo, Kai…". Players
 sharing one device take turns (passing the device between them); players on other devices and
@@ -1296,11 +1296,47 @@ with more to them (investing amounts, auctions) open their own windows.
 
 **Square symbols.** Boon and Boom squares show a symbol instead of a name and percent: Boon a
 green disc with an up arrow (20% commission), Boom a pink starburst with a double up arrow (50%).
-Squares without a label (suits, Boon, Boom) center their symbol on the tile.
+Special squares (everything that isn't a shop or a vacant plot: the bank, venture, suits, roll on,
+break, stocks, arcade, cannon, taxi, swap, warp, Boon, Boom...) carry **no name** on the tile: just
+their picture, centered and a little bigger (hex tiles at 90%). The name is in the tile's pop-up.
+Pictures are centered by their visible part (`drawPropCentered`). The Boom picture's starburst
+used to be cut off at its left and right points in the image itself; `boom-v17/` redraws its
+outline whole (`BOOM_SET = previous` restores the original, which is kept).
 
-**Tooltips.** Hovering (or tapping) a square shows a tooltip: properties show their numbers, and
-every other square says in a sentence what it does (bank, venture, suits, roll on, break, Boon,
-Boom, stockbroker, arcade, cannon...; text in `squareInfo`, `apps/client/src/names.ts`).
+**Rides.** Every jump straight to a square has its own animation and sound (`BoardView.travel`;
+the engine's warp event says what carried the player, which changes nothing in the game):
+
+- **Warp:** the player spins and stretches up into a beam of light in the warp's color, crosses
+  unseen, and beams down at the other end (also the Home building's call).
+- **Portal tile:** the player spirals down into a swirling vortex and spins back out of the other.
+- **Cannon:** a blast of smoke and a boom, a high tumbling arc with a smoke trail (higher the
+  further it goes), and a puff of dust on landing.
+- **Taxi:** a honk, then the taxi (with the rider's color on its roof light) drives them across,
+  kicking up dust, and honks again as they climb out; the ride takes longer the further it goes.
+- **Balloon:** a whoosh, and the player rises under a hot-air balloon in their color, drifts
+  over swaying, and settles down.
+- **Swap:** both players fly at once, curving past each other on opposite sides, each leaving a
+  trail of dots in their color.
+- **Venture card** (Zoom to the bank, Zoom anywhere): lifted on a trail of gold stars, with a
+  burst of stars as they leave and land.
+- **Portal links** keep their pull-in / pop-out, now with sparks swirling into the entrance, a
+  streak of light racing along the link to the exit, and sparks bursting out of it.
+  Timings are in `timing.ts` (`travel*`); reduced motion jumps straight there.
+
+**Tooltips.** Hovering (or tapping) a square shows a tooltip. Its head has a small picture of the
+tile as it looks on the board, the square's name (without the price: "Brick Row shop") and, for
+properties, the owner (a pill in their color with their portrait) or a muted "For sale". Then:
+
+- **Shop for sale:** one big gold **Price** (its value: the two are always the same then).
+- **Owned shop or 3-Star Shop:** a big gold **Fee** ("Fee · shops closed", struck through, while
+  the owner is on a break), then lines for Value, Max value and Buyout (5x).
+- **Other buildings:** the Fee (10% NW for the Tax Office, the motel's fee; none for the Estate
+  Agency), the Value, and one sentence on what it does to rivals.
+- Standard rules add the district's **Stock** price ("19G a share"); every property ends with the
+  district strip (its name, a dot per property in its owner's color, "Dominated").
+- **Every other square** says in a sentence what it does (bank, venture, suits, roll on, break,
+  Boon, Boom, stockbroker, arcade, cannon...; text in `squareInfo`, `apps/client/src/names.ts`);
+  a Change of Suit square also says which suit it offers now.
 
 **Promotion dance.** A player who levels up does a little dance on the spot: they spin through
 their four facings with small hops while the confetti falls.

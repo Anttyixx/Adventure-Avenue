@@ -241,6 +241,13 @@ describe('flat warp floor pad', () => {
   });
 });
 
+describe('Boom burst', () => {
+  it('adds a whole, uncut burst while preserving the original Boom sprite', () => {
+    expect(png(resolve('apps/client/src/assets/boom-v17/boom-base.png'))).toEqual([256, 256]);
+    expect(existsSync(resolve('apps/client/src/assets/tiles-v2/boom-base.png'))).toBe(true);
+  });
+});
+
 describe('Boon coin burst', () => {
   it('adds a fixed-color sprite while preserving the previous coin and the matching Boom art', () => {
     expect(png(resolve('apps/client/src/assets/boon-v16/boon-base.png'))).toEqual([256, 256]);

@@ -5,12 +5,21 @@
 import type { MemoryPrize, ReelSymbol, TradeOffer } from './decisions';
 import type { LogLine } from './types';
 
+/** What carries a player on a warp event (see `GameEvent` 'warp'). */
+export type TravelKind =
+  'warp' | 'portal' | 'cannon' | 'taxi' | 'balloon' | 'swap' | 'swapBack' | 'card' | 'home';
+
 export type GameEvent =
   | { type: 'turnStart'; pid: number; round: number }
   | { type: 'roundStart'; round: number }
   | { type: 'roll'; pid: number; value: number }
   | { type: 'step'; pid: number; from: number; to: number; left: number }
-  | { type: 'warp'; pid: number; to: number }
+  /**
+   * A jump straight to a square (no walking). `from`: the square left; `how`: what carried the
+   * player, so the client can show each ride its own way (display only: it changes nothing);
+   * `other`: for a swap, the player trading places (their own warp follows as 'swapBack').
+   */
+  | { type: 'warp'; pid: number; to: number; from?: number; how?: TravelKind; other?: number }
   | { type: 'land'; pid: number; sq: number }
   /** `sq`: the square the money goes into (an investment), when it is not a player or the bank. */
   | { type: 'money'; from: number; to: number; amount: number; reason: string; sq?: number }

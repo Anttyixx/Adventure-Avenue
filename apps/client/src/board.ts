@@ -1,4 +1,4 @@
-import { neighborCells, nextSteps, transportColor, type PortalWay } from '@aa/engine';
+import { neighborCells, nextSteps, transportColor, type PortalWay, type TravelKind } from '@aa/engine';
 import { motelFee } from './names';
 /**
  * The HD board: a 1300 x 800 logical canvas with 100-unit squares, scaled to the container
@@ -19,6 +19,7 @@ import { cellCenter, sideVector, tileShape, tileTop, worldSize } from './geometr
 import { SHOP_TIERS, STAR3_TIERS, badge, darken, drawShop, drawStar3, tierFor, tint } from './art';
 import {
   drawProp,
+  drawPropCentered,
   drawStamp,
   propCanvas,
   PAINTED_LANDSCAPE,
@@ -44,6 +45,7 @@ import { TIMING as T } from './timing';
 import { portalFlows, portalPartner } from './portal-links';
 import { drawLink } from './portal-link-art';
 import { portalTravelPose } from './portal-travel';
+import { drawBalloon, drawBeam, drawPuff, drawStar, drawTaxi, drawVortex } from './travel-art';
 
 import { ZOOM_MAX_OUT, fitZoom, gameNearZoom, zoomScale, wheelZoomStep } from './zoom';
 export { ZOOM_STEP } from './zoom';
@@ -451,6 +453,54 @@ export class BoardView {
       return;
     }
     const color = this.portalSpots.find((p) => p.node === from && p.side === gate.side)?.color ?? '#a78bfa';
+    // Sparks swirl into the entrance, a streak of light races along the link to the exit, and
+    // sparks burst out of it as the player pops out.
+    this.fx.push({
+      t0: performance.now(),
+      dur: T.portalStep * this.speed,
+      draw: (ctx, k) => {
+        ctx.save();
+        ctx.fillStyle = color;
+        const sparks = (at: { x: number; y: number }, q: number, inward: boolean) => {
+          for (let i = 0; i < 8; i++) {
+            const a = (i / 8) * Math.PI * 2 + q * (inward ? 5 : -5);
+            const r = inward ? 34 * (1 - q) + 4 : 6 + 36 * q;
+            ctx.globalAlpha = inward ? q : 1 - q;
+            ctx.beginPath();
+            ctx.arc(at.x + Math.cos(a) * r, at.y + 12 + Math.sin(a) * r * 0.6, 3, 0, Math.PI * 2);
+            ctx.fill();
+          }
+        };
+        if (k > 0.12 && k < 0.45) sparks(entrance, (k - 0.12) / 0.33, true);
+        if (k > 0.55 && k < 0.85) sparks(exit, (k - 0.55) / 0.3, false);
+        if (k > 0.38 && k < 0.62) {
+          const q = (k - 0.38) / 0.24;
+          const head = {
+            x: entrance.x + (exit.x - entrance.x) * q,
+            y: entrance.y + 12 + (exit.y - entrance.y) * q,
+          };
+          const tail = Math.max(0, q - 0.35);
+          const tx = entrance.x + (exit.x - entrance.x) * tail;
+          const ty = entrance.y + 12 + (exit.y - entrance.y) * tail;
+          const g = ctx.createLinearGradient(tx, ty, head.x, head.y);
+          g.addColorStop(0, 'rgba(255,255,255,0)');
+          g.addColorStop(1, color);
+          ctx.globalAlpha = Math.sin(q * Math.PI);
+          ctx.strokeStyle = g;
+          ctx.lineCap = 'round';
+          ctx.lineWidth = 9;
+          ctx.beginPath();
+          ctx.moveTo(tx, ty);
+          ctx.lineTo(head.x, head.y);
+          ctx.stroke();
+          ctx.fillStyle = '#ffffff';
+          ctx.beginPath();
+          ctx.arc(head.x, head.y, 6, 0, Math.PI * 2);
+          ctx.fill();
+        }
+        ctx.restore();
+      },
+    });
     const t0 = performance.now();
     let entered = false,
       emerged = false;
@@ -502,29 +552,322 @@ export class BoardView {
     });
   }
 
-  async warp(pid: number, to: number) {
+  /** A plain jump to a square (the lab's "warp" button): the warp tile's ride. */
+  warp(pid: number, to: number) {
+    return this.travel(pid, to, 'warp');
+  }
+
+  /**
+   * Carry a player straight to a square, each ride its own way (`how`, from the engine's warp
+   * event): a warp beams them up and down, a portal tile swirls them through a vortex, the cannon
+   * fires them on a high tumbling arc through smoke, a taxi drives them over, a balloon floats
+   * them across, a venture card lifts them on a trail of stars, and a swap flies both players
+   * past each other at once (`other`: the swapped player and where they go). `from` is the
+   * square left (for the warp's or portal's color).
+   */
+  async travel(
+    pid: number,
+    to: number,
+    how: TravelKind,
+    opts: { from?: number; other?: { pid: number; to: number } } = {},
+  ) {
+    const G = this.G!;
     const t = this.tokens.get(pid)!;
     const dest = this.slotPos(pid, to);
-    const from = { x: t.x, y: t.y };
-    t.walking = true;
-    const dur = T.warp * this.speed;
-    const t0 = performance.now();
-    await new Promise<void>((resolve) => {
-      const tick = () => {
-        const k = Math.min(1, (performance.now() - t0) / dur);
-        const e = ease(k);
-        t.x = from.x + (dest.x - from.x) * e;
-        t.y = from.y + (dest.y - from.y) * e;
-        t.hop = Math.sin(k * Math.PI) * 90;
-        if (k < 1 && this.alive) requestAnimationFrame(tick);
-        else resolve();
-      };
-      tick();
-    });
-    t.hop = 0;
+    const start = { x: t.x, y: t.y };
+    const finish = () => {
+      delete t.portal;
+      t.hop = 0;
+      t.walking = false;
+      this.snapTokens();
+      this.ring(to, '#ffffff');
+    };
+    // The swapped player's second warp: they already flew with the first one.
+    if (how === 'swapBack') return finish();
+    if (reducedMotion()) {
+      if (opts.other) this.snapTokens();
+      return finish();
+    }
+    const color = PLAYER_COLORS[G.players[pid].color];
+    const fromSq = opts.from != null ? G.nodes[opts.from] : undefined;
+    const gateColor =
+      fromSq && (fromSq.t === 'warp' || fromSq.t === 'portal')
+        ? fromSq.channel == null && !fromSq.toBank && (fromSq.link ?? -1) >= 0
+          ? warpColor(G, fromSq)
+          : transportColor(fromSq)
+        : '#8b5cf6';
+    const dist = Math.hypot(dest.x - start.x, dest.y - start.y);
+    const ms = (n: number) => n * this.speed;
+    const lerp = (a: number, b: number, k: number) => a + (b - a) * k;
+    const clamp = (k: number) => Math.max(0, Math.min(1, k));
+    const easeOut = (k: number) => 1 - (1 - k) ** 3;
+    /** Run `step(k)` every frame for `dur` ms (k from 0 to 1). */
+    const run = (dur: number, step: (k: number, now: number) => void) =>
+      new Promise<void>((resolve) => {
+        const t0 = performance.now();
+        const tick = () => {
+          const now = performance.now();
+          const k = Math.min(1, (now - t0) / dur);
+          step(k, now);
+          if (k < 1 && this.alive) requestAnimationFrame(tick);
+          else resolve();
+        };
+        tick();
+      });
+    /** A short-lived effect, starting `delay` ms from now. */
+    const fx = (dur: number, draw: Fx['draw'], delay = 0) =>
+      this.fx.push({ t0: performance.now() + ms(delay), dur: ms(dur), draw });
+    /** The token's special pose (no base disc or name plate while it rides). */
+    const pose = (alpha: number, sx = 1, sy = sx, turn = 0) => {
+      t.portal = { x: t.x, y: t.y, sx, sy, alpha, turn, hop: t.hop, exiting: false };
+    };
     t.walking = false;
-    this.snapTokens();
-    this.ring(to, '#ffffff');
+
+    if (how === 'warp' || how === 'home' || how === 'portal') {
+      // Warp: spin and stretch up into a beam of light, cross over unseen, beam down at the end.
+      // Portal tile: swirl down into a vortex and spin back out of the other one.
+      const portal = how === 'portal';
+      const dur = ms(portal ? T.travelPortal : T.travelWarp);
+      const show = (at: { x: number; y: number }, from: number, to: number) =>
+        fx(
+          (dur * (to - from)) / this.speed,
+          (ctx, k, now) => {
+            const s = Math.sin(k * Math.PI);
+            if (portal) drawVortex(ctx, at.x, at.y + 16, gateColor, s, now);
+            else drawBeam(ctx, at.x, at.y + 16, gateColor, s, now);
+          },
+          (dur * from) / this.speed,
+        );
+      show(start, 0, 0.45);
+      show(dest, 0.5, 1);
+      await run(dur, (k) => {
+        if (k < 0.38) {
+          const a = k / 0.38;
+          t.x = start.x;
+          t.y = start.y;
+          t.hop = portal ? 0 : a * 30;
+          if (portal) pose(1 - a * a, 1 - a * 0.9, 1 - a * 0.9, a * Math.PI * 4);
+          else pose(1 - a * a, 1 - a * 0.85, 1 + a * 1.6, a * 0.3);
+        } else if (k < 0.6) {
+          const a = (k - 0.38) / 0.22;
+          const e = a * a * (3 - 2 * a);
+          t.x = lerp(start.x, dest.x, e);
+          t.y = lerp(start.y, dest.y, e);
+          pose(0);
+        } else {
+          const b = easeOut((k - 0.6) / 0.4);
+          t.x = dest.x;
+          t.y = dest.y;
+          t.hop = portal ? 0 : (1 - b) * 30;
+          if (portal) pose(b, 0.1 + 0.9 * b, 0.1 + 0.9 * b, (1 - b) * -Math.PI * 4);
+          else pose(b, 0.15 + 0.85 * b, 2.6 - 1.6 * b, (1 - b) * -0.3);
+        }
+      });
+      return finish();
+    }
+
+    if (how === 'cannon') {
+      // Fired: a blast of smoke, a high tumbling arc with a smoke trail, a dusty landing.
+      const dur = ms(T.travelCannon);
+      for (let i = 0; i < 7; i++) {
+        const a = (i / 7) * Math.PI * 2;
+        fx(700, (ctx, k) =>
+          drawPuff(
+            ctx,
+            start.x + Math.cos(a) * 30 * k,
+            start.y + 10 + Math.sin(a) * 14 * k - 20 * k,
+            14 + 22 * k,
+            1 - k,
+          ),
+        );
+      }
+      const peak = Math.min(320, 130 + dist * 0.3);
+      let lastPuff = 0;
+      await run(dur, (k, now) => {
+        t.x = lerp(start.x, dest.x, k);
+        t.y = lerp(start.y, dest.y, k);
+        t.hop = Math.sin(k * Math.PI) * peak;
+        pose(1, 1, 1, k * Math.PI * 4);
+        if (k < 0.92 && now - lastPuff > 45) {
+          lastPuff = now;
+          const at = { x: t.x, y: t.y + 10 - t.hop };
+          fx(520, (ctx, q) => drawPuff(ctx, at.x, at.y, 8 + 10 * q, 0.7 * (1 - q)));
+        }
+      });
+      for (let i = 0; i < 6; i++) {
+        const a = Math.PI + (i / 5) * Math.PI;
+        fx(500, (ctx, k) =>
+          drawPuff(
+            ctx,
+            dest.x + Math.cos(a) * 34 * k,
+            dest.y + 20 + Math.sin(a) * 6 * k,
+            10 + 12 * k,
+            1 - k,
+            '214,190,140',
+          ),
+        );
+      }
+      return finish();
+    }
+
+    if (how === 'taxi') {
+      // A taxi pulls up, the rider hops in, and it drives them across, kicking up dust.
+      const dur = ms(Math.max(T.travelTaxiMin, Math.min(T.travelTaxiMax, 600 + dist * 0.9)));
+      const left = dest.x < start.x;
+      let bounce = 0;
+      let lastDust = 0;
+      const car = { x: start.x, y: start.y };
+      this.fx.push({
+        t0: performance.now(),
+        dur: dur + ms(260),
+        draw: (ctx, k) => {
+          const fade = k > 0.9 ? (1 - k) / 0.1 : 1;
+          ctx.save();
+          ctx.globalAlpha = fade;
+          drawTaxi(ctx, car.x, car.y + 26, left, bounce, color);
+          ctx.restore();
+        },
+      });
+      await run(dur, (k, now) => {
+        const e = k < 0.5 ? 2 * k * k : 1 - (-2 * k + 2) ** 2 / 2;
+        car.x = lerp(start.x, dest.x, e);
+        car.y = lerp(start.y, dest.y, e);
+        t.x = car.x;
+        t.y = car.y;
+        bounce = Math.abs(Math.sin(now / 70)) * 2.5;
+        // The rider is inside: hidden until they climb out at the end.
+        pose(k > 0.92 ? (k - 0.92) / 0.08 : 0);
+        if (k > 0.08 && k < 0.92 && now - lastDust > 70) {
+          lastDust = now;
+          const at = { x: car.x + (left ? 34 : -34), y: car.y + 22 };
+          fx(450, (ctx, q) => drawPuff(ctx, at.x, at.y - 8 * q, 7 + 9 * q, 0.6 * (1 - q), '214,190,140'));
+        }
+      });
+      return finish();
+    }
+
+    if (how === 'balloon') {
+      // Up, up and away: rise under a balloon in the player's color, drift over, settle down.
+      const dur = ms(T.travelBalloon);
+      const high = 170;
+      let sway = 0;
+      const frameH = 48 * 1.35;
+      this.fx.push({
+        t0: performance.now(),
+        dur,
+        draw: (ctx, k) => {
+          const fade = Math.min(1, k / 0.08, (1 - k) / 0.08);
+          ctx.save();
+          ctx.globalAlpha = fade;
+          drawBalloon(ctx, t.x, t.y + 21 - t.hop - frameH * t.size * 0.35, color, sway);
+          ctx.restore();
+        },
+      });
+      await run(dur, (k, now) => {
+        const rise = clamp(k / 0.3);
+        const fall = clamp((k - 0.75) / 0.25);
+        const drift = clamp((k - 0.2) / 0.6);
+        const e = drift * drift * (3 - 2 * drift);
+        t.x = lerp(start.x, dest.x, e);
+        t.y = lerp(start.y, dest.y, e);
+        t.hop = high * (easeOut(rise) - fall * fall * (3 - 2 * fall));
+        sway = Math.sin(now / 260) * 0.08 * (1 - fall);
+        pose(1);
+      });
+      return finish();
+    }
+
+    if (how === 'swap' && opts.other) {
+      // A swap: both players fly at once, curving past each other, each leaving a colored trail.
+      const dur = ms(T.travelSwap);
+      const o = this.tokens.get(opts.other.pid)!;
+      const oStart = { x: o.x, y: o.y };
+      const oDest = this.slotPos(opts.other.pid, opts.other.to);
+      const oColor = PLAYER_COLORS[G.players[opts.other.pid].color];
+      // Bend both paths to opposite sides so they pass rather than collide.
+      const nx = -(dest.y - start.y) / (dist || 1);
+      const ny = (dest.x - start.x) / (dist || 1);
+      const bend = Math.min(90, 30 + dist * 0.2);
+      const curve = (a: { x: number; y: number }, b: { x: number; y: number }, side: number, k: number) => {
+        const cx = (a.x + b.x) / 2 + nx * bend * side;
+        const cy = (a.y + b.y) / 2 + ny * bend * side;
+        return {
+          x: (1 - k) ** 2 * a.x + 2 * (1 - k) * k * cx + k * k * b.x,
+          y: (1 - k) ** 2 * a.y + 2 * (1 - k) * k * cy + k * k * b.y,
+        };
+      };
+      let lastTrail = 0;
+      await run(dur, (k, now) => {
+        const e = k * k * (3 - 2 * k);
+        const p1 = curve(start, dest, 1, e);
+        const p2 = curve(oStart, oDest, 1, e);
+        t.x = p1.x;
+        t.y = p1.y;
+        o.x = p2.x;
+        o.y = p2.y;
+        t.hop = o.hop = Math.sin(k * Math.PI) * 50;
+        pose(1, 1, 1, k * Math.PI * 2);
+        o.portal = {
+          x: o.x,
+          y: o.y,
+          sx: 1,
+          sy: 1,
+          alpha: 1,
+          turn: -k * Math.PI * 2,
+          hop: o.hop,
+          exiting: false,
+        };
+        if (k < 0.95 && now - lastTrail > 35) {
+          lastTrail = now;
+          for (const [q, c] of [
+            [{ x: t.x, y: t.y + 10 - t.hop }, color],
+            [{ x: o.x, y: o.y + 10 - o.hop }, oColor],
+          ] as const)
+            fx(420, (ctx, f) => {
+              ctx.save();
+              ctx.globalAlpha = 0.8 * (1 - f);
+              ctx.fillStyle = c;
+              ctx.beginPath();
+              ctx.arc(q.x, q.y, 6 * (1 - f) + 2, 0, Math.PI * 2);
+              ctx.fill();
+              ctx.restore();
+            });
+        }
+      });
+      delete o.portal;
+      o.hop = 0;
+      return finish();
+    }
+
+    // A venture card: lifted on a sparkling trail of gold stars, with bursts at both ends.
+    const dur = ms(T.travelCard);
+    const burst = (at: { x: number; y: number }, delay: number) => {
+      for (let i = 0; i < 8; i++) {
+        const a = (i / 8) * Math.PI * 2;
+        fx(
+          600,
+          (ctx, k) =>
+            drawStar(ctx, at.x + Math.cos(a) * 40 * k, at.y - 10 + Math.sin(a) * 26 * k, 7, 1 - k, k * 3),
+          delay,
+        );
+      }
+    };
+    burst(start, 0);
+    burst(dest, T.travelCard * 0.85);
+    let lastStar = 0;
+    await run(dur, (k, now) => {
+      const e = k * k * (3 - 2 * k);
+      t.x = lerp(start.x, dest.x, e);
+      t.y = lerp(start.y, dest.y, e);
+      t.hop = Math.sin(k * Math.PI) * Math.min(160, 70 + dist * 0.15);
+      pose(1, 1, 1, Math.sin(k * Math.PI * 2) * 0.15);
+      if (k < 0.95 && now - lastStar > 50) {
+        lastStar = now;
+        const at = { x: t.x + (Math.random() - 0.5) * 24, y: t.y - t.hop + (Math.random() - 0.5) * 16 };
+        fx(600, (ctx, q) => drawStar(ctx, at.x, at.y + 18 * q, 6 * (1 - q) + 2, 1 - q, q * 4));
+      }
+    });
+    return finish();
   }
 
   /**
@@ -1362,7 +1705,8 @@ export class BoardView {
     this.fx = this.fx.filter((f) => {
       const k = (now - f.t0) / f.dur;
       if (k > 1) return false;
-      f.draw(ctx, Math.max(0, k), now);
+      // An effect may be planned to start a little later (t0 in the future).
+      if (k >= 0) f.draw(ctx, k, now);
       return true;
     });
     // Screen-space overlays
@@ -2841,22 +3185,6 @@ function drawParkGround(ctx: CanvasRenderingContext2D, G: GameState) {
   ctx.restore();
 }
 
-const SPECIAL_LABEL: Record<string, string> = {
-  bank: 'BANK',
-  venture: 'VENTURE',
-  change: 'CHANGE',
-  roll: 'ROLL ON',
-  break: 'BREAK',
-  broker: 'STOCKS',
-  portal: 'PORTAL',
-  arcade: 'ARCADE',
-  cannon: 'CANNON',
-  hike: 'PRICE UP',
-  taxi: 'TAXI',
-  swap: 'SWAP',
-  warp: 'WARP',
-};
-
 const MONEY = /^(.*\d)G$/;
 
 /** Width of `text` with a trailing "G" drawn as a coin (font must be set). */
@@ -3050,12 +3378,13 @@ function specialIcon(ctx: CanvasRenderingContext2D, G: GameState, sq: Square, x:
         ? warpColor(G, sq)
         : transportColor(sq)
       : '#9aa3b8';
-  if (sq.t === 'warp' && GROUND_WARP_ART && drawProp(ctx, 'warp', col, x, y, 54, 54)) return;
-  if (sq.t === 'change' && drawStamp(ctx, 'change-ring', col, x, y, 56, 56)) {
-    drawStamp(ctx, SUITS[G.changeSuit] as PropKey, col, x, y, 30, 30);
+  // Special tiles show just their picture, centered and as big as the tile comfortably allows.
+  if (sq.t === 'warp' && GROUND_WARP_ART && drawPropCentered(ctx, 'warp', col, x, y, 64, 64)) return;
+  if (sq.t === 'change' && drawStamp(ctx, 'change-ring', col, x, y, 62, 62)) {
+    drawStamp(ctx, SUITS[G.changeSuit] as PropKey, col, x, y, 33, 33);
     return;
   }
-  if (sq.t !== 'bank' && drawProp(ctx, key as PropKey, col, x, y, 58, 56)) return;
+  if (sq.t !== 'bank' && drawPropCentered(ctx, key as PropKey, col, x, y, 66, 66)) return;
 
   ctx.save();
   ctx.textAlign = 'center';
@@ -3063,7 +3392,7 @@ function specialIcon(ctx: CanvasRenderingContext2D, G: GameState, sq: Square, x:
   switch (sq.t) {
     case 'bank':
       // The painted bank (it has no player color); the gold coin until the images load.
-      if (drawProp(ctx, 'bank', '#9aa3b8', x, y - 3, 72, 50)) break;
+      if (drawPropCentered(ctx, 'bank', '#9aa3b8', x, y, 76, 64)) break;
       ctx.fillStyle = '#c98a12';
       ctx.beginPath();
       ctx.arc(x, y, 26, 0, Math.PI * 2);
@@ -3420,12 +3749,11 @@ function drawSquare(ctx: CanvasRenderingContext2D, G: GameState, sq: Square) {
   // middle of the tile (using some of the room under the top point).
   const iy = c.y + (L === 'hex' ? -10 : 0);
   const ty = c.y + (L === 'hex' ? -11 : 0);
-  // Every tile uses the same two spots, so the board reads evenly: pictures stand on one base
-  // line (property art is bottom-aligned there; symbols are centered just above it), and the
-  // price, fee or name sits on one text line under it.
-  // Both keep at least 5px clear of the border's inner edge (37.5 from the center).
+  // Property tiles use the same two spots, so the board reads evenly: pictures stand on one base
+  // line (bottom-aligned there) and the price or fee sits on one text line under it. Both keep at
+  // least 5px clear of the border's inner edge (37.5 from the center). Special tiles center
+  // their picture instead, with no text.
   const artY = iy - 8;
-  const iconY = iy - 7;
   const textY = ty + 27;
   /** The fee (owned) or price as plain text; dark on an owner's color so it stays readable. */
   const amount = (text: string) => label(ctx, c.x, textY, text, owner ? '#1b2340' : '#26314f', 15);
@@ -3511,15 +3839,17 @@ function drawSquare(ctx: CanvasRenderingContext2D, G: GameState, sq: Square) {
               : `${squareFee(G, sq)}G`;
       if (owner) amount(fee);
     }
-  } else if (sq.t === 'warp' && GROUND_WARP_ART) {
-    // The warp is a floor surface under the token's feet, rather than an upright tile picture.
-    art(() => specialIcon(ctx, G, sq, c.x, c.y + 11));
-    label(ctx, c.x, c.y - 29, 'WARP', '#4a5470', 11);
   } else {
-    const t = sq.t === 'broker' && G.rules === 'easy' ? 'VENTURE' : (SPECIAL_LABEL[sq.t] ?? '');
-    // Squares without a label (suits, Boon, Boom) center their symbol on the tile.
-    art(() => specialIcon(ctx, G, sq, c.x, t ? iconY : c.y));
-    if (t) label(ctx, c.x, textY, t, '#4a5470', t.length > 8 ? 9 : 11);
+    // Special tiles carry no name: just their picture, centered (hex pictures a little smaller,
+    // around the middle, clear of the slanted border). The name is in the tile's pop-up.
+    ctx.save();
+    if (L === 'hex') {
+      ctx.translate(c.x, c.y);
+      ctx.scale(HEX_ART, HEX_ART);
+      ctx.translate(-c.x, -c.y);
+    }
+    specialIcon(ctx, G, sq, c.x, c.y);
+    ctx.restore();
   }
 
   // Border: the district's solid color on properties, else the owner's ring or a faint outline.

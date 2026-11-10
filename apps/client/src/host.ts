@@ -51,7 +51,7 @@ import {
   tradeOnBoard,
   type PickCtx,
 } from './ui/pick';
-import { sound, type Track } from './audio';
+import { sound, type Sfx, type Track } from './audio';
 import { closeSoundPopover } from './ui/soundpanel';
 import type { GameLink } from './net/link';
 import { inviteURL } from './net/protocol';
@@ -998,14 +998,38 @@ export class HotSeat implements GameIO {
         this.passing = e.left > 0;
         if (e.left === 0) board.walkTarget = -1;
         break;
-      case 'warp':
-        hud.action('warping', `${G.players[e.pid].name} is teleporting...`, 'move');
+      case 'warp': {
+        const how = e.how ?? 'warp';
+        const who = G.players[e.pid].name;
+        // Each ride has its own message, sound and animation (BoardView.travel).
+        const ride: Record<string, [string, Sfx | null]> = {
+          warp: [`${who} is warping...`, 'warp'],
+          home: [`${who} is called home...`, 'warp'],
+          portal: [`${who} is going through the portal...`, 'warp'],
+          cannon: [`${who} is fired from the cannon!`, 'cannon'],
+          taxi: [`${who} is taking a taxi...`, 'honk'],
+          balloon: [`${who} is floating away in a balloon...`, 'whoosh'],
+          swap: [
+            `${who} swaps places with ${e.other != null ? G.players[e.other].name : 'a rival'}!`,
+            'whoosh',
+          ],
+          card: [`${who} zooms off...`, 'warp'],
+          swapBack: ['', null],
+        };
+        const [text, sfx] = ride[how] ?? ride.warp;
+        if (text) hud.action(`warping:${how}`, text, 'move');
         board.directionsPid = -1;
         board.frameIds = null;
-        sound.play('warp');
-        await board.warp(e.pid, e.to);
+        if (sfx) sound.play(sfx);
+        await board.travel(e.pid, e.to, how, {
+          from: e.from,
+          other:
+            how === 'swap' && e.other != null && e.from != null ? { pid: e.other, to: e.from } : undefined,
+        });
+        if (how === 'taxi') sound.play('honk');
         this.refresh();
         break;
+      }
       case 'land':
         this.movementRoll = null;
         if (![...SUITS, 'change'].includes(G.nodes[e.sq].t))

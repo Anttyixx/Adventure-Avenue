@@ -15,7 +15,7 @@ import type {
   Route,
   TradeOffer,
 } from './decisions';
-import type { GameEvent } from './events';
+import type { GameEvent, TravelKind } from './events';
 import { randInt, rollDie } from './rng';
 import {
   buildingAvailable,
@@ -355,7 +355,7 @@ export class Game {
       left--;
       await this.emit({ type: 'step', pid: p.id, from, to: next, left });
       if (i + 1 < path.length && G.nodes[next].t === 'portal' && G.nodes[next].link === path[i + 1]) {
-        await this.warp(p, path[++i]);
+        await this.warp(p, path[++i], 'portal');
       }
       if (left > 0) {
         await this.passSquare(p, G.nodes[p.node]);
@@ -399,10 +399,12 @@ export class Game {
     await this.log(`${p.name} passed their checkpoint. Its toll is now ${sq.toll}G.`, p.id, 'property');
   }
 
-  async warp(p: Player, to: number) {
+  /** Jump straight to a square. `how` and `other` only tell the client how to show it. */
+  async warp(p: Player, to: number, how: TravelKind = 'warp', other?: number) {
+    const from = p.node;
     p.node = to;
     p.prev = -1;
-    await this.emit({ type: 'warp', pid: p.id, to });
+    await this.emit({ type: 'warp', pid: p.id, to, from, how, ...(other != null ? { other } : {}) });
   }
 
   // ---------------------------------------------------------------- suits, bank, promotion
@@ -510,7 +512,7 @@ export class Game {
         const to = sq.link ?? -1;
         if (to >= 0 && to !== sq.id && G.nodes[to]) {
           await this.log(`${p.name} warped away.`, p.id, 'move');
-          await this.warp(p, to);
+          await this.warp(p, to, sq.t === 'portal' ? 'portal' : 'warp');
           // Either kind may lead to the bank: arriving there counts as stopping at it.
           if (G.nodes[to].t === 'bank') await this.bankVisit(p, true);
         }
@@ -539,7 +541,7 @@ export class Game {
     if (!options.includes(target)) target = options[0];
     const q = G.players[target];
     await this.log(`${p.name} was fired from the cannon to ${q.name}.`, p.id, 'move', [q.id]);
-    await this.warp(p, q.node);
+    await this.warp(p, q.node, 'cannon');
     const dest = G.nodes[q.node];
     if (SUIT_TYPES.includes(dest.t) || dest.t === 'change') await this.collectSuit(p, dest);
     else if (dest.t === 'bank') await this.bankVisit(p, true);
@@ -559,7 +561,7 @@ export class Game {
     let to = await this.ask({ kind: 'pickSquare', pid: p.id, purpose: 'taxi', options, optional: false });
     if (to == null || !options.includes(to)) to = options[0];
     await this.log(`${p.name} took a taxi.`, p.id, 'move');
-    await this.warp(p, to);
+    await this.warp(p, to, 'taxi');
     return this.land(p, G.nodes[to]);
   }
 
@@ -573,8 +575,8 @@ export class Game {
     const q = G.players[target];
     const mine = p.node;
     await this.log(`${p.name} swapped places with ${q.name}.`, p.id, 'move', [q.id]);
-    await this.warp(p, q.node);
-    await this.warp(q, mine);
+    await this.warp(p, q.node, 'swap', q.id);
+    await this.warp(q, mine, 'swapBack');
     // Like the cannon: arriving on a suit picks it up, arriving at the bank counts as stopping.
     const dest = G.nodes[p.node];
     if (SUIT_TYPES.includes(dest.t) || dest.t === 'change') await this.collectSuit(p, dest);
@@ -814,7 +816,7 @@ export class Game {
         });
         if (to == null || !options.includes(to)) return;
         await this.log(`${p.name} took the balloon.`, p.id, 'move');
-        await this.warp(p, to);
+        await this.warp(p, to, 'balloon');
         return this.landAfterWarp(p);
       }
       case 'tax': {
@@ -832,7 +834,7 @@ export class Game {
           'move',
           others.map((q) => q.id),
         );
-        for (const q of others) await this.warp(q, sq.id);
+        for (const q of others) await this.warp(q, sq.id, 'home');
         return;
       }
       case 'agency': {

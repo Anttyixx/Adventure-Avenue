@@ -696,21 +696,33 @@ if (!(await ask(`Delete ${d.name}?`, 'Its 4 properties will be removed from the 
 
 ### 5.17 Tooltip
 
-- Glass box near the pointer (kept on screen), 220-280px, **5px top edge in the district color**;
-  owner pill (player color + portrait), then a 2-column grid of stat boxes; one plain sentence for
-  what a special square does ("Stop here to jump to the bank.").
+- Glass box near the pointer (kept on screen), 220-280px, **5px top edge in the district color**.
+- **Head** (`.tt-head`): a 56px picture of the tile drawn with `paintSquare` (`.tt-pic`), then the
+  name (Lilita 15px, no price) and the owner pill (player color + portrait) or a muted "For sale"
+  pill (`.tt-owner.free`).
+- **Headline number** (`.tt-hero`): one gold Lilita 22px amount on a faint gold panel with a muted
+  label: the Fee when owned (muted and struck through when closed), the Price when for sale.
+- **Lines** (`.tt-lines`): muted label left, bold amount right (Value, Max value, Buyout, Stock).
+  Never repeat a number: a shop for sale shows only its price.
+- Then a plain sentence (`.tt-info`: what a building or special square does) and the district strip.
 
 ### 5.17b Board tiles (canvas)
 
-- Every tile uses the same two spots (`drawSquare` in `board.ts`): pictures stand on one base line
-  (property and building art is bottom-aligned at `artY + 23`; symbols for special squares are
-  centered at `iconY`) and the price, fee or name is centered on one text line (`textY`). The
+- Property tiles use the same two spots (`drawSquare` in `board.ts`): pictures stand on one base
+  line (property and building art is bottom-aligned at `artY + 23`) and the price or fee is
+  centered on one text line (`textY`). **Special tiles have no text**: their picture is centered on
+  the tile by its visible part (`drawPropCentered`, about 66 x 66; the bank 76 x 64). The
   owner's initial badge sits in the same spot on every property (`x + 22, y + 14` from the art).
   Everything keeps at least 5px clear of the border's inner edge (art at most ~59 x 45, text 15px).
   `drawProp` fits each image's visible part (its alpha bounding box, `contentBox` in `props.ts`),
   never the frame, so sprites with uneven padding line up. Hex tiles draw their pictures at
   `HEX_ART` (90%) around the base line, clear of the slanted top edges.
-  Squares with no name (suits, Boon, Boom) center their symbol on the tile.
+- Sprites must never be clipped: check new art for straight cuts at the image edge (the old Boom
+  burst had them; `boom-v17/` replaces it).
+- **Rides** (`travel-art.ts`, drawn by `BoardView.travel`): each way of jumping to a square has its
+  own look (warp beam, portal vortex, cannon smoke and tumbling arc, taxi with the rider's color on
+  the roof, hot-air balloon in the player's color, swap trails in both players' colors, venture
+  gold stars). New rides follow the same pattern: a token pose plus short-lived world effects.
 
 ### 5.17c Game setup
 

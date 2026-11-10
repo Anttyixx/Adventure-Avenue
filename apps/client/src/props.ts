@@ -64,6 +64,13 @@ export type PropKey =
 export const ART_SET: string = 'layered';
 /** Restore the previous property sprites without changing the rest of the board art. */
 export const PROPERTY_SET: string = 'painted';
+/** `whole` = the Boom burst redrawn so no spike is cut off at the image edge; `previous` = the original. */
+export const BOOM_SET: string = 'whole';
+const boomArt = import.meta.glob<string>('./assets/boom-v17/*.png', {
+  eager: true,
+  query: '?url',
+  import: 'default',
+});
 /** Restore the previous standalone Boon coin without changing the Boom sprite. */
 export const BOON_SET: string = 'burst';
 const boonArt = import.meta.glob<string>('./assets/boon-v16/*.png', {
@@ -210,6 +217,12 @@ const urls = Object.fromEntries([
     : []),
   ...(ART_SET === 'layered' && BOON_SET === 'burst'
     ? Object.entries(boonArt).map(([path, url]) => [
+        path.replace(/^.*\//, '').replace('-base.png', '.png'),
+        { url, explicit: true },
+      ])
+    : []),
+  ...(ART_SET === 'layered' && BOOM_SET === 'whole'
+    ? Object.entries(boomArt).map(([path, url]) => [
         path.replace(/^.*\//, '').replace('-base.png', '.png'),
         { url, explicit: true },
       ])
@@ -400,6 +413,32 @@ function contentBox(key: PropKey, cv: HTMLCanvasElement) {
  * Draw a property image's visible part fitted into a `w` x `h` box centered on (x, y), its
  * bottom on the box's bottom edge. Returns false if the images are not loaded yet.
  */
+/**
+ * Like `drawProp`, but the picture's visible part is centered on (x, y) instead of standing on a
+ * base line: for symbols (special tiles), which have no ground to stand on.
+ */
+export function drawPropCentered(
+  ctx: CanvasRenderingContext2D,
+  key: PropKey,
+  color: string,
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+): boolean {
+  const cv = propCanvas(key, color);
+  if (!cv) return false;
+  const box = contentBox(key, cv);
+  const k = Math.min(w / box.w, h / box.h) * PROP_SCALE;
+  const dw = box.w * k;
+  const dh = box.h * k;
+  ctx.save();
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = 'high';
+  ctx.drawImage(cv, box.x, box.y, box.w, box.h, x - dw / 2, y - dh / 2, dw, dh);
+  ctx.restore();
+  return true;
+}
 export function drawProp(
   ctx: CanvasRenderingContext2D,
   key: PropKey,
