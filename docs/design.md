@@ -1007,6 +1007,9 @@ until it enters and restore its full size afterward; reduced motion skips this t
 
 ## 8. Layout and responsive
 
+On smaller screens (`.ab-left`, the action bar sits bottom left), the board centers between the
+left window edge and the player cards' left edge (`BoardView.centerLeft`), not on the window.
+
 - HUD hugs corners with 10px margins; the board fills the screen behind it; the camera keeps
   important squares out from under panels (`hud.updateInsets()`).
 - Content-sized panels; caps with `min(<px>, 100% - <margin>)`.

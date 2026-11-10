@@ -117,7 +117,7 @@ const rnd = (n: number) => Math.floor(Math.random() * n);
  * Controls for UI elements that were just added or changed: they shake once and glow so they
  * are easy to find. Update this list with each change.
  */
-const RECENT = new Set(['Town terrain: square', 'Town terrain: hex', 'Zoom in', 'Zoom out']);
+const RECENT = new Set(['Zoom in', 'Zoom out', 'Zoom modes', 'Roll and walk']);
 
 /**
  * Which board the lab plays on: Town with portal links (square, the default) or Twin Lakes (hex),

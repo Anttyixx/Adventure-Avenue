@@ -182,6 +182,9 @@ room, Continue resumes the saved game, and the board editor (`ui/editor.ts`).
   - `zoomMode` names the three modes for the zoom chip's border: `locked` (a timed show), `auto`
     (a view waiting on the player) or `free` (only the player's `zoomOut`). `onZoom(pct, mode)`
     reports both to the HUD.
+  - `centerLeft` (set by `hud.updateInsets` with `.ab-left`, smaller screens): `focusArea` moves
+    the camera's center to the middle of the space between the left edge and the player cards,
+    and `freeFit` fits the board into that space.
   - `insets` (set by `hud.updateInsets`) is the screen area covered by HUD panels, so framing
     keeps squares out from under them.
 

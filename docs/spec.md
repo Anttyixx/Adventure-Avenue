@@ -1499,6 +1499,10 @@ both sides, so it never runs under the toolbar, player cards or action bar) with
 camera keeps the player centered and zooms out just enough to frame every glowing square around
 them (if they are too spread out for that, it frames them all instead; never closer than the
 player's own zoom). The game-over view shows the whole board.
+**Smaller screens** (the same windows where the action bar moves to the bottom left, e.g. phones
+in landscape): "centered" means centered between the left edge of the window and the left edge
+of the player cards, for the followed player, the zoomed-out board and framed views alike, and
+the zoomed-out board fits that space.
 When almost every square is a choice (the Balloonport flying anywhere, the Taxi, the zoom
 card), nothing is dimmed, lit or pinned: the player taps any square, and only the square under
 the pointer glows (lighting the whole board hid it and could slow the game down).

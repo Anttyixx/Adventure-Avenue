@@ -26,6 +26,13 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: '2026-11-10-phone-centering',
+    date: 'Nov 10, 2026',
+    title: 'Board centered on phones',
+    features: [],
+    extras: ['On smaller screens the board centers in the space left of the player cards'],
+  },
+  {
     id: '2026-11-10-fast-ground',
     date: 'Nov 10, 2026',
     title: 'Faster zooming',

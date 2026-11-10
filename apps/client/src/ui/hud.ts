@@ -520,6 +520,8 @@ export class Hud {
     const centeredRoom = W - 2 * (Math.max(this.leftInset, right) + 14);
     const narrow = centeredRoom < AB_CENTER_MIN || this.abLeftAt === W;
     this.root.classList.toggle('ab-left', !portraitStack && narrow);
+    // The same smaller screens center the board between the left edge and the player cards.
+    this.board.centerLeft = !portraitStack && narrow && right > 0;
   }
 
   // ------------------------------------------------------------ state rendering

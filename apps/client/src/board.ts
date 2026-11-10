@@ -146,6 +146,11 @@ export class BoardView {
   private pinchDist = 0;
   fitIds: number[] = [];
   insets: Insets = { top: 0, right: 0, bottom: 0, left: 0 };
+  /**
+   * Smaller screens (set by the HUD with its bottom-left action bar): the board centers between
+   * the left edge and the player cards instead of on the whole screen.
+   */
+  centerLeft = false;
   followPid = -1;
   activePid = -1;
   /**
@@ -784,7 +789,7 @@ export class BoardView {
     // Extra room above for the pins and labels over the choices.
     const up = this.glow.length ? 90 : 0;
     const { top, right, bottom, left } = this.insets;
-    const cx = this.w / 2;
+    const { fx: cx } = this.focusArea();
     const cy = this.h / 2;
     let z = Infinity;
     for (const id of this.fitIds) {
@@ -805,7 +810,7 @@ export class BoardView {
     const fz = Math.max(this.freeFit().z, Math.min(fw / w, fh / h));
     return {
       // Centered in the free area, not under the cards or the action bar.
-      x: (Math.min(...xs) + Math.max(...xs)) / 2 - (left - right) / 2 / fz,
+      x: (Math.min(...xs) + Math.max(...xs)) / 2 + this.freeShiftX() / fz,
       y: (Math.min(...ys) + Math.max(...ys)) / 2 - up / 2 - (top - bottom) / 2 / fz,
       z: fz,
     };
@@ -829,7 +834,7 @@ export class BoardView {
     const z = Math.min(this.followZoom(), fw / w, fh / h);
     return {
       // Centered in the free area, not under the cards or the action bar.
-      x: (Math.min(...xs) + Math.max(...xs)) / 2 - (left - right) / 2 / z,
+      x: (Math.min(...xs) + Math.max(...xs)) / 2 + this.freeShiftX() / z,
       y: (Math.min(...ys) + Math.max(...ys)) / 2 - (top - bottom) / 2 / z,
       z,
     };
@@ -985,17 +990,31 @@ export class BoardView {
    */
   freeFit() {
     const { top, right, bottom, left } = this.insets;
-    const sx = Math.max(left, right);
     const sy = Math.max(top, bottom);
-    return { z: fitZoom(this.w - 2 * sx, this.h - 2 * sy, this.ww, this.wh) };
+    // Smaller screens center between the left edge and the cards, so only that room counts.
+    const fw = this.centerLeft ? this.w - left - right : this.w - 2 * Math.max(left, right);
+    return { z: fitZoom(fw, this.h - 2 * sy, this.ww, this.wh) };
   }
 
   /**
    * The area the camera centers on: the whole screen. The HUD (cards, options, toolbar) floats
-   * over the board instead of pushing it aside, so the board stays centered on the screen.
+   * over the board instead of pushing it aside, so the board stays centered on the screen. On
+   * smaller screens (`centerLeft`) the cards take too much of the width for that: the camera
+   * centers between the left edge and the cards.
    */
   focusArea() {
+    if (this.centerLeft) {
+      const { left, right } = this.insets;
+      const aw = Math.max(100, this.w - left - right);
+      return { fx: left + aw / 2, fy: this.h / 2, aw, ah: this.h };
+    }
     return { fx: this.w / 2, fy: this.h / 2, aw: this.w, ah: this.h };
+  }
+
+  /** Screen pixels from the camera's center to the middle of the area the HUD leaves free. */
+  private freeShiftX() {
+    const { left, right } = this.insets;
+    return this.focusArea().fx - (left + this.w - right) / 2;
   }
 
   followZoom() {
