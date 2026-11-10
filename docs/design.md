@@ -774,8 +774,7 @@ if (!(await ask(`Delete ${d.name}?`, 'Its 4 properties will be removed from the 
   short.
 - **Players column** (`playersColumn()`): no heading and no empty seats. Top to bottom: the add
   chips (host only, until 5 players; `addChips()`, `.su-add`, keyed `add`), `.su-seats` (up to 5
-  seat cards with the game's 6px gap, 4px on phones), then an optional footer tile (`.su-start`:
-  Resume on Continue game). Order (`byArrival`): this device's own player at the bottom, everyone
+  seat cards with the game's 6px gap, 4px on phones), then an optional footer tile (`.su-start`). Order (`byArrival`): this device's own player at the bottom, everyone
   else above by arrival, newest on top; seats already there when a device first draws keep seat
   order. Because the column is bottom-anchored, a new seat on top pushes the chips up (they slide)
   and pops in itself; at 5 players the chips leave as a fading ghost while the new card pops in.
@@ -826,8 +825,10 @@ if (!(await ask(`Delete ${d.name}?`, 'Its 4 properties will be removed from the 
   `.su-saved` with the head "Saved Game" and the muted "Saved in round N" pill (`.su-round`), a body
   with the board (`boardStage()`: `.mapcar.locked`, picture and name) beside a `dl.su-saved-facts`
   of the chosen settings (muted 13px labels, bold white 15px values; wraps under the board when
-  narrow), and a foot (a hairline above) with the rejoin hints and the gold **Resume Game**. A
-  player not back yet: seat faded to 50% with a red "AWAY" pill (`.seat-away`) beside the tag.
+  narrow), and a foot (a hairline above) with the rejoin hints. **Resume** is on the host's seat
+  card, in the Ready chip's place: the same pill filled gold like a main button
+  (`button.seat-ready.resume`). A player not back yet: seat faded to 50% with a red "AWAY" pill
+  (`.seat-away`) beside the tag.
 
 ### 5.17f Board collection
 

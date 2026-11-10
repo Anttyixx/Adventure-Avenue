@@ -10583,6 +10583,15 @@ button.seat-ready.on {
 .seat-ready.ghost {
   visibility: hidden;
 }
+/* Continue game: the host's Resume chip, in the Ready chip's place, filled gold as the main action. */
+button.seat-ready.resume {
+  border-color: #f5b301;
+  background: linear-gradient(#ffd166, #f5b301);
+  color: #3b2a00;
+}
+button.seat-ready.resume:hover {
+  background: linear-gradient(#ffe08f, #ffc21a);
+}
 
 .su-status {
   font: 700 12px var(--body);
@@ -11446,9 +11455,6 @@ button.char-btn:hover img {
 }
 .su-saved-notes .hint {
   margin: 0;
-}
-.su-saved-foot .btn.big {
-  flex: none;
 }
 @media (max-height: 500px) {
   .su-saved {

@@ -1683,9 +1683,10 @@ with a seat card per player. The board and settings can't be changed, so instead
 Game Settings panels there is one **Saved Game** panel in the middle of the room: "Saved in
 round N" in its corner, the board's picture and name beside the settings that were chosen (Rule
 Set, Winning Goal, Stocks, Vacant Plots, and a Round Limit for older saves that had one), then a
-line on how friends rejoin and the **Resume Game** button. It scales with the window like setup. Each seat says who it is ("You · host", "On this device", "Back online", "Not back yet",
-"Bot"); players who haven't rejoined are faded with a red "Away" badge, and the button reads
-"Resume (N away)" until they are back.
+line on how friends rejoin (and how many are not back yet). It scales with the window like setup.
+Each seat says who it is ("You · host", "On this device", "Back online", "Not back yet",
+"Bot"); players who haven't rejoined are faded with a red "Away" badge. The host resumes with the
+gold **Resume** chip on their own seat card, where the Ready chip is in game setup.
 
 **Coming back as a guest:** each device remembers the room and name it last joined (for 3 days,
 cleared when that game ends). Reloading the page during a game rejoins straight away; on a later

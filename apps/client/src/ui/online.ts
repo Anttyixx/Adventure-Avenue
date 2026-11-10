@@ -97,13 +97,30 @@ export function resumeLobby(
       kind: bot ? 'bot' : 'joined',
       away,
       title: away ? `${s.name} is not back yet: a CPU plays for them until they join.` : null,
+      // The host resumes from their own card, where the Ready chip sits in game setup.
+      ready:
+        s.kind === 'host'
+          ? h(
+              'button',
+              {
+                class: 'seat-ready resume',
+                title: missing()
+                  ? `Resume now: a CPU plays for the ${missing()} not back yet until they join.`
+                  : 'Resume the saved game',
+                onclick: () => handlers.onResume(),
+              },
+              'Resume',
+            )
+          : null,
     });
   };
+  /** Friends who haven't come back yet. */
+  const missing = () => room.lobby().seats.filter((x) => x.kind === 'remote' && !x.online).length;
   /** Arrival order of the seats for the players column (see `byArrival`). */
   const seen: string[] = [];
   const draw = () => {
     const lobby = room.lobby();
-    const missing = lobby.seats.filter((x) => x.kind === 'remote' && !x.online).length;
+    const away = missing();
     // The saved game keeps only the board's name: find it among the built-in and saved boards.
     const board =
       lobby.board ??
@@ -129,8 +146,8 @@ export function resumeLobby(
         ),
       ),
     );
-    // Nothing can change here, so one panel shows what was saved: the board, the settings
-    // chosen, and Resume.
+    // Nothing can change here, so one panel shows what was saved: the board and the settings
+    // chosen. Resume is on the host's seat card.
     const standard = lobby.rules === 'standard';
     const fact = (k: string, v: string | Node) => [h('dt', null, k), h('dd', null, v)];
     f.single(
@@ -177,14 +194,9 @@ export function resumeLobby(
                 ? 'Friends rejoin with the code and the same name.'
                 : `The old code ${oldCode} was taken: friends use the new one.`,
             ),
-            missing
-              ? h('span', { class: 'hint' }, `${missing} not back yet: a CPU plays for them until they join.`)
+            away
+              ? h('span', { class: 'hint' }, `${away} not back yet: a CPU plays for them until they join.`)
               : null,
-          ),
-          h(
-            'button',
-            { class: 'btn main big', onclick: () => handlers.onResume() },
-            missing ? `Resume (${missing} away)` : 'Resume Game',
           ),
         ),
       ),

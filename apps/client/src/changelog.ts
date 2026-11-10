@@ -26,6 +26,13 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: '2026-11-10-resume-chip',
+    date: 'Nov 10, 2026',
+    title: 'Resume from your player card',
+    features: [],
+    extras: ['Continue Game: Resume is now on your player card, where Ready is when setting up a game'],
+  },
+  {
     id: '2026-11-10-auction-music-motel',
     date: 'Nov 10, 2026',
     title: 'Auction music and a friendlier motel',
