@@ -26,6 +26,13 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: '2026-11-10-chip-borders',
+    date: 'Nov 10, 2026',
+    title: 'Neater card chips',
+    features: [],
+    extras: ['The layout chip shows just its icon', 'Thicker borders on the chips under the player cards'],
+  },
+  {
     id: '2026-11-10-popup-chips',
     date: 'Nov 10, 2026',
     title: 'Chips for stocks and properties',

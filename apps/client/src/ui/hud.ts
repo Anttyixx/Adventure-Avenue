@@ -608,9 +608,11 @@ export class Hud {
       const ico = h('span', { class: 'cards-mode-ico', 'aria-hidden': 'true' });
       ico.innerHTML = m.icon;
       clear(this.modeChip);
-      this.modeChip.append(ico, m.label);
+      // Just the icon: its name is in the tooltip and for screen readers.
+      this.modeChip.append(ico);
       this.modeChip.dataset.mode = mode;
       this.modeChip.title = m.title;
+      this.modeChip.setAttribute('aria-label', m.title);
       if (this.G) this.stackCards(false);
     };
     if (unfold) this.glide(change);
@@ -1745,15 +1747,13 @@ function stackTransform(d: number): string {
 /** How the player cards are shown: a list or a smart stack. */
 export type CardsMode = 'list' | 'smart';
 
-/** The layout chip's label, tooltip and icon (16 x 16) for each layout. */
-const CARDS_MODES: Record<CardsMode, { label: string; title: string; icon: string }> = {
+/** The layout chip's tooltip and icon (16 x 16) for each layout. */
+const CARDS_MODES: Record<CardsMode, { title: string; icon: string }> = {
   list: {
-    label: 'List',
     title: 'List: every player card is shown. Tap for Smart stack.',
     icon: '<svg viewBox="0 0 16 16"><rect x="2.5" y="2" width="11" height="3" rx="1"/><rect x="2.5" y="6.5" width="11" height="3" rx="1"/><rect x="2.5" y="11" width="11" height="3" rx="1"/></svg>',
   },
   smart: {
-    label: 'Smart stack',
     title:
       "Smart stack: the active player's card in front; cards that change pop out for a moment. Tap for List.",
     icon: '<svg viewBox="0 0 16 16"><rect x="2" y="8.5" width="12" height="5" rx="1"/><path d="M8 6.5V1.5M5.5 4 8 1.5 10.5 4"/></svg>',

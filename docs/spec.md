@@ -1172,8 +1172,9 @@ watch them being played; their result screen closes by itself or with Close.
 **Chips under the player cards.** One row of glass chips sits just below the player cards,
 against the right edge: **Stocks** (Standard rules only) opens the stock market pop-up,
 **Properties** opens the properties pop-up (each chip turns gold while its pop-up is open; tapping
-it again closes it), and the **layout chip** shows the cards' layout now, with its icon: **List** or
-**Smart stack**. Tapping the layout chip switches to the other layout. The choice is remembered on
+it again closes it), and the **layout chip** shows the cards' layout now as an icon only (its name
+is in its tooltip): **List** (three bars) or **Smart stack** (a card with an arrow rising out).
+The chips have a 2px border. Tapping the layout chip switches to the other layout. The choice is remembered on
 that device (an older "folded" or Stack choice becomes Smart stack).
 
 - **List:** every player card, one above the other.

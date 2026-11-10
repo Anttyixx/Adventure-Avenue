@@ -597,10 +597,10 @@ if (!(await ask(`Delete ${d.name}?`, 'Its 4 properties will be removed from the 
     Clicking opens that player's page in the info pop-up.
 - **Chips under the cards** (`.cards-bar` of `.cards-chip.glass`): one row, right-aligned, 5px
   apart: Stocks (hidden on Easy rules), Properties, then the layout chip (`.cards-mode-chip`). Glass
-  pills, Nunito 700 12px, padding 3px 10px; hover gives a gold border; `.on` (its pop-up is open) is
+  pills with a 2px border (one step thicker than the glass default), Nunito 700 12px, padding 2px 9px; hover gives a gold border; `.on` (its pop-up is open) is
   gold with dark text, like the Info button; focus shows a gold ring.
 - **Card layouts** (`.cards-wrap.collapsed`, `hud.setCardsMode`): the layout chip shows only the
-  current layout: a 14px stroked SVG icon and its name, List (three bars) or Smart stack (a card
+  current layout as a 14px stroked SVG icon only (the name is its tooltip and aria-label), List (three bars) or Smart stack (a card
   with an arrow rising out); a tap switches to the other one (`CARDS_MODES` in `hud.ts`).
   Collapsed (Smart stack), every card shares one grid cell (`grid-area: var(--row) / 1`, with
   `--stack-n` x 7px of room above for the peeking cards); the active card is in front

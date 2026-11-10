@@ -1023,7 +1023,9 @@ input[type='range'] {
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  padding: 3px 10px;
+  /* A 2px border (thicker than the glass default, so the chips read over the board). */
+  padding: 2px 9px;
+  border-width: 2px;
   border-radius: 999px;
   color: var(--text);
   font: 700 12px var(--body);
@@ -1050,7 +1052,8 @@ input[type='range'] {
   outline-offset: 1px;
 }
 .cards-mode-chip {
-  padding-left: 7px;
+  justify-content: center;
+  padding: 2px 8px;
 }
 .cards-mode-ico,
 .cards-mode-ico svg {
