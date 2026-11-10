@@ -135,7 +135,17 @@ room, Continue resumes the saved game, and the board editor (`ui/editor.ts`).
 
 ### The board (`board.ts`)
 
-`BoardView` draws everything on one `<canvas>`:
+**Renderers.** `renderer.ts` picks `classic` (default) or `pixi` (`?renderer=pixi`, remembered;
+UI Lab Board effects toggle). In `pixi` mode `BoardView` lazy-loads `pixi-board.ts`: a PixiJS
+(WebGL) canvas under the 2D canvas draws the background (`paintGrass`) and the cached board
+picture, fed by a recording stand-in context (`PixiBoard.begin()`) that turns `drawImage` and solid
+`fillRect` calls into a reused sprite pool, one GPU texture per source canvas (freed after ~5 s
+unused, re-uploaded when `refresh()` is called after `renderStatic`). The 2D canvas is cleared to
+transparent and keeps the moving parts. Background drawing must therefore use only `drawImage`,
+solid `fillRect` and transforms/alpha. If WebGL fails, it falls back to classic. `?fps=1` or the
+Lab's FPS meter shows frames per second. Later phases move tokens, portals and effects to PixiJS.
+
+`BoardView` draws everything on one `<canvas>` (classic renderer):
 
 - **Background:** `paintGrass` fills the inverse-camera rectangle with nonrepeating grass
   (`meadow.ts`). Default `SCENERY_SET = terrain` adds `town-terrain.ts` / `town-terrain-art.ts`:

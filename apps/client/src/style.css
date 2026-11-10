@@ -614,6 +614,31 @@ input[type='range'] {
   display: block;
   touch-action: none;
 }
+/* PixiJS renderer (renderer.ts): the WebGL layer (background and board picture) sits right
+   under the 2D canvas, which then holds only the moving parts on a transparent background. */
+.board-gl {
+  position: absolute;
+  left: 0;
+  top: 0;
+  pointer-events: none;
+}
+.board-canvas.over-gl {
+  position: relative;
+}
+/* The FPS meter (board.ts toggleFps): a small dark label in the board's bottom left corner,
+   above the board but under the HUD's pop-ups. */
+.fps-meter {
+  position: absolute;
+  left: 10px;
+  bottom: 10px;
+  z-index: 3;
+  padding: 3px 8px;
+  border-radius: 6px;
+  background: rgba(16, 26, 51, 0.8);
+  color: #fff;
+  font: 700 11px var(--body);
+  pointer-events: none;
+}
 .hud {
   position: absolute;
   inset: 0;

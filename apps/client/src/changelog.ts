@@ -26,6 +26,18 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: '2026-11-10-pixi-test',
+    date: 'Nov 10, 2026',
+    title: 'A graphics card renderer to try',
+    features: [
+      {
+        tag: 'new',
+        title: 'PixiJS renderer (test)',
+        text: 'Add ?renderer=pixi to the address to draw the background and board on the graphics card. Add ?fps=1 to see a frame rate meter. The usual renderer stays the default for now.',
+      },
+    ],
+  },
+  {
     id: '2026-11-10-smooth-zoom',
     date: 'Nov 10, 2026',
     title: 'Smoother camera zooms',

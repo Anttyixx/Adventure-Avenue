@@ -29,6 +29,8 @@ import {
 } from './props';
 import { paintMeadow } from './meadow';
 import { chunkBudget } from './chunk-budget';
+import type { PixiBoard } from './pixi-board';
+import { rendererKind } from './renderer';
 import { parkSceneryBeyondBoard, sceneryBeyondBoard, sceneryForBoard } from './scenery';
 import { paintParkScenery, paintParkStream } from './park';
 import { paintParkScenes } from './park-scenes-art';
@@ -251,6 +253,15 @@ export class BoardView {
   dpr = 1;
   private raf = 0;
   private alive = true;
+  /**
+   * The PixiJS layer under the canvas when the renderer is `pixi` (`renderer.ts`): it draws the
+   * background and the board picture on the graphics card, and this canvas only the moving parts.
+   */
+  private pixi: PixiBoard | null = null;
+  /** The FPS meter (UI Lab, or `?fps=1`): frames per second and the slowest recent frame. */
+  private fpsEl: HTMLElement | null = null;
+  private fpsTimes: number[] = [];
+  private fpsShown = 0;
 
   constructor(private host: HTMLElement) {
     this.canvas = document.createElement('canvas');
@@ -258,6 +269,14 @@ export class BoardView {
     host.appendChild(this.canvas);
     this.ctx = this.canvas.getContext('2d')!;
     this.resize();
+    // PixiJS loads only when it is chosen, so the classic renderer doesn't download it.
+    if (rendererKind() === 'pixi')
+      void import('./pixi-board').then(({ PixiBoard }) => {
+        if (!this.alive) return;
+        this.pixi = new PixiBoard(host, this.canvas, this.w, this.h, this.dpr);
+        this.canvas.classList.add('over-gl');
+      });
+    if (new URLSearchParams(location.search).get('fps') === '1') this.toggleFps();
     window.addEventListener('resize', this.resize);
     this.canvas.addEventListener('pointermove', this.pointerMove);
     this.canvas.addEventListener('pointerleave', () => this.onHover?.(null, 0, 0));
@@ -273,6 +292,32 @@ export class BoardView {
     for (const f of ['20px "Lilita One"', '700 12px "Atkinson Hyperlegible"']) void document.fonts?.load(f);
   }
 
+  /** Show or hide the FPS meter in the board's corner. */
+  toggleFps() {
+    if (this.fpsEl) {
+      this.fpsEl.remove();
+      this.fpsEl = null;
+      return;
+    }
+    this.fpsTimes = [];
+    this.fpsEl = document.createElement('div');
+    this.fpsEl.className = 'fps-meter';
+    this.host.appendChild(this.fpsEl);
+  }
+
+  private countFps(now: number) {
+    const el = this.fpsEl;
+    if (!el) return;
+    const t = this.fpsTimes;
+    t.push(now);
+    while (t.length && now - t[0] > 1000) t.shift();
+    if (now - this.fpsShown < 500) return;
+    this.fpsShown = now;
+    let worst = 0;
+    for (let i = 1; i < t.length; i++) worst = Math.max(worst, t[i] - t[i - 1]);
+    el.textContent = `${this.pixi?.ready ? 'PixiJS' : 'Classic'} · ${t.length} fps · slowest ${Math.round(worst)} ms`;
+  }
+
   private fontsLoaded = () => {
     this.dirty = true;
   };
@@ -283,6 +328,7 @@ export class BoardView {
     cancelAnimationFrame(this.raf);
     window.removeEventListener('resize', this.resize);
     document.fonts?.removeEventListener('loadingdone', this.fontsLoaded);
+    this.pixi?.destroy();
     this.canvas.remove();
   }
 
@@ -1211,6 +1257,7 @@ export class BoardView {
     this.canvas.height = Math.round(this.h * this.dpr);
     this.canvas.style.width = `${this.w}px`;
     this.canvas.style.height = `${this.h}px`;
+    this.pixi?.resize(this.w, this.h, this.dpr);
   };
 
   // ------------------------------------------------------------ frame
@@ -1218,6 +1265,7 @@ export class BoardView {
   private frame = (now: number) => {
     if (!this.alive) return;
     this.raf = requestAnimationFrame(this.frame);
+    this.countFps(now);
     if (!this.G) return;
     if (this.host.clientWidth !== Math.round(this.w) || this.host.clientHeight !== Math.round(this.h))
       this.resize();
@@ -1252,10 +1300,29 @@ export class BoardView {
     ctx.imageSmoothingEnabled = true;
     // Paint the visible world, rather than a fixed rectangle around the board.
     // Build at most one new background chunk per frame (see chunk-budget.ts).
+    const gl = this.pixi;
+    if (gl?.failed) {
+      // WebGL is unavailable: carry on with the classic renderer.
+      this.pixi = null;
+      this.canvas.classList.remove('over-gl');
+    }
     chunkBudget.left = 1;
-    paintGrass(ctx, this.G);
+    if (gl?.ready) {
+      // The background and the board picture go to the PixiJS layer underneath; this canvas
+      // keeps only what moves, over a transparent clear.
+      const back = gl.begin(ctx.getTransform(), this.canvas.width, this.canvas.height);
+      paintGrass(back, this.G);
+      back.drawImage(this.cache, 0, 0, this.ww, this.wh);
+      gl.end();
+      ctx.save();
+      ctx.resetTransform();
+      ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+      ctx.restore();
+    } else {
+      paintGrass(ctx, this.G);
+      ctx.drawImage(this.cache, 0, 0, this.ww, this.wh);
+    }
     chunkBudget.left = Infinity;
-    ctx.drawImage(this.cache, 0, 0, this.ww, this.wh);
 
     const motion = !reducedMotion();
     drawPortals(ctx, this.G!, motion ? now : 0, this.portalSpots);
@@ -1924,6 +1991,7 @@ export class BoardView {
     // Portals spin, so they're drawn every frame instead (drawPortals).
     paintBoard(ctx, G, false, true, false);
     this.portalSpots = portalGates(G);
+    this.pixi?.refresh(cv);
   }
 }
 
