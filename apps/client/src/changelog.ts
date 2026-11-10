@@ -26,6 +26,13 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: '2026-11-10-active-glide',
+    date: 'Nov 10, 2026',
+    title: 'Smoother card unfolding',
+    features: [],
+    extras: ['The active player’s card glides out with the others when a stack opens into a list'],
+  },
+  {
     id: '2026-11-10-info-bar',
     date: 'Nov 10, 2026',
     title: 'Keep an eye on the game',

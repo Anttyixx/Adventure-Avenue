@@ -1201,7 +1201,7 @@ on the stack opens it until the mouse moves off the cards. While it is open, tap
 card opens their info. The chosen layout doesn't change. The chips stay fixed below the cards as the cards open, fold, or rise out of a smart stack.
 
 Switching between List and a stack is animated: the cards glide together into the stack (or fan
-back out to their places) one just after another; cards rising out of a smart stack and going
+back out to their places) one just after another; the active player's card glides straight to its slightly-out active spot as part of that motion (it never snaps out afterward); cards rising out of a smart stack and going
 back glide the same way.
 
 One rule decides every asset: only the player character sprites are pixel art. Everything else,

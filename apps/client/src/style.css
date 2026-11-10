@@ -855,7 +855,8 @@ input[type='range'] {
     box-shadow 0.3s;
 }
 .pcard.active {
-  /* Slides out without scaling, so its text never shifts between pixels. */
+  /* Slides out without scaling, so its text never shifts between pixels (hud.ts ACTIVE_SHIFT
+     matches it, so unfolding a stack glides the card here). */
   transform: translateX(-12px);
   border-color: var(--pc);
   background:

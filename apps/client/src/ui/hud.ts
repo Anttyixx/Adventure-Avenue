@@ -769,11 +769,15 @@ export class Hud {
       if (el.getAnimations().some((x) => !(x instanceof CSSTransition))) return done();
       const a = before[i];
       const b = el.getBoundingClientRect();
-      // Use the intended stack pose, never an in-flight CSS transition's sampled matrix.
+      // Use the intended pose, never an in-flight CSS transition's sampled matrix: a stacked
+      // card's depth, or the active card's slide out of a list (so it glides there instead of
+      // snapping out once the glide ends).
       const end =
         this.stacked && el.classList.contains('behind')
           ? stackTransform(Number(el.style.getPropertyValue('--d')))
-          : 'none';
+          : !this.stacked && el.classList.contains('active')
+            ? ACTIVE_SHIFT
+            : 'none';
       const final = end === 'none' ? '' : end;
       const dx = (a.left + a.width / 2 - (b.left + b.width / 2)) / zoom;
       const dy = (a.top - b.top) / zoom;
@@ -1736,6 +1740,9 @@ function ordinal(n: number) {
       : (({ 1: 'st', 2: 'nd', 3: 'rd' } as Record<number, string>)[n % 10] ?? 'th');
   return `${n}${s}`;
 }
+
+/** The active card's slide out of a list (matches the CSS for `.pcard.active`). */
+const ACTIVE_SHIFT = 'translateX(-12px)';
 
 /** How many cards peek out behind the front card when the player cards are collapsed. */
 const STACK_SHOWN = 3;
