@@ -130,6 +130,11 @@ room, Continue resumes the saved game, and the board editor (`ui/editor.ts`).
   rings, banners, gates closing...) and waits the time in `timing.ts` so a turn is easy to follow.
   `refresh()` redraws the board and HUD from the state. After events it announces any stock
   price change (`announceStockMoves`).
+- **Net worth on the cards** (`shownWorth`, set as `Hud.worthOf`): stock is counted from
+  `stockShown`, not live prices. `trackStock` (in `refresh`) adds a share purchase at its cost
+  (or takes a sale off at its proceeds) and values other share changes at the prices shown so
+  far; `announceStockMoves` updates `prices[d]` and re-syncs only after each district's rise or
+  fall has played. Rules, saves and online play still use the live `netWorth`.
 - It also handles pausing (the menu), Fast CPU speed, saving at each turn start, and the game
   over sequence.
 

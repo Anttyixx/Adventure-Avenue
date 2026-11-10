@@ -7,6 +7,7 @@ import {
   SUITS,
   netWorth,
   stockPrice,
+  stockValue,
   dominated,
   K,
   PLAYER_COLORS,
@@ -15,6 +16,7 @@ import {
   type DecisionKind,
   type DecisionRequest,
   type GameEvent,
+  type Player,
   type GameIO,
   type GameState,
 } from '@aa/engine';
@@ -88,6 +90,14 @@ export class HotSeat implements GameIO {
   private owners = new Map<number, number>();
   /** Each district's stock price as last shown, to announce rises. */
   private prices: number[] = [];
+  /**
+   * Each player's stock value as the player cards show it, and the shares it was worked out
+   * for. Buying or selling shares counts at what was paid, so net worth doesn't move on the
+   * trade itself; a price change counts only once its rise or fall has been shown.
+   */
+  private stockShown = new Map<number, { value: number; held: number[] }>();
+  /** The share purchase or sale being shown (its money event), for `trackStock`. */
+  private stockTrade: Extract<GameEvent, { type: 'money' }> | null = null;
   /** Districts each player dominates ("pid:group"), as last shown; null until first checked. */
   private doms: Set<string> | null = null;
   /** The live auction window while an auction runs. */
@@ -123,6 +133,8 @@ export class HotSeat implements GameIO {
       onGuide: () => guideModal(this.hud, this.G),
       onPause: (open) => this.setPaused(open),
     });
+    // The cards show net worth with stock moves counted once they have been announced.
+    this.hud.worthOf = (p) => this.shownWorth(p);
     // Online, this device's own player's card sits at the bottom of the stack.
     if (link) this.hud.myPid = this.G.players.find((p) => this.localHuman(p.id))?.id ?? -1;
     this.game = new Game(G, this);
@@ -334,8 +346,45 @@ export class HotSeat implements GameIO {
     for (const n of this.G.nodes) if (!this.owners.has(n.id)) this.owners.set(n.id, n.owner);
     this.board.dirty = true;
     this.board.snapTokens();
+    this.trackStock();
     this.hud.render(this.G);
     if (!this.dead) this.checkWinReady();
+  }
+
+  /** Bring each player's shown stock value up to date with their shares (see `stockShown`). */
+  private trackStock() {
+    const G = this.G;
+    const trade = this.stockTrade;
+    this.stockTrade = null;
+    for (const p of G.players) {
+      const s = this.stockShown.get(p.id);
+      if (!s || this.prices.length !== G.districts.length) {
+        this.stockShown.set(p.id, { value: stockValue(G, p), held: [...p.shares] });
+        continue;
+      }
+      if (p.shares.every((n, d) => n === s.held[d])) continue;
+      if (trade?.reason === 'Stock' && trade.from === p.id) s.value += trade.amount;
+      else if (trade?.reason === 'Stock sale' && trade.to === p.id) s.value -= trade.amount;
+      // Shares that came another way (a card, a trade) count at the prices shown so far.
+      else s.value += p.shares.reduce((v, n, d) => v + (n - (s.held[d] ?? 0)) * (this.prices[d] ?? 0), 0);
+      s.held = [...p.shares];
+    }
+  }
+
+  /** Every player's shown stock value at the prices shown so far (after a price was announced). */
+  private syncStock() {
+    for (const p of this.G.players)
+      this.stockShown.set(p.id, {
+        value: p.shares.reduce((v, n, d) => v + n * (this.prices[d] ?? 0), 0),
+        held: [...p.shares],
+      });
+  }
+
+  /** A player's net worth as the player cards show it (stock counted as in `stockShown`). */
+  shownWorth(p: Player) {
+    const G = this.G;
+    const shown = this.stockShown.get(p.id);
+    return shown ? netWorth(G, p) - stockValue(G, p) + shown.value : netWorth(G, p);
   }
 
   playerPos(pid: number) {
@@ -972,6 +1021,8 @@ export class HotSeat implements GameIO {
         if (![...SUITS, 'change'].includes(G.nodes[e.sq].t)) await this.wait(T.land);
         break;
       case 'money': {
+        // A share trade: the cards count the shares at what was paid (see `trackStock`).
+        if (e.reason === 'Stock' || e.reason === 'Stock sale') this.stockTrade = e;
         // The engine has committed the payment and property changes already. Announce that
         // result before any pacing delay, so a completed choice never looks undecided.
         const completed = paymentActivity(G, e);
@@ -1290,9 +1341,12 @@ export class HotSeat implements GameIO {
     const G = this.G;
     if (G.rules !== 'standard' || G.over) return;
     const now = G.districts.map((_, d) => stockPrice(G, d));
-    const before = this.prices;
-    this.prices = now;
-    if (before.length !== now.length) return;
+    if (this.prices.length !== now.length) {
+      this.prices = now;
+      this.syncStock();
+      return;
+    }
+    const before = this.prices.slice();
     for (let d = 0; d < now.length; d++) {
       if (now[d] === before[d]) continue;
       const up = now[d] > before[d];
@@ -1314,6 +1368,10 @@ export class HotSeat implements GameIO {
       );
       this.board.stockFx(ids, T.stockRise, up);
       await this.wait(T.stockRise);
+      // The new price has been shown: now the shareholders' net worth follows it.
+      this.prices[d] = now[d];
+      this.syncStock();
+      this.hud.render(G);
       this.board.lookAt = null;
       await this.wait(T.stockZoom);
       if (this.dead) return;

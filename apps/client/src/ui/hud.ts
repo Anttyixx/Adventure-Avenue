@@ -209,6 +209,11 @@ export class Hud {
   activePid = -1;
   /** This device's player in an online game (their card goes at the bottom), or -1. */
   myPid = -1;
+  /**
+   * A player's net worth as the cards show it. The game sets this so a share price change only
+   * counts once it has been announced (`HotSeat.shownWorth`); by default, the live net worth.
+   */
+  worthOf: (p: Player) => number = (p) => netWorth(this.G, p);
   /** Extra space covered on the left (e.g. the UI Lab panel). */
   leftInset = 0;
   private shown = new Map<number, { nw: number; cash: number }>();
@@ -555,11 +560,11 @@ export class Hud {
     if (mine >= 0) ids.push(...ids.splice(0, mine + 1));
     const order = ids.map((id) => G.players[id]);
     // Ranking by net worth (ties share a place).
-    const ranked = ranking(G);
+    const ranked = ranking(G).sort((a, b) => this.worthOf(b) - this.worthOf(a));
     this.ranks = new Map();
     ranked.forEach((p, i) => {
       const prev = ranked[i - 1];
-      const same = prev && netWorth(G, prev) === netWorth(G, p);
+      const same = prev && this.worthOf(prev) === this.worthOf(p);
       this.ranks.set(p.id, same ? this.ranks.get(prev.id)! : i + 1);
     });
     for (const p of order) {
@@ -801,7 +806,7 @@ export class Hud {
 
   private fillCard(el: HTMLElement, p: Player) {
     const G = this.G;
-    const nw = netWorth(G, p);
+    const nw = this.worthOf(p);
     const prev = this.shown.get(p.id) ?? { nw, cash: p.cash };
     const color = PLAYER_COLORS[p.color];
     el.style.setProperty('--pc', color);

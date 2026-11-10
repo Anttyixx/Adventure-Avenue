@@ -26,6 +26,15 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: '2026-11-10-stock-net-worth',
+    date: 'Nov 10, 2026',
+    title: 'Net worth waits for the stock price',
+    features: [],
+    extras: [
+      "Buying shares no longer bumps your net worth: it goes up only after the district's price rise has been shown",
+    ],
+  },
+  {
     id: '2026-11-10-steady-venture',
     date: 'Nov 10, 2026',
     title: 'Steadier venture board',

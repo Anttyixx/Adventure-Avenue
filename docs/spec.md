@@ -1500,7 +1500,11 @@ choice comes up straight away). Whenever a district's stock price moves, for any
 (investments, stock deals, venture cards, value changes), the camera frames that district's
 squares right away (mid-walk too: the walk pauses for it; an investment first shows the shop's own
 value rising), a banner like the turn banner gives the old and new price, and arrows rise from the
-squares (green, going up) or sink over them (red, going down). Property choices (e.g. selling
+squares (green, going up) or sink over them (red, going down). The player cards' net worth
+follows the prices as shown: buying or selling shares counts them at exactly what was paid, so
+net worth does not move on the trade itself, and a price move (including the one a purchase
+causes) changes shareholders' net worth only once its rise or fall has played
+(`HotSeat.shownWorth`). Property choices (e.g. selling
 to pay a debt) are framed in the space the HUD leaves free, so none sit under the action bar. When a player comes to own a whole district
 (a domination), once the action that caused it is over (a purchase, trade, auction...) the camera
 frames the district, a banner says "Rosa dominates Downtown!", gold rings with sparkles burst from
