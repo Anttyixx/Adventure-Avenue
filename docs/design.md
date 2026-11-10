@@ -947,14 +947,12 @@ animation has a `prefers-reduced-motion` path (CSS media query, or `matchMedia(.
 
 Bright and physical, unlike the dark HUD:
 
-- **World:** recombinable cartoon park pieces, with the reference art's rounded forms, rich
-  planting, furniture and chunky low hedge walls. A module is a scene fragment, not its own
-  complete framed park. Related modules must work in different connected footprints. Join ground,
-  path and pond edges; cancel internal borders and build one continuous hedge around the shared
-  outside, including concave corners. Use the actual square/hex board grid. Compose activity
-  centers with planted neighbors and connecting walks so each group reads as one miniature
-  diorama when viewed alone. Avoid a large noise field with scattered isolated props. Preserve
-  quiet grass between groups and all gameplay/portal clearances. Hide scenery in the builder.
+- **World:** varied cartoon grass, turquoise water and warm paving, with soft transitions and
+  the same rounded forms and cheerful colors as the board tiles. Use light foliage-led
+  decoration: trees, flowers, reeds and lily pads, with occasional benches/planters near the
+  board. Keep furnishings sparse and distant areas quiet. No default dioramas, enclosing hedge
+  walls or decorative walk networks. Keep gameplay tiles, roads and portal mouths clear; no
+  sticker rims, opaque floor pads, labels or realistic botanical detail. Hide scenery in the builder.
 - **Tiles** (86 units on a 100 grid): cream `#fdfbf5` (bank `#fff6d6`), radius 12, soft shadow
   down-right. Owned: tint of the owner's color. Properties: 6px district-color border. Vacant
   plots: dashed grey outline + "VACANT".

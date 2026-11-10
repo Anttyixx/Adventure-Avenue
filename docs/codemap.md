@@ -109,8 +109,9 @@ Everything is re-exported from `index.ts`, so the client imports from `'@aa/engi
 and plans free-space groups on the actual board grid (`composePark`, `parkScenes`).
 `park-scenes-art.ts` cancels shared square/hex edges and caches assemblies with continuous
 hedges, ground, water and paths (`parkBoundary`, `paintParkScene`, `paintParkScenes`).
-The Lab includes an exploded/recombined preview. Earlier `town-terrain.ts` defines connected park/water/courtyard cells, traces region contours, and plans
-park amenities/courtyard anchors. `town-terrain-art.ts` paints continuous material surfaces with
+The puzzle scene implementation is preserved for rollback. `town-terrain.ts` defines connected park/water/courtyard cells, traces region contours, and plans
+park amenities/courtyard anchors for the older mode. Default `townBackgroundFeatures` places
+foliage and sparse benches near the board. `town-terrain-art.ts` paints continuous material surfaces with
 soft masks and cached chunks using `assets/terrain-v8/`.
 `meadow.ts` builds cached, coordinate-seeded grass chunks with smooth patch blending.
 `scenery.ts` owns cosmetic coordinate randomness and small scenery placement, inside the board

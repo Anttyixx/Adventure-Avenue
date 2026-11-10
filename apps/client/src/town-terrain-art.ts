@@ -1,6 +1,6 @@
 /** Shared surfaces for whole locations: adjacent cells have no separately drawn tile borders. */
 import type { GameState } from '@aa/engine';
-import { drawStamp, propCanvas } from './props';
+import { SCENERY_SET, drawStamp, propCanvas } from './props';
 import {
   DECOR_CELL,
   FRAME_CELL,
@@ -10,6 +10,7 @@ import {
   terrainContours,
   townTerrainCells,
   townTerrainFeatures,
+  townBackgroundFeatures,
   type TerrainKind,
 } from './town-terrain';
 
@@ -94,7 +95,7 @@ function chunk(G: GameState, x: number, y: number) {
     if (pattern) {
       pattern.setTransform(new DOMMatrix().scale(kind === 'court' ? 0.25 : 0.5));
       lctx.fillStyle = pattern;
-      lctx.globalAlpha = kind === 'water' ? 0.28 : 0.45;
+      lctx.globalAlpha = kind === 'water' ? 0.48 : 0.45;
       lctx.fillRect(...box);
       lctx.globalAlpha = 1;
     }
@@ -114,55 +115,58 @@ function chunk(G: GameState, x: number, y: number) {
     if (kind === 'water') paint(path, kind, 12, true);
     paint(path, kind, kind === 'water' ? 7 : kind === 'court' ? 14 : 18);
   }
-  const hedge = (path: Path2D, width: number) => {
-    ctx.strokeStyle = 'rgba(57,91,29,.2)';
-    ctx.lineWidth = width + 5;
-    ctx.stroke(path);
-    const image = propCanvas('terrain-hedge', '#808080');
-    const pattern = image && ctx.createPattern(image, 'repeat');
-    pattern?.setTransform(new DOMMatrix().scale(0.1));
-    ctx.strokeStyle = pattern || '#83b638';
-    ctx.lineWidth = width;
-    ctx.stroke(path);
-    ctx.strokeStyle = 'rgba(200,235,99,.38)';
-    ctx.lineWidth = 2;
-    ctx.stroke(path);
-  };
-  // A small planted garden boundary shares the same cells and concave curves as its terrain.
-  const gardens = cells.filter((c) => c.kind === 'park' && townParkTheme(c.x, c.y) === 'garden');
-  hedge(surfacePath(gardens, 'park'), 11);
-  const paths = townWalks(G, cells);
-  ctx.lineCap = 'round';
-  ctx.lineJoin = 'round';
-  for (const route of paths) {
-    ctx.beginPath();
-    ctx.moveTo(route[0].x, route[0].y);
-    for (let i = 1; i < route.length - 1; i++) {
-      const p = route[i],
-        next = route[i + 1];
-      ctx.quadraticCurveTo(p.x, p.y, (p.x + next.x) / 2, (p.y + next.y) / 2);
+  if (SCENERY_SET === 'connected') {
+    const hedge = (path: Path2D, width: number) => {
+      ctx.strokeStyle = 'rgba(57,91,29,.2)';
+      ctx.lineWidth = width + 5;
+      ctx.stroke(path);
+      const image = propCanvas('terrain-hedge', '#808080');
+      const pattern = image && ctx.createPattern(image, 'repeat');
+      pattern?.setTransform(new DOMMatrix().scale(0.1));
+      ctx.strokeStyle = pattern || '#83b638';
+      ctx.lineWidth = width;
+      ctx.stroke(path);
+      ctx.strokeStyle = 'rgba(200,235,99,.38)';
+      ctx.lineWidth = 2;
+      ctx.stroke(path);
+    };
+    // A small planted garden boundary shares the same cells and concave curves as its terrain.
+    const gardens = cells.filter((c) => c.kind === 'park' && townParkTheme(c.x, c.y) === 'garden');
+    hedge(surfacePath(gardens, 'park'), 11);
+    const paths = townWalks(G, cells);
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    for (const route of paths) {
+      ctx.beginPath();
+      ctx.moveTo(route[0].x, route[0].y);
+      for (let i = 1; i < route.length - 1; i++) {
+        const p = route[i],
+          next = route[i + 1];
+        ctx.quadraticCurveTo(p.x, p.y, (p.x + next.x) / 2, (p.y + next.y) / 2);
+      }
+      ctx.lineTo(route.at(-1)!.x, route.at(-1)!.y);
+      ctx.strokeStyle = 'rgba(176,151,103,.3)';
+      ctx.lineWidth = 19;
+      ctx.stroke();
+      ctx.strokeStyle = '#dbc493';
+      ctx.lineWidth = 13;
+      ctx.stroke();
     }
-    ctx.lineTo(route.at(-1)!.x, route.at(-1)!.y);
-    ctx.strokeStyle = 'rgba(176,151,103,.3)';
-    ctx.lineWidth = 19;
-    ctx.stroke();
-    ctx.strokeStyle = '#dbc493';
-    ctx.lineWidth = 13;
-    ctx.stroke();
+    const frame = townBoardFrame(G);
+    ctx.save();
+    for (const p of frame.gates) {
+      if (p.x < left - 50 || p.x > left + WORLD + 50 || p.y < top - 50 || p.y > top + WORLD + 50) continue;
+      const gateMask = new Path2D();
+      gateMask.rect(left - 200, top - 200, WORLD + 400, WORLD + 400);
+      gateMask.moveTo(p.x + 48, p.y);
+      gateMask.arc(p.x, p.y, 48, 0, Math.PI * 2);
+      ctx.clip(gateMask, 'evenodd');
+    }
+    hedge(surfacePath(frame.cells, 'park', FRAME_CELL, 15), 9);
+    ctx.restore();
   }
-  const frame = townBoardFrame(G);
-  ctx.save();
-  for (const p of frame.gates) {
-    if (p.x < left - 50 || p.x > left + WORLD + 50 || p.y < top - 50 || p.y > top + WORLD + 50) continue;
-    const gateMask = new Path2D();
-    gateMask.rect(left - 200, top - 200, WORLD + 400, WORLD + 400);
-    gateMask.moveTo(p.x + 48, p.y);
-    gateMask.arc(p.x, p.y, 48, 0, Math.PI * 2);
-    ctx.clip(gateMask, 'evenodd');
-  }
-  hedge(surfacePath(frame.cells, 'park', FRAME_CELL, 15), 9);
-  ctx.restore();
-  const features = townTerrainFeatures(G, cells);
+  const features =
+    SCENERY_SET === 'terrain' ? townBackgroundFeatures(G, cells) : townTerrainFeatures(G, cells);
   for (const p of features.filter((p) => p.clearing)) {
     ctx.save();
     ctx.translate(p.x, p.y + 18);

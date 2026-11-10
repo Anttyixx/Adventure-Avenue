@@ -13,12 +13,11 @@ surfaces. Shared edges are removed, preserving irregular boundaries and holes.
 edges with overscanned masks (park 18, court 14, water 7 world units; soft banks 12).
 Rendering caches up to 48 world chunks of 800 units at 512px, including features.
 
-Park clearings use suitable two-by-two cell areas for picnic/gazebo/fountain,
-bench, flower and small-tree groups; surrounding trees leave the clearing empty.
-One focal feature anchors each connected courtyard. Features never create gameplay
-routes, and terrain leaves actual board tiles, roads and portal openings clear.
-The builder hides all scenery. Layout is deterministic and changes no engine state.
+Default `SCENERY_SET = terrain` uses light foliage, water details and occasional
+benches/planters near the board (`townBackgroundFeatures`). There are no default
+hedge frames, dioramas or decorative walks. The builder hides scenery. Layout is
+stable and changes no engine state.
 
-`SCENERY_SET = connected` selects these surfaces. `park` restores the prior natural
-park/stream set; `previous` restores outlined meadow props. All earlier assets,
-including `town-v7/` complete-scene artwork, remain preserved for reuse.
+`connected` preserves the earlier clearings, courtyard anchors, walks and hedge
+frames. `park` restores natural park/stream scenery; `previous` the outlined meadow
+props. All earlier assets, including `town-v7/` complete-scene artwork, are retained.

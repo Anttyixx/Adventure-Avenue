@@ -13,6 +13,7 @@ import {
   townTerrainAt,
   townTerrainCells,
   townTerrainFeatures,
+  townBackgroundFeatures,
   type TerrainCell,
 } from '../src/town-terrain';
 const state = (board = BUILT_IN_BOARDS[0]) =>
@@ -125,6 +126,26 @@ describe('connected cartoon terrain', () => {
         frame.cells.some((c) => c.x === Math.floor(p.x / FRAME_CELL) && c.y === Math.floor(p.y / FRAME_CELL)),
       ).toBe(true);
     }
+  });
+  it('keeps the active background foliage-led and furniture close to the playable board', () => {
+    const G = state(),
+      cells = townTerrainCells(G, -1200, -1200, 3000, 2400),
+      features = townBackgroundFeatures(G, cells);
+    const furniture = features.filter((p) => p.key === 'park-bench' || p.key === 'garden-planter');
+    expect(furniture.length).toBeGreaterThan(0);
+    expect(furniture.length / features.length).toBeLessThan(0.2);
+    for (const p of furniture) {
+      const distance = Math.min(
+        ...G.nodes.map((n) => {
+          const c = cellCenter(G.layout, n.x, n.y);
+          return Math.hypot(p.x - c.x, p.y - c.y);
+        }),
+      );
+      expect(distance).toBeLessThan(p.key === 'park-bench' ? 260 : 300);
+    }
+    expect(features.some((p) => ['park-gazebo', 'park-fountain', 'park-picnic'].includes(p.key))).toBe(false);
+    const patch = townBackgroundFeatures(G, townTerrainCells(G, 0, 0, 800, 800));
+    for (const p of patch) expect(features).toContainEqual(p);
   });
   it('puts useful amenity groups in clear park areas instead of growing trees through them', () => {
     const G = state(),

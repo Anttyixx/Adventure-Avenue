@@ -65,11 +65,11 @@ export const PROPERTY_SET: string = 'painted';
 /** Restore the previous grass and scenery density independently of the building set. */
 export const LANDSCAPE_SET: string = 'painted';
 export const PAINTED_LANDSCAPE = ART_SET === 'layered' && LANDSCAPE_SET === 'painted';
-/** puzzle = recombinable park pieces; connected/park/previous preserve earlier scenery. */
-export const SCENERY_SET: string = 'puzzle';
+/** terrain = varied cartoon surfaces; puzzle/connected/park/previous preserve earlier scenery. */
+export const SCENERY_SET: string = 'terrain';
 export const PARK_LANDSCAPE = PAINTED_LANDSCAPE && SCENERY_SET === 'park';
 export const PUZZLE_LANDSCAPE = PAINTED_LANDSCAPE && SCENERY_SET === 'puzzle';
-export const TOWN_LANDSCAPE = PAINTED_LANDSCAPE && ['connected', 'puzzle'].includes(SCENERY_SET);
+export const TOWN_LANDSCAPE = PAINTED_LANDSCAPE && ['terrain', 'connected', 'puzzle'].includes(SCENERY_SET);
 const modules = import.meta.glob<string>('./assets/park-modules-v10/*.png', {
   eager: true,
   query: '?url',

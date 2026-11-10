@@ -138,21 +138,18 @@ room, Continue resumes the saved game, and the board editor (`ui/editor.ts`).
 `BoardView` draws everything on one `<canvas>`:
 
 - **Background:** `paintGrass` fills the inverse-camera rectangle with nonrepeating grass
-  (`meadow.ts`). Default `SCENERY_SET = puzzle` adds `park-scenes.ts` and `park-scenes-art.ts`.
-  `parkScenes` plans connected groups of free cells on the actual board grid, checking nodes,
-  real roads and portal mouths. `composePark` accepts arbitrary connected footprints and
-  combines reusable activity/planting fragments, connected water and walks. There is no fixed
-  scene-to-footprint pairing. `parkBoundary` cancels shared square/hex polygon edges, including
-  staggered and negative hex rows; only the shared outer/inner contours remain. The renderer
-  fills common ground/water, joins paths and draws repeated hedge wall segments and curated
-  fragments from `assets/park-modules-v10/`. Each assembled scene is cached at 2px/world unit
-  and culled outside the camera. WeakMaps keep all plans/canvases outside game state. The Lab
-  shows assembled/exploded views, alternate shapes, planting and grids.
-  `SCENERY_SET = connected` retains the previous noise-based `town-terrain.ts` /
-  `town-terrain-art.ts` and v8/v9 art. `park` restores natural park/stream scenery; `previous`
-  restores the original outlined meadow props. All old PNGs and classic fallbacks remain.
+  (`meadow.ts`). Default `SCENERY_SET = terrain` adds `town-terrain.ts` / `town-terrain-art.ts`:
+  80-unit grass/water/paving material cells, board-aware clearance, shared contours and soft
+  material masks. Cartoon PNGs in `terrain-v8/` and `terrain-details-v9/` supply textures and
+  foliage. `townBackgroundFeatures` places trees, flowers, reeds, rocks and lily pads, with
+  benches only within 260 world units of a playable tile and planters within 300. No default
+  hedge frame, activity clearings or decorative paths. Rendering caches 48 world chunks at
+  512px per 800 world units, with 48px mask overscan to avoid blur seams. Layout/canvas caches
+  live outside game state and never consume engine randomness.
+  `puzzle` retains `park-scenes.ts` / `park-scenes-art.ts` and v10 art; `connected` restores
+  the earlier detailed terrain. `park` / `previous` retain older scenery. All PNGs remain.
   The builder omits scenery; `drawParkGround` adds verges below actual roads in games, leaving
-  portal stems their normal width.
+  portal stems their normal width. Square/hex Lab previews show the active scenery.
 - **Static layer:** scenery and tiles are painted once into an offscreen cache
   (`renderStatic` → `paintBoard`) and redrawn only when `dirty` (state changed) or the zoom needs
   a sharper copy. Property images come from `props.ts` (PNG art in `assets/props`, recolored to

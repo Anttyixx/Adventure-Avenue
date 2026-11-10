@@ -553,3 +553,45 @@ export function townBoardFrame(G: GameState) {
   frames.set(G, result);
   return result;
 }
+
+/** Light, foliage-led dressing for the textured background; furniture stays close to the board. */
+export function townBackgroundFeatures(G: GameState, cells: TerrainCell[]): TerrainFeature[] {
+  const points = G.nodes.map((n) => cellCenter(G.layout, n.x, n.y));
+  const out: TerrainFeature[] = [];
+  for (const c of cells) {
+    const x = (c.x + 0.5) * DECOR_CELL,
+      y = (c.y + 0.5) * DECOR_CELL,
+      distance = Math.min(...points.map((p) => Math.hypot(x - p.x, y - p.y))),
+      r = landscapeRandom(c.x - 419, c.y + 557),
+      pick = r();
+    if (c.kind === 'water') {
+      if (pick > 0.91) out.push({ key: 'pond-lilies', x, y, size: 32 });
+      continue;
+    }
+    // Only a few furnishings, naturally placed by paving or a planted verge near the route.
+    if (distance < 260 && pick > 0.955) {
+      out.push({ key: 'park-bench', x, y, size: 46 });
+      continue;
+    }
+    const shore = [
+      [1, 0],
+      [-1, 0],
+      [0, 1],
+      [0, -1],
+    ].some(([dx, dy]) => townTerrainAt(G, c.x + dx, c.y + dy) === 'water');
+    if (shore && pick > 0.64) {
+      out.push({ key: pick > 0.84 ? 'pond-rocks' : 'pond-reeds', x, y, size: 38 });
+      continue;
+    }
+    if (c.kind === 'court') {
+      if (distance < 300 && pick > 0.8) out.push({ key: 'garden-planter', x, y, size: 33 });
+      continue;
+    }
+    const wooded = noise(c.x / 4, c.y / 4, 178) > 0.49;
+    if (wooded && pick > 0.69)
+      out.push({ key: r() > 0.8 ? 'orchard-apple' : 'park-tree', x, y, size: distance < 210 ? 60 : 70 });
+    else if (pick > 0.76)
+      out.push({ key: pick > 0.94 ? 'garden-bed' : 'park-flowers', x, y, size: pick > 0.94 ? 40 : 33 });
+  }
+  return out.sort((a, b) => a.y - b.y);
+}

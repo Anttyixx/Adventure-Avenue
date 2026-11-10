@@ -35,9 +35,6 @@ import { propIconURL, ART_SOURCES, type PropKey } from '../props';
 /** The grey unowned property art is drawn in (as on the board). */
 const UNOWNED_ART = '#8a94a8';
 import { BoardView, ZOOM_STEP, portalGates } from '../board';
-import { cellCenter } from '../geometry';
-import { composePark } from '../park-scenes';
-import { paintParkScene } from '../park-scenes-art';
 import { ZOOM_MAX_OUT } from '../zoom';
 import { CHARACTERS, shuffledCharacters } from '../sprites';
 import { clear, fmt, h } from './dom';
@@ -124,7 +121,6 @@ const RECENT = new Set([
   'Portal: two-way flow',
   'Travel through a portal',
   'Portal links in the builder',
-  'Park puzzle pieces',
   'Town terrain: square',
   'Town terrain: hex',
   'Tile sprites and tint layers',
@@ -1471,140 +1467,10 @@ export async function openLab(app: HTMLElement, section?: string) {
     const s = addSection(
       'art',
       'Landscape',
-      'Reusable park pieces form shared dioramas on the board grid. Compare an assembled park with its pieces, then check square and hex boards.',
+      'Varied cartoon grass, ponds and paving, with foliage and occasional benches near the board. Use the zoom chip to inspect both scales.',
     );
     row(
       s,
-      btn('Park puzzle pieces', () => {
-        let seed = 21,
-          exploded = false,
-          hex = false,
-          shape = 0;
-        const cv = h('canvas', {
-          width: 900,
-          height: 500,
-          style: 'width:100%;height:auto;display:block;border-radius:16px',
-          'aria-label': 'Reusable park pieces assembled into a connected diorama',
-        });
-        const shapes = [
-          [
-            [0, 0],
-            [1, 0],
-            [0, 1],
-            [1, 1],
-            [0, 2],
-            [1, 2],
-            [2, 2],
-          ],
-          [
-            [0, 0],
-            [1, 0],
-            [2, 0],
-            [0, 1],
-            [0, 2],
-            [1, 2],
-            [2, 2],
-          ],
-          [
-            [0, 0],
-            [1, 0],
-            [2, 0],
-            [1, 1],
-            [2, 1],
-            [2, 2],
-            [3, 2],
-          ],
-        ];
-        const draw = () => {
-          const ctx = cv.getContext('2d')!;
-          ctx.resetTransform();
-          ctx.fillStyle = '#d5e6ad';
-          ctx.fillRect(0, 0, 900, 500);
-          ctx.save();
-          const points = shapes[shape].map(([x, y]) => cellCenter(hex ? 'hex' : 'square', x, y));
-          const cx = (Math.min(...points.map((p) => p.x)) + Math.max(...points.map((p) => p.x))) / 2;
-          const cy = (Math.min(...points.map((p) => p.y)) + Math.max(...points.map((p) => p.y))) / 2;
-          ctx.translate(450 - cx * 1.1, 250 - cy * 1.1);
-          ctx.scale(1.1, 1.1);
-          paintParkScene(
-            ctx,
-            composePark(
-              hex ? 'hex' : 'square',
-              shapes[shape].map(([x, y]) => ({ x, y })),
-              seed,
-            ),
-            exploded,
-          );
-          ctx.restore();
-        };
-        const controls = h(
-          'div',
-          { class: 'actions' },
-          h(
-            'button',
-            {
-              class: 'btn small',
-              onclick: () => {
-                exploded = !exploded;
-                controls.querySelector('button')!.textContent = exploded
-                  ? 'Assemble pieces'
-                  : 'Separate pieces';
-                draw();
-              },
-            },
-            'Separate pieces',
-          ),
-          h(
-            'button',
-            {
-              class: 'btn small',
-              onclick: () => {
-                shape = (shape + 1) % shapes.length;
-                draw();
-              },
-            },
-            'Change shape',
-          ),
-          h(
-            'button',
-            {
-              class: 'btn small',
-              onclick: () => {
-                seed++;
-                draw();
-              },
-            },
-            'Change planting',
-          ),
-          h(
-            'button',
-            {
-              class: 'btn small',
-              onclick: () => {
-                hex = !hex;
-                draw();
-              },
-            },
-            'Switch grid',
-          ),
-        );
-        const m = hud.modal(
-          'Park puzzle pieces',
-          h(
-            'div',
-            null,
-            h(
-              'p',
-              { class: 'hint' },
-              'Shared hedges and paths join reusable pieces. Try another shape or planting mix.',
-            ),
-            cv,
-            controls,
-          ),
-          { wide: true, onClose: () => m.close() },
-        );
-        draw();
-      }),
       ...(['square', 'hex'] as const).map((layout) =>
         btn(`Town terrain: ${layout}`, () => {
           const mount = h('div', { class: 'lab-screen' });

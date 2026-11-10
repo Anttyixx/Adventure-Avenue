@@ -227,25 +227,21 @@ The board fills the entire canvas behind the HUD, with no space reserved beside 
 The hovered cell has a tinted fill and two contrasting outlines: a dark outer stroke (6 screen
 pixels) and a bright inner stroke (3 screen pixels), gold normally and red while erasing. Their
 screen size stays constant at every zoom.
-The default landscape uses recombinable park pieces on the board's actual square or hex grid.
-Related pieces assemble into small park dioramas: shared walks, hedge walls, planting and ponds
-span several cells. A piece is a fragment of a scene, not a complete square scene with its own
-frame. The same fountain, gazebo, picnic, grove, orchard, planted bend and wall pieces work in
-different arrangements. Connected footprints can be concave, notched or bent; they are not
-limited to one predefined completed picture. Square and hex pieces share this composition rule.
-Free pockets near the playable route are filled first. Groups contain 3–13 cells, with quiet
-grass separating different parks. Shared internal edges disappear. Only the assembly perimeter
-gets a continuous chunky hedge wall, including inner and outer corners. Pond pieces share
-water and banks; connected walks link activity spots. Curated furniture/planting fragments keep
-the rounded, detailed cartoon style of the reference art. There are no private floor pads,
-individual tile rims, or labels on decorative pieces.
-The planner keeps whole groups clear of playable tiles, real roads and portal mouths. Placement
-and planting stay fixed while panning and consume no engine randomness. These are cosmetic
-scenes, never movement routes. The UI Lab's **Park puzzle pieces** preview can separate an
-assembly, change its footprint, change planting and switch grids to check recombination.
-Nonrepeating grass fills the background beneath the dioramas, and warm ground follows actual
-board roads at normal portal-approach width. The builder hides decoration and verges. Earlier
-art is preserved, including the previous connected terrain, natural park and meadow styles.
+The default landscape uses varied cartoon grass, turquoise pond water and warm paving textures,
+matching the rounded board-tile style. Adjacent material cells share one surface, with softened
+banks and transitions rather than visible individual tile borders. These background materials
+fill irregular areas around both square and hex boards; nonrepeating grass continues beneath
+and beyond them.
+Decoration is light and mostly foliage: rounded trees, occasional fruit trees, flower patches,
+reeds, rocks and lily pads. A few benches sit within 260 world units of the nearest playable
+tile, with occasional planters near paving within 300 units. There are no default hedge frames,
+park dioramas, gazebos, fountains, picnic scenes or decorative walk networks. Preserve open space
+so the playable tiles remain the focus. Decorations use the same colorful cartoon theme as
+the board and have no isolated tile rims, opaque floor pads or labels.
+Terrain and props stay clear of playable tiles, real roads and portal openings. Their placement
+stays fixed while panning and uses no engine randomness. The builder hides decorative terrain,
+props and verges. Earlier scenery assets and implementations remain available for rollback.
+The UI Lab's square/hex landscape previews show the active background at both zoom scales.
 Grass is a separate background beneath tiles and scenery. Both builder and games fill the
 entire visible camera area, including outside the board, at every zoom and screen size. The
 landscape is anchored in board coordinates and scales with the tiles; there is no finite
