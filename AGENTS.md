@@ -137,7 +137,8 @@ Requests refer to parts of the game by these names:
   unchanged in `assets/tiles-v2/` and `assets/props/`; `PROPERTY_SET` selects the property set. Base-only sprites never auto-recolor blue pixels. New recolorable sprites
   require an aligned grey `-tint.png`. `transport-v13/` preserves the crystal warp and supplies the portal frame / two vortex pairs
   (`TRANSPORT_SET`). `warp-v14/` supplies the active flat four-point floor pad (`WARP_SET`), with
-  equal height/width, equal arms, no pedestal, and uniform scaling in both grids. Closed shops use the drawn gate by default; `CLOSED_SET = 'sprite'` restores the preserved painted PNG. Portal frames stay fixed; vortex
+  equal height/width, equal arms, no pedestal, and uniform scaling in both grids. `boon-v15/`
+  supplies the green Boon coin-burst (`BOON_SET`), with the original standalone coin preserved. Closed shops use the drawn gate by default; `CLOSED_SET = 'sprite'` restores the preserved painted PNG. Portal frames stay fixed; vortex
   phase must stay continuous and freeze with reduced motion. Keep legacy assets and canvas fallbacks for rollback.
 
 ## Commands

@@ -64,6 +64,13 @@ export type PropKey =
 export const ART_SET: string = 'layered';
 /** Restore the previous property sprites without changing the rest of the board art. */
 export const PROPERTY_SET: string = 'painted';
+/** Restore the previous standalone Boon coin without changing the Boom sprite. */
+export const BOON_SET: string = 'burst';
+const boonArt = import.meta.glob<string>('./assets/boon-v15/*.png', {
+  eager: true,
+  query: '?url',
+  import: 'default',
+});
 /** Restore the previous warp and portal artwork independently of other board sprites. */
 export const TRANSPORT_SET: string = 'crystal';
 /**
@@ -197,6 +204,12 @@ const urls = Object.fromEntries([
     : []),
   ...(GROUND_WARP_ART
     ? Object.entries(groundWarp).map(([path, url]) => [
+        path.replace(/^.*\//, '').replace('-base.png', '.png'),
+        { url, explicit: true },
+      ])
+    : []),
+  ...(ART_SET === 'layered' && BOON_SET === 'burst'
+    ? Object.entries(boonArt).map(([path, url]) => [
         path.replace(/^.*\//, '').replace('-base.png', '.png'),
         { url, explicit: true },
       ])

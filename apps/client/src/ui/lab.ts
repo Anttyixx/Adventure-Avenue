@@ -117,7 +117,12 @@ const rnd = (n: number) => Math.floor(Math.random() * n);
  * Controls for UI elements that were just added or changed: they shake once and glow so they
  * are easy to find. Update this list with each change.
  */
-const RECENT = new Set(['Warp landing pad', 'Warp and portal artwork', 'Tile sprites and tint layers']);
+const RECENT = new Set([
+  'Boon and Boom artwork',
+  'Warp landing pad',
+  'Warp and portal artwork',
+  'Tile sprites and tint layers',
+]);
 
 /**
  * Which board the lab plays on: Town with portal links (square, the default) or Twin Lakes (hex),
@@ -1523,6 +1528,37 @@ export async function openLab(app: HTMLElement, section?: string) {
           }
         }),
       );
+  }
+
+  {
+    const s = addSection(
+      'art',
+      'Bonus tile artwork',
+      'Boon and Boom use matching burst shapes around their coins.',
+    );
+    row(
+      s,
+      btn('Boon and Boom artwork', () => {
+        const body = h(
+          'div',
+          { style: 'display:flex;justify-content:center;gap:32px;flex-wrap:wrap;padding:16px' },
+          ...(['boon', 'boom'] as const).map((key) =>
+            h(
+              'figure',
+              { style: 'margin:0;display:grid;justify-items:center;gap:12px' },
+              h('img', {
+                src: propIconURL(key, '#808080'),
+                alt: key === 'boon' ? 'Boon' : 'Boom',
+                width: 128,
+                height: 128,
+              }),
+              h('figcaption', null, key === 'boon' ? 'Boon' : 'Boom'),
+            ),
+          ),
+        );
+        const m = hud.modal('Boon and Boom artwork', body, { onClose: () => m.close() });
+      }),
+    );
   }
 
   // Transport sprite and motion preview, with the actual board renderer in each pair color.

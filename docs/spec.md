@@ -1931,6 +1931,9 @@ vacant land, square/hex shells and district borders, ownership flags, selection 
 shop shutters, scenery, roads and grass. Buildings and transport accents use explicit base/tint
 layers; fixed-color artwork needs only a base. Change-of-suit combines a PNG ring with the
 current suit PNG. Prices, labels, initials, highlights and movement remain driven by game state.
+The Boon board sprite is a gold up-arrow coin inside a green rounded burst, matching Boom’s
+pink coin-burst badge. `boon-v15/` contains the fixed-color base PNG; `BOON_SET = previous`
+restores the older standalone coin, which remains preserved.
 Existing paired Checkpoint/Circus/Motel artwork and all old art files are preserved. `ART_SET` in
 `props.ts` selects the layered set or the classic assets and vector fallbacks. The UI Lab can
 inspect bases, masks and recolored composites.

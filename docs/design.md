@@ -993,6 +993,9 @@ Bright and physical, unlike the dark HUD:
   gold to the bank, grey unlinked.
 - The warp pad sits low on its tile, under the token’s feet, with its WARP label above. Keep its
   geometry square and its plane flat; no socket, pedestal, upright gem or perspective squash.
+- **Boon / Boom board sprites:** matched rounded burst silhouettes around gold coins, cream
+  trim and bold cartoon shading. Boon is green with an up-arrow coin; Boom retains its pink
+  burst and coins. Fixed colors need only base PNGs; preserve earlier artwork.
 - **Characters:** pixel sprites, whole-number scales, sprite-shaped shadow, a name plate (white
   Lilita on a player-color pill with a white outline); the active one is bigger with a bobbing
   arrow.

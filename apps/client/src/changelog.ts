@@ -26,6 +26,18 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: '2026-11-10-boon-burst',
+    date: 'Nov 10, 2026',
+    title: 'A matching Boon badge',
+    features: [
+      {
+        tag: 'better',
+        title: 'A burst around the Boon coin',
+        text: 'Boon’s gold coin now sits inside a green burst that matches Boom’s pink badge, keeping its positive up-arrow symbol.',
+      },
+    ],
+  },
+  {
     id: '2026-11-10-warp-floor-pad',
     date: 'Nov 10, 2026',
     title: 'A warp point to stand on',
