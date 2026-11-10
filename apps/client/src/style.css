@@ -625,12 +625,12 @@ input[type='range'] {
 .board-canvas.over-gl {
   position: relative;
 }
-/* The FPS meter (board.ts toggleFps): a small dark label at the top left, under the info chip,
+/* The FPS meter (board.ts toggleFps): a small dark label in the board's bottom left corner,
    above the board but under the HUD's pop-ups. */
 .fps-meter {
   position: absolute;
   left: 10px;
-  top: 58px;
+  bottom: 10px;
   z-index: 3;
   padding: 3px 8px;
   border-radius: 6px;

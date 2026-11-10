@@ -139,11 +139,8 @@ room, Continue resumes the saved game, and the board editor (`ui/editor.ts`).
 UI Lab Board effects toggle). In `pixi` mode `BoardView` lazy-loads `pixi-board.ts`: a PixiJS
 (WebGL) canvas under the 2D canvas draws the background (`paintGrass`) and the cached board
 picture, fed by a recording stand-in context (`PixiBoard.begin()`) that turns `drawImage` and solid
-`fillRect` calls into a reused sprite pool, GPU textures per source canvas in pieces of at most
-2048 px (freed after ~10 s unused, or least recently drawn first past a memory budget of 160 MB on
-touch devices and 384 MB elsewhere; re-uploaded when `refresh()` is called after `renderStatic`).
-At most two new background textures upload per frame (the board picture always draws), the WebGL
-layer renders at no more than 2x pixel density, and a lost WebGL context switches back to classic. The 2D canvas is cleared to
+`fillRect` calls into a reused sprite pool, one GPU texture per source canvas (freed after ~5 s
+unused, re-uploaded when `refresh()` is called after `renderStatic`). The 2D canvas is cleared to
 transparent and keeps the moving parts. Background drawing must therefore use only `drawImage`,
 solid `fillRect` and transforms/alpha. If WebGL fails, it falls back to classic. `?fps=1` or the
 Lab's FPS meter shows frames per second. Later phases move tokens, portals and effects to PixiJS.

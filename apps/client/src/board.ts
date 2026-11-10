@@ -1300,26 +1300,20 @@ export class BoardView {
     ctx.imageSmoothingEnabled = true;
     // Paint the visible world, rather than a fixed rectangle around the board.
     // Build at most one new background chunk per frame (see chunk-budget.ts).
-    if (this.pixi?.failed) {
-      // WebGL is unavailable or was lost: carry on with the classic renderer.
-      try {
-        this.pixi.destroy();
-      } catch {
-        // A lost context may not clean up; the classic canvas covers it anyway.
-      }
+    const gl = this.pixi;
+    if (gl?.failed) {
+      // WebGL is unavailable: carry on with the classic renderer.
       this.pixi = null;
       this.canvas.classList.remove('over-gl');
     }
-    const gl = this.pixi;
     chunkBudget.left = 1;
     if (gl?.ready) {
       // The background and the board picture go to the PixiJS layer underneath; this canvas
       // keeps only what moves, over a transparent clear.
       const back = gl.begin(ctx.getTransform(), this.canvas.width, this.canvas.height);
       paintGrass(back, this.G);
-      gl.keep(this.cache);
       back.drawImage(this.cache, 0, 0, this.ww, this.wh);
-      gl.end(this.dpr);
+      gl.end();
       ctx.save();
       ctx.resetTransform();
       ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
