@@ -208,3 +208,13 @@ describe('recombinable park kit', () => {
     expect(existsSync(resolve('apps/client/src/assets/town-v7/land-garden-base.png'))).toBe(true);
   });
 });
+
+describe('crisp cartoon terrain materials', () => {
+  it('supplies high-resolution lawn, water, paving and meadow while preserving the previous art', () => {
+    const dir = resolve('apps/client/src/assets/terrain-v12');
+    expect(readdirSync(dir).filter((f) => f.endsWith('.png'))).toHaveLength(4);
+    for (const key of ['terrain-park', 'terrain-water', 'terrain-court', 'meadow'])
+      expect(png(resolve(dir, `${key}-base.png`))).toEqual(key === 'meadow' ? [2048, 2048] : [1024, 1024]);
+    expect(existsSync(resolve('apps/client/src/assets/terrain-v8/terrain-park-base.png'))).toBe(true);
+  });
+});

@@ -140,11 +140,15 @@ room, Continue resumes the saved game, and the board editor (`ui/editor.ts`).
 - **Background:** `paintGrass` fills the inverse-camera rectangle with nonrepeating grass
   (`meadow.ts`). Default `SCENERY_SET = terrain` adds `town-terrain.ts` / `town-terrain-art.ts`:
   80-unit grass/water/paving material cells, board-aware clearance, shared contours and soft
-  material masks. Cartoon PNGs in `terrain-v8/` and `terrain-details-v9/` supply textures and
-  foliage. `townBackgroundFeatures` places trees, flowers, reeds, rocks and lily pads, with
+  material masks. `terrain-v12/` supplies crisp cartoon lawn and cobblestone materials; water retains its v8 material,
+  v8/v9 artwork remains intact and supplies foliage. `townBackgroundFeatures` places trees, flowers, reeds, rocks and lily pads, with
   benches only within 260 world units of a playable tile and planters within 300. No default
-  hedge frame, activity clearings or decorative paths. Rendering caches 48 world chunks at
-  512px per 800 world units, with 48px mask overscan to avoid blur seams. Layout/canvas caches
+  hedge frame, activity clearings or decorative paths. Terrain caches use 800-unit world chunks at 1–2 pixels/world unit, selected from the current
+  camera transform. Overscan grows with resolution; the LRU is bounded by 48 entries and 128MiB.
+  Default decorations draw directly from their PNGs after terrain, with placement plans cached
+  separately. Meadow caches also keep camera-dependent resolution levels, with a 128MiB budget
+  across levels per source. Meadow patches vary their crops and horizontal flips only; no rotation
+  or vertical mirroring is allowed for the active lawn artwork. Layout/canvas caches
   live outside game state and never consume engine randomness.
   `puzzle` retains `park-scenes.ts` / `park-scenes-art.ts` and v10 art; `connected` restores
   the earlier detailed terrain. `park` / `previous` retain older scenery. All PNGs remain.

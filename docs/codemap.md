@@ -112,7 +112,8 @@ hedges, ground, water and paths (`parkBoundary`, `paintParkScene`, `paintParkSce
 The puzzle scene implementation is preserved for rollback. `town-terrain.ts` defines connected park/water/courtyard cells, traces region contours, and plans
 park amenities/courtyard anchors for the older mode. Default `townBackgroundFeatures` places
 foliage and sparse benches near the board. `town-terrain-art.ts` paints continuous material surfaces with
-soft masks and cached chunks using `assets/terrain-v8/`.
+soft masks and camera-scaled world chunks using `assets/terrain-v12/`; decoration PNGs draw
+at native resolution with cached placement plans. Earlier textures remain in `terrain-v8/`.
 `meadow.ts` builds cached, coordinate-seeded grass chunks with smooth patch blending.
 `scenery.ts` owns cosmetic coordinate randomness and small scenery placement, inside the board
 (`sceneryForBoard`) and beyond it (`parkSceneryBeyondBoard` for grouped park scenery,

@@ -70,6 +70,11 @@ export const SCENERY_SET: string = 'terrain';
 export const PARK_LANDSCAPE = PAINTED_LANDSCAPE && SCENERY_SET === 'park';
 export const PUZZLE_LANDSCAPE = PAINTED_LANDSCAPE && SCENERY_SET === 'puzzle';
 export const TOWN_LANDSCAPE = PAINTED_LANDSCAPE && ['terrain', 'connected', 'puzzle'].includes(SCENERY_SET);
+const sharpTerrain = import.meta.glob<string>('./assets/terrain-v12/*.png', {
+  eager: true,
+  query: '?url',
+  import: 'default',
+});
 const modules = import.meta.glob<string>('./assets/park-modules-v10/*.png', {
   eager: true,
   query: '?url',
@@ -143,7 +148,16 @@ const urls = Object.fromEntries([
       ])
     : []),
   ...(TOWN_LANDSCAPE
-    ? Object.entries({ ...connected, ...details, ...modules }).map(([path, url]) => [
+    ? Object.entries({
+        ...connected,
+        ...details,
+        ...modules,
+        ...(SCENERY_SET === 'terrain'
+          ? Object.fromEntries(
+              Object.entries(sharpTerrain).filter(([path]) => !path.includes('terrain-water')),
+            )
+          : {}),
+      }).map(([path, url]) => [
         path.replace(/^.*\//, '').replace('-base.png', '.png'),
         { url, explicit: true },
       ])

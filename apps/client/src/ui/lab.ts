@@ -117,6 +117,9 @@ const rnd = (n: number) => Math.floor(Math.random() * n);
  * are easy to find. Update this list with each change.
  */
 const RECENT = new Set([
+  'Town terrain: square',
+  'Town terrain: hex',
+  'Tile sprites and tint layers',
   'Cards: list',
   'Cards: stack',
   'Cards: smart',
@@ -1465,7 +1468,7 @@ export async function openLab(app: HTMLElement, section?: string) {
     const s = addSection(
       'art',
       'Landscape',
-      'Varied cartoon grass, ponds and paving, with foliage and occasional benches near the board. Use the zoom chip to inspect both scales.',
+      'Sharper cartoon grass, ponds and paving, with native-resolution foliage and benches. Use the zoom chip to inspect both scales.',
     );
     row(
       s,

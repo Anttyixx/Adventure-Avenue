@@ -26,6 +26,19 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: '2026-11-10-sharp-landscape',
+    date: 'Nov 10, 2026',
+    title: 'A clearer cartoon background',
+    features: [
+      {
+        tag: 'better',
+        title: 'Clean details at every zoom',
+        text: 'Trees, flowers and benches now draw at their own sprite resolution. Higher-resolution terrain and cleaner grass and paving artwork keep the background sharp and consistent with the board pieces.',
+      },
+    ],
+    extras: ['Grass and clovers stay upright', 'Previous background artwork preserved'],
+  },
+  {
     id: '2026-11-09-player-card-controls',
     date: 'Nov 9, 2026',
     title: 'Player card controls stay put',

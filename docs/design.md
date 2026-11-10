@@ -952,7 +952,12 @@ Bright and physical, unlike the dark HUD:
   decoration: trees, flowers, reeds and lily pads, with occasional benches/planters near the
   board. Keep furnishings sparse and distant areas quiet. No default dioramas, enclosing hedge
   walls or decorative walk networks. Keep gameplay tiles, roads and portal mouths clear; no
-  sticker rims, opaque floor pads, labels or realistic botanical detail. Hide scenery in the builder.
+  sticker rims, opaque floor pads, labels or realistic botanical detail. Terrain uses clean lawn
+  tufts, flowing water highlights and chunky rounded paving; keep all lawn tufts/clovers upright
+  (no rotated patches or vertical texture mirroring). Keep outlines readable at close
+  zoom. Draw decoration PNGs at native resolution, outside the terrain bitmap cache. Match cache
+  resolution to camera pixel scale (up to 2px/world unit); soften only the material boundary
+  (grass/paving/water: 8/6/3 units, bank 7). Hide scenery in the builder.
 - **Ground beneath tiles:** follow the square/hex tile footprint with a continuous margin at
   corners, points and dead ends. Join these pads with the existing path strokes; keep portal
   approach roads their normal width.

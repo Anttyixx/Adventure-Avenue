@@ -12,11 +12,12 @@ import {
   townTerrainFeatures,
   townBackgroundFeatures,
   type TerrainKind,
+  type TerrainFeature,
 } from './town-terrain';
 
 const WORLD = 800,
-  PIXELS = 512,
-  LIMIT = 48;
+  LIMIT = 48,
+  MAX_BYTES = 128 * 1024 * 1024;
 const chunks = new WeakMap<GameState, Map<string, HTMLCanvasElement>>();
 const kinds: TerrainKind[] = ['park', 'court', 'water'];
 
@@ -40,13 +41,13 @@ function surfacePath(
   }
   return path;
 }
-function chunk(G: GameState, x: number, y: number) {
+function chunk(G: GameState, x: number, y: number, PIXELS: number) {
   let cache = chunks.get(G);
   if (!cache) {
     cache = new Map();
     chunks.set(G, cache);
   }
-  const key = `${x},${y}`,
+  const key = `${x},${y},${PIXELS}`,
     saved = cache.get(key);
   if (saved) {
     cache.delete(key);
@@ -60,7 +61,7 @@ function chunk(G: GameState, x: number, y: number) {
   ctx.setTransform(PIXELS / WORLD, 0, 0, PIXELS / WORLD, (-left * PIXELS) / WORLD, (-top * PIXELS) / WORLD);
   const cells = townTerrainCells(G, left, top, left + WORLD, top + WORLD);
   // Overscan the masks before blurring so cached chunk borders never become visible seams.
-  const pad = 48,
+  const pad = Math.ceil((48 * PIXELS) / 512),
     extent = PIXELS + pad * 2,
     scale = PIXELS / WORLD;
   const layer = Object.assign(document.createElement('canvas'), { width: extent, height: extent });
@@ -93,7 +94,17 @@ function chunk(G: GameState, x: number, y: number) {
     const image = !bank && propCanvas(`terrain-${kind}`, '#808080');
     const pattern = image && lctx.createPattern(image, 'repeat');
     if (pattern) {
-      pattern.setTransform(new DOMMatrix().scale(kind === 'court' ? 0.25 : 0.5));
+      pattern.setTransform(
+        new DOMMatrix().scale(
+          SCENERY_SET === 'terrain' && kind !== 'water'
+            ? kind === 'court'
+              ? 0.125
+              : 0.25
+            : kind === 'court'
+              ? 0.25
+              : 0.5,
+        ),
+      );
       lctx.fillStyle = pattern;
       lctx.globalAlpha = kind === 'water' ? 0.48 : 0.45;
       lctx.fillRect(...box);
@@ -112,8 +123,8 @@ function chunk(G: GameState, x: number, y: number) {
   };
   for (const kind of kinds) {
     const path = surfacePath(cells, kind);
-    if (kind === 'water') paint(path, kind, 12, true);
-    paint(path, kind, kind === 'water' ? 7 : kind === 'court' ? 14 : 18);
+    if (kind === 'water') paint(path, kind, 7, true);
+    paint(path, kind, kind === 'water' ? 3 : kind === 'court' ? 6 : 8);
   }
   if (SCENERY_SET === 'connected') {
     const hedge = (path: Path2D, width: number) => {
@@ -165,8 +176,7 @@ function chunk(G: GameState, x: number, y: number) {
     hedge(surfacePath(frame.cells, 'park', FRAME_CELL, 15), 9);
     ctx.restore();
   }
-  const features =
-    SCENERY_SET === 'terrain' ? townBackgroundFeatures(G, cells) : townTerrainFeatures(G, cells);
+  const features = SCENERY_SET === 'terrain' ? [] : townTerrainFeatures(G, cells);
   for (const p of features.filter((p) => p.clearing)) {
     ctx.save();
     ctx.translate(p.x, p.y + 18);
@@ -186,7 +196,13 @@ function chunk(G: GameState, x: number, y: number) {
     ctx.restore();
   }
   cache.set(key, cv);
-  if (cache.size > LIMIT) cache.delete(cache.keys().next().value!);
+  let bytes = [...cache.values()].reduce((n, c) => n + c.width * c.height * 4, 0);
+  while (cache.size > LIMIT || bytes > MAX_BYTES) {
+    const first = cache.keys().next().value!,
+      old = cache.get(first)!;
+    bytes -= old.width * old.height * 4;
+    cache.delete(first);
+  }
   return cv;
 }
 
@@ -199,7 +215,41 @@ export function paintTownTerrain(
   right: number,
   bottom: number,
 ) {
+  const transform = ctx.getTransform();
+  const pixels = WORLD * Math.min(2, Math.max(1, Math.ceil(Math.hypot(transform.a, transform.b))));
   for (let y = Math.floor(top / WORLD); y < Math.ceil(bottom / WORLD); y++)
     for (let x = Math.floor(left / WORLD); x < Math.ceil(right / WORLD); x++)
-      ctx.drawImage(chunk(G, x, y), x * WORLD, y * WORLD, WORLD, WORLD);
+      ctx.drawImage(chunk(G, x, y, pixels), x * WORLD, y * WORLD, WORLD, WORLD);
+  if (SCENERY_SET === 'terrain') {
+    const features: TerrainFeature[] = [];
+    for (let y = Math.floor((top - 80) / WORLD); y < Math.ceil((bottom + 80) / WORLD); y++)
+      for (let x = Math.floor((left - 80) / WORLD); x < Math.ceil((right + 80) / WORLD); x++)
+        features.push(...backgroundFeatures(G, x, y));
+    features.sort((a, b) => a.y - b.y);
+    for (const p of features)
+      if (p.x > left - 80 && p.x < right + 80 && p.y > top - 80 && p.y < bottom + 80)
+        drawStamp(ctx, p.key, '#808080', p.x, p.y, p.size, p.size);
+  }
+}
+
+const featurePlans = new WeakMap<GameState, Map<string, TerrainFeature[]>>();
+/** Cache placement data, leaving the PNGs to draw at the display's actual resolution. */
+function backgroundFeatures(G: GameState, x: number, y: number) {
+  let cache = featurePlans.get(G);
+  if (!cache) {
+    cache = new Map();
+    featurePlans.set(G, cache);
+  }
+  const key = `${x},${y}`;
+  let saved = cache.get(key);
+  if (!saved) {
+    const left = x * WORLD,
+      top = y * WORLD;
+    saved = townBackgroundFeatures(G, townTerrainCells(G, left, top, left + WORLD, top + WORLD)).filter(
+      (p) => p.x >= left && p.x < left + WORLD && p.y >= top && p.y < top + WORLD,
+    );
+    cache.set(key, saved);
+    if (cache.size > 128) cache.delete(cache.keys().next().value!);
+  }
+  return saved;
 }

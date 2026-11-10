@@ -228,7 +228,8 @@ The hovered cell has a tinted fill and two contrasting outlines: a dark outer st
 pixels) and a bright inner stroke (3 screen pixels), gold normally and red while erasing. Their
 screen size stays constant at every zoom.
 The default landscape uses varied cartoon grass, turquoise pond water and warm paving textures,
-matching the rounded board-tile style. Adjacent material cells share one surface, with softened
+matching the rounded board-tile style: clean lawn tufts, flowing water highlights and chunky
+rounded cobblestones. Adjacent material cells share one surface, with softened
 banks and transitions rather than visible individual tile borders. These background materials
 fill irregular areas around both square and hex boards; nonrepeating grass continues beneath
 and beyond them.
@@ -241,6 +242,12 @@ the board and have no isolated tile rims, opaque floor pads or labels.
 Terrain and props stay clear of playable tiles, real roads and portal openings. Their placement
 stays fixed while panning and uses no engine randomness. The builder hides decorative terrain,
 props and verges. Earlier scenery assets and implementations remain available for rollback.
+Grass, leaves and clovers stay upright: vary crops and horizontal flips, never rotate patches
+or mirror them vertically. The lawn material itself also preserves the source orientation.
+Terrain and meadow caches follow the camera's pixel scale (1–2 pixels per world unit) instead
+of enlarging a small background bitmap. Decorative PNGs render separately at their own native
+sprite resolution, with cached placement data. Material boundaries keep a narrow soft blend
+(grass 8, paving 6, water 3 world units; water bank 7), while foliage and furnishings stay crisp.
 The UI Lab's square/hex landscape previews show the active background at both zoom scales.
 The warm path beneath the board follows each tile's square or hex footprint, leaving an even
 margin around corners, points, bends and dead ends; round road caps must not cut this margin off.
@@ -724,7 +731,7 @@ without a button and the board stays up until then (the engine waits on a `ventu
 decision, so online players stay in step). A CPU closes its card after a short reading pause.
 On short screens the board shrinks to leave space for the action bar.
 
-- **Card numbers:** each card has a permanent number (1–30), shared across Standard and Easy.
+- **Card numbers:** each card has a permanent number (1–20), shared across Standard and Easy.
   Flipped panels show the card number in the player’s color; face-down panels hide it. The
   result heading includes the same number. Guide → Venture cards lists all numbers, titles
   and effects, including clearly marked Standard-only cards. Numbering is independent of the

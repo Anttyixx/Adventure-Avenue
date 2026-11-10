@@ -2,19 +2,18 @@
 import { landscapeRandom } from './scenery';
 
 const WORLD = 768;
-const PIXELS = 384;
 const PATCHES = 3;
-const PATCH_PIXELS = PIXELS / PATCHES;
 const LIMIT = 96;
-const chunks = new Map<string, HTMLCanvasElement>();
-let sourceImage: HTMLCanvasElement | null = null;
-let parkStyle = false;
-let masks: HTMLCanvasElement[] | null = null;
-
-const canvas = (size = PIXELS) =>
+interface MeadowCache {
+  pixels: number;
+  chunks: Map<string, HTMLCanvasElement>;
+  masks: HTMLCanvasElement[] | null;
+}
+const caches = new WeakMap<HTMLCanvasElement, Map<string, MeadowCache>>();
+const canvas = (size: number) =>
   Object.assign(document.createElement('canvas'), { width: size, height: size });
 
-function weights() {
+function weights(PATCH_PIXELS: number) {
   return Array.from({ length: 4 }, (_, corner) => {
     const cv = canvas(PATCH_PIXELS);
     const ctx = cv.getContext('2d')!;
@@ -33,7 +32,10 @@ function weights() {
   });
 }
 
-function chunk(source: HTMLCanvasElement, x: number, y: number, park: boolean) {
+function chunk(source: HTMLCanvasElement, x: number, y: number, park: boolean, cache: MeadowCache) {
+  const PIXELS = cache.pixels,
+    PATCH_PIXELS = PIXELS / PATCHES,
+    chunks = cache.chunks;
   const key = `${x},${y}`;
   const saved = chunks.get(key);
   if (saved) {
@@ -41,8 +43,8 @@ function chunk(source: HTMLCanvasElement, x: number, y: number, park: boolean) {
     chunks.set(key, saved);
     return saved;
   }
-  masks ??= weights();
-  const cv = canvas();
+  const masks = (cache.masks ??= weights(PATCH_PIXELS));
+  const cv = canvas(PIXELS);
   const ctx = cv.getContext('2d')!;
   const layer = canvas(PATCH_PIXELS);
   const lctx = layer.getContext('2d')!;
@@ -60,7 +62,7 @@ function chunk(source: HTMLCanvasElement, x: number, y: number, park: boolean) {
         lctx.clearRect(0, 0, PATCH_PIXELS, PATCH_PIXELS);
         lctx.save();
         lctx.translate(dx * PATCH_PIXELS, dy * PATCH_PIXELS);
-        lctx.rotate((Math.floor(r() * 4) * Math.PI) / 2);
+        // Keep grass blades upright; horizontal flips and varied crops supply the variation.
         lctx.scale(r() < 0.5 ? -1 : 1, 1);
         if (park) lctx.filter = 'saturate(0.65)';
         lctx.drawImage(
@@ -87,14 +89,15 @@ function chunk(source: HTMLCanvasElement, x: number, y: number, park: boolean) {
   ctx.globalCompositeOperation = 'destination-over';
   ctx.fillStyle = '#97b96f';
   ctx.fillRect(0, 0, PIXELS, PIXELS);
-  if (park) paintTones(ctx, x, y);
+  if (park) paintTones(ctx, x, y, PIXELS);
   chunks.set(key, cv);
-  if (chunks.size > LIMIT) chunks.delete(chunks.keys().next().value!);
+  while (chunks.size > LIMIT || chunks.size * PIXELS * PIXELS * 4 > 96 * 1024 * 1024)
+    chunks.delete(chunks.keys().next().value!);
   return cv;
 }
 
 /** Broad sun-dried clearings and cool woodland shade, shared across chunk edges. */
-function paintTones(ctx: CanvasRenderingContext2D, x: number, y: number) {
+function paintTones(ctx: CanvasRenderingContext2D, x: number, y: number, PIXELS: number) {
   ctx.save();
   ctx.setTransform(PIXELS / WORLD, 0, 0, PIXELS / WORLD, -x * PIXELS, -y * PIXELS);
   ctx.globalCompositeOperation = 'source-over';
@@ -141,16 +144,29 @@ export function paintMeadow(
   bottom: number,
   park = false,
 ) {
-  if (source !== sourceImage || park !== parkStyle) {
-    chunks.clear();
-    sourceImage = source;
-    parkStyle = park;
+  const transform = ctx.getTransform();
+  const pixels = WORLD * Math.min(2, Math.max(1, Math.ceil(Math.hypot(transform.a, transform.b))));
+  let levels = caches.get(source);
+  if (!levels) {
+    levels = new Map();
+    caches.set(source, levels);
+  }
+  const key = `${pixels},${park}`;
+  let cache = levels.get(key);
+  if (!cache) {
+    cache = { pixels, chunks: new Map(), masks: null };
+    levels.set(key, cache);
   }
   ctx.fillStyle = '#97b96f';
   ctx.fillRect(left, top, right - left, bottom - top);
   for (let y = Math.floor(top / WORLD); y < Math.ceil(bottom / WORLD); y++) {
     for (let x = Math.floor(left / WORLD); x < Math.ceil(right / WORLD); x++) {
-      ctx.drawImage(chunk(source, x, y, park), x * WORLD, y * WORLD, WORLD, WORLD);
+      ctx.drawImage(chunk(source, x, y, park, cache), x * WORLD, y * WORLD, WORLD, WORLD);
     }
   }
+  // Retain useful zoom levels without keeping several full-resolution meadow caches forever.
+  levels.delete(key);
+  levels.set(key, cache);
+  const bytes = () => [...levels.values()].reduce((n, l) => n + l.chunks.size * l.pixels * l.pixels * 4, 0);
+  while (levels.size > 1 && bytes() > 128 * 1024 * 1024) levels.delete(levels.keys().next().value!);
 }
