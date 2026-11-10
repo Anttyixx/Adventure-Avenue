@@ -242,6 +242,9 @@ Terrain and props stay clear of playable tiles, real roads and portal openings. 
 stays fixed while panning and uses no engine randomness. The builder hides decorative terrain,
 props and verges. Earlier scenery assets and implementations remain available for rollback.
 The UI Lab's square/hex landscape previews show the active background at both zoom scales.
+The warm path beneath the board follows each tile's square or hex footprint, leaving an even
+margin around corners, points, bends and dead ends; round road caps must not cut this margin off.
+Portal approach roads retain their normal width.
 Grass is a separate background beneath tiles and scenery. Both builder and games fill the
 entire visible camera area, including outside the board, at every zoom and screen size. The
 landscape is anchored in board coordinates and scales with the tiles; there is no finite

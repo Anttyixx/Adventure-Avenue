@@ -2465,12 +2465,15 @@ function drawParkGround(ctx: CanvasRenderingContext2D, G: GameState) {
       ctx.moveTo(p.from.x, p.from.y);
       ctx.lineTo(p.to.x, p.to.y);
     }
+    ctx.stroke();
+    // A round road cap leaves square corners (and hex points) without a ground margin.
+    // Extend the actual tile footprint instead, keeping the same verge around every edge.
+    ctx.fillStyle = color;
     for (const sq of G.nodes) {
       const p = squareCenter(sq, G.layout);
-      ctx.moveTo(p.x, p.y);
-      ctx.lineTo(p.x + 0.01, p.y);
+      tileShape(ctx, G.layout, p.x, p.y, width / 2, 12 + (width - 86) / 2);
+      ctx.fill();
     }
-    ctx.stroke();
   }
   const bank = G.nodes.find((n) => n.t === 'bank');
   if (bank) {

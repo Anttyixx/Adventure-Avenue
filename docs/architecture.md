@@ -149,7 +149,9 @@ room, Continue resumes the saved game, and the board editor (`ui/editor.ts`).
   `puzzle` retains `park-scenes.ts` / `park-scenes-art.ts` and v10 art; `connected` restores
   the earlier detailed terrain. `park` / `previous` retain older scenery. All PNGs remain.
   The builder omits scenery; `drawParkGround` adds verges below actual roads in games, leaving
-  portal stems their normal width. Square/hex Lab previews show the active scenery.
+  portal stems their normal width. Each verge pass joins road strokes with expanded `tileShape`
+  pads so square corners and hex points retain a continuous ground margin. Square/hex Lab
+  previews show the active scenery.
 - **Static layer:** scenery and tiles are painted once into an offscreen cache
   (`renderStatic` → `paintBoard`) and redrawn only when `dirty` (state changed) or the zoom needs
   a sharper copy. Property images come from `props.ts` (PNG art in `assets/props`, recolored to

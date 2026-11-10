@@ -953,6 +953,9 @@ Bright and physical, unlike the dark HUD:
   board. Keep furnishings sparse and distant areas quiet. No default dioramas, enclosing hedge
   walls or decorative walk networks. Keep gameplay tiles, roads and portal mouths clear; no
   sticker rims, opaque floor pads, labels or realistic botanical detail. Hide scenery in the builder.
+- **Ground beneath tiles:** follow the square/hex tile footprint with a continuous margin at
+  corners, points and dead ends. Join these pads with the existing path strokes; keep portal
+  approach roads their normal width.
 - **Tiles** (86 units on a 100 grid): cream `#fdfbf5` (bank `#fff6d6`), radius 12, soft shadow
   down-right. Owned: tint of the owner's color. Properties: 6px district-color border. Vacant
   plots: dashed grey outline + "VACANT".

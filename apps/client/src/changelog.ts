@@ -41,7 +41,7 @@ export const CHANGELOG: ChangelogEntry[] = [
         text: 'Trees, flowers, reeds and lily pads add light decoration. A few benches and planters sit near the board, with open space keeping the route easy to see.',
       },
     ],
-    extras: ['Previous scenery artwork preserved'],
+    extras: ['Continuous ground beneath square and hex tile edges', 'Previous scenery artwork preserved'],
   },
   {
     id: '2026-11-09-portal-flow',
