@@ -1004,7 +1004,7 @@ input[type='range'] {
   }
 }
 
-/* Player card layouts: three buttons above the cards, against the window's right edge: List,
+/* Player card layouts: three buttons below the cards, against the window's right edge: List,
    Stack and Smart. Just an outline with no fill, so they can be found when looked for but don't
    pull the eye from the board; the chosen one gets a brighter outline. Stack folds the cards: the
    active player's card stays in front and the others sit behind it in turn order, each peeking

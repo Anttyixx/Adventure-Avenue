@@ -1162,7 +1162,7 @@ switches to it; Buy buys the marked one. Online games show a "Room ABCD" button 
 glowing suits on their card. Arcade games and venture picks open for everyone, so other players
 watch them being played; their result screen closes by itself or with Close.
 
-**Player card layouts.** Three small buttons float just above the right end of the player
+**Player card layouts.** Three small buttons sit just below the right end of the player
 cards, in this order: **List**, **Stack** and **Smart**. They are an outline with a light, see-through
 backing (the chosen one outlined brighter), so they can be found easily but don't pull the eye
 from the board. The choice is remembered on that device (an older "folded" choice becomes Stack).
@@ -1184,8 +1184,7 @@ from the board. The choice is remembered on that device (an older "folded" choic
 **Opening a stack** (the same gliding motion as switching layouts, one card just after another): in Stack and Smart, tapping a card doesn't open the player's info; tapping or
 clicking the stack opens it into a list for 3 seconds, then it folds back. With a mouse, resting
 on the stack opens it until the mouse moves off the cards. While it is open, tapping a player's
-card opens their info. The chosen layout doesn't change. The layout buttons above the cards
-glide up or down with the top card, never jumping.
+card opens their info. The chosen layout doesn't change. The layout buttons stay fixed below the cards as the cards open, fold, or rise out of a smart stack.
 
 Switching between List and a stack is animated: the cards glide together into the stack (or fan
 back out to their places) one just after another; cards rising out of a smart stack and going

@@ -26,6 +26,18 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: '2026-11-09-player-card-controls',
+    date: 'Nov 9, 2026',
+    title: 'Player card controls stay put',
+    features: [
+      {
+        tag: 'better',
+        title: 'Layout buttons below the cards',
+        text: 'The List, Stack and Smart buttons now sit below the player cards and stay in place while the cards expand, fold or pop out.',
+      },
+    ],
+  },
+  {
     id: '2026-11-09-cartoon-town-terrain',
     date: 'Nov 9, 2026',
     title: 'A lighter cartoon landscape',

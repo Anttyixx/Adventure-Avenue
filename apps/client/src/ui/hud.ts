@@ -126,7 +126,7 @@ export class Hud {
   cardsWrap = h('div', { class: 'cards-wrap' });
   cards = h('div', { class: 'cards' });
   /**
-   * The three outlined buttons above the player cards, against the right edge: List (every
+   * The three outlined buttons below the player cards, against the right edge: List (every
    * card), Stack (only the active player's card in front) and Smart (a stack, but a card that
    * changes on someone else's turn rises out of it for a moment).
    */
@@ -224,7 +224,7 @@ export class Hud {
         ),
       );
     }
-    this.cardsWrap.append(this.cardsModes, this.cards);
+    this.cardsWrap.append(this.cards, this.cardsModes);
     // Clicking or tapping the stack (its front card or the strips behind) opens it into a list
     // for a moment; a mouse resting on it keeps it open until it leaves.
     this.cards.addEventListener('click', () => {
@@ -723,10 +723,6 @@ export class Hud {
     if (!this.G || matchMedia('(prefers-reduced-motion: reduce)').matches) return change();
     const before = els.map((el) => el.getBoundingClientRect());
     for (const el of els) for (const a of el.getAnimations()) a.cancel();
-    // The layout buttons sit above the top card, so they glide along with it.
-    const modes = this.cardsModes;
-    for (const a of modes.getAnimations()) if (!(a instanceof CSSTransition)) a.cancel();
-    const modesBefore = modes.getBoundingClientRect();
     const wrap = this.cardsWrap;
     wrap.classList.add('stacking');
     change();
@@ -736,14 +732,6 @@ export class Hud {
     const done = () => {
       if (--left <= 0) wrap.classList.remove('stacking');
     };
-    const modesAfter = modes.getBoundingClientRect();
-    const mx = (modesBefore.left - modesAfter.left) / zoom;
-    const my = (modesBefore.top - modesAfter.top) / zoom;
-    if (Math.abs(mx) >= 0.5 || Math.abs(my) >= 0.5)
-      modes.animate([{ transform: `translate(${mx}px, ${my}px)` }, { transform: 'none' }], {
-        duration: T.cardStack,
-        easing: 'cubic-bezier(0.2, 0.8, 0.2, 1)',
-      });
     els.forEach((el, i) => {
       // A card the change set moving itself (the old front card dropping to the back when the
       // turn passes) keeps its own move: gliding it too would pull it out of line.
@@ -1690,7 +1678,7 @@ function stackTransform(d: number): string {
 /** How the player cards are shown: a list, a stack, or a smart stack. */
 export type CardsMode = 'list' | 'stack' | 'smart';
 
-/** The three buttons above the player cards, in this order, with their icons (16 x 16). */
+/** The three buttons below the player cards, in this order, with their icons (16 x 16). */
 const CARDS_MODES: { id: CardsMode; title: string; icon: string }[] = [
   {
     id: 'list',

@@ -117,13 +117,11 @@ const rnd = (n: number) => Math.floor(Math.random() * n);
  * are easy to find. Update this list with each change.
  */
 const RECENT = new Set([
-  'Portal: entrance to exit',
-  'Portal: two-way flow',
-  'Travel through a portal',
-  'Portal links in the builder',
-  'Town terrain: square',
-  'Town terrain: hex',
-  'Tile sprites and tint layers',
+  'Cards: list',
+  'Cards: stack',
+  'Cards: smart',
+  'Cards: open the stack',
+  'Smart stack: pay someone else',
 ]);
 
 /**
