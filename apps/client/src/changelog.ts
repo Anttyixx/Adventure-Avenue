@@ -26,6 +26,18 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: '2026-11-10-foliage',
+    date: 'Nov 10, 2026',
+    title: 'Trees and a river around the board',
+    features: [
+      {
+        tag: 'better',
+        title: 'Livelier grass',
+        text: 'Woods, orchards, flowers and rocks now fill the open grass around the board, thicker further out, and a winding river with reeds and lily pads runs down one side. Tiles and roads stay clear, and zooming stays smooth.',
+      },
+    ],
+  },
+  {
     id: '2026-11-10-quick-redraws',
     date: 'Nov 10, 2026',
     title: 'No more hitches when things change',

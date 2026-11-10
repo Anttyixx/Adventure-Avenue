@@ -115,6 +115,7 @@ foliage and sparse benches near the board. `town-terrain-art.ts` paints continuo
 soft masks and camera-scaled world chunks using `assets/terrain-v12/`; decoration PNGs draw
 at native resolution with cached placement plans. Earlier textures remain in `terrain-v8/`.
 `meadow.ts` builds cached, coordinate-seeded grass chunks with smooth patch blending.
+`foliage.ts` draws the light river and foliage on the solid ground (`paintFoliage`).
 `ground.ts` bakes the textured ground (meadow + terrain) into cached chunks for live views
 (`paintGround`, `warmGround`); unused while `GROUND_SET` is `solid`.
 `chunk-budget.ts` holds the shared chunk rules for both: half, 1x or 2x resolution (`chunkLevel`), at most one

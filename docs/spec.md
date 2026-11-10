@@ -232,7 +232,16 @@ pixels) and a bright inner stroke (3 screen pixels), gold normally and red while
 screen size stays constant at every zoom.
 **Ground.** By default (`GROUND_SET = 'solid'` in `props.ts`) the ground around and under the board
 is one plain grass color (`#97c26a`) in games, the builder and still pictures: one fill per frame
-and nothing to build while zooming. Cloud shadows still drift over it. `GROUND_SET = 'textured'`
+and nothing to build while zooming. Cloud shadows still drift over it. In games and still
+pictures (not the builder) `foliage.ts` adds light scenery on it: a winding river (74 units wide,
+grass-green banks, a few broken white ripples) running top to bottom about 430 units beside the
+board, on a side chosen from the board's id, with reeds and rocks on its banks and lily pads on
+it; and foliage on an 80-unit grid: trees, apple trees and shrubs in clumps of woods, scattered
+flowers, shrubs, rocks, saplings and mushrooms elsewhere. Nothing grows within 125 units of a
+tile center or portal opening (trees 155); density rises from sparse beside the board to full
+650 units out. Placement is fixed by board coordinates (no engine randomness). Pieces smaller
+than 14 screen pixels are left out when zoomed far out, and each piece draws from a copy of its
+picture halved down close to its size on screen. `GROUND_SET = 'textured'`
 restores the painted landscape described next; live views then draw it from ground chunks cached
 by `ground.ts` (meadow and terrain baked together), with its decorations drawn live on top.
 The textured landscape uses varied cartoon grass, turquoise pond water and warm paving textures,

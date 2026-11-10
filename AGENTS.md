@@ -113,7 +113,9 @@ Requests refer to parts of the game by these names:
 - **Board** (`apps/client/src/board.ts`):
   - **tiles/squares**, **districts** (color groups of shops), **vacant plots** (empty properties
     that get a building).
-  - **background:** `GROUND_SET = 'solid'` (`props.ts`, default) fills plain grass for speed;
+  - **background:** `GROUND_SET = 'solid'` (`props.ts`, default) fills plain grass for speed,
+    with a river and foliage from `foliage.ts` drawn as small live pieces (keep it cheap: no
+    full-screen layers);
     `textured` restores the painted ground below, baked into chunks by `ground.ts` for live views.
     Textured mode: `paintGrass` paints nonrepeating grass plus varied cartoon grass/water/paving cells (`SCENERY_SET = terrain`). `town-terrain.ts` joins material cells and `townBackgroundFeatures` adds mainly foliage, with occasional benches/planters near the board; `town-terrain-art.ts` blends edges and caches world chunks at the current camera pixel scale (0.5–2px/world unit); decoration PNGs draw separately at native resolution. `terrain-v12/` contains the active crisp cartoon materials, with previous textures preserved. Meadow caches also follow camera pixel scale. Lawn blades and clovers must stay upright: vary crops / horizontal flips only, never rotate patches or vertically mirror the lawn texture. Match board tile art, keep geometry/portal mouths clear, and hide scenery in the builder. Default scenery has no hedge frames, dioramas or decorative walk network. `puzzle` and `connected` preserve the earlier experiments; `park` and `previous` preserve older scenery. Keep all earlier assets.
   - **auto zoom / camera:** see "Camera" in `docs/architecture.md`.

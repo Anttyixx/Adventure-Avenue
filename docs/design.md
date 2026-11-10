@@ -963,8 +963,12 @@ animation has a `prefers-reduced-motion` path (CSS media query, or `matchMedia(.
 
 Bright and physical, unlike the dark HUD:
 
-- **Ground:** solid grass `#97c26a` by default (`GROUND_SET` in `props.ts`), for speed: the
-  textured world below is kept for rollback (`GROUND_SET = 'textured'`).
+- **Ground:** solid grass `#97c26a` by default (`GROUND_SET` in `props.ts`), for speed, with
+  light scenery from `foliage.ts`: a river beside the board (bank `#7fae58`, water `#4cb8cf`,
+  broken white ripples) and foliage clumps that thicken away from the board. Only draw scenery
+  as separate small pieces (never a full-screen layer), keep tiles, roads and portal openings
+  clear, and skip specks when zoomed far out. The textured world below is kept for rollback
+  (`GROUND_SET = 'textured'`).
 - **World (textured ground):** varied cartoon grass, turquoise water and warm paving, with soft transitions and
   the same rounded forms and cheerful colors as the board tiles. Use light foliage-led
   decoration: trees, flowers, reeds and lily pads, with occasional benches/planters near the

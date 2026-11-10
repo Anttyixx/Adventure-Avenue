@@ -138,7 +138,10 @@ room, Continue resumes the saved game, and the board editor (`ui/editor.ts`).
 `BoardView` draws everything on one `<canvas>`:
 
 - **Ground:** `GROUND_SET` (`props.ts`) is `solid` by default: `paintGrass` / `paintLiveGrass`
-  fill the visible world with one grass color and nothing below is built. With `textured`,
+  fill the visible world with one grass color and nothing below is built. With a game state,
+  `paintSceneryOnGrass` adds `foliage.ts` `paintFoliage`: the visible stretch of a river path
+  stroked live and foliage pieces planned per 800-unit chunk (cached per state), drawn from
+  halved sprite copies (`spriteAt`) sized to the screen; pieces under 14px are skipped. With `textured`,
   `paintLiveGrass` draws the background described next from `ground.ts`: meadow and terrain baked
   into one cached 800-unit chunk per resolution level (96MiB LRU), so a frame paints one layer.
   At most one chunk is built per frame and none while the camera zooms (another level stands

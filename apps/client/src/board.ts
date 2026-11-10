@@ -35,6 +35,7 @@ import { paintParkScenery, paintParkStream } from './park';
 import { paintParkScenes } from './park-scenes-art';
 import { paintTownFeatures, paintTownTerrain } from './town-terrain-art';
 import { paintGround, warmGround, type GroundPainter } from './ground';
+import { paintFoliage } from './foliage';
 import { drawBoonIcon, drawCoin, drawSparkle, SUIT_CHARS } from './icons';
 import { Facing, FRAME_H, FRAME_W, drawCharacter, drawCharacterGlow, facingFor } from './sprites';
 import { TIMING as T } from './timing';
@@ -2523,6 +2524,28 @@ function paintSolidGrass(
   ctx.fillRect(left, top, right - left, bottom - top);
 }
 
+const portalOpenings = new WeakMap<GameState, { x: number; y: number }[]>();
+
+/** The river and foliage around the board (`foliage.ts`), clear of tiles and portal openings. */
+function paintSceneryOnGrass(
+  ctx: CanvasRenderingContext2D,
+  G: GameState,
+  left: number,
+  top: number,
+  right: number,
+  bottom: number,
+) {
+  let portals = portalOpenings.get(G);
+  if (!portals) {
+    portals = portalGates(G).map((g) => portalPoint(G, G.nodes[g.node], g.side));
+    portalOpenings.set(G, portals);
+  }
+  const t = ctx.getTransform();
+  ctx.save();
+  paintFoliage(ctx, G, portals, left, top, right, bottom, Math.hypot(t.a, t.b));
+  ctx.restore();
+}
+
 /** Builder views have no game state: their ground (plain meadow) is cached under this key. */
 const NO_BOARD = {};
 
@@ -2533,7 +2556,11 @@ const NO_BOARD = {};
  */
 export function paintLiveGrass(ctx: CanvasRenderingContext2D, G?: GameState) {
   const { left, top, right, bottom } = visibleWorld(ctx);
-  if (GROUND_SET === 'solid') return paintSolidGrass(ctx, left, top, right, bottom);
+  if (GROUND_SET === 'solid') {
+    paintSolidGrass(ctx, left, top, right, bottom);
+    if (G) paintSceneryOnGrass(ctx, G, left, top, right, bottom);
+    return;
+  }
   ctx.save();
   paintGround(ctx, G ?? NO_BOARD, groundPainter(G), left, top, right, bottom);
   if (TOWN_LANDSCAPE && G) paintTownFeatures(ctx, G, left, top, right, bottom);
@@ -2558,7 +2585,11 @@ function paintGrassArea(
   bottom: number,
   features: boolean,
 ) {
-  if (GROUND_SET === 'solid') return paintSolidGrass(ctx, left, top, right, bottom);
+  if (GROUND_SET === 'solid') {
+    paintSolidGrass(ctx, left, top, right, bottom);
+    if (G && features) paintSceneryOnGrass(ctx, G, left, top, right, bottom);
+    return;
+  }
   const meadow = propCanvas('meadow', '#808080');
   if (PAINTED_LANDSCAPE && meadow) paintMeadow(ctx, meadow, left, top, right, bottom, PARK_LANDSCAPE);
   else {
