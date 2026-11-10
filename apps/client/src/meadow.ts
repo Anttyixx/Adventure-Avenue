@@ -1,5 +1,6 @@
 /** Softly blended, coordinate-seeded grass patches: no mirrored or repeating world tile. */
 import { landscapeRandom } from './scenery';
+import { chunkBudget, chunkLevel, touchChunk, trimChunks } from './chunk-budget';
 
 const WORLD = 768;
 const PATCHES = 3;
@@ -37,12 +38,6 @@ function chunk(source: HTMLCanvasElement, x: number, y: number, park: boolean, c
     PATCH_PIXELS = PIXELS / PATCHES,
     chunks = cache.chunks;
   const key = `${x},${y}`;
-  const saved = chunks.get(key);
-  if (saved) {
-    chunks.delete(key);
-    chunks.set(key, saved);
-    return saved;
-  }
   const masks = (cache.masks ??= weights(PATCH_PIXELS));
   const cv = canvas(PIXELS);
   const ctx = cv.getContext('2d')!;
@@ -91,8 +86,6 @@ function chunk(source: HTMLCanvasElement, x: number, y: number, park: boolean, c
   ctx.fillRect(0, 0, PIXELS, PIXELS);
   if (park) paintTones(ctx, x, y, PIXELS);
   chunks.set(key, cv);
-  while (chunks.size > LIMIT || chunks.size * PIXELS * PIXELS * 4 > 96 * 1024 * 1024)
-    chunks.delete(chunks.keys().next().value!);
   return cv;
 }
 
@@ -145,7 +138,8 @@ export function paintMeadow(
   park = false,
 ) {
   const transform = ctx.getTransform();
-  const pixels = WORLD * Math.min(2, Math.max(1, Math.ceil(Math.hypot(transform.a, transform.b))));
+  const level = chunkLevel(Math.hypot(transform.a, transform.b));
+  const pixels = WORLD * level;
   let levels = caches.get(source);
   if (!levels) {
     levels = new Map();
@@ -159,11 +153,26 @@ export function paintMeadow(
   }
   ctx.fillStyle = '#97b96f';
   ctx.fillRect(left, top, right - left, bottom - top);
+  // The other resolution's chunks stand in while this one's are still being built.
+  const other = levels.get(`${WORLD * (3 - level)},${park}`);
+  let drawn = 0;
   for (let y = Math.floor(top / WORLD); y < Math.ceil(bottom / WORLD); y++) {
     for (let x = Math.floor(left / WORLD); x < Math.ceil(right / WORLD); x++) {
-      ctx.drawImage(chunk(source, x, y, park, cache), x * WORLD, y * WORLD, WORLD, WORLD);
+      const key = `${x},${y}`;
+      let cv = touchChunk(cache.chunks, key);
+      if (!cv) {
+        const stand = other && touchChunk(other.chunks, key);
+        if (stand && chunkBudget.left <= 0) cv = stand;
+        else {
+          cv = chunk(source, x, y, park, cache);
+          chunkBudget.left--;
+        }
+      }
+      if (cache.chunks.has(key)) drawn++;
+      ctx.drawImage(cv, x * WORLD, y * WORLD, WORLD, WORLD);
     }
   }
+  trimChunks(cache.chunks, Math.min(LIMIT, Math.floor((96 * 1024 * 1024) / (pixels * pixels * 4))), drawn);
   // Retain useful zoom levels without keeping several full-resolution meadow caches forever.
   levels.delete(key);
   levels.set(key, cache);

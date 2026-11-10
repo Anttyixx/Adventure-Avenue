@@ -26,6 +26,18 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: '2026-11-10-smooth-zoom',
+    date: 'Nov 10, 2026',
+    title: 'Smoother camera zooms',
+    features: [
+      {
+        tag: 'fix',
+        title: 'No more stutter',
+        text: 'Zooming between a player and the whole board is smooth again. The background no longer redraws itself all at once mid-zoom.',
+      },
+    ],
+  },
+  {
     id: '2026-11-10-active-glide',
     date: 'Nov 10, 2026',
     title: 'Smoother card unfolding',

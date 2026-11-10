@@ -178,6 +178,12 @@ room, Continue resumes the saved game, and the board editor (`ui/editor.ts`).
   - `insets` (set by `hud.updateInsets`) is the screen area covered by HUD panels, so framing
     keeps squares out from under them.
 
+Camera zooms stay smooth because background chunks follow `chunk-budget.ts`: chunks use 2x
+resolution only when the canvas scale is at least 1.5, a live frame builds at most one new chunk
+(an already-built chunk at the other resolution stands in until then), and the caches never drop
+chunks drawn in the current frame (a whole-board view used to evict and rebuild chunks every frame).
+`BoardView` also only re-renders its static board picture at a higher scale, never a lower one.
+
 ### The HUD (`ui/hud.ts`)
 
 While any pop-up is up, `Hud.updateLock` (a MutationObserver on the HUD's layers) adds
