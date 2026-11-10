@@ -26,6 +26,13 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: '2026-11-10-classic-renderer',
+    date: 'Nov 10, 2026',
+    title: 'Back to the classic renderer',
+    features: [],
+    extras: ['The PixiJS test renderer is removed: the board draws the usual way again, path included'],
+  },
+  {
     id: '2026-11-10-smooth-zoom',
     date: 'Nov 10, 2026',
     title: 'Smoother camera zooms',
