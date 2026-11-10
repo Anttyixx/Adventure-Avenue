@@ -3,7 +3,7 @@ import { landscapeRandom } from './scenery';
 
 const WORLD = 768;
 const PATCHES = 3;
-const LIMIT = 96;
+const LIMIT = 256;
 interface MeadowCache {
   pixels: number;
   chunks: Map<string, HTMLCanvasElement>;
@@ -145,7 +145,11 @@ export function paintMeadow(
   park = false,
 ) {
   const transform = ctx.getTransform();
-  const pixels = WORLD * Math.min(2, Math.max(1, Math.ceil(Math.hypot(transform.a, transform.b))));
+  const pixels =
+    WORLD *
+    (Math.hypot(transform.a, transform.b) <= 0.5
+      ? 0.5
+      : Math.min(2, Math.ceil(Math.hypot(transform.a, transform.b))));
   let levels = caches.get(source);
   if (!levels) {
     levels = new Map();

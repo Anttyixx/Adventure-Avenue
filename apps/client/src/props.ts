@@ -56,12 +56,21 @@ export type PropKey =
   | 'portal-side'
   | 'portal-swirl'
   | 'portal-swirl-inner'
+  | 'portal-vortex'
+  | 'portal-vortex-inner'
   | `${'square' | 'hex'}-${'tile' | 'shadow' | 'border' | 'selection'}`;
 
 /** Change to classic to restore the original PNGs and canvas artwork. */
 export const ART_SET: string = 'layered';
 /** Restore the previous property sprites without changing the rest of the board art. */
 export const PROPERTY_SET: string = 'painted';
+/** Restore the previous warp and portal artwork independently of other board sprites. */
+export const TRANSPORT_SET: string = 'crystal';
+const transportArt = import.meta.glob<string>('./assets/transport-v13/*.png', {
+  eager: true,
+  query: '?url',
+  import: 'default',
+});
 /** Restore the previous grass and scenery density independently of the building set. */
 export const LANDSCAPE_SET: string = 'painted';
 export const PAINTED_LANDSCAPE = ART_SET === 'layered' && LANDSCAPE_SET === 'painted';
@@ -158,6 +167,12 @@ const urls = Object.fromEntries([
             )
           : {}),
       }).map(([path, url]) => [
+        path.replace(/^.*\//, '').replace('-base.png', '.png'),
+        { url, explicit: true },
+      ])
+    : []),
+  ...(ART_SET === 'layered' && TRANSPORT_SET === 'crystal'
+    ? Object.entries(transportArt).map(([path, url]) => [
         path.replace(/^.*\//, '').replace('-base.png', '.png'),
         { url, explicit: true },
       ])
@@ -313,7 +328,7 @@ const PROP_SCALE = 0.9;
 const contentBoxes = new Map<string, { x: number; y: number; w: number; h: number }>();
 
 /**
- * The visible part of an image. Sprite frames carry different amounts of empty space around the
+ * The visible part of the base and tint together. Sprite frames carry different amounts of empty space around the
  * drawing, so fitting the frame would leave some drawings small or floating and push others into
  * the tile's border; fitting this box lines them all up.
  */
@@ -324,13 +339,15 @@ function contentBox(key: PropKey, cv: HTMLCanvasElement) {
   let box = { x: 0, y: 0, w: cv.width, h: cv.height };
   if (src) {
     const { data, width, height } = src.data;
+    const tint = tintLayers.get(key)?.data;
     let x0 = width;
     let y0 = height;
     let x1 = -1;
     let y1 = -1;
     for (let y = 0; y < height; y++)
       for (let x = 0; x < width; x++) {
-        if (data[(y * width + x) * 4 + 3] <= 24) continue;
+        const alphaIndex = (y * width + x) * 4 + 3;
+        if (Math.max(data[alphaIndex], tint?.[alphaIndex] ?? 0) <= 24) continue;
         if (x < x0) x0 = x;
         if (x > x1) x1 = x;
         if (y < y0) y0 = y;

@@ -143,8 +143,8 @@ room, Continue resumes the saved game, and the board editor (`ui/editor.ts`).
   material masks. `terrain-v12/` supplies crisp cartoon lawn and cobblestone materials; water retains its v8 material,
   v8/v9 artwork remains intact and supplies foliage. `townBackgroundFeatures` places trees, flowers, reeds, rocks and lily pads, with
   benches only within 260 world units of a playable tile and planters within 300. No default
-  hedge frame, activity clearings or decorative paths. Terrain caches use 800-unit world chunks at 1–2 pixels/world unit, selected from the current
-  camera transform. Overscan grows with resolution; the LRU is bounded by 48 entries and 128MiB.
+  hedge frame, activity clearings or decorative paths. Terrain caches use 800-unit world chunks at 0.5–2 pixels/world unit, selected from the current
+  camera transform. Overscan grows with resolution; the LRU is bounded by 256 entries and 128MiB.
   Default decorations draw directly from their PNGs after terrain, with placement plans cached
   separately. Meadow caches also keep camera-dependent resolution levels, with a 128MiB budget
   across levels per source. Meadow patches vary their crops and horizontal flips only; no rotation
@@ -208,6 +208,9 @@ compatible with older saves. `portal-links.ts` resolves exact partner sides and 
 `portal-travel.ts` provides pure poses for `BoardView.portalStep`, which updates the die once,
 animates for `TIMING.portalStep`, clears the transient token pose and resumes normal stepping.
 `drawTokens` transforms only the traveling sprite and hides its name/base until arrival.
+`drawPortalRing` composes a fixed v13 frame with tinted vortex layers, a pulse and orbit lights.
+`drawPortals` passes continuous unwrapped time; reduced motion passes zero. The game and builder
+share the renderer. `TRANSPORT_SET` in `props.ts` selects v13 or preserves earlier artwork.
 
 ### Online play (`net/`)
 

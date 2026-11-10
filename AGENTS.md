@@ -113,7 +113,7 @@ Requests refer to parts of the game by these names:
 - **Board** (`apps/client/src/board.ts`):
   - **tiles/squares**, **districts** (color groups of shops), **vacant plots** (empty properties
     that get a building).
-  - **background:** `paintGrass` paints nonrepeating grass plus varied cartoon grass/water/paving cells (`SCENERY_SET = terrain`). `town-terrain.ts` joins material cells and `townBackgroundFeatures` adds mainly foliage, with occasional benches/planters near the board; `town-terrain-art.ts` blends edges and caches world chunks at the current camera pixel scale (1–2px/world unit); decoration PNGs draw separately at native resolution. `terrain-v12/` contains the active crisp cartoon materials, with previous textures preserved. Meadow caches also follow camera pixel scale. Lawn blades and clovers must stay upright: vary crops / horizontal flips only, never rotate patches or vertically mirror the lawn texture. Match board tile art, keep geometry/portal mouths clear, and hide scenery in the builder. Default scenery has no hedge frames, dioramas or decorative walk network. `puzzle` and `connected` preserve the earlier experiments; `park` and `previous` preserve older scenery. Keep all earlier assets.
+  - **background:** `paintGrass` paints nonrepeating grass plus varied cartoon grass/water/paving cells (`SCENERY_SET = terrain`). `town-terrain.ts` joins material cells and `townBackgroundFeatures` adds mainly foliage, with occasional benches/planters near the board; `town-terrain-art.ts` blends edges and caches world chunks at the current camera pixel scale (0.5–2px/world unit); decoration PNGs draw separately at native resolution. `terrain-v12/` contains the active crisp cartoon materials, with previous textures preserved. Meadow caches also follow camera pixel scale. Lawn blades and clovers must stay upright: vary crops / horizontal flips only, never rotate patches or vertically mirror the lawn texture. Match board tile art, keep geometry/portal mouths clear, and hide scenery in the builder. Default scenery has no hedge frames, dioramas or decorative walk network. `puzzle` and `connected` preserve the earlier experiments; `park` and `previous` preserve older scenery. Keep all earlier assets.
   - **auto zoom / camera:** see "Camera" in `docs/architecture.md`.
 - **Board builder** (or board editor, `ui/editor.ts`, `#editor`): the full-screen builder with the
   left icon toolbar (Select, Pan, Place, Erase, Links), the Tiles pane, Board settings, tile info panel, the portal panel and
@@ -131,7 +131,9 @@ Requests refer to parts of the game by these names:
   `assets/tiles-v2/`, mapped in
   `props.ts` (`ART_SET`, `ART_SOURCES`). The previous property set and original Checkpoint/Circus/Motel pairs remain
   unchanged in `assets/tiles-v2/` and `assets/props/`; `PROPERTY_SET` selects the property set. Base-only sprites never auto-recolor blue pixels. New recolorable sprites
-  require an aligned grey `-tint.png`. Keep legacy assets and canvas fallbacks for rollback.
+  require an aligned grey `-tint.png`. `transport-v13/` holds the crystal warp, portal frame and
+  two vortex base/tint pairs (`TRANSPORT_SET` selects them). Portal frames stay fixed; vortex
+  phase must stay continuous and freeze with reduced motion. Keep legacy assets and canvas fallbacks for rollback.
 
 ## Commands
 

@@ -30,11 +30,11 @@ import {
   type TradeOffer,
 } from '@aa/engine';
 import { SHOP_TIERS, SHOP_TIER_NAMES, STAR3_TIERS, STAR3_TIER_NAMES, propertyIconURL } from '../art';
-import { propIconURL, ART_SOURCES, type PropKey } from '../props';
+import { propIconURL, drawProp, ART_SOURCES, type PropKey } from '../props';
 
 /** The grey unowned property art is drawn in (as on the board). */
 const UNOWNED_ART = '#8a94a8';
-import { BoardView, ZOOM_STEP, portalGates } from '../board';
+import { BoardView, ZOOM_STEP, portalGates, drawPortalRing } from '../board';
 import { ZOOM_MAX_OUT } from '../zoom';
 import { CHARACTERS, shuffledCharacters } from '../sprites';
 import { clear, fmt, h } from './dom';
@@ -116,7 +116,14 @@ const rnd = (n: number) => Math.floor(Math.random() * n);
  * Controls for UI elements that were just added or changed: they shake once and glow so they
  * are easy to find. Update this list with each change.
  */
-const RECENT = new Set(['Cards: list', 'Cards: open the stack']);
+const RECENT = new Set([
+  'Warp and portal artwork',
+  'Portal: entrance to exit',
+  'Portal: two-way flow',
+  'Travel through a portal',
+  'Portal links in the builder',
+  'Tile sprites and tint layers',
+]);
 
 /**
  * Which board the lab plays on: Town with portal links (square, the default) or Twin Lakes (hex),
@@ -1459,6 +1466,57 @@ export async function openLab(app: HTMLElement, section?: string) {
           }
         }),
       );
+  }
+
+  // Transport sprite and motion preview, with the actual board renderer in each pair color.
+  {
+    const s = addSection(
+      'art',
+      'Transport artwork',
+      'Crystal warps and animated portal link rings. Colors match their linked partners.',
+    );
+    row(
+      s,
+      btn('Warp and portal artwork', () => {
+        const canvas = h('canvas', {
+          width: 1000,
+          height: 340,
+          style: 'width:100%;height:auto;display:block',
+          'aria-label': 'Warp and portal colors',
+        });
+        let frame = 0;
+        const m = hud.modal('Warp and portal artwork', canvas, {
+          wide: true,
+          onClose: () => {
+            cancelAnimationFrame(frame);
+            m.close();
+          },
+        });
+        const paint = (now: number) => {
+          if (!canvas.isConnected) return;
+          const ctx = canvas.getContext('2d')!;
+          ctx.clearRect(0, 0, 1000, 340);
+          const colors = ['#8b5cf6', '#06b6d4', '#f97316', '#ec4899', '#22c55e'];
+          ctx.fillStyle = '#f8efd7';
+          ctx.font = '700 18px "Atkinson Hyperlegible",sans-serif';
+          ctx.textAlign = 'center';
+          ctx.fillText('Warp pairs', 500, 27);
+          ctx.fillText('Portal links', 500, 187);
+          const still = matchMedia('(prefers-reduced-motion: reduce)').matches;
+          colors.forEach((color, i) => {
+            const x = 100 + i * 200;
+            drawProp(ctx, 'warp', color, x, 102, 105, 108);
+            ctx.save();
+            ctx.translate(x, 260);
+            ctx.scale(1.65, 1.65);
+            drawPortalRing(ctx, { x: 0, y: 0 }, color, still ? 0 : (now / 4200) * Math.PI * 2);
+            ctx.restore();
+          });
+          frame = requestAnimationFrame(paint);
+        };
+        frame = requestAnimationFrame(paint);
+      }),
+    );
   }
 
   // Landscape previews

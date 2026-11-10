@@ -854,11 +854,12 @@ if (!(await ask(`Delete ${d.name}?`, 'Its 4 properties will be removed from the 
   players may go.
 - Portals (`portalGates`, `drawPortals`, `drawPortalRing`): a short road from the tile out
   through its side to a ring 0.72 of a cell step from the tile's center (`portalPoint`). The ring
-  (radius 17) is the same for every kind: the group's color (`PORTAL_LINK_COLORS`), a 3px white
-  edge and a navy core (radius 10.5) with two pairs of white swirl arcs, an outer pair (radius
-  6.8, 2.4 wide) turning clockwise and an inner pair (radius 3.4, 1.8 wide) turning
-  counterclockwise a bit faster (one turn per `PORTAL_SPIN_MS`, 4.2 s; still with reduced
-  motion). An entrance or exit is told apart only by the one-way arrow painted on its short road.
+  is the same for every kind: a 48-unit ivory stone/gold frame with four inset gems in its
+  link color, enclosing a shaded colored core. The frame stays fixed. Two separate PNG energy
+  layers counter-rotate (outer 4.2 s/revolution, inner 1.3x faster in reverse), with a gentle
+  5.5% sinusoidal pulse and three tiny cream lights orbiting the rim. Use continuous time rather
+  than wrapping phase, so the different speeds never snap at a loop boundary. Reduced motion
+  freezes all parts. Entrance/exit direction is still indicated by the arrow on its short road.
   Live views draw portals every frame over the cached board (`paintBoard(..., portals = false)`);
   still pictures draw them unturned. The cell a portal opens onto gets no scenery.
 - Portal pop-up (`hud.showPortalTooltip`): the tile tooltip's frame with the portal's color as
@@ -981,7 +982,7 @@ Bright and physical, unlike the dark HUD:
   plots: dashed grey outline + "VACANT".
 - **Tile text:** Atkinson 700, navy `#26314f` (`#1b2340` on tints); amounts with the coin
   (`fillMoney`). Special squares: icon + small uppercase label.
-- **Warps** (four-pointed star) and **portals** (round swirl) in their link color: a pair's color,
+- **Warps** (beveled four-point crystal above a small ivory/gold socket) and **portals** (round swirl) in their link color: a pair's color,
   gold to the bank, grey unlinked.
 - **Characters:** pixel sprites, whole-number scales, sprite-shaped shadow, a name plate (white
   Lilita on a player-color pill with a white outline); the active one is bigger with a bobbing

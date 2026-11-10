@@ -26,6 +26,24 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: '2026-11-10-transport-art',
+    date: 'Nov 10, 2026',
+    title: 'Crystal warps and living portals',
+    features: [
+      {
+        tag: 'better',
+        title: 'A new warp crystal',
+        text: 'Warp tiles now show a beveled four-point crystal above a small stone-and-gold socket, keeping their paired colors.',
+      },
+      {
+        tag: 'better',
+        title: 'Animated portal links',
+        text: 'Portal links have a jeweled circular frame with a flowing, counter-rotating vortex, gentle pulse and orbiting lights. Reduced motion keeps them still.',
+      },
+    ],
+    extras: ['Earlier transport artwork preserved', 'Smoother wide board views'],
+  },
+  {
     id: '2026-11-10-active-glide',
     date: 'Nov 10, 2026',
     title: 'Smoother card unfolding',

@@ -157,9 +157,12 @@ are three kinds:
 - **Entrance**: players can only go in there. An entrance leads to one exit.
 - **Exit**: players only come out there. Several entrances may lead to one exit.
 
-Every kind looks the same: a colored ring with a navy core holding two sets of white swirl arcs,
-an outer pair turning clockwise and a smaller inner pair turning the other way (once every 4.2
-seconds; still with reduced motion and in board pictures). The way a one-way portal works is
+Every kind uses a chunky ivory-and-gold circular frame with inset gems in its link color.
+Inside, two colored vortex layers counter-rotate, gently breathe and show three orbiting lights.
+The frame stays fixed so it remains aligned with the approach road. The outer vortex turns once
+per 4.2 seconds; its inner layer turns the opposite way, 1.3 times faster. Phase stays continuous
+across turns, without resetting at the end of a revolution. Reduced motion and still board
+pictures freeze the vortex, pulse and lights. The way a one-way portal works is
 shown on its short road, with the same painted arrow as a one-way road: pointing into the ring at
 an entrance, out of it toward the tile at an exit.
 
@@ -244,7 +247,7 @@ stays fixed while panning and uses no engine randomness. The builder hides decor
 props and verges. Earlier scenery assets and implementations remain available for rollback.
 Grass, leaves and clovers stay upright: vary crops and horizontal flips, never rotate patches
 or mirror them vertically. The lawn material itself also preserves the source orientation.
-Terrain and meadow caches follow the camera's pixel scale (1–2 pixels per world unit) instead
+Terrain and meadow caches follow the camera's pixel scale (0.5–2 pixels per world unit) instead
 of enlarging a small background bitmap. Decorative PNGs render separately at their own native
 sprite resolution, with cached placement data. Material boundaries keep a narrow soft blend
 (grass 8, paving 6, water 3 world units; water bank 7), while foliage and furnishings stay crisp.
@@ -731,7 +734,7 @@ without a button and the board stays up until then (the engine waits on a `ventu
 decision, so online players stay in step). A CPU closes its card after a short reading pause.
 On short screens the board shrinks to leave space for the action bar.
 
-- **Card numbers:** each card has a permanent number (1–20), shared across Standard and Easy.
+- **Card numbers:** each card has a permanent number (0.5–20), shared across Standard and Easy.
   Flipped panels show the card number in the player’s color; face-down panels hide it. The
   result heading includes the same number. Guide → Venture cards lists all numbers, titles
   and effects, including clearly marked Standard-only cards. Numbering is independent of the
@@ -1890,8 +1893,11 @@ Existing paired Checkpoint/Circus/Motel artwork and all old art files are preser
 `props.ts` selects the layered set or the classic assets and vector fallbacks. The UI Lab can
 inspect bases, masks and recolored composites.
 
-Side portals use a PNG color ring and two rotating swirl PNGs, retaining the current shared
-portal appearance and tap/hover behavior. Price Up, Taxi and Swap also have base-only PNG icons.
+The warp icon is a beveled four-point crystal above a small ivory/gold socket. Side portals
+use a fixed jeweled frame and two separate animated vortex PNG layers. `assets/transport-v13/`
+contains aligned base/tint pairs for these four components. Matching link colors, bank gold and
+unlinked grey are preserved. `TRANSPORT_SET = previous` restores the earlier artwork; all prior
+files and tap/hover behavior remain available. Price Up, Taxi and Swap also have base-only PNG icons.
 
 ### Painted property buildings
 

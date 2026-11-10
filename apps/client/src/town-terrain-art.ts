@@ -16,7 +16,7 @@ import {
 } from './town-terrain';
 
 const WORLD = 800,
-  LIMIT = 48,
+  LIMIT = 256,
   MAX_BYTES = 128 * 1024 * 1024;
 const chunks = new WeakMap<GameState, Map<string, HTMLCanvasElement>>();
 const kinds: TerrainKind[] = ['park', 'court', 'water'];
@@ -216,7 +216,11 @@ export function paintTownTerrain(
   bottom: number,
 ) {
   const transform = ctx.getTransform();
-  const pixels = WORLD * Math.min(2, Math.max(1, Math.ceil(Math.hypot(transform.a, transform.b))));
+  const pixels =
+    WORLD *
+    (Math.hypot(transform.a, transform.b) <= 0.5
+      ? 0.5
+      : Math.min(2, Math.ceil(Math.hypot(transform.a, transform.b))));
   for (let y = Math.floor(top / WORLD); y < Math.ceil(bottom / WORLD); y++)
     for (let x = Math.floor(left / WORLD); x < Math.ceil(right / WORLD); x++)
       ctx.drawImage(chunk(G, x, y, pixels), x * WORLD, y * WORLD, WORLD, WORLD);

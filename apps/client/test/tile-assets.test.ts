@@ -218,3 +218,16 @@ describe('crisp cartoon terrain materials', () => {
     expect(existsSync(resolve('apps/client/src/assets/terrain-v8/terrain-park-base.png'))).toBe(true);
   });
 });
+
+describe('crystal warp and animated portal components', () => {
+  it('provides aligned base/tint pairs and preserves the earlier transport art', () => {
+    const dir = resolve('apps/client/src/assets/transport-v13');
+    expect(readdirSync(dir).filter((f) => f.endsWith('.png'))).toHaveLength(8);
+    for (const key of ['warp', 'portal-side', 'portal-vortex', 'portal-vortex-inner']) {
+      expect(png(resolve(dir, `${key}-base.png`))).toEqual([256, 256]);
+      expect(png(resolve(dir, `${key}-tint.png`))).toEqual([256, 256]);
+    }
+    for (const key of ['warp', 'portal-side', 'portal-swirl', 'portal-swirl-inner'])
+      expect(existsSync(resolve('apps/client/src/assets/tiles-v2', `${key}-base.png`))).toBe(true);
+  });
+});

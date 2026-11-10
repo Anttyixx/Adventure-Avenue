@@ -1949,7 +1949,7 @@ export function drawPortals(
   now: number,
   gates: ReturnType<typeof portalGates> = portalGates(G),
 ) {
-  const turn = ((now % PORTAL_SPIN_MS) / PORTAL_SPIN_MS) * Math.PI * 2;
+  const turn = (now / PORTAL_SPIN_MS) * Math.PI * 2;
   for (const gate of gates)
     drawPortalRing(ctx, portalPoint(G, G.nodes[gate.node], gate.side), gate.color, turn);
 }
@@ -2015,17 +2015,43 @@ export function portalGates(G: GameState) {
 export const isPortalLink = (G: GameState, a: number, b: number) =>
   !!G.nodes[a]?.portals?.some((p) => p.to === b);
 
-/**
- * A portal's ring, the same for every kind (the one-way arrow on its short road shows the way):
- * a colored disc with a 3px white edge around a navy core with two pairs of white swirl arcs, an
- * outer pair turning clockwise (`turn`, in radians) and a smaller inner pair turning the other way.
- */
+/** A fixed jeweled frame with a breathing, counter-rotating vortex; turn=0 is motionless. */
 export function drawPortalRing(
   ctx: CanvasRenderingContext2D,
   at: { x: number; y: number },
   color: string,
   turn = 0,
 ) {
+  if (propCanvas('portal-vortex', color)) {
+    ctx.save();
+    ctx.translate(at.x, at.y);
+    const pulse = 1 + Math.sin(turn * 2) * 0.055;
+    const core = ctx.createRadialGradient(-2, -3, 1, 0, 0, 16);
+    core.addColorStop(0, tint(color, 0.18));
+    core.addColorStop(0.55, darken(color, 0.28));
+    core.addColorStop(1, darken(color, 0.72));
+    ctx.fillStyle = core;
+    ctx.beginPath();
+    ctx.arc(0, 0, 16, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.save();
+    ctx.rotate(turn);
+    drawStamp(ctx, 'portal-vortex', color, 0, 0, 33 * pulse, 33 * pulse);
+    ctx.rotate(-turn * 2.3);
+    drawStamp(ctx, 'portal-vortex-inner', color, 0, 0, 19 / pulse, 19 / pulse);
+    ctx.restore();
+    drawStamp(ctx, 'portal-side', color, 0, 0, 48, 48);
+    // Lights orbit over the fixed frame; its outline stays aligned with the approach road.
+    for (let i = 0; i < 3; i++) {
+      const angle = turn * 1.5 + (i * Math.PI * 2) / 3;
+      ctx.fillStyle = '#fff9df';
+      ctx.beginPath();
+      ctx.arc(Math.cos(angle) * 19.5, Math.sin(angle) * 19.5, 1, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.restore();
+    return;
+  }
   if (propCanvas('portal-side', color)) {
     ctx.save();
     ctx.translate(at.x, at.y);
