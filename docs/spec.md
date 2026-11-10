@@ -1312,7 +1312,8 @@ spreading out from them and fading, so the eye goes straight to them; everything
 **Shops closing.** When a player's shops close (break square, Estate Agency, the Holiday and Odd or
 even venture cards; the engine emits `closed`), the camera pulls back to the whole board, each of
 their shops' gates rolls down in turn, then the camera returns to the player's zoom. The gates stay
-down (inside each tile's border, with a small CLOSED sign) until the owner's next turn starts; the
+down (a drawn rolling gate filling the tile inside its border, with a red CLOSED sign; the
+painted `closed` sprite is kept and comes back with `CLOSED_SET = 'sprite'` in `props.ts`) until the owner's next turn starts; the
 engine then emits `opened` and the gates roll back up one after another in the background: the
 camera does not move and play carries straight on (timings `close*` in `timing.ts`). Each gate
 takes 450ms to move, and the next shop's gate starts 70ms after the one before (`closeStagger`), so

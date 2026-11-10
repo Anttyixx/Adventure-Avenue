@@ -66,6 +66,11 @@ export const ART_SET: string = 'layered';
 export const PROPERTY_SET: string = 'painted';
 /** Restore the previous warp and portal artwork independently of other board sprites. */
 export const TRANSPORT_SET: string = 'crystal';
+/**
+ * How closed shops look: `gate` is the drawn rolling gate over the whole tile with a red CLOSED
+ * sign; `sprite` uses the painted `closed` PNG instead (kept for a possible return).
+ */
+export const CLOSED_SET: string = 'gate';
 const transportArt = import.meta.glob<string>('./assets/transport-v13/*.png', {
   eager: true,
   query: '?url',

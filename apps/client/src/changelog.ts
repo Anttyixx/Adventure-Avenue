@@ -26,6 +26,13 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: '2026-11-10-closed-gate',
+    date: 'Nov 10, 2026',
+    title: 'The closed-shop gate is back',
+    features: [],
+    extras: ['Closed shops show the full-tile rolling gate with a CLOSED sign again'],
+  },
+  {
     id: '2026-11-10-stock-net-worth',
     date: 'Nov 10, 2026',
     title: 'Net worth waits for the stock price',

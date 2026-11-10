@@ -26,6 +26,7 @@ import {
   TOWN_LANDSCAPE,
   PUZZLE_LANDSCAPE,
   GROUND_SET,
+  CLOSED_SET,
   type PropKey,
 } from './props';
 import { paintMeadow } from './meadow';
@@ -1483,7 +1484,8 @@ export class BoardView {
     const full = 2 * tileTop(G.layout, inner);
     const e = 1 - Math.pow(1 - down, 3);
     const hgt = full * e;
-    if (propCanvas('closed', '#808080')) {
+    // The painted gate PNG only when chosen (CLOSED_SET); by default the drawn gate below.
+    if (CLOSED_SET === 'sprite' && propCanvas('closed', '#808080')) {
       ctx.save();
       tileShape(ctx, G.layout, c.x, c.y, inner, 8);
       ctx.clip();

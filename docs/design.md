@@ -995,7 +995,9 @@ Bright and physical, unlike the dark HUD:
   Lilita on a player-color pill with a white outline); the active one is bigger with a bobbing
   arrow.
 - **Effects:** gold ring + sparkles (bought, grew), flying coins, floating "+120G"/"-50G" in
-  Lilita with a dark outline, stock arrows, shop gates.
+  Lilita with a dark outline, stock arrows, shop gates (a drawn navy rolling gate with pale slats
+  filling the tile inside its border, a light bottom bar and a red CLOSED sign once down;
+  `CLOSED_SET = 'sprite'` brings back the painted `closed` PNG, which is kept).
 - Text, rings and lines that must stay readable are drawn at **screen size** (divide widths by
   the camera scale).
 

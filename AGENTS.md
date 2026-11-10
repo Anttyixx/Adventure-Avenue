@@ -136,7 +136,8 @@ Requests refer to parts of the game by these names:
   `props.ts` (`ART_SET`, `ART_SOURCES`). The previous property set and original Checkpoint/Circus/Motel pairs remain
   unchanged in `assets/tiles-v2/` and `assets/props/`; `PROPERTY_SET` selects the property set. Base-only sprites never auto-recolor blue pixels. New recolorable sprites
   require an aligned grey `-tint.png`. `transport-v13/` holds the crystal warp, portal frame and
-  two vortex base/tint pairs (`TRANSPORT_SET` selects them). Portal frames stay fixed; vortex
+  two vortex base/tint pairs (`TRANSPORT_SET` selects them). Closed shops use the drawn gate
+  by default; `CLOSED_SET = 'sprite'` brings back the painted `closed` PNG (kept). Portal frames stay fixed; vortex
   phase must stay continuous and freeze with reduced motion. Keep legacy assets and canvas fallbacks for rollback.
 
 ## Commands
