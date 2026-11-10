@@ -185,7 +185,7 @@ Selected links in the builder and portal-tap feedback in games show directional 
 flow always runs entrance to exit, including when the exit is selected. Two-way links have
 separate opposing curved lanes. Moving dots have tails and fixed chevrons retain direction with
 reduced motion.
-A portal step takes 720ms at normal speed (ordinary steps: 420ms): the character accelerates
+A portal step takes 1,100ms at normal speed (slowed from 720ms so it can be followed) (ordinary steps: 420ms): the character accelerates
 into the entrance while shrinking, disappears briefly, then grows and hops out of the exact
 paired exit onto its target tile. Name/base markers hide during transit; entrance/exit rings
 pulse locally. The remaining-steps die updates once, movement continues with unused steps,
@@ -1311,8 +1311,12 @@ the engine's warp event says what carried the player, which changes nothing in t
 - **Portal tile:** the player spirals down into a swirling vortex and spins back out of the other.
 - **Cannon:** a blast of smoke and a boom, a high tumbling arc with a smoke trail (higher the
   further it goes), and a puff of dust on landing.
-- **Taxi:** a honk, then the taxi (with the rider's color on its roof light) drives them across,
-  kicking up dust, and honks again as they climb out; the ride takes longer the further it goes.
+- **Taxi:** a honk, then the taxi (with the rider's color on its roof light) drives them along the
+  board's roads to the stop, tile by tile, kicking up dust, and honks again as they climb out. It
+  takes the shortest way by road and portal link (one-way roads and portals respected,
+  `taxi-route.ts`): at a portal the car drives into it, shrinks away and pops out of the partner.
+  About a quarter second a tile, faster on long rides so the drive stays under 4 seconds; with no
+  way there by road it drives straight across.
 - **Balloon:** a whoosh, and the player rises under a hot-air balloon in their color, drifts
   over swaying, and settles down.
 - **Swap:** both players fly at once, curving past each other on opposite sides, each leaving a

@@ -26,6 +26,19 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: '2026-11-11-taxi-roads',
+    date: 'Nov 11, 2026',
+    title: 'Taxis take the roads',
+    features: [
+      {
+        tag: 'better',
+        title: 'The taxi drives the board',
+        text: 'Taxi rides now follow the roads tile by tile to your stop, taking the shortest way, and drive through portal links too.',
+      },
+    ],
+    extras: ['Going through a portal is a little slower, so it is easier to follow'],
+  },
+  {
     id: '2026-11-11-rides-tooltips',
     date: 'Nov 11, 2026',
     title: 'Rides with style and clearer tile info',

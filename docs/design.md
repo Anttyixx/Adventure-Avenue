@@ -1025,7 +1025,7 @@ arcs run from the actual entrance to exit, independent of selection; two-way lin
 opposing arches, with glowing heads/tails and a static chevron on each lane. Keep line widths
 in screen pixels at every zoom. Reduced motion freezes the dots but retains directional arrows.
 Side portal frames are 48 world units to meet the 44-unit road; their hit radius is 26 units.
-Portal travel is a 720ms pull-in / brief disappearance / launch-out pose, with soft local bursts,
+Portal travel is a 1,100ms pull-in / brief disappearance / launch-out pose, with soft local bursts,
 no nameplate or base disc during transit, and a small landing hop. Keep the character readable
 until it enters and restore its full size afterward; reduced motion skips this transformation.
 
@@ -1234,7 +1234,9 @@ Board controls (the Board effects section, made with `boardBtn` in `lab.ts`, exc
 button) step the pop-up aside so the effect can be seen: it fades out (160ms), 0.5s later the
 effect plays, and 0.5s after it has finished (its promise resolves, then no board effects are left
 and the camera is at rest, at most 8s) it pops back in on the same tab and scroll position.
-Opening or closing the pop-up by hand meanwhile cancels the return (`playOnBoard`). While the
+Opening or closing the pop-up by hand meanwhile cancels the return (`playOnBoard`). "Travel
+through a portal" walks the target player three tiles up to a portal, through it, and three tiles
+on. While the
 effect plays, the camera zooms in on the target player at the game's close zoom and follows them
 (so a ride or a ring stays in view, as in a real game), then returns to the Lab's overview zoom as
 the pop-up comes back. The zoom controls (Zoom in, Zoom out, Zoom modes) pass `focus: false` and

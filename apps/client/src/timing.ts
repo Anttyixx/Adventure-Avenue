@@ -7,19 +7,21 @@ export const TIMING = {
   /** Walking one square. */
   step: 420,
   /** Pull into a portal, disappear briefly, then launch onto the destination tile. */
-  portalStep: 720,
+  portalStep: 1100,
   /** Pause after a destination is chosen, before the token starts walking. */
   afterChoice: 500,
   /** Flying to a square (the old shared ride; kept for reference). */
   warp: 750,
   /** Each ride straight to a square (`BoardView.travel`): warp beam, portal-tile vortex, cannon
-   * shot, balloon float, swap flight and venture-card star trail. A taxi's time grows with the
-   * distance, between the two limits. */
+   * shot, balloon float, swap flight and venture-card star trail. A taxi drives the roads at about
+   * a quarter second a tile, between the two limits (faster on long rides). */
   travelWarp: 1150,
   travelPortal: 1050,
   travelCannon: 1150,
   travelTaxiMin: 950,
-  travelTaxiMax: 1900,
+  travelTaxiMax: 4000,
+  /** A taxi shrinking into a portal (and again popping out of its partner). */
+  taxiPortal: 220,
   travelBalloon: 1900,
   travelSwap: 1050,
   travelCard: 1150,

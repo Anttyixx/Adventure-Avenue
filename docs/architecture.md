@@ -239,7 +239,10 @@ message and sound and calls `BoardView.travel`, which runs a per-ride animation:
 special pose (`Token.portal`: alpha, scale, spin; no disc or name plate) while its position moves,
 and short-lived effects (`fx`, which may now start later than they are added) draw the beam,
 vortex, smoke, taxi, balloon, trails or stars from `travel-art.ts`. A swap animates both players on
-the first event; the second (`swapBack`) only snaps. `portalStep` adds sparks and a streak.
+the first event; the second (`swapBack`) only snaps. `portalStep` adds sparks and a streak. The
+taxi drives `taxiRoute` (`taxi-route.ts`: a breadth-first search over `nb`, honoring `noGo` and
+exit-only portals) as legs (`taxiLegs` in `board.ts`): drives between tile centers, and
+shrink-into / pop-out legs at portal links.
 
 ### Portal rendering and travel
 

@@ -115,6 +115,7 @@ foliage and sparse benches near the board. `town-terrain-art.ts` paints continuo
 soft masks and camera-scaled world chunks using `assets/terrain-v12/`; decoration PNGs draw
 at native resolution with cached placement plans. Earlier textures remain in `terrain-v8/`.
 `meadow.ts` builds cached, coordinate-seeded grass chunks with smooth patch blending.
+`taxi-route.ts` finds a taxi's road route (`taxiRoute`, tested in `test/taxi-route.test.ts`).
 `travel-art.ts` draws the rides' effects (`drawBeam`, `drawVortex`, `drawPuff`, `drawStar`,
 `drawTaxi`, `drawBalloon`) for `BoardView.travel`; `props.ts` `drawPropCentered` centers a symbol.
 `foliage.ts` draws the light river and foliage on the solid ground (`paintFoliage`).

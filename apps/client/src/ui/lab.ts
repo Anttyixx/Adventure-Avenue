@@ -117,16 +117,7 @@ const rnd = (n: number) => Math.floor(Math.random() * n);
  * Controls for UI elements that were just added or changed: they shake once and glow so they
  * are easy to find. Update this list with each change.
  */
-const RECENT = new Set([
-  'Ride: warp beam',
-  'Ride: cannon shot',
-  'Ride: taxi',
-  'Ride: balloon',
-  'Ride: swap places',
-  'Travel through a portal',
-  'Gold ring + sparkles',
-  'Confetti',
-]);
+const RECENT = new Set(['Travel through a portal', 'Ride: taxi']);
 
 /**
  * Which board the lab plays on: Town with portal links (square, the default) or Twin Lakes (hex),
@@ -1048,21 +1039,48 @@ export async function openLab(app: HTMLElement, section?: string) {
         }),
       ),
       boardBtn('Travel through a portal', async () => {
+        // The target player walks three tiles up to a portal, goes through it and walks three
+        // more on the other side, with the camera following them as in a game.
         const gate = portalGates(G).find((g) => g.way !== 'out');
         if (!gate) return hud.tick('Switch to the square board to try its portals.');
         const p = cur(),
           was = p.node;
-        p.node = gate.node;
+        const roads = (n: number) =>
+          G.nodes[n].nb.filter((m) => !G.nodes[n].portals?.some((q) => q.to === m));
+        /** Up to three tiles further along the roads from `n`, never back over `seen`. */
+        const walk = (n: number, seen: number[]) => {
+          const out: number[] = [];
+          for (let at = n; out.length < 3;) {
+            const next = roads(at).find((m) => !seen.includes(m) && !out.includes(m) && m !== n);
+            if (next == null) break;
+            out.push(next);
+            at = next;
+          }
+          return out;
+        };
+        const approach = [...walk(gate.node, []).reverse(), gate.node];
+        const exit = gate.to[0];
+        const after = walk(exit, [...approach, exit]);
+        const steps = [...approach.slice(1), exit, ...after];
+        p.node = approach[0];
+        p.prev = -1;
+        setActive(p.id);
         board.snapTokens();
-        board.activePid = p.id;
-        board.peekWhole = true;
-        p.node = gate.to[0];
+        await new Promise((r) => setTimeout(r, 700));
         try {
-          await board.portalStep(p.id, gate.node, p.node, 0);
+          let left = steps.length;
+          for (let i = 0; i < steps.length; i++) {
+            const from = p.node;
+            p.node = steps[i];
+            left--;
+            if (from === gate.node && p.node === exit) await board.portalStep(p.id, from, exit, left);
+            else await board.step(p.id, p.node, left);
+          }
+          await new Promise((r) => setTimeout(r, 600));
         } finally {
           p.node = was;
-          board.peekWhole = false;
           board.snapTokens();
+          refresh();
         }
       }),
       btn('Portal links in the builder', () =>

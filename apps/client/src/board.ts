@@ -43,6 +43,7 @@ import { drawBoonIcon, drawCoin, drawSparkle, SUIT_CHARS } from './icons';
 import { Facing, FRAME_H, FRAME_W, drawCharacter, drawCharacterGlow, facingFor } from './sprites';
 import { TIMING as T } from './timing';
 import { portalFlows, portalPartner } from './portal-links';
+import { taxiRoute } from './taxi-route';
 import { drawLink } from './portal-link-art';
 import { portalTravelPose } from './portal-travel';
 import { drawBalloon, drawBeam, drawPuff, drawStar, drawTaxi, drawVortex } from './travel-art';
@@ -711,36 +712,75 @@ export class BoardView {
     }
 
     if (how === 'taxi') {
-      // A taxi pulls up, the rider hops in, and it drives them across, kicking up dust.
-      const dur = ms(Math.max(T.travelTaxiMin, Math.min(T.travelTaxiMax, 600 + dist * 0.9)));
-      const left = dest.x < start.x;
+      // A taxi pulls up and drives the rider along the roads to the stop, tile by tile, through
+      // portal links too (the car shrinks into a portal and pops out of its partner). With no way
+      // there by road it drives straight across. The rider climbs out at the end.
+      const legs = taxiLegs(G, opts.from, to, start, dest);
+      const timed = legs.map((l) => ({
+        ...l,
+        ms: l.kind === 'drive' ? Math.hypot(l.b.x - l.a.x, l.b.y - l.a.y) : 0,
+      }));
+      const road = timed.reduce((n, l) => n + l.ms, 0);
+      // About a quarter second a tile, faster on long rides so no drive takes over travelTaxiMax.
+      const speed = Math.max(0.42, road / T.travelTaxiMax);
+      for (const l of timed) l.ms = l.kind === 'drive' ? l.ms / speed : T.taxiPortal;
+      const total = Math.max(
+        T.travelTaxiMin,
+        timed.reduce((n, l) => n + l.ms, 0),
+      );
+      const dur = ms(total);
+      let left = dest.x < start.x;
       let bounce = 0;
+      let scale = 1;
       let lastDust = 0;
       const car = { x: start.x, y: start.y };
       this.fx.push({
         t0: performance.now(),
         dur: dur + ms(260),
         draw: (ctx, k) => {
-          const fade = k > 0.9 ? (1 - k) / 0.1 : 1;
+          const fade = k > 0.93 ? (1 - k) / 0.07 : 1;
+          if (scale <= 0.02) return;
           ctx.save();
           ctx.globalAlpha = fade;
-          drawTaxi(ctx, car.x, car.y + 26, left, bounce, color);
+          ctx.translate(car.x, car.y + 26);
+          ctx.scale(scale, scale);
+          drawTaxi(ctx, 0, 0, left, bounce, color);
           ctx.restore();
         },
       });
       await run(dur, (k, now) => {
+        // Ease in and out over the whole ride, then find the leg it has reached.
         const e = k < 0.5 ? 2 * k * k : 1 - (-2 * k + 2) ** 2 / 2;
-        car.x = lerp(start.x, dest.x, e);
-        car.y = lerp(start.y, dest.y, e);
+        let at = e * total;
+        let leg = timed[timed.length - 1];
+        let q = 1;
+        for (const l of timed) {
+          if (at <= l.ms) {
+            leg = l;
+            q = l.ms ? at / l.ms : 1;
+            break;
+          }
+          at -= l.ms;
+        }
+        car.x = lerp(leg.a.x, leg.b.x, q);
+        car.y = lerp(leg.a.y, leg.b.y, q);
+        scale = leg.kind === 'into' ? 1 - q : leg.kind === 'out' ? q : 1;
+        if (leg.kind === 'drive' && Math.abs(leg.b.x - leg.a.x) > 4) left = leg.b.x < leg.a.x;
         t.x = car.x;
         t.y = car.y;
-        bounce = Math.abs(Math.sin(now / 70)) * 2.5;
+        bounce = leg.kind === 'drive' ? Math.abs(Math.sin(now / 70)) * 2.5 : 0;
         // The rider is inside: hidden until they climb out at the end.
-        pose(k > 0.92 ? (k - 0.92) / 0.08 : 0);
-        if (k > 0.08 && k < 0.92 && now - lastDust > 70) {
+        pose(k > 0.94 ? (k - 0.94) / 0.06 : 0);
+        if (leg.kind === 'drive' && k > 0.04 && k < 0.94 && now - lastDust > 70) {
           lastDust = now;
-          const at = { x: car.x + (left ? 34 : -34), y: car.y + 22 };
-          fx(450, (ctx, q) => drawPuff(ctx, at.x, at.y - 8 * q, 7 + 9 * q, 0.6 * (1 - q), '214,190,140'));
+          const dust = { x: car.x + (left ? 30 : -30), y: car.y + 22 };
+          fx(450, (ctx, f) => drawPuff(ctx, dust.x, dust.y - 8 * f, 7 + 9 * f, 0.6 * (1 - f), '214,190,140'));
+        }
+        if (leg.kind === 'into' && q > 0.5 && !leg.done) {
+          leg.done = true;
+          this.portalBurst({ x: leg.b.x, y: leg.b.y + 12 }, leg.color ?? '#a78bfa');
+          const out = timed[timed.indexOf(leg) + 1];
+          if (out) this.portalBurst({ x: out.a.x, y: out.a.y + 12 }, leg.color ?? '#a78bfa');
         }
       });
       return finish();
@@ -2475,6 +2515,51 @@ function repaintSquares(cv: HTMLCanvasElement, scale: number, G: GameState, ids:
     if (near) drawSquareClean(ctx, G, sq);
   }
   ctx.restore();
+}
+
+/** One leg of a taxi ride: driving between two points, or shrinking into / out of a portal. */
+interface TaxiLeg {
+  kind: 'drive' | 'into' | 'out';
+  a: { x: number; y: number };
+  b: { x: number; y: number };
+  color?: string;
+  done?: boolean;
+}
+
+/** The legs of a taxi ride (see `BoardView.travel`): along the route, else straight across. */
+function taxiLegs(
+  G: GameState,
+  from: number | undefined,
+  to: number,
+  start: { x: number; y: number },
+  dest: { x: number; y: number },
+): TaxiLeg[] {
+  const route = from != null ? taxiRoute(G, from, to) : null;
+  if (!route || route.length < 2) return [{ kind: 'drive', a: start, b: dest }];
+  const legs: TaxiLeg[] = [];
+  let at = start;
+  const driveTo = (b: { x: number; y: number }) => {
+    legs.push({ kind: 'drive', a: at, b });
+    at = b;
+  };
+  for (let i = 1; i < route.length; i++) {
+    const a = route[i - 1],
+      b = route[i];
+    const gate = G.nodes[a].portals?.find((p) => p.to === b && p.way !== 'out');
+    const exit = gate && portalPartner(G, a, gate);
+    if (gate && exit) {
+      // Through a portal link: drive to the portal, shrink into it, pop out of the partner.
+      const entrance = portalPoint(G, G.nodes[a], gate.side);
+      const out = portalPoint(G, G.nodes[b], exit.side);
+      const color = portalGates(G).find((g) => g.node === a && g.side === gate.side)?.color;
+      driveTo(entrance);
+      legs.push({ kind: 'into', a: entrance, b: entrance, color });
+      legs.push({ kind: 'out', a: out, b: out, color });
+      at = out;
+    }
+    driveTo(i === route.length - 1 ? dest : squareCenter(G.nodes[b], G.layout));
+  }
+  return legs;
 }
 
 /**
