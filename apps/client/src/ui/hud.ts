@@ -281,7 +281,10 @@ export class Hud {
     this.fastBtn.onclick = cb.onToggleFast;
     this.zoomChip.onclick = () => board.resetZoom();
     board.onZoom = (pct, mode) => {
-      this.zoomChip.textContent = `${pct}%`;
+      // Only the text changes while zooming: update it in place (no new nodes for the observers).
+      const text = this.zoomChip.firstChild;
+      if (text instanceof Text) text.data = `${pct}%`;
+      else this.zoomChip.textContent = `${pct}%`;
       // The border shows who controls the zoom: grey free, blue auto, red locked.
       this.zoomChip.dataset.mode = mode;
       this.zoomChip.title = ZOOM_TITLES[mode];
@@ -324,6 +327,7 @@ export class Hud {
     this.askChanges.disconnect();
     this.lockWatch.disconnect();
     cancelAnimationFrame(this.askFrame);
+    clearTimeout(this.openTimer);
     this.stopAskMorph();
     window.removeEventListener('keydown', this.onKey);
     this.root.remove();

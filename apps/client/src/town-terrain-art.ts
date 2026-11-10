@@ -42,13 +42,8 @@ function surfacePath(
   }
   return path;
 }
+/** Paint one terrain chunk onto a new canvas (the caller decides whether to keep it). */
 function chunk(G: GameState, x: number, y: number, PIXELS: number) {
-  let cache = chunks.get(G);
-  if (!cache) {
-    cache = new Map();
-    chunks.set(G, cache);
-  }
-  const key = `${x},${y},${PIXELS}`;
   const cv = Object.assign(document.createElement('canvas'), { width: PIXELS, height: PIXELS });
   const ctx = cv.getContext('2d')!;
   const left = x * WORLD,
@@ -117,6 +112,8 @@ function chunk(G: GameState, x: number, y: number, PIXELS: number) {
     ctx.restore();
   };
   for (const kind of kinds) {
+    // A kind missing from this chunk would paint nothing, after two costly blurred passes.
+    if (!cells.some((c) => c.kind === kind)) continue;
     const path = surfacePath(cells, kind);
     if (kind === 'water') paint(path, kind, 7, true);
     paint(path, kind, kind === 'water' ? 3 : kind === 'court' ? 6 : 8);
@@ -190,11 +187,14 @@ function chunk(G: GameState, x: number, y: number, PIXELS: number) {
     drawStamp(ctx, p.key, '#808080', 0, 0, p.size, p.size);
     ctx.restore();
   }
-  cache.set(key, cv);
   return cv;
 }
 
-/** Cached, camera-stable connected parks, courtyards and ponds around every bend of the board. */
+/**
+ * Cached, camera-stable connected parks, courtyards and ponds around every bend of the board.
+ * `cache: false` paints the chunks without keeping them (the live ground in `ground.ts` keeps the
+ * finished picture instead); `features: false` leaves out the decorations, for `paintTownFeatures`.
+ */
 export function paintTownTerrain(
   ctx: CanvasRenderingContext2D,
   G: GameState,
@@ -202,10 +202,29 @@ export function paintTownTerrain(
   top: number,
   right: number,
   bottom: number,
+  opts: { cache?: boolean; features?: boolean } = {},
 ) {
   const transform = ctx.getTransform();
   const level = chunkLevel(Math.hypot(transform.a, transform.b));
   const pixels = WORLD * level;
+  if (opts.cache === false) {
+    for (let y = Math.floor(top / WORLD); y < Math.ceil(bottom / WORLD); y++)
+      for (let x = Math.floor(left / WORLD); x < Math.ceil(right / WORLD); x++)
+        ctx.drawImage(chunk(G, x, y, pixels), x * WORLD, y * WORLD, WORLD, WORLD);
+  } else paintCachedTerrain(ctx, G, left, top, right, bottom, pixels, level);
+  if (opts.features !== false) paintTownFeatures(ctx, G, left, top, right, bottom);
+}
+
+function paintCachedTerrain(
+  ctx: CanvasRenderingContext2D,
+  G: GameState,
+  left: number,
+  top: number,
+  right: number,
+  bottom: number,
+  pixels: number,
+  level: number,
+) {
   let cache = chunks.get(G);
   if (!cache) {
     cache = new Map();
@@ -214,7 +233,8 @@ export function paintTownTerrain(
   let drawn = 0;
   for (let y = Math.floor(top / WORLD); y < Math.ceil(bottom / WORLD); y++)
     for (let x = Math.floor(left / WORLD); x < Math.ceil(right / WORLD); x++) {
-      let cv = touchChunk(cache, `${x},${y},${pixels}`);
+      const key = `${x},${y},${pixels}`;
+      let cv = touchChunk(cache, key);
       if (!cv) {
         // The other resolution's chunk stands in while this one is still being built.
         let stand: HTMLCanvasElement | undefined;
@@ -222,6 +242,7 @@ export function paintTownTerrain(
         if (stand && chunkBudget.left <= 0) cv = stand;
         else {
           cv = chunk(G, x, y, pixels);
+          cache.set(key, cv);
           chunkBudget.left--;
         }
       }
@@ -230,6 +251,17 @@ export function paintTownTerrain(
     }
   // Keep within the memory budget, but never drop a chunk drawn just now.
   trimChunks(cache, Math.min(LIMIT, Math.floor(MAX_BYTES / (pixels * pixels * 4))), drawn);
+}
+
+/** The terrain set's decorations (trees, flowers, benches...), drawn from their PNGs at full sharpness. */
+export function paintTownFeatures(
+  ctx: CanvasRenderingContext2D,
+  G: GameState,
+  left: number,
+  top: number,
+  right: number,
+  bottom: number,
+) {
   if (SCENERY_SET === 'terrain') {
     const features: TerrainFeature[] = [];
     for (let y = Math.floor((top - 80) / WORLD); y < Math.ceil((bottom + 80) / WORLD); y++)

@@ -149,12 +149,6 @@ export function shareBoost(held: number, vol: number): number {
   return 1 + K.shareSlope * Math.max(0, held) * vol;
 }
 
-/** How a volatility reads to players: the bottom third of the range is Calm, the top third Wild. */
-export function volMood(vol: number): 'calm' | 'normal' | 'wild' {
-  const k = (vol - K.volMin) / Math.max(1e-9, K.volMax - K.volMin);
-  return k < 1 / 3 ? 'calm' : k > 2 / 3 ? 'wild' : 'normal';
-}
-
 /** The listed share price, in whole coins. */
 export function stockPrice(G: GameState, d: number): number {
   return Math.max(1, Math.round(stockPriceExact(G, d)));

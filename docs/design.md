@@ -963,7 +963,9 @@ animation has a `prefers-reduced-motion` path (CSS media query, or `matchMedia(.
 
 Bright and physical, unlike the dark HUD:
 
-- **World:** varied cartoon grass, turquoise water and warm paving, with soft transitions and
+- **Ground:** solid grass `#97c26a` by default (`GROUND_SET` in `props.ts`), for speed: the
+  textured world below is kept for rollback (`GROUND_SET = 'textured'`).
+- **World (textured ground):** varied cartoon grass, turquoise water and warm paving, with soft transitions and
   the same rounded forms and cheerful colors as the board tiles. Use light foliage-led
   decoration: trees, flowers, reeds and lily pads, with occasional benches/planters near the
   board. Keep furnishings sparse and distant areas quiet. No default dioramas, enclosing hedge

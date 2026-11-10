@@ -117,7 +117,7 @@ const rnd = (n: number) => Math.floor(Math.random() * n);
  * Controls for UI elements that were just added or changed: they shake once and glow so they
  * are easy to find. Update this list with each change.
  */
-const RECENT = new Set(['Portal: entrance to exit', 'Travel through a portal', 'Roll and walk', 'Confetti']);
+const RECENT = new Set(['Town terrain: square', 'Town terrain: hex', 'Zoom in', 'Zoom out']);
 
 /**
  * Which board the lab plays on: Town with portal links (square, the default) or Twin Lakes (hex),
@@ -1581,7 +1581,7 @@ export async function openLab(app: HTMLElement, section?: string) {
     const s = addSection(
       'art',
       'Landscape',
-      'Sharper cartoon grass, ponds and paving, with native-resolution foliage and benches. Use the zoom chip to inspect both scales.',
+      'The ground under the board: solid grass by default (GROUND_SET in props.ts; textured restores the painted grass, ponds and paving). Use the zoom chip to inspect both scales.',
     );
     row(
       s,

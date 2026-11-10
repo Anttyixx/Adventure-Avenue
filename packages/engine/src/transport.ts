@@ -10,7 +10,6 @@
 import type { BoardDef, BoardSquareDef } from './types';
 
 export const TRANSPORT_COLORS = ['#8b5cf6', '#06b6d4', '#f97316', '#ec4899', '#22c55e'];
-export const TRANSPORT_NAMES = ['Purple', 'Cyan', 'Orange', 'Pink', 'Green'];
 /** Tiles linked to the bank. */
 export const TRANSPORT_BANK_COLOR = '#f5b301';
 /** Tiles not linked yet. */

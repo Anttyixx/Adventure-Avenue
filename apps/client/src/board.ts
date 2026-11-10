@@ -25,14 +25,16 @@ import {
   PARK_LANDSCAPE,
   TOWN_LANDSCAPE,
   PUZZLE_LANDSCAPE,
+  GROUND_SET,
   type PropKey,
 } from './props';
 import { paintMeadow } from './meadow';
-import { chunkBudget } from './chunk-budget';
+import { CHUNK_LEVELS, chunkBudget, chunkLevel } from './chunk-budget';
 import { parkSceneryBeyondBoard, sceneryBeyondBoard, sceneryForBoard } from './scenery';
 import { paintParkScenery, paintParkStream } from './park';
 import { paintParkScenes } from './park-scenes-art';
-import { paintTownTerrain } from './town-terrain-art';
+import { paintTownFeatures, paintTownTerrain } from './town-terrain-art';
+import { paintGround, warmGround, type GroundPainter } from './ground';
 import { drawBoonIcon, drawCoin, drawSparkle, SUIT_CHARS } from './icons';
 import { Facing, FRAME_H, FRAME_W, drawCharacter, drawCharacterGlow, facingFor } from './sprites';
 import { TIMING as T } from './timing';
@@ -54,7 +56,9 @@ const TILE = 86;
 /** Ways the steps-left die can flip over: sideways, up and over, and the two diagonals. */
 const DIE_FLIPS = 4;
 
-const reducedMotion = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+// Asked several times a frame: keep the media query instead of parsing it each time.
+let motionQuery: MediaQueryList | null = null;
+const reducedMotion = () => (motionQuery ??= window.matchMedia('(prefers-reduced-motion: reduce)')).matches;
 
 /** How long one ring takes to spread out from a highlighted square. */
 const RING_MS = 1400;
@@ -280,6 +284,7 @@ export class BoardView {
   destroy() {
     this.alive = false;
     this.gateTimers.forEach(clearTimeout);
+    clearTimeout(this.portalTimer);
     cancelAnimationFrame(this.raf);
     window.removeEventListener('resize', this.resize);
     document.fonts?.removeEventListener('loadingdone', this.fontsLoaded);
@@ -291,6 +296,7 @@ export class BoardView {
   setState(G: GameState) {
     this.G = G;
     this.dirty = true;
+    this.scheduleWarm();
     for (const p of G.players) {
       if (!this.tokens.has(p.id)) {
         const c = this.slotPos(p.id, p.node);
@@ -1213,6 +1219,44 @@ export class BoardView {
     this.canvas.style.height = `${this.h}px`;
   };
 
+  // ------------------------------------------------------------ ground warm-up
+
+  private warming = false;
+  private wasZooming = false;
+
+  /** Build ground chunks while the browser is idle, so a zoom finds them ready (see ground.ts). */
+  private scheduleWarm() {
+    if (this.warming || !this.alive) return;
+    this.warming = true;
+    if ('requestIdleCallback' in window) requestIdleCallback(this.warm, { timeout: 2000 });
+    else setTimeout(() => this.warm(), 200);
+  }
+
+  private warm = (deadline?: IdleDeadline) => {
+    this.warming = false;
+    const G = this.G;
+    if (!this.alive || !G || GROUND_SET === 'solid') return;
+    const paint = groundPainter(G);
+    const far = this.zoomFor(ZOOM_MAX_OUT);
+    const farLevel = chunkLevel(far * this.dpr);
+    const nearLevel = chunkLevel(this.followZoom() * this.dpr);
+    // Zoomed all the way out: everything that view can show. One level sharper (the zoom passes
+    // through it on the way in): the board and a margin. The sharpest chunks are built on demand.
+    const fw = this.w / far / 2,
+      fh = this.h / far / 2;
+    const jobs: [number, number, number, number, number][] = [
+      [farLevel, this.ww / 2 - fw, this.wh / 2 - fh, this.ww / 2 + fw, this.wh / 2 + fh],
+    ];
+    const next = CHUNK_LEVELS.find((l) => l > farLevel);
+    if (next && nearLevel > farLevel) jobs.push([next, -400, -400, this.ww + 400, this.wh + 400]);
+    for (const job of jobs) {
+      while (warmGround(G, paint, ...job)) {
+        // Keep idle callbacks short; the rest waits for the next idle moment.
+        if (!deadline || deadline.timeRemaining() < 8) return this.scheduleWarm();
+      }
+    }
+  };
+
   // ------------------------------------------------------------ frame
 
   private frame = (now: number) => {
@@ -1234,10 +1278,14 @@ export class BoardView {
       this.onZoom?.(pct, mode);
     }
     const ctx = this.ctx;
+    // While the zoom is still moving, nothing slow is re-drawn just to be sharper: the pictures
+    // at hand stand in and the sharper ones follow once the camera settles.
+    const zooming = Math.abs(this.cam.z / this.camTarget.z - 1) > 0.02;
     // The board picture only gets sharper, never re-drawn smaller: a sharper one shrinks fine,
     // and re-drawing the whole board as the camera zooms out made the zoom stutter.
-    const want = Math.min(3, Math.max(1, Math.ceil(this.camTarget.z * this.dpr * 2) / 2));
-    if (this.dirty || want > this.cacheScale) this.renderStatic(Math.max(want, this.cacheScale));
+    const want = Math.min(this.maxCacheScale(), Math.max(1, Math.ceil(this.camTarget.z * this.dpr * 2) / 2));
+    if (this.dirty || (want > this.cacheScale && !zooming))
+      this.renderStatic(Math.max(want, Math.min(this.cacheScale, this.maxCacheScale())));
 
     const { fx, fy } = this.focusArea();
     const z = this.cam.z * this.dpr;
@@ -1250,10 +1298,13 @@ export class BoardView {
       (fy - this.cam.y * this.cam.z) * this.dpr,
     );
     ctx.imageSmoothingEnabled = true;
-    // Paint the visible world, rather than a fixed rectangle around the board.
-    // Build at most one new background chunk per frame (see chunk-budget.ts).
-    chunkBudget.left = 1;
-    paintGrass(ctx, this.G);
+    // Paint the visible world, rather than a fixed rectangle around the board. Build at most one
+    // new ground chunk per frame, none while zooming (see ground.ts).
+    // Settled after a zoom: chunks may have been dropped for memory, so top the warm-up up again.
+    if (this.wasZooming && !zooming) this.scheduleWarm();
+    this.wasZooming = zooming;
+    chunkBudget.left = zooming ? 0 : 1;
+    paintLiveGrass(ctx, this.G);
     chunkBudget.left = Infinity;
     ctx.drawImage(this.cache, 0, 0, this.ww, this.wh);
 
@@ -1912,6 +1963,15 @@ export class BoardView {
 
   // ------------------------------------------------------------ static board
 
+  /**
+   * The sharpest the board picture may get: 3x, or less for big boards so it stays under 16
+   * million pixels (Safari leaves bigger canvases blank, and they use a lot of memory).
+   */
+  private maxCacheScale() {
+    const fit = Math.sqrt(16_000_000 / (this.ww * this.wh));
+    return Math.max(0.5, Math.min(3, Math.floor(fit * 4) / 4));
+  }
+
   private renderStatic(scale: number) {
     const G = this.G!;
     this.dirty = false;
@@ -2243,6 +2303,8 @@ function drawCustomDecor(ctx: CanvasRenderingContext2D, G: GameState) {
 }
 
 export const GRASS = '#92d268';
+/** The solid ground's color. */
+const SOLID_GRASS = '#97c26a';
 let grassCanvas: HTMLCanvasElement | null = null;
 
 /** A 200 x 200 grass tile with tufts, repeated over the board and beyond it. */
@@ -2267,8 +2329,8 @@ export function grassTile(): HTMLCanvasElement {
 
 const grassPatterns = new WeakMap<CanvasRenderingContext2D, CanvasPattern>();
 
-/** World-aligned grass; games may also add scenery beyond the board, builders omit `G`. */
-export function paintGrass(ctx: CanvasRenderingContext2D, G?: GameState) {
+/** The world rectangle a context's transform shows, with a small overscan for edge pixels. */
+function visibleWorld(ctx: CanvasRenderingContext2D) {
   // The inverse camera transform gives the visible world, even when it lies beyond the board.
   // A small overscan covers edge pixels at fractional zoom and on high-density screens.
   const inverse = ctx.getTransform().inverse();
@@ -2278,11 +2340,73 @@ export function paintGrass(ctx: CanvasRenderingContext2D, G?: GameState) {
     inverse.transformPoint({ x: 0, y: ctx.canvas.height }),
     inverse.transformPoint({ x: ctx.canvas.width, y: ctx.canvas.height }),
   ];
-  const left = Math.floor(Math.min(...corners.map((p) => p.x))) - 1;
-  const top = Math.floor(Math.min(...corners.map((p) => p.y))) - 1;
-  const right = Math.ceil(Math.max(...corners.map((p) => p.x))) + 1;
-  const bottom = Math.ceil(Math.max(...corners.map((p) => p.y))) + 1;
+  return {
+    left: Math.floor(Math.min(...corners.map((p) => p.x))) - 1,
+    top: Math.floor(Math.min(...corners.map((p) => p.y))) - 1,
+    right: Math.ceil(Math.max(...corners.map((p) => p.x))) + 1,
+    bottom: Math.ceil(Math.max(...corners.map((p) => p.y))) + 1,
+  };
+}
+
+/** World-aligned grass; games may also add scenery beyond the board, builders omit `G`. */
+export function paintGrass(ctx: CanvasRenderingContext2D, G?: GameState) {
+  const { left, top, right, bottom } = visibleWorld(ctx);
   ctx.save();
+  paintGrassArea(ctx, G, left, top, right, bottom, true);
+  ctx.restore();
+}
+
+/**
+ * The solid ground (`GROUND_SET = 'solid'`): one fill of plain grass. The textured meadow and
+ * terrain looked richer but made every frame and every zoom far slower.
+ */
+function paintSolidGrass(
+  ctx: CanvasRenderingContext2D,
+  left: number,
+  top: number,
+  right: number,
+  bottom: number,
+) {
+  ctx.fillStyle = SOLID_GRASS;
+  ctx.fillRect(left, top, right - left, bottom - top);
+}
+
+/** Builder views have no game state: their ground (plain meadow) is cached under this key. */
+const NO_BOARD = {};
+
+/**
+ * Live views (the game, the builder): the same picture as `paintGrass`, drawn from ground chunks
+ * cached by `ground.ts`, so each frame paints one layer. Only the terrain set's decorations are
+ * drawn live on top, at full sharpness.
+ */
+export function paintLiveGrass(ctx: CanvasRenderingContext2D, G?: GameState) {
+  const { left, top, right, bottom } = visibleWorld(ctx);
+  if (GROUND_SET === 'solid') return paintSolidGrass(ctx, left, top, right, bottom);
+  ctx.save();
+  paintGround(ctx, G ?? NO_BOARD, groundPainter(G), left, top, right, bottom);
+  if (TOWN_LANDSCAPE && G) paintTownFeatures(ctx, G, left, top, right, bottom);
+  ctx.restore();
+}
+
+/** Ground chunks are built for idle time too (see `BoardView.warm`). */
+function groundPainter(G?: GameState): GroundPainter {
+  // Scenery other than the terrain set draws stamps that may cross a chunk's edge: look a little
+  // beyond the chunk for them (the canvas clips what falls outside).
+  const m = G && PAINTED_LANDSCAPE && !TOWN_LANDSCAPE ? 160 : 0;
+  return (ctx, left, top, right, bottom) =>
+    paintGrassArea(ctx, G, left - m, top - m, right + m, bottom + m, false);
+}
+
+function paintGrassArea(
+  ctx: CanvasRenderingContext2D,
+  G: GameState | undefined,
+  left: number,
+  top: number,
+  right: number,
+  bottom: number,
+  features: boolean,
+) {
+  if (GROUND_SET === 'solid') return paintSolidGrass(ctx, left, top, right, bottom);
   const meadow = propCanvas('meadow', '#808080');
   if (PAINTED_LANDSCAPE && meadow) paintMeadow(ctx, meadow, left, top, right, bottom, PARK_LANDSCAPE);
   else {
@@ -2298,7 +2422,8 @@ export function paintGrass(ctx: CanvasRenderingContext2D, G?: GameState) {
     if (PUZZLE_LANDSCAPE) {
       paintParkScenes(ctx, G, left, top, right, bottom);
     } else if (TOWN_LANDSCAPE) {
-      paintTownTerrain(ctx, G, left, top, right, bottom);
+      // Live ground chunks keep the finished picture, so the terrain's own cache would be a copy.
+      paintTownTerrain(ctx, G, left, top, right, bottom, { cache: features, features });
     } else {
       if (PARK_LANDSCAPE) paintParkStream(ctx, G, top, right);
       const scenery = PARK_LANDSCAPE ? parkSceneryBeyondBoard : sceneryBeyondBoard;
@@ -2308,7 +2433,6 @@ export function paintGrass(ctx: CanvasRenderingContext2D, G?: GameState) {
       }
     }
   }
-  ctx.restore();
 }
 
 /** Road colors: the border, the paving and the arrow painted on one-way roads. */

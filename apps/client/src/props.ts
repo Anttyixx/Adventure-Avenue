@@ -74,6 +74,11 @@ const transportArt = import.meta.glob<string>('./assets/transport-v13/*.png', {
 /** Restore the previous grass and scenery density independently of the building set. */
 export const LANDSCAPE_SET: string = 'painted';
 export const PAINTED_LANDSCAPE = ART_SET === 'layered' && LANDSCAPE_SET === 'painted';
+/**
+ * solid = plain grass color under the board (fast: one fill per frame, nothing to build while
+ * zooming); textured = the painted meadow plus the scenery set below (much slower to draw).
+ */
+export const GROUND_SET: string = 'solid';
 /** terrain = varied cartoon surfaces; puzzle/connected/park/previous preserve earlier scenery. */
 export const SCENERY_SET: string = 'terrain';
 export const PARK_LANDSCAPE = PAINTED_LANDSCAPE && SCENERY_SET === 'park';

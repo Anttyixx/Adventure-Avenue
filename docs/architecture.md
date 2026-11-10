@@ -137,7 +137,14 @@ room, Continue resumes the saved game, and the board editor (`ui/editor.ts`).
 
 `BoardView` draws everything on one `<canvas>`:
 
-- **Background:** `paintGrass` fills the inverse-camera rectangle with nonrepeating grass
+- **Ground:** `GROUND_SET` (`props.ts`) is `solid` by default: `paintGrass` / `paintLiveGrass`
+  fill the visible world with one grass color and nothing below is built. With `textured`,
+  `paintLiveGrass` draws the background described next from `ground.ts`: meadow and terrain baked
+  into one cached 800-unit chunk per resolution level (96MiB LRU), so a frame paints one layer.
+  At most one chunk is built per frame and none while the camera zooms (another level stands
+  in; with none, the cheap 0.5 level is built), and `BoardView.warm` pre-builds chunks in idle
+  time. Terrain decorations stay live on top (`paintTownFeatures`).
+- **Background (textured):** `paintGrass` fills the inverse-camera rectangle with nonrepeating grass
   (`meadow.ts`). Default `SCENERY_SET = terrain` adds `town-terrain.ts` / `town-terrain-art.ts`:
   80-unit grass/water/paving material cells, board-aware clearance, shared contours and soft
   material masks. `terrain-v12/` supplies crisp cartoon lawn and cobblestone materials; water retains its v8 material,
@@ -157,8 +164,8 @@ room, Continue resumes the saved game, and the board editor (`ui/editor.ts`).
   pads so square corners and hex points retain a continuous ground margin. Square/hex Lab
   previews show the active scenery.
 - **Static layer:** scenery and tiles are painted once into an offscreen cache
-  (`renderStatic` → `paintBoard`) and redrawn only when `dirty` (state changed) or the zoom needs
-  a sharper copy. Property images come from `props.ts` (PNG art in `assets/props`, recolored to
+  (`renderStatic` → `paintBoard`) and redrawn only when `dirty` (state changed) or the settled
+  zoom needs a sharper copy (never mid-zoom; `maxCacheScale` keeps it under 16M pixels). Property images come from `props.ts` (PNG art in `assets/props`, recolored to
   the owner's color) with vector fallbacks in `art.ts`.
 - **Each frame:** camera update, the cached board, then ambient animation, closed-shop gates,
   greyed tiles, choice glows, routes, tokens (pixel characters from `sprites.ts`), direction

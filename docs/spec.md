@@ -230,7 +230,12 @@ The board fills the entire canvas behind the HUD, with no space reserved beside 
 The hovered cell has a tinted fill and two contrasting outlines: a dark outer stroke (6 screen
 pixels) and a bright inner stroke (3 screen pixels), gold normally and red while erasing. Their
 screen size stays constant at every zoom.
-The default landscape uses varied cartoon grass, turquoise pond water and warm paving textures,
+**Ground.** By default (`GROUND_SET = 'solid'` in `props.ts`) the ground around and under the board
+is one plain grass color (`#97c26a`) in games, the builder and still pictures: one fill per frame
+and nothing to build while zooming. Cloud shadows still drift over it. `GROUND_SET = 'textured'`
+restores the painted landscape described next; live views then draw it from ground chunks cached
+by `ground.ts` (meadow and terrain baked together), with its decorations drawn live on top.
+The textured landscape uses varied cartoon grass, turquoise pond water and warm paving textures,
 matching the rounded board-tile style: clean lawn tufts, flowing water highlights and chunky
 rounded cobblestones. Adjacent material cells share one surface, with softened
 banks and transitions rather than visible individual tile borders. These background materials
@@ -1212,9 +1217,11 @@ including the board, the interface, suits, wild cards, coins and effects, is HD 
 by the owner on Oct 23, 2026; the original spec drew suits, coins and wild cards as pixel art.)_
 
 **Board (HD canvas).** Logical size 1300 x 800 with 100-unit squares, scaled to the container and to
-devicePixelRatio. The static board (grass, roads, pond, fountain, flower beds, trees, every square)
-is drawn into a cached offscreen canvas and redrawn only when state changes; each frame draws that
-cache, then highlights, sprites, coins, floating text and the die.
+devicePixelRatio. The static board (roads, pond, fountain, flower beds, trees, every square)
+is drawn into a cached offscreen canvas and redrawn when state changes; each frame draws the
+ground, that cache, then highlights, sprites, coins, floating text and the die. The cache gets
+sharper as the camera zooms in (up to 3x, capped at 16 million pixels for big boards), but only
+once the zoom has settled, never in the middle of it.
 
 - Property art is painted PNGs (`apps/client/src/assets/tiles-v2/` plus preserved paired art in `assets/props/`, drawn by `props.ts`): five
   shop designs by value (cottage, house, storefront, townhouse, tower), three 3-Star Shop designs

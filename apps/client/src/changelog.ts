@@ -26,6 +26,22 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: '2026-11-10-fast-ground',
+    date: 'Nov 10, 2026',
+    title: 'Faster zooming',
+    features: [
+      {
+        tag: 'better',
+        title: 'Plain grass, smooth zooms',
+        text: 'The ground around the board is now plain grass. The painted grass, ponds and paving made every frame slow to draw; zooming in and out is now about twice as smooth.',
+      },
+    ],
+    extras: [
+      'The board picture no longer re-draws itself in the middle of a zoom',
+      'Very big boards no longer risk showing blank on iPhones',
+    ],
+  },
+  {
     id: '2026-11-10-classic-renderer',
     date: 'Nov 10, 2026',
     title: 'Back to the classic renderer',

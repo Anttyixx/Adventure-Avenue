@@ -10,24 +10,22 @@ export const PLAYER_COLORS = ['#e5484d', '#3e7bfa', '#30a46c', '#a855f7', '#f76b
 
 /** Players per match (humans and CPUs). */
 export const MAX_PLAYERS = PLAYER_COLORS.length;
-export const PLAYER_COLOR_NAMES = ['red', 'blue', 'green', 'purple', 'orange'];
-
 export function newGame(opts: MatchOptions): GameState {
   const board = opts.board ?? BOARDS[opts.boardId ?? 'town'];
   const seed = opts.seed ?? Math.floor(Math.random() * 2 ** 31);
   const pricing = districtStartingValues(board);
+  // Every property starts as a shop; vacant plots are picked later (`choosePlots`).
   const nodes: Square[] = board.squares.map((s, id) => {
-    const isPlot = false;
     return {
       id,
       x: s.x,
       y: s.y,
-      t: isPlot ? 'plot' : s.t,
+      t: s.t,
       nb: [],
       d: s.d ?? -1,
       g: -1,
       base: pricing.values[id],
-      value: isPlot ? 0 : pricing.values[id],
+      value: pricing.values[id],
       owner: -1,
       b: null,
       lv: 0,
