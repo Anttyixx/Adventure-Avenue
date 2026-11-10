@@ -1914,8 +1914,8 @@ original complete board artwork.
 with PixiJS on the graphics card: add `?renderer=pixi` to the address (or `?renderer=classic` to go
 back; the choice is remembered on that device), or use the UI Lab's renderer button. In PixiJS mode
 the background and the board picture are drawn by the graphics card; everything looks the same.
-If the device can't run it, the board quietly uses the classic renderer. `?fps=1` (or the Lab's FPS
-meter) shows a small meter in the bottom left corner: the renderer, frames per second and the
+If the device can't run it, or its graphics card gives up mid-game, the board quietly switches to the classic renderer. `?fps=1` (or the Lab's FPS
+meter) shows a small meter at the top left, under the info chip: the renderer, frames per second and the
 slowest recent frame.
 
 Every tile picture is sized by its visible drawing, not by its image frame (frames carry different

@@ -26,6 +26,18 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: '2026-11-10-pixi-fixes',
+    date: 'Nov 10, 2026',
+    title: 'PixiJS renderer fixes',
+    features: [
+      {
+        tag: 'fix',
+        title: 'Lighter on the graphics card',
+        text: 'The PixiJS test renderer now splits big pictures into pieces, keeps its memory use in check and loads background pieces gradually, so zooming out no longer lags or makes parts of the board vanish. If the graphics card gives up anyway, the game switches back to the usual renderer.',
+      },
+    ],
+  },
+  {
     id: '2026-11-10-pixi-test',
     date: 'Nov 10, 2026',
     title: 'A graphics card renderer to try',
