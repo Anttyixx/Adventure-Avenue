@@ -102,7 +102,9 @@ Requests refer to parts of the game by these names:
   - **action bar** (`.prompt-center`): the current player's options at the bottom, or the
     **status line** when no options are up; it morphs between the two. `ui/status-messages.ts` gives new action phases priority over old results, protects brief in-phase overlays and debounces idle activity; actual choices interrupt stale announcements.
   - **player cards:** bottom right. Clicking one opens that player's page in the info pop-up
-    (drawn by `ui/overview.ts`).
+    (drawn by `ui/overview.ts`). Hidden stack cards use size containment and stretch to the
+    front card’s row; their extra status content must not size the stack. `Hud.glide` uses a
+    generation guard and intended depth transforms so interrupted animations settle correctly.
 - **Portal links:** `newGame` must register endpoint metadata even when a graph edge already exists. Keep `toSide` paired correctly, with a fallback for older saves. `portal-links.ts`, `portal-link-art.ts` and `portal-travel.ts` share direction and travel feedback; `TIMING.portalStep` controls its duration.
 - **Board** (`apps/client/src/board.ts`):
   - **tiles/squares**, **districts** (color groups of shops), **vacant plots** (empty properties

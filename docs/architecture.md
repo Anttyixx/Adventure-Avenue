@@ -188,6 +188,12 @@ the choice; `status()` shows what is happening; `updateInsets()` moves it bottom
 (bottom right; clicking one opens that player's info page, drawn by `ui/overview.ts`), tooltips, banners,
 and modals (`modal()` for any centered dialog). It re-renders from the state on `render(G)`.
 
+Hidden stack cards use CSS size containment and stretch within the front card's grid row;
+status rows on hidden cards never change that row's height. Opened/popped cards retain their
+natural height. `Hud.glide` samples current positions but uses explicit intended depth transforms
+for destinations. Its generation guard prevents cancelled glides from clearing a newer glide's
+transition lock. Reduced motion cancels prior animations before applying the final layout.
+
 ### Portal rendering and travel
 
 `newGame` registers all portal endpoints independently of graph-neighbor deduplication. Runtime

@@ -26,6 +26,18 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: '2026-11-10-stack-alignment',
+    date: 'Nov 10, 2026',
+    title: 'Player cards stay aligned',
+    features: [
+      {
+        tag: 'fix',
+        title: 'A tidy stack',
+        text: 'Cards with extra status rows no longer stick out of the stack. Hidden cards match the front card’s height, and interrupted animations settle into the latest layout.',
+      },
+    ],
+  },
+  {
     id: '2026-11-10-sharp-landscape',
     date: 'Nov 10, 2026',
     title: 'A clearer cartoon background',

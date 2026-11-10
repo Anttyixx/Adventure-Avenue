@@ -151,6 +151,8 @@ export class Hud {
   private popped = new Map<number, number>();
   /** The player whose card is at the front of the stack. */
   private stackFront = -1;
+  /** Older cancelled glides must not finish a newer layout change. */
+  private cardGlide = 0;
   /**
    * The Info button, right of the info chip: it opens the info pop-up (the game, the stock market
    * and each player), with the page picked in the action bar.
@@ -719,18 +721,27 @@ export class Hud {
    * and for cards rising out of a smart stack. Front to back, one just after another.
    */
   private glide(change: () => void) {
+    const generation = ++this.cardGlide;
     const els = [...this.cardEls.values()];
-    if (!this.G || matchMedia('(prefers-reduced-motion: reduce)').matches) return change();
     const before = els.map((el) => el.getBoundingClientRect());
     for (const el of els) for (const a of el.getAnimations()) a.cancel();
     const wrap = this.cardsWrap;
+    if (!this.G || matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      wrap.classList.remove('stacking');
+      change();
+      return;
+    }
     wrap.classList.add('stacking');
     change();
     this.updateInsets();
     const zoom = wrap.getBoundingClientRect().width / (wrap.offsetWidth || 1) || 1;
     let left = els.length;
+    if (!left) {
+      wrap.classList.remove('stacking');
+      return;
+    }
     const done = () => {
-      if (--left <= 0) wrap.classList.remove('stacking');
+      if (generation === this.cardGlide && --left <= 0) wrap.classList.remove('stacking');
     };
     els.forEach((el, i) => {
       // A card the change set moving itself (the old front card dropping to the back when the
@@ -739,7 +750,11 @@ export class Hud {
       if (el.getAnimations().some((x) => !(x instanceof CSSTransition))) return done();
       const a = before[i];
       const b = el.getBoundingClientRect();
-      const end = getComputedStyle(el).transform;
+      // Use the intended stack pose, never an in-flight CSS transition's sampled matrix.
+      const end =
+        this.stacked && el.classList.contains('behind')
+          ? stackTransform(Number(el.style.getPropertyValue('--d')))
+          : 'none';
       const final = end === 'none' ? '' : end;
       const dx = (a.left + a.width / 2 - (b.left + b.width / 2)) / zoom;
       const dy = (a.top - b.top) / zoom;

@@ -1096,6 +1096,11 @@ input[type='range'] {
   transition: opacity 0.3s;
 }
 .cards-wrap.collapsed .pcard.behind {
+  /* Hidden status rows must not size the stack: every back card fills the front card's row. */
+  contain: size;
+  align-self: stretch;
+  min-height: 0;
+  overflow: hidden;
   transform: translateY(calc(var(--d) * -7px)) scale(calc(1 - var(--d) * 0.05));
   opacity: calc(1 - var(--d) * 0.12);
   /* Only a strip shows, so it is filled with the player's color to tell who goes next. */

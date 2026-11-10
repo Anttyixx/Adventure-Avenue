@@ -121,6 +121,8 @@ const RECENT = new Set([
   'Town terrain: hex',
   'Tile sprites and tint layers',
   'Cards: list',
+  'Cards: mixed card heights',
+  'Next player (card stack)',
   'Cards: stack',
   'Cards: smart',
   'Cards: open the stack',
@@ -591,10 +593,18 @@ export async function openLab(app: HTMLElement, section?: string) {
         cur().name = 'Maximilian';
         refresh();
       }),
+      btn('Cards: mixed card heights', () => {
+        G.players.forEach((p, i) => {
+          p.boost = i % 2 ? 1.3 : 1;
+        });
+        hud.setCardsMode('stack');
+        refresh();
+        hud.tick('Extra status rows on some cards. Advance the turn or open the stack to check alignment.');
+      }),
       btn('Cards: list', () => hud.setCardsMode('list')),
       btn('Cards: stack', () => hud.setCardsMode('stack')),
       btn('Cards: smart', () => hud.setCardsMode('smart')),
-      // A folded stack opens into a list for a moment, as when tapped (the layout buttons glide up).
+      // A folded stack opens into a list for a moment, as when tapped.
       btn('Cards: open the stack', () => {
         if (hud.cardsMode === 'list') hud.setCardsMode('stack');
         window.setTimeout(() => hud.openStack('tap'), 600);

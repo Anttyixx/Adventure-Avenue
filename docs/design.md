@@ -605,12 +605,15 @@ if (!(await ask(`Delete ${d.name}?`, 'Its 4 properties will be removed from the 
   Collapsed (Stack and Smart), every card shares one grid cell (`grid-area: var(--row) / 1`, with
   `--stack-n` x 7px of room above for the peeking cards); the active card is in front
   and the others sit behind by turn order (`--d` = depth), each 7px higher and 5% narrower, filled
-  with their `--pc` and their contents hidden (3 show, deeper ones fade out). Folding/unfolding (`setCardsCollapsed`): each card glides from
+  with their `--pc` and their contents hidden (3 show, deeper ones fade out). Back cards use
+  `contain: size` and stretch to the front card’s grid row: hidden status content never sizes
+  the stack. Opening or popping removes containment and restores natural card height. Folding/unfolding (`setCardsCollapsed`): each card glides from
   where it was to its new place, matched at its top middle (`.pcard` `transform-origin: 50% 0`,
   `T.cardStack` 504ms, `T.cardStackStagger` 26ms, `cubic-bezier(0.2, 0.8, 0.2, 1)`; `hud.glide`, the
   one motion for the layout buttons, opening a stack for a moment and smart pop-outs), with the cards' own
   transform transitions off meanwhile (`.cards-wrap.stacking`). The layout buttons remain anchored below the bottom card, with no translation animation
-  while the cards fold, unfold or pop out. Turn change: the old front card
+  while the cards fold, unfold or pop out. Interrupted glides resolve to the intended depth
+  transform, with a generation guard preventing cancelled glides from ending a newer one. Turn change: the old front card
   drops 55% of its height (ease-in), goes behind the stack, then rises into its back place
   (ease-out; `T.cardCycle` 750ms, Web Animations), while the rest ease forward (0.4s). Behind cards are `inert`.
   Opening a stack (`openStack` / `closeStack`, `hud.stacked`): a click or tap on `.cards` (the
