@@ -33,7 +33,7 @@ export const CHANGELOG: ChangelogEntry[] = [
       {
         tag: 'better',
         title: 'A burst around the Boon coin',
-        text: 'Boon’s gold coin now sits inside a green burst that matches Boom’s pink badge, keeping its positive up-arrow symbol.',
+        text: 'Boon now has a plain gold coin inside a green burst matching Boom’s pink badge. The coin is 30% smaller, with the up arrow removed.',
       },
     ],
   },

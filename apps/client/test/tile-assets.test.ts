@@ -243,7 +243,8 @@ describe('flat warp floor pad', () => {
 
 describe('Boon coin burst', () => {
   it('adds a fixed-color sprite while preserving the previous coin and the matching Boom art', () => {
-    expect(png(resolve('apps/client/src/assets/boon-v15/boon-base.png'))).toEqual([256, 256]);
+    expect(png(resolve('apps/client/src/assets/boon-v16/boon-base.png'))).toEqual([256, 256]);
+    expect(existsSync(resolve('apps/client/src/assets/boon-v15/boon-base.png'))).toBe(true);
     expect(existsSync(resolve('apps/client/src/assets/tiles-v2/boon-base.png'))).toBe(true);
     expect(existsSync(resolve('apps/client/src/assets/tiles-v2/boom-base.png'))).toBe(true);
   });

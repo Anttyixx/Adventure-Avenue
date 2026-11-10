@@ -66,7 +66,7 @@ export const ART_SET: string = 'layered';
 export const PROPERTY_SET: string = 'painted';
 /** Restore the previous standalone Boon coin without changing the Boom sprite. */
 export const BOON_SET: string = 'burst';
-const boonArt = import.meta.glob<string>('./assets/boon-v15/*.png', {
+const boonArt = import.meta.glob<string>('./assets/boon-v16/*.png', {
   eager: true,
   query: '?url',
   import: 'default',
