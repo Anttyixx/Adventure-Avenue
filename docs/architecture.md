@@ -180,12 +180,17 @@ room, Continue resumes the saved game, and the board editor (`ui/editor.ts`).
 
 ### The HUD (`ui/hud.ts`)
 
+While any pop-up is up, `Hud.updateLock` (a MutationObserver on the HUD's layers) adds
+`.hud.locked` and sets `board.locked`, so only the action bar and the toolbar's View board, Game
+log, Music and Menu respond.
+
 `Hud` owns every HTML overlay on the game screen, by name (see `CLAUDE.md`/`AGENTS.md` naming):
-the info chip and Info button (top left; `toggleInfo` opens the info pop-up from `ui/info.ts`), the toolbar (zoom chip, Game log, Music, Menu), the
+the info chip and Info button (top left; `toggleInfo` opens the info pop-ups from `ui/info.ts`), the toolbar (zoom chip, Game log, Music, Menu), the
 action bar (`.prompt-center`: `prompt()` shows a question with buttons and returns a promise of
 the choice; `status()` shows what is happening; `updateInsets()` moves it bottom left with
 `.ab-left` when the window is too narrow to center it), the Game log button (in the toolbar) and the log panel it opens, the player cards
-(bottom right; clicking one opens that player's info page, drawn by `ui/overview.ts`), tooltips, banners,
+(bottom right; clicking one opens that player's info page, drawn by `ui/overview.ts`) with the
+Stocks, Properties and layout chips under them, tooltips, banners,
 and modals (`modal()` for any centered dialog). It re-renders from the state on `render(G)`.
 
 Hidden stack cards use CSS size containment and stretch within the front card's grid row;

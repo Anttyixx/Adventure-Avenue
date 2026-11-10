@@ -595,14 +595,14 @@ if (!(await ask(`Delete ${d.name}?`, 'Its 4 properties will be removed from the 
     bottom-right. Active player: breathing `--pc` glow on an `::after` layer. Money changes pop out
     beside the card ("+120G" green / "-50G" red). Can win: net worth and portrait pulse gold.
     Clicking opens that player's page in the info pop-up.
-- **Card layouts** (`.cards-modes` + `.cards-wrap.collapsed`, `hud.setCardsMode`): below the
-  cards' right end, a group outlined in 1.5px white 55% (radius 9) on a light see-through backing
-  (white 16% with a 4px backdrop blur and a soft navy shadow) holding three 26x20 icon buttons
-  (`.cards-mode`, 14px stroked SVG icons in white 70%): List (three bars), Stack (a card with two
-  strips above), Smart (a card with an arrow rising out). The chosen one has a 1.5px white 90%
-  outline, a white 18% fill and a white icon; hover makes an icon white; focus shows a gold ring.
-  Easy to find, but quiet over the board.
-  Collapsed (Stack and Smart), every card shares one grid cell (`grid-area: var(--row) / 1`, with
+- **Chips under the cards** (`.cards-bar` of `.cards-chip.glass`): one row, right-aligned, 5px
+  apart: Stocks (hidden on Easy rules), Properties, then the layout chip (`.cards-mode-chip`). Glass
+  pills, Nunito 700 12px, padding 3px 10px; hover gives a gold border; `.on` (its pop-up is open) is
+  gold with dark text, like the Info button; focus shows a gold ring.
+- **Card layouts** (`.cards-wrap.collapsed`, `hud.setCardsMode`): the layout chip shows only the
+  current layout: a 14px stroked SVG icon and its name, List (three bars) or Smart stack (a card
+  with an arrow rising out); a tap switches to the other one (`CARDS_MODES` in `hud.ts`).
+  Collapsed (Smart stack), every card shares one grid cell (`grid-area: var(--row) / 1`, with
   `--stack-n` x 7px of room above for the peeking cards); the active card is in front
   and the others sit behind by turn order (`--d` = depth), each 7px higher and 5% narrower, filled
   with their `--pc` and their contents hidden (3 show, deeper ones fade out). Back cards use
@@ -610,8 +610,8 @@ if (!(await ask(`Delete ${d.name}?`, 'Its 4 properties will be removed from the 
   the stack. Opening or popping removes containment and restores natural card height. Folding/unfolding (`setCardsCollapsed`): each card glides from
   where it was to its new place, matched at its top middle (`.pcard` `transform-origin: 50% 0`,
   `T.cardStack` 504ms, `T.cardStackStagger` 26ms, `cubic-bezier(0.2, 0.8, 0.2, 1)`; `hud.glide`, the
-  one motion for the layout buttons, opening a stack for a moment and smart pop-outs), with the cards' own
-  transform transitions off meanwhile (`.cards-wrap.stacking`). The layout buttons remain anchored below the bottom card, with no translation animation
+  one motion for the layout chip, opening a stack for a moment and smart pop-outs), with the cards' own
+  transform transitions off meanwhile (`.cards-wrap.stacking`). The chips remain anchored below the bottom card, with no translation animation
   while the cards fold, unfold or pop out. Interrupted glides resolve to the intended depth
   transform, with a generation guard preventing cancelled glides from ending a newer one. Turn change: the old front card
   drops 55% of its height (ease-in), goes behind the stack, then rises into its back place
@@ -619,7 +619,7 @@ if (!(await ask(`Delete ${d.name}?`, 'Its 4 properties will be removed from the 
   Opening a stack (`openStack` / `closeStack`, `hud.stacked`): a click or tap on `.cards` (the
   front card or the strips) unfolds it to the list with the same glide for `T.stackOpen` (3s); a
   mouse `pointerenter` keeps it open until `pointerleave` (taking over a tap's timer). Cards open
-  the info pop-up only while the cards aren't stacked; the layout buttons don't change.
+  the info pop-up only while the cards aren't stacked; the layout chip doesn't change.
   Smart: a card behind the front one (never the active player's) whose cash or net worth changes
   gets `.popped`
   (`popCard`): it takes a row of its own above the stack (`--row` 1, 2... in turn order, the stack
@@ -633,7 +633,14 @@ if (!(await ask(`Delete ${d.name}?`, 'Its 4 properties will be removed from the 
 ### 5.15 Info pop-up (pop-up + action bar)
 
 - **Info button** (`.info-btn`): a pill at the end of the info chip, an "i" in a white outlined circle and "Info";
-  gold (`.on`) while the pop-up is open.
+  gold (`.on`) while the Game info pop-up is open. The Stocks and Properties chips under the player
+  cards open the stock market and properties pop-ups the same way (5.14).
+- **Pop-up lock** (`hud.updateLock`, `.hud.locked`, `board.locked`): while any pop-up layer has
+  content (info, stock, venture, arcade, or a `.modal-wrap` dialog) and View board isn't peeking,
+  `pointer-events: none` on the top-left chips, the zoom chip and the player cards with their chips,
+  and the board ignores hover, taps, wheel and pinches (glowing squares of a choice stay
+  pickable). The action bar and the toolbar's View board, Game log, Music and Menu stay live. Use
+  this for every new pop-up: put it in one of those layers so the lock follows it.
 - **Pop-up** (`.info-layer > .modal.info-pop`): one width (up to 1,000px). Game and Stocks take
   the height they need (max 640px); player pages (`.player`) all share one fixed height (400px;
   phones fill the free area; with three columns the properties list `.pv-props` scrolls inside
@@ -649,8 +656,8 @@ if (!(await ask(`Delete ${d.name}?`, 'Its 4 properties will be removed from the 
   sections 16px apart, the first column at least 300px; a container query keeps the top-right
   heading (or the name, single column) 70px clear of Back.
 - **Action bar:** a stand-in `.prompt-center.info-bar` over the real bar (`.hud.info-open` hides
-  the real one and any stock/venture/arcade layer): pill tabs (`.ib-tab`, 2px border, gold when on) Game,
-  Stocks, a divider, one per player (`.ib-player`: portrait + name, border and fill in `--pc`;
+  the real one and any stock/venture/arcade layer). Game info, the stock market and the properties
+  show just a gold **Close** (`.ib-close`). Player pages show pill tabs (`.ib-tab`, 2px border, gold when on), one per player (`.ib-player`: portrait + name, border and fill in `--pc`;
   portrait only on phones, and anywhere the chips don't all fit the bar's widest size:
   `info.ts` `fitTabs` adds `.compact`, rechecked as the bar resizes). It morphs out of the real bar's size on opening (300ms, tabs fade in
   after 120ms) and back into it on closing (tabs fade out first; then the real bar shows underneath while the
@@ -698,6 +705,9 @@ if (!(await ask(`Delete ${d.name}?`, 'Its 4 properties will be removed from the 
   centered at `iconY`) and the price, fee or name is centered on one text line (`textY`). The
   owner's initial badge sits in the same spot on every property (`x + 22, y + 14` from the art).
   Everything keeps at least 5px clear of the border's inner edge (art at most ~59 x 45, text 15px).
+  `drawProp` fits each image's visible part (its alpha bounding box, `contentBox` in `props.ts`),
+  never the frame, so sprites with uneven padding line up. Hex tiles draw their pictures at
+  `HEX_ART` (90%) around the base line, clear of the slanted top edges.
   Squares with no name (suits, Boon, Boom) center their symbol on the tile.
 
 ### 5.17c Game setup

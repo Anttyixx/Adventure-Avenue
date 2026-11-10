@@ -678,7 +678,7 @@ same way. The pop-up's panels:
 - **Holdings table:** one row per player with squares owned in the district, shares held, the value
   of those shares at the current price, and a bar showing their share of all stock held there.
   Players with nothing there are dimmed.
-- No note under the table (the info pop-up's Stocks page has none either).
+- No note under the table (the stock market pop-up has none either).
 
 ## Suits, bank and promotion
 
@@ -1169,18 +1169,19 @@ switches to it; Buy buys the marked one. Online games show a "Room ABCD" button 
 glowing suits on their card. Arcade games and venture picks open for everyone, so other players
 watch them being played; their result screen closes by itself or with Close.
 
-**Player card layouts.** Three small buttons sit just below the right end of the player
-cards, in this order: **List**, **Stack** and **Smart**. They are an outline with a light, see-through
-backing (the chosen one outlined brighter), so they can be found easily but don't pull the eye
-from the board. The choice is remembered on that device (an older "folded" choice becomes Stack).
+**Chips under the player cards.** One row of glass chips sits just below the player cards,
+against the right edge: **Stocks** (Standard rules only) opens the stock market pop-up,
+**Properties** opens the properties pop-up (each chip turns gold while its pop-up is open; tapping
+it again closes it), and the **layout chip** shows the cards' layout now, with its icon: **List** or
+**Smart stack**. Tapping the layout chip switches to the other layout. The choice is remembered on
+that device (an older "folded" or Stack choice becomes Smart stack).
 
 - **List:** every player card, one above the other.
-- **Stack:** the cards fold into a stack: only the active player's card shows in full, with the
-  other players' cards stacked behind it in turn order (the next player just behind, the player
-  who just went at the back), each peeking out a little higher as a strip in that player's color.
-  When the turn passes, the front card drops down out of the way, slips behind the stack and rises
-  into its place at the back, while the next player's card moves forward.
-- **Smart:** a stack, except that when another player's **cash or net worth** changes on someone
+- **Smart stack:** the cards fold into a stack: only the active player's card shows in full, with
+  the other players' cards stacked behind it in turn order (the next player just behind, the
+  player who just went at the back), each peeking out a little higher as a strip in that player's
+  color. When the turn passes, the front card drops down out of the way, slips behind the stack and
+  rises into its place at the back, while the next player's card moves forward. When another player's **cash or net worth** changes on someone
   else's turn (they get paid, pay, their shops or shares change value), their card rises out of
   the stack into a list above it. Once it has arrived, the numbers count to their new values and
   the money chip beside the card shows what they gained or lost. About 3 seconds after its last
@@ -1193,10 +1194,10 @@ must not change the stack's size or expose a larger panel. Opening/popping resto
 natural full height. Interrupted glides use the current layout's final pose, and only the latest
 glide may restore normal CSS transitions after it finishes.
 
-**Opening a stack** (the same gliding motion as switching layouts, one card just after another): in Stack and Smart, tapping a card doesn't open the player's info; tapping or
+**Opening a stack** (the same gliding motion as switching layouts, one card just after another): in Smart stack, tapping a card doesn't open the player's info; tapping or
 clicking the stack opens it into a list for 3 seconds, then it folds back. With a mouse, resting
 on the stack opens it until the mouse moves off the cards. While it is open, tapping a player's
-card opens their info. The chosen layout doesn't change. The layout buttons stay fixed below the cards as the cards open, fold, or rise out of a smart stack.
+card opens their info. The chosen layout doesn't change. The chips stay fixed below the cards as the cards open, fold, or rise out of a smart stack.
 
 Switching between List and a stack is animated: the cards glide together into the stack (or fan
 back out to their places) one just after another; cards rising out of a smart stack and going
@@ -1341,8 +1342,8 @@ pays, with the Lucky Reels prize list), and Venture cards (all 30 fixed numbers,
 effects, with Standard-only cards marked). Each topic is a card with an icon, a title and a few
 short points. Easy rules show Basics, Arcade games and Venture cards. It reopens on the last tab read. Top left: the **info chip**, with the game's name, the goal (target net worth), online a Room
 button that shows the room code, and at its end the **Info** button (an "i" in a white outlined circle
-and the word Info; gold while open), which opens the **info pop-up** (see below). The board name and the
-round are on the info pop-up's Game page instead. Bottom center: the **action bar** (on
+and the word Info; gold while open), which opens the **Game info pop-up** (see below). The board name and the
+round are on the Game info pop-up instead. Bottom center: the **action bar** (on
 narrow windows such as phones in landscape, where a centered bar would have less than 520px
 between the screen edge and the player cards, it sits in the bottom left corner instead and uses
 all the width up to the cards; this depends only on the window, not on what the bar shows; as a safety net, a centered bar
@@ -1388,16 +1389,19 @@ turns the order round so its own player's card is at the bottom; turns still go 
 suits and progress bar); they are always shown. Player cards show the character's whole sprite
 (trimmed to its drawn pixels, no fade).
 
-**Info pop-up** (`ui/info.ts`). The Info button (or a player card) opens one pop-up for
-everything a player may want to look up, in the middle of the screen like the stock market (up to
-1,000px wide, kept clear of the player cards; the Game and Stocks pages take the height they
+**Info pop-ups** (`ui/info.ts`). Four kinds of pop-up show what a player may want to look up:
+**Game info** (the Info button), the **stock market** (the Stocks chip), the **properties** (the
+Properties chip) and a **player's page** (their player card). They sit in the middle of the screen like the stock market (up to
+1,000px wide, kept clear of the player cards; Game info and the stock market take the height they
 need, while every player page shares one fixed height (400px, enough for its columns; the whole free
 area on phones; when three columns fit side by side a long property list scrolls inside its own
 column, with no scroll bar), so
 flipping between players never makes it jump; pages scroll inside when they need more room; it does not dim the board). **Back** sits in its top
-right corner. The page is picked in the **action bar**: while
-the pop-up is open, a stand-in bar covers the real one with tabs (with 2px borders) for **Game**, **Stocks** (Standard
-rules only), **Properties** and a button per player (portrait and name; portraits only on phones).
+right corner. While one is open, a stand-in **action bar** covers the real one. On a player's page
+it holds a button per player (portrait and name, with 2px borders; portraits only on phones) to flip
+between players. Game info, the stock market and the properties are separate pop-ups: their bar
+holds just **Close**. Tapping another of the four buttons is not possible while one is open (see the
+pop-up lock below), but the standings on Game info open a player's page.
 Anything the game shows in the real bar meanwhile (a status, or a choice waiting for this player)
 is there again when the pop-up closes. The pop-up opens and closes with the pop-up motion (rise
 and fade in; sink and fade out); the stand-in bar morphs out of the real bar's size with its tabs
@@ -1407,9 +1411,16 @@ then the new page's parts pop in one by one (growing from 82% with a slight over
 edge's color fades to the new page's. On a player page the columns keep at least 26px between
 them and sections 16px apart, and whatever sits in the top right corner (the shares or
 properties heading, or the player's name on narrow screens) stays clear of Back. The toolbar's View board chip works for it too, and it covers
-any stock market, venture board or arcade game that is up while open. Escape, Back or the Info
-button again closes it; clicking a player card opens that player's page (clicking it again
-closes the pop-up). It updates live as the game goes on.
+any stock market, venture board or arcade game that is up while open. Escape, Back or Close
+closes it. It updates live as the game goes on.
+
+**Pop-up lock.** While any pop-up is on the screen (the info pop-ups, the stock market or venture
+board during a choice, an arcade game, a dialog or the Menu), only these still work: the action bar's
+buttons, the View board chip (when it is shown), Game log, the Music chip and Menu. The info chip
+and its Info and Room buttons, the zoom chip, the player cards (no tap, no hover, no opening the
+stack) and the chips under them, and the board (no tile or portal info on hover or tap, no wheel or
+pinch zoom) do nothing until the pop-up closes. Squares glowing for a choice can still be tapped.
+While View board has the pop-up out of the way, the screen is unlocked.
 
 - **Game:** how to win (the goal, back to the bank, the round limit if any) and who leads; this
   game's facts (board, rules, stock system, round, whose turn, properties owned, venture panels
@@ -1889,3 +1900,8 @@ grandeur across shop and Circus tiers. Ownership colors and all game rules remai
 Old PNGs and the earlier layered set remain intact. `PROPERTY_SET = 'previous'` restores the
 previous property art independently of other board sprites; `ART_SET = 'classic'` restores the
 original complete board artwork.
+
+Every tile picture is sized by its visible drawing, not by its image frame (frames carry different
+amounts of empty space), so all pictures stand on the same base line at matching sizes and stay
+clear of the tile's border. Hex tiles narrow toward their top point, so their pictures are drawn
+at 90% of the square size.

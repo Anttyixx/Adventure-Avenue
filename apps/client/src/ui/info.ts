@@ -1,8 +1,9 @@
 /**
- * The info pop-up, opened by the Info button beside the info chip (or a player card): one place to
- * read about the game. It sits in the middle of the screen like the stock market, and the page is
- * picked in the action bar: Game (the rules in play, the goal, the turn and the standings),
- * Stocks (the stock market, Standard rules only) or a player (everything about them).
+ * The pop-ups for reading about the game, in the middle of the screen like the stock market:
+ * Game info (the Info button beside the info chip: the rules in play, the goal, the turn and the
+ * standings), the stock market and the properties (the Stocks and Properties chips under the
+ * player cards), and a player's page (their card). Player pages share the action bar, which holds
+ * a button per player; the other three are separate pop-ups with a Close button there.
  *
  * The action bar while it is open is a stand-in laid over the real one, so whatever the game
  * shows meanwhile (statuses, a choice waiting for the player) is still there when it closes.
@@ -378,15 +379,21 @@ export class InfoPopup {
     return el;
   }
 
-  /** The action bar: Game, Stocks, then a button per player (the tabs only change state). */
+  /**
+   * The action bar: on a player's page, a button per player (the tabs only change state); on the
+   * Game info, stock market and properties pop-ups, just Close.
+   */
   private drawBar(G: GameState, page: InfoPage) {
+    if (typeof page !== 'number') {
+      if (this.bar.querySelector('.ib-close')) return;
+      clear(this.bar);
+      this.bar.append(
+        h('button', { class: 'btn main ib-close', onclick: () => this.hud.toggleInfo(null) }, 'Close'),
+      );
+      return;
+    }
     const tabs = [...this.bar.querySelectorAll<HTMLElement>('.ib-tab')];
-    const pages: InfoPage[] = [
-      'game',
-      ...(G.rules === 'standard' ? ['stocks' as const] : []),
-      'props',
-      ...G.players.map((p) => p.id),
-    ];
+    const pages: InfoPage[] = G.players.map((p) => p.id);
     if (tabs.length === pages.length) {
       tabs.forEach((t, i) => {
         t.classList.toggle('on', pages[i] === page);
@@ -409,11 +416,7 @@ export class InfoPopup {
     this.bar.append(
       h(
         'div',
-        { class: 'info-tabs', role: 'tablist', 'aria-label': 'Info pages' },
-        tab('game', 'Game'),
-        G.rules === 'standard' ? tab('stocks', 'Stocks') : null,
-        tab('props', 'Properties'),
-        h('span', { class: 'ib-sep', 'aria-hidden': 'true' }),
+        { class: 'info-tabs', role: 'tablist', 'aria-label': 'Players' },
         ...G.players.map((p) => {
           const b = tab(
             p.id,

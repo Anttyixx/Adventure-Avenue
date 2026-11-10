@@ -309,9 +309,42 @@ export function propIconURL(key: PropKey, color: string): string {
 /** Property images fill this much of their box (bottom-aligned), leaving a little room. */
 const PROP_SCALE = 0.9;
 
+/** Each image's visible part (pixels that aren't almost see-through), by image name. */
+const contentBoxes = new Map<string, { x: number; y: number; w: number; h: number }>();
+
 /**
- * Draw a property image fitted into a `w` x `h` box centered on (x, y), its bottom on the box's
- * bottom edge. Returns false if the images are not loaded yet.
+ * The visible part of an image. Sprite frames carry different amounts of empty space around the
+ * drawing, so fitting the frame would leave some drawings small or floating and push others into
+ * the tile's border; fitting this box lines them all up.
+ */
+function contentBox(key: PropKey, cv: HTMLCanvasElement) {
+  const hit = contentBoxes.get(key);
+  if (hit) return hit;
+  const src = sources.get(key);
+  let box = { x: 0, y: 0, w: cv.width, h: cv.height };
+  if (src) {
+    const { data, width, height } = src.data;
+    let x0 = width;
+    let y0 = height;
+    let x1 = -1;
+    let y1 = -1;
+    for (let y = 0; y < height; y++)
+      for (let x = 0; x < width; x++) {
+        if (data[(y * width + x) * 4 + 3] <= 24) continue;
+        if (x < x0) x0 = x;
+        if (x > x1) x1 = x;
+        if (y < y0) y0 = y;
+        if (y > y1) y1 = y;
+      }
+    if (x1 >= x0) box = { x: x0, y: y0, w: x1 - x0 + 1, h: y1 - y0 + 1 };
+  }
+  contentBoxes.set(key, box);
+  return box;
+}
+
+/**
+ * Draw a property image's visible part fitted into a `w` x `h` box centered on (x, y), its
+ * bottom on the box's bottom edge. Returns false if the images are not loaded yet.
  */
 export function drawProp(
   ctx: CanvasRenderingContext2D,
@@ -324,13 +357,14 @@ export function drawProp(
 ): boolean {
   const cv = propCanvas(key, color);
   if (!cv) return false;
-  const k = Math.min(w / cv.width, h / cv.height) * PROP_SCALE;
-  const dw = cv.width * k;
-  const dh = cv.height * k;
+  const box = contentBox(key, cv);
+  const k = Math.min(w / box.w, h / box.h) * PROP_SCALE;
+  const dw = box.w * k;
+  const dh = box.h * k;
   ctx.save();
   ctx.imageSmoothingEnabled = true;
   ctx.imageSmoothingQuality = 'high';
-  ctx.drawImage(cv, x - dw / 2, y + h / 2 - dh, dw, dh);
+  ctx.drawImage(cv, box.x, box.y, box.w, box.h, x - dw / 2, y + h / 2 - dh, dw, dh);
   ctx.restore();
   return true;
 }

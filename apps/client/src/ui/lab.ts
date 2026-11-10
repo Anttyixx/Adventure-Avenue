@@ -117,16 +117,13 @@ const rnd = (n: number) => Math.floor(Math.random() * n);
  * are easy to find. Update this list with each change.
  */
 const RECENT = new Set([
-  'Town terrain: square',
-  'Town terrain: hex',
-  'Tile sprites and tint layers',
   'Cards: list',
-  'Cards: mixed card heights',
-  'Next player (card stack)',
-  'Cards: stack',
-  'Cards: smart',
-  'Cards: open the stack',
-  'Smart stack: pay someone else',
+  'Cards: smart stack',
+  'Info: game page',
+  'Info: stocks page',
+  'Info: properties page',
+  'Info: player page',
+  'Tile sprites and tint layers',
 ]);
 
 /**
@@ -597,16 +594,15 @@ export async function openLab(app: HTMLElement, section?: string) {
         G.players.forEach((p, i) => {
           p.boost = i % 2 ? 1.3 : 1;
         });
-        hud.setCardsMode('stack');
+        hud.setCardsMode('smart');
         refresh();
         hud.tick('Extra status rows on some cards. Advance the turn or open the stack to check alignment.');
       }),
       btn('Cards: list', () => hud.setCardsMode('list')),
-      btn('Cards: stack', () => hud.setCardsMode('stack')),
-      btn('Cards: smart', () => hud.setCardsMode('smart')),
+      btn('Cards: smart stack', () => hud.setCardsMode('smart')),
       // A folded stack opens into a list for a moment, as when tapped.
       btn('Cards: open the stack', () => {
-        if (hud.cardsMode === 'list') hud.setCardsMode('stack');
+        if (hud.cardsMode === 'list') hud.setCardsMode('smart');
         window.setTimeout(() => hud.openStack('tap'), 600);
       }),
       // A player who isn't up gets paid: in a smart stack their card rises out for a moment.

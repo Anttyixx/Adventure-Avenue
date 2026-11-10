@@ -116,6 +116,10 @@ export class Hud {
   private askContent: HTMLElement | null = null;
   private resize: ResizeObserver;
   private askChanges: MutationObserver;
+  /** Watches pop-ups opening and closing, to lock the rest of the screen (see `updateLock`). */
+  private lockWatch: MutationObserver;
+  /** Whether a pop-up is up and the screen behind it is locked. */
+  locked = false;
   private askFrame = 0;
   /** Window width at which a centered action bar overflowed, so it stays bottom left at this size. */
   private abLeftAt = 0;
@@ -126,11 +130,28 @@ export class Hud {
   cardsWrap = h('div', { class: 'cards-wrap' });
   cards = h('div', { class: 'cards' });
   /**
-   * The three outlined buttons below the player cards, against the right edge: List (every
-   * card), Stack (only the active player's card in front) and Smart (a stack, but a card that
-   * changes on someone else's turn rises out of it for a moment).
+   * The row of chips below the player cards: Stocks (the stock market pop-up, Standard rules
+   * only), Properties (the properties pop-up) and, against the right edge, the layout chip.
    */
-  cardsModes = h('div', { class: 'cards-modes', role: 'radiogroup', 'aria-label': 'Player cards' });
+  cardsBar = h('div', { class: 'cards-bar' });
+  /** Opens the stock market pop-up. */
+  stocksChip = h(
+    'button',
+    { class: 'cards-chip glass', 'aria-haspopup': 'dialog', title: 'The stock market' },
+    'Stocks',
+  );
+  /** Opens the properties pop-up. */
+  propsChip = h(
+    'button',
+    { class: 'cards-chip glass', 'aria-haspopup': 'dialog', title: 'Every property on the board' },
+    'Properties',
+  );
+  /**
+   * The layout chip: shows the player cards' layout now (List: every card; Smart stack: only the
+   * active player's card in front, but a card that changes on someone else's turn rises out of
+   * the stack for a moment). Tapping it switches to the other one.
+   */
+  modeChip = h('button', { class: 'cards-chip glass cards-mode-chip' });
   /** How the player cards are shown (remembered on this device). */
   cardsMode: CardsMode = loadCardsMode();
   /** Whether the player cards are set to fold into a stack (Stack or Smart). */
@@ -208,25 +229,11 @@ export class Hud {
   ) {
     this.root = h('div', { class: 'hud' });
     this.logPanel.append(this.logBox);
-    for (const m of CARDS_MODES) {
-      const ico = h('span', { class: 'cards-mode-ico', 'aria-hidden': 'true' });
-      ico.innerHTML = m.icon;
-      this.cardsModes.append(
-        h(
-          'button',
-          {
-            class: 'cards-mode',
-            role: 'radio',
-            'data-mode': m.id,
-            title: m.title,
-            'aria-label': m.title,
-            onclick: () => this.setCardsMode(m.id),
-          },
-          ico,
-        ),
-      );
-    }
-    this.cardsWrap.append(this.cards, this.cardsModes);
+    this.modeChip.onclick = () => this.setCardsMode(this.cardsMode === 'list' ? 'smart' : 'list');
+    this.stocksChip.onclick = () => this.toggleInfo(this.infoPage === 'stocks' ? null : 'stocks');
+    this.propsChip.onclick = () => this.toggleInfo(this.infoPage === 'props' ? null : 'props');
+    this.cardsBar.append(this.stocksChip, this.propsChip, this.modeChip);
+    this.cardsWrap.append(this.cards, this.cardsBar);
     // Clicking or tapping the stack (its front card or the strips behind) opens it into a list
     // for a moment; a mouse resting on it keeps it open until it leaves.
     this.cards.addEventListener('click', () => {
@@ -259,7 +266,16 @@ export class Hud {
     );
     parent.append(this.root);
     this.info = new InfoPopup(this);
-    this.infoBtn.onclick = () => this.toggleInfo(this.infoPage == null ? 'game' : null);
+    this.infoBtn.onclick = () => this.toggleInfo(this.infoPage === 'game' ? null : 'game');
+    // While a pop-up is up, only the action bar and the toolbar's View board, Game log, sound and
+    // Menu buttons can be used: watch the pop-up layers coming and going.
+    this.lockWatch = new MutationObserver(() => this.updateLock());
+    this.lockWatch.observe(this.root, {
+      subtree: true,
+      childList: true,
+      attributes: true,
+      attributeFilter: ['hidden', 'class'],
+    });
 
     this.cb = cb;
     this.fastBtn.onclick = cb.onToggleFast;
@@ -306,6 +322,7 @@ export class Hud {
     this.messages.destroy();
     this.resize.disconnect();
     this.askChanges.disconnect();
+    this.lockWatch.disconnect();
     cancelAnimationFrame(this.askFrame);
     this.stopAskMorph();
     window.removeEventListener('keydown', this.onKey);
@@ -516,6 +533,8 @@ export class Hud {
     );
     clear(this.chipGoal);
     this.chipGoal.append('Goal ', h('b', null, fmt(G.target)));
+    // Easy rules have no stock market.
+    this.stocksChip.hidden = G.rules !== 'standard';
     this.renderCards();
     if (this.logOpen) this.renderLog();
     if (this.infoPage != null) this.info.render();
@@ -568,13 +587,10 @@ export class Hud {
 
   /** Fold the player cards into a stack (only the active player's card in front) or spread them out. */
   setCardsCollapsed(on: boolean) {
-    this.setCardsMode(on ? (this.cardsMode === 'list' ? 'stack' : this.cardsMode) : 'list');
+    this.setCardsMode(on ? 'smart' : 'list');
   }
 
-  /**
-   * Show the player cards as a list, a stack or a smart stack. Folding or unfolding glides every
-   * card from where it was; switching between Stack and Smart only changes which button is lit.
-   */
+  /** Show the player cards as a list or a smart stack, gliding every card from where it was. */
   setCardsMode(mode: CardsMode) {
     const on = mode !== 'list';
     const unfold = on !== this.stacked;
@@ -588,14 +604,15 @@ export class Hud {
       saveCardsMode(mode);
       this.cardsWrap.classList.toggle('collapsed', on);
       this.cardsWrap.dataset.mode = mode;
-      for (const b of this.cardsModes.querySelectorAll<HTMLElement>('.cards-mode')) {
-        const lit = b.dataset.mode === mode;
-        b.classList.toggle('on', lit);
-        b.setAttribute('aria-checked', String(lit));
-      }
+      const m = CARDS_MODES[mode];
+      const ico = h('span', { class: 'cards-mode-ico', 'aria-hidden': 'true' });
+      ico.innerHTML = m.icon;
+      clear(this.modeChip);
+      this.modeChip.append(ico, m.label);
+      this.modeChip.dataset.mode = mode;
+      this.modeChip.title = m.title;
       if (this.G) this.stackCards(false);
     };
-    // Folding or unfolding glides every card from where it was; Stack <-> Smart just relights.
     if (unfold) this.glide(change);
     else change();
   }
@@ -911,8 +928,15 @@ export class Hud {
     if (page === 'stocks' && this.G.rules !== 'standard') page = 'game';
     const was = this.infoPage;
     this.infoPage = page;
-    this.infoBtn.classList.toggle('on', page != null);
-    this.infoBtn.setAttribute('aria-expanded', String(page != null));
+    // The button or chip that opened the pop-up stays lit while it is open.
+    for (const [btn, at] of [
+      [this.infoBtn, 'game'],
+      [this.stocksChip, 'stocks'],
+      [this.propsChip, 'props'],
+    ] as const) {
+      btn.classList.toggle('on', page === at);
+      btn.setAttribute('aria-expanded', String(page === at));
+    }
     this.board.focusOwner = typeof page === 'number' ? page : -1;
     if (page == null) {
       if (was != null) this.info.close();
@@ -920,6 +944,33 @@ export class Hud {
     }
     if (was == null) this.info.open();
     else this.info.render(true);
+  }
+
+  /**
+   * While a pop-up is on the screen (the info, stock market or properties pop-up, the stock
+   * market or venture board during a choice, an arcade game or a dialog), the rest of the screen
+   * is locked: only the action bar and the toolbar's View board, Game log, sound and Menu buttons
+   * still work. The info chip, the zoom chip, the player cards (their taps and hover) and the
+   * chips under them, and the board (taps and hover) stand still until it closes. Looking at the
+   * board with View board unlocks it for as long as the pop-up is away.
+   */
+  private updateLock() {
+    const layers = this.root.querySelectorAll<HTMLElement>(
+      ':scope > .info-layer, :scope > .stock-layer, :scope > .venture-layer, :scope > .arcade-layer',
+    );
+    const up =
+      !this.peeking &&
+      ([...layers].some((l) => !l.hidden && l.childElementCount > 0) ||
+        this.modalLayer.querySelector('.modal-wrap') != null);
+    if (up === this.locked) return;
+    this.locked = up;
+    this.root.classList.toggle('locked', up);
+    this.board.locked = up;
+    if (up) {
+      // A stack opened by the mouse would never get its "pointer left" now: fold it back.
+      if (this.opened) this.closeStack();
+      this.tooltip.classList.remove('show');
+    }
   }
 
   /** A property clicked in the info pop-up: show it on the board (see `InfoPopup.showOnBoard`). */
@@ -1503,6 +1554,7 @@ export class Hud {
     const t = this.peekTarget;
     if (!t || on === this.peeking) return;
     this.peeking = on;
+    this.updateLock();
     this.board.overviewHold = on;
     this.popAnim(t.el, on);
     this.morphViewChip(on);
@@ -1690,35 +1742,33 @@ const STACK_SHOWN = 3;
 function stackTransform(d: number): string {
   return d ? `translateY(${-d * 7}px) scale(${1 - d * 0.05})` : 'none';
 }
-/** How the player cards are shown: a list, a stack, or a smart stack. */
-export type CardsMode = 'list' | 'stack' | 'smart';
+/** How the player cards are shown: a list or a smart stack. */
+export type CardsMode = 'list' | 'smart';
 
-/** The three buttons below the player cards, in this order, with their icons (16 x 16). */
-const CARDS_MODES: { id: CardsMode; title: string; icon: string }[] = [
-  {
-    id: 'list',
-    title: 'List: show every player card',
+/** The layout chip's label, tooltip and icon (16 x 16) for each layout. */
+const CARDS_MODES: Record<CardsMode, { label: string; title: string; icon: string }> = {
+  list: {
+    label: 'List',
+    title: 'List: every player card is shown. Tap for Smart stack.',
     icon: '<svg viewBox="0 0 16 16"><rect x="2.5" y="2" width="11" height="3" rx="1"/><rect x="2.5" y="6.5" width="11" height="3" rx="1"/><rect x="2.5" y="11" width="11" height="3" rx="1"/></svg>',
   },
-  {
-    id: 'stack',
-    title: "Stack: show only the active player's card",
-    icon: '<svg viewBox="0 0 16 16"><path d="M4.5 3.5h7M3.5 6h9"/><rect x="2" y="8.5" width="12" height="5" rx="1"/></svg>',
-  },
-  {
-    id: 'smart',
-    title: 'Smart: a stack, but cards that change pop out for a moment',
+  smart: {
+    label: 'Smart stack',
+    title:
+      "Smart stack: the active player's card in front; cards that change pop out for a moment. Tap for List.",
     icon: '<svg viewBox="0 0 16 16"><rect x="2" y="8.5" width="12" height="5" rx="1"/><path d="M8 6.5V1.5M5.5 4 8 1.5 10.5 4"/></svg>',
   },
-];
+};
 const MODE_KEY = 'adventure-avenue-cards-mode';
 /** The older on/off setting (a stack when '1'), read once so the choice carries over. */
 const COLLAPSE_KEY = 'adventure-avenue-cards-collapsed';
 function loadCardsMode(): CardsMode {
   try {
     const m = localStorage.getItem(MODE_KEY);
-    if (m === 'list' || m === 'stack' || m === 'smart') return m;
-    return localStorage.getItem(COLLAPSE_KEY) === '1' ? 'stack' : 'list';
+    if (m === 'list' || m === 'smart') return m;
+    // The old plain Stack layout is now the smart stack.
+    if (m === 'stack') return 'smart';
+    return localStorage.getItem(COLLAPSE_KEY) === '1' ? 'smart' : 'list';
   } catch {
     return 'list';
   }

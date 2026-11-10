@@ -1004,52 +1004,53 @@ input[type='range'] {
   }
 }
 
-/* Player card layouts: three buttons below the cards, against the window's right edge: List,
-   Stack and Smart. Just an outline with no fill, so they can be found when looked for but don't
-   pull the eye from the board; the chosen one gets a brighter outline. Stack folds the cards: the
-   active player's card stays in front and the others sit behind it in turn order, each peeking
-   out a little higher and narrower, showing only their color. Smart is a stack too, but a card
-   that changes on someone else's turn rises out of it into a list above the stack for a moment.
-   hud.ts stackCards sets each card's depth (--d) and row (--row) and plays the cycle when the
-   turn moves on; popCard lifts cards out. */
-.cards-modes {
+/* The chips below the player cards, in one row against the window's right edge: Stocks and
+   Properties (each opens its pop-up; gold while it is open, like the Info button), then the
+   layout chip, which shows the cards' layout now (List or Smart stack) and switches to the other
+   on a tap. Smart stack folds the cards: the active player's card stays in front and the others
+   sit behind it in turn order, each peeking out a little higher and narrower, showing only their
+   color; a card that changes on someone else's turn rises out of it into a list above the stack
+   for a moment. hud.ts stackCards sets each card's depth (--d) and row (--row) and plays the
+   cycle when the turn moves on; popCard lifts cards out. */
+.cards-bar {
   display: flex;
-  gap: 2px;
-  padding: 2px;
-  border: 1.5px solid rgba(255, 255, 255, 0.55);
-  border-radius: 9px;
-  /* A light, see-through backing so it can be spotted over the board without standing out. */
-  background: rgba(255, 255, 255, 0.16);
-  -webkit-backdrop-filter: blur(4px);
-  backdrop-filter: blur(4px);
-  box-shadow: 0 1px 3px rgba(16, 26, 51, 0.25);
+  justify-content: flex-end;
+  gap: 5px;
+  max-width: 100%;
 }
-.cards-mode {
-  display: grid;
-  place-items: center;
-  width: 26px;
-  height: 20px;
-  padding: 0;
-  border: 1.5px solid transparent;
-  border-radius: 6px;
-  background: none;
-  color: rgba(255, 255, 255, 0.7);
+.cards-chip {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  color: var(--text);
+  font: 700 12px var(--body);
+  white-space: nowrap;
   cursor: pointer;
   transition:
-    color 0.15s,
-    border-color 0.15s;
+    background-color 0.2s,
+    color 0.2s,
+    border-color 0.2s;
 }
-.cards-mode:hover {
-  color: #fff;
+.cards-chip[hidden] {
+  display: none;
 }
-.cards-mode.on {
-  border-color: rgba(255, 255, 255, 0.9);
-  background: rgba(255, 255, 255, 0.18);
-  color: #fff;
+.cards-chip:hover {
+  border-color: var(--accent);
 }
-.cards-mode:focus-visible {
+.cards-chip.on {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #3b2a00;
+}
+.cards-chip:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 1px;
+}
+.cards-mode-chip {
+  padding-left: 7px;
 }
 .cards-mode-ico,
 .cards-mode-ico svg {
@@ -9708,6 +9709,19 @@ div.sl-inline label {
   inset: 0;
   z-index: 10000;
   background: var(--navy);
+}
+
+/* ------------------------------------------------------------ pop-up lock */
+
+/* While a pop-up is up (hud.ts updateLock), only the action bar and the toolbar's View board,
+   Game log, sound and Menu buttons work: the info chip, the zoom chip, the player cards and the
+   chips under them stop taking taps and hover. The board ignores taps itself (board.ts locked). */
+.hud.locked .top-left,
+.hud.locked .top-left > *,
+.hud.locked .cards-wrap,
+.hud.locked .cards-wrap *,
+.hud.locked .zoom-chip {
+  pointer-events: none;
 }
 
 /* ------------------------------------------------------------ info pop-up */

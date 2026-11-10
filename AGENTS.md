@@ -94,15 +94,19 @@ Requests refer to parts of the game by these names:
 
 - **Game screen (HUD, `apps/client/src/ui/hud.ts`):**
   - **info chip:** top left; game name, board, round, goal, and the Room button online.
-  - **Info button:** right of the info chip; it opens the **info pop-up** (`ui/info.ts`): Game,
-    Stocks and one page per player, picked in the action bar.
+  - **Info button:** right of the info chip; it opens the **Game info pop-up** (`ui/info.ts`).
+  - **Stocks chip** and **Properties chip:** below the player cards; they open the **stock market
+    pop-up** and the **properties pop-up** (also `ui/info.ts`). Beside them, the **layout chip**
+    shows the cards' layout (List or Smart stack) and switches to the other on a tap.
+  - **pop-up lock:** while any pop-up is up, only the action bar and the toolbar's View board,
+    Game log, Music and Menu buttons work (`Hud.updateLock`, `.hud.locked`, `board.locked`).
   - **toolbar:** top right; the **zoom chip**, the **Game log** button (opens the **game log**
     panel in the top right, under the toolbar and above the player cards), the **Music** chip (current track and audio controls, `ui/soundpanel.ts`) and the **Menu** button (a centered
     pop-up that pauses games on this device; it holds the **Guide**, `ui/guide.ts`, a centered pop-up with tabs).
   - **action bar** (`.prompt-center`): the current player's options at the bottom, or the
     **status line** when no options are up; it morphs between the two. `ui/status-messages.ts` gives new action phases priority over old results, protects brief in-phase overlays and debounces idle activity; actual choices interrupt stale announcements.
-  - **player cards:** bottom right. Clicking one opens that player's page in the info pop-up
-    (drawn by `ui/overview.ts`). Hidden stack cards use size containment and stretch to the
+  - **player cards:** bottom right. Clicking one opens that player's page (drawn by
+    `ui/overview.ts`), with a button per player in the action bar. Hidden stack cards use size containment and stretch to the
     front card’s row; their extra status content must not size the stack. `Hud.glide` uses a
     generation guard and intended depth transforms so interrupted animations settle correctly.
 - **Portal links:** `newGame` must register endpoint metadata even when a graph edge already exists. Keep `toSide` paired correctly, with a fallback for older saves. `portal-links.ts`, `portal-link-art.ts` and `portal-travel.ts` share direction and travel feedback; `TIMING.portalStep` controls its duration.

@@ -217,6 +217,11 @@ export class BoardView {
   /** Before a roll: the player whose possible first steps are shown as sliding arrows, or -1. */
   directionsPid = -1;
   onPick: ((id: number) => void) | null = null;
+  /**
+   * A pop-up is on the screen (set by the HUD): tiles and portals give no info on hover or tap,
+   * and the wheel and pinches don't zoom. Squares glowing for a choice can still be picked.
+   */
+  locked = false;
   onHover: ((id: number | null, cx: number, cy: number) => void) | null = null;
   /** The pointer is over a portal (beside a tile, so never also over a square). */
   onPortalHover: ((gate: PortalGate, cx: number, cy: number) => void) | null = null;
@@ -937,12 +942,13 @@ export class BoardView {
 
   private wheel = (e: WheelEvent) => {
     e.preventDefault();
+    if (this.locked) return;
     // Trackpads send many small deltas, mouse wheels a few big ones.
     this.zoomBy(wheelZoomStep(e.deltaY, e.deltaMode));
   };
 
   private pinchDown = (e: PointerEvent) => {
-    if (e.pointerType !== 'touch') return;
+    if (e.pointerType !== 'touch' || this.locked) return;
     this.pinch.set(e.pointerId, { x: e.clientX, y: e.clientY });
     this.pinchDist = this.pinchSpan();
   };
@@ -1077,6 +1083,11 @@ export class BoardView {
       this.pinchDist = d;
     }
     const id = this.squareAt(e.clientX, e.clientY);
+    if (this.locked && !(id != null && this.glow.includes(id) && this.onPick)) {
+      this.hoverId = null;
+      this.canvas.style.cursor = 'default';
+      return;
+    }
     this.hoverId = id;
     const gate = id == null ? this.portalAt(e.clientX, e.clientY) : null;
     this.canvas.style.cursor = (id != null && this.glow.includes(id)) || gate ? 'pointer' : 'default';
@@ -1180,6 +1191,7 @@ export class BoardView {
       f(id);
       return;
     }
+    if (this.locked) return;
     if (id != null) return this.onHover?.(id, e.clientX, e.clientY);
     // A portal: show where it leads (and its info, for touch screens with no hover).
     const gate = this.portalAt(e.clientX, e.clientY);
@@ -3048,6 +3060,9 @@ export function paintSquare(ctx: CanvasRenderingContext2D, G: GameState, sq: Squ
   drawSquare(ctx, G, sq);
 }
 
+/** How big a hex tile's picture is drawn next to a square tile's (see `art` in drawSquare). */
+const HEX_ART = 0.9;
+
 function drawSquare(ctx: CanvasRenderingContext2D, G: GameState, sq: Square) {
   const L = G.layout;
   const c = squareCenter(sq, L);
@@ -3071,6 +3086,20 @@ function drawSquare(ctx: CanvasRenderingContext2D, G: GameState, sq: Square) {
   const textY = ty + 27;
   /** The fee (owned) or price as plain text; dark on an owner's color so it stays readable. */
   const amount = (text: string) => label(ctx, c.x, textY, text, owner ? '#1b2340' : '#26314f', 15);
+  /**
+   * Draw a tile's picture. A hex narrows toward its top point, so its pictures are drawn a little
+   * smaller (around the shared base line) to keep them clear of the slanted border.
+   */
+  const art = (draw: () => unknown) => {
+    if (L !== 'hex') return void draw();
+    const base = artY + 23;
+    ctx.save();
+    ctx.translate(c.x, base);
+    ctx.scale(HEX_ART, HEX_ART);
+    ctx.translate(-c.x, -base);
+    draw();
+    ctx.restore();
+  };
 
   // Shadow + tile
   ctx.fillStyle = 'rgba(0,0,0,0.18)';
@@ -3089,11 +3118,13 @@ function drawSquare(ctx: CanvasRenderingContext2D, G: GameState, sq: Square) {
     // The design grows with the shop's value; owned shops use the owner's color, unowned ones
     // stay plain grey so they never look like a player's.
     const tier = tierFor(sq.value, SHOP_TIERS);
-    drawShop(ctx, c.x, artY, tier, owner ? ownerColor : '#8a94a8', owner?.name[0]?.toUpperCase());
+    art(() => drawShop(ctx, c.x, artY, tier, owner ? ownerColor : '#8a94a8', owner?.name[0]?.toUpperCase()));
     amount(owner ? `${squareFee(G, sq)}G` : `${sq.value}G`);
   } else if (sq.t === 'plot') {
     if (!sq.b) {
-      if (drawProp(ctx, 'vacant', '#808080', c.x, artY, 60, 48)) {
+      let drawn = false;
+      art(() => (drawn = drawProp(ctx, 'vacant', '#808080', c.x, artY, 60, 48)));
+      if (drawn) {
         label(ctx, c.x, textY, 'VACANT', '#4a5470', 10);
       } else {
         ctx.save();
@@ -3110,17 +3141,22 @@ function drawSquare(ctx: CanvasRenderingContext2D, G: GameState, sq: Square) {
     } else if (sq.b === 'star3') {
       // The 3-Star Shop has its own designs that grow with its value.
       const tier = tierFor(sq.value, STAR3_TIERS);
-      drawStar3(ctx, c.x, artY, tier, owner ? ownerColor : '#8a94a8', owner?.name[0]?.toUpperCase());
+      art(() =>
+        drawStar3(ctx, c.x, artY, tier, owner ? ownerColor : '#8a94a8', owner?.name[0]?.toUpperCase()),
+      );
       if (owner) amount(`${squareFee(G, sq)}G`);
     } else {
-      buildingIcon(
-        ctx,
-        sq.b,
-        c.x,
-        artY,
-        owner ? ownerColor : '#8a94a8',
-        owner?.name[0]?.toUpperCase() ?? '',
-        sq.lv,
+      const b = sq.b;
+      art(() =>
+        buildingIcon(
+          ctx,
+          b,
+          c.x,
+          artY,
+          owner ? ownerColor : '#8a94a8',
+          owner?.name[0]?.toUpperCase() ?? '',
+          sq.lv,
+        ),
       );
       const fee =
         sq.b === 'tax'
@@ -3135,7 +3171,7 @@ function drawSquare(ctx: CanvasRenderingContext2D, G: GameState, sq: Square) {
   } else {
     const t = sq.t === 'broker' && G.rules === 'easy' ? 'VENTURE' : (SPECIAL_LABEL[sq.t] ?? '');
     // Squares without a label (suits, Boon, Boom) center their symbol on the tile.
-    specialIcon(ctx, G, sq, c.x, t ? iconY : c.y);
+    art(() => specialIcon(ctx, G, sq, c.x, t ? iconY : c.y));
     if (t) label(ctx, c.x, textY, t, '#4a5470', t.length > 8 ? 9 : 11);
   }
 

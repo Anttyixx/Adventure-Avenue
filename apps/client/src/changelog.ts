@@ -26,6 +26,32 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: '2026-11-10-popup-chips',
+    date: 'Nov 10, 2026',
+    title: 'Chips for stocks and properties',
+    features: [
+      {
+        tag: 'new',
+        title: 'Stocks and Properties chips',
+        text: 'Two chips under the player cards open the stock market and the properties, each in its own pop-up. The Info button now shows just the game info.',
+      },
+      {
+        tag: 'better',
+        title: 'One layout chip',
+        text: 'The player card buttons are now one chip showing the current layout: List or Smart stack. Tap it to switch.',
+      },
+      {
+        tag: 'better',
+        title: 'Pop-ups stay in focus',
+        text: 'While a pop-up is open, the board, the player cards and the other chips wait. The action bar, View board, Game log, Music and Menu still work.',
+      },
+    ],
+    extras: [
+      'Tile pictures sized evenly and kept clear of tile borders',
+      'The plain Stack layout is now Smart stack',
+    ],
+  },
+  {
     id: '2026-11-10-stack-alignment',
     date: 'Nov 10, 2026',
     title: 'Player cards stay aligned',
