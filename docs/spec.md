@@ -227,33 +227,25 @@ The board fills the entire canvas behind the HUD, with no space reserved beside 
 The hovered cell has a tinted fill and two contrasting outlines: a dark outer stroke (6 screen
 pixels) and a bright inner stroke (3 screen pixels), gold normally and red while erasing. Their
 screen size stays constant at every zoom.
-The default landscape is built from connecting 80-unit terrain cells: park grass, pond water
-and courtyard paving. Neighboring cells of the same material share one continuous surface;
-internal edges are removed. Contours retain holes, concave bends and irregular outlines, so
-ponds can span many cells and parks can follow the playable board's corners. Material patterns
-are anchored in world coordinates. Edges blend into neighboring surfaces with soft masks rather
-than hard tile frames; water has a softly blended bank. Rounded cartoon materials and props
-match the board tiles, without sticker rims or realistic botanical detail.
-Terrain cells stay clear of playable tiles, actual roads and portal openings. Parkland fills
-free areas near the board; farther out, connected terrain varies smoothly into larger locations.
-Paving around the bank creates a courtyard where space permits. Isolated one-cell water
-fragments become land instead. These are cosmetic locations, never new movement routes.
-Parks contain small activity clearings in suitable two-by-two areas: picnic tables, gazebos or
-fountains, with benches, planted corners and small trees. They leave a quiet area around the
-furniture instead of growing trees through it. Other trees form wooded patches, flowers follow
-park edges and benches sit near courtyard entrances. Each connected courtyard has at most one
-focal fountain/gazebo. Features and terrain stay fixed while panning/zooming and do not change
-engine state or randomness. Soft worn-ground patches anchor activity areas to the park surface.
-Low, rounded hedges frame the playable board through inside and outside bends, with portal
-openings left clear. Garden hedges join the surrounding scenery. Neighboring activity clearings
-connect by narrow cosmetic walks that avoid gameplay tiles; narrow water crossings can have
-bridges. Planting themes span multiple cells: flower gardens, fruit orchards, groves and meadow.
-Pond edges contain reeds and rocks, with lily pads on open water. No movement rules change.
-Terrain surfaces and props are cached together in world chunks; overscanned masks prevent blur
-from creating seams at chunk edges. The existing nonrepeating grass remains beneath them, and
-warm ground follows the real board roads at normal portal-approach width. The builder hides all
-terrain/props/verges to keep its editing grid clear. Earlier artwork is preserved; prior park,
-meadow and classic styles remain available for rollback.
+The default landscape uses recombinable park pieces on the board's actual square or hex grid.
+Related pieces assemble into small park dioramas: shared walks, hedge walls, planting and ponds
+span several cells. A piece is a fragment of a scene, not a complete square scene with its own
+frame. The same fountain, gazebo, picnic, grove, orchard, planted bend and wall pieces work in
+different arrangements. Connected footprints can be concave, notched or bent; they are not
+limited to one predefined completed picture. Square and hex pieces share this composition rule.
+Free pockets near the playable route are filled first. Groups contain 3–13 cells, with quiet
+grass separating different parks. Shared internal edges disappear. Only the assembly perimeter
+gets a continuous chunky hedge wall, including inner and outer corners. Pond pieces share
+water and banks; connected walks link activity spots. Curated furniture/planting fragments keep
+the rounded, detailed cartoon style of the reference art. There are no private floor pads,
+individual tile rims, or labels on decorative pieces.
+The planner keeps whole groups clear of playable tiles, real roads and portal mouths. Placement
+and planting stay fixed while panning and consume no engine randomness. These are cosmetic
+scenes, never movement routes. The UI Lab's **Park puzzle pieces** preview can separate an
+assembly, change its footprint, change planting and switch grids to check recombination.
+Nonrepeating grass fills the background beneath the dioramas, and warm ground follows actual
+board roads at normal portal-approach width. The builder hides decoration and verges. Earlier
+art is preserved, including the previous connected terrain, natural park and meadow styles.
 Grass is a separate background beneath tiles and scenery. Both builder and games fill the
 entire visible camera area, including outside the board, at every zoom and screen size. The
 landscape is anchored in board coordinates and scales with the tiles; there is no finite

@@ -947,19 +947,14 @@ animation has a `prefers-reduced-motion` path (CSS media query, or `matchMedia(.
 
 Bright and physical, unlike the dark HUD:
 
-- **World:** connected cartoon park, pond and courtyard terrain, using the board tiles' rounded
-  forms, friendly greens/turquoise and simple highlights. Draw a shared surface for adjacent
-  cells, with no internal borders or self-contained scene stickers. Allow holes, concave corners
-  and nonrectangular areas that fit around the board. Use world-aligned materials and soften
-  transitions at the region boundary (park 18, paving 14, water 7 world units; soft banks 12).
-  Park activity clearings combine picnic/gazebo/fountain, bench, planting and a small tree on
-  shared park ground. Keep trees out of these clearings; courtyards have one focal feature per
-  connected area. Narrow cosmetic walks join nearby clearings, crossing water only on small
-  bridges. Orchards and flower gardens span multiple cells. Low hedges frame the board’s shared
-  silhouette through concave/convex bends, with gaps at portal openings; garden hedges lead into
-  the scenery. Keep these borders restrained and below the visual weight of playable tiles.
-  Keep tile/road/portal geometry clear. No sticker rims or dark outlines on
-  props. Hide terrain, props and verges in the builder. Preserve earlier art for rollback.
+- **World:** recombinable cartoon park pieces, with the reference art's rounded forms, rich
+  planting, furniture and chunky low hedge walls. A module is a scene fragment, not its own
+  complete framed park. Related modules must work in different connected footprints. Join ground,
+  path and pond edges; cancel internal borders and build one continuous hedge around the shared
+  outside, including concave corners. Use the actual square/hex board grid. Compose activity
+  centers with planted neighbors and connecting walks so each group reads as one miniature
+  diorama when viewed alone. Avoid a large noise field with scattered isolated props. Preserve
+  quiet grass between groups and all gameplay/portal clearances. Hide scenery in the builder.
 - **Tiles** (86 units on a 100 grid): cream `#fdfbf5` (bank `#fff6d6`), radius 12, soft shadow
   down-right. Owned: tint of the owner's color. Properties: 6px district-color border. Vacant
   plots: dashed grey outline + "VACANT".

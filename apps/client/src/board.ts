@@ -24,11 +24,13 @@ import {
   PAINTED_LANDSCAPE,
   PARK_LANDSCAPE,
   TOWN_LANDSCAPE,
+  PUZZLE_LANDSCAPE,
   type PropKey,
 } from './props';
 import { paintMeadow } from './meadow';
 import { parkSceneryBeyondBoard, sceneryBeyondBoard, sceneryForBoard } from './scenery';
 import { paintParkScenery, paintParkStream } from './park';
+import { paintParkScenes } from './park-scenes-art';
 import { paintTownTerrain } from './town-terrain-art';
 import { drawBoonIcon, drawCoin, drawSparkle, SUIT_CHARS } from './icons';
 import { Facing, FRAME_H, FRAME_W, drawCharacter, drawCharacterGlow, facingFor } from './sprites';
@@ -2249,7 +2251,9 @@ export function paintGrass(ctx: CanvasRenderingContext2D, G?: GameState) {
     ctx.fillRect(left, top, right - left, bottom - top);
   }
   if (PAINTED_LANDSCAPE && G) {
-    if (TOWN_LANDSCAPE) {
+    if (PUZZLE_LANDSCAPE) {
+      paintParkScenes(ctx, G, left, top, right, bottom);
+    } else if (TOWN_LANDSCAPE) {
       paintTownTerrain(ctx, G, left, top, right, bottom);
     } else {
       if (PARK_LANDSCAPE) paintParkStream(ctx, G, top, right);

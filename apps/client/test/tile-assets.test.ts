@@ -188,3 +188,23 @@ describe('connected park detail PNGs', () => {
     expect(existsSync(resolve('apps/client/src/assets/terrain-v8/park-tree-base.png'))).toBe(true);
   });
 });
+
+describe('recombinable park kit', () => {
+  it('supplies all curated fragments and wall pieces without replacing the earlier art', () => {
+    const dir = resolve('apps/client/src/assets/park-modules-v10');
+    expect(readdirSync(dir).filter((f) => f.endsWith('.png'))).toHaveLength(9);
+    for (const key of [
+      'fountain',
+      'gazebo',
+      'picnic',
+      'grove',
+      'orchard',
+      'garden',
+      'hedge',
+      'corner',
+      'bridge',
+    ])
+      expect(png(resolve(dir, `module-${key}-base.png`))).toEqual([256, 256]);
+    expect(existsSync(resolve('apps/client/src/assets/town-v7/land-garden-base.png'))).toBe(true);
+  });
+});

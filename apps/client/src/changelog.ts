@@ -28,17 +28,17 @@ export const CHANGELOG: ChangelogEntry[] = [
   {
     id: '2026-11-09-cartoon-town-terrain',
     date: 'Nov 9, 2026',
-    title: 'Connected cartoon parks and ponds',
+    title: 'Park puzzle pieces',
     features: [
       {
         tag: 'better',
-        title: 'Places that grow around the board',
-        text: 'Background terrain cells join into large irregular ponds, parks and courtyards, following the board’s bends. Only the outside of each location has an edge, with soft transitions between surfaces.',
+        title: 'Pieces that make a whole park',
+        text: 'Related decoration pieces now combine into small park dioramas on the board grid. The same pieces can create different bent and notched layouts, with shared paths, pond banks and continuous hedge walls.',
       },
       {
         tag: 'new',
         title: 'Things to do in the park',
-        text: 'Connected walks lead between picnic spots, gazebos and planted clearings. Orchards, flower gardens, reeds, lily pads and small bridges give the shared landscape more life. Low hedges follow the board’s bends, with gaps for portals.',
+        text: 'Curated fountain, gazebo, picnic, grove, orchard and flower-garden fragments match the detailed cartoon style. The UI Lab lets you separate an assembly, change its shape and try another planting mix.',
       },
     ],
     extras: ['Previous scenery artwork preserved'],

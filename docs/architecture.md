@@ -137,33 +137,22 @@ room, Continue resumes the saved game, and the board editor (`ui/editor.ts`).
 
 `BoardView` draws everything on one `<canvas>`:
 
-- **Background:** `paintGrass` fills the inverse-camera world rectangle with nonrepeating grass
-  from `meadow.ts` (256-unit patches in cached 768-unit chunks). Default `SCENERY_SET = connected`
-  adds `town-terrain.ts` / `town-terrain-art.ts`: 80-unit material cells, smooth coordinate-seeded
-  terrain fields, and board-aware collision masks. `terrainContours` cancels shared edges and
-  traces only the outside/holes of each material, preserving concave bends and separate diagonal
-  locations. World-aligned material patterns fill those shared surfaces. Offscreen masks blur
-  park/paving/water edges by 18/14/7 world units, with soft water banks. The 48px mask overscan
-  prevents cached-chunk seams. Nine base-only PNGs in `assets/terrain-v8/` supply three material
-  textures and six cartoon props. Connected courtyard anchors and two-by-two park clearing plans
-  place meaningful furniture groups and keep trees out of their footprints. All caches live in
-  WeakMaps keyed by game state; layout never consumes engine randomness or adds fields to saves.
-  Low, rounded hedges frame the playable board through inside and outside bends, with portal
-  openings left clear. Garden hedges join the surrounding scenery. Neighboring activity clearings
-  connect by narrow cosmetic walks that avoid gameplay tiles; narrow water crossings can have
-  bridges. Planting themes span multiple cells: flower gardens, fruit orchards, groves and meadow.
-  Pond edges contain reeds and rocks, with lily pads on open water. No movement rules change.
-  `assets/terrain-details-v9/` supplies clean-alpha fruit trees, flower beds, water details,
-  bridges and a seamless leaf material. The board hedge silhouette is rasterized at 20 world
-  units, shared edges removed, corners rounded, and portal openings clipped out. Short bounded
-  breadth-first walks join neighboring park clearings; water can only be crossed along a bridge.
-  Planting avoids those paths. These plans are cached independently of the camera.
-  Rendering uses up to 48 cached 800-unit chunks at 512px. The builder omits terrain/props;
-  `drawParkGround` adds verges beneath actual roads in games, keeping portal stems normal width.
-  `SCENERY_SET = park` restores the preserved natural park/stream set (`park.ts`, `park-geometry.ts`,
-  `scenery.ts`, `assets/park-v6/`); `previous` restores outlined meadow props (`scenery-v5/`).
-  `LANDSCAPE_SET` / `ART_SET` retain original grass and classic art. `assets/town-v7/` preserves
-  the complete-scene cartoon art separately; it is not drawn as square scene stamps by default.
+- **Background:** `paintGrass` fills the inverse-camera rectangle with nonrepeating grass
+  (`meadow.ts`). Default `SCENERY_SET = puzzle` adds `park-scenes.ts` and `park-scenes-art.ts`.
+  `parkScenes` plans connected groups of free cells on the actual board grid, checking nodes,
+  real roads and portal mouths. `composePark` accepts arbitrary connected footprints and
+  combines reusable activity/planting fragments, connected water and walks. There is no fixed
+  scene-to-footprint pairing. `parkBoundary` cancels shared square/hex polygon edges, including
+  staggered and negative hex rows; only the shared outer/inner contours remain. The renderer
+  fills common ground/water, joins paths and draws repeated hedge wall segments and curated
+  fragments from `assets/park-modules-v10/`. Each assembled scene is cached at 2px/world unit
+  and culled outside the camera. WeakMaps keep all plans/canvases outside game state. The Lab
+  shows assembled/exploded views, alternate shapes, planting and grids.
+  `SCENERY_SET = connected` retains the previous noise-based `town-terrain.ts` /
+  `town-terrain-art.ts` and v8/v9 art. `park` restores natural park/stream scenery; `previous`
+  restores the original outlined meadow props. All old PNGs and classic fallbacks remain.
+  The builder omits scenery; `drawParkGround` adds verges below actual roads in games, leaving
+  portal stems their normal width.
 - **Static layer:** scenery and tiles are painted once into an offscreen cache
   (`renderStatic` → `paintBoard`) and redrawn only when `dirty` (state changed) or the zoom needs
   a sharper copy. Property images come from `props.ts` (PNG art in `assets/props`, recolored to

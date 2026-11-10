@@ -105,7 +105,11 @@ Everything is re-exported from `index.ts`, so the client imports from `'@aa/engi
 | `names.ts`      | Square names and what buildings and special squares do (tooltips, guide)                                                                                                                          | `squareName`, `shortName`, `squareInfo`, `BUILDING_INFO`                                                                                                                               |
 | `boardstore.ts` | Custom boards saved in the browser, hidden boards, the board collection list; export/import files                                                                                                 | `listBoards`, `saveBoard`, `deleteBoard`, `getBoard`, `collection`, `shownBoards`, `setBoardHidden`, `isBuiltIn`, `exportBoard`, `readBoardFile`, `pickBoardFile`                      |
 
-`town-terrain.ts` defines connected park/water/courtyard cells, traces region contours, and plans
+`park-scenes.ts` defines reusable activity/planting modules, composes arbitrary connected footprints
+and plans free-space groups on the actual board grid (`composePark`, `parkScenes`).
+`park-scenes-art.ts` cancels shared square/hex edges and caches assemblies with continuous
+hedges, ground, water and paths (`parkBoundary`, `paintParkScene`, `paintParkScenes`).
+The Lab includes an exploded/recombined preview. Earlier `town-terrain.ts` defines connected park/water/courtyard cells, traces region contours, and plans
 park amenities/courtyard anchors. `town-terrain-art.ts` paints continuous material surfaces with
 soft masks and cached chunks using `assets/terrain-v8/`.
 `meadow.ts` builds cached, coordinate-seeded grass chunks with smooth patch blending.
