@@ -26,6 +26,18 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: '2026-11-10-warp-floor-pad',
+    date: 'Nov 10, 2026',
+    title: 'A warp point to stand on',
+    features: [
+      {
+        tag: 'better',
+        title: 'A flat star warp pad',
+        text: 'The warp is now a flat four-point star on the tile floor, with equal height and width. The pedestal is gone, and the pad sits under the player’s feet. Paired colors are preserved.',
+      },
+    ],
+  },
+  {
     id: '2026-11-10-closed-gate',
     date: 'Nov 10, 2026',
     title: 'The closed-shop gate is back',

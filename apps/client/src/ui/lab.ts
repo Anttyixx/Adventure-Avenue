@@ -117,7 +117,7 @@ const rnd = (n: number) => Math.floor(Math.random() * n);
  * Controls for UI elements that were just added or changed: they shake once and glow so they
  * are easy to find. Update this list with each change.
  */
-const RECENT = new Set(['Shops closing']);
+const RECENT = new Set(['Warp landing pad', 'Warp and portal artwork', 'Tile sprites and tint layers']);
 
 /**
  * Which board the lab plays on: Town with portal links (square, the default) or Twin Lakes (hex),
@@ -1530,10 +1530,44 @@ export async function openLab(app: HTMLElement, section?: string) {
     const s = addSection(
       'art',
       'Transport artwork',
-      'Crystal warps and animated portal link rings. Colors match their linked partners.',
+      'Flat star warp pads and animated portal link rings. Colors match their linked partners.',
     );
     row(
       s,
+      btn('Warp landing pad', () => {
+        const boardDef = BUILT_IN_BOARDS.find(
+          (b) => b.layout !== 'hex' && b.squares.some((sq) => sq.t === 'warp'),
+        )!;
+        const sample = newGame({
+          rules: 'standard',
+          target: 10000,
+          roundCap: 0,
+          board: boardDef,
+          seats: G.players.map((p) => ({ name: p.name, cpu: true, ch: p.ch })),
+        });
+        sample.players[0].node = sample.nodes.find((sq) => sq.t === 'warp')!.id;
+        const mount = h('div', { class: 'lab-screen' });
+        root.append(mount);
+        const preview = new HotSeat(mount, sample, () => mount.remove(), false);
+        preview.board.followPid = 0;
+        preview.board.activePid = 0;
+        preview.board.zoomOut = 0;
+        preview.hud.activePid = 0;
+        preview.hud.renderCards();
+        mount.append(
+          h(
+            'button',
+            {
+              class: 'btn small lab-back',
+              onclick: () => {
+                preview.destroy();
+                mount.remove();
+              },
+            },
+            'Back to UI Lab',
+          ),
+        );
+      }),
       btn('Warp and portal artwork', () => {
         const canvas = h('canvas', {
           width: 1000,

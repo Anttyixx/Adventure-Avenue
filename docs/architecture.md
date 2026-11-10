@@ -241,7 +241,9 @@ animates for `TIMING.portalStep`, clears the transient token pose and resumes no
 `drawTokens` transforms only the traveling sprite and hides its name/base until arrival.
 `drawPortalRing` composes a fixed v13 frame with tinted vortex layers, a pulse and orbit lights.
 `drawPortals` passes continuous unwrapped time; reduced motion passes zero. The game and builder
-share the renderer. `TRANSPORT_SET` in `props.ts` selects v13 or preserves earlier artwork.
+share the renderer. `TRANSPORT_SET` in `props.ts` selects v13 portals or preserves earlier artwork. `WARP_SET`
+selects the active v14 flat star independently; `drawSquare` gives it a ground-plane position
+and top label. Uniform scaling keeps its width and height equal on both grids.
 
 ### Online play (`net/`)
 

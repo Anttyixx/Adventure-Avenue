@@ -989,8 +989,10 @@ Bright and physical, unlike the dark HUD:
   plots: dashed grey outline + "VACANT".
 - **Tile text:** Atkinson 700, navy `#26314f` (`#1b2340` on tints); amounts with the coin
   (`fillMoney`). Special squares: icon + small uppercase label.
-- **Warps** (beveled four-point crystal above a small ivory/gold socket) and **portals** (round swirl) in their link color: a pair's color,
+- **Warps** (flat four-point star floor pad, equal width/height with four equal arms) and **portals** (round swirl) in their link color: a pair's color,
   gold to the bank, grey unlinked.
+- The warp pad sits low on its tile, under the token’s feet, with its WARP label above. Keep its
+  geometry square and its plane flat; no socket, pedestal, upright gem or perspective squash.
 - **Characters:** pixel sprites, whole-number scales, sprite-shaped shadow, a name plate (white
   Lilita on a player-color pill with a white outline); the active one is bigger with a bobbing
   arrow.

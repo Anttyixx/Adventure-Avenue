@@ -1935,9 +1935,12 @@ Existing paired Checkpoint/Circus/Motel artwork and all old art files are preser
 `props.ts` selects the layered set or the classic assets and vector fallbacks. The UI Lab can
 inspect bases, masks and recolored composites.
 
-The warp icon is a beveled four-point crystal above a small ivory/gold socket. Side portals
+The warp icon is a flat, symmetrical four-point star pad on the tile floor, with equal height
+and width and four equal-length arms. It has no pedestal, socket or upright crystal. Place the
+pad beneath the token’s feet, with WARP above it, so the player appears to stand on the star. Side portals
 use a fixed jeweled frame and two separate animated vortex PNG layers. `assets/transport-v13/`
-contains aligned base/tint pairs for these four components. Matching link colors, bank gold and
+contains aligned base/tint pairs for the earlier crystal and the portal components;
+`assets/warp-v14/` supplies the active floor star’s aligned base/tint pair. Matching link colors, bank gold and
 unlinked grey are preserved. `TRANSPORT_SET = previous` restores the earlier artwork; all prior
 files and tap/hover behavior remain available. Price Up, Taxi and Swap also have base-only PNG icons.
 

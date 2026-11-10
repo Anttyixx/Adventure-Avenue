@@ -231,3 +231,12 @@ describe('crystal warp and animated portal components', () => {
       expect(existsSync(resolve('apps/client/src/assets/tiles-v2', `${key}-base.png`))).toBe(true);
   });
 });
+
+describe('flat warp floor pad', () => {
+  it('provides an aligned recolorable pair while preserving the previous crystal and pedestal', () => {
+    const dir = resolve('apps/client/src/assets/warp-v14');
+    expect(png(resolve(dir, 'warp-base.png'))).toEqual([256, 256]);
+    expect(png(resolve(dir, 'warp-tint.png'))).toEqual([256, 256]);
+    expect(existsSync(resolve('apps/client/src/assets/transport-v13/warp-base.png'))).toBe(true);
+  });
+});

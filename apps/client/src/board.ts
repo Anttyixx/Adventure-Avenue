@@ -27,6 +27,7 @@ import {
   PUZZLE_LANDSCAPE,
   GROUND_SET,
   CLOSED_SET,
+  GROUND_WARP_ART,
   type PropKey,
 } from './props';
 import { paintMeadow } from './meadow';
@@ -3049,6 +3050,7 @@ function specialIcon(ctx: CanvasRenderingContext2D, G: GameState, sq: Square, x:
         ? warpColor(G, sq)
         : transportColor(sq)
       : '#9aa3b8';
+  if (sq.t === 'warp' && GROUND_WARP_ART && drawProp(ctx, 'warp', col, x, y, 54, 54)) return;
   if (sq.t === 'change' && drawStamp(ctx, 'change-ring', col, x, y, 56, 56)) {
     drawStamp(ctx, SUITS[G.changeSuit] as PropKey, col, x, y, 30, 30);
     return;
@@ -3509,6 +3511,10 @@ function drawSquare(ctx: CanvasRenderingContext2D, G: GameState, sq: Square) {
               : `${squareFee(G, sq)}G`;
       if (owner) amount(fee);
     }
+  } else if (sq.t === 'warp' && GROUND_WARP_ART) {
+    // The warp is a floor surface under the token's feet, rather than an upright tile picture.
+    art(() => specialIcon(ctx, G, sq, c.x, c.y + 11));
+    label(ctx, c.x, c.y - 29, 'WARP', '#4a5470', 11);
   } else {
     const t = sq.t === 'broker' && G.rules === 'easy' ? 'VENTURE' : (SPECIAL_LABEL[sq.t] ?? '');
     // Squares without a label (suits, Boon, Boom) center their symbol on the tile.

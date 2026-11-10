@@ -71,6 +71,14 @@ export const TRANSPORT_SET: string = 'crystal';
  * sign; `sprite` uses the painted `closed` PNG instead (kept for a possible return).
  */
 export const CLOSED_SET: string = 'gate';
+/** Restore the previous upright crystal while retaining the new portal rings. */
+export const WARP_SET: string = 'ground';
+export const GROUND_WARP_ART = ART_SET === 'layered' && TRANSPORT_SET === 'crystal' && WARP_SET === 'ground';
+const groundWarp = import.meta.glob<string>('./assets/warp-v14/*.png', {
+  eager: true,
+  query: '?url',
+  import: 'default',
+});
 const transportArt = import.meta.glob<string>('./assets/transport-v13/*.png', {
   eager: true,
   query: '?url',
@@ -183,6 +191,12 @@ const urls = Object.fromEntries([
     : []),
   ...(ART_SET === 'layered' && TRANSPORT_SET === 'crystal'
     ? Object.entries(transportArt).map(([path, url]) => [
+        path.replace(/^.*\//, '').replace('-base.png', '.png'),
+        { url, explicit: true },
+      ])
+    : []),
+  ...(GROUND_WARP_ART
+    ? Object.entries(groundWarp).map(([path, url]) => [
         path.replace(/^.*\//, '').replace('-base.png', '.png'),
         { url, explicit: true },
       ])

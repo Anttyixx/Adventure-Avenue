@@ -2,7 +2,7 @@
 
 Four 256px base/tint sprite pairs:
 
-- `warp`: a beveled four-point crystal on a small ivory/gold socket.
+- `warp`: the earlier beveled crystal/socket, preserved for rollback; the active floor star is in `warp-v14/`.
 - `portal-side`: fixed circular ivory/gold frame, four recolorable inset gems, open center.
 - `portal-vortex`: three broad curling energy ribbons.
 - `portal-vortex-inner`: a smaller counter-rotating core with white highlights.
