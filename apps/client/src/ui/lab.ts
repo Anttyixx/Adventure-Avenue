@@ -65,7 +65,6 @@ import { AuctionView, LiveAuction } from './auction';
 import { confettiRain } from './confetti';
 import { TIMING as T } from '../timing';
 import { BUILD, VERSION_LABEL } from '../build';
-import { rendererKind, setRendererKind } from '../renderer';
 import { inviteURL } from '../net/protocol';
 import {
   answerTradeOnBoard,
@@ -118,11 +117,7 @@ const rnd = (n: number) => Math.floor(Math.random() * n);
  * Controls for UI elements that were just added or changed: they shake once and glow so they
  * are easy to find. Update this list with each change.
  */
-const RECENT = new Set([
-  'Renderer: PixiJS (switch to classic)',
-  'Renderer: classic (switch to PixiJS)',
-  'FPS meter',
-]);
+const RECENT = new Set(['Portal: entrance to exit', 'Travel through a portal', 'Roll and walk', 'Confetti']);
 
 /**
  * Which board the lab plays on: Town with portal links (square, the default) or Twin Lakes (hex),
@@ -1248,22 +1243,6 @@ export async function openLab(app: HTMLElement, section?: string) {
       }),
       boardBtn('Zoom in', () => board.zoomBy(-ZOOM_STEP)),
       boardBtn('Zoom out', () => board.zoomBy(ZOOM_STEP)),
-    );
-    // The board's renderer (renderer.ts): reloads with the other one. The FPS meter helps compare.
-    row(
-      s,
-      btn(
-        rendererKind() === 'pixi'
-          ? 'Renderer: PixiJS (switch to classic)'
-          : 'Renderer: classic (switch to PixiJS)',
-        () => {
-          setRendererKind(rendererKind() === 'pixi' ? 'classic' : 'pixi');
-          // Drop any ?renderer= in the address, which would override the choice.
-          if (location.search) location.href = location.pathname + location.hash;
-          else location.reload();
-        },
-      ),
-      btn('FPS meter', () => board.toggleFps()),
     );
   }
 

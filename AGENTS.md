@@ -60,13 +60,6 @@ When the spec and the code disagree, ask the owner which is right; then fix the 
 
 ## Rules for the code
 
-- **Two board renderers.** The board draws with the classic 2D canvas by default, or with
-  PixiJS (WebGL) when `renderer.ts` says `pixi` (`?renderer=pixi`, or the UI Lab toggle). In
-  PixiJS mode the background (`paintGrass` and everything it calls) and the board picture are
-  recorded and redrawn as GPU sprites (`pixi-board.ts`), which only understands `drawImage`, solid
-  `fillRect`, transforms and `globalAlpha`. Keep background drawing to those calls (cache anything
-  else into a canvas first), and check changes in both renderers. The classic code is backed up on
-  the `backup/pre-pixi` branch.
 - **The engine (`packages/engine`) is UI-free and deterministic.** It never touches the DOM,
   timers or sockets. All randomness goes through `G.rng` (`rng.ts`), never `Math.random`, or
   online games fall out of step. Every tunable number lives in `src/constants.ts` as `K` (CPU

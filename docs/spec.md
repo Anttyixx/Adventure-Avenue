@@ -1910,14 +1910,6 @@ Old PNGs and the earlier layered set remain intact. `PROPERTY_SET = 'previous'` 
 previous property art independently of other board sprites; `ART_SET = 'classic'` restores the
 original complete board artwork.
 
-**Renderer (test).** The board can draw with the browser's 2D canvas (classic, the default) or
-with PixiJS on the graphics card: add `?renderer=pixi` to the address (or `?renderer=classic` to go
-back; the choice is remembered on that device), or use the UI Lab's renderer button. In PixiJS mode
-the background and the board picture are drawn by the graphics card; everything looks the same.
-If the device can't run it, the board quietly uses the classic renderer. `?fps=1` (or the Lab's FPS
-meter) shows a small meter in the bottom left corner: the renderer, frames per second and the
-slowest recent frame.
-
 Every tile picture is sized by its visible drawing, not by its image frame (frames carry different
 amounts of empty space), so all pictures stand on the same base line at matching sizes and stay
 clear of the tile's border. Hex tiles narrow toward their top point, so their pictures are drawn
