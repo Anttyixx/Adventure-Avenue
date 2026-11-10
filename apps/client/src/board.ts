@@ -28,6 +28,7 @@ import {
   type PropKey,
 } from './props';
 import { paintMeadow } from './meadow';
+import { chunkBudget } from './chunk-budget';
 import { parkSceneryBeyondBoard, sceneryBeyondBoard, sceneryForBoard } from './scenery';
 import { paintParkScenery, paintParkStream } from './park';
 import { paintParkScenes } from './park-scenes-art';
@@ -1233,8 +1234,10 @@ export class BoardView {
       this.onZoom?.(pct, mode);
     }
     const ctx = this.ctx;
+    // The board picture only gets sharper, never re-drawn smaller: a sharper one shrinks fine,
+    // and re-drawing the whole board as the camera zooms out made the zoom stutter.
     const want = Math.min(3, Math.max(1, Math.ceil(this.camTarget.z * this.dpr * 2) / 2));
-    if (this.dirty || want !== this.cacheScale) this.renderStatic(want);
+    if (this.dirty || want > this.cacheScale) this.renderStatic(Math.max(want, this.cacheScale));
 
     const { fx, fy } = this.focusArea();
     const z = this.cam.z * this.dpr;
@@ -1248,7 +1251,10 @@ export class BoardView {
     );
     ctx.imageSmoothingEnabled = true;
     // Paint the visible world, rather than a fixed rectangle around the board.
+    // Build at most one new background chunk per frame (see chunk-budget.ts).
+    chunkBudget.left = 1;
     paintGrass(ctx, this.G);
+    chunkBudget.left = Infinity;
     ctx.drawImage(this.cache, 0, 0, this.ww, this.wh);
 
     const motion = !reducedMotion();

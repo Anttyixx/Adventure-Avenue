@@ -115,6 +115,9 @@ foliage and sparse benches near the board. `town-terrain-art.ts` paints continuo
 soft masks and camera-scaled world chunks using `assets/terrain-v12/`; decoration PNGs draw
 at native resolution with cached placement plans. Earlier textures remain in `terrain-v8/`.
 `meadow.ts` builds cached, coordinate-seeded grass chunks with smooth patch blending.
+`chunk-budget.ts` holds the shared chunk rules for both: half, 1x or 2x resolution (`chunkLevel`), at most one
+new chunk built per live frame with the other resolution standing in (`chunkBudget`), and trimming that
+never drops chunks drawn this frame (`trimChunks`).
 `scenery.ts` owns cosmetic coordinate randomness and small scenery placement, inside the board
 (`sceneryForBoard`) and beyond it (`parkSceneryBeyondBoard` for grouped park scenery,
 `sceneryBeyondBoard` for the preserved earlier scatter). It never changes engine state.

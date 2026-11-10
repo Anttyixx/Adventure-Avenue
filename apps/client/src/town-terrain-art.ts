@@ -1,6 +1,7 @@
 /** Shared surfaces for whole locations: adjacent cells have no separately drawn tile borders. */
 import type { GameState } from '@aa/engine';
 import { SCENERY_SET, drawStamp, propCanvas } from './props';
+import { CHUNK_LEVELS, chunkBudget, chunkLevel, touchChunk, trimChunks } from './chunk-budget';
 import {
   DECOR_CELL,
   FRAME_CELL,
@@ -47,13 +48,7 @@ function chunk(G: GameState, x: number, y: number, PIXELS: number) {
     cache = new Map();
     chunks.set(G, cache);
   }
-  const key = `${x},${y},${PIXELS}`,
-    saved = cache.get(key);
-  if (saved) {
-    cache.delete(key);
-    cache.set(key, saved);
-    return saved;
-  }
+  const key = `${x},${y},${PIXELS}`;
   const cv = Object.assign(document.createElement('canvas'), { width: PIXELS, height: PIXELS });
   const ctx = cv.getContext('2d')!;
   const left = x * WORLD,
@@ -196,13 +191,6 @@ function chunk(G: GameState, x: number, y: number, PIXELS: number) {
     ctx.restore();
   }
   cache.set(key, cv);
-  let bytes = [...cache.values()].reduce((n, c) => n + c.width * c.height * 4, 0);
-  while (cache.size > LIMIT || bytes > MAX_BYTES) {
-    const first = cache.keys().next().value!,
-      old = cache.get(first)!;
-    bytes -= old.width * old.height * 4;
-    cache.delete(first);
-  }
   return cv;
 }
 
@@ -216,14 +204,32 @@ export function paintTownTerrain(
   bottom: number,
 ) {
   const transform = ctx.getTransform();
-  const pixels =
-    WORLD *
-    (Math.hypot(transform.a, transform.b) <= 0.5
-      ? 0.5
-      : Math.min(2, Math.ceil(Math.hypot(transform.a, transform.b))));
+  const level = chunkLevel(Math.hypot(transform.a, transform.b));
+  const pixels = WORLD * level;
+  let cache = chunks.get(G);
+  if (!cache) {
+    cache = new Map();
+    chunks.set(G, cache);
+  }
+  let drawn = 0;
   for (let y = Math.floor(top / WORLD); y < Math.ceil(bottom / WORLD); y++)
-    for (let x = Math.floor(left / WORLD); x < Math.ceil(right / WORLD); x++)
-      ctx.drawImage(chunk(G, x, y, pixels), x * WORLD, y * WORLD, WORLD, WORLD);
+    for (let x = Math.floor(left / WORLD); x < Math.ceil(right / WORLD); x++) {
+      let cv = touchChunk(cache, `${x},${y},${pixels}`);
+      if (!cv) {
+        // The other resolution's chunk stands in while this one is still being built.
+        let stand: HTMLCanvasElement | undefined;
+        for (const l of CHUNK_LEVELS) if (l !== level) stand ??= touchChunk(cache, `${x},${y},${WORLD * l}`);
+        if (stand && chunkBudget.left <= 0) cv = stand;
+        else {
+          cv = chunk(G, x, y, pixels);
+          chunkBudget.left--;
+        }
+      }
+      drawn++;
+      ctx.drawImage(cv, x * WORLD, y * WORLD, WORLD, WORLD);
+    }
+  // Keep within the memory budget, but never drop a chunk drawn just now.
+  trimChunks(cache, Math.min(LIMIT, Math.floor(MAX_BYTES / (pixels * pixels * 4))), drawn);
   if (SCENERY_SET === 'terrain') {
     const features: TerrainFeature[] = [];
     for (let y = Math.floor((top - 80) / WORLD); y < Math.ceil((bottom + 80) / WORLD); y++)
