@@ -186,8 +186,15 @@ export class AuctionView {
     this.paintClock();
   }
 
+  /** The whole second the clock showed last, so each new second down ticks once. */
+  private shownSecs = -1;
+
   private paintClock() {
     const left = Math.max(0, Math.ceil((this.deadline - performance.now()) / 1000));
+    // Tick as the clock counts down (not when a bid fills it back up); the last two seconds beep.
+    if (left > 0 && left < this.shownSecs && this.clock.classList.contains('on'))
+      sound.play(left <= 2 ? 'tickUrgent' : 'tick');
+    this.shownSecs = left;
     const text = `${left}s`;
     const secs = this.clock.querySelector('.au-clock-secs')!;
     if (secs.textContent !== text) secs.textContent = text;
@@ -278,6 +285,7 @@ export class AuctionView {
   async end(winner: number, price: number, ms: number) {
     this.closeBar();
     window.clearInterval(this.tick);
+    sound.play('gavel');
     this.clock.classList.remove('on');
     this.drawBidders();
     clear(this.high);

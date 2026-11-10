@@ -386,6 +386,8 @@ export class Game {
     const fee = sq.owner === p.id || isClosed(owner) ? 0 : squareFee(this.G, sq, p);
     const yes = await this.ask({ kind: 'motelStop', pid: p.id, sq: sq.id, fee, left });
     if (yes !== true) return false;
+    // A night's rest: the next move may set off in any direction, like leaving the bank.
+    p.prev = -1;
     await this.log(`${p.name} stopped at the motel.`, p.id, 'move');
     return true;
   }

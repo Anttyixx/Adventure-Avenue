@@ -51,7 +51,8 @@ export const BUILDING_INFO: Record<string, { rival: string; owner: string }> = {
   balloon: { rival: 'Pays 150G.', owner: 'Fly to any square; its landing effect applies.' },
   tax: { rival: 'Pays you 10% of their own net worth.', owner: 'The bank pays you 5% of your net worth.' },
   motel: {
-    rival: 'Pays 25% of the cash they hold. Anyone passing may stop here instead of moving on.',
+    rival:
+      'Pays 15% of the cash they hold. Anyone passing may stop here instead of moving on, then set off in any direction.',
     owner: 'Invest in any of your shops (you can stop here when passing too).',
   },
   home: { rival: 'Pays 60G x your level.', owner: 'Every other player is pulled to this square.' },
@@ -97,7 +98,7 @@ export function squareInfo(G: GameState, sq: Square): string {
 
 /**
  * A motel's fee as shown on its tile and in lists: what the player whose turn it is would pay
- * there now (25% of their cash), or just "25%" when it is their own motel.
+ * there now (15% of their cash), or just "15%" when it is their own motel.
  */
 export function motelFee(G: GameState, sq: Square): string {
   const p = G.players[G.order[G.turn]];

@@ -108,7 +108,7 @@ export const K = {
   balloonFee: 150,
   homeFee: 60,
   /** Motel: a rival who stops there pays this share of the cash they hold. */
-  motelRate: 0.25,
+  motelRate: 0.15,
   taxRate: 0.1,
   taxOwner: 0.05,
 

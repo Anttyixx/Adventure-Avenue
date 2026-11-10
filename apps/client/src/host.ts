@@ -292,6 +292,9 @@ export class HotSeat implements GameIO {
     this.playMusic();
   }
 
+  /** The scene (if any) that was up when an auction started, to go back to after it. */
+  private sceneBeforeAuction: Track | null = null;
+
   /** The scene's music, else the board music (the urgent theme once someone can win). */
   private playMusic() {
     if (this.G.over) return;
@@ -1123,6 +1126,9 @@ export class HotSeat implements GameIO {
         hud.action('auction', 'The auction is starting...', 'property');
         this.auction?.close();
         this.auction = new AuctionView(hud, G, e.sq, e.seller, e.opening, e.step, e.bidders);
+        // Auctions have their own music until the gavel falls.
+        if (this.scene !== 'auction') this.sceneBeforeAuction = this.scene;
+        this.setScene('auction');
         board.setChoices([e.sq], '#ffd166', () => {}, undefined, { pins: false });
         await this.wait(T.cpuDecision);
         break;
@@ -1139,6 +1145,8 @@ export class HotSeat implements GameIO {
         this.refresh();
         await view?.end(e.winner, e.price, T.cpuResult * this.speed);
         board.clearChoices();
+        this.setScene(this.sceneBeforeAuction);
+        this.sceneBeforeAuction = null;
         break;
       }
       case 'trade':

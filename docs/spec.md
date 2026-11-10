@@ -546,7 +546,7 @@ the Guide's Buildings tab says the same during a game ("2 left to build").
 | Circus        | 200G   | Pays the show fee: 100G (tier 0)                                                                                                           | Upgrade to 500 / 1,000 / 2,000G for 300 / 600 / 1,200G                                | Show fee           |
 | Balloonport   | 200G   | Pays 150G                                                                                                                                  | Fly to any square; that square's landing effect applies (bank counts as a bank visit) | 150G               |
 | Tax Office    | 200G   | Pays the owner 10% of the rival's own net worth                                                                                            | Bank pays the owner 5% of their net worth                                             | 10%                |
-| Motel         | 200G   | Pays 25% of the cash they hold (`K.motelRate`). Anyone passing may stop here instead (see below)                                           | Invest in any of your shops                                                           | 25%                |
+| Motel         | 200G   | Pays 15% of the cash they hold (`K.motelRate`). Anyone passing may stop here instead (see below)                                           | Invest in any of your shops                                                           | 15%                |
 | Estate Agency | 200G   | Rival takes a break: their shops close until their next turn                                                                               | Buy any unowned shop at its value                                                     | Break              |
 | 3-Star Shop   | 1,000G | Pays a shop fee on a 1,000G base, with district multipliers; buyouts allowed                                                               | Invest in any of your shops                                                           | Fee                |
 
@@ -560,11 +560,13 @@ the Guide's Buildings tab says the same during a game ("2 left to build").
   hike card, Price Up square). All building fees pay dividends and commissions like shop fees.
 - **Motel fee on the board:** a motel's tile (and its fee in the tooltip, the info pop-up and the
   stock market's shop cards) shows what the player whose turn it is would pay there right now,
-  25% of their cash; on its owner's turn it shows "25%".
+  15% of their cash; on its owner's turn it shows "15%".
 - **Motel stops:** every player who passes a motel (its owner too) is asked in the action bar
   "Stop at Rosa's motel?" (the fee to stop and the spaces left to move) with **Stop here** or
   **Keep moving**. Stopping ends the move there and counts as landing on it: a rival pays the fee,
-  the owner may invest. Landing on it with the roll works the same. CPUs never stop at a rival's
+  the owner may invest. Landing on it with the roll works the same. A player who chose to stop
+  sets off in any direction on their next move (like leaving the bank), instead of having to keep
+  going the way they came. CPUs never stop at a rival's
   motel; at their own they stop when they have more than 900G and a shop to invest in.
 - **The Home is retired:** the Motel took its place in the build list. Games saved with a Home
   keep it working as before (rivals pay 60G x the owner's level; the owner calls everyone home).
@@ -885,7 +887,9 @@ it gives + 20G and it can afford its cash side. CPUs never propose trades in the
   the next step up: the opening bid first, then + 10% of value (minimum 10G) over the high bid.
   The high bidder can't pass (their bid stands); a player who passes is out. A bidder who can't
   pay the next bid counts as out ("Too pricey"). The auction ends:
-  - 5 seconds (`TIMING.auctionWindow`) after the last bid: the high bidder wins;
+  - 5 seconds (`TIMING.auctionWindow`) after the last bid: the high bidder wins. There is one
+    clock for everyone: every bid, by anyone, fills it back to 5 seconds for all bidders still in
+    (passing does not). Only an auction among CPUs alone shortens it with Fast CPU speed;
   - 5 seconds after it opens with no bids: no sale (the property stays with the seller or, for
     the bank, goes back on the market);
   - as soon as only one bidder is left: they win (at the opening bid if nobody bid).
@@ -1586,10 +1590,14 @@ ring/silent switch does not mute the game; the in-game Mute switch still does.
   bouncier one during games (a faster, urgent one once someone can win), a curious, twinkly one
   while the venture board is up, and one per arcade game: a casino jingle (Lucky Reels), a calm,
   sparse tune to think by (Memory Blocks), a galloping race theme (Coin Derby), a game-show tune
-  (Lucky Wheel) and a sea shanty (Treasure Split). The board music comes back when they close.
+  (Lucky Wheel) and a sea shanty (Treasure Split), plus a quick, tense A-minor tune with ticking
+  hats for live auctions ("Going, Going..."), from the moment the auction opens until its result
+  closes. The board music (or the scene that was up before) comes back when they close.
   Every change of track cross-fades: the old song plays on while it fades out over 0.7 seconds
   as the new one fades in. The music stops for the winning fanfare at the end of a game.
-- **Effects:** a domination fanfare, venture line and full-row jingles, button clicks, dice roll, each step (a soft tap as the token touches each square; the lift-off "hop" sound is switched off for now and kept in `audio.ts`), landing, gaining and paying money, buying a
+- **Effects:** the auction clock ticks once per second as it counts down (a dry wood-block tick;
+  a brighter double beep for the last 2 seconds; no tick when a bid fills it back up) and a gavel
+  knocks when the auction ends, sold or not; a domination fanfare, venture line and full-row jingles, button clicks, dice roll, each step (a soft tap as the token touches each square; the lift-off "hop" sound is switched off for now and kept in `audio.ts`), landing, gaining and paying money, buying a
   shop, buying stock (a short register click and "ching"), selling stock (two quick falling coin clinks into a soft "ching"), buying out a rival's property (a brass stab, a rising run and a cash-register ring), a shop's value going up, collecting a suit, promotion, venture cards, a card flipping over (a paper swish and a click), slot reels ticking as they spin and clunking as each stops, warps, the start of a
   human player's turn, a new round, bankruptcy and the win fanfare.
 - **Settings:** Sound buttons on the main menu, setup and collection open a compact navy-glass

@@ -68,17 +68,31 @@ describe('Motel', () => {
     return { ...made, motel, p };
   }
 
-  it('asks passers-by and stops them there, charging 25% of their cash', async () => {
+  it('asks passers-by and stops them there, charging 15% of their cash', async () => {
     const { G, game, asked, motel, p } = setup((r) =>
       r.kind === 'motelStop' ? true : r.kind === 'buyout' ? false : undefined,
     );
     p.cash = 2000;
     await game.move(p, 3);
     const req = asked.find((r) => r.kind === 'motelStop');
-    expect(req && req.kind === 'motelStop' && req.fee).toBe(500);
+    expect(req && req.kind === 'motelStop' && req.fee).toBe(300);
     expect(p.node).toBe(motel.id);
-    expect(p.cash).toBe(1500);
-    expect(G.players[1].cash).toBe(K.startCash + 500);
+    expect(p.cash).toBe(1700);
+    expect(G.players[1].cash).toBe(K.startCash + 300);
+  });
+
+  it('lets a player who stopped set off in any direction next time', async () => {
+    const { game, p } = setup((r) =>
+      r.kind === 'motelStop' ? true : r.kind === 'buyout' ? false : undefined,
+    );
+    await game.move(p, 3);
+    expect(p.prev).toBe(-1);
+  });
+
+  it('keeps the direction of a player who only passes', async () => {
+    const { game, p } = setup((r) => (r.kind === 'motelStop' ? false : undefined));
+    await game.move(p, 3);
+    expect(p.prev).not.toBe(-1);
   });
 
   it('lets passers-by keep moving', async () => {

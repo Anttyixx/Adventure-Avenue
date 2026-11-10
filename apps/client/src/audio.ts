@@ -37,7 +37,10 @@ export type Sfx =
   | 'warp'
   | 'bankrupt'
   | 'win'
-  | 'deny';
+  | 'deny'
+  | 'tick'
+  | 'tickUrgent'
+  | 'gavel';
 
 export const SFX_NAMES: Sfx[] = [
   'click',
@@ -71,10 +74,23 @@ export const SFX_NAMES: Sfx[] = [
   'bankrupt',
   'win',
   'deny',
+  'tick',
+  'tickUrgent',
+  'gavel',
 ];
 
 export type Track =
-  'menu' | 'setup' | 'game' | 'urgent' | 'venture' | 'reels' | 'memory' | 'derby' | 'wheel' | 'treasure';
+  | 'menu'
+  | 'setup'
+  | 'game'
+  | 'urgent'
+  | 'venture'
+  | 'reels'
+  | 'memory'
+  | 'derby'
+  | 'wheel'
+  | 'treasure'
+  | 'auction';
 export const TRACK_NAMES: Record<Track, string> = {
   menu: 'Main Street (menu)',
   setup: 'Getting Ready (game setup)',
@@ -86,6 +102,7 @@ export const TRACK_NAMES: Record<Track, string> = {
   derby: 'Race Day (Coin Derby)',
   wheel: 'Spin to Win (Lucky Wheel)',
   treasure: 'Pirate Gold (Treasure Split)',
+  auction: 'Going, Going... (auction)',
 };
 
 interface AudioPrefs {
@@ -141,6 +158,41 @@ interface Song {
 }
 
 const SONGS: Record<Track, Song> = {
+  // Live auctions: a quick, tense tune in A minor with ticking hats, like a clock running down.
+  auction: {
+    bpm: 144,
+    chords: [
+      ['A3', 'C4', 'E4'],
+      ['A3', 'C4', 'E4'],
+      ['F3', 'A3', 'C4'],
+      ['G3', 'B3', 'D4'],
+      ['A3', 'C4', 'E4'],
+      ['A3', 'C4', 'E4'],
+      ['D3', 'F3', 'A3'],
+      ['E3', 'G#3', 'B3'],
+    ],
+    lead: [
+      'A4 . C5 . E5 . A5 .',
+      'G5 . E5 . C5 . E5 .',
+      'F5 . A5 . C6 - A5 .',
+      'G5 . D5 . B4 . D5 .',
+      'A4 . C5 . E5 . A5 .',
+      'B5 . A5 . G5 . E5 .',
+      'F5 . D5 . A4 . D5 F5',
+      'E5 - G#5 - B5 - . .',
+    ],
+    bass: [
+      'A2 . A2 . A2 . E2 .',
+      'A2 . A2 . A2 . E2 .',
+      'F2 . F2 . F2 . C3 .',
+      'G2 . G2 . G2 . D3 .',
+      'A2 . A2 . A2 . E2 .',
+      'A2 . A2 . A2 . E2 .',
+      'D2 . D2 . D2 . A2 .',
+      'E2 . E2 . E2 . G#2 .',
+    ],
+    drums: ['k h h h s h h h', 'k h k h s h s h'],
+  },
   // Relaxed theme for the menus.
   menu: {
     bpm: 92,
@@ -997,6 +1049,22 @@ class AudioEngine {
       case 'deny':
         this.tone(bus, 'square', 220, t, 0.12, 0.12, { cutoff: 1200 });
         this.tone(bus, 'square', 196, t + 0.12, 0.18, 0.12, { cutoff: 1200 });
+        break;
+      case 'tick':
+        // The auction clock counting a second: a dry wood-block tick.
+        this.tone(bus, 'triangle', 1700, t, 0.035, 0.16, { to: 1300 });
+        this.hiss(bus, t, 0.02, 0.06, 4000, 2);
+        break;
+      case 'tickUrgent':
+        // The last seconds: a brighter double beep.
+        this.tone(bus, 'square', 1320, t, 0.06, 0.08, { cutoff: 3000 });
+        this.tone(bus, 'square', 1760, t + 0.09, 0.07, 0.08, { cutoff: 3000 });
+        break;
+      case 'gavel':
+        // Sold (or no sale): the auctioneer's gavel knocks down on the block.
+        this.tone(bus, 'sine', 210, t, 0.22, 0.55, { to: 80 });
+        this.tone(bus, 'triangle', 700, t, 0.06, 0.22, { to: 350 });
+        this.hiss(bus, t, 0.05, 0.2, 1400, 1);
         break;
     }
   }

@@ -26,6 +26,23 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: '2026-11-10-auction-music-motel',
+    date: 'Nov 10, 2026',
+    title: 'Auction music and a friendlier motel',
+    features: [
+      {
+        tag: 'new',
+        title: 'Auctions sound like auctions',
+        text: 'Live auctions have their own tense music. The clock ticks each second, beeps for the last two, and a gavel knocks when it ends. Every bid still resets the 5-second clock for everyone.',
+      },
+      {
+        tag: 'rules',
+        title: 'Motel: rest, then go any way',
+        text: 'Stopping at a motel now lets you set off in any direction on your next move, like leaving the bank. Its fee drops from 25% to 15% of the cash you hold.',
+      },
+    ],
+  },
+  {
     id: '2026-11-10-invest-prompt',
     date: 'Nov 10, 2026',
     title: 'Shorter invest question',

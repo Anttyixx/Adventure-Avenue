@@ -117,7 +117,15 @@ const rnd = (n: number) => Math.floor(Math.random() * n);
  * Controls for UI elements that were just added or changed: they shake once and glow so they
  * are easy to find. Update this list with each change.
  */
-const RECENT = new Set(['Invest']);
+const RECENT = new Set([
+  'Live auction',
+  'Live auction (two players here)',
+  'Music: Going, Going... (auction)',
+  'tick',
+  'tickUrgent',
+  'gavel',
+  'Motel',
+]);
 
 /**
  * Which board the lab plays on: Town with portal links (square, the default) or Twin Lakes (hex),
@@ -2032,9 +2040,11 @@ export async function openLab(app: HTMLElement, section?: string) {
           speed: 1,
         });
         view.openBar([cur().id], (pid, act) => live.act(pid, act));
+        sound.music('auction');
         const ans = await live.run();
         view.closeBar();
         await view.end(ans.winner, ans.price, 3000);
+        sound.music(null);
       }),
       btn('Live auction (two players here)', async () => {
         // Two people on this device bid side by side; the others are CPUs.
@@ -2058,9 +2068,11 @@ export async function openLab(app: HTMLElement, section?: string) {
           speed: 1,
         });
         view.openBar(here, (pid, act) => live.act(pid, act));
+        sound.music('auction');
         const ans = await live.run();
         view.closeBar();
         await view.end(ans.winner, ans.price, 3000);
+        sound.music(null);
       }),
       btn('Info: game page', () => hud.toggleInfo('game')),
       btn('Info: stocks page', () => hud.toggleInfo('stocks')),
