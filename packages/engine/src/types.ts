@@ -56,7 +56,7 @@ export interface Square {
    * Portal links at this square: the neighbor `to`, reached through this tile's `side`, and what
    * the portal on that side lets players do (missing in older saves: both).
    */
-  portals?: { to: number; side: number; way?: PortalWay }[];
+  portals?: { to: number; side: number; toSide?: number; way?: PortalWay }[];
   /** District index 0-6 for shops and plots, else -1. */
   d: number;
   /** Group index used for expansion and domination, else -1. */

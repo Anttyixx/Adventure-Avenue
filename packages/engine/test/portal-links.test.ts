@@ -32,7 +32,7 @@ describe('portal links', () => {
     const one = game.destinations(p, 1).map((r) => r.node);
     expect(one).toContain(at(G, 5, 6).id);
     expect(one).toContain(at(G, 6, 0).id);
-    expect(at(G, 5, 0).portals).toEqual([{ to: at(G, 5, 6).id, side: 2, way: 'both' }]);
+    expect(at(G, 5, 0).portals).toEqual([{ to: at(G, 5, 6).id, side: 2, toSide: 3, way: 'both' }]);
     // Coming back through the portal counts as turning back.
     p.node = at(G, 5, 6).id;
     p.prev = at(G, 5, 0).id;
@@ -44,8 +44,8 @@ describe('portal links', () => {
     b.portalLinks![0].oneWay = true;
     const { G, game } = play(b);
     const p = G.players[0];
-    expect(at(G, 5, 0).portals).toEqual([{ to: at(G, 5, 6).id, side: 2, way: 'in' }]);
-    expect(at(G, 5, 6).portals).toEqual([{ to: at(G, 5, 0).id, side: 3, way: 'out' }]);
+    expect(at(G, 5, 0).portals).toEqual([{ to: at(G, 5, 6).id, side: 2, toSide: 3, way: 'in' }]);
+    expect(at(G, 5, 6).portals).toEqual([{ to: at(G, 5, 0).id, side: 3, toSide: 2, way: 'out' }]);
     p.node = at(G, 5, 0).id;
     p.prev = at(G, 4, 0).id;
     expect(game.destinations(p, 1).map((r) => r.node)).toContain(at(G, 5, 6).id);
@@ -103,5 +103,40 @@ describe('portal links', () => {
     const broken = structuredClone(TEST_TOWN);
     broken.portalLinks = [{ a: 0, b: 0, sa: 0, sb: 1 }];
     expect(validateBoard(broken).errors).toContain('The board has a broken portal link.');
+  });
+});
+
+describe('portal endpoint registration', () => {
+  it('keeps both portal rings when a road already joins the tiles', () => {
+    const b = structuredClone(TEST_TOWN);
+    const a = idx(b, 5, 0),
+      c = idx(b, 6, 0);
+    b.portalLinks = [{ a, b: c, sa: 2, sb: 2, oneWay: true }];
+    const { G, game } = play(b);
+    expect(G.nodes[a].portals).toEqual([{ to: c, side: 2, toSide: 2, way: 'in' }]);
+    expect(G.nodes[c].portals).toEqual([{ to: a, side: 2, toSide: 2, way: 'out' }]);
+    expect(G.nodes[a].nb.filter((id) => id === c)).toHaveLength(1);
+    expect(G.nodes[c].nb.filter((id) => id === a)).toHaveLength(1);
+    const p = G.players[0];
+    p.node = a;
+    p.prev = -1;
+    expect(game.destinations(p, 1).map((r) => r.node)).toContain(c);
+    p.node = c;
+    expect(game.destinations(p, 1).map((r) => r.node)).not.toContain(a);
+  });
+
+  it('preserves distinct portal pairs between the same two tiles and after board-file reload', () => {
+    const b = portalTown();
+    const a = idx(b, 5, 0),
+      c = idx(b, 5, 6);
+    b.portalLinks!.push({ a: c, b: a, sa: 2, sb: 3 });
+    const saved = boardFromFile(JSON.parse(JSON.stringify(boardToFile(b))), 'parallel').board!;
+    const { G } = play(saved);
+    expect(G.nodes[a].portals).toEqual([
+      { to: c, side: 2, toSide: 3, way: 'both' },
+      { to: c, side: 3, toSide: 2, way: 'both' },
+    ]);
+    expect(G.nodes[c].portals).toHaveLength(2);
+    expect(G.nodes[a].nb.filter((id) => id === c)).toHaveLength(1);
   });
 });

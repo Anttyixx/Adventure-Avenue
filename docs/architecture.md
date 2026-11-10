@@ -148,7 +148,7 @@ room, Continue resumes the saved game, and the board editor (`ui/editor.ts`).
   Park chunks desaturate the source and add smooth world-aligned earth/woodland color fields.
   The stream geometry stays beyond the west/south playable rectangle; its irregular ribbon
   clips a world-aligned water PNG and uses no engine state changes. `drawParkGround` follows
-  `roadPieces` in the static cache for warm verges, including actual portal stems, with no
+  `roadPieces` in the static cache for warm verges, leaving portal stems at normal road width, with no
   decorative fake routes. Scenery groups avoid the water; all props use soft contact shadows. `sceneryForBoard` supplies smaller sprites
   inside the static board cache. Both use an independent coordinate hash, avoid gameplay
   geometry and leave engine state/randomness unchanged. `props.ts` maps base-only scenery
@@ -186,6 +186,16 @@ the choice; `status()` shows what is happening; `updateInsets()` moves it bottom
 `.ab-left` when the window is too narrow to center it), the Game log button (in the toolbar) and the log panel it opens, the player cards
 (bottom right; clicking one opens that player's info page, drawn by `ui/overview.ts`), tooltips, banners,
 and modals (`modal()` for any centered dialog). It re-renders from the state on `render(G)`.
+
+### Portal rendering and travel
+
+`newGame` registers all portal endpoints independently of graph-neighbor deduplication. Runtime
+portal records include optional `toSide`; this keeps parallel links paired correctly and remains
+compatible with older saves. `portal-links.ts` resolves exact partner sides and allowed flow;
+`portal-link-art.ts` draws shared directional feedback for the editor and portal-tap effects.
+`portal-travel.ts` provides pure poses for `BoardView.portalStep`, which updates the die once,
+animates for `TIMING.portalStep`, clears the transient token pose and resumes normal stepping.
+`drawTokens` transforms only the traveling sprite and hides its name/base until arrival.
 
 ### Online play (`net/`)
 

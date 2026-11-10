@@ -112,6 +112,10 @@ Everything is re-exported from `index.ts`, so the client imports from `'@aa/engi
 `park-geometry.ts` defines the cosmetic stream and planting clearance outside the playable map.
 `park.ts` paints its textured water, organic banks and contact shadows beneath scenery.
 
+`portal-links.ts` resolves exact reciprocal endpoints and permitted flow. `portal-link-art.ts`
+draws one-way and two-way arcs for the builder/game. `portal-travel.ts` supplies the pure pull-in,
+vanish and launch-out poses used by `BoardView.portalStep`.
+
 ### Art
 
 | File                | What it does                                                                                                       | Key exports                                                                                                |

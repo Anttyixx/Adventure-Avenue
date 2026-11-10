@@ -116,7 +116,12 @@ const rnd = (n: number) => Math.floor(Math.random() * n);
  * Controls for UI elements that were just added or changed: they shake once and glow so they
  * are easy to find. Update this list with each change.
  */
-const RECENT = new Set(['Park landscape: square', 'Park landscape: hex', 'Tile sprites and tint layers']);
+const RECENT = new Set([
+  'Portal: entrance to exit',
+  'Portal: two-way flow',
+  'Travel through a portal',
+  'Portal links in the builder',
+]);
 
 /**
  * Which board the lab plays on: Town with portal links (square, the default) or Twin Lakes (hex),
@@ -935,10 +940,30 @@ export async function openLab(app: HTMLElement, section?: string) {
     // leading to one exit). Show one, as a tap does, or open the board in the builder.
     row(
       s,
-      btn('Show where a portal leads', () => {
-        const gate = portalGates(G)[0];
-        if (!gate) return hud.tick('This board has no portals: switch back with Square / hex board.');
-        board.showPortal(gate);
+      ...(['out', 'both'] as const).map((way) =>
+        btn(way === 'out' ? 'Portal: entrance to exit' : 'Portal: two-way flow', () => {
+          const gate = portalGates(G).find((g) => g.way === way);
+          if (!gate) return hud.tick('Switch to the square board to try its portals.');
+          board.showPortal(gate);
+        }),
+      ),
+      btn('Travel through a portal', async () => {
+        const gate = portalGates(G).find((g) => g.way !== 'out');
+        if (!gate) return hud.tick('Switch to the square board to try its portals.');
+        const p = cur(),
+          was = p.node;
+        p.node = gate.node;
+        board.snapTokens();
+        board.activePid = p.id;
+        board.peekWhole = true;
+        p.node = gate.to[0];
+        try {
+          await board.portalStep(p.id, gate.node, p.node, 0);
+        } finally {
+          p.node = was;
+          board.peekWhole = false;
+          board.snapTokens();
+        }
       }),
       btn('Portal links in the builder', () =>
         openLabBuilder(root, portalTown(), '.ed-tool-button[aria-label="Links"]', () =>

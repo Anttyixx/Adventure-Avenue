@@ -24,6 +24,9 @@ import { paintParkScenery, paintParkStream } from './park';
 import { drawBoonIcon, drawCoin, drawSparkle, SUIT_CHARS } from './icons';
 import { Facing, FRAME_H, FRAME_W, drawCharacter, drawCharacterGlow, facingFor } from './sprites';
 import { TIMING as T } from './timing';
+import { portalFlows, portalPartner } from './portal-links';
+import { drawLink } from './portal-link-art';
+import { portalTravelPose } from './portal-travel';
 
 import { ZOOM_MAX_OUT, fitZoom, gameNearZoom, zoomScale, wheelZoomStep } from './zoom';
 export { ZOOM_STEP } from './zoom';
@@ -52,6 +55,7 @@ interface Token {
   hop: number;
   walking: boolean;
   visible: boolean;
+  portal?: ReturnType<typeof portalTravelPose>;
   /** Which way the character faces: the way it is walking, or toward the viewer at rest. */
   facing: Facing;
   /** Drawn size, easing toward bigger for the active player and smaller for the others. */
@@ -340,16 +344,7 @@ export class BoardView {
     const from = { x: t.x, y: t.y };
     const dest = this.center(this.G!.nodes[to]);
     dest.y -= 12;
-    // The die beside the player counts down as the step starts.
-    if (this.die?.phase === 'small' && pid === this.activePid && this.die.count !== left) {
-      this.die.prev = this.die.count;
-      this.die.count = left;
-      this.die.changed = performance.now();
-      // A different flip from last time: sideways, up and over, or along either diagonal.
-      const last = this.die.flip ?? -1;
-      const pick = Math.floor(Math.random() * (DIE_FLIPS - 1));
-      this.die.flip = pick >= last && last >= 0 ? pick + 1 : pick;
-    }
+    this.countStep(pid, left);
     clearTimeout(t.pause);
     t.walking = true;
     t.facing = facingFor(dest.x - from.x, dest.y - from.y);
@@ -367,6 +362,23 @@ export class BoardView {
       };
       tick();
     });
+    this.finishStep(t, left);
+  }
+
+  private countStep(pid: number, left: number) {
+    // The die beside the player counts down as the step starts.
+    if (this.die?.phase === 'small' && pid === this.activePid && this.die.count !== left) {
+      this.die.prev = this.die.count;
+      this.die.count = left;
+      this.die.changed = performance.now();
+      // A different flip from last time: sideways, up and over, or along either diagonal.
+      const last = this.die.flip ?? -1;
+      const pick = Math.floor(Math.random() * (DIE_FLIPS - 1));
+      this.die.flip = pick >= last && last >= 0 ? pick + 1 : pick;
+    }
+  }
+
+  private finishStep(t: Token, left: number) {
     t.hop = 0;
     // Steps follow each other at once; if the walk stalls (a pop-up or a choice on the way),
     // the character stands still until it carries on.
@@ -378,39 +390,79 @@ export class BoardView {
     }
   }
 
-  /**
-   * A step through a portal link: walk into the ring beside `from`, pop out of the ring beside
-   * `to`, then walk onto that tile.
-   */
+  /** Squeeze into the entrance, vanish briefly, then launch from the exact paired exit. */
   async portalStep(pid: number, from: number, to: number, left: number) {
     const G = this.G!;
     const t = this.tokens.get(pid)!;
-    const gate = G.nodes[from].portals?.find((q) => q.to === to);
-    const back = G.nodes[to].portals?.find((q) => q.to === from);
+    const gate = G.nodes[from].portals?.find((q) => q.to === to && q.way !== 'out');
+    const back = gate && portalPartner(G, from, gate);
     if (!gate || !back) return this.step(pid, to, left);
-    const into = portalPoint(G, G.nodes[from], gate.side);
+    this.countStep(pid, left);
+    clearTimeout(t.pause);
+    t.walking = false;
     const start = { x: t.x, y: t.y };
-    t.walking = true;
-    t.facing = facingFor(into.x - start.x, into.y - start.y);
-    const dur = (T.step / 2) * this.speed;
+    const entrance = portalPoint(G, G.nodes[from], gate.side);
+    const exit = portalPoint(G, G.nodes[to], back.side);
+    entrance.y -= 12;
+    exit.y -= 12;
+    const target = this.center(G.nodes[to]);
+    target.y -= 12;
+    if (reducedMotion()) {
+      t.x = target.x;
+      t.y = target.y;
+      this.finishStep(t, left);
+      return;
+    }
+    const color = this.portalSpots.find((p) => p.node === from && p.side === gate.side)?.color ?? '#a78bfa';
     const t0 = performance.now();
+    let entered = false,
+      emerged = false;
     await new Promise<void>((resolve) => {
       const tick = () => {
-        const k = Math.min(1, (performance.now() - t0) / dur);
-        const e = ease(k);
-        t.x = start.x + (into.x - start.x) * e;
-        t.y = start.y + (into.y - 12 - start.y) * e;
+        const k = Math.min(1, (performance.now() - t0) / (T.portalStep * this.speed));
+        const pose = portalTravelPose(k, start, entrance, exit, target);
+        t.portal = pose;
+        t.x = pose.x;
+        t.y = pose.y;
+        t.hop = pose.hop;
+        t.facing = pose.exiting
+          ? facingFor(target.x - exit.x, target.y - exit.y)
+          : facingFor(entrance.x - start.x, entrance.y - start.y);
+        if (!entered && k >= 0.4) {
+          entered = true;
+          this.portalBurst({ x: entrance.x, y: entrance.y + 12 }, color);
+        }
+        if (!emerged && k >= 0.55) {
+          emerged = true;
+          this.portalBurst({ x: exit.x, y: exit.y + 12 }, color);
+        }
         if (k < 1 && this.alive) requestAnimationFrame(tick);
         else resolve();
       };
       tick();
     });
-    this.ring(from, '#ffffff');
-    const out = portalPoint(G, G.nodes[to], back.side);
-    t.x = out.x;
-    t.y = out.y - 12;
-    this.ring(to, '#ffffff');
-    await this.step(pid, to, left);
+    delete t.portal;
+    t.x = target.x;
+    t.y = target.y;
+    t.walking = left > 0;
+    this.finishStep(t, left);
+  }
+
+  private portalBurst(at: { x: number; y: number }, color: string) {
+    this.fx.push({
+      t0: performance.now(),
+      dur: 260 * this.speed,
+      draw: (ctx, k) => {
+        ctx.save();
+        ctx.globalAlpha = (1 - k) * 0.7;
+        ctx.strokeStyle = color;
+        ctx.lineWidth = 4 * (1 - k) + 1;
+        ctx.beginPath();
+        ctx.arc(at.x, at.y, 13 + k * 24, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.restore();
+      },
+    });
   }
 
   async warp(pid: number, to: number) {
@@ -1030,7 +1082,7 @@ export class BoardView {
     return (
       this.portalSpots.find((g) => {
         const at = portalPoint(this.G!, this.G!.nodes[g.node], g.side);
-        return Math.hypot(at.x - w.x, at.y - w.y) <= 22;
+        return Math.hypot(at.x - w.x, at.y - w.y) <= 26;
       }) ?? null
     );
   }
@@ -1060,11 +1112,12 @@ export class BoardView {
    */
   private flashPortals(gate: PortalGate) {
     const G = this.G!;
+    const flows = portalFlows(G, gate);
     const spots = [
       portalPoint(G, G.nodes[gate.node], gate.side),
-      ...gate.to.flatMap((to) => {
-        const back = G.nodes[to]?.portals?.find((q) => q.to === gate.node);
-        return back ? [portalPoint(G, G.nodes[to], back.side)] : [];
+      ...flows.map((f) => {
+        const other = f.from.node === gate.node && f.from.side === gate.side ? f.to : f.from;
+        return portalPoint(G, G.nodes[other.node], other.side);
       }),
     ];
     const pulses = 3;
@@ -1072,6 +1125,16 @@ export class BoardView {
       t0: performance.now(),
       dur: T.portalShow * this.speed,
       draw: (ctx, k) => {
+        for (const flow of flows)
+          drawLink(
+            ctx,
+            portalPoint(G, G.nodes[flow.from.node], flow.from.side),
+            portalPoint(G, G.nodes[flow.to.node], flow.to.side),
+            gate.color,
+            this.cam.z * this.dpr,
+            reducedMotion(),
+            flow.both,
+          );
         // Each pulse: a quick light-up, then a slower fade.
         const t = (k * pulses) % 1;
         const light = t < 0.2 ? t / 0.2 : Math.max(0, 1 - (t - 0.2) / 0.6);
@@ -1623,6 +1686,17 @@ export class BoardView {
         }
       }
       const sy = footY - hop * this.cam.z * this.dpr;
+      if (t.portal) {
+        ctx.save();
+        ctx.globalAlpha = t.portal.alpha;
+        ctx.translate(sx, sy + px * 3);
+        ctx.rotate(t.portal.turn);
+        ctx.scale(t.portal.sx, t.portal.sy);
+        drawCharacterGlow(ctx, p.ch, false, facing, frame, 0, 0, px);
+        drawCharacter(ctx, p.ch, false, facing, frame, 0, 0, px);
+        ctx.restore();
+        continue;
+      }
       ctx.save();
       ctx.imageSmoothingEnabled = true;
       ctx.fillStyle = 'rgba(0,0,0,0.28)';
@@ -1900,7 +1974,8 @@ export function portalGates(G: GameState) {
   };
   for (const gate of gates.values())
     for (const to of gate.to) {
-      const back = G.nodes[to]?.portals?.find((q) => q.to === gate.node);
+      const link = G.nodes[gate.node].portals?.find((p) => p.side === gate.side && p.to === to);
+      const back = link && portalPartner(G, gate.node, link);
       if (!back || !gates.has(keyOf(to, back.side))) continue;
       const [x, y] = [root(keyOf(gate.node, gate.side)), root(keyOf(to, back.side))];
       if (x !== y) gates.get(y)!.group = x;
@@ -1931,31 +2006,31 @@ export function drawPortalRing(
   if (propCanvas('portal-side', color)) {
     ctx.save();
     ctx.translate(at.x, at.y);
-    drawStamp(ctx, 'portal-side', color, 0, 0, 40, 40);
+    drawStamp(ctx, 'portal-side', color, 0, 0, 48, 48);
     ctx.rotate(turn);
-    drawStamp(ctx, 'portal-swirl', '#ffffff', 0, 0, 40, 40);
+    drawStamp(ctx, 'portal-swirl', '#ffffff', 0, 0, 48, 48);
     ctx.rotate(-turn * 2.3);
-    drawStamp(ctx, 'portal-swirl-inner', '#ffffff', 0, 0, 40, 40);
+    drawStamp(ctx, 'portal-swirl-inner', '#ffffff', 0, 0, 48, 48);
     ctx.restore();
     return;
   }
   ctx.save();
   ctx.translate(at.x, at.y);
   ctx.beginPath();
-  ctx.arc(0, 0, 17, 0, Math.PI * 2);
+  ctx.arc(0, 0, 21, 0, Math.PI * 2);
   ctx.fillStyle = color;
   ctx.fill();
   ctx.lineWidth = 3;
   ctx.strokeStyle = '#fff';
   ctx.stroke();
   ctx.beginPath();
-  ctx.arc(0, 0, 10.5, 0, Math.PI * 2);
+  ctx.arc(0, 0, 13, 0, Math.PI * 2);
   ctx.fillStyle = '#16213f';
   ctx.fill();
   ctx.lineCap = 'round';
   for (const [r, width, spin] of [
-    [6.8, 2.4, turn],
-    [3.4, 1.8, -turn * 1.3],
+    [8.4, 2.8, turn],
+    [4.2, 2, -turn * 1.3],
   ] as const) {
     ctx.lineWidth = width;
     for (const start of [0, Math.PI]) {
@@ -2184,7 +2259,13 @@ const ROAD = { edge: '#c9b07a', fill: '#efe0b6', arrow: '#a07b3f' };
  * `at` is where along the piece a one-way arrow goes (the middle of the part that shows).
  */
 function roadPieces(G: GameState) {
-  type Piece = { from: { x: number; y: number }; to: { x: number; y: number }; dir: number; at: number };
+  type Piece = {
+    from: { x: number; y: number };
+    to: { x: number; y: number };
+    dir: number;
+    at: number;
+    portal?: boolean;
+  };
   const pieces: Piece[] = [];
   const blocked = (a: number, b: number) => !!G.nodes[a]?.noGo?.includes(b);
   for (const sq of G.nodes) {
@@ -2200,7 +2281,7 @@ function roadPieces(G: GameState) {
       if (seen.has(p.side)) continue;
       seen.add(p.side);
       const dir = p.way === 'in' ? 1 : p.way === 'out' ? -1 : 0;
-      pieces.push({ from: a, to: portalPoint(G, sq, p.side), dir, at: 0.68 });
+      pieces.push({ from: a, to: portalPoint(G, sq, p.side), dir, at: 0.68, portal: true });
     }
   }
   return pieces;
@@ -2362,6 +2443,7 @@ function drawParkGround(ctx: CanvasRenderingContext2D, G: GameState) {
     ctx.lineWidth = width;
     ctx.beginPath();
     for (const p of pieces) {
+      if (p.portal) continue;
       ctx.moveTo(p.from.x, p.from.y);
       ctx.lineTo(p.to.x, p.to.y);
     }

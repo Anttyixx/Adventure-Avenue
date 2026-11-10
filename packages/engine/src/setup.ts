@@ -43,11 +43,12 @@ export function newGame(opts: MatchOptions): GameState {
   }
   // Portal links: neighbors through a tile side, wherever they are on the board.
   for (const { a, b, sa, sb, oneWay } of board.portalLinks ?? []) {
-    if (!nodes[a] || !nodes[b] || a === b || nodes[a].nb.includes(b)) continue;
-    nodes[a].nb.push(b);
-    nodes[b].nb.push(a);
-    (nodes[a].portals ??= []).push({ to: b, side: sa, way: oneWay ? 'in' : 'both' });
-    (nodes[b].portals ??= []).push({ to: a, side: sb, way: oneWay ? 'out' : 'both' });
+    if (!nodes[a] || !nodes[b] || a === b) continue;
+    // A road (or another portal) may already join these tiles. Keep every visible endpoint.
+    if (!nodes[a].nb.includes(b)) nodes[a].nb.push(b);
+    if (!nodes[b].nb.includes(a)) nodes[b].nb.push(a);
+    (nodes[a].portals ??= []).push({ to: b, side: sa, toSide: sb, way: oneWay ? 'in' : 'both' });
+    (nodes[b].portals ??= []).push({ to: a, side: sb, toSide: sa, way: oneWay ? 'out' : 'both' });
     // Out of an exit there's no way back in.
     if (oneWay) (nodes[b].noGo ??= []).push(a);
   }

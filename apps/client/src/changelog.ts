@@ -26,6 +26,23 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: '2026-11-09-portal-flow',
+    date: 'Nov 9, 2026',
+    title: 'Clearer portal links',
+    features: [
+      {
+        tag: 'fix',
+        title: 'Every portal stays visible',
+        text: 'Creating a portal between tiles that already connect now keeps both portal rings. Separate links between the same tiles keep their own endpoints. Larger rings meet the approach paths cleanly.',
+      },
+      {
+        tag: 'better',
+        title: 'Follow the flow',
+        text: 'One-way link animations always run from entrance to exit. Two-way links show opposing flows. Players squeeze into a portal and launch from the paired exit in a quick new animation.',
+      },
+    ],
+  },
+  {
     id: '2026-11-09-park-landscape',
     date: 'Nov 9, 2026',
     title: 'A town in a living park',

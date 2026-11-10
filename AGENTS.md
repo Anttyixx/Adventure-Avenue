@@ -103,6 +103,7 @@ Requests refer to parts of the game by these names:
     **status line** when no options are up; it morphs between the two. `ui/status-messages.ts` gives new action phases priority over old results, protects brief in-phase overlays and debounces idle activity; actual choices interrupt stale announcements.
   - **player cards:** bottom right. Clicking one opens that player's page in the info pop-up
     (drawn by `ui/overview.ts`).
+- **Portal links:** `newGame` must register endpoint metadata even when a graph edge already exists. Keep `toSide` paired correctly, with a fallback for older saves. `portal-links.ts`, `portal-link-art.ts` and `portal-travel.ts` share direction and travel feedback; `TIMING.portalStep` controls its duration.
 - **Board** (`apps/client/src/board.ts`):
   - **tiles/squares**, **districts** (color groups of shops), **vacant plots** (empty properties
     that get a building).

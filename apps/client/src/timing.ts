@@ -6,6 +6,8 @@
 export const TIMING = {
   /** Walking one square. */
   step: 420,
+  /** Pull into a portal, disappear briefly, then launch onto the destination tile. */
+  portalStep: 720,
   /** Pause after a destination is chosen, before the token starts walking. */
   afterChoice: 500,
   /** Flying to a square (warps, cannon, balloon, portal). */

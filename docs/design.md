@@ -975,6 +975,15 @@ Bright and physical, unlike the dark HUD:
 
 ---
 
+Portal link feedback uses shared `portal-link-art.ts` arcs in the builder and game. One-way
+arcs run from the actual entrance to exit, independent of selection; two-way links draw two
+opposing arches, with glowing heads/tails and a static chevron on each lane. Keep line widths
+in screen pixels at every zoom. Reduced motion freezes the dots but retains directional arrows.
+Side portal frames are 48 world units to meet the 44-unit road; their hit radius is 26 units.
+Portal travel is a 720ms pull-in / brief disappearance / launch-out pose, with soft local bursts,
+no nameplate or base disc during transit, and a small landing hop. Keep the character readable
+until it enters and restore its full size afterward; reduced motion skips this transformation.
+
 ## 8. Layout and responsive
 
 - HUD hugs corners with 10px margins; the board fills the screen behind it; the camera keeps

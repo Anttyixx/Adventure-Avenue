@@ -172,6 +172,22 @@ tiles of every portal it links to for 2 seconds, then goes back to the zoom it h
 pop-up goes away). Meanwhile the portal and the portals it links to flash together three times:
 each ring lights up white and a glow in its color spreads out (the tiles get no effect).
 
+Portal endpoints are registered even when their two tiles already have a road connection or
+another portal link. Neighbor lists stay unique; each portal retains its own source/destination
+side. Old saves without the destination-side field use the previous first-matching fallback.
+The portal frame is 48 world units across (formerly 40), matching the 44-unit approach road;
+hit targets grow to match. Portal approach paths keep their normal road width rather than the
+wide decorative ground verge. Canvas fallback rings grow proportionally.
+Selected links in the builder and portal-tap feedback in games show directional arcs. One-way
+flow always runs entrance to exit, including when the exit is selected. Two-way links have
+separate opposing curved lanes. Moving dots have tails and fixed chevrons retain direction with
+reduced motion.
+A portal step takes 720ms at normal speed (ordinary steps: 420ms): the character accelerates
+into the entrance while shrinking, disappears briefly, then grows and hops out of the exact
+paired exit onto its target tile. Name/base markers hide during transit; entrance/exit rings
+pulse locally. The remaining-steps die updates once, movement continues with unused steps,
+and reduced motion places the character directly at the exit tile without distortion.
+
 Rings share a color per group (a pair, or an exit and all its entrances): purple, cyan, pink,
 amber, green, blue, in board order. The token walks into one ring and comes out of the other; the
 route preview's dotted line does the same, and the direction arrow points out through the
