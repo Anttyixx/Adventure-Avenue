@@ -277,14 +277,18 @@ export class BoardView {
     this.canvas.addEventListener('pointercancel', this.pinchUp);
     this.raf = requestAnimationFrame(this.frame);
     // The static board is cached; redraw it once the web fonts arrive so labels use them.
-    document.fonts?.ready.then(() => (this.dirty = true));
+    document.fonts?.ready.then(() => this.redrawAll());
     document.fonts?.addEventListener('loadingdone', this.fontsLoaded);
     for (const f of ['20px "Lilita One"', '700 12px "Atkinson Hyperlegible"']) void document.fonts?.load(f);
   }
 
-  private fontsLoaded = () => {
+  private fontsLoaded = () => this.redrawAll();
+
+  /** Re-draw the whole board picture next frame (not just the squares that changed). */
+  redrawAll() {
+    this.looks = [];
     this.dirty = true;
-  };
+  }
 
   destroy() {
     this.alive = false;
@@ -301,6 +305,8 @@ export class BoardView {
   setState(G: GameState) {
     this.G = G;
     this.dirty = true;
+    this.looks = [];
+    this.tints = tintJobs(G);
     this.scheduleWarm();
     for (const p of G.players) {
       if (!this.tokens.has(p.id)) {
@@ -1251,10 +1257,21 @@ export class BoardView {
     else setTimeout(() => this.warm(), 200);
   }
 
+  /** Recolored images still to make ahead of time (see `tintJobs`). */
+  private tints: [PropKey, string][] = [];
+
   private warm = (deadline?: IdleDeadline) => {
     this.warming = false;
     const G = this.G;
-    if (!this.alive || !G || GROUND_SET === 'solid') return;
+    if (!this.alive || !G) return;
+    // Recoloring an image takes a moment the first time each color is used: do the ones a
+    // player's first purchase needs now, rather than in the middle of the purchase.
+    while (this.tints.length) {
+      const [key, color] = this.tints.pop()!;
+      propCanvas(key, color);
+      if (!deadline || deadline.timeRemaining() < 8) return this.scheduleWarm();
+    }
+    if (GROUND_SET === 'solid') return;
     const paint = groundPainter(G);
     const far = this.zoomFor(ZOOM_MAX_OUT);
     const farLevel = chunkLevel(far * this.dpr);
@@ -1303,8 +1320,9 @@ export class BoardView {
     // The board picture only gets sharper, never re-drawn smaller: a sharper one shrinks fine,
     // and re-drawing the whole board as the camera zooms out made the zoom stutter.
     const want = Math.min(this.maxCacheScale(), Math.max(1, Math.ceil(this.camTarget.z * this.dpr * 2) / 2));
-    if (this.dirty || (want > this.cacheScale && !zooming))
+    if (want > this.cacheScale && !zooming)
       this.renderStatic(Math.max(want, Math.min(this.cacheScale, this.maxCacheScale())));
+    else if (this.dirty) this.updateStatic();
 
     const { fx, fy } = this.focusArea();
     const z = this.cam.z * this.dpr;
@@ -1991,19 +2009,134 @@ export class BoardView {
     return Math.max(0.5, Math.min(3, Math.floor(fit * 4) / 4));
   }
 
+  /**
+   * What each square looked like when the board picture was drawn (`squareLook`), so a change
+   * re-draws only the squares that look different. Empty: the whole picture must be drawn.
+   */
+  private looks: string[] = [];
+
+  /**
+   * The state changed: re-draw just the squares whose look changed (buying a shop re-draws one
+   * tile and its neighbors' edges, not the whole board), or everything when many changed.
+   */
+  private updateStatic() {
+    const G = this.G!;
+    this.dirty = false;
+    if (!this.looks.length || this.cacheScale <= 0) return this.renderStatic(this.cacheScale || 1);
+    const changed: number[] = [];
+    for (const sq of G.nodes) if (squareLook(G, sq) !== this.looks[sq.id]) changed.push(sq.id);
+    if (!changed.length) return;
+    if (changed.length > Math.max(8, G.nodes.length / 3)) return this.renderStatic(this.cacheScale);
+    for (const id of changed) this.looks[id] = squareLook(G, G.nodes[id]);
+    repaintSquares(this.cache, this.cacheScale, G, changed);
+  }
+
   private renderStatic(scale: number) {
     const G = this.G!;
     this.dirty = false;
     this.cacheScale = scale;
+    this.looks = G.nodes.map((sq) => squareLook(G, sq));
     const cv = this.cache;
     cv.width = Math.round(this.ww * scale);
     cv.height = Math.round(this.wh * scale);
     const ctx = cv.getContext('2d')!;
+    // Saved and restored so the context is back at its defaults for `repaintSquares`.
+    ctx.save();
     ctx.setTransform(scale, 0, 0, scale, 0, 0);
     // Portals spin, so they're drawn every frame instead (drawPortals).
     paintBoard(ctx, G, false, true, false);
+    ctx.restore();
     this.portalSpots = portalGates(G);
   }
+}
+
+/**
+ * The recolored images a player's purchases first need (`drawSquare`): owned tiles at both tint
+ * strengths, the flag and every shop design, for each player's color. Colors are written the way
+ * a canvas writes them back (`String(ctx.fillStyle)`), as `drawSquare` asks for them.
+ */
+function tintJobs(G: GameState): [PropKey, string][] {
+  const L = G.layout === 'hex' ? 'hex' : 'square';
+  const ctx = document.createElement('canvas').getContext('2d')!;
+  const css = (c: string) => {
+    ctx.fillStyle = c;
+    return String(ctx.fillStyle);
+  };
+  const jobs: [PropKey, string][] = [];
+  for (const p of G.players) {
+    const color = PLAYER_COLORS[p.color];
+    jobs.push([`${L}-tile`, css(tint(color, 0.62))], [`${L}-tile`, css(tint(color, 0.22))], ['flag', color]);
+    for (const tier of [0, 1, 2, 3, 4] as const) jobs.push([`shop${tier}`, color]);
+  }
+  return jobs.reverse();
+}
+
+/**
+ * How far a square's drawing reaches from its center, in world units: the tile, its shadow, the
+ * owner's flag and the art all stay inside this box.
+ */
+const SQUARE_REACH = 90;
+
+/**
+ * Everything that decides how a square is drawn on the static board, as one string: if it is the
+ * same as last time, the square looks the same (fees depend on the whole district, so they are
+ * included as worked out, as are the owner's color and initial).
+ */
+function squareLook(G: GameState, sq: Square): string {
+  const owner = sq.owner >= 0 ? G.players[sq.owner] : null;
+  const fee = !owner || sq.t === 'bank' ? '' : sq.b === 'motel' ? motelFee(G, sq) : squareFee(G, sq);
+  const district = sq.d >= 0 ? G.districts[sq.d]?.color : '';
+  const extra = sq.t === 'change' ? G.changeSuit : sq.t === 'broker' ? G.rules : '';
+  return JSON.stringify([sq, owner?.color, owner?.name[0], fee, district, extra]);
+}
+
+/**
+ * Re-draw some squares on a board picture drawn by `paintBoard(ctx, G, false, true, false)` at
+ * `scale`: each one's box is cleared (on whole device pixels, so no seam shows) and everything
+ * reaching into it is painted again, in the same order as the full picture.
+ */
+function repaintSquares(cv: HTMLCanvasElement, scale: number, G: GameState, ids: number[]) {
+  const ctx = cv.getContext('2d')!;
+  const boxes = ids.map((id) => {
+    const c = squareCenter(G.nodes[id], G.layout);
+    const x0 = Math.max(0, Math.floor((c.x - SQUARE_REACH) * scale));
+    const y0 = Math.max(0, Math.floor((c.y - SQUARE_REACH) * scale));
+    const x1 = Math.min(cv.width, Math.ceil((c.x + SQUARE_REACH) * scale));
+    const y1 = Math.min(cv.height, Math.ceil((c.y + SQUARE_REACH) * scale));
+    return { x0, y0, x1, y1 };
+  });
+  ctx.save();
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  const clip = new Path2D();
+  for (const b of boxes) {
+    ctx.clearRect(b.x0, b.y0, b.x1 - b.x0, b.y1 - b.y0);
+    clip.rect(b.x0, b.y0, b.x1 - b.x0, b.y1 - b.y0);
+  }
+  ctx.clip(clip);
+  ctx.setTransform(scale, 0, 0, scale, 0, 0);
+  drawScenery(ctx, G, true);
+  for (const sq of G.nodes) {
+    const c = squareCenter(sq, G.layout);
+    const near = boxes.some(
+      (b) =>
+        (c.x + SQUARE_REACH) * scale > b.x0 &&
+        (c.x - SQUARE_REACH) * scale < b.x1 &&
+        (c.y + SQUARE_REACH) * scale > b.y0 &&
+        (c.y - SQUARE_REACH) * scale < b.y1,
+    );
+    if (near) drawSquareClean(ctx, G, sq);
+  }
+  ctx.restore();
+}
+
+/**
+ * Draw a square with the context's settings put back afterwards, so no square depends on what the
+ * one before it left behind (a partial re-draw starts from a different square than a full one).
+ */
+function drawSquareClean(ctx: CanvasRenderingContext2D, G: GameState, sq: Square) {
+  ctx.save();
+  drawSquare(ctx, G, sq);
+  ctx.restore();
 }
 
 /** Draw scenery, roads and tiles. Live views paint grass separately beneath this transparent layer. */
@@ -2016,7 +2149,7 @@ export function paintBoard(
 ) {
   if (background) paintGrass(ctx, decorations ? G : undefined);
   drawScenery(ctx, G, decorations);
-  for (const sq of G.nodes) drawSquare(ctx, G, sq);
+  for (const sq of G.nodes) drawSquareClean(ctx, G, sq);
   // Still pictures draw portals here; live views spin them each frame with drawPortals.
   if (portals) drawPortals(ctx, G, 0);
 }

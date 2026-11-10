@@ -1218,8 +1218,11 @@ by the owner on Oct 23, 2026; the original spec drew suits, coins and wild cards
 
 **Board (HD canvas).** Logical size 1300 x 800 with 100-unit squares, scaled to the container and to
 devicePixelRatio. The static board (roads, pond, fountain, flower beds, trees, every square)
-is drawn into a cached offscreen canvas and redrawn when state changes; each frame draws the
-ground, that cache, then highlights, sprites, coins, floating text and the die. The cache gets
+is drawn into a cached offscreen canvas. When state changes, only the squares that look different
+are redrawn (each square's look is compared: owner, value, building, fee...); events that change
+no square's look redraw nothing, and a full redraw happens only when many squares change at once.
+Each player's tile, flag and shop colors are prepared in idle time at the start of a game. Each
+frame draws the ground, that cache, then highlights, sprites, coins, floating text and the die. The cache gets
 sharper as the camera zooms in (up to 3x, capped at 16 million pixels for big boards), but only
 once the zoom has settled, never in the middle of it.
 

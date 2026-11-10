@@ -26,6 +26,19 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: '2026-11-10-quick-redraws',
+    date: 'Nov 10, 2026',
+    title: 'No more hitches when things change',
+    features: [
+      {
+        tag: 'better',
+        title: 'Only what changed is redrawn',
+        text: 'Buying a shop, a price going up or a building going in now redraws just that tile, not the whole board. Payments, suits and promotions no longer redraw the board at all.',
+      },
+    ],
+    extras: ["Each player's tile colors are prepared at the start, so a first purchase doesn't stutter"],
+  },
+  {
     id: '2026-11-10-phone-centering',
     date: 'Nov 10, 2026',
     title: 'Board centered on phones',

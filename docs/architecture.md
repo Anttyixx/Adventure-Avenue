@@ -164,8 +164,15 @@ room, Continue resumes the saved game, and the board editor (`ui/editor.ts`).
   pads so square corners and hex points retain a continuous ground margin. Square/hex Lab
   previews show the active scenery.
 - **Static layer:** scenery and tiles are painted once into an offscreen cache
-  (`renderStatic` → `paintBoard`) and redrawn only when `dirty` (state changed) or the settled
-  zoom needs a sharper copy (never mid-zoom; `maxCacheScale` keeps it under 16M pixels). Property images come from `props.ts` (PNG art in `assets/props`, recolored to
+  (`renderStatic` → `paintBoard`). When `dirty` (state changed), `updateStatic` compares each
+  square's `squareLook` (everything `drawSquare` reads, fees included) with the last paint and
+  `repaintSquares` re-draws only changed squares: their `SQUARE_REACH` boxes are cleared on whole
+  device pixels, clipped, and scenery plus every square reaching into them is painted again in
+  the same order (`drawSquareClean` isolates each square's context state). More than a third of
+  the squares changed, a new state (`setState`) or fonts loading (`redrawAll`) paint it all.
+  The settled zoom may also need a sharper copy (never mid-zoom; `maxCacheScale` keeps it under
+  16M pixels). `BoardView.warm` also pre-tints each player's tile, flag and shop sprites
+  (`tintJobs`) in idle time, since `propCanvas` recolors pixel by pixel on first use. Property images come from `props.ts` (PNG art in `assets/props`, recolored to
   the owner's color) with vector fallbacks in `art.ts`.
 - **Each frame:** camera update, the cached board, then ambient animation, closed-shop gates,
   greyed tiles, choice glows, routes, tokens (pixel characters from `sprites.ts`), direction
