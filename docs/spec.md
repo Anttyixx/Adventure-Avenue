@@ -506,6 +506,9 @@ Investing raises value one-for-one, which raises the fee, the salary bonus and t
 price. Cap: max value = base x (1 + k), x 1.5 if dominated. When none of the player's shops can
 take more (all at their cap, or they own only vacant-plot buildings), nothing is asked: the game
 says "Rosa has no shops to invest in." (or "has no money to invest" when nothing can pay for it).
+The action bar just asks "Invest in any of your shops?" ("Invest in your shop?" with one) while
+the shops that can grow glow on the board, with a Don't invest button; the limit shows only in the
+amount picker that follows.
 
 **Buyouts.** After paying a fee at a rival's shop, 3-Star Shop or other vacant-plot building (or
 visiting it, for an Estate Agency), the visitor may buy it for 5x value. The owner receives 3x value; the bank keeps 2x. Ownership transfers and expansion runs for

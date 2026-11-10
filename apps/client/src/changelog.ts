@@ -26,6 +26,13 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: '2026-11-10-invest-prompt',
+    date: 'Nov 10, 2026',
+    title: 'Shorter invest question',
+    features: [],
+    extras: ['Investing just asks "Invest in any of your shops?"; the limit shows when you pick the amount'],
+  },
+  {
     id: '2026-11-10-foliage',
     date: 'Nov 10, 2026',
     title: 'Trees and a river around the board',

@@ -4,7 +4,6 @@
  */
 import { PLAYER_COLORS, type GameState, type Player } from '@aa/engine';
 import type { BoardView } from '../board';
-import { fmt } from './dom';
 import type { Hud } from './hud';
 import { investAmountModal } from './modals';
 
@@ -25,9 +24,8 @@ export async function investOnBoard(
       (id) => hud.resolvePrompt(id),
     );
     const id = await hud.prompt<number | null>(
-      shops.length > 1
-        ? `Invest: tap any of your glowing shops (you can invest up to ${fmt(max)}).`
-        : `Invest: tap your glowing shop to invest in it.`,
+      // Just the question: the amount (and its limit) comes in the next step.
+      shops.length > 1 ? 'Invest in any of your shops?' : 'Invest in your shop?',
       [{ label: "Don't invest", value: null, secondary: true }],
       p.color,
     );
