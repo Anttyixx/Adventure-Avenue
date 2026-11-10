@@ -1219,6 +1219,10 @@ Opening or closing the pop-up by hand meanwhile cancels the return (`playOnBoard
 
 ### Arcade games (board + action bar)
 
+The venture board's layer keeps `--venture-ask` free at the bottom: `max(116px, --ask-free)`
+(94px on screens 500px tall or less), the room the action bar takes once it shows the card
+drawn, so the board never jumps or shrinks as the bar grows (the arcade layer does the same).
+
 Arcade games follow the venture board: a glass board centered on the screen
 (`.arcade-layer > .arcade-stage`, kept clear of the toolbar, the action bar and, on phones, the
 player cards) and the action bar for words and buttons. Never a pop-up.

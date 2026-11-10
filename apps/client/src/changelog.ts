@@ -26,6 +26,13 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: '2026-11-10-steady-venture',
+    date: 'Nov 10, 2026',
+    title: 'Steadier venture board',
+    features: [],
+    extras: ['The venture board no longer jumps up when the card you drew appears below it'],
+  },
+  {
     id: '2026-11-10-resume-chip',
     date: 'Nov 10, 2026',
     title: 'Resume from your player card',

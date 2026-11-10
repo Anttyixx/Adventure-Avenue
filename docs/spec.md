@@ -740,7 +740,9 @@ stationary, with rounded square tiles and no header or OK button in its containe
 the room between the toolbar and the action bar allows, so its tiles are easy to tap: up to 660px
 wide on monitors (about 72% of the window height, never reaching the player cards). When the action
 bar sits in the bottom left corner (phones), the board sits on the left above it too and fills the
-height between the toolbar and the action bar. It does not
+height between the toolbar and the action bar. The room kept for the action bar is what it needs
+once it grows to show the card drawn (at least 116px, 94px on short screens), so the board is
+placed and sized for that from the start and does not move or shrink when the card appears. It does not
 dim the background or block interaction with the action bar. As the tile flips, the action bar
 shows the card's title and description, for everyone, with nothing else shown in between. The picked tile flips with a card-flip sound. If it makes a
 bonus line, the line's tiles flip over again one after another, starting next to the picked tile

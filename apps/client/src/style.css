@@ -2217,7 +2217,7 @@ input[type='range'] {
 .hud.ab-left .venture-board {
   --venture-size: min(
     calc(100vw - var(--free-left, 0px) - var(--free-right, 0px) - 52px),
-    max(140px, calc(100dvh - var(--top-free, 50px) - var(--ask-free, 120px) - 40px))
+    max(140px, calc(100dvh - var(--top-free, 50px) - var(--venture-ask, 120px) - 40px))
   );
 }
 .stock-pop {
@@ -2386,9 +2386,18 @@ input[type='range'] {
   z-index: 4;
 }
 .hud > .venture-layer {
-  /* Kept clear of the toolbar and the action bar, so the board can use the room between them. */
+  /* Kept clear of the toolbar and the action bar, so the board can use the room between them.
+     The room kept for the bar is what it needs once it grows to show the card drawn (title,
+     text and OK), so the board is placed and sized for that from the start and stays still
+     when the card appears (it only moves if the bar grows taller still). Like the arcade layer. */
+  --venture-ask: max(116px, var(--ask-free, 120px));
   box-sizing: border-box;
-  padding: var(--top-free, 50px) 12px var(--ask-free, 120px);
+  padding: var(--top-free, 50px) 12px var(--venture-ask);
+}
+@media (max-height: 500px) {
+  .hud > .venture-layer {
+    --venture-ask: max(94px, var(--ask-free, 120px));
+  }
 }
 .venture-board {
   /* As big as the room between the toolbar and the action bar allows (up to 660px), without
@@ -2397,7 +2406,7 @@ input[type='range'] {
     clamp(360px, 72dvh, 660px),
     max(360px, calc(100vw - 2 * var(--free-right, 0px) - 80px)),
     calc(100vw - 64px),
-    max(140px, calc(100dvh - var(--top-free, 50px) - var(--ask-free, 120px) - 40px))
+    max(140px, calc(100dvh - var(--top-free, 50px) - var(--venture-ask, 120px) - 40px))
   );
   padding: 16px;
   background: rgba(16, 26, 51, 0.96);

@@ -117,7 +117,7 @@ const rnd = (n: number) => Math.floor(Math.random() * n);
  * Controls for UI elements that were just added or changed: they shake once and glow so they
  * are easy to find. Update this list with each change.
  */
-const RECENT = new Set(['Online: continue saved game']);
+const RECENT = new Set(['Venture grid (play)', 'Line of 5 bonus', 'Full row bonus']);
 
 /**
  * Which board the lab plays on: Town with portal links (square, the default) or Twin Lakes (hex),
