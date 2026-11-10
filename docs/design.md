@@ -655,9 +655,11 @@ if (!(await ask(`Delete ${d.name}?`, 'Its 4 properties will be removed from the 
   (`.info-scroll`, the property list's right side) so popping and hovered parts are never clipped. Player pages: columns 26px apart (rows 18px),
   sections 16px apart, the first column at least 300px; a container query keeps the top-right
   heading (or the name, single column) 70px clear of Back.
-- **Action bar:** a stand-in `.prompt-center.info-bar` over the real bar (`.hud.info-open` hides
-  the real one and any stock/venture/arcade layer). Game info, the stock market and the properties
-  show just a gold **Close** (`.ib-close`). Player pages show pill tabs (`.ib-tab`, 2px border, gold when on), one per player (`.ib-player`: portrait + name, border and fill in `--pc`;
+- **Action bar:** Game info, the stock market and the properties leave the real bar showing
+  (`.hud.info-plain`, `InfoPopup.syncBar`) and offer no View board chip: View board is only for
+  pop-ups that can't be closed until a choice is made. Player pages (and finding a property) use a
+  stand-in `.prompt-center.info-bar` over the real bar (`.hud.info-open` hides the real one and
+  any stock/venture/arcade layer) with pill tabs (`.ib-tab`, 2px border, gold when on), one per player (`.ib-player`: portrait + name, border and fill in `--pc`;
   portrait only on phones, and anywhere the chips don't all fit the bar's widest size:
   `info.ts` `fitTabs` adds `.compact`, rechecked as the bar resizes). It morphs out of the real bar's size on opening (300ms, tabs fade in
   after 120ms) and back into it on closing (tabs fade out first; then the real bar shows underneath while the

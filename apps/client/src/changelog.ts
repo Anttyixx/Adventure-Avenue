@@ -26,6 +26,18 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: '2026-11-10-info-bar',
+    date: 'Nov 10, 2026',
+    title: 'Keep an eye on the game',
+    features: [
+      {
+        tag: 'better',
+        title: 'The action bar stays live',
+        text: 'With Game info, the stock market or the properties open, the action bar keeps showing what is happening in the game. These pop-ups no longer show a View board button, since you can just close them.',
+      },
+    ],
+  },
+  {
     id: '2026-11-10-chip-borders',
     date: 'Nov 10, 2026',
     title: 'Neater card chips',

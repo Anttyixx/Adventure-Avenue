@@ -1398,10 +1398,12 @@ need, while every player page shares one fixed height (400px, enough for its col
 area on phones; when three columns fit side by side a long property list scrolls inside its own
 column, with no scroll bar), so
 flipping between players never makes it jump; pages scroll inside when they need more room; it does not dim the board). **Back** sits in its top
-right corner. While one is open, a stand-in **action bar** covers the real one. On a player's page
-it holds a button per player (portrait and name, with 2px borders; portraits only on phones) to flip
-between players. Game info, the stock market and the properties are separate pop-ups: their bar
-holds just **Close**. Tapping another of the four buttons is not possible while one is open (see the
+right corner. Game info, the stock market and the properties are separate pop-ups that leave the
+**action bar** as it is, still showing what is happening in the game (and any choice waiting), and
+they have no View board chip, since they can simply be closed. On a player's page a stand-in action
+bar covers the real one, holding a button per player (portrait and name, with 2px borders;
+portraits only on phones) to flip between players; when a property is shown on the board from any
+of them, the stand-in bar holds its note and **Back to info**. Tapping another of the four buttons is not possible while one is open (see the
 pop-up lock below), but the standings on Game info open a player's page.
 Anything the game shows in the real bar meanwhile (a status, or a choice waiting for this player)
 is there again when the pop-up closes. The pop-up opens and closes with the pop-up motion (rise
@@ -1411,8 +1413,8 @@ section shrinks and fades, one after another), then the pop-up morphs to the new
 then the new page's parts pop in one by one (growing from 82% with a slight overshoot); the top
 edge's color fades to the new page's. On a player page the columns keep at least 26px between
 them and sections 16px apart, and whatever sits in the top right corner (the shares or
-properties heading, or the player's name on narrow screens) stays clear of Back. The toolbar's View board chip works for it too, and it covers
-any stock market, venture board or arcade game that is up while open. Escape, Back or Close
+properties heading, or the player's name on narrow screens) stays clear of Back. On player pages the toolbar's View board chip works too. Any of these pop-ups covers
+any stock market, venture board or arcade game that is up while open. Escape or Back
 closes it. It updates live as the game goes on.
 
 **Pop-up lock.** While any pop-up is on the screen (the info pop-ups, the stock market or venture

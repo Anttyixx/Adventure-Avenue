@@ -9748,7 +9748,7 @@ div.sl-inline label {
 .hud.info-open > .stock-layer,
 .hud.info-open > .venture-layer,
 .hud.info-open > .arcade-layer,
-.hud.info-open > .prompt-center:not(.info-bar) {
+.hud.info-open:not(.info-plain) > .prompt-center:not(.info-bar) {
   visibility: hidden;
 }
 .info-pop {

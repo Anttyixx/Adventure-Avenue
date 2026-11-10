@@ -2,11 +2,10 @@
  * The pop-ups for reading about the game, in the middle of the screen like the stock market:
  * Game info (the Info button beside the info chip: the rules in play, the goal, the turn and the
  * standings), the stock market and the properties (the Stocks and Properties chips under the
- * player cards), and a player's page (their card). Player pages share the action bar, which holds
- * a button per player; the other three are separate pop-ups with a Close button there.
- *
- * The action bar while it is open is a stand-in laid over the real one, so whatever the game
- * shows meanwhile (statuses, a choice waiting for the player) is still there when it closes.
+ * player cards), and a player's page (their card). Player pages share a stand-in action bar laid
+ * over the real one, holding a button per player (whatever the game shows meanwhile is still there
+ * when it closes). The other three are separate pop-ups that leave the real action bar showing
+ * what is happening in the game, and offer no View board chip (they can simply be closed).
  */
 import {
   PLAYER_COLORS,
@@ -45,6 +44,8 @@ export class InfoPopup {
   private bar = h('div', { class: 'prompt-center glass show info-bar', hidden: true });
   private unplace = () => {};
   private release = () => {};
+  /** Whether the View board chip is offered for this pop-up (player pages only). */
+  private offered = false;
   /** The page drawn last, so a page change scrolls back to the top but a refresh keeps its place. */
   private drawn: InfoPage | null = null;
 
@@ -78,20 +79,49 @@ export class InfoPopup {
     const ask = hud.ask.classList.contains('show') ? hud.ask.getBoundingClientRect() : null;
     hud.root.classList.add('info-open');
     this.layer.hidden = false;
-    this.bar.hidden = false;
     this.drawn = null;
     this.render();
     this.unplace = keepClearOfCards(hud, this.box);
-    this.release = hud.offerViewBoard(this.layer);
     if (STILL()) return;
     this.box.animate([AWAY, HERE], { duration: 240, easing: 'cubic-bezier(0.2, 0.8, 0.2, 1)' });
-    this.morphBar(ask, null);
+    if (!this.bar.hidden) this.morphBar(ask, null);
+  }
+
+  /**
+   * Show the stand-in action bar and offer View board on a player's page (or while a property is
+   * shown on the board); on Game info, the stock market and the properties, hide both so the real
+   * action bar keeps showing the game (`.hud.info-plain`).
+   */
+  private syncBar(page: InfoPage) {
+    const hud = this.hud;
+    const player = typeof page === 'number';
+    const stand = player || this.finding >= 0;
+    hud.root.classList.toggle('info-plain', !stand);
+    if (stand) this.bar.hidden = false;
+    else if (!this.bar.hidden) {
+      this.bar.getAnimations({ subtree: true }).forEach((a) => a.cancel());
+      this.bar.classList.remove('morphing');
+      clear(this.bar);
+      this.bar.hidden = true;
+    }
+    if (player && !this.offered) {
+      this.release = hud.offerViewBoard(this.layer);
+      this.offered = true;
+    } else if (!player && this.offered) {
+      this.dropViewBoard();
+    }
+  }
+
+  private dropViewBoard() {
+    this.release();
+    this.release = () => {};
+    this.offered = false;
   }
 
   close() {
     const hud = this.hud;
     this.backFromBoard(true);
-    this.release();
+    this.dropViewBoard();
     this.unplace();
     const reopened = () => hud.infoPage != null;
     const finish = () => {
@@ -103,14 +133,18 @@ export class InfoPopup {
       clear(this.box);
       clear(this.bar);
       this.pageEl = null;
-      hud.root.classList.remove('info-open');
+      hud.root.classList.remove('info-open', 'info-plain');
     };
     if (STILL()) return finish();
     // The pop-up sinks away and stays hidden once it has (no frame of it popping back).
+    const plain = this.bar.hidden;
     this.box.animate([HERE, AWAY], { duration: 200, easing: 'ease-in', fill: 'forwards' }).onfinish = (e) => {
       if (!reopened()) this.layer.hidden = true;
       (e.target as Animation).cancel();
+      // No stand-in bar to hand over: the real one has been showing all along.
+      if (plain) finish();
     };
+    if (plain) return;
     // The stand-in bar morphs to the real bar's size, then the real bar shows underneath while the
     // stand-in fades away on top of it, so the two never blink.
     const ask = hud.ask.classList.contains('show') ? hud.ask.getBoundingClientRect() : null;
@@ -194,6 +228,8 @@ export class InfoPopup {
         if (this.finding >= 0) this.layer.hidden = true;
         (e.target as Animation).cancel();
       };
+    // The note and its Back button need the stand-in bar, even over a pop-up that has none.
+    this.syncBar(hud.infoPage);
     this.swapBar(() =>
       this.bar.append(
         h(
@@ -218,7 +254,9 @@ export class InfoPopup {
     if (quiet) return;
     this.layer.hidden = false;
     if (!STILL()) this.box.animate([AWAY, HERE], { duration: 220, easing: 'ease-out' });
-    this.swapBar(() => this.drawBar(hud.G, hud.infoPage ?? 'game'));
+    const page = hud.infoPage ?? 'game';
+    if (typeof page === 'number') this.swapBar(() => this.drawBar(hud.G, page));
+    else this.syncBar(page);
     this.render();
   }
 
@@ -265,7 +303,10 @@ export class InfoPopup {
     // Another page picked (e.g. a player card) while a property is on the board: back first.
     if (changed && this.finding >= 0) this.backFromBoard();
     const old = this.pageEl;
-    if (this.finding < 0) this.drawBar(G, page);
+    if (this.finding < 0) {
+      this.syncBar(page);
+      this.drawBar(G, page);
+    }
     if (!this.back.isConnected) this.box.append(this.back);
     const was = this.drawn;
     this.drawn = page;
@@ -379,19 +420,9 @@ export class InfoPopup {
     return el;
   }
 
-  /**
-   * The action bar: on a player's page, a button per player (the tabs only change state); on the
-   * Game info, stock market and properties pop-ups, just Close.
-   */
+  /** The stand-in action bar on a player's page: a button per player (the tabs only change state). */
   private drawBar(G: GameState, page: InfoPage) {
-    if (typeof page !== 'number') {
-      if (this.bar.querySelector('.ib-close')) return;
-      clear(this.bar);
-      this.bar.append(
-        h('button', { class: 'btn main ib-close', onclick: () => this.hud.toggleInfo(null) }, 'Close'),
-      );
-      return;
-    }
+    if (typeof page !== 'number') return;
     const tabs = [...this.bar.querySelectorAll<HTMLElement>('.ib-tab')];
     const pages: InfoPage[] = G.players.map((p) => p.id);
     if (tabs.length === pages.length) {
