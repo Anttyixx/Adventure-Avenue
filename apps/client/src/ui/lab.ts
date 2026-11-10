@@ -121,6 +121,9 @@ const RECENT = new Set([
   'Portal: two-way flow',
   'Travel through a portal',
   'Portal links in the builder',
+  'Town terrain: square',
+  'Town terrain: hex',
+  'Tile sprites and tint layers',
 ]);
 
 /**
@@ -1464,12 +1467,12 @@ export async function openLab(app: HTMLElement, section?: string) {
     const s = addSection(
       'art',
       'Landscape',
-      'Natural park scenery, planted groves, warm path verges and a stream beyond the board. Use the zoom chip to check both scales.',
+      'Connected ponds, irregular parks, activity clearings and softly blended surfaces around the board. Use the zoom chip to check both scales.',
     );
     row(
       s,
       ...(['square', 'hex'] as const).map((layout) =>
-        btn(`Park landscape: ${layout}`, () => {
+        btn(`Town terrain: ${layout}`, () => {
           const mount = h('div', { class: 'lab-screen' });
           root.append(mount);
           const sample = newGame({

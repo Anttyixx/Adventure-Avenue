@@ -227,23 +227,33 @@ The board fills the entire canvas behind the HUD, with no space reserved beside 
 The hovered cell has a tinted fill and two contrasting outlines: a dark outer stroke (6 screen
 pixels) and a bright inner stroke (3 screen pixels), gold normally and red while erasing. Their
 screen size stays constant at every zoom.
-The default landscape is a painted town park. Grass uses coordinate-seeded crops, turns and
-reflections blended with smooth complementary weights, avoiding mirrored repetition and hard
-patch joins. Muted grass, broad warm sun-dried clearings and cooler woodland shade break up the
-single green surface. Each world location stays fixed while panning/zooming; chunks are cached.
-Warm earth verges follow only the actual board roads and tiles, with a soft clearing around the
-bank. A blue-green stream with irregular banks and a painted water texture runs outside the
-west and south of the board rectangle, continuing beyond the visible camera. It does not cross
-playable ground, create routes or change movement. Low rocks dress its banks.
-Twelve new base-only scenery PNGs replace the outlined decoration set: benches, flowering shrubs,
-garden rocks, planters, fences, young birches, mushrooms, lily pools, picnic tables, mature oaks,
-and Town's pond and fountain. Scenery has naturally painted edges, organic soil patches and
-soft contact shadows; no white/cream sticker rims or dark contour strokes. Inside the board,
-small accents leave playable tiles, roads, portal rings and landing cells clear. Outside it,
-groves, picnic areas and garden pools grow in stable, varied-size groups rather than a regular
-scatter. Planting stays clear of the stream. The scenery has no game effects or engine randomness.
-Cloud shadows remain subtle. The builder hides all props, stream, path verges and bank clearing;
-it keeps the varied grass beneath its grid. All previous art and landscape modes remain available.
+The default landscape is built from connecting 80-unit terrain cells: park grass, pond water
+and courtyard paving. Neighboring cells of the same material share one continuous surface;
+internal edges are removed. Contours retain holes, concave bends and irregular outlines, so
+ponds can span many cells and parks can follow the playable board's corners. Material patterns
+are anchored in world coordinates. Edges blend into neighboring surfaces with soft masks rather
+than hard tile frames; water has a softly blended bank. Rounded cartoon materials and props
+match the board tiles, without sticker rims or realistic botanical detail.
+Terrain cells stay clear of playable tiles, actual roads and portal openings. Parkland fills
+free areas near the board; farther out, connected terrain varies smoothly into larger locations.
+Paving around the bank creates a courtyard where space permits. Isolated one-cell water
+fragments become land instead. These are cosmetic locations, never new movement routes.
+Parks contain small activity clearings in suitable two-by-two areas: picnic tables, gazebos or
+fountains, with benches, planted corners and small trees. They leave a quiet area around the
+furniture instead of growing trees through it. Other trees form wooded patches, flowers follow
+park edges and benches sit near courtyard entrances. Each connected courtyard has at most one
+focal fountain/gazebo. Features and terrain stay fixed while panning/zooming and do not change
+engine state or randomness. Soft worn-ground patches anchor activity areas to the park surface.
+Low, rounded hedges frame the playable board through inside and outside bends, with portal
+openings left clear. Garden hedges join the surrounding scenery. Neighboring activity clearings
+connect by narrow cosmetic walks that avoid gameplay tiles; narrow water crossings can have
+bridges. Planting themes span multiple cells: flower gardens, fruit orchards, groves and meadow.
+Pond edges contain reeds and rocks, with lily pads on open water. No movement rules change.
+Terrain surfaces and props are cached together in world chunks; overscanned masks prevent blur
+from creating seams at chunk edges. The existing nonrepeating grass remains beneath them, and
+warm ground follows the real board roads at normal portal-approach width. The builder hides all
+terrain/props/verges to keep its editing grid clear. Earlier artwork is preserved; prior park,
+meadow and classic styles remain available for rollback.
 Grass is a separate background beneath tiles and scenery. Both builder and games fill the
 entire visible camera area, including outside the board, at every zoom and screen size. The
 landscape is anchored in board coordinates and scales with the tiles; there is no finite

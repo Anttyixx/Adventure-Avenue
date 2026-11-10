@@ -137,24 +137,33 @@ room, Continue resumes the saved game, and the board editor (`ui/editor.ts`).
 
 `BoardView` draws everything on one `<canvas>`:
 
-- **Background:** `paintGrass` fills the visible world through the inverse camera transform.
-  `meadow.ts` uses the unmirrored quarter of `landscape-v4/meadow-base.png` to build
-  coordinate-seeded, smoothly blended grass patches (256 world units), cached in 768-unit
-  chunks rendered at 384px. Four complementary smoothstep weights share their boundary
-  samples, avoiding hard joins. The 96-entry LRU cache bounds memory. Panning/zooming never
-  changes the grass at a world coordinate; the builder uses the same ground.
-  Games pass `G` to `paintGrass` to add the stream (`park.ts` / `park-geometry.ts`) and grouped
-  outer scenery (`parkSceneryBeyondBoard`); builders omit `G`, leaving decorations hidden.
-  Park chunks desaturate the source and add smooth world-aligned earth/woodland color fields.
-  The stream geometry stays beyond the west/south playable rectangle; its irregular ribbon
-  clips a world-aligned water PNG and uses no engine state changes. `drawParkGround` follows
-  `roadPieces` in the static cache for warm verges, leaving portal stems at normal road width, with no
-  decorative fake routes. Scenery groups avoid the water; all props use soft contact shadows. `sceneryForBoard` supplies smaller sprites
-  inside the static board cache. Both use an independent coordinate hash, avoid gameplay
-  geometry and leave engine state/randomness unchanged. `props.ts` maps base-only scenery
-  PNGs in `assets/park-v6/`, overriding the preserved `scenery-v5/` files. `SCENERY_SET = previous`
-  restores the outlined meadow-only scene; `LANDSCAPE_SET` restores original grass/scenery.
-  All previous artwork remains available. The game/editor board caches stay transparent.
+- **Background:** `paintGrass` fills the inverse-camera world rectangle with nonrepeating grass
+  from `meadow.ts` (256-unit patches in cached 768-unit chunks). Default `SCENERY_SET = connected`
+  adds `town-terrain.ts` / `town-terrain-art.ts`: 80-unit material cells, smooth coordinate-seeded
+  terrain fields, and board-aware collision masks. `terrainContours` cancels shared edges and
+  traces only the outside/holes of each material, preserving concave bends and separate diagonal
+  locations. World-aligned material patterns fill those shared surfaces. Offscreen masks blur
+  park/paving/water edges by 18/14/7 world units, with soft water banks. The 48px mask overscan
+  prevents cached-chunk seams. Nine base-only PNGs in `assets/terrain-v8/` supply three material
+  textures and six cartoon props. Connected courtyard anchors and two-by-two park clearing plans
+  place meaningful furniture groups and keep trees out of their footprints. All caches live in
+  WeakMaps keyed by game state; layout never consumes engine randomness or adds fields to saves.
+  Low, rounded hedges frame the playable board through inside and outside bends, with portal
+  openings left clear. Garden hedges join the surrounding scenery. Neighboring activity clearings
+  connect by narrow cosmetic walks that avoid gameplay tiles; narrow water crossings can have
+  bridges. Planting themes span multiple cells: flower gardens, fruit orchards, groves and meadow.
+  Pond edges contain reeds and rocks, with lily pads on open water. No movement rules change.
+  `assets/terrain-details-v9/` supplies clean-alpha fruit trees, flower beds, water details,
+  bridges and a seamless leaf material. The board hedge silhouette is rasterized at 20 world
+  units, shared edges removed, corners rounded, and portal openings clipped out. Short bounded
+  breadth-first walks join neighboring park clearings; water can only be crossed along a bridge.
+  Planting avoids those paths. These plans are cached independently of the camera.
+  Rendering uses up to 48 cached 800-unit chunks at 512px. The builder omits terrain/props;
+  `drawParkGround` adds verges beneath actual roads in games, keeping portal stems normal width.
+  `SCENERY_SET = park` restores the preserved natural park/stream set (`park.ts`, `park-geometry.ts`,
+  `scenery.ts`, `assets/park-v6/`); `previous` restores outlined meadow props (`scenery-v5/`).
+  `LANDSCAPE_SET` / `ART_SET` retain original grass and classic art. `assets/town-v7/` preserves
+  the complete-scene cartoon art separately; it is not drawn as square scene stamps by default.
 - **Static layer:** scenery and tiles are painted once into an offscreen cache
   (`renderStatic` → `paintBoard`) and redrawn only when `dirty` (state changed) or the zoom needs
   a sharper copy. Property images come from `props.ts` (PNG art in `assets/props`, recolored to

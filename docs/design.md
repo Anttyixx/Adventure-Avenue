@@ -947,17 +947,19 @@ animation has a `prefers-reduced-motion` path (CSS media query, or `matchMedia(.
 
 Bright and physical, unlike the dark HUD:
 
-- **World:** a painted town park, with muted grass, broad sun-dried clearings, cooler woodland
-  shade and a blue-green stream outside the west/south board boundary. Blend grass patches
-  softly with no mirrored repeats or hard joins. Warm earth verges follow actual board paths;
-  the bank has a quiet clearing. Preserve cream tiles and district colors as the focal point.
-  Group outside scenery into groves, picnic areas and planted pools instead of uniform scatter.
-  Scenery uses natural painted edges, organic soil patches and soft contact shadows: **no white
-  or cream sticker rims, dark contour strokes, tile frames or labels**. The stream has textured
-  water, varying width and low bank rocks; keep it clear of playable ground and plant groups.
-  Inside the board, keep tiles, roads, portal rings and landing cells clear. The builder shows
-  varied grass but hides scenery, stream and path verges. Keep the world fixed during camera
-  movement and cloud shadows faint. Preserve previous artwork for rollback.
+- **World:** connected cartoon park, pond and courtyard terrain, using the board tiles' rounded
+  forms, friendly greens/turquoise and simple highlights. Draw a shared surface for adjacent
+  cells, with no internal borders or self-contained scene stickers. Allow holes, concave corners
+  and nonrectangular areas that fit around the board. Use world-aligned materials and soften
+  transitions at the region boundary (park 18, paving 14, water 7 world units; soft banks 12).
+  Park activity clearings combine picnic/gazebo/fountain, bench, planting and a small tree on
+  shared park ground. Keep trees out of these clearings; courtyards have one focal feature per
+  connected area. Narrow cosmetic walks join nearby clearings, crossing water only on small
+  bridges. Orchards and flower gardens span multiple cells. Low hedges frame the board’s shared
+  silhouette through concave/convex bends, with gaps at portal openings; garden hedges lead into
+  the scenery. Keep these borders restrained and below the visual weight of playable tiles.
+  Keep tile/road/portal geometry clear. No sticker rims or dark outlines on
+  props. Hide terrain, props and verges in the builder. Preserve earlier art for rollback.
 - **Tiles** (86 units on a 100 grid): cream `#fdfbf5` (bank `#fff6d6`), radius 12, soft shadow
   down-right. Owned: tint of the owner's color. Properties: 6px district-color border. Vacant
   plots: dashed grey outline + "VACANT".

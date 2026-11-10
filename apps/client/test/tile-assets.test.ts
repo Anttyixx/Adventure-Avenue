@@ -145,3 +145,46 @@ describe('natural park PNG set', () => {
     }
   });
 });
+
+describe('cartoon town terrain PNG set', () => {
+  it('adds nine base-only scene tiles while keeping earlier decoration sets', () => {
+    const dir = resolve('apps/client/src/assets/town-v7');
+    const keys = ['courtyard', 'grove', 'pond', 'garden', 'orchard', 'picnic', 'meadow', 'gazebo', 'hedges'];
+    expect(readdirSync(dir).filter((f) => f.endsWith('.png'))).toHaveLength(9);
+    for (const key of keys) expect(png(resolve(dir, `land-${key}-base.png`))).toEqual([320, 320]);
+    expect(existsSync(resolve('apps/client/src/assets/park-v6/scenery-bench-base.png'))).toBe(true);
+    expect(existsSync(resolve('apps/client/src/assets/scenery-v5/scenery-bench-base.png'))).toBe(true);
+  });
+});
+
+describe('connected terrain material PNGs', () => {
+  it('provides opaque material frames and separate cartoon props without replacing earlier assets', () => {
+    const dir = resolve('apps/client/src/assets/terrain-v8');
+    expect(readdirSync(dir).filter((f) => f.endsWith('.png'))).toHaveLength(9);
+    for (const kind of ['park', 'water', 'court'])
+      expect(png(resolve(dir, `terrain-${kind}-base.png`))).toEqual([512, 512]);
+    for (const kind of ['tree', 'flowers', 'bench', 'fountain', 'gazebo', 'picnic'])
+      expect(png(resolve(dir, `park-${kind}-base.png`))).toEqual([256, 256]);
+    expect(existsSync(resolve('apps/client/src/assets/town-v7/land-pond-base.png'))).toBe(true);
+  });
+});
+
+describe('connected park detail PNGs', () => {
+  it('provides hedge material and transparent scene ingredients while preserving the base terrain', () => {
+    const dir = resolve('apps/client/src/assets/terrain-details-v9');
+    expect(readdirSync(dir).filter((f) => f.endsWith('.png'))).toHaveLength(9);
+    expect(png(resolve(dir, 'terrain-hedge-base.png'))).toEqual([512, 512]);
+    for (const key of [
+      'garden-bed',
+      'orchard-apple',
+      'orchard-orange',
+      'pond-reeds',
+      'pond-rocks',
+      'pond-lilies',
+      'pond-bridge',
+      'garden-planter',
+    ])
+      expect(png(resolve(dir, `${key}-base.png`))).toEqual([256, 256]);
+    expect(existsSync(resolve('apps/client/src/assets/terrain-v8/park-tree-base.png'))).toBe(true);
+  });
+});

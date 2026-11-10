@@ -26,6 +26,24 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: '2026-11-09-cartoon-town-terrain',
+    date: 'Nov 9, 2026',
+    title: 'Connected cartoon parks and ponds',
+    features: [
+      {
+        tag: 'better',
+        title: 'Places that grow around the board',
+        text: 'Background terrain cells join into large irregular ponds, parks and courtyards, following the board’s bends. Only the outside of each location has an edge, with soft transitions between surfaces.',
+      },
+      {
+        tag: 'new',
+        title: 'Things to do in the park',
+        text: 'Connected walks lead between picnic spots, gazebos and planted clearings. Orchards, flower gardens, reeds, lily pads and small bridges give the shared landscape more life. Low hedges follow the board’s bends, with gaps for portals.',
+      },
+    ],
+    extras: ['Previous scenery artwork preserved'],
+  },
+  {
     id: '2026-11-09-portal-flow',
     date: 'Nov 9, 2026',
     title: 'Clearer portal links',

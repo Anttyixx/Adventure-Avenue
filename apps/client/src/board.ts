@@ -17,10 +17,19 @@ import {
 } from '@aa/engine';
 import { cellCenter, sideVector, tileShape, tileTop, worldSize } from './geometry';
 import { SHOP_TIERS, STAR3_TIERS, badge, darken, drawShop, drawStar3, tierFor, tint } from './art';
-import { drawProp, drawStamp, propCanvas, PAINTED_LANDSCAPE, PARK_LANDSCAPE, type PropKey } from './props';
+import {
+  drawProp,
+  drawStamp,
+  propCanvas,
+  PAINTED_LANDSCAPE,
+  PARK_LANDSCAPE,
+  TOWN_LANDSCAPE,
+  type PropKey,
+} from './props';
 import { paintMeadow } from './meadow';
 import { parkSceneryBeyondBoard, sceneryBeyondBoard, sceneryForBoard } from './scenery';
 import { paintParkScenery, paintParkStream } from './park';
+import { paintTownTerrain } from './town-terrain-art';
 import { drawBoonIcon, drawCoin, drawSparkle, SUIT_CHARS } from './icons';
 import { Facing, FRAME_H, FRAME_W, drawCharacter, drawCharacterGlow, facingFor } from './sprites';
 import { TIMING as T } from './timing';
@@ -1264,7 +1273,7 @@ export class BoardView {
       ctx.fill();
     }
     ctx.restore();
-    if (isTown(this.G)) this.drawTownAmbient(ctx, t);
+    if (isTown(this.G) && !TOWN_LANDSCAPE) this.drawTownAmbient(ctx, t);
     // Bank coin glint every few seconds
     this.drawBankGlint(ctx, t);
   }
@@ -2240,11 +2249,15 @@ export function paintGrass(ctx: CanvasRenderingContext2D, G?: GameState) {
     ctx.fillRect(left, top, right - left, bottom - top);
   }
   if (PAINTED_LANDSCAPE && G) {
-    if (PARK_LANDSCAPE) paintParkStream(ctx, G, top, right);
-    const scenery = PARK_LANDSCAPE ? parkSceneryBeyondBoard : sceneryBeyondBoard;
-    for (const p of scenery(G, left, top, right, bottom)) {
-      if (PARK_LANDSCAPE) paintParkScenery(ctx, p);
-      else drawStamp(ctx, p.key, '#808080', p.x, p.y, p.size, p.size);
+    if (TOWN_LANDSCAPE) {
+      paintTownTerrain(ctx, G, left, top, right, bottom);
+    } else {
+      if (PARK_LANDSCAPE) paintParkStream(ctx, G, top, right);
+      const scenery = PARK_LANDSCAPE ? parkSceneryBeyondBoard : sceneryBeyondBoard;
+      for (const p of scenery(G, left, top, right, bottom)) {
+        if (PARK_LANDSCAPE) paintParkScenery(ctx, p);
+        else drawStamp(ctx, p.key, '#808080', p.x, p.y, p.size, p.size);
+      }
     }
   }
   ctx.restore();
@@ -2340,11 +2353,12 @@ function drawRoads(ctx: CanvasRenderingContext2D, G: GameState) {
 }
 
 function drawScenery(ctx: CanvasRenderingContext2D, G: GameState, decorations: boolean) {
-  if (PARK_LANDSCAPE && decorations) drawParkGround(ctx, G);
+  if ((PARK_LANDSCAPE || TOWN_LANDSCAPE) && decorations) drawParkGround(ctx, G);
   drawRoads(ctx, G);
 
   // Keep roads visible while the builder hides purely decorative scenery.
   if (!decorations) return;
+  if (TOWN_LANDSCAPE) return;
 
   if (!isTown(G)) {
     if (PAINTED_LANDSCAPE) drawPaintedDecor(ctx, G);

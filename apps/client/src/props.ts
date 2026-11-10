@@ -7,6 +7,7 @@
  * Call `loadProps()` once before drawing; until then callers fall back to the vector art.
  */
 import type { SceneryStamp } from './scenery';
+import type { DecorationKey } from './town-terrain';
 
 export type PropKey =
   | `shop${0 | 1 | 2 | 3 | 4}`
@@ -44,6 +45,7 @@ export type PropKey =
   | 'meadow'
   | 'park-water'
   | SceneryStamp['key']
+  | DecorationKey
   | 'fountain'
   | 'flag'
   | 'hike'
@@ -61,9 +63,20 @@ export const PROPERTY_SET: string = 'painted';
 /** Restore the previous grass and scenery density independently of the building set. */
 export const LANDSCAPE_SET: string = 'painted';
 export const PAINTED_LANDSCAPE = ART_SET === 'layered' && LANDSCAPE_SET === 'painted';
-/** Choose previous for the outlined scenery and meadow-only landscape. Old files are retained. */
-export const SCENERY_SET: string = 'park';
+/** connected = joining cartoon terrain cells; park = painted scenery; previous = outlined meadow props. */
+export const SCENERY_SET: string = 'connected';
 export const PARK_LANDSCAPE = PAINTED_LANDSCAPE && SCENERY_SET === 'park';
+export const TOWN_LANDSCAPE = PAINTED_LANDSCAPE && SCENERY_SET === 'connected';
+const details = import.meta.glob<string>('./assets/terrain-details-v9/*.png', {
+  eager: true,
+  query: '?url',
+  import: 'default',
+});
+const connected = import.meta.glob<string>('./assets/terrain-v8/*.png', {
+  eager: true,
+  query: '?url',
+  import: 'default',
+});
 const landscape = import.meta.glob<string>('./assets/landscape-v4/*.png', {
   eager: true,
   query: '?url',
@@ -117,6 +130,12 @@ const urls = Object.fromEntries([
     : []),
   ...(PARK_LANDSCAPE
     ? Object.entries(park).map(([path, url]) => [
+        path.replace(/^.*\//, '').replace('-base.png', '.png'),
+        { url, explicit: true },
+      ])
+    : []),
+  ...(TOWN_LANDSCAPE
+    ? Object.entries({ ...connected, ...details }).map(([path, url]) => [
         path.replace(/^.*\//, '').replace('-base.png', '.png'),
         { url, explicit: true },
       ])
