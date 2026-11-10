@@ -119,21 +119,13 @@ const rnd = (n: number) => Math.floor(Math.random() * n);
  */
 const RECENT = new Set([
   'Ride: warp beam',
-  'Ride: portal tile vortex',
   'Ride: cannon shot',
   'Ride: taxi',
   'Ride: balloon',
-  'Ride: venture card stars',
   'Ride: swap places',
   'Travel through a portal',
-  'Coin Derby',
-  'Boon and Boom artwork',
-  'Tooltip: special square',
-  'Tooltip: shop for sale',
-  'Tooltip: owned shop',
-  'cannon',
-  'honk',
-  'whoosh',
+  'Gold ring + sparkles',
+  'Confetti',
 ]);
 
 /**
@@ -486,19 +478,23 @@ export async function openLab(app: HTMLElement, section?: string) {
       hud.tick(`Error: ${(err as Error).message}`);
     }
   };
-  const btn = (label: string, fn: () => unknown, onBoard = false) =>
+  const btn = (label: string, fn: () => unknown, onBoard = false, focus = true) =>
     h(
       'button',
       {
         // Controls for things changed recently shake once and keep a soft glow.
         class: `btn small ${RECENT.has(label) ? 'lab-new' : ''}`,
         title: RECENT.has(label) ? 'Recently updated' : null,
-        onclick: () => (onBoard ? playOnBoard(fn) : run(fn)),
+        onclick: () => (onBoard ? playOnBoard(fn, focus) : run(fn)),
       },
       label,
     );
-  /** A control whose effect plays on the board: the pop-up steps aside while it plays. */
-  const boardBtn = (label: string, fn: () => unknown) => btn(label, fn, true);
+  /**
+   * A control whose effect plays on the board: the pop-up steps aside while it plays and the
+   * camera zooms in on the target player, as in a game (`focus: false` for the zoom controls,
+   * which move the camera themselves).
+   */
+  const boardBtn = (label: string, fn: () => unknown, focus = true) => btn(label, fn, true, focus);
   const wait = (ms: number) => new Promise((r) => window.setTimeout(r, ms));
   /** Resolves once the board has no effects playing and the camera has come to rest (at most 8s). */
   const boardSettled = async () => {
@@ -517,8 +513,27 @@ export async function openLab(app: HTMLElement, section?: string) {
    * finish, wait 0.5s, then bring the pop-up back where it was (same tab and scroll). Opening or
    * closing the pop-up by hand meanwhile cancels the reopen.
    */
-  const playOnBoard = async (fn: () => unknown) => {
-    if (panel.hidden) return run(fn);
+  const playOnBoard = async (fn: () => unknown, focus = true) => {
+    // Zoom in on the player the effect is about (the camera follows them, so a ride stays in
+    // view), and go back to the Lab's overview once it has played.
+    const view = { zoom: board.zoomOut, follow: board.followPid };
+    const zoomIn = () => {
+      if (!focus) return;
+      board.followPid = cur().id;
+      board.zoomOut = 0;
+    };
+    const zoomBack = () => {
+      if (!focus) return;
+      board.zoomOut = view.zoom;
+      board.followPid = view.follow;
+    };
+    if (panel.hidden) {
+      zoomIn();
+      await wait(focus ? 450 : 0);
+      await run(fn);
+      await boardSettled();
+      return zoomBack();
+    }
     const token = ++staging;
     const scroll = body.scrollTop;
     if (!STILL())
@@ -527,10 +542,12 @@ export async function openLab(app: HTMLElement, section?: string) {
         easing: 'ease-in',
       }).finished;
     panel.hidden = true;
+    zoomIn();
     await wait(500);
     await run(fn);
     await boardSettled();
     await wait(500);
+    zoomBack();
     if (token !== staging || !panel.hidden) return;
     panel.hidden = false;
     body.scrollTop = scroll;
@@ -1234,20 +1251,24 @@ export async function openLab(app: HTMLElement, section?: string) {
         board.confetti(cur().id);
         board.dance(cur().id);
       }),
-      boardBtn('Zoom modes', async () => {
-        // The zoom chip's border: blue for auto zoom, red for locked zoom, grey for free zoom.
-        const p = cur();
-        setActive(p.id);
-        hud.tick('Auto zoom (blue): the game frames squares; you can still zoom.');
-        board.frameIds = game.destinations(p, 6).flatMap((r) => r.path);
-        await new Promise((r) => setTimeout(r, 3000));
-        board.frameIds = null;
-        hud.tick('Locked zoom (red): only the game moves the zoom.');
-        board.showHold = true;
-        await new Promise((r) => setTimeout(r, 3000));
-        board.showHold = false;
-        hud.tick('Free zoom (grey): your own zoom again.');
-      }),
+      boardBtn(
+        'Zoom modes',
+        async () => {
+          // The zoom chip's border: blue for auto zoom, red for locked zoom, grey for free zoom.
+          const p = cur();
+          setActive(p.id);
+          hud.tick('Auto zoom (blue): the game frames squares; you can still zoom.');
+          board.frameIds = game.destinations(p, 6).flatMap((r) => r.path);
+          await new Promise((r) => setTimeout(r, 3000));
+          board.frameIds = null;
+          hud.tick('Locked zoom (red): only the game moves the zoom.');
+          board.showHold = true;
+          await new Promise((r) => setTimeout(r, 3000));
+          board.showHold = false;
+          hud.tick('Free zoom (grey): your own zoom again.');
+        },
+        false,
+      ),
       boardBtn('Shops closing', async () => {
         // Close the target player's shops (gates come down and stay down).
         const p = cur();
@@ -1297,8 +1318,8 @@ export async function openLab(app: HTMLElement, section?: string) {
         }
         refresh();
       }),
-      boardBtn('Zoom in', () => board.zoomBy(-ZOOM_STEP)),
-      boardBtn('Zoom out', () => board.zoomBy(ZOOM_STEP)),
+      boardBtn('Zoom in', () => board.zoomBy(-ZOOM_STEP), false),
+      boardBtn('Zoom out', () => board.zoomBy(ZOOM_STEP), false),
     );
   }
 

@@ -137,10 +137,9 @@ Requests refer to parts of the game by these names:
   unchanged in `assets/tiles-v2/` and `assets/props/`; `PROPERTY_SET` selects the property set. Base-only sprites never auto-recolor blue pixels. New recolorable sprites
   require an aligned grey `-tint.png`. `transport-v13/` preserves the crystal warp and supplies the portal frame / two vortex pairs
   (`TRANSPORT_SET`). `warp-v14/` supplies the active flat four-point floor pad (`WARP_SET`), with
-  equal height/width, equal arms, no pedestal, and uniform scaling in both grids. `boon-v16/`
+  equal height/width, equal arms, no pedestal, and uniform scaling in both grids.
   `boom-v17/` is the Boom burst redrawn whole (the original's spikes were cut at the image edge;
-  `BOOM_SET = previous` restores it). `boon-v16/`
-  supplies the green Boon burst with a 30% smaller plain coin (`BOON_SET`); v15 and the original
+  `BOOM_SET = previous` restores it). `boon-v16/` supplies the green Boon burst with a 30% smaller plain coin (`BOON_SET`); v15 and the original
   standalone coin remain preserved. Closed shops use the drawn gate by default; `CLOSED_SET = 'sprite'` restores the preserved painted PNG. Portal frames stay fixed; vortex
   phase must stay continuous and freeze with reduced motion. Keep legacy assets and canvas fallbacks for rollback.
 
@@ -164,7 +163,7 @@ npm run sim -- 500   # CPU-only balance simulation (average match length, etc.)
   test board and scripted answers). Add a test for every rule change or rule bug fix.
 - **UI Lab:** `/#ui-lab` (or the dev menu: hold the version chip on the main menu for 3 seconds).
   It builds a sample game and has a button for every UI element, in a pop-up that the version chip
-  in the top left opens and closes (Board effects buttons hide it while their effect plays, then bring it back) (scripts can preset `localStorage['aa-lab-open'] = '0'` to
+  in the top left opens and closes (Board effects buttons hide it and zoom in on the target player while their effect plays, then bring it back) (scripts can preset `localStorage['aa-lab-open'] = '0'` to
   start with it closed). `/#stocks-lab` compares the
   stock systems; `/#editor` is the board editor.
 - **Browser automation:** Playwright works against `npm run preview`. Dev builds expose the

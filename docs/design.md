@@ -1234,7 +1234,11 @@ Board controls (the Board effects section, made with `boardBtn` in `lab.ts`, exc
 button) step the pop-up aside so the effect can be seen: it fades out (160ms), 0.5s later the
 effect plays, and 0.5s after it has finished (its promise resolves, then no board effects are left
 and the camera is at rest, at most 8s) it pops back in on the same tab and scroll position.
-Opening or closing the pop-up by hand meanwhile cancels the return (`playOnBoard`).
+Opening or closing the pop-up by hand meanwhile cancels the return (`playOnBoard`). While the
+effect plays, the camera zooms in on the target player at the game's close zoom and follows them
+(so a ride or a ring stays in view, as in a real game), then returns to the Lab's overview zoom as
+the pop-up comes back. The zoom controls (Zoom in, Zoom out, Zoom modes) pass `focus: false` and
+leave the camera to themselves.
 
 ### Arcade games (board + action bar)
 
