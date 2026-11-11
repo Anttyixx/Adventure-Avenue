@@ -164,7 +164,21 @@ export function drawBalloon(ctx: Ctx, x: number, y: number, color: string, sway:
     // Anchor the basket rim at the rider's waist, just like the original drawing.
     const h = 144;
     const w = (h * art.width) / art.height;
-    ctx.drawImage(art, -w / 2, -126, w, h);
+    const basketTop = Math.round(art.height * 0.85);
+    const rim = -126 + (basketTop / art.height) * h;
+    ctx.drawImage(art, 0, 0, art.width, basketTop, -w / 2, -126, w, rim + 126);
+    // Grow just the basket, anchored at its rim; the canopy and ropes keep their size.
+    ctx.drawImage(
+      art,
+      0,
+      basketTop,
+      art.width,
+      art.height - basketTop,
+      (-w * 1.05) / 2,
+      rim,
+      w * 1.05,
+      (h - rim - 126) * 1.05,
+    );
     ctx.restore();
     return;
   }

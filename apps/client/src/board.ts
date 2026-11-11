@@ -787,32 +787,42 @@ export class BoardView {
     }
 
     if (how === 'balloon') {
-      // Up, up and away: rise under a balloon in the player's color, drift over, settle down.
       const dur = ms(T.travelBalloon);
-      const high = 170;
-      let sway = 0;
       const frameH = 48 * 1.35;
+      let bx = start.x;
+      let by = start.y;
+      let lift = 0;
+      let sway = 0;
+      const smooth = (k: number) => {
+        const v = clamp(k);
+        return v * v * (3 - 2 * v);
+      };
       this.fx.push({
         t0: performance.now(),
         dur,
         draw: (ctx, k) => {
-          const fade = Math.min(1, k / 0.08, (1 - k) / 0.08);
           ctx.save();
-          ctx.globalAlpha = fade;
-          drawBalloon(ctx, t.x, t.y + 21 - t.hop - frameH * t.size * 0.35, color, sway);
+          ctx.globalAlpha = Math.min(1, k / 0.08, (1 - k) / 0.08);
+          drawBalloon(ctx, bx, by + 21 - lift - frameH * t.size * 0.35, color, sway);
           ctx.restore();
         },
       });
       await run(dur, (k, now) => {
-        const rise = clamp(k / 0.3);
-        const fall = clamp((k - 0.75) / 0.25);
-        const drift = clamp((k - 0.2) / 0.6);
-        const e = drift * drift * (3 - 2 * drift);
-        t.x = lerp(start.x, dest.x, e);
-        t.y = lerp(start.y, dest.y, e);
-        t.hop = high * (easeOut(rise) - fall * fall * (3 - 2 * fall));
-        sway = Math.sin(now / 260) * 0.08 * (1 - fall);
-        pose(1);
+        const enter = smooth(k / 0.18);
+        const exit = smooth((k - 0.82) / 0.18);
+        const seated = enter * (1 - exit);
+        const rise = smooth((k - 0.18) / 0.2);
+        const fall = smooth((k - 0.65) / 0.17);
+        const drift = smooth((k - 0.26) / 0.44);
+        bx = lerp(start.x, dest.x, drift);
+        by = lerp(start.y, dest.y, drift);
+        lift = 170 * (rise - fall);
+        sway = Math.sin(now / 260) * 0.08 * (rise - fall);
+        // Step into the basket while shrinking; hop out and regain full size after landing.
+        t.x = bx - 22 * Math.sin(enter * Math.PI) + 22 * Math.sin(exit * Math.PI);
+        t.y = by;
+        t.hop = lift + seated * 22 + Math.sin(enter * Math.PI) * 8 + Math.sin(exit * Math.PI) * 8;
+        pose(1, lerp(1, 0.62, seated));
       });
       return finish();
     }

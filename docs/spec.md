@@ -1333,7 +1333,7 @@ the engine's warp event says what carried the player, which changes nothing in t
   `taxi-route.ts`): at a portal the car drives into it, shrinks away and pops out of the partner.
   About a quarter second a tile, faster on long rides so the drive stays under 4 seconds; with no
   way there by road it drives straight across.
-- **Balloon:** a whoosh, and the player rises under a hot-air balloon in their color, drifts The ride uses a painted base/tint PNG in `balloon-v18/`: cream panels and wicker stay fixed, canopy panels take the rider’s color. The basket rim stays at the rider’s waist; the original canvas drawing remains a loading fallback.
+- **Balloon:** a whoosh, and the player rises under a hot-air balloon in their color, drifts The ride uses a painted base/tint PNG in `balloon-v18/`: cream panels and wicker stay fixed, canopy panels take the rider’s color. The basket rim stays at the rider’s waist; the original canvas drawing remains a loading fallback. Boarding uses a 5% larger basket: the player steps in over the first 18% of the ride, shrinking to 62% size, then hops out and returns to full size during the final 18%, after landing. Reduced motion skips the ride.
   over swaying, and settles down.
 - **Swap:** both players fly at once, curving past each other on opposite sides, each leaving a
   trail of dots in their color.
