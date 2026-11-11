@@ -601,8 +601,10 @@ export class Game {
     const G = this.G;
     const owner = G.players[sq.owner];
     if (isClosed(owner)) {
+      // No fee while the owner is closed, but the shop can still be bought out. Shops are open
+      // or closed with their owner, so it opens (or stays closed) with whoever buys it.
       await this.log(`${owner.name}'s shop is closed. No fee!`, p.id, 'effect', [owner.id]);
-      return;
+      return this.offerBuyout(p, sq);
     }
     await this.chargeFee(p, sq, shopFee(G, sq));
     if (G.over) return;
@@ -751,8 +753,9 @@ export class Game {
     if (sq.owner === p.id) return this.ownPlot(p, sq);
     const owner = G.players[sq.owner];
     if (isClosed(owner)) {
+      // Closed: no fee or effect, but it can still be bought out (see rivalShop).
       await this.log(`${owner.name}'s ${buildingName(sq.b!)} is closed.`, p.id, 'effect', [owner.id]);
-      return;
+      return this.offerBuyout(p, sq);
     }
     switch (sq.b) {
       case 'checkpoint':

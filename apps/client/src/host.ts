@@ -5,6 +5,7 @@
 import {
   Game,
   SUITS,
+  isClosed,
   netWorth,
   stockPrice,
   stockValue,
@@ -1065,6 +1066,13 @@ export class HotSeat implements GameIO {
         if (['Purchase', 'Construction', 'Buyout', 'Auction'].includes(e.reason) && e.from >= 0)
           for (const n of G.nodes)
             if (n.owner === e.from && this.owners.get(n.id) !== e.from) {
+              // Shops are open or closed with their owner: a closed shop bought by an open player
+              // rolls its gate up; an open one bought by a closed player brings it down.
+              const before = this.owners.get(n.id) ?? -1;
+              const wasClosed = before >= 0 && isClosed(G.players[before]);
+              const nowClosed = isClosed(G.players[e.from]);
+              if (wasClosed && !nowClosed) board.openShops([n.id]);
+              else if (!wasClosed && nowClosed) board.closeGate(n.id);
               this.owners.set(n.id, e.from);
               this.values.set(n.id, n.value);
               sound.play(e.reason === 'Buyout' ? 'buyout' : 'buy');

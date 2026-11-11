@@ -5,6 +5,7 @@ import { Game } from '../src/engine';
 import { simulate } from '../src/headless';
 import {
   confidence,
+  isClosed,
   isShopLike,
   market,
   netWorth,
@@ -150,6 +151,36 @@ describe('fees, dividends and commission', () => {
     expect(shop.owner).toBe(a.id);
     expect(b.cash).toBe(bCash + 40 + 600);
     expect(a.cash).toBe(5000 - 40 - 1000);
+  });
+
+  it("offers a buyout of a closed rival's shop: no fee, and it opens or stays closed with its buyer", async () => {
+    const { G, game, asked } = makeGame('standard', (r) => (r.kind === 'buyout' ? true : undefined));
+    const [a, b] = G.players;
+    a.cash = 5000;
+    b.closed = true;
+    const shop = at(G, 6, 0);
+    shop.owner = b.id;
+    const bCash = b.cash;
+    await game.landShop(a, shop);
+    expect(asked.some((r) => r.kind === 'buyout')).toBe(true);
+    expect(shop.owner).toBe(a.id);
+    // No fee, just the buyout: the closed owner still gets their 3x.
+    expect(b.cash).toBe(bCash + 600);
+    expect(a.cash).toBe(5000 - 1000);
+    expect(isClosed(G.players[shop.owner])).toBe(false);
+  });
+
+  it('a closed buyer keeps the bought shop closed', async () => {
+    const { G, game } = makeGame('standard', (r) => (r.kind === 'buyout' ? true : undefined));
+    const [a, b] = G.players;
+    a.cash = 5000;
+    a.onBreak = true;
+    b.closed = true;
+    const shop = at(G, 6, 0);
+    shop.owner = b.id;
+    await game.landShop(a, shop);
+    expect(shop.owner).toBe(a.id);
+    expect(isClosed(G.players[shop.owner])).toBe(true);
   });
 });
 

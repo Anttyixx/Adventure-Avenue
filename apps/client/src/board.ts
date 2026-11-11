@@ -941,6 +941,20 @@ export class BoardView {
     });
   }
 
+  /** One shop's gate comes down where it stands (a closed player bought it): no camera move. */
+  closeGate(id: number) {
+    const start = performance.now();
+    this.gates.set(id, { start, opening: false });
+    this.gateSound(start, false);
+    // Once down, the gate is drawn from the state (its owner is closed).
+    window.setTimeout(
+      () => {
+        if (this.gates.get(id)?.start === start) this.gates.delete(id);
+      },
+      (T.closeShutter + 50) * this.speed,
+    );
+  }
+
   private async moveGates(sqs: number[], opening: boolean) {
     if (!sqs.length) return;
     this.showHold = true;

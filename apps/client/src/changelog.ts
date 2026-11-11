@@ -26,6 +26,18 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: '2026-11-11-closed-buyouts',
+    date: 'Nov 11, 2026',
+    title: 'Buy out closed shops',
+    features: [
+      {
+        tag: 'rules',
+        title: 'Closed shops can be bought out',
+        text: 'Landing on a closed shop still charges no fee, but you can now buy it out. It opens right away if your shops are open, or stays closed if yours are closed too.',
+      },
+    ],
+  },
+  {
     id: '2026-11-10-balloon-boarding',
     date: 'Nov 10, 2026',
     title: 'A better fit in the balloon',

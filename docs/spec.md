@@ -531,7 +531,12 @@ visiting it, for an Estate Agency), the visitor may buy it for 5x value. The own
 the buyer.
 
 **Closed shops.** If the owner is on a break (Take-a-break, Estate Agency or a venture card), their
-shops and buildings charge nothing until the owner's next turn starts.
+shops and buildings charge nothing until the owner's next turn starts. They can still be **bought
+out**: landing on one charges no fee (and a building does nothing) but offers the 5x buyout as
+usual, and the closed owner still receives their 3x. Shops are open or closed with their owner, so
+a bought-out shop goes with its buyer: if the buyer's shops are open, its gate rolls up and it
+opens at once; if the buyer's shops are closed too, it stays closed (an open shop bought by a
+closed player has its gate come down).
 
 ## Vacant plots (Standard rules)
 
