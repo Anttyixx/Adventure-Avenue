@@ -376,6 +376,11 @@ with the game's painters (`paintBoard`, `paintSquare`, `drawTileGlow`, `drawRing
   tiles with problems carry red/yellow badges (`BoardIssue`s from `validateBoard`); a selected
   warp/portal shows its link line (`drawLink`).
 
+The Blank tile (`SquareType` 'blank') is a builder placeholder: placeable, drawn as a dashed empty
+tile, and an error in `validateBoard` until replaced, so it never reaches a game. The view chip
+switches the cached board picture between `paintBoard` and `paintTileTypes` (part of
+`boardImageKey`).
+
 Districts are automatic (`nextDistrict`), warp/portal colors are automatic (`transport.ts`), every
 edit is one undo step (`snapshot`), and `recompute` re-derives roads, the bank, transport links and
 problems after each change. Questions use the game-style `ask()` pop-up.

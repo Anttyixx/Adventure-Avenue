@@ -339,6 +339,22 @@ Erase deletes the selection in one undoable action. If the bank is part of it, e
 is erased and the bank stays (the action bar says so); Erase is only missing when the bank is the
 only thing selected.
 
+**Blank tiles.** The Tiles pane starts with a LAYOUT group holding the **Blank** tile: a
+placeholder for laying a board out before deciding what each tile is. It draws as an empty tile
+with a dashed outline and a faint "?", joins roads like any tile, saves with the board, and is
+replaced by placing any other tile on it. A board with blank tiles can't be played: each carries
+a red "?" problem badge ("Blank: choose what it becomes.") and Board settings lists "Choose what
+the blank tile becomes before playing" (`validateBoard`).
+
+**View chip.** The builder's toolbar starts with a view chip: **View: Normal** (the board as it
+will look in a game) or **View: Tile types** (gold outline), remembered on the device. The tile
+type view draws every tile as a solid color for its kind, with no pictures: gold for properties,
+coral for suits (and Change of suit), lavender for specials (the bank included), teal for
+transport (warp, cannon, taxi; portals too) and grey for blanks; properties get a thick border
+in their district's color with a thin white ring inside it. Roads, portal rings, badges, choices
+and the hover outline stay as in the normal view. A glass key of the colors sits under the info
+chip while it is on (`paintTileTypes`, `TILE_TYPE_COLORS` in `board.ts`).
+
 **Placing and erasing feedback.** A placed tile bounces up slightly and settles while a gold ring
 with sparkles grows from it (the game's purchase ring); an erased tile leaves a red ring. The
 chosen tile in the Tiles pane glows like a game choice (pulsing white outline in a gold glow,

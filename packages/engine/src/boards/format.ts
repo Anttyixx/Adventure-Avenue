@@ -47,6 +47,7 @@ export const PLACEABLE: SquareType[] = [
   'taxi',
   'swap',
   'warp',
+  'blank',
 ];
 
 /** What players download: the board plus a format tag so imports can be checked. */
@@ -177,6 +178,15 @@ export function validateBoard(def: BoardDef): BoardCheck {
       error(`Square ${where(s)} is outside the grid.`, { squares: [i], tileText: 'Outside the grid.' });
     if (!PLACEABLE.includes(s.t)) error(`Square ${where(s)} has an unknown type "${s.t}".`, { squares: [i] });
   });
+
+  const blanks = sq.filter((s) => s.t === 'blank');
+  if (blanks.length)
+    error(
+      blanks.length === 1
+        ? 'Choose what the blank tile becomes before playing.'
+        : `Choose what the ${blanks.length} blank tiles become before playing.`,
+      { squares: blanks.map(ix), tileText: 'Blank: choose what it becomes.', badge: '?' },
+    );
 
   const banks = sq.filter((s) => s.t === 'bank');
   if (banks.length !== 1)

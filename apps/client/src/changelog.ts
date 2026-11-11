@@ -26,6 +26,23 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: '2026-11-11-builder-blank-view',
+    date: 'Nov 11, 2026',
+    title: 'Plan boards faster in the builder',
+    features: [
+      {
+        tag: 'new',
+        title: 'Blank tiles',
+        text: 'Lay a board out with Blank tiles first, then place the real tile over each one later. A board with blanks left can be saved but not played.',
+      },
+      {
+        tag: 'new',
+        title: 'Tile type view',
+        text: 'A new view chip in the builder shows every tile as a color for its kind (property, suit, special, transport, blank), with district borders, so the layout is easy to read.',
+      },
+    ],
+  },
+  {
     id: '2026-11-11-taxi-roads',
     date: 'Nov 11, 2026',
     title: 'Taxis take the roads',

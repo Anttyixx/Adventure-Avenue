@@ -30,7 +30,9 @@ export type SquareType =
   /** Swap: trade places with any other player. */
   | 'swap'
   /** Landing here moves the player to the square in `link` (detached areas). */
-  | 'warp';
+  | 'warp'
+  /** Blank: a placeholder in the board builder, to lay a board out before choosing each tile. Boards with blanks can't be played. */
+  | 'blank';
 
 /** How many properties start as vacant plots (Standard rules), chosen at game setup. */
 export type PlotSetting = 'none' | 'few' | 'some' | 'lot' | 'all';

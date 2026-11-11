@@ -2517,6 +2517,64 @@ function repaintSquares(cv: HTMLCanvasElement, scale: number, G: GameState, ids:
   ctx.restore();
 }
 
+/** The kinds of tile the builder's tile-type view colors (see `paintTileTypes`). */
+export type TileCategory = 'property' | 'suit' | 'special' | 'transport' | 'blank';
+
+/** The tile-type view's fill for each kind of tile, with the name its key shows. */
+export const TILE_TYPE_COLORS: Record<TileCategory, { fill: string; label: string }> = {
+  property: { fill: '#f6d36b', label: 'Property' },
+  suit: { fill: '#ff8a8a', label: 'Suit' },
+  special: { fill: '#b794ff', label: 'Special' },
+  transport: { fill: '#5ad1c2', label: 'Transport' },
+  blank: { fill: '#c3c9d6', label: 'Blank' },
+};
+
+/** Which kind of tile a square is, as the builder's palette groups them. */
+export function tileCategory(t: string): TileCategory {
+  if (t === 'shop' || t === 'plot') return 'property';
+  if (['spade', 'heart', 'diamond', 'club', 'change'].includes(t)) return 'suit';
+  if (['warp', 'portal', 'cannon', 'taxi'].includes(t)) return 'transport';
+  if (t === 'blank') return 'blank';
+  return 'special';
+}
+
+/**
+ * The builder's tile-type view: roads, then every tile as a solid color for its kind (no
+ * pictures), with a thick border in its district's color (a white ring between them keeps light
+ * borders readable).
+ */
+export function paintTileTypes(ctx: CanvasRenderingContext2D, G: GameState) {
+  drawRoads(ctx, G);
+  const L = G.layout;
+  for (const sq of G.nodes) {
+    const c = squareCenter(sq, L);
+    ctx.save();
+    ctx.fillStyle = 'rgba(0,0,0,0.18)';
+    tileShape(ctx, L, c.x + 2, c.y + 5, TILE / 2, 12);
+    ctx.fill();
+    ctx.fillStyle = TILE_TYPE_COLORS[tileCategory(sq.t)].fill;
+    tileShape(ctx, L, c.x, c.y, TILE / 2, 12);
+    ctx.fill();
+    const district = sq.d >= 0 ? G.districts[sq.d] : null;
+    if (district) {
+      ctx.strokeStyle = district.color;
+      ctx.lineWidth = 8;
+      tileShape(ctx, L, c.x, c.y, TILE / 2 - 4, 9);
+      ctx.stroke();
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 2.5;
+      tileShape(ctx, L, c.x, c.y, TILE / 2 - 9.5, 6);
+      ctx.stroke();
+    } else {
+      ctx.strokeStyle = 'rgba(38,49,79,0.35)';
+      ctx.lineWidth = 2;
+      tileShape(ctx, L, c.x, c.y, TILE / 2 - 1, 11);
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+}
+
 /** One leg of a taxi ride: driving between two points, or shrinking into / out of a portal. */
 interface TaxiLeg {
   kind: 'drive' | 'into' | 'out';
@@ -3924,6 +3982,16 @@ function drawSquare(ctx: CanvasRenderingContext2D, G: GameState, sq: Square) {
               : `${squareFee(G, sq)}G`;
       if (owner) amount(fee);
     }
+  } else if (sq.t === 'blank') {
+    // A placeholder from the board builder: an empty tile with a dashed outline and a faint "?".
+    ctx.save();
+    ctx.setLineDash([7, 5]);
+    ctx.strokeStyle = '#9aa3b8';
+    ctx.lineWidth = 2.5;
+    tileShape(ctx, L, c.x, c.y, TILE / 2 - 10, 7);
+    ctx.stroke();
+    ctx.restore();
+    label(ctx, c.x, c.y + 2, '?', '#b4bccd', 26);
   } else {
     // Special tiles carry no name: just their picture, centered (hex pictures a little smaller,
     // around the middle, clear of the slanted border). The name is in the tile's pop-up.

@@ -117,7 +117,7 @@ const rnd = (n: number) => Math.floor(Math.random() * n);
  * Controls for UI elements that were just added or changed: they shake once and glow so they
  * are easy to find. Update this list with each change.
  */
-const RECENT = new Set(['Travel through a portal', 'Ride: taxi']);
+const RECENT = new Set(['Builder: blank tiles', 'Builder: tile type view']);
 
 /**
  * Which board the lab plays on: Town with portal links (square, the default) or Twin Lakes (hex),
@@ -1087,6 +1087,25 @@ export async function openLab(app: HTMLElement, section?: string) {
         openLabBuilder(root, portalTown(), '.ed-tool-button[aria-label="Links"]', () =>
           hud.tick('Board builder test play pressed.'),
         ),
+      ),
+      ...(['normal', 'types'] as const).map((view) =>
+        btn(view === 'types' ? 'Builder: tile type view' : 'Builder: blank tiles', () => {
+          // A sample board with a few tiles left blank, opened in the chosen view.
+          const board = portalTown();
+          board.squares
+            .filter((sq) => sq.t !== 'bank')
+            .filter((_, i) => i % 9 === 4)
+            .forEach((sq) => {
+              sq.t = 'blank';
+              delete sq.d;
+            });
+          try {
+            localStorage.setItem('adventure-avenue-editor-view', view);
+          } catch {
+            /* private browsing */
+          }
+          openLabBuilder(root, board, null, () => hud.tick('Board builder test play pressed.'));
+        }),
       ),
     );
     row(

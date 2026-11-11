@@ -25,6 +25,7 @@ const SPECIAL: Record<string, string> = {
   taxi: 'Taxi',
   swap: 'Swap',
   warp: 'Warp',
+  blank: 'Blank tile',
 };
 
 export function squareName(G: GameState, sq: Square): string {
@@ -91,6 +92,7 @@ export function squareInfo(G: GameState, sq: Square): string {
     hike: 'Price Up: your fees are 10% higher until your next turn.',
     taxi: 'Taxi: ride to any special square and use it.',
     swap: 'Swap: trade places with any other player.',
+    blank: 'A placeholder: choose what it becomes in the board builder.',
     warp: `Stop here to jump to ${G.nodes[sq.link ?? -1]?.t === 'bank' ? 'the bank' : 'its partner warp (same color), even in another part of the map'}.`,
   };
   return info[sq.t] ?? '';

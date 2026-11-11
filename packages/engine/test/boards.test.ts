@@ -215,6 +215,21 @@ function hexBoard(): BoardDef {
   };
 }
 
+describe('blank tiles', () => {
+  it('can be placed while building, but a board with blanks cannot be played', () => {
+    const board: BoardDef = structuredClone(TOWN);
+    const i = board.squares.findIndex((sq) => sq.t === 'venture');
+    board.squares[i] = { x: board.squares[i].x, y: board.squares[i].y, t: 'blank' };
+    const check = validateBoard(board);
+    expect(check.errors).toContain('Choose what the blank tile becomes before playing.');
+    const issue = check.issues.find((x) => x.badge === '?')!;
+    expect(issue.squares).toEqual([i]);
+    // Choosing a real tile for it makes the board playable again.
+    board.squares[i] = { ...board.squares[i], t: 'venture' };
+    expect(validateBoard(board).errors).toEqual([]);
+  });
+});
+
 describe('hex boards', () => {
   it('has six neighbors per cell, and neighbors are mutual', () => {
     for (const [x, y] of [

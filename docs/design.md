@@ -570,10 +570,16 @@ if (!(await ask(`Delete ${d.name}?`, 'Its 4 properties will be removed from the 
 ### 5.12 Tiles pane (builder)
 
 - A side panel (§5.4) titled "Tiles" with the hint "Pick one, then click or drag on the board";
-  groups (PROPERTIES, SUITS, SPECIALS, TRANSPORT) use section headings; tiles are the game's own
+  groups (LAYOUT with the Blank placeholder, PROPERTIES, SUITS, SPECIALS, TRANSPORT) use section
+  headings; tiles are the game's own
   tile art in a two-column grid. The chosen tile glows like a game choice (pulsing white outline
   in a gold glow + white rings spreading out, CSS `::before`/`::after` matched to the tile).
   Shown only while placing.
+
+- **View chip** (`.ed-view-chip`, first in the toolbar): "View: Normal" / "View: Tile types",
+  gold outline and text when on. The tile-type view is a planning aid: solid fills by kind
+  (`TILE_TYPE_COLORS`), district borders with a white ring inside, no pictures, and a glass key
+  (`.ed-legend`: 12px swatches and names, 12px bold) under the info chip while it is on.
 
 ### 5.13 Problem badges and lists
 

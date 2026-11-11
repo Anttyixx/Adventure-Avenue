@@ -33,6 +33,8 @@ import {
   drawRoadArrow,
   drawTileGlow,
   paintBoard,
+  paintTileTypes,
+  TILE_TYPE_COLORS,
   paintGrass,
   paintSquare,
   worldSize,
@@ -85,6 +87,16 @@ const PALETTE: { group: string; items: { tool: Tool; label: string; hint: string
     ],
   },
   {
+    group: 'Layout',
+    items: [
+      {
+        tool: 'blank',
+        label: 'Blank',
+        hint: 'A placeholder: lay the board out first, then place the real tile over it.',
+      },
+    ],
+  },
+  {
     group: 'Properties',
     items: [
       {
@@ -127,6 +139,9 @@ const PALETTE: { group: string; items: { tool: Tool; label: string; hint: string
     ],
   },
 ];
+
+/** Remembers the builder's view (normal or tile types) on this device. */
+const VIEW_KEY = 'adventure-avenue-editor-view';
 
 /** How long a placed or erased tile's effect plays. */
 const TILE_FX_MS = 650;
@@ -584,6 +599,46 @@ export function openEditor(
     },
     '300%',
   );
+  /**
+   * The view chip: Normal (the board as it will look) or Tile types (each tile a solid color
+   * for its kind, districts as colored borders), remembered on this device. A key of the colors
+   * shows under the toolbar in the tile-type view.
+   */
+  let typeView = false;
+  try {
+    typeView = localStorage.getItem(VIEW_KEY) === 'types';
+  } catch {
+    /* private browsing */
+  }
+  const viewChip = h('button', {
+    class: 'btn small ed-view-chip',
+    title: 'Switch between the normal look and a view colored by tile type.',
+    onclick: () => {
+      typeView = !typeView;
+      try {
+        localStorage.setItem(VIEW_KEY, typeView ? 'types' : 'normal');
+      } catch {
+        /* private browsing */
+      }
+      syncView();
+      redraw();
+    },
+  });
+  const legend = h(
+    'div',
+    { class: 'ed-legend glass', 'aria-label': 'Tile type colors' },
+    ...Object.values(TILE_TYPE_COLORS).map(({ fill, label }) =>
+      h('span', { class: 'ed-legend-item' }, h('i', { style: `background:${fill}` }), label),
+    ),
+    h('span', { class: 'ed-legend-item' }, h('i', { class: 'district' }), 'District border'),
+  );
+  const syncView = () => {
+    viewChip.textContent = typeView ? 'View: Tile types' : 'View: Normal';
+    viewChip.setAttribute('aria-pressed', String(typeView));
+    viewChip.classList.toggle('on', typeView);
+    legend.hidden = !typeView;
+  };
+  syncView();
   // Viewing: Edit and Back. Editing: Undo, Test play, Menu and Done (save or not, then view).
   const viewButtons = [
     h('button', { class: 'btn small main ed-edit', onclick: () => startEditing() }, 'Edit'),
@@ -595,7 +650,7 @@ export function openEditor(
     h('button', { class: 'btn small', onclick: () => editorMenu() }, 'Menu'),
     h('button', { class: 'btn small main ed-done', onclick: () => void finishEditing() }, 'Done'),
   ];
-  const topbar = h('div', { class: 'ed-top toolbar' }, zoomChip, ...viewButtons, ...editButtons);
+  const topbar = h('div', { class: 'ed-top toolbar' }, viewChip, zoomChip, ...viewButtons, ...editButtons);
   /** Show the controls for viewing or editing. */
   const syncMode = () => {
     root.classList.toggle('ed-viewing', viewing);
@@ -647,7 +702,7 @@ export function openEditor(
   });
   const actionContent = h('div', { class: 'ed-action-content' });
   actionbar.append(actionContent);
-  root.append(stage, info, topbar, palette, toolBar, tileInspector, settingsPanel, actionbar);
+  root.append(stage, info, topbar, legend, palette, toolBar, tileInspector, settingsPanel, actionbar);
   let notice = '';
   let noticeBad = false;
   let noticeTimer = 0;
@@ -1358,7 +1413,7 @@ export function openEditor(
     // Cache the board and empty grid during camera motion, as the game caches its scenery.
     const closest = zoomScale(near, far, EDITOR_ZOOM_MIN_OUT);
     const imageScale = Math.min(2, Math.max(1, Math.ceil(closest * dpr * 2) / 2));
-    const imageKey = `${imageScale}:${moving ? [...selection].join(',') : ''}:${JSON.stringify(board)}`;
+    const imageKey = `${imageScale}:${typeView}:${moving ? [...selection].join(',') : ''}:${JSON.stringify(board)}`;
     if (!boardImage || imageKey !== boardImageKey) {
       boardImage = h('canvas') as HTMLCanvasElement;
       boardImage.width = Math.ceil(w * imageScale);
@@ -1380,7 +1435,8 @@ export function openEditor(
         }));
       }
       // Portals turn, so they're drawn over the cache; while a group moves they stay still in it.
-      paintBoard(ctx, G, false, false, !!moving);
+      if (typeView) paintTileTypes(ctx, G);
+      else paintBoard(ctx, G, false, false, !!moving);
       // Empty cells
       const used = new Set(board.squares.map((s) => `${s.x},${s.y}`));
       ctx.setLineDash([8, 6]);
