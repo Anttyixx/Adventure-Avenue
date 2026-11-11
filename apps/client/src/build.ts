@@ -10,7 +10,7 @@ export const IS_DEV_BUILD = BUILD.branch !== 'main';
  * The version released on main (the stable site). Bump it whenever dev is pushed to main:
  * dev builds always work on the next version.
  */
-export const VERSION = '0.1';
+export const VERSION = '0.2';
 
 /** The version after `v` (0.1 -> 0.2). */
 function nextVersion(v: string): string {

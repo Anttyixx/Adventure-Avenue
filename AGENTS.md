@@ -35,7 +35,7 @@ When the spec and the code disagree, ask the owner which is right; then fix the 
   - `dev`: https://anttyixx.github.io/Adventure-Avenue/dev/ (e.g. "dev build `bbca06e`")
   - `main`: https://anttyixx.github.io/Adventure-Avenue/
 - **Versions.** `VERSION` in `apps/client/src/build.ts` is the version released on `main` (now
-  0.1). `dev` shows the next version (v0.2) plus its build. When the owner says to push to
+  0.2). `dev` shows the next version (v0.3) plus its build. When the owner says to push to
   `main`, bump `VERSION` to the version being released.
 - **For every change players will notice:**
   1. Add an entry at the top of `apps/client/src/changelog.ts` (shown in "What's new" on the main
