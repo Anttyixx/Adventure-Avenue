@@ -132,7 +132,7 @@ Requests refer to parts of the game by these names:
   - **UI Lab** (`#ui-lab`), **Stocks lab** (`#stocks-lab`), **board editor** (`#editor`).
 - **Stocks:** two systems chosen in game setup (`G.stocks`): `dynamic` (default) and `classic`
   (for old saves). See "Stock market" in the spec.
-- **Board art:** property base/tint PNGs live in `apps/client/src/assets/properties-v3/`, other board art in
+- **Board art:** property base/tint PNGs live in `apps/client/src/assets/properties-v3/`, other board art in Balloon travel uses `balloon-v18/` base/tint PNGs through `travel-art.ts`; keep the original canvas balloon as a fallback.
   `assets/tiles-v2/`, mapped in
   `props.ts` (`ART_SET`, `ART_SOURCES`). The previous property set and original Checkpoint/Circus/Motel pairs remain
   unchanged in `assets/tiles-v2/` and `assets/props/`; `PROPERTY_SET` selects the property set. Base-only sprites never auto-recolor blue pixels. New recolorable sprites

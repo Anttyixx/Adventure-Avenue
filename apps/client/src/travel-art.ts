@@ -159,6 +159,15 @@ export function drawBalloon(ctx: Ctx, x: number, y: number, color: string, sway:
   ctx.save();
   ctx.translate(x, y);
   ctx.rotate(sway);
+  const art = propCanvas('balloon-ride', color);
+  if (art) {
+    // Anchor the basket rim at the rider's waist, just like the original drawing.
+    const h = 144;
+    const w = (h * art.width) / art.height;
+    ctx.drawImage(art, -w / 2, -126, w, h);
+    ctx.restore();
+    return;
+  }
   // Envelope with stripes.
   const ey = -78;
   ctx.fillStyle = color;

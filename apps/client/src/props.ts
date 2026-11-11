@@ -16,6 +16,7 @@ export type PropKey =
   | `circus${0 | 1 | 2 | 3}`
   | 'checkpoint'
   | 'balloon'
+  | 'balloon-ride'
   | 'tax'
   | 'home'
   | 'motel'
@@ -59,6 +60,12 @@ export type PropKey =
   | 'portal-vortex'
   | 'portal-vortex-inner'
   | `${'square' | 'hex'}-${'tile' | 'shadow' | 'border' | 'selection'}`;
+
+const balloonRideArt = import.meta.glob<string>('./assets/balloon-v18/*.png', {
+  eager: true,
+  query: '?url',
+  import: 'default',
+});
 
 /** Change to classic to restore the original PNGs and canvas artwork. */
 export const ART_SET: string = 'layered';
@@ -163,6 +170,10 @@ const legacy = import.meta.glob<string>('./assets/props/*.png', {
 });
 
 const urls = Object.fromEntries([
+  ...Object.entries(balloonRideArt).map(([path, url]) => [
+    path.replace(/^.*\//, '').replace('-base.png', '.png'),
+    { url, explicit: true },
+  ]),
   ...Object.entries(legacy).map(([path, url]) => [path.replace(/^.*\//, ''), { url, explicit: false }]),
   ...(ART_SET === 'layered'
     ? Object.entries(layered).map(([path, url]) => [

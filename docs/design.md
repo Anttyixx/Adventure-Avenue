@@ -725,7 +725,7 @@ if (!(await ask(`Delete ${d.name}?`, 'Its 4 properties will be removed from the 
   `HEX_ART` (90%) around the base line, clear of the slanted top edges.
 - Sprites must never be clipped: check new art for straight cuts at the image edge (the old Boom
   burst had them; `boom-v17/` replaces it).
-- **Rides** (`travel-art.ts`, drawn by `BoardView.travel`): each way of jumping to a square has its
+- **Rides** (`travel-art.ts`, drawn by `BoardView.travel`): each way of jumping to a square has its Balloon rides use `balloon-v18/` base/tint art, with a recolored canopy, cream panels and warm wicker basket. Keep the rider visible in the open suspension gap and anchor the basket rim at their waist.
   own look (warp beam, portal vortex, cannon smoke and tumbling arc, taxi with the rider's color on
   the roof, hot-air balloon in the player's color, swap trails in both players' colors, venture
   gold stars). New rides follow the same pattern: a token pose plus short-lived world effects.

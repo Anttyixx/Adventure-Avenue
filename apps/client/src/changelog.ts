@@ -26,6 +26,13 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: '2026-11-11-balloon-ride-sprite',
+    date: 'Nov 11, 2026',
+    title: 'A painted balloon ride',
+    features: [],
+    extras: ['Balloon travel has a rounded painted canopy in your player color and a wicker basket.'],
+  },
+  {
     id: '2026-11-11-builder-blank-view',
     date: 'Nov 11, 2026',
     title: 'Plan boards faster in the builder',
