@@ -37,3 +37,60 @@ describe('warp events say what carried the player', () => {
     expect(p.prev).toBe(-1);
   });
 });
+
+describe('every transport arrival collects suits', () => {
+  it.each(['cannon', 'taxi', 'balloon', 'warp', 'portal', 'card', 'swap', 'swapBack'] as const)(
+    '%s awards a suit as soon as travel finishes',
+    async (how) => {
+      for (const type of ['spade', 'heart', 'diamond', 'club', 'change'] as const) {
+        const { G, game, events } = makeGame();
+        const p = G.players[0];
+        const dest = G.nodes.find((n) => n.t === 'spade')!;
+        dest.t = type;
+        p.suits.fill(false);
+        G.changeSuit = 2;
+        await game.warp(p, dest.id, how);
+        expect(p.suits[type === 'change' ? 2 : ['spade', 'heart', 'diamond', 'club'].indexOf(type)]).toBe(
+          true,
+        );
+        expect(events.findIndex((e) => e.type === 'suit')).toBeGreaterThan(
+          events.findIndex((e) => e.type === 'warp'),
+        );
+        game.venture = async () => {};
+        await game.landAfterWarp(p);
+        expect(events.filter((e) => e.type === 'suit')).toHaveLength(1);
+        if (type === 'change') expect(G.changeSuit).toBe(3);
+      }
+    },
+  );
+  it('collects for both players in a swap, including the player who did not choose it', async () => {
+    const { G, game } = makeGame('standard', (r) => (r.kind === 'swapTarget' ? 1 : undefined));
+    const [a, b] = G.players;
+    a.node = G.nodes.find((n) => n.t === 'heart')!.id;
+    b.node = G.nodes.find((n) => n.t === 'club')!.id;
+    a.suits.fill(false);
+    b.suits.fill(false);
+    await game.swap(a);
+    expect(a.suits[3]).toBe(true);
+    expect(b.suits[1]).toBe(true);
+  });
+});
+
+it('a taxi skips suits along the road but collects its destination suit', async () => {
+  const { G, game } = makeGame('standard', (r) => (r.kind === 'pickSquare' ? 2 : undefined));
+  G.nodes = G.nodes.slice(0, 3);
+  const [start, passing, dest] = G.nodes;
+  start.t = 'taxi';
+  passing.t = 'heart';
+  dest.t = 'club';
+  start.nb = [1];
+  passing.nb = [0, 2];
+  dest.nb = [1];
+  const p = G.players[0];
+  p.node = start.id;
+  p.suits.fill(false);
+  game.venture = async () => {};
+  await game.taxi(p);
+  expect(p.node).toBe(dest.id);
+  expect(p.suits).toEqual([false, false, false, true]);
+});

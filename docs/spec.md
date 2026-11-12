@@ -732,7 +732,7 @@ paycheck.
 - **Collecting:** entering a suit square (passing or landing) gives that suit if you don't have it. On a final step, the pickup starts immediately with no landing pause.
   When passing, the token does not stop: the suit pops up above it as it walks on.
   The change-of-suit square gives its current suit and then rotates spade -> heart -> diamond ->
-  club. Cannon, balloon and zoom warps also collect the suit at the destination.
+  club. Every transport arrival collects the suit at the destination: cannon, taxi, balloon, warp, portal, card and both players moved by a swap. Taxi road travel does not collect suits along the route; only stepping out at its destination counts. The pickup follows the travel animation immediately. Change-suit tiles rotate once per arrival, even when a landing effect also follows.
 - **Suit Yourself cards:** a wild card for any one missing suit. Gained from venture cards, Lucky
   Reels and Memory Blocks. Promotion consumes one wild per missing suit.
 - **Bank visit** (pass or land), in this order: win check (net worth already at the target when

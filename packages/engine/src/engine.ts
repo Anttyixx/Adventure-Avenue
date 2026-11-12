@@ -347,7 +347,9 @@ export class Game {
     }
     const path = choice.path;
     let left = n;
+    let arrivedByWarp = false;
     for (let i = 0; i < path.length; i++) {
+      arrivedByWarp = false;
       const next = path[i];
       const from = p.node;
       p.prev = p.node;
@@ -356,9 +358,10 @@ export class Game {
       await this.emit({ type: 'step', pid: p.id, from, to: next, left });
       if (i + 1 < path.length && G.nodes[next].t === 'portal' && G.nodes[next].link === path[i + 1]) {
         await this.warp(p, path[++i], 'portal');
+        arrivedByWarp = true;
       }
       if (left > 0) {
-        await this.passSquare(p, G.nodes[p.node]);
+        await this.passSquare(p, G.nodes[p.node], arrivedByWarp);
         if (G.over) return;
         // Passing a motel: the player may stop there instead, giving up the rest of the roll.
         if (await this.motelStop(p, G.nodes[p.node], left)) break;
@@ -366,12 +369,13 @@ export class Game {
     }
     // Arrival at a paired portal does not immediately send the player back.
     if (G.nodes[p.node].t === 'portal') await this.emit({ type: 'land', pid: p.id, sq: p.node });
-    else await this.land(p, G.nodes[p.node]);
+    else await this.land(p, G.nodes[p.node], arrivedByWarp);
   }
 
-  async passSquare(p: Player, sq: Square) {
-    if (SUIT_TYPES.includes(sq.t) || sq.t === 'change') await this.collectSuit(p, sq, true);
-    else if (sq.t === 'bank') await this.bankVisit(p, false);
+  async passSquare(p: Player, sq: Square, suitCollected = false) {
+    if (SUIT_TYPES.includes(sq.t) || sq.t === 'change') {
+      if (!suitCollected) await this.collectSuit(p, sq, true);
+    } else if (sq.t === 'bank') await this.bankVisit(p, false);
     else if (sq.t === 'plot' && sq.b === 'checkpoint' && sq.owner >= 0) {
       // A rival pays the toll; the owner pays nothing, but the toll still goes up.
       if (sq.owner !== p.id) await this.payToll(p, sq);
@@ -405,6 +409,9 @@ export class Game {
     p.node = to;
     p.prev = -1;
     await this.emit({ type: 'warp', pid: p.id, to, from, how, ...(other != null ? { other } : {}) });
+    // Touching a suit is enough, regardless of which ride moved this player.
+    const dest = this.G.nodes[to];
+    if (SUIT_TYPES.includes(dest.t) || dest.t === 'change') await this.collectSuit(p, dest);
   }
 
   // ---------------------------------------------------------------- suits, bank, promotion
@@ -456,7 +463,7 @@ export class Game {
 
   // ---------------------------------------------------------------- landing
 
-  async land(p: Player, sq: Square): Promise<void> {
+  async land(p: Player, sq: Square, suitCollected = false): Promise<void> {
     const G = this.G;
     await this.emit({ type: 'land', pid: p.id, sq: sq.id });
     switch (sq.t) {
@@ -472,10 +479,11 @@ export class Game {
       case 'heart':
       case 'diamond':
       case 'club':
-        await this.collectSuit(p, sq);
+        if (!suitCollected) await this.collectSuit(p, sq);
         return this.venture(p);
       case 'change':
-        return this.collectSuit(p, sq);
+        if (!suitCollected) await this.collectSuit(p, sq);
+        return;
       case 'roll':
         return this.rollAgain(p);
       case 'break':
@@ -543,8 +551,7 @@ export class Game {
     await this.log(`${p.name} was fired from the cannon to ${q.name}.`, p.id, 'move', [q.id]);
     await this.warp(p, q.node, 'cannon');
     const dest = G.nodes[q.node];
-    if (SUIT_TYPES.includes(dest.t) || dest.t === 'change') await this.collectSuit(p, dest);
-    else if (dest.t === 'bank') await this.bankVisit(p, true);
+    if (dest.t === 'bank') await this.bankVisit(p, true);
   }
 
   /** The squares a taxi can take you to: every special square except the bank, taxis and portals. */
@@ -562,7 +569,7 @@ export class Game {
     if (to == null || !options.includes(to)) to = options[0];
     await this.log(`${p.name} took a taxi.`, p.id, 'move');
     await this.warp(p, to, 'taxi');
-    return this.land(p, G.nodes[to]);
+    return this.land(p, G.nodes[to], true);
   }
 
   /** Swap: trade places with another player. */
@@ -577,10 +584,9 @@ export class Game {
     await this.log(`${p.name} swapped places with ${q.name}.`, p.id, 'move', [q.id]);
     await this.warp(p, q.node, 'swap', q.id);
     await this.warp(q, mine, 'swapBack');
-    // Like the cannon: arriving on a suit picks it up, arriving at the bank counts as stopping.
+    // The shared arrival already collected suits for both players; the initiator visits the bank.
     const dest = G.nodes[p.node];
-    if (SUIT_TYPES.includes(dest.t) || dest.t === 'change') await this.collectSuit(p, dest);
-    else if (dest.t === 'bank') await this.bankVisit(p, true);
+    if (dest.t === 'bank') await this.bankVisit(p, true);
   }
 
   async landShop(p: Player, sq: Square) {
@@ -864,7 +870,7 @@ export class Game {
   /** Landing after a warp that applies the destination's landing effect (balloon, zoom). */
   async landAfterWarp(p: Player) {
     const sq = this.G.nodes[p.node];
-    await this.land(p, sq);
+    await this.land(p, sq, true);
   }
 
   // ---------------------------------------------------------------- venture

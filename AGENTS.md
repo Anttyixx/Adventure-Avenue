@@ -109,6 +109,7 @@ Requests refer to parts of the game by these names:
     `ui/overview.ts`), with a button per player in the action bar. Hidden stack cards use size containment and stretch to the
     front card’s row; their extra status content must not size the stack. `Hud.glide` uses a
     generation guard and intended depth transforms so interrupted animations settle correctly.
+- **Suit arrivals:** `Game.warp` collects destination suits for every transported player, including swapBack. Its callers pass `suitCollected` when continuing into pass/land handling, so change-suit tiles rotate once.
 - **Portal links:** `newGame` must register endpoint metadata even when a graph edge already exists. Keep `toSide` paired correctly, with a fallback for older saves. `portal-links.ts`, `portal-link-art.ts` and `portal-travel.ts` share direction and travel feedback; `TIMING.portalStep` controls its duration.
 - **Board** (`apps/client/src/board.ts`):
   - **tiles/squares**, **districts** (color groups of shops), **vacant plots** (empty properties

@@ -26,6 +26,15 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: '2026-11-12-suits-every-arrival',
+    date: 'Nov 12, 2026',
+    title: 'Every arrival collects its suit',
+    features: [],
+    extras: [
+      'Suit pickup applies to every arrival, including cannons, taxis, balloons, portals, cards and both players in a swap. Taxi rides collect only at their destination, not along the road. Change-suit tiles rotate only once per arrival.',
+    ],
+  },
+  {
     id: '2026-11-12-immediate-arrivals',
     date: 'Nov 12, 2026',
     title: 'Checkpoints trigger as you arrive',

@@ -159,7 +159,7 @@ describe('portals during movement', () => {
     expect(emit).toHaveBeenCalledWith(
       expect.objectContaining({ type: 'warp', pid: p.id, to: exit.id, how: 'portal' }),
     );
-    expect(land).toHaveBeenCalledExactlyOnceWith(p, finish);
+    expect(land).toHaveBeenCalledExactlyOnceWith(p, finish, false);
   });
   it('stops at the exit without bouncing when the portal is the final step', async () => {
     const { game, p, exit } = routeGame();
@@ -169,6 +169,23 @@ describe('portals during movement', () => {
     expect(warp).toHaveBeenCalledTimes(1);
     expect(p.prev).toBe(-1);
   });
+  it.each([1, 2])(
+    'collects once when a portal reaches a change-suit tile with a %i-step roll',
+    async (steps) => {
+      const { G, game, p, entry, bank } = routeGame();
+      entry.link = bank.id;
+      entry.toBank = true;
+      bank.t = 'change';
+      p.suits.fill(false);
+      G.changeSuit = 0;
+      vi.spyOn(game, 'venture').mockResolvedValue(undefined);
+      const suit = vi.spyOn(game, 'collectSuit');
+      await game.move(p, steps);
+      expect(p.suits[0]).toBe(true);
+      expect(G.changeSuit).toBe(1);
+      expect(suit).toHaveBeenCalledTimes(1);
+    },
+  );
   it('visits the bank when passing through a bank-linked portal', async () => {
     const { game, p, entry, bank, finish } = routeGame();
     entry.link = bank.id;
