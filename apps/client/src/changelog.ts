@@ -33,7 +33,7 @@ export const CHANGELOG: ChangelogEntry[] = [
     extras: [
       'The last eligible bidder can still pass; properties with no bids return to the bank.',
       'Traded properties change hands on the board before a domination is celebrated.',
-      'Trade offers separate properties, cash and action buttons for easier comparison.',
+      'Trade offers keep their compact layout, with clearer give/get labels, stronger text contrast and more readable amounts.',
     ],
   },
   {

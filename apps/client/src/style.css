@@ -6080,21 +6080,11 @@ button.char-btn:focus-visible .char-btn-tag {
 
 .trade-bar {
   display: flex;
-  flex-direction: column;
-  align-items: stretch;
-  gap: 10px;
+  align-items: center;
+  gap: 12px;
   width: min(680px, calc(100vw - 48px));
   max-width: 100%;
   min-width: 0;
-}
-.tb-money {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  padding-top: 6px;
-  border-top: 1px solid var(--glass-line);
-  margin-top: auto;
 }
 /* One column per player: theirs side by side, the proposer (or offerer) on the left. */
 .tb-rows {
@@ -6109,7 +6099,7 @@ button.char-btn:focus-visible .char-btn-tag {
   flex-direction: column;
   gap: 5px;
   min-width: 0;
-  padding: 8px 10px;
+  padding: 5px 6px 6px 8px;
   border-radius: 10px;
   border-left: 4px solid var(--pc);
   background: rgba(255, 255, 255, 0.05);
@@ -6123,8 +6113,8 @@ button.char-btn:focus-visible .char-btn-tag {
 }
 .tb-who {
   font-family: var(--head);
-  font-size: 14px;
-  color: var(--pc);
+  font-size: 15px;
+  color: var(--text);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -6157,6 +6147,8 @@ button.tb-chip:hover {
   background: rgba(229, 72, 77, 0.35);
 }
 .tb-chip.cash {
+  color: #ffe59b;
+  background: rgba(255, 210, 63, 0.12);
   border-left-color: #ffd23f;
 }
 .tb-hint {
@@ -6218,16 +6210,20 @@ button.tb-chip:hover {
 .tb-btns {
   flex: none;
   display: flex;
-  justify-content: center;
-  flex-direction: row;
+  flex-direction: column;
   gap: 4px;
 }
 .prompt-center .tb-btns .btn {
   padding: 5px 14px;
   font-size: 14px;
 }
-.tb-btns .btn {
-  min-width: 90px;
+/* Accept on top, Counter and Decline side by side below it. */
+.tb-btns.three {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+}
+.tb-btns.three .btn.main {
+  grid-column: 1 / -1;
 }
 @media (max-height: 500px), (max-width: 760px) {
   .trade-bar {
@@ -6245,17 +6241,17 @@ button.tb-chip:hover {
     min-height: 18px;
   }
   .tb-who {
-    font-size: 10px;
+    font-size: 12px;
   }
   .tb-chips {
     max-height: 34px;
     min-height: 15px;
   }
   .tb-hint {
-    font-size: 9px;
+    font-size: 11px;
   }
   .tb-chip {
-    font-size: 10px;
+    font-size: 11px;
     padding: 1px 6px;
   }
   .tb-cash-in {

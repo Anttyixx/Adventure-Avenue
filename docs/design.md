@@ -730,7 +730,7 @@ if (!(await ask(`Delete ${d.name}?`, 'Its 4 properties will be removed from the 
   the roof, hot-air balloon in the player's color, swap trails in both players' colors, venture
   gold stars). New rides follow the same pattern: a token pose plus short-lived world effects.
 
-Trade offers stay in the action bar so the board remains visible. Use two colored columns: player/direction heading, property chips, then a separate Cash row. Received offers explicitly say “You receive from [name]” and “You give.” Center Propose/Cancel or Accept/Counter/Decline together below the terms. Watching players see the same terms with a waiting line. Preserve the two-column comparison on landscape phones and scroll long property lists.
+Trade offers keep the compact action bar layout: two colored offer columns and buttons to their right. Each column has a high-contrast heading above its property chips; editing places the cash stepper beside the heading, while reviewing keeps gold cash chips inline with the properties. Received offers say “You get” and “You give.” Accept sits above Counter/Decline. Keep phone labels and chips at least 11px, preserving the existing small footprint and scrolling long property lists.
 
 ### 5.17c Game setup
 
