@@ -121,6 +121,12 @@ export type LogKind =
 
 export interface LogLine {
   text: string;
+  /** Stable links within a saved turn log (missing in legacy saves). */
+  id?: string;
+  parent?: string;
+  /** Tile to locate when this entry is selected. */
+  sq?: number;
+  action?: 'roll' | 'land';
   /** The player the line is about (their color), if any. */
   color?: number;
   /** Turn the line belongs to: the round and the index into `order` of the player taking it. */
@@ -181,6 +187,8 @@ export interface GameState {
   /** Net worth of every player at the start of each round (and at the end of the match). */
   hist: number[][];
   log: LogLine[];
+  /** Monotonic log entry IDs, preserved across saves. */
+  logSeq?: number;
   over: boolean;
   winner: number;
   endReason: string;

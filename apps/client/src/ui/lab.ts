@@ -117,7 +117,7 @@ const rnd = (n: number) => Math.floor(Math.random() * n);
  * Controls for UI elements that were just added or changed: they shake once and glow so they
  * are easy to find. Update this list with each change.
  */
-const RECENT = new Set(['Motel stop', 'Motel saved movement', 'Motel bonus roll', 'New squares and Motel']);
+const RECENT = new Set(['Game log', 'Log: landing and purchase', 'Tax Office and Estate Agency labels']);
 
 /**
  * Which board the lab plays on: Town with portal links (square, the default) or Twin Lakes (hex),
@@ -1359,6 +1359,19 @@ export async function openLab(app: HTMLElement, section?: string) {
         cur().onBreak = !cur().onBreak;
         refresh();
       }),
+      boardBtn('Tax Office and Estate Agency labels', () => {
+        const active = G.order[G.turn];
+        const rival = G.players.find((p) => p.id !== active)!.id;
+        const tiles = G.nodes.filter((n) => n.t === 'plot' || n.t === 'shop').slice(0, 4);
+        tiles.forEach((sq, i) => {
+          sq.t = 'plot';
+          sq.b = i < 2 ? 'tax' : 'agency';
+          sq.owner = i % 2 ? rival : active;
+          sq.value = K.plotCost;
+        });
+        board.frameIds = tiles.map((sq) => sq.id);
+        refresh();
+      }),
       boardBtn('New squares and Motel', () => {
         // Price Up, Taxi and Swap squares, and a Motel, near the start of the board.
         const specials = G.nodes.filter((n) => ['venture', 'roll', 'break', 'boon'].includes(n.t));
@@ -2205,6 +2218,16 @@ export async function openLab(app: HTMLElement, section?: string) {
     row(
       s,
       btn('Game log', () => hud.toggleLog()),
+      btn('Log: landing and purchase', async () => {
+        const p = G.players[G.order[G.turn]];
+        const sq = G.nodes.find((n) => n.t === 'shop')!;
+        await game.log(`${p.name} rolled a 4.`, p.id, 'move', [], { action: 'roll' });
+        await game.logArrival(p, sq);
+        await game.log(`${p.name} bought a shop for ${sq.value}G.`, p.id, 'property', [], { sq: sq.id });
+        refresh();
+        hud.toggleLog(true);
+      }),
+
       btn('Game menu', () => hud.toggleMenu(true)),
       btn('Quit confirm', () => hud.confirmQuit()),
       btn('Room code button', () => hud.setRoom('KQZD', inviteURL('KQZD'))),

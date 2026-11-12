@@ -735,6 +735,8 @@ paycheck.
   suits (counting wilds) -> stock purchase (Standard; only when landing or after a promotion) ->
   free direction next turn if landed.
 
+**Active-player building labels:** Tax Offices show the actual amount the active player would pay (10% of their net worth), or receive when the owner lands (5% net worth). Estate Agencies show “Buy” on the owner’s turn and “Break” for other players. Amounts refresh when the active player or their net worth changes, including the board cache and tile tooltip. Shop arrival text uses its district/name without a price, and the Buy/Pass action bar omits the price row (the board and tile info retain it).
+
 **Promotion** clears all suits, adds 1 level and pays:
 
 ```
@@ -1349,8 +1351,8 @@ properties, the owner (a pill in their color with their portrait) or a muted "Fo
 - **Shop for sale:** one big gold **Price** (its value: the two are always the same then).
 - **Owned shop or 3-Star Shop:** a big gold **Fee** ("Fee · shops closed", struck through, while
   the owner is on a break), then lines for Value, Max value and Buyout (5x).
-- **Other buildings:** the Fee (10% NW for the Tax Office, the motel's fee; none for the Estate
-  Agency), the Value, and one sentence on what it does to rivals.
+- **Other buildings:** the active-player Tax Office fee or payout, motel fee, and Estate Agency effect (Buy or Break).
+  Each also shows Value and a sentence explaining its effect.
 - Standard rules add the district's **Stock** price ("19G a share"); every property ends with the
   district strip (its name, a dot per property in its owner's color, "Dominated").
 - **Every other square** says in a sentence what it does (bank, venture, suits, roll on, break,
@@ -1463,7 +1465,7 @@ bar's visible size, and changes to screen size or player-card space retarget the
 motion skips the size animation. The UI Lab's “Action bar resize test” exercises short, long and
 interrupted prompts. In the toolbar, between the
 zoom chip and Music chip: the **Game log** button (gold while the log is open). It opens the game log
-(turn by turn, newest at the bottom, scrollable back to the start of the game) as a glass panel in
+(turn by turn, newest at the bottom, with scrollable history) as a glass panel in
 the top right, just under the toolbar and above the player cards, as wide as the cards; it pops in
 from the top right. On short phone screens the open panel may run down over the player cards so
 enough lines show. The current turn's card ends with a waiting
@@ -1472,7 +1474,7 @@ choices are logged too** (a line each, also shown on the status line): "Rosa pas
 shop for 320G.", "Rosa passed on buying out Milo's shop for 1,600G.", "Rosa passed on buying
 stock.", "Rosa passed on selling stock.", "Rosa chose not to invest.", "Rosa passed on building on
 the vacant plot.", "Rosa passed on the 200G circus upgrade.", "Rosa passed on buying a shop."
-(Estate Agency), "Rosa passed on the hostile takeover.". The log's Close button, the Game log button again or Escape closes it. Bottom right: the player cards stacked vertically in turn order (online, each device
+(Estate Agency), "Rosa passed on the hostile takeover.". Every roll and landing/transport arrival is recorded. Landings are parent entries; purchases, fees and follow-up actions appear indented beneath the landing that caused them, until the next roll or arrival. Each purchase keeps its amount and target tile. Tile-linked entries are keyboard-accessible buttons; selecting one outlines the tile in gold and focuses the camera for 3 seconds, then returns to the game view. This changes only the view, never the player's movement choices. Older saves keep flat text entries where tile IDs are unavailable. The log's Close button, the Game log button again or Escape closes it. Bottom right: the player cards stacked vertically in turn order (online, each device
 turns the order round so its own player's card is at the bottom; turns still go top to bottom) (net worth, cash, level,
 suits and progress bar); they are always shown. Player cards show the character's whole sprite
 (trimmed to its drawn pixels, no fade).

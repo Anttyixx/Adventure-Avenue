@@ -1,5 +1,5 @@
 import { neighborCells, nextSteps, transportColor, type PortalWay, type TravelKind } from '@aa/engine';
-import { motelFee } from './names';
+import { motelFee, buildingLandingLabel } from './names';
 /**
  * The HD board: a 1300 x 800 logical canvas with 100-unit squares, scaled to the container
  * and devicePixelRatio. The static board is cached offscreen and redrawn only when the state
@@ -300,6 +300,7 @@ export class BoardView {
     this.alive = false;
     this.gateTimers.forEach(clearTimeout);
     clearTimeout(this.portalTimer);
+    clearTimeout(this.logFocusTimer);
     cancelAnimationFrame(this.raf);
     window.removeEventListener('resize', this.resize);
     document.fonts?.removeEventListener('loadingdone', this.fontsLoaded);
@@ -983,6 +984,36 @@ export class BoardView {
       draw: (ctx, k) => drawRingBurst(ctx, this.G?.layout, c, color, k, sparkles),
     });
   }
+
+  /** A log entry briefly locates a tile without changing the player's choices. */
+  focusLogTile(id: number) {
+    const sq = this.G?.nodes[id];
+    if (!sq) return;
+    const focus = ++this.logFocus;
+    clearTimeout(this.logFocusTimer);
+    const view = this.frameSquares([id]);
+    const center = this.center(sq);
+    this.lookAt = view;
+    this.fx.push({
+      t0: performance.now(),
+      dur: T.logFocus,
+      draw: (ctx, k) => {
+        if (focus !== this.logFocus) return;
+        ctx.save();
+        ctx.globalAlpha = Math.min(1, (1 - k) * 5);
+        ctx.strokeStyle = '#ffd166';
+        ctx.lineWidth = 5;
+        tileShape(ctx, this.G?.layout, center.x, center.y, TILE / 2 + 5, 10);
+        ctx.stroke();
+        ctx.restore();
+      },
+    });
+    this.logFocusTimer = window.setTimeout(() => {
+      if (this.lookAt === view) this.lookAt = null;
+    }, T.logFocus);
+  }
+  private logFocusTimer = 0;
+  private logFocus = 0;
 
   /** A square's value changed: the tile swells and a +/- label floats up from it. */
   valueFx(sqId: number, delta: number) {
@@ -2502,7 +2533,12 @@ const SQUARE_REACH = 90;
  */
 function squareLook(G: GameState, sq: Square): string {
   const owner = sq.owner >= 0 ? G.players[sq.owner] : null;
-  const fee = !owner || sq.t === 'bank' ? '' : sq.b === 'motel' ? motelFee(G, sq) : squareFee(G, sq);
+  const fee =
+    !owner || sq.t === 'bank'
+      ? ''
+      : sq.b && ['tax', 'agency', 'motel'].includes(sq.b)
+        ? buildingLandingLabel(G, sq)
+        : squareFee(G, sq);
   const district = sq.d >= 0 ? G.districts[sq.d]?.color : '';
   const extra = sq.t === 'change' ? G.changeSuit : sq.t === 'broker' ? G.rules : '';
   return JSON.stringify([sq, owner?.color, owner?.name[0], fee, district, extra]);
@@ -4003,13 +4039,11 @@ function drawSquare(ctx: CanvasRenderingContext2D, G: GameState, sq: Square) {
         ),
       );
       const fee =
-        sq.b === 'tax'
-          ? '10%'
-          : sq.b === 'agency'
-            ? 'Break'
-            : sq.b === 'motel'
-              ? motelFee(G, sq)
-              : `${squareFee(G, sq)}G`;
+        sq.b === 'tax' || sq.b === 'agency'
+          ? buildingLandingLabel(G, sq)
+          : sq.b === 'motel'
+            ? motelFee(G, sq)
+            : `${squareFee(G, sq)}G`;
       if (owner) amount(fee);
     }
   } else if (sq.t === 'blank') {

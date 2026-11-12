@@ -770,7 +770,6 @@ export class HotSeat implements GameIO {
       case 'buyShop':
         return hud.prompt(
           question(`Buy this ${shortName(G, G.nodes[req.sq])}?`, [
-            ['Price', fmt(req.price), 'big'],
             ['Fee when rivals land here', fmt(feeIfOwned(G, req.sq, p.id))],
           ]),
           [
@@ -1056,7 +1055,7 @@ export class HotSeat implements GameIO {
         const immediate = this.checkpointArrival || [...SUITS, 'change'].includes(sq.t);
         // Let tolls and suits announce themselves as soon as the final step ends.
         if (!immediate)
-          hud.action('landing', `${G.players[e.pid].name} landed on ${squareName(G, sq)}.`, 'move');
+          hud.action('landing', `${G.players[e.pid].name} landed on ${shortName(G, sq)}.`, 'move');
         board.frameIds = null;
         sound.play('land');
         board.ring(e.sq, '#ffffff');
@@ -1314,6 +1313,8 @@ export class HotSeat implements GameIO {
       }
       case 'log': {
         hud.refreshLog();
+        // The landing itself already announced this; the structured log keeps its history.
+        if (e.action === 'land') break;
         if (e.text === this.suitMessage) {
           this.suitMessage = null;
           break;

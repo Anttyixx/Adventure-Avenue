@@ -4,6 +4,8 @@
  * The Fast CPU toggle multiplies everything by FAST_CPU_SPEED during CPU turns.
  */
 export const TIMING = {
+  /** A tile located from the game log stays highlighted for this long. */
+  logFocus: 3000,
   /** Walking one square. */
   step: 420,
   /** Pull into a portal, disappear briefly, then launch onto the destination tile. */

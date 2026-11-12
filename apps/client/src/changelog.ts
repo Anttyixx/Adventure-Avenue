@@ -26,6 +26,22 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: '2026-11-12-linked-game-log',
+    date: 'Nov 12, 2026',
+    title: 'Follow the action in the game log',
+    features: [
+      {
+        tag: 'better',
+        title: 'Landings with their follow-up actions',
+        text: 'The log records rolls and arrivals, with purchases and other follow-up actions underneath. Select a tile entry to briefly highlight and focus it on the board.',
+      },
+    ],
+    extras: [
+      'Tax Offices show the active player’s payment or owner payout. Estate Agencies show Buy for their owner and Break for rivals.',
+      'Shop landing and buying prompts no longer repeat the shop price.',
+    ],
+  },
+  {
     id: '2026-11-12-motel-carryover',
     date: 'Nov 12, 2026',
     title: 'Check in and save your steps',

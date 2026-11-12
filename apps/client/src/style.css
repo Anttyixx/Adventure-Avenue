@@ -1263,27 +1263,37 @@ input[type='range'] {
   box-shadow: 0 0 0 1px var(--pc);
 }
 .turn-head {
-  display: flex;
+  display: grid;
+  grid-template-columns: 20px minmax(0, 1fr) auto;
   align-items: center;
-  gap: 8px;
+  gap: 2px 6px;
   padding: 8px 10px;
   background: rgba(255, 255, 255, 0.05);
   font-family: var(--head);
   font-size: 15px;
 }
 .turn-head b {
+  grid-column: 2;
+  grid-row: 1;
   font-weight: 400;
 }
 .turn-head .portrait.tiny {
+  grid-column: 1;
+  grid-row: 1 / span 2;
   margin-right: 0;
 }
 .turn-round {
-  margin-left: auto;
+  grid-column: 2;
+  grid-row: 2;
+  margin-left: 0;
   font-family: var(--body);
   font-size: 12px;
   color: var(--muted);
 }
 .turn-live {
+  grid-column: 3;
+  grid-row: 1 / span 2;
+  align-self: center;
   font-family: var(--body);
   font-size: 11px;
   font-weight: 700;
@@ -1298,15 +1308,64 @@ input[type='range'] {
   padding: 4px 10px 8px;
 }
 .log-line {
-  display: flex;
-  align-items: flex-start;
-  gap: 8px;
-  padding: 5px 0;
+  display: block;
+  padding: 3px 0;
   font-size: 13px;
-  line-height: 1.35;
+  line-height: 1.45;
 }
 .log-line + .log-line {
-  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  border-top: 1px solid rgba(255, 255, 255, 0.07);
+}
+.log-entry {
+  display: grid;
+  grid-template-columns: 20px minmax(0, 1fr) auto;
+  align-items: flex-start;
+  gap: 8px;
+  width: 100%;
+  padding: 6px 4px;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+}
+.log-link {
+  cursor: pointer;
+}
+.log-link:hover {
+  background: rgba(255, 209, 102, 0.1);
+}
+.log-link:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+.log-locate {
+  color: var(--accent);
+  font-size: 16px;
+  flex: none;
+}
+.log-children {
+  list-style: none;
+  margin: 0 0 2px 13px;
+  padding: 0 0 0 12px;
+  border-left: 2px solid var(--glass-line);
+}
+.log-children .log-line {
+  font-size: 12px;
+}
+.log-children .log-icon {
+  width: 17px;
+  height: 17px;
+}
+.log-children .log-icon svg {
+  width: 12px;
+  height: 12px;
+}
+.log-line.waiting {
+  display: flex;
+  gap: 8px;
+  padding: 7px 4px;
 }
 /* The line saying who the game is waiting on; the action that answers it fades in in its place. */
 .log-line.waiting {
@@ -1369,6 +1428,7 @@ input[type='range'] {
   padding-top: 1px;
 }
 .log-others {
+  grid-column: 2 / -1;
   display: flex;
   flex-wrap: wrap;
   gap: 4px;

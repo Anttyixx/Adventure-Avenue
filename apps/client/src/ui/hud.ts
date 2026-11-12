@@ -23,7 +23,7 @@ import {
 } from '@aa/engine';
 import { paintSquare, squareCenter, type BoardView, type PortalGate } from '../board';
 import { closeSoundPopover, disposeSoundControls, soundButton, soundControls } from './soundpanel';
-import { BUILDING_INFO, motelFee, shortName, squareInfo, squareName } from '../names';
+import { BUILDING_INFO, buildingLandingLabel, motelFee, shortName, squareInfo, squareName } from '../names';
 import { boonIconURL, suitIconURL, wildIconURL } from '../icons';
 import { bodyURL, portraitURL } from '../sprites';
 import { nameText } from './marquee';
@@ -111,6 +111,7 @@ export class Hud {
   private shownStatus: { text: string; kind?: IconKind } | null = null;
   /** How many log lines the open log last showed, so new ones can fade in. */
   private logSeen = -1;
+  private logHeadId: string | undefined;
   /** The action bar morphing between sizes (status line, options). */
   private askAnim: Animation | null = null;
   /** Holds the new content at its final width while the surrounding bar resizes. */
@@ -1302,9 +1303,22 @@ export class Hud {
     clear(this.logBox);
     const G = this.G;
     // Lines added since the last render fade in (in place of the waiting line they answer).
-    const fresh = this.logSeen < 0 ? 0 : Math.max(0, G.log.length - this.logSeen);
+    const previous = this.logHeadId ? G.log.findIndex((line) => line.id === this.logHeadId) : -1;
+    const fresh =
+      this.logSeen < 0
+        ? 0
+        : this.logHeadId
+          ? previous < 0
+            ? G.log.length
+            : previous
+          : Math.max(0, G.log.length - this.logSeen);
     this.logSeen = G.log.length;
-    const list = logView(G, `${G.round}:${G.turn}`, { waiting: this.waiting ?? undefined, fresh });
+    this.logHeadId = G.log[0]?.id;
+    const list = logView(G, `${G.round}:${G.turn}`, {
+      waiting: this.waiting ?? undefined,
+      fresh,
+      onTile: (id) => this.board.focusLogTile(id),
+    });
     this.logBox.append(
       h(
         'div',
@@ -1357,9 +1371,20 @@ export class Hud {
       const shopLike = sq.t === 'shop' || sq.b === 'star3';
       if (owner) {
         // Owned: what landing here costs is the headline; the shop's numbers follow.
-        if (sq.b !== 'agency') {
-          const fee = sq.b === 'tax' ? '10% NW' : sq.b === 'motel' ? motelFee(G, sq) : fmt(squareFee(G, sq));
-          hero = this.ttHero(isClosed(owner) ? 'Fee · shops closed' : 'Fee', fee, isClosed(owner));
+        {
+          const fee =
+            sq.b === 'tax' || sq.b === 'agency'
+              ? buildingLandingLabel(G, sq)
+              : sq.b === 'motel'
+                ? motelFee(G, sq)
+                : fmt(squareFee(G, sq));
+          const label =
+            sq.b === 'tax' && G.players[G.order[G.turn]]?.id === sq.owner
+              ? 'Receive'
+              : sq.b === 'agency'
+                ? 'Effect'
+                : 'Fee';
+          hero = this.ttHero(isClosed(owner) ? `${label} · shops closed` : label, fee, isClosed(owner));
         }
         if (sq.t === 'shop' || sq.b) lines.push(row('Value', fmt(sq.value)));
         if (shopLike) {
@@ -1372,8 +1397,17 @@ export class Hud {
       }
       if (G.rules === 'standard' && sq.d >= 0)
         lines.push(row('Stock', `${fmt(stockPrice(G, sq.d))} a share`));
-      // What a building does, in a sentence (rivals' side; its owner's is in the Guide).
-      if (sq.b && BUILDING_INFO[sq.b]) extra.push(h('p', { class: 'tt-info' }, BUILDING_INFO[sq.b].rival));
+      // Explain the effect for the active player, matching the fee or payout headline.
+      if (sq.b && BUILDING_INFO[sq.b])
+        extra.push(
+          h(
+            'p',
+            { class: 'tt-info' },
+            G.players[G.order[G.turn]]?.id === sq.owner
+              ? BUILDING_INFO[sq.b].owner
+              : BUILDING_INFO[sq.b].rival,
+          ),
+        );
       if (sq.g >= 0) {
         // Who owns the rest of the district, as dots in the owners' colors.
         const grp = G.groups[sq.g];

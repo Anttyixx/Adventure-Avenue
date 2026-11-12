@@ -736,6 +736,8 @@ Checkpoint and suit arrivals skip the generic landing announcement and pause, so
 
 Motel check-in uses the existing action-bar question: show the lodging fee, “Added to your next roll +N spaces”, and that checking in ends the turn. Check in and Keep moving are the only choices. Normal landings skip this prompt. Player cards show pending carryover as a status tag; roll-result text explains “5 + 2 saved = 7 spaces,” with the real die face preserved and the small movement counter starting at the total.
 
+Tax Office board labels and tile-info headlines show the active player's actual fee, or “Receive” and the owner payout on their own turn. Estate Agencies show “Buy” for the owner and “Break” for rivals. Shop landing and Buy/Pass action bars omit the price; the board and tile info remain the price reference.
+
 ### 5.17c Game setup
 
 Reopened online games keep guests on Continue Game until the host presses Resume; no Ready, rename or character controls are shown there. The host then sends the same saved turn to all connected guests before play starts. Reopened local games designate the first human as host, so Resume is always available.
@@ -931,7 +933,7 @@ Reopened online games keep guests on Continue Game until the host presses Resume
   toolbar), `right: 10px`, as wide as the player cards (`--cards-w`, min 240px), max height down to
   the top of the cards (`--dock-b`); on phones (`max-height: 500px`) it may run over the cards. It
   pops in (200ms, fade + 8px drop + scale .96 from the top right); Close, the button or Escape
-  closes it. The log groups lines by turn, newest at the bottom, players as chips.
+  closes it. The log groups lines by turn, newest at the bottom. Rolls and arrivals are main rows; follow-up actions use an indented branch beneath their landing. Keep action icons, high-contrast text and colored player names. Tile-linked rows are full-width buttons with an arrow, a hover background and a visible keyboard focus outline. Clicking briefly frames and outlines the tile for 3 seconds, leaving movement choices intact. Legacy rows remain plain text. No extra confirmation is needed.
 
 ### 5.19 Board overlays (canvas)
 

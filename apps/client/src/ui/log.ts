@@ -85,6 +85,24 @@ export function groupLog(G: GameState): TurnGroup[] {
   return groups;
 }
 
+export interface LogNode {
+  line: LogLine;
+  children: LogNode[];
+}
+
+/** Nest only under earlier entries, so legacy or truncated history stays readable and acyclic. */
+export function nestLog(lines: LogLine[]): LogNode[] {
+  const roots: LogNode[] = [];
+  const known = new Map<string, LogNode>();
+  for (const line of lines) {
+    const node: LogNode = { line, children: [] };
+    const parent = line.parent ? known.get(line.parent) : undefined;
+    (parent ? parent.children : roots).push(node);
+    if (line.id) known.set(line.id, node);
+  }
+  return roots;
+}
+
 /**
  * The log, oldest turn at the top and the current turn at the bottom. `waiting` adds a line to
  * the current turn saying who the game is waiting on; the newest `fresh` lines fade in.
@@ -92,7 +110,7 @@ export function groupLog(G: GameState): TurnGroup[] {
 export function logView(
   G: GameState,
   currentKey: string,
-  opts: { waiting?: { text: string; kind?: IconKind }; fresh?: number } = {},
+  opts: { waiting?: { text: string; kind?: IconKind }; fresh?: number; onTile?: (id: number) => void } = {},
 ): HTMLElement {
   const groups = groupLog(G);
   // The turn in progress always gets a card, even before anything has happened in it.
@@ -116,39 +134,54 @@ export function logView(
       g.round != null ? h('span', { class: 'turn-round' }, `Round ${g.round}`) : null,
       live ? h('span', { class: 'turn-live' }, 'Now') : null,
     );
-    const body = h(
-      'ul',
-      { class: 'turn-lines' },
-      g.lines.length || waiting ? null : h('li', { class: 'log-line hint' }, 'Getting ready...'),
-      ...g.lines.map((l, i) => {
-        // Other players this line touches: anyone involved, plus the line's own player if it
-        // is not the one taking the turn (e.g. a dividend paid to someone else).
-        const others = new Set(l.involves ?? []);
-        if (l.color != null && l.color >= 0 && l.color !== g.pid) others.add(l.color);
-        others.delete(g.pid);
-        return h(
-          'li',
-          { class: `log-line ${i >= g.lines.length - fresh ? 'log-new' : ''}` },
-          kindIcon(l.kind),
-          h('span', { class: 'log-text' }, l.text),
-          others.size
-            ? h(
-                'span',
-                { class: 'log-others' },
-                ...[...others].map((id) => {
+    const freshLines = new Set(fresh ? g.lines.slice(-fresh) : []);
+    const renderLine = ({ line: l, children }: LogNode): HTMLElement => {
+      const others = new Set(l.involves ?? []);
+      if (l.color != null && l.color >= 0 && l.color !== g.pid) others.add(l.color);
+      others.delete(g.pid);
+      const sq = l.sq;
+      const clickable = sq != null && !!G.nodes[sq] && !!opts.onTile;
+      const entry = h(
+        clickable ? 'button' : 'div',
+        {
+          class: `log-entry ${clickable ? 'log-link' : ''}`,
+          ...(clickable
+            ? { type: 'button', title: 'Show this tile on the board', onclick: () => opts.onTile?.(sq!) }
+            : {}),
+        },
+        kindIcon(l.action === 'land' ? 'property' : l.kind),
+        h('span', { class: 'log-text' }, ...namesInColor(G, l.text)),
+        clickable ? h('span', { class: 'log-locate', 'aria-hidden': 'true' }, '›') : null,
+        others.size
+          ? h(
+              'span',
+              { class: 'log-others' },
+              ...[...others]
+                .filter((id) => !!G.players[id])
+                .map((id) => {
                   const q = G.players[id];
-                  const qc = PLAYER_COLORS[q.color];
                   return h(
                     'span',
-                    { class: 'who', style: `--pc:${qc}`, title: q.name },
+                    { class: 'who', style: `--pc:${PLAYER_COLORS[q.color]}`, title: q.name },
                     h('img', { src: portraitURL(q.ch), alt: '' }),
                     q.name,
                   );
                 }),
-              )
-            : null,
-        );
-      }),
+            )
+          : null,
+      );
+      return h(
+        'li',
+        { class: `log-line ${freshLines.has(l) ? 'log-new' : ''}` },
+        entry,
+        children.length ? h('ul', { class: 'log-children' }, ...children.map(renderLine)) : null,
+      );
+    };
+    const body = h(
+      'ul',
+      { class: 'turn-lines' },
+      g.lines.length || waiting ? null : h('li', { class: 'log-line hint' }, 'Getting ready...'),
+      ...nestLog(g.lines).map(renderLine),
       waiting
         ? h(
             'li',
