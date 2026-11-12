@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest';
 import { K } from '../src/constants';
 import {
   canPromote,
+  districtWorth,
+  sellOffCut,
   dominated,
   expand,
   lineBonus,
@@ -116,8 +118,8 @@ describe('stocks and salary', () => {
   });
 
   it.each([
-    [300, 13.475],
-    [-300, 6.125],
+    [300, 12.8625],
+    [-300, 6.7375],
   ])(
     'prices a %iG change in shop value with gentler growth and the same demand boost',
     (change, expected) => {
@@ -198,5 +200,32 @@ describe('venture line bonus', () => {
     expect(lines.map((l) => l.length).sort()).toEqual([4, 4]);
     expect(lines.reduce((s, l) => s + lineBonus(l.length), 0)).toBe(80);
     expect(linesThrough(owner, 2, 1)).toHaveLength(1);
+  });
+});
+
+// Balance examples use whole district growth and sell-off amounts, before market multipliers.
+describe('dynamic stock balance', () => {
+  it('makes sell-offs stronger while retaining the 75-share threshold', () => {
+    expect(sellOffCut(74)).toBe(0);
+    expect(sellOffCut(75)).toBeCloseTo(0.12);
+    expect(sellOffCut(150)).toBeCloseTo(0.216);
+    expect(sellOffCut(300)).toBeCloseTo(0.35424);
+  });
+  it('makes 50% shop growth add 31.25% to the underlying dynamic share price', () => {
+    const { G } = makeGame();
+    G.stocks = 'dynamic';
+    const shops = G.nodes.filter((n) => n.d === 6 && n.t === 'shop');
+    expect(shops.length).toBeGreaterThan(0);
+    shops.forEach((n) => {
+      n.base = 200;
+      n.value = 200;
+    });
+    const before = districtWorth(G, 6);
+    shops.forEach((n) => {
+      n.value += 100;
+    });
+    expect(districtWorth(G, 6) / before).toBeCloseTo(1.3125);
+    G.stocks = 'classic';
+    expect(districtWorth(G, 6)).toBeCloseTo(300 * K.stockRate);
   });
 });

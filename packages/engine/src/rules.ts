@@ -121,7 +121,7 @@ export function confidence(G: GameState, d: number): number {
 /**
  * What a district's shops are worth per share, before the multiplier. Classic: the shops' average
  * value x K.stockRate. Dynamic: their average base value x K.stockRate plus their average growth
- * (value above base) x K.growthRate, so investing moves the stock more.
+ * (value above base) x K.growthRate, so growth moves the stock more gently than base value.
  */
 export function districtWorth(G: GameState, d: number): number {
   const shops = G.nodes.filter((s) => s.d === d && isShopLike(s));

@@ -268,7 +268,7 @@ describe('dynamic stocks', () => {
     expect(confidence(G, 6)).toBe(1);
     await game.sellStock(p, 6, 1, 0);
     expect(confidence(G, 6)).toBeCloseTo(1 - K.dent);
-    // Selling more the same turn deepens it: 150 shares = 10% + 8%.
+    // Selling more the same turn deepens it: 150 shares = 12% + 9.6%.
     await game.sellStock(p, 6, 75, 0);
     expect(confidence(G, 6)).toBeCloseTo(1 - K.dent * (1 + K.dentDecay));
     expect(sellOffCut(300)).toBeCloseTo(K.dent * (1 + 0.8 + 0.64 + 0.512));

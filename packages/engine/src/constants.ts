@@ -52,9 +52,9 @@ export const K = {
   tradeDown: 0.9,
   /**
    * Dynamic stocks. Shop growth (value above the shops' base) counts at growthRate instead of
-   * stockRate: a 50% rise in average shop value adds 37.5% to the underlying share price.
+   * stockRate: a 50% rise in average shop value adds 31.25% to the underlying share price.
    */
-  growthRate: 0.03,
+  growthRate: 0.025,
   /**
    * Dynamic stocks' demand: the price rises in a straight line with the total shares all players
    * hold in a district: boost = 1 + shareSlope x held x volatility. At volatility 1 (the calmest),
@@ -70,11 +70,11 @@ export const K = {
   /**
    * Sell-offs: selling sellOff+ shares of one district in a turn (by anyone) dents its price by
    * `dent`; each further sellOff shares add dentDecay x the previous step, scaled smoothly
-   * (75: -10%, 150: -18%, 300: -29.5%, never quite -50% in one turn). Dents stack across turns
+   * (75: -12%, 150: -21.6%, 300: -35.4%, capped at -50%). Dents stack across turns
    * down to confMin at most. The seller is paid before the dent lands.
    */
   sellOff: 75,
-  dent: 0.1,
+  dent: 0.12,
   dentDecay: 0.8,
   confMin: 0.5,
   /** Each share bought back (by anyone, over any rounds) repairs this much of a dent... */

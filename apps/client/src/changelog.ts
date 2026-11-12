@@ -26,6 +26,15 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: '2026-11-12-stock-balance',
+    date: 'Nov 12, 2026',
+    title: 'Stronger sell-offs, gentler stock growth',
+    features: [],
+    extras: [
+      'Selling 75 shares dents a district by 12% (150 shares: 21.6%). Property growth contributes about 17% less to Dynamic stock prices. Classic stocks are unchanged.',
+    ],
+  },
+  {
     id: '2026-11-12-auctions-trades',
     date: 'Nov 12, 2026',
     title: 'Clearer trades and optional bids',

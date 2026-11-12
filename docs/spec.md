@@ -622,15 +622,15 @@ multiplies it by 0.9.
 **Dynamic:**
 
 ```
-price_d = (average base value_d x 0.04 + average growth_d x 0.03) x factor_d x confidence_d x boost_d
+price_d = (average base value_d x 0.04 + average growth_d x 0.025) x factor_d x confidence_d x boost_d
 boost_d = 1 + 0.00075 x held_d x vol_d
 ```
 
 - A shop's growth is its value above its base value (investing, ownership bonuses, venture cards
-  and arcade prizes; negative when a shop shrinks). Growth counts at 75% of the base-value rate:
-  a 50% rise in average shop value raises the underlying share price by 37.5%, before the other
-  multipliers (`districtWorth`). This reduces growth's direct price effect by 62.5% from the former
-  0.08 rate, without changing the shares-held boost. A plot's base is the cost of what was built on it.
+  and arcade prizes; negative when a shop shrinks). Growth counts at 62.5% of the base-value rate:
+  a 50% rise in average shop value raises the underlying share price by 31.25%, before the other
+  multipliers (`districtWorth`). This reduces growth's direct price effect by about 16.7% from the previous
+  0.03 rate, without changing the shares-held boost. A plot's base is the cost of what was built on it.
   The lower rate also softens losses from shrinking shops. Existing Dynamic saves use the new rate
   when loaded, so developed districts reprice immediately; Classic stocks are unchanged.
 - `held_d` is the total shares everyone holds in the district. The price rises in a straight line:
@@ -642,9 +642,9 @@ boost_d = 1 + 0.00075 x held_d x vol_d
 - A trade pays the average of the price before and after it (sells use the same), so buying 99
   shares at once costs the same as buying them in steps.
 - **Sell-off:** when 75+ shares of a district are sold in one turn (by anyone, in any number of
-  sales), its price is dented by 10%; each further 75 shares add 0.8x the previous step, scaled
-  smoothly (`sellOffCut`: 100 shares -12.8%, 150 -18%, 200 -22.3%, 300 -29.5%; one turn never
-  quite reaches -50%). Dents stack across turns down to -50% at most (`K.confMin`). The seller is
+  sales), its price is dented by 12%; each further 75 shares add 0.8x the previous step, scaled
+  smoothly (`sellOffCut`: 100 shares -15.4%, 150 -21.6%, 200 -26.9%, 300 -35.4%; capped
+  at -50%). Dents stack across turns down to -50% at most (`K.confMin`). The seller is
   paid before the dent lands (the average of the price before and after their shares left). Every
   share bought there repairs 0.1% (100 shares = 10%), and every 100G invested in its shops repairs
   1% (`G.market.cut`). Saves from before this rule count each old dent as 5%.

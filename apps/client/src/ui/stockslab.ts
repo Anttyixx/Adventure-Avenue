@@ -83,7 +83,7 @@ const GROUPS: { title: string; settings: Setting[] }[] = [
         key: 'growthRate',
         label: 'Price per shop growth',
         step: 0.005,
-        hint: 'Shop value above base (investing, ownership, cards) counts at this rate (default 0.03; base rate 0.04)',
+        hint: 'Shop value above base (investing, ownership, cards) counts at this rate (default 0.025; base rate 0.04)',
       },
       {
         key: 'shareSlope',
@@ -99,7 +99,7 @@ const GROUPS: { title: string; settings: Setting[] }[] = [
         step: 5,
         hint: 'Shares sold in one turn before a district is dented',
       },
-      { key: 'dent', label: 'First dent', step: 0.01, hint: 'Price cut at that many shares (0.1 = -10%)' },
+      { key: 'dent', label: 'First dent', step: 0.01, hint: 'Price cut at that many shares (0.12 = -12%)' },
       {
         key: 'dentDecay',
         label: 'Dent scaling',

@@ -197,7 +197,7 @@ function stocks(G: GameState | null): Node[] {
             card(
               'What sets the price',
               null,
-              'The price follows the shops in the district: their starting value sets the base price, and shop growth raises it more gently. A 50% rise in average shop value adds 37.5% to the share price before other boosts.',
+              'The price follows the shops in the district: their starting value sets the base price, and shop growth raises it more gently. A 50% rise in average shop value adds 31.25% to the share price before other boosts.',
             ),
             card(
               'Demand and volatility',
@@ -212,7 +212,7 @@ function stocks(G: GameState | null): Node[] {
               'Sell-offs',
               null,
               points(
-                `Selling ${K.sellOff}+ shares of one district in a turn drops its price ${pct(K.dent)} (more the more you sell; 150 shares: -18%), down to -${pct(1 - K.confMin)} at most.`,
+                `Selling ${K.sellOff}+ shares of one district in a turn drops its price ${pct(K.dent)} (more the more you sell; 150 shares: -21.6%), down to -${pct(1 - K.confMin)} at most.`,
                 'The seller is paid the price before the drop.',
                 "Buying back (10 shares per 1%) and investing in the district's shops (100G per 1%) repair it.",
               ),
