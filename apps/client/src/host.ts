@@ -105,6 +105,8 @@ export class HotSeat implements GameIO {
   auction: AuctionView | null = null;
   /** True while a token is between squares of a walk (passing, not landing). */
   private passing = false;
+  /** Checkpoint toll payment and increase share one immediate arrival sequence. */
+  private checkpointArrival = false;
   /** Number of decisions made so far (online games number them to stay in step). */
   seq = 0;
 
@@ -401,6 +403,7 @@ export class HotSeat implements GameIO {
     if (this.dead) return never();
     await this.pauseGate();
     this.summarizedPayments = [];
+    this.checkpointArrival = false;
     const seq = this.seq++;
     if (this.link) return (await this.decideOnline(seq, req as DecisionRequest)) as DecisionAnswer<T>;
     // A live auction is run here for everyone at once (bids from people here and CPUs).
@@ -927,6 +930,7 @@ export class HotSeat implements GameIO {
     const hud = this.hud;
     switch (e.type) {
       case 'turnStart': {
+        this.checkpointArrival = false;
         board.directionsPid = -1;
         board.die = null;
         board.frameIds = null;
@@ -984,6 +988,7 @@ export class HotSeat implements GameIO {
         break;
       }
       case 'step':
+        this.checkpointArrival = false;
         // The direction arrows stay up until the player actually moves. Once they do, the
         // camera goes back to the player's own zoom.
         board.directionsPid = -1;
@@ -1002,6 +1007,7 @@ export class HotSeat implements GameIO {
         if (e.left === 0) board.walkTarget = -1;
         break;
       case 'warp': {
+        this.checkpointArrival = false;
         const how = e.how ?? 'warp';
         const who = G.players[e.pid].name;
         // Each ride has its own message, sound and animation (BoardView.travel).
@@ -1033,20 +1039,21 @@ export class HotSeat implements GameIO {
         this.refresh();
         break;
       }
-      case 'land':
+      case 'land': {
         this.movementRoll = null;
-        if (![...SUITS, 'change'].includes(G.nodes[e.sq].t))
-          hud.action(
-            'landing',
-            `${G.players[e.pid].name} landed on ${squareName(G, G.nodes[e.sq])}.`,
-            'move',
-          );
+        const sq = G.nodes[e.sq];
+        this.checkpointArrival = sq.t === 'plot' && sq.b === 'checkpoint';
+        const immediate = this.checkpointArrival || [...SUITS, 'change'].includes(sq.t);
+        // Let tolls and suits announce themselves as soon as the final step ends.
+        if (!immediate)
+          hud.action('landing', `${G.players[e.pid].name} landed on ${squareName(G, sq)}.`, 'move');
         board.frameIds = null;
         sound.play('land');
         board.ring(e.sq, '#ffffff');
         board.walkTarget = -1;
-        if (![...SUITS, 'change'].includes(G.nodes[e.sq].t)) await this.wait(T.land);
+        if (!immediate) await this.wait(T.land);
         break;
+      }
       case 'money': {
         // A share trade: the cards count the shares at what was paid (see `trackStock`).
         if (e.reason === 'Stock' || e.reason === 'Stock sale') this.stockTrade = e;
@@ -1089,7 +1096,7 @@ export class HotSeat implements GameIO {
         if (e.to >= 0) board.floatText(to.x, to.y, `+${fmt(e.amount)}`, '#7cf29a');
         if (e.from >= 0) board.floatText(from.x, from.y + 22, `-${fmt(e.amount)}`, '#ff8a8a');
         this.refresh();
-        if (!this.passing) await this.wait(T.money);
+        if (!this.passing && !this.checkpointArrival) await this.wait(T.money);
         break;
       }
       case 'owner':
@@ -1115,7 +1122,7 @@ export class HotSeat implements GameIO {
           this.values.set(id, G.nodes[id].value);
         }
         this.refresh();
-        if (!this.passing) await this.wait(T.value);
+        if (!this.passing && !this.checkpointArrival) await this.wait(T.value);
         break;
       case 'suit': {
         this.suitMessage = e.suit >= 0 ? `${G.players[e.pid].name} collected the ${SUITS[e.suit]}.` : null;

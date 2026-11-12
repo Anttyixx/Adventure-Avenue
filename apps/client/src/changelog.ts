@@ -26,6 +26,15 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: '2026-11-12-immediate-arrivals',
+    date: 'Nov 12, 2026',
+    title: 'Checkpoints trigger as you arrive',
+    features: [],
+    extras: [
+      'Stopping at a checkpoint pays its toll and increases it immediately, just like passing. Suit tiles award their suit as soon as you arrive.',
+    ],
+  },
+  {
     id: '2026-11-12-stock-balance',
     date: 'Nov 12, 2026',
     title: 'Stronger sell-offs, gentler stock growth',

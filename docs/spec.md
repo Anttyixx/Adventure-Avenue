@@ -577,6 +577,7 @@ the Guide's Buildings tab says the same during a game ("2 left to build").
   circus upgrades.
 - Only the 3-Star Shop counts as a shop for expansion bonuses, salary and stock price. Every built
   plot counts toward district ownership and domination.
+- **Checkpoint arrival:** stopping on a checkpoint skips the landing pause, then shows toll payment and the increase together without payment/value pauses. Any following buyout or investment choice keeps its normal decision timing.
 - Fixed fees (checkpoint, circus, balloonport, motel) are multiplied by the owner's fee boost (Price
   hike card, Price Up square). All building fees pay dividends and commissions like shop fees.
 - **Motel fee on the board:** a motel's tile (and its fee in the tooltip, the info pop-up and the
@@ -728,7 +729,7 @@ same way. The pop-up's panels:
 Collecting all four suits and then reaching the bank is the game's lap counter and its steady
 paycheck.
 
-- **Collecting:** entering a suit square (passing or landing) gives that suit if you don't have it.
+- **Collecting:** entering a suit square (passing or landing) gives that suit if you don't have it. On a final step, the pickup starts immediately with no landing pause.
   When passing, the token does not stop: the suit pops up above it as it walks on.
   The change-of-suit square gives its current suit and then rotates spade -> heart -> diamond ->
   club. Cannon, balloon and zoom warps also collect the suit at the destination.

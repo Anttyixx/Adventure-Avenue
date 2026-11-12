@@ -732,6 +732,8 @@ if (!(await ask(`Delete ${d.name}?`, 'Its 4 properties will be removed from the 
 
 Trade offers keep the compact action bar layout: two colored offer columns and buttons to their right. Each column has a high-contrast heading above its property chips; editing places the cash stepper beside the heading, while reviewing keeps gold cash chips inline with the properties. Received offers say “You get” and “You give.” Accept sits above Counter/Decline. Keep phone labels and chips at least 11px, preserving the existing small footprint and scrolling long property lists.
 
+Checkpoint and suit arrivals skip the generic landing announcement and pause, so the effect takes priority immediately. Checkpoint payment and toll-rise effects run without pauses between them, matching a pass-through; subsequent decisions restore normal pacing.
+
 ### 5.17c Game setup
 
 Reopened online games keep guests on Continue Game until the host presses Resume; no Ready, rename or character controls are shown there. The host then sends the same saved turn to all connected guests before play starts. Reopened local games designate the first human as host, so Resume is always available.
