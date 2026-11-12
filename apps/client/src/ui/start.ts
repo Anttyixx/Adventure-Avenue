@@ -1452,18 +1452,20 @@ export function guestSetup(root: HTMLElement, room: GuestSetupRoom, handlers: Gu
     const me = lobby?.seats[room.seat];
     const status = !lobby
       ? 'Connected. Waiting for the lobby...'
-      : lobby.starting
-        ? "Everyone's ready! Starting..."
-        : me?.ready
-          ? 'Waiting for everyone else...'
-          : 'Tap Ready when you are set';
+      : lobby.resuming
+        ? 'Reconnected. Waiting for the host to resume...'
+        : lobby.starting
+          ? "Everyone's ready! Starting..."
+          : me?.ready
+            ? 'Waiting for everyone else...'
+            : 'Tap Ready when you are set';
     setupHead(
       frame.top,
       () => {
         room.leave();
         handlers.onBack();
       },
-      'Joined Game',
+      lobby?.resuming ? 'Continue Game' : 'Joined Game',
       h(
         'span',
         { class: 'su-code', title: 'The code of the game you joined' },
@@ -1480,7 +1482,13 @@ export function guestSetup(root: HTMLElement, room: GuestSetupRoom, handlers: Gu
           'div',
           { class: 'panel-head' },
           h('h3', null, 'Board'),
-          h('span', { class: 'hint' }, 'The host picks the board and the rules.'),
+          h(
+            'span',
+            { class: 'hint' },
+            lobby?.resuming
+              ? 'Your saved game. The host will resume when ready.'
+              : 'The host picks the board and the rules.',
+          ),
         ),
         board ? boardStage(board, false) : h('p', { class: 'hint' }, lobby ? lobby.boardName : 'Loading...'),
       ),
@@ -1508,8 +1516,8 @@ export function guestSetup(root: HTMLElement, room: GuestSetupRoom, handlers: Gu
               key,
               color: PLAYER_COLORS[i],
               look: x.look ?? null,
-              pick: mine ? () => pick(lobby!, i) : null,
-              rename: mine ? rename(x.name) : undefined,
+              pick: mine && !lobby?.resuming ? () => pick(lobby!, i) : null,
+              rename: mine && !lobby?.resuming ? rename(x.name) : undefined,
               name: x.name,
               tag: mine
                 ? 'You'
@@ -1521,22 +1529,24 @@ export function guestSetup(root: HTMLElement, room: GuestSetupRoom, handlers: Gu
                       ? "Host's device"
                       : 'Joined',
               kind: bot ? 'bot' : mine ? 'human' : 'joined',
-              ready: mine
-                ? h(
-                    'button',
-                    {
-                      class: `seat-ready ${x.ready ? 'on' : ''}`,
-                      'aria-pressed': String(!!x.ready),
-                      title: x.ready
-                        ? 'Tap if you are not ready after all'
-                        : 'Tap when you are ready to play',
-                      onclick: () => room.setReady(!x.ready),
-                    },
-                    x.ready ? '✓ Ready' : 'Ready',
-                  )
-                : bot
-                  ? null
-                  : readyBadge(!!x.ready),
+              ready: lobby?.resuming
+                ? null
+                : mine
+                  ? h(
+                      'button',
+                      {
+                        class: `seat-ready ${x.ready ? 'on' : ''}`,
+                        'aria-pressed': String(!!x.ready),
+                        title: x.ready
+                          ? 'Tap if you are not ready after all'
+                          : 'Tap when you are ready to play',
+                        onclick: () => room.setReady(!x.ready),
+                      },
+                      x.ready ? '✓ Ready' : 'Ready',
+                    )
+                  : bot
+                    ? null
+                    : readyBadge(!!x.ready),
             });
           }),
         ),

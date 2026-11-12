@@ -61,7 +61,9 @@ export function openPeer(id?: string): Promise<Peer> {
 /** Connect to another peer; resolves once the data channel is open. */
 export function connectTo(peer: Peer, id: string, timeoutMs = 15000): Promise<DataConnection> {
   return new Promise((resolve, reject) => {
-    const conn = peer.connect(id, { reliable: true, serialization: 'json' });
+    // JSON channels reject messages over PeerJS's ~16KB limit, including saved turns.
+    // Binary channels split large snapshots into chunks and reassemble them for the receiver.
+    const conn = peer.connect(id, { reliable: true, serialization: 'binary' });
     const timer = setTimeout(() => {
       cleanup();
       conn.close();

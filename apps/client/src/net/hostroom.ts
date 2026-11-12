@@ -56,6 +56,8 @@ export class HostRoom implements GameLink {
   role = 'host' as const;
   seats: Seat[];
   started = false;
+  /** Reopened seats are locked, but guests wait until the host presses Resume. */
+  private resuming = false;
   private G: GameState | null = null;
   private settings: LobbySettings = { boardName: '', rules: 'standard', target: 0, roundCap: 0 };
   private snap: StartInfo | null = null;
@@ -121,6 +123,7 @@ export class HostRoom implements GameLink {
       const s = online.seats.find((x) => x.pid === p.id);
       const base = { name: p.name, look: p.ch, pid: p.id };
       if (p.cpu) return { ...base, kind: 'cpu' as const, online: false };
+      if (p.id === hp.id) return { ...base, kind: 'host' as const, online: true };
       if (!s || s.kind !== 'remote') return { ...base, kind: s?.kind ?? ('host' as const), online: true };
       return { ...base, kind: 'remote' as const, online: false, token: s.token };
     });
@@ -133,6 +136,7 @@ export class HostRoom implements GameLink {
       stocks: G.stocks ?? 'classic',
     };
     room.started = true;
+    room.resuming = true;
     room.G = G;
     room.snap = { state: cloneState(G), seq: 0, answers: [], you: [] };
     return room;
@@ -179,6 +183,7 @@ export class HostRoom implements GameLink {
         ready: kind === 'cpu' || kind === 'open' || !!ready,
       })),
       starting: this.starting,
+      resuming: this.resuming,
     };
   }
 
@@ -303,7 +308,8 @@ export class HostRoom implements GameLink {
       (msg.act === 'bid' || msg.act === 'pass')
     )
       this.onAuctionAct?.(msg.seq, seat.pid, msg.act);
-    else if (msg.t === 'resync' && this.snap) this.send(seat, { t: 'start', start: this.startFor(seat) });
+    else if (msg.t === 'resync' && this.snap && !this.resuming)
+      this.send(seat, { t: 'start', start: this.startFor(seat) });
     else if (msg.t === 'bye') this.dropped(conn);
   }
 
@@ -340,17 +346,18 @@ export class HostRoom implements GameLink {
       this.seats.find((s) => s.kind === 'remote' && s.token === msg.token) ??
       this.seats.find((s) => s.kind === 'remote' && sameName(s));
     if (back) {
-      if (back.conn && back.conn !== conn) back.conn.close();
+      const previous = back.conn;
       back.conn = conn;
+      if (previous && previous !== conn) previous.close();
       back.online = true;
       back.token = msg.token;
       reply({ t: 'welcome', seat: this.seats.indexOf(back) });
+      this.changed();
       if (this.started) {
-        reply({ t: 'start', start: this.startFor(back) });
+        if (!this.resuming) reply({ t: 'start', start: this.startFor(back) });
         this.broadcast({ t: 'seat', pid: back.pid, online: true });
         this.onNotice(`${back.name} reconnected.`);
       }
-      this.changed();
       return;
     }
     if (this.started) {
@@ -442,6 +449,7 @@ export class HostRoom implements GameLink {
 
   /** Send the starting state to everyone. Call before the host's game starts running. */
   begin(G: GameState) {
+    this.resuming = false;
     this.started = true;
     this.G = G;
     this.snap = { state: cloneState(G), seq: 0, answers: [], you: [] };
@@ -477,6 +485,7 @@ export class HostRoom implements GameLink {
   }
 
   private answered(seat: Seat, seq: number, ans: unknown) {
+    if (this.resuming) return;
     const p = this.pending.get(seq);
     if (p) {
       if (p.pid !== seat.pid) return;

@@ -732,6 +732,8 @@ if (!(await ask(`Delete ${d.name}?`, 'Its 4 properties will be removed from the 
 
 ### 5.17c Game setup
 
+Reopened online games keep guests on Continue Game until the host presses Resume; no Ready, rename or character controls are shown there. The host then sends the same saved turn to all connected guests before play starts. Reopened local games designate the first human as host, so Resume is always available.
+
 - **Layout** (`.setup.su`): a fixed top bar `.su-top` across the screen, 10px from the edges:
   "‹ Back" (`.btn`, navy 60%) and the title (Lilita 34px) in the top left corner, the join code
   chip `.su-code` (dashed gold pill: "Code", the code in Lilita gold, "Copy link") right of the

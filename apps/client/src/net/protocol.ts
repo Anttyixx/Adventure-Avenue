@@ -11,7 +11,7 @@
 import type { BoardDef, CharId, GameState, PlotSetting, RuleSet, StockSystem } from '@aa/engine';
 
 /** Protocol version: a joiner on a different version is turned away. */
-export const NET_VERSION = 42;
+export const NET_VERSION = 43;
 
 export type SeatKind = 'host' | 'local' | 'remote' | 'open' | 'cpu';
 
@@ -39,6 +39,8 @@ export interface LobbyInfo {
   seats: LobbySeat[];
   /** Everyone is ready: the host starts the game in a moment (unless someone changes their mind). */
   starting?: boolean;
+  /** Saved game reopened; guests wait for the host to press Resume. */
+  resuming?: boolean;
 }
 
 /**

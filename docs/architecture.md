@@ -483,3 +483,5 @@ or engine/network outcomes.
 `props.ts` applies `properties-v3` overrides after the board-art mapping when `PROPERTY_SET` is
 `painted` and `ART_SET` is `layered`. Choosing `previous` skips those overrides, preserving the
 prior layered buildings and original paired art. No old image files are overwritten.
+
+Online connections use PeerJS binary serialization, which chunks large snapshots. JSON serialization rejects messages above roughly 16KB and cannot carry saved-game snapshots reliably. Reopened rooms lock their seats but wait for Resume before sending start; lobby details are delivered first.

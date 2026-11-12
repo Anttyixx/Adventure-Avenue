@@ -139,6 +139,7 @@ async function resumeOnline(save: SaveInfo) {
     {
       onResume() {
         close();
+        room.begin(room.game!);
         const game = new HotSeat(
           app,
           room.game!,

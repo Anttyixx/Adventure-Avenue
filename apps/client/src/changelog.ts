@@ -26,6 +26,15 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: '2026-11-11-reconnect-continue',
+    date: 'Nov 11, 2026',
+    title: 'Reconnect before resuming',
+    features: [],
+    extras: [
+      'Large saved games reconnect reliably. Friends reconnect to Continue Game and wait for the host to resume together. Saved games from one device always have a host Resume button.',
+    ],
+  },
+  {
     id: '2026-11-11-closed-buyouts',
     date: 'Nov 11, 2026',
     title: 'Buy out closed shops',

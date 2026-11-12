@@ -1756,6 +1756,8 @@ Each seat says who it is ("You · host", "On this device", "Back online", "Not b
 "Bot"); players who haven't rejoined are faded with a red "Away" badge. The host resumes with the
 gold **Resume** chip on their own seat card, where the Ready chip is in game setup.
 
+Reopened online games keep guests on Continue Game until the host presses Resume; no Ready, rename or character controls are shown there. The host then sends the same saved turn to all connected guests before play starts. Reopened local games designate the first human as host, so Resume is always available.
+
 **Coming back as a guest:** each device remembers the room and name it last joined (for 3 days,
 cleared when that game ends). Reloading the page during a game rejoins straight away; on a later
 visit the main menu shows "Rejoin online game". A guest who rejoins mid-turn replays the turn
