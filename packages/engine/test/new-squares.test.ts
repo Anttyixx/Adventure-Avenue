@@ -1,6 +1,7 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { coinDerby } from '../src/arcade';
 import { K } from '../src/constants';
+import { rollDie } from '../src/rng';
 import type { DecisionKind, DecisionRequest } from '../src/decisions';
 import { Game } from '../src/engine';
 import { shopFee } from '../src/rules';
@@ -68,17 +69,19 @@ describe('Motel', () => {
     return { ...made, motel, p };
   }
 
-  it('asks passers-by and stops them there, charging 15% of their cash', async () => {
+  it('asks passers-by and stops them there, charging 100G and saving the two unused spaces', async () => {
     const { G, game, asked, motel, p } = setup((r) =>
       r.kind === 'motelStop' ? true : r.kind === 'buyout' ? false : undefined,
     );
     p.cash = 2000;
     await game.move(p, 3);
     const req = asked.find((r) => r.kind === 'motelStop');
-    expect(req && req.kind === 'motelStop' && req.fee).toBe(300);
+    expect(req && req.kind === 'motelStop' && req.fee).toBe(100);
     expect(p.node).toBe(motel.id);
-    expect(p.cash).toBe(1700);
-    expect(G.players[1].cash).toBe(K.startCash + 300);
+    expect(p.cash).toBe(1900);
+    expect(G.players[1].cash).toBe(K.startCash + 100);
+    expect(p.motelMoves).toBe(2);
+    expect(asked.some((r) => r.kind === 'buyout')).toBe(false);
   });
 
   it('lets a player who stopped set off in any direction next time', async () => {
@@ -104,7 +107,7 @@ describe('Motel', () => {
     expect(p.cash).toBeLessThanOrEqual(cash);
   });
 
-  it('lets its owner stop to invest in a shop', async () => {
+  it('lets its owner check in without investing', async () => {
     const { G, game, asked, motel, p } = setup(
       (r) => (r.kind === 'motelStop' ? true : r.kind === 'invest' ? null : undefined),
       0,
@@ -112,8 +115,60 @@ describe('Motel', () => {
     at(G, 1, 0).owner = 0;
     await game.move(p, 3);
     expect(p.node).toBe(motel.id);
-    expect(asked.find((r) => r.kind === 'motelStop')).toMatchObject({ fee: 0 });
-    expect(asked.some((r) => r.kind === 'invest')).toBe(true);
+    expect(asked.find((r) => r.kind === 'motelStop')).toMatchObject({ fee: 100 });
+    expect(asked.some((r) => r.kind === 'invest')).toBe(false);
+    expect(p.cash).toBe(K.startCash - 100);
+    expect(p.motelMoves).toBe(2);
+  });
+
+  it.each([0, 1])('a normal landing at owner %i has no check-in prompt or carryover', async (owner) => {
+    const { game, p, asked, motel } = setup(
+      (r) => (r.kind === 'invest' ? null : r.kind === 'buyout' ? false : undefined),
+      owner,
+    );
+    at(game.G, 1, 0).owner = p.id;
+    const cash = p.cash;
+    await game.move(p, 1);
+    expect(p.node).toBe(motel.id);
+    expect(asked.some((r) => r.kind === 'motelStop')).toBe(false);
+    expect(p.motelMoves ?? 0).toBe(0);
+    expect(asked.some((r) => r.kind === 'invest')).toBe(owner === p.id);
+    expect(p.cash).toBe(owner === p.id ? cash : cash - 100);
+  });
+
+  it('adds two saved spaces to a roll of five exactly once, including after saving and loading', async () => {
+    const { game, p, G } = setup((r) => (r.kind === 'motelStop' ? true : undefined));
+    await game.move(p, 3);
+    const loaded = JSON.parse(JSON.stringify(G));
+    const player = loaded.players[p.id];
+    let seed = 0;
+    while (rollDie({ ...loaded, rng: seed }) !== 5) seed++;
+    loaded.rng = seed;
+    const events: { type: string; bonus?: number; value?: number }[] = [];
+    const resumed = new Game(loaded, {
+      decide: async () => null as never,
+      emit: (e) => {
+        events.push(e);
+      },
+    });
+    const move = vi.spyOn(resumed, 'move').mockResolvedValue(undefined);
+    await resumed.rollAndMove(player);
+    expect(move).toHaveBeenLastCalledWith(player, 7);
+    expect(events.find((e) => e.type === 'roll')).toMatchObject({ value: 5, bonus: 2 });
+    expect(player.motelMoves).toBeUndefined();
+    events.length = 0;
+    await resumed.rollAndMove(player);
+    const roll = events.find((e) => e.type === 'roll')!;
+    expect(roll.bonus).toBeUndefined();
+    expect(move).toHaveBeenLastCalledWith(player, roll.value);
+  });
+
+  it('cannot check into a closed motel or save zero spaces', async () => {
+    const { G, game, p, motel, asked } = setup((r) => (r.kind === 'motelStop' ? true : undefined));
+    expect(await game.motelStop(p, motel, 0)).toBe(false);
+    G.players[1].closed = true;
+    expect(await game.motelStop(p, motel, 2)).toBe(false);
+    expect(asked.some((r) => r.kind === 'motelStop')).toBe(false);
   });
 
   it('is offered instead of the Home, which can no longer be built', async () => {

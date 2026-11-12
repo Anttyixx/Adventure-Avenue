@@ -1137,14 +1137,20 @@ export class BoardView {
    * Roll the die on screen. With `shrinkFirst` it also waits for the die to shrink beside the
    * player before returning, so walking starts after it (not while it is still shrinking).
    */
-  async rollDie(value: number, onResult?: () => void, resultHold: number = T.dieHold, shrinkFirst = false) {
+  async rollDie(
+    value: number,
+    onResult?: () => void,
+    resultHold: number = T.dieHold,
+    shrinkFirst = false,
+    movement = value,
+  ) {
     const roll = reducedMotion() ? 250 : T.dieRoll;
     const die = {
       value,
       t0: performance.now(),
       phase: 'rolling' as const,
-      count: value,
-      prev: value,
+      count: movement,
+      prev: movement,
       changed: 0,
     };
     this.die = die;

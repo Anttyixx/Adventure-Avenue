@@ -351,14 +351,8 @@ function decide(G: GameState, req: DecisionRequest): unknown {
       return req.options.slice().sort((a, b) => near(a) - near(b))[0];
     }
 
-    case 'motelStop': {
-      // Rivals never stop to pay; the owner stops when it has the cash to invest.
-      if (G.nodes[req.sq].owner !== p.id) return false;
-      return (
-        p.cash > C.investAbove &&
-        G.nodes.some((s) => s.owner === p.id && isShopLike(s) && investRoom(G, s) > 0)
-      );
-    }
+    case 'motelStop':
+      return req.left >= C.motelMinCarry && p.cash - req.fee >= C.motelCashReserve;
 
     case 'pickSquare': {
       if (req.purpose === 'balloon' || req.purpose === 'zoom') {

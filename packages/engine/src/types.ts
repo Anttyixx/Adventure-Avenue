@@ -106,6 +106,8 @@ export interface Player {
   node: number;
   /** Square the player came from; -1 = may move in any direction. */
   prev: number;
+  /** Unused spaces saved by checking into a motel; added to the next roll (old saves: 0). */
+  motelMoves?: number;
   onBreak: boolean;
   closed: boolean;
   boon: number;

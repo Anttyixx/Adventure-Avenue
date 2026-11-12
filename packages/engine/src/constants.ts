@@ -107,8 +107,8 @@ export const K = {
   circusUp: [300, 600, 1200],
   balloonFee: 150,
   homeFee: 60,
-  /** Motel: a rival who stops there pays this share of the cash they hold. */
-  motelRate: 0.15,
+  /** Motel: base lodging fee for a normal rival landing or an optional check-in. */
+  motelFee: 100,
   taxRate: 0.1,
   taxOwner: 0.05,
 
@@ -155,6 +155,9 @@ export const K = {
     investChance: 0.8,
     investAbove: 900,
     investFloor: 600,
+    /** Check in only with meaningful carryover and enough cash left after lodging. */
+    motelMinCarry: 2,
+    motelCashReserve: 600,
     investShare: 0.6,
     buyoutKeep: 600,
     stockAbove: 900,

@@ -72,7 +72,7 @@ export function squareFee(G: GameState, sq: Square, payer?: Player): number {
     case 'home':
       return ceil5(K.homeFee * owner.level * owner.boost);
     case 'motel':
-      return payer ? ceil5(Math.max(0, payer.cash) * K.motelRate * owner.boost) : 0;
+      return ceil5(K.motelFee * owner.boost);
     case 'tax':
       return payer ? ceil5(Math.max(0, netWorth(G, payer)) * K.taxRate) : 0;
     default:

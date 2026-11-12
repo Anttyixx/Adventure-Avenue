@@ -964,21 +964,31 @@ export class HotSeat implements GameIO {
         this.refresh();
         break;
       case 'roll': {
+        this.refresh();
         this.movementRoll = { pid: e.pid, value: e.value };
         hud.action('rolling', `${G.players[e.pid].name} is rolling...`, 'move');
         sound.play('roll');
         const mover = G.players[e.pid];
-        const routes = this.game.destinations(mover, e.value);
+        const total = e.value + (e.bonus ?? 0);
+        const routes = this.game.destinations(mover, total);
         // A CPU's existing route preview supplies the stationary result beat; don't add a
         // second hold before it. Single-route rolls and human rolls use the die hold.
         const routePreviewHolds = mover.cpu && routes.length > 1;
         await board.rollDie(
           e.value,
-          () => hud.action('roll-result', `${mover.name} rolled a ${e.value}.`, 'move'),
+          () =>
+            hud.action(
+              'roll-result',
+              e.bonus
+                ? `${mover.name} rolled ${e.value} + ${e.bonus} saved = ${total} spaces.`
+                : `${mover.name} rolled a ${e.value}.`,
+              'move',
+            ),
           routePreviewHolds ? 0 : T.dieHold,
           // One way to go: the die shrinks first, then the player walks. With a choice of where
           // to go, the choice comes straight up as before.
           routes.length <= 1,
+          total,
         );
         // Once the die has landed, zoom out to show the player and every square the roll could
         // take them to: only on the screen of the human who rolled (they pick where to go).

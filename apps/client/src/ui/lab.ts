@@ -117,7 +117,7 @@ const rnd = (n: number) => Math.floor(Math.random() * n);
  * Controls for UI elements that were just added or changed: they shake once and glow so they
  * are easy to find. Update this list with each change.
  */
-const RECENT = new Set(['Suit pickup text', 'Suit collected in passing']);
+const RECENT = new Set(['Motel stop', 'Motel saved movement', 'Motel bonus roll', 'New squares and Motel']);
 
 /**
  * Which board the lab plays on: Town with portal links (square, the default) or Twin Lakes (hex),
@@ -581,6 +581,13 @@ export async function openLab(app: HTMLElement, section?: string) {
   // Player cards
   {
     const s = addSection('cards', 'Player cards', 'Changes apply to the target player.');
+    row(
+      s,
+      btn('Motel saved movement', () => {
+        cur().motelMoves = cur().motelMoves ? 0 : 2;
+        refresh();
+      }),
+    );
     row(
       s,
       ...['♠', '♥', '♦', '♣'].map((c, i) =>
@@ -1110,6 +1117,17 @@ export async function openLab(app: HTMLElement, section?: string) {
     );
     row(
       s,
+      boardBtn('Motel bonus roll', async () => {
+        setActive(cur().id);
+        await board.rollDie(
+          5,
+          () => hud.action('motel-bonus', 'Rolled 5 + 2 saved = 7 spaces.', 'move'),
+          T.dieHold,
+          true,
+          7,
+        );
+        setTimeout(() => (board.die = null), 1200);
+      }),
       boardBtn('Roll die', async () => {
         setActive(cur().id);
         await board.rollDie(1 + rnd(K.dieSides));
@@ -1501,7 +1519,7 @@ export async function openLab(app: HTMLElement, section?: string) {
         plot.owner = q.id;
         plot.value = K.plotCost;
         refresh();
-        result('Motel', await motelPrompt(pick, cur(), plot.id, Math.ceil(cur().cash * K.motelRate), 3));
+        result('Motel', await motelPrompt(pick, cur(), plot.id, K.motelFee, 3));
       }),
       btn('Taxi / fly anywhere (no highlights)', async () => {
         const ids = G.nodes.filter((n) => !['shop', 'plot', 'bank'].includes(n.t)).map((n) => n.id);

@@ -270,9 +270,17 @@ export class Game {
 
   async rollAndMove(p: Player) {
     const n = rollDie(this.G);
-    await this.emit({ type: 'roll', pid: p.id, value: n });
-    await this.log(`${p.name} rolled a ${n}.`, p.id, 'move');
-    await this.move(p, n);
+    const bonus = Math.max(0, Math.floor(p.motelMoves ?? 0));
+    delete p.motelMoves;
+    await this.emit({ type: 'roll', pid: p.id, value: n, ...(bonus ? { bonus } : {}) });
+    await this.log(
+      bonus
+        ? `${p.name} rolled ${n} + ${bonus} saved spaces: ${n + bonus} spaces to move.`
+        : `${p.name} rolled a ${n}.`,
+      p.id,
+      'move',
+    );
+    await this.move(p, n + bonus);
   }
 
   /** Every square the player could stop on after exactly n steps, with the best route to each. */
@@ -364,7 +372,7 @@ export class Game {
         await this.passSquare(p, G.nodes[p.node], arrivedByWarp);
         if (G.over) return;
         // Passing a motel: the player may stop there instead, giving up the rest of the roll.
-        if (await this.motelStop(p, G.nodes[p.node], left)) break;
+        if (await this.motelStop(p, G.nodes[p.node], left)) return;
       }
     }
     // Arrival at a paired portal does not immediately send the player back.
@@ -383,16 +391,24 @@ export class Game {
     }
   }
 
-  /** Passing a motel: ask whether to stop there instead of moving on. */
+  /** Check in while passing: finish the move, pay once, and save the unused spaces. */
   async motelStop(p: Player, sq: Square, left: number): Promise<boolean> {
-    if (sq.t !== 'plot' || sq.b !== 'motel' || sq.owner < 0) return false;
+    if (left <= 0 || sq.t !== 'plot' || sq.b !== 'motel' || sq.owner < 0) return false;
     const owner = this.G.players[sq.owner];
-    const fee = sq.owner === p.id || isClosed(owner) ? 0 : squareFee(this.G, sq, p);
+    if (isClosed(owner)) return false;
+    const fee = sq.owner === p.id ? K.motelFee : squareFee(this.G, sq, p);
     const yes = await this.ask({ kind: 'motelStop', pid: p.id, sq: sq.id, fee, left });
     if (yes !== true) return false;
-    // A night's rest: the next move may set off in any direction, like leaving the bank.
     p.prev = -1;
-    await this.log(`${p.name} stopped at the motel.`, p.id, 'move');
+    p.motelMoves = left;
+    await this.emit({ type: 'land', pid: p.id, sq: sq.id });
+    if (sq.owner === p.id) await this.pay(p, null, fee, 'Motel check-in');
+    else await this.chargeFee(p, sq, fee);
+    await this.log(
+      `${p.name} checked in at the motel and saved ${left} spaces for their next roll.`,
+      p.id,
+      'move',
+    );
     return true;
   }
 

@@ -26,6 +26,18 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: '2026-11-12-motel-carryover',
+    date: 'Nov 12, 2026',
+    title: 'Check in and save your steps',
+    features: [
+      {
+        tag: 'rules',
+        title: 'A new reason to visit the motel',
+        text: 'Check in while passing to pay a 100G base fee, end your turn and add your unused spaces to your next roll. Owners who check in pay the bank and cannot invest; landing normally still lets owners invest. Normal landings never ask about check-in.',
+      },
+    ],
+  },
+  {
     id: '2026-11-12-suits-every-arrival',
     date: 'Nov 12, 2026',
     title: 'Every arrival collects its suit',

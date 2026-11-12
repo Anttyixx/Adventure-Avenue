@@ -2,7 +2,7 @@
  * Names and descriptions of squares for the interface: tooltips, prompts, the log and the guide.
  * `BUILDING_INFO` says what each vacant plot building does for a rival and for its owner.
  */
-import { K, buildingName, squareFee, type GameState, type Square } from '@aa/engine';
+import { buildingName, squareFee, type GameState, type Square } from '@aa/engine';
 import { fmt } from './ui/dom';
 
 const SPECIAL: Record<string, string> = {
@@ -52,9 +52,8 @@ export const BUILDING_INFO: Record<string, { rival: string; owner: string }> = {
   balloon: { rival: 'Pays 150G.', owner: 'Fly to any square; its landing effect applies.' },
   tax: { rival: 'Pays you 10% of their own net worth.', owner: 'The bank pays you 5% of your net worth.' },
   motel: {
-    rival:
-      'Pays 15% of the cash they hold. Anyone passing may stop here instead of moving on, then set off in any direction.',
-    owner: 'Invest in any of your shops (you can stop here when passing too).',
+    rival: 'Pays 100G. Check in while passing to save unused spaces for the next roll.',
+    owner: 'Land normally to invest. Check in while passing to save spaces instead; pay 100G to the bank.',
   },
   home: { rival: 'Pays 60G x your level.', owner: 'Every other player is pulled to this square.' },
   agency: {
@@ -98,12 +97,7 @@ export function squareInfo(G: GameState, sq: Square): string {
   return info[sq.t] ?? '';
 }
 
-/**
- * A motel's fee as shown on its tile and in lists: what the player whose turn it is would pay
- * there now (15% of their cash), or just "15%" when it is their own motel.
- */
+/** The motel's fixed fee, including the owner's fee boost, on tiles and in lists. */
 export function motelFee(G: GameState, sq: Square): string {
-  const p = G.players[G.order[G.turn]];
-  if (!p || p.id === sq.owner) return `${Math.round(K.motelRate * 100)}%`;
-  return fmt(squareFee(G, sq, p));
+  return fmt(squareFee(G, sq));
 }

@@ -567,7 +567,7 @@ the Guide's Buildings tab says the same during a game ("2 left to build").
 | Circus        | 200G   | Pays the show fee: 100G (tier 0)                                                                                                           | Upgrade to 500 / 1,000 / 2,000G for 300 / 600 / 1,200G                                | Show fee           |
 | Balloonport   | 200G   | Pays 150G                                                                                                                                  | Fly to any square; that square's landing effect applies (bank counts as a bank visit) | 150G               |
 | Tax Office    | 200G   | Pays the owner 10% of the rival's own net worth                                                                                            | Bank pays the owner 5% of their net worth                                             | 10%                |
-| Motel         | 200G   | Pays 15% of the cash they hold (`K.motelRate`). Anyone passing may stop here instead (see below)                                           | Invest in any of your shops                                                           | 15%                |
+| Motel         | 200G   | Pays 100G (`K.motelFee`). Passing players may check in and save unused movement (see below)                                           | Invest in any of your shops                                                           | 100G               |
 | Estate Agency | 200G   | Rival takes a break: their shops close until their next turn                                                                               | Buy any unowned shop at its value                                                     | Break              |
 | 3-Star Shop   | 1,000G | Pays a shop fee on a 1,000G base, with district multipliers; buyouts allowed                                                               | Invest in any of your shops                                                           | Fee                |
 
@@ -580,16 +580,11 @@ the Guide's Buildings tab says the same during a game ("2 left to build").
 - **Checkpoint arrival:** stopping on a checkpoint skips the landing pause, then shows toll payment and the increase together without payment/value pauses. Any following buyout or investment choice keeps its normal decision timing.
 - Fixed fees (checkpoint, circus, balloonport, motel) are multiplied by the owner's fee boost (Price
   hike card, Price Up square). All building fees pay dividends and commissions like shop fees.
-- **Motel fee on the board:** a motel's tile (and its fee in the tooltip, the info pop-up and the
-  stock market's shop cards) shows what the player whose turn it is would pay there right now,
-  15% of their cash; on its owner's turn it shows "15%".
-- **Motel stops:** every player who passes a motel (its owner too) is asked in the action bar
-  "Stop at Rosa's motel?" (the fee to stop and the spaces left to move) with **Stop here** or
-  **Keep moving**. Stopping ends the move there and counts as landing on it: a rival pays the fee,
-  the owner may invest. Landing on it with the roll works the same. A player who chose to stop
-  sets off in any direction on their next move (like leaving the bank), instead of having to keep
-  going the way they came. CPUs never stop at a rival's
-  motel; at their own they stop when they have more than 900G and a shop to invest in.
+- **Motel fee:** 100G base, independent of cash held; normal fee boosts still apply to rival fees. The tile, tooltip and lists show that fixed fee.
+- **Checking in:** only players passing with spaces left may choose **Check in** or **Keep moving**. Check-in ends this move and turn (after any debt is settled), pays the lodging fee once, and saves the unused spaces in `Player.motelMoves`. Rivals pay the owner; owners pay 100G to the bank. Closed motels do not offer check-in. No investment or buyout choice follows a check-in.
+- **Next roll:** add saved spaces to the next die roll, then clear them. A roll of 5 with 2 saved spaces moves 7; the die still shows 5 and the action bar shows the addition. Saved movement survives save/load and online reconnection. A player card shows “Motel +2 spaces” while waiting. Checking in also allows departure in any direction next turn.
+- **Normal landing:** never asks about check-in and saves no spaces. A rival pays the normal fee; an owner may invest as before. Passing without checking in is free.
+- **CPUs:** check in with at least 2 spaces to carry and 600G cash remaining after lodging, regardless of who owns the motel.
 - **The Home is retired:** the Motel took its place in the build list. Games saved with a Home
   keep it working as before (rivals pay 60G x the owner's level; the owner calls everyone home).
 - Closed owners (on a break) charge nothing and their Estate Agency does not trigger.

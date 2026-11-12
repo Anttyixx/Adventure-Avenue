@@ -734,6 +734,8 @@ Trade offers keep the compact action bar layout: two colored offer columns and b
 
 Checkpoint and suit arrivals skip the generic landing announcement and pause, so the effect takes priority immediately. Checkpoint payment and toll-rise effects run without pauses between them, matching a pass-through; subsequent decisions restore normal pacing.
 
+Motel check-in uses the existing action-bar question: show the lodging fee, “Added to your next roll +N spaces”, and that checking in ends the turn. Check in and Keep moving are the only choices. Normal landings skip this prompt. Player cards show pending carryover as a status tag; roll-result text explains “5 + 2 saved = 7 spaces,” with the real die face preserved and the small movement counter starting at the total.
+
 ### 5.17c Game setup
 
 Reopened online games keep guests on Continue Game until the host presses Resume; no Ready, rename or character controls are shown there. The host then sends the same saved turn to all connected guests before play starts. Reopened local games designate the first human as host, so Resume is always available.

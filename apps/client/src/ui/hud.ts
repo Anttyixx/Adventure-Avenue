@@ -815,6 +815,7 @@ export class Hud {
     el.classList.toggle('bankrupt', p.bankrupt);
     const tags: string[] = [];
     if (p.boost > 1) tags.push('Fees +30%');
+    if (p.motelMoves) tags.push(`Motel +${p.motelMoves} spaces`);
     if (p.bankrupt) tags.push('Bankrupt');
     // Reached the target: net worth and portrait pulse and glow (they win at the bank).
     const canWin = !p.bankrupt && nw >= G.target && !G.over;

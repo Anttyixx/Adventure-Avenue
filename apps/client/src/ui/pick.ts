@@ -313,12 +313,13 @@ export function motelPrompt(
   spotlight(board, sqId, p.color);
   return hud
     .prompt(
-      question(mine ? 'Stop at your motel?' : `Stop at ${G.players[sq.owner].name}'s motel?`, [
-        mine ? ['Stopping here', 'Invest in one of your shops'] : ['Fee to stop here', fmt(fee), 'big'],
-        ['Spaces left to move', String(left)],
+      question(mine ? 'Check in at your motel?' : `Check in at ${G.players[sq.owner].name}'s motel?`, [
+        ['Check-in fee', fmt(fee), 'big'],
+        ['Added to your next roll', `+${left} spaces`],
+        ['Check in', 'End this turn. No investment or buyout.'],
       ]),
       [
-        { label: 'Stop here', value: true },
+        { label: 'Check in', value: true },
         { label: 'Keep moving', value: false, main: true },
       ],
       p.color,

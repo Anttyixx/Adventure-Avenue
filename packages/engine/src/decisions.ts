@@ -81,7 +81,7 @@ export interface DecisionMap {
   cannonTarget: [{ options: number[] }, number];
   /** Swap square: the player to trade places with. */
   swapTarget: [{ options: number[] }, number];
-  /** Passing a motel: stop here instead of moving on (`fee`: what stopping costs, 0 for its owner). */
+  /** Passing a motel: pay to check in, end movement and save `left` spaces for the next roll. */
   motelStop: [{ sq: number; fee: number; left: number }, boolean];
   pickDistrict: [{ purpose: DistrictPurpose; options: number[] }, number];
   /** Accept, decline, or send back different terms (a counter-offer from the answering player). */

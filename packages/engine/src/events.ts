@@ -12,7 +12,7 @@ export type TravelKind =
 export type GameEvent =
   | { type: 'turnStart'; pid: number; round: number }
   | { type: 'roundStart'; round: number }
-  | { type: 'roll'; pid: number; value: number }
+  | { type: 'roll'; pid: number; value: number; bonus?: number }
   | { type: 'step'; pid: number; from: number; to: number; left: number }
   /**
    * A jump straight to a square (no walking). `from`: the square left; `how`: what carried the
