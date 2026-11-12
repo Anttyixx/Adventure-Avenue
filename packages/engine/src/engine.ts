@@ -1090,7 +1090,16 @@ export class Game {
     const winner = ans && bidders.includes(ans.winner) ? G.players[ans.winner] : null;
     const price = Math.round(ans?.price ?? 0);
     if (!winner || price < opening || price > winner.cash) {
-      await this.log('Nobody bid. No sale.', seller?.id, 'property');
+      const noBids = !ans || ans.winner < 0;
+      if (noBids) {
+        sq.owner = -1;
+        await this.emit({ type: 'owner', sq: sq.id, owner: -1 });
+      }
+      await this.log(
+        noBids ? 'Nobody bid. The property returned to the bank.' : 'No valid bid. No sale.',
+        seller?.id,
+        'property',
+      );
       await this.emit({ type: 'auctionEnd', sq: sq.id, winner: -1, price: 0 });
       return;
     }

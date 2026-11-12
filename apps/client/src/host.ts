@@ -652,6 +652,8 @@ export class HotSeat implements GameIO {
   }
 
   /** Takes down the trade terms shown to everyone not deciding. */
+  /** Hold domination celebrations until every part of an accepted trade has finished. */
+  private tradeAnimating = false;
   private tradeWatch: (() => void) | null = null;
 
   /** Give CPU choices a beat so players can follow along. */
@@ -1233,6 +1235,7 @@ export class HotSeat implements GameIO {
         break;
       }
       case 'trade':
+        this.tradeAnimating = false;
         this.refresh();
         break;
       case 'closed': {
@@ -1305,6 +1308,7 @@ export class HotSeat implements GameIO {
         }
         // The venture card itself was already on screen with the board.
         if (e.text.startsWith('Venture card: ')) break;
+        if (e.text.endsWith("'s trade.") && e.text.includes(' accepted ')) this.tradeAnimating = true;
         if (e.text.endsWith("'s trade.") && (e.text.includes(' accepted ') || e.text.includes(' declined ')))
           hud.action('trade', e.text, e.kind);
         else hud.tick(e.text, e.kind, T.actionResult, this.passing);
@@ -1320,7 +1324,8 @@ export class HotSeat implements GameIO {
     if (!investing && e.type !== 'gameOver') await this.announceStockMoves();
     // A new domination is celebrated once the action that made it is over (a trade or purchase
     // ends with its log line), never halfway through it.
-    if (e.type === 'log' || e.type === 'trade' || e.type === 'auctionEnd') await this.announceDominations();
+    if (!this.tradeAnimating && (e.type === 'log' || e.type === 'trade' || e.type === 'auctionEnd'))
+      await this.announceDominations();
   }
 
   /**

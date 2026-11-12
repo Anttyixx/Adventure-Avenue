@@ -881,7 +881,7 @@ these are the main tools for completing districts.
 1. Proposer picks a partner first. The board then pulls back so every square fits in the space the
    player cards and action bar leave free; everything but the two players' properties is dimmed.
    The action bar shows the deal: a row for each side with the chosen properties as chips and a
-   cash amount (minus/plus in 50G steps, or typed). Tapping a property on the board adds or removes
+   separate cash row (minus/plus in 50G steps, or typed). The two offer columns sit above a centered footer of action buttons. Tapping a property on the board adds or removes
    it ("Give"/"Get" labels on the board); tapping a chip removes it.
 2. Validation: at least one item, and neither side offers more cash than they hold.
 3. The partner sees the same zoomed-out board and an action bar listing both sides, with the offered
@@ -892,8 +892,7 @@ these are the main tools for completing districts.
    bar, the properties labelled on the board, and who is deciding) without buttons. The log does
    not list each counter-offer: while it goes on it shows who is deciding, and it ends with one
    line, "Milo accepted Rosa's trade." or "Milo declined Rosa's trade."
-4. On accept, ownership and cash swap atomically, then expansion runs for both players in every
-   group that changed hands.
+4. Ownership and cash swap atomically, and acceptance is announced; the board plays every ownership-change animation before any domination celebration. Expansion runs for both players in every group that changed hands.
 
 CPU acceptance rule: value each property at value x (1 + 0.35 x squares the CPU already owns in that
 group, excluding the square itself when giving it away). Accept if what it receives >= 1.15 x what
@@ -913,9 +912,8 @@ it gives + 20G and it can afford its cash side. CPUs never propose trades in the
   - 5 seconds (`TIMING.auctionWindow`) after the last bid: the high bidder wins. There is one
     clock for everyone: every bid, by anyone, fills it back to 5 seconds for all bidders still in
     (passing does not). Only an auction among CPUs alone shortens it with Fast CPU speed;
-  - 5 seconds after it opens with no bids: no sale (the property stays with the seller or, for
-    the bank, goes back on the market);
-  - as soon as only one bidder is left: they win (at the opening bid if nobody bid).
+  - 5 seconds after it opens with no bids: the property returns to the bank, unowned, with no money paid to the seller;
+  - as soon as the only bidder left has already placed a bid: they win at that bid. A sole eligible player who has not bid can still bid, pass or let the clock expire.
 - **Screen:** a pop-up in the middle of every player's screen ("Live auction") shows the lot (art,
   name, value and the bid step), the high bid and leader (it pops and a coin chimes on each new
   bid), a countdown bar with the seconds left (gold, turning red for the last 2 seconds; every bid

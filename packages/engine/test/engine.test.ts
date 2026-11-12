@@ -454,6 +454,17 @@ describe('auctions and trades', () => {
     }
   });
 
+  it('returns an unsold property to the bank without charging any bidder', async () => {
+    const { G, game, events } = makeGame('standard', (r) => (r.kind === 'auction' ? null : undefined));
+    const shop = at(G, 6, 0);
+    shop.owner = 0;
+    const balances = G.players.map((p) => p.cash);
+    await game.voluntaryAuction(G.players[0], shop.id);
+    expect(shop.owner).toBe(-1);
+    expect(G.players.map((p) => p.cash)).toEqual(balances);
+    expect(events).toContainEqual({ type: 'owner', sq: shop.id, owner: -1 });
+  });
+
   it('CPUs settle an auction one step above the runner-up', async () => {
     const { G, game } = makeGame();
     const shop = at(G, 6, 0);

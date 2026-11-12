@@ -730,6 +730,8 @@ if (!(await ask(`Delete ${d.name}?`, 'Its 4 properties will be removed from the 
   the roof, hot-air balloon in the player's color, swap trails in both players' colors, venture
   gold stars). New rides follow the same pattern: a token pose plus short-lived world effects.
 
+Trade offers stay in the action bar so the board remains visible. Use two colored columns: player/direction heading, property chips, then a separate Cash row. Received offers explicitly say “You receive from [name]” and “You give.” Center Propose/Cancel or Accept/Counter/Decline together below the terms. Watching players see the same terms with a waiting line. Preserve the two-column comparison on landscape phones and scroll long property lists.
+
 ### 5.17c Game setup
 
 Reopened online games keep guests on Continue Game until the host presses Resume; no Ready, rename or character controls are shown there. The host then sends the same saved turn to all connected guests before play starts. Reopened local games designate the first human as host, so Resume is always available.

@@ -3,7 +3,7 @@
  * middle of the screen with the lot, the high bid and a countdown, and every bidder; the bidding
  * itself is in the action bar. Anyone may bid (the next step up) or pass at any moment. It ends
  * TIMING.auctionWindow after the last bid (the high bidder wins; with no bids, no sale), or as
- * soon as only one bidder is left (they win, at the opening bid if nobody bid).
+ * soon as the only bidder left has actually placed a bid.
  *
  * `AuctionView` draws it everywhere. `LiveAuction` runs the rules on the device that answers the
  * engine's `auction` decision (the only device in a hot-seat game, the host online); guests send
@@ -304,8 +304,8 @@ export class AuctionView {
         ),
       );
     } else {
-      title = 'Nobody bid. No sale.';
-      this.high.append(h('small', null, 'No bids'), h('b', null, 'No sale'));
+      title = 'Nobody bid. The property returns to the bank.';
+      this.high.append(h('small', null, 'No bids'), h('b', null, 'Back to the bank'));
     }
     this.high.classList.add('pop', 'won');
     const t = window.setTimeout(() => this.hud.resolvePrompt(undefined), ms);
@@ -381,15 +381,15 @@ export class LiveAuction {
   /** The state changed: check for an end, reset the clock after a bid, share it, plan CPU moves. */
   private restart(bid = true) {
     if (bid || !this.deadline) this.deadline = performance.now() + this.window;
-    // Bidders who passed, or can't afford the next bid, are out; one left wins.
+    // A sole bidder must still choose to bid; being able to pay never commits their cash.
     const left = this.req.bidders.filter(
       (pid) =>
         !this.live.passed.includes(pid) && (pid === this.live.highBidder || this.view.canBid(pid, this.live)),
     );
     if (left.length === 0) return this.finish(-1, 0);
-    if (left.length === 1 && (this.live.highBidder === left[0] || this.live.highBidder < 0)) {
+    if (left.length === 1 && this.live.highBidder === left[0]) {
       const w = left[0];
-      return this.finish(w, this.live.highBidder < 0 ? this.req.opening : this.live.high);
+      return this.finish(w, this.live.high);
     }
     this.publish();
     clearTimeout(this.timer);

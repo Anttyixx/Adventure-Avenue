@@ -26,6 +26,17 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: '2026-11-12-auctions-trades',
+    date: 'Nov 12, 2026',
+    title: 'Clearer trades and optional bids',
+    features: [],
+    extras: [
+      'The last eligible bidder can still pass; properties with no bids return to the bank.',
+      'Traded properties change hands on the board before a domination is celebrated.',
+      'Trade offers separate properties, cash and action buttons for easier comparison.',
+    ],
+  },
+  {
     id: '2026-11-11-reconnect-continue',
     date: 'Nov 11, 2026',
     title: 'Reconnect before resuming',

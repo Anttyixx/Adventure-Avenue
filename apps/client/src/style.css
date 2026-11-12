@@ -6080,9 +6080,21 @@ button.char-btn:focus-visible .char-btn-tag {
 
 .trade-bar {
   display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 10px;
+  width: min(680px, calc(100vw - 48px));
+  max-width: 100%;
+  min-width: 0;
+}
+.tb-money {
+  display: flex;
   align-items: center;
-  gap: 12px;
-  min-width: min(680px, 100%);
+  justify-content: space-between;
+  gap: 8px;
+  padding-top: 6px;
+  border-top: 1px solid var(--glass-line);
+  margin-top: auto;
 }
 /* One column per player: theirs side by side, the proposer (or offerer) on the left. */
 .tb-rows {
@@ -6097,7 +6109,7 @@ button.char-btn:focus-visible .char-btn-tag {
   flex-direction: column;
   gap: 5px;
   min-width: 0;
-  padding: 5px 6px 6px 8px;
+  padding: 8px 10px;
   border-radius: 10px;
   border-left: 4px solid var(--pc);
   background: rgba(255, 255, 255, 0.05);
@@ -6206,20 +6218,16 @@ button.tb-chip:hover {
 .tb-btns {
   flex: none;
   display: flex;
-  flex-direction: column;
+  justify-content: center;
+  flex-direction: row;
   gap: 4px;
 }
 .prompt-center .tb-btns .btn {
   padding: 5px 14px;
   font-size: 14px;
 }
-/* Accept on top, Counter and Decline side by side below it. */
-.tb-btns.three {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-}
-.tb-btns.three .btn.main {
-  grid-column: 1 / -1;
+.tb-btns .btn {
+  min-width: 90px;
 }
 @media (max-height: 500px), (max-width: 760px) {
   .trade-bar {

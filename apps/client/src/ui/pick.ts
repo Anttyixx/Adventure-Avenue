@@ -488,21 +488,22 @@ export async function tradeOnBoard(
     h(
       'div',
       { class: 'tb-row', style: `--pc:${PLAYER_COLORS[who.color]}` },
-      h(
-        'div',
-        { class: 'tb-head' },
-        h('span', { class: 'tb-who' }, label),
-        cashStepper(cash, who.cash, (v) => {
-          setCash(v);
-          send.disabled = !valid();
-        }),
-      ),
+      h('div', { class: 'tb-head' }, h('span', { class: 'tb-who' }, label)),
       h(
         'div',
         { class: 'tb-chips' },
         ...(set.size
           ? [...set].map((id) => tradeChip(G, id, () => toggle(id)))
           : [h('span', { class: 'tb-hint' }, `Tap ${who === p ? 'your' : `${who.name}'s`} properties`)]),
+      ),
+      h(
+        'div',
+        { class: 'tb-money' },
+        h('span', { class: 'tb-hint' }, 'Cash'),
+        cashStepper(cash, who.cash, (v) => {
+          setCash(v);
+          send.disabled = !valid();
+        }),
       ),
     );
   const draw = () => {
@@ -552,8 +553,14 @@ export function watchTradeOnBoard(ctx: PickCtx, o: TradeOffer): () => void {
         'div',
         { class: 'tb-chips' },
         ...ids.map((id) => tradeChip(G, id)),
-        cash ? h('span', { class: 'tb-chip cash' }, fmt(cash)) : null,
-        !ids.length && !cash ? h('span', { class: 'tb-hint' }, 'Nothing') : null,
+
+        !ids.length ? h('span', { class: 'tb-hint' }, 'No properties') : null,
+      ),
+      h(
+        'div',
+        { class: 'tb-money' },
+        h('span', { class: 'tb-hint' }, 'Cash'),
+        h('span', { class: 'tb-chip cash' }, fmt(cash)),
       ),
     );
   const body = h(
@@ -601,8 +608,14 @@ export async function answerTradeOnBoard(
         'div',
         { class: 'tb-chips' },
         ...ids.map((id) => tradeChip(G, id)),
-        cash ? h('span', { class: 'tb-chip cash' }, fmt(cash)) : null,
-        !ids.length && !cash ? h('span', { class: 'tb-hint' }, 'Nothing') : null,
+
+        !ids.length ? h('span', { class: 'tb-hint' }, 'No properties') : null,
+      ),
+      h(
+        'div',
+        { class: 'tb-money' },
+        h('span', { class: 'tb-hint' }, 'Cash'),
+        h('span', { class: 'tb-chip cash' }, fmt(cash)),
       ),
     );
   const body = h(
@@ -611,7 +624,7 @@ export async function answerTradeOnBoard(
     h(
       'div',
       { class: 'tb-rows' },
-      row(a, `${a.name} gives`, o.give, o.cashGive),
+      row(a, `You receive from ${a.name}`, o.give, o.cashGive),
       row(b, 'You give', o.get, o.cashGet),
     ),
     h(
