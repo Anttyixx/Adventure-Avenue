@@ -9571,20 +9571,43 @@ div.sl-inline label {
   margin: 0;
   translate: -50% -50%;
   rotate: calc(-1 * var(--turn, 0deg));
-  border: 1px solid rgba(255, 255, 255, 0.45);
+  border: 0;
   box-sizing: border-box;
-  border-radius: 50%;
   display: grid;
   place-items: center;
-  background: rgba(16, 26, 51, 0.85);
-  font: 400 16px var(--head);
+  background: transparent;
+  font: 600 16px var(--head);
+  -webkit-text-stroke: 0.65px #182641;
+  paint-order: stroke fill;
+  text-shadow: 0 1px 2px #182641;
   line-height: 1;
   color: #fff;
 }
 .wheel-num.hit {
-  background: #fff;
-  color: #26314f;
-  box-shadow: 0 0 10px #fff;
+  color: #fff9d8;
+  background: transparent;
+  box-shadow: none;
+  text-shadow:
+    0 0 5px #fff6bb,
+    0 0 10px #ffd166,
+    0 1px 2px #182641;
+}
+.wheel-glow {
+  position: absolute;
+  inset: 9%;
+  border-radius: 50%;
+  opacity: 0;
+  pointer-events: none;
+  background: conic-gradient(
+    from var(--lit-start, 0deg),
+    rgba(255, 244, 180, 0.5) 0 30deg,
+    transparent 30deg 360deg
+  );
+  filter: drop-shadow(0 0 5px rgba(255, 221, 113, 0.65));
+}
+.wheel-disc.spinning .wheel-glow,
+.wheel-disc.settled .wheel-glow {
+  opacity: 1;
 }
 .wheel-pointer {
   position: absolute;
@@ -12230,7 +12253,10 @@ button.char-btn:hover img {
     0 0 2px #101a33;
 }
 .arcade-painted .wheel-num.hit {
-  text-shadow: none;
+  text-shadow:
+    0 0 5px #fff6bb,
+    0 0 10px #ffd166,
+    0 1px 2px #182641;
 }
 .arcade-painted .wheel-pointer {
   top: -9px;

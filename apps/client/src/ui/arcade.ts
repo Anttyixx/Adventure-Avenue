@@ -792,7 +792,7 @@ export class ArcadeStage {
 
   private wheelBoard() {
     if (this.disc) return;
-    const disc = h('div', { class: 'wheel-disc' });
+    const disc = h('div', { class: 'wheel-disc' }, h('span', { class: 'wheel-glow', 'aria-hidden': 'true' }));
     for (let n = 1; n <= K.wheel.spaces; n++) {
       const angle = ((n - 0.5) * Math.PI * 2) / K.wheel.spaces;
       // The center of each sector, well inside the painted rim. Text stays upright separately.
@@ -887,12 +887,34 @@ export class ArcadeStage {
     const end = 360 * 4 - ((n - 1) * seg + seg / 2);
     this.disc!.style.setProperty('--turn', `${end}deg`);
     const spin = { duration: T.arcadeWheel, easing: 'cubic-bezier(.1,.7,.15,1)' };
-    await Promise.all([
-      this.anim(this.disc!, [{ rotate: '0deg' }, { rotate: `${end}deg` }], spin),
-      ...Array.from(this.disc!.querySelectorAll('.wheel-num')).map((number) =>
-        this.anim(number, [{ rotate: '0deg' }, { rotate: `${-end}deg` }], spin),
-      ),
-    ]);
+    const disc = this.disc!;
+    let frame = 0;
+    const light = (index: number) => {
+      disc.style.setProperty('--lit-start', `${index * seg}deg`);
+    };
+    // Follow the sector currently under the fixed pointer while the wheel turns beneath it.
+    const follow = () => {
+      if (this.closed) return;
+      const angle = parseFloat(getComputedStyle(disc).rotate) || 0;
+      const local = ((-angle % 360) + 360) % 360;
+      light(Math.floor(local / seg) % K.wheel.spaces);
+      frame = requestAnimationFrame(follow);
+    };
+    disc.classList.add('spinning');
+    if (!reduced()) frame = requestAnimationFrame(follow);
+    try {
+      await Promise.all([
+        this.anim(this.disc!, [{ rotate: '0deg' }, { rotate: `${end}deg` }], spin),
+        ...Array.from(this.disc!.querySelectorAll('.wheel-num')).map((number) =>
+          this.anim(number, [{ rotate: '0deg' }, { rotate: `${-end}deg` }], spin),
+        ),
+      ]);
+    } finally {
+      cancelAnimationFrame(frame);
+      disc.classList.remove('spinning');
+    }
+    light(n - 1);
+    disc.classList.add('settled');
     this.disc!.querySelectorAll('.wheel-num').forEach((el, i) => el.classList.toggle('hit', i + 1 === n));
     this.zones.forEach((z, i) => z.classList.toggle('hit', wheelWins(i, n)));
     // Each bet appears on its zone with what it won or lost.

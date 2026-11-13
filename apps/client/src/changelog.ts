@@ -31,7 +31,7 @@ export const CHANGELOG: ChangelogEntry[] = [
     title: 'Readable wheel numbers and memory prizes',
     features: [],
     extras: [
-      'Lucky Wheel numbers sit inside the rim on high-contrast badges and stay upright as the wheel spins.',
+      'Lucky Wheel numbers stay upright inside the rim with a subtle outline. Wedges glow as they pass the pointer, and the winner stays lit.',
       'Memory prizes use larger, short labels inside the card frames. Landscape phones use two rows of cards to keep text readable.',
     ],
   },
