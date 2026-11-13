@@ -112,6 +112,8 @@ export const TIMING = {
   cpuResult: 2300,
   memoryReveal: 600,
   arcadeRoll: 350,
+  /** Read everyone’s locked-in bets before the wheel starts. */
+  arcadeBets: 2000,
   arcadeWheel: 2800,
   arcadeRace: 1800,
   arcadeResult: 3500,

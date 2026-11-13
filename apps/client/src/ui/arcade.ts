@@ -819,7 +819,12 @@ export class ArcadeStage {
       h(
         'div',
         { class: 'wheel' },
-        h('div', { class: 'wheel-wrap' }, h('span', { class: 'wheel-pointer', 'aria-hidden': 'true' }), disc),
+        h(
+          'div',
+          { class: 'wheel-wrap' },
+          h('span', { class: 'wheel-pointer', 'aria-hidden': 'true' }),
+          h('div', { class: 'wheel-spin' }, disc),
+        ),
         zones,
       ),
     );
@@ -881,6 +886,26 @@ export class ArcadeStage {
 
   private async wheelReveal(e: Round) {
     this.wheelBoard();
+    const bets = h('div', { class: 'wheel-bets', 'aria-label': 'Locked-in bets' });
+    const betLabels = new Map<number, HTMLElement>();
+    for (const row of e.rows) {
+      const p = this.G.players[row.pid];
+      const label = h('span', null, h('b', null, p.name), ` · ${row.text}`);
+      betLabels.set(row.pid, label);
+      bets.append(
+        h(
+          'span',
+          { class: 'wz-chip', style: `--pc:${PLAYER_COLORS[p.color]}` },
+          h('img', { src: portraitURL(p.ch), alt: '' }),
+          label,
+        ),
+      );
+    }
+    this.body.querySelector('.wheel')!.append(bets);
+    this.sub.textContent = 'All bets locked in';
+    await this.wait(T.arcadeBets);
+    if (this.closed) return;
+    this.sub.textContent = 'Spinning…';
     const n = e.wheel ?? 1;
     // Segment n is centered at (n - 1) * 30 + 15 degrees; turn it under the pointer at the top.
     const seg = 360 / K.wheel.spaces;
@@ -915,35 +940,20 @@ export class ArcadeStage {
     }
     light(n - 1);
     disc.classList.add('settled');
+    this.sub.textContent = `Number ${n}`;
     this.disc!.querySelectorAll('.wheel-num').forEach((el, i) => el.classList.toggle('hit', i + 1 === n));
     this.zones.forEach((z, i) => z.classList.toggle('hit', wheelWins(i, n)));
-    // Each bet appears on its zone with what it won or lost.
+    // Reuse the bet markers for payouts so crowded zones do not grow on short screens.
     for (const row of e.rows) {
       if (row.choice == null || row.choice < 0) continue;
       const p = this.G.players[row.pid];
       const amt = row.amount ?? 0;
-      this.zones[row.choice].querySelector('.wz-chips')!.append(
-        h(
-          'span',
-          {
-            class: `wz-chip ${amt >= 0 ? 'up' : 'down'}`,
-            style: `--pc:${PLAYER_COLORS[p.color]}`,
-            title: p.name,
-          },
-          h('img', { src: portraitURL(p.ch), alt: p.name }),
-          `${amt >= 0 ? '+' : ''}${fmt(amt)}`,
-        ),
-      );
+      const label = betLabels.get(row.pid)!;
+      clear(label);
+      label.append(h('b', null, p.name), ` · ${WHEEL_BETS[row.choice]} · ${amt >= 0 ? '+' : ''}${fmt(amt)}`);
+      label.parentElement!.classList.add(amt >= 0 ? 'up' : 'down');
+      label.parentElement!.title = `${p.name} · ${row.text}`;
     }
-    const skipped = e.rows.filter((r) => r.choice == null || r.choice < 0);
-    if (skipped.length)
-      this.body.append(
-        h(
-          'div',
-          { class: 'wheel-skips' },
-          `Skipped: ${skipped.map((r) => this.G.players[r.pid].name).join(', ')}`,
-        ),
-      );
     await this.wait(500);
   }
 

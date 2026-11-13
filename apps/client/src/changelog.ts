@@ -26,6 +26,15 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: '2026-11-12-wheel-bet-preview',
+    date: 'Nov 12, 2026',
+    title: 'See every bet before the wheel spins',
+    features: [],
+    extras: [
+      'Lucky Wheel shows everyone’s locked-in bets for two seconds before spinning. On larger screens the wheel grows by up to 25%, while phone sizing stays the same.',
+    ],
+  },
+  {
     id: '2026-11-12-readable-arcade-text',
     date: 'Nov 12, 2026',
     title: 'Readable wheel numbers and memory prizes',
