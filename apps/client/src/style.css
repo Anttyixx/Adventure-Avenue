@@ -9557,22 +9557,6 @@ div.sl-inline label {
     aspect-ratio: 1;
   }
 }
-.wheel-bets {
-  grid-column: 1 / -1;
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 6px;
-  max-width: 598px;
-}
-.wheel-bets .wz-chip {
-  padding-right: 8px;
-  font-family: var(--body);
-}
-.wheel-bets .wz-chip > span {
-  min-width: 0;
-  overflow-wrap: anywhere;
-}
 /* Contain the rotating square bounds; the fixed pointer stays outside this clip. */
 .wheel-spin {
   width: 100%;
@@ -9751,6 +9735,7 @@ div.sl-inline label {
 }
 .wz-chip {
   display: inline-flex;
+  white-space: nowrap;
   align-items: center;
   gap: 2px;
   padding: 1px 6px 1px 1px;
@@ -10074,26 +10059,19 @@ div.sl-inline label {
     font-size: 12px;
   }
   .wheel {
-    grid-template-columns: 160px 270px;
+    grid-template-columns: 160px minmax(0, 330px);
+    width: 500px;
+    max-width: 100%;
     gap: 6px 10px;
   }
-  .wheel:has(.wheel-bets) .wheel-wrap {
-    grid-row: 1 / 3;
-  }
-  .wheel-bets {
-    grid-column: 2;
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 4px;
-  }
-  .wheel-bets .wz-chip {
+  .wz-chip {
     font-size: 11px;
-    line-height: 1.2;
-    padding-right: 4px;
-    min-width: 0;
+    padding: 1px 3px 1px 1px;
   }
-  .wheel-bets .wz-chip img {
+  .wz-chip img {
     flex: none;
+    width: 14px;
+    height: 14px;
   }
   .wheel-wrap {
     width: 160px;
@@ -10105,7 +10083,7 @@ div.sl-inline label {
     font-size: 14px;
   }
   .wheel-zones {
-    width: 270px;
+    width: 100%;
     gap: 5px;
   }
   .wheel-zone {

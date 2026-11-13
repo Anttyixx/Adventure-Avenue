@@ -26,6 +26,15 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: '2026-11-13-wheel-container-bets',
+    date: 'Nov 13, 2026',
+    title: 'Wheel bets stay with their choices',
+    features: [],
+    extras: [
+      'Locked-in bets appear inside their chosen Lucky Wheel containers before the spin. The same player markers update to show wins and losses when the wheel stops.',
+    ],
+  },
+  {
     id: '2026-11-13-draw-districts',
     date: 'Nov 13, 2026',
     title: 'Draw properties, then paint their districts',

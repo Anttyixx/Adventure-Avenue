@@ -886,26 +886,35 @@ export class ArcadeStage {
 
   private async wheelReveal(e: Round) {
     this.wheelBoard();
-    const bets = h('div', { class: 'wheel-bets', 'aria-label': 'Locked-in bets' });
     const betLabels = new Map<number, HTMLElement>();
+    const skipped = e.rows.filter((row) => row.choice == null || row.choice < 0);
+    const skipNote = skipped.length
+      ? ` · Skipped: ${skipped.map((row) => this.G.players[row.pid].name).join(', ')}`
+      : '';
     for (const row of e.rows) {
+      if (row.choice == null || row.choice < 0) continue;
       const p = this.G.players[row.pid];
-      const label = h('span', null, h('b', null, p.name), ` · ${row.text}`);
+      // The round's public bet text ends with the stake; the container already names its bet.
+      const label = h('span', null, row.text.split(' · bet ')[1] ?? row.text);
       betLabels.set(row.pid, label);
-      bets.append(
+      this.zones[row.choice].querySelector('.wz-chips')!.append(
         h(
           'span',
-          { class: 'wz-chip', style: `--pc:${PLAYER_COLORS[p.color]}` },
+          {
+            class: 'wz-chip',
+            style: `--pc:${PLAYER_COLORS[p.color]}`,
+            title: `${p.name} · ${row.text}`,
+            'aria-label': `${p.name} · ${row.text}`,
+          },
           h('img', { src: portraitURL(p.ch), alt: '' }),
           label,
         ),
       );
     }
-    this.body.querySelector('.wheel')!.append(bets);
-    this.sub.textContent = 'All bets locked in';
+    this.sub.textContent = `All bets locked in${skipNote}`;
     await this.wait(T.arcadeBets);
     if (this.closed) return;
-    this.sub.textContent = 'Spinning…';
+    this.sub.textContent = `Spinning…${skipNote}`;
     const n = e.wheel ?? 1;
     // Segment n is centered at (n - 1) * 30 + 15 degrees; turn it under the pointer at the top.
     const seg = 360 / K.wheel.spaces;
@@ -940,19 +949,22 @@ export class ArcadeStage {
     }
     light(n - 1);
     disc.classList.add('settled');
-    this.sub.textContent = `Number ${n}`;
+    this.sub.textContent = `Number ${n}${skipNote}`;
     this.disc!.querySelectorAll('.wheel-num').forEach((el, i) => el.classList.toggle('hit', i + 1 === n));
     this.zones.forEach((z, i) => z.classList.toggle('hit', wheelWins(i, n)));
-    // Reuse the bet markers for payouts so crowded zones do not grow on short screens.
+    // Update each wager in its own bet container when the result is revealed.
     for (const row of e.rows) {
       if (row.choice == null || row.choice < 0) continue;
       const p = this.G.players[row.pid];
       const amt = row.amount ?? 0;
       const label = betLabels.get(row.pid)!;
       clear(label);
-      label.append(h('b', null, p.name), ` · ${WHEEL_BETS[row.choice]} · ${amt >= 0 ? '+' : ''}${fmt(amt)}`);
+      label.append(`${amt >= 0 ? '+' : ''}${fmt(amt)}`);
       label.parentElement!.classList.add(amt >= 0 ? 'up' : 'down');
-      label.parentElement!.title = `${p.name} · ${row.text}`;
+      label.parentElement!.setAttribute(
+        'aria-label',
+        `${p.name} · ${row.text} · ${amt >= 0 ? '+' : ''}${fmt(amt)}`,
+      );
     }
     await this.wait(500);
   }
