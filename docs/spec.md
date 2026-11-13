@@ -288,7 +288,9 @@ It opens and resets at 300%. Wheel, pinch and - / + still use 5% steps, with for
 300% to 100%. Game zoom is unchanged. Camera scale eases with the game's 0.12 factor, or
 changes immediately with reduced motion. Pinching does not place tiles;
 board picking uses the current camera transform at every zoom. Form typing keeps its normal keys.
-An icon-only toolbar is centered vertically 10px from the left edge: Select, Pan, Place and Erase.
+An icon-only toolbar is centered vertically 10px from the left edge: Select, Move, Pan, Place and Erase.
+The Move tool directly picks up one tile on pointer down and snaps its preview to the grid while dragged. Releasing places it in one undoable operation, preserving tile data and links; occupied destination tiles are replaced, but the bank cannot be overwritten. The bank itself can be dragged. Escape, pointer cancellation, a two-finger pinch, or a drop outside the grid cancels without editing. Clicking without moving adds no undo entry. Select’s existing Move action still supports moving a selected group by clicking to place. Mouse/pen dragging and one-finger touch dragging share these rules.
+
 Hovering or focusing an icon shows its name; the active tool has a gold fill and inset
 outline. Buttons have accessible names and work with keyboard and touch. Erase removes squares.
 Board settings is in the top-left info bar.

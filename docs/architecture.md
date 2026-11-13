@@ -372,7 +372,7 @@ with the game's painters (`paintBoard`, `paintSquare`, `drawTileGlow`, `drawRing
 
 - **Info chip** (top left): name, save status, Board settings (with the problem-count badge).
 - **Toolbar** (top right): zoom chip (tap: reset zoom and recenter), Undo, Save, Test play, Menu.
-- **Tool rail** (left): Select, Pan, Place, Erase. Pan also works with right/middle-drag,
+- **Tool rail** (left): Select, Move, Pan, Place, Erase. Move drags a single tile from pointer down to release, using the shared selection preview and atomic placement; cancellation never mutates the board. Pan also works with right/middle-drag,
   Space+drag, two fingers and arrow keys; the camera eases (`pan`, `cameraPan`, `clampPan`).
 - **Tiles pane** (right, only while placing): the game's tile art; the chosen one glows.
 - **Side panels** (right): Board settings (grid, author, district cards with steppers, problems)

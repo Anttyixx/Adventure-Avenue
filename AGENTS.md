@@ -124,7 +124,7 @@ Requests refer to parts of the game by these names:
     Textured mode: `paintGrass` paints nonrepeating grass plus varied cartoon grass/water/paving cells (`SCENERY_SET = terrain`). `town-terrain.ts` joins material cells and `townBackgroundFeatures` adds mainly foliage, with occasional benches/planters near the board; `town-terrain-art.ts` blends edges and caches world chunks at the current camera pixel scale (0.5–2px/world unit); decoration PNGs draw separately at native resolution. `terrain-v12/` contains the active crisp cartoon materials, with previous textures preserved. Meadow caches also follow camera pixel scale. Lawn blades and clovers must stay upright: vary crops / horizontal flips only, never rotate patches or vertically mirror the lawn texture. Match board tile art, keep geometry/portal mouths clear, and hide scenery in the builder. Default scenery has no hedge frames, dioramas or decorative walk network. `puzzle` and `connected` preserve the earlier experiments; `park` and `previous` preserve older scenery. Keep all earlier assets.
   - **auto zoom / camera:** see "Camera" in `docs/architecture.md`.
 - **Board builder** (or board editor, `ui/editor.ts`, `#editor`): the full-screen builder with the
-  left icon toolbar (Select, Pan, Place, Erase, Links), the Tiles pane (with the Blank placeholder
+  left icon toolbar (Select, Move, Pan, Place, Erase, Links), the Tiles pane (with the Blank placeholder
   tile), the **view chip** (Normal / Tile types), Board settings, tile info panel, the portal panel and
   warps/portals. How it works in detail: "Board builder overview" in `docs/architecture.md`.
 - **Menus and tools:**

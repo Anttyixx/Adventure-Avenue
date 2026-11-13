@@ -26,6 +26,18 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: '2026-11-13-editor-move-tool',
+    date: 'Nov 13, 2026',
+    title: 'Drag tiles into place',
+    features: [
+      {
+        tag: 'new',
+        title: 'Move tool',
+        text: 'Use Move in the board builder to click and drag a tile straight to a new spot. Release to place it on the grid; Escape cancels. Undo, tile links and bank protection work as usual.',
+      },
+    ],
+  },
+  {
     id: '2026-11-13-random-suit-tile',
     date: 'Nov 13, 2026',
     title: 'A suit tile that fills the gaps',

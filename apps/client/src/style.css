@@ -7711,6 +7711,12 @@ div.sl-inline label {
   display: none;
 }
 
+.editor.ed-move .ed-canvas {
+  cursor: grab;
+}
+.editor.ed-move.ed-moving .ed-canvas {
+  cursor: grabbing;
+}
 .ed-moving .ed-canvas {
   cursor: none;
 }

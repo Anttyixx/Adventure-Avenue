@@ -68,7 +68,7 @@ a default browser widget.
 | Be **told** something happened (no answer needed)                       | **Banner** (top center, fades) or the status line                                    | "Rosa's turn", "Bay Market stock up!"                        |
 | See **details on demand** about something on the board                  | **Tooltip**                                                                          | Hovering/tapping a square                                    |
 | Get to a **screen-wide tool** or info at any time                       | **Toolbar / info chip** (top corners)                                                | Zoom, Game log, Menu (with the Guide), game name and goal    |
-| Pick a **tool** in an editor                                            | **Tool rail** (icon buttons, left edge)                                              | Select, Pan, Place, Erase                                    |
+| Pick a **tool** in an editor                                            | **Tool rail** (icon buttons, left edge)                                              | Select, Move, Pan, Place, Erase                                    |
 | Pick **one color/category** while doing something else                  | Let **the game decide** and say so; a color row only if the player truly must choose | Districts and warp/portal colors (automatic)                 |
 
 Rules of thumb:
@@ -563,7 +563,7 @@ if (!(await ask(`Delete ${d.name}?`, 'Its 4 properties will be removed from the 
 ### 5.11 Tool rail (builder, left edge)
 
 - **Anatomy:** glass column of 44px icon buttons (24px line icons), vertically centered, 10px from
-  the left: Select (arrow), Pan (four arrows), Place (pencil), Erase (eraser).
+  the left: Select (arrow), Move (tile with outward arrows), Pan (four arrows), Place (pencil), Erase (eraser).
 - **States:** active = gold fill with an inset light ring; name appears to the right on hover or
   focus. The action bar always explains the active tool in words.
 
@@ -1336,3 +1336,7 @@ Bank art keeps its gold roof. Keep all previous art files; property-only rollbac
 ### Random suit tile
 
 The builder adds Random suit to the existing two-column Suits palette and uses its normal tile inspector. The tile uses a custom fixed-color PNG (`random-suit-v20/random-suit-base.png`): an ivory card with a rounded gold rim, four colored suits and small gold shuffle arrows, matching the rounded board art; the four live suit symbols provide a fallback while art loads. It uses the suit color in Tile types view, a clear Random suit name and description, and the ordinary immediate suit pickup feedback. No prompt is needed: the engine chooses one missing suit. Landing also opens the usual venture board. UI Lab’s Random suit tile button demonstrates the tile and a real passing pickup with two suits missing.
+
+### Builder Move tool
+
+Add Move to the existing icon-only tool rail, beside Select. Use a tile with outward arrows icon, the existing hover name and selected treatment, and hide the Tiles pane. Use a grab cursor at rest and grabbing during a direct drag. Reuse the selected-tile movement preview, original-position outline, grid snapping, and red invalid-drop outline. The status says to drag and release; Escape cancels. Direct dragging works with a pointer or one finger, and two fingers cancel the drag before panning/zooming. Keep Select’s click-to-place group move. UI Lab’s Board builder: Move opens a sample board with the tool active.

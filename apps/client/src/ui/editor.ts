@@ -73,13 +73,14 @@ import {
 } from './editor-districts';
 import { moveSelection, selectionPositions, selectionAnchor, ensureEditorBank } from './editor-selection';
 
-type Tool = Exclude<SquareType, 'plot'> | 'select' | 'pan' | 'place' | 'erase' | 'links';
+type Tool = Exclude<SquareType, 'plot'> | 'select' | 'pan' | 'place' | 'erase' | 'links' | 'move';
 
 const PALETTE: { group: string; items: { tool: Tool; label: string; hint: string }[] }[] = [
   {
     group: 'Tools',
     items: [
       { tool: 'select', label: 'Select', hint: 'Click a tile or drag to select a group.' },
+      { tool: 'move', label: 'Move', hint: 'Click and drag a tile to a new spot.' },
       { tool: 'pan', label: 'Pan', hint: 'Drag to move around the board.' },
       { tool: 'place', label: 'Place', hint: 'Choose tiles to place on the board.' },
       { tool: 'erase', label: 'Erase', hint: 'Remove squares (click or drag).' },
@@ -487,9 +488,11 @@ export function openEditor(
   let choosingLink = false;
   let selection = new Set<number>();
   let moving: { anchor: { x: number; y: number }; target: { x: number; y: number } } | null = null;
+  let dragPointer: number | null = null;
   let marquee: { start: { x: number; y: number }; end: { x: number; y: number } } | null = null;
   let placeTool: Tool = 'shop';
-  const isPlacing = () => tool !== 'select' && tool !== 'pan' && tool !== 'erase' && tool !== 'links';
+  const isPlacing = () =>
+    tool !== 'select' && tool !== 'pan' && tool !== 'erase' && tool !== 'links' && tool !== 'move';
   const clearSelection = () => {
     portalPick = null;
     selectedGate = null;
@@ -497,6 +500,7 @@ export function openEditor(
     selected = null;
     selection.clear();
     moving = null;
+    dragPointer = null;
     marquee = null;
   };
   let hover: { x: number; y: number } | null = null;
@@ -1237,7 +1241,8 @@ export function openEditor(
       else if (selected != null && selected > i) selected--;
       return true;
     }
-    if (tool === 'select' || tool === 'pan' || tool === 'place' || tool === 'links') return false;
+    if (tool === 'select' || tool === 'pan' || tool === 'place' || tool === 'links' || tool === 'move')
+      return false;
     const t: SquareType = tool;
     let d = -1;
     if (t === 'shop') {
@@ -1647,19 +1652,28 @@ export function openEditor(
 
   let painting = false;
   let paintedThisStroke = false;
+  const dropMove = (target: { x: number; y: number }) => {
+    if (!moving) return;
+    if (target.x === moving.anchor.x && target.y === moving.anchor.y) {
+      moving = null;
+      drawInspector();
+      redraw();
+      return;
+    }
+    const result = moveSelection(board, selection, moving.anchor, target);
+    if (!result) return say('Keep the group inside the board and clear of the bank.', true);
+    snapshot();
+    remapLinks(selection, result.board, result.selection);
+    board = result.board;
+    selection = result.selection;
+    moving = null;
+    selected = selection.size === 1 ? [...selection][0] : null;
+    changed();
+  };
   const beginStroke = (e: PointerEvent) => {
     if (moving) {
       const target = toCell(e);
-      if (!target) return;
-      const result = moveSelection(board, selection, moving.anchor, target);
-      if (!result) return say('Keep the group inside the board and clear of the bank.', true);
-      snapshot();
-      remapLinks(selection, result.board, result.selection);
-      board = result.board;
-      selection = result.selection;
-      moving = null;
-      selected = selection.size === 1 ? [...selection][0] : null;
-      changed();
+      if (target) dropMove(target);
       return;
     }
     // Portals sit beside tiles (maybe off the grid), so they're checked before the cell.
@@ -1692,6 +1706,20 @@ export function openEditor(
     if (tool === 'pan' || tool === 'links') {
       panning = { x: e.clientX, y: e.clientY };
       root.classList.add('ed-grabbing');
+      return;
+    }
+    if (tool === 'move') {
+      if (viewing || settings) return;
+      const i = indexAt(cell.x, cell.y);
+      if (i < 0) return;
+      clearSelection();
+      selection.add(i);
+      selected = i;
+      moving = { anchor: { ...cell }, target: { ...cell } };
+      dragPointer = e.pointerId;
+      notice = '';
+      drawInspector();
+      redraw();
       return;
     }
     if (tool === 'select') {
@@ -1752,10 +1780,20 @@ export function openEditor(
         pinching = true;
         touchStart = null;
         panning = null;
+        if (dragPointer != null) {
+          moving = null;
+          dragPointer = null;
+          drawInspector();
+          redraw();
+        }
         endStroke();
       }
       pinchDistance = span();
       pinchMid = midpoint();
+      if (tool === 'move' && touches.size === 1) {
+        beginStroke(e);
+        touchStart = null;
+      }
       return;
     }
     beginStroke(e);
@@ -1842,6 +1880,15 @@ export function openEditor(
     painting = false;
   };
   const releasePointer = (e: PointerEvent) => {
+    if (dragPointer === e.pointerId) {
+      const target = e.type === 'pointerup' ? toCell(e) : null;
+      if (target) dropMove(target);
+      // Cancelled or invalid drops leave the original tile in place.
+      moving = null;
+      dragPointer = null;
+      drawInspector();
+      redraw();
+    }
     if (e.type === 'pointerup' && touches.has(e.pointerId) && !pinching && touchStart) beginStroke(e);
     touches.delete(e.pointerId);
     touchStart = null;
@@ -1868,6 +1915,7 @@ export function openEditor(
   };
   const paths: Record<string, string> = {
     select: 'M5 3l14 10-7 1-3 7z',
+    move: 'M8 8h8v8H8zM12 2v4M12 2l-2 2M12 2l2 2M12 22v-4M12 22l-2-2M12 22l2-2M2 12h4M2 12l2-2M2 12l2 2M22 12h-4M22 12l-2-2M22 12l-2 2',
     pan: 'M12 3v18M3 12h18M12 3l-3 3M12 3l3 3M12 21l-3-3M12 21l3-3M3 12l3-3M3 12l3 3M21 12l-3-3M21 12l-3 3',
     place: 'M15 4l5 5M4 15L15 4a3.5 3.5 0 015 5L9 20l-6 1zM4 15l5 5',
     erase: 'M4 13l9-10 8 8-9 10H9l-5-5zM8 9l8 8M12 21h9',
@@ -2043,6 +2091,7 @@ export function openEditor(
     root.classList.toggle('ed-moving', !!moving);
     root.classList.toggle('ed-linking', choosingLink);
     root.classList.toggle('ed-pan', tool === 'pan');
+    root.classList.toggle('ed-move', tool === 'move');
     settingsButton.setAttribute('aria-pressed', String(settings));
     const label = PALETTE.flatMap((g) => g.items).find((it) => it.tool === tool)?.label;
     actionContent.append(
@@ -2057,7 +2106,9 @@ export function openEditor(
               ? `Board settings · ${check.errors.length} problem${check.errors.length === 1 ? '' : 's'} to fix before playing`
               : 'Board settings · ready to play'
             : moving
-              ? 'Move the group, then click to place · Esc to cancel'
+              ? dragPointer != null
+                ? 'Drag to move · release to place · Esc to cancel'
+                : 'Move the group, then click to place · Esc to cancel'
               : tool === 'select' && selectedGate
                 ? 'Portal selected: change it in the side panel'
                 : tool === 'select'
@@ -2068,13 +2119,15 @@ export function openEditor(
                     ? portalPick
                       ? 'Now tap a free side of another tile, or an exit portal · Esc to cancel'
                       : 'Tap a link to change it · tap a faint portal to start a portal link'
-                    : tool === 'pan'
-                      ? 'Drag to move around the board · tap the zoom to recenter'
-                      : tool === 'shop'
-                        ? next
-                          ? `Property: goes into ${next.name} (${next.count} of ${BOARD_LIMITS.districtSize}) · click or drag to place`
-                          : 'All twelve districts have 4 properties'
-                        : `${label}: ${tool === 'erase' ? 'click or drag to remove squares' : 'click or drag to place tiles'}`),
+                    : tool === 'move'
+                      ? 'Click and drag a tile to move it · release to place'
+                      : tool === 'pan'
+                        ? 'Drag to move around the board · tap the zoom to recenter'
+                        : tool === 'shop'
+                          ? next
+                            ? `Property: goes into ${next.name} (${next.count} of ${BOARD_LIMITS.districtSize}) · click or drag to place`
+                            : 'All twelve districts have 4 properties'
+                          : `${label}: ${tool === 'erase' ? 'click or drag to remove squares' : 'click or drag to place tiles'}`),
       ),
       h(
         'div',
@@ -2982,6 +3035,7 @@ export function openEditor(
       return;
     }
     if (e.key === 'Escape') {
+      dragPointer = null;
       if (portalPick) portalPick = null;
       else if (selectedGate) selectedGate = null;
       else if (choosingLink) choosingLink = false;
