@@ -64,16 +64,11 @@ import {
 import { clear, h, fmt } from './dom';
 import { boardThumb } from './thumb';
 import { stepper } from './stepper';
-import {
-  DISTRICT_COLORS,
-  DISTRICT_NAMES,
-  districtChoices,
-  canAssignProperty,
-  type DistrictChoice,
-} from './editor-districts';
+import { DISTRICT_COLORS, DISTRICT_NAMES, districtChoices, assignPropertyDistrict } from './editor-districts';
 import { moveSelection, selectionPositions, selectionAnchor, ensureEditorBank } from './editor-selection';
 
-type Tool = Exclude<SquareType, 'plot'> | 'select' | 'pan' | 'place' | 'erase' | 'links' | 'move';
+type Tool =
+  Exclude<SquareType, 'plot'> | 'select' | 'pan' | 'draw' | 'erase' | 'links' | 'move' | 'districts';
 
 const PALETTE: { group: string; items: { tool: Tool; label: string; hint: string }[] }[] = [
   {
@@ -82,7 +77,7 @@ const PALETTE: { group: string; items: { tool: Tool; label: string; hint: string
       { tool: 'select', label: 'Select', hint: 'Click a tile or drag to select a group.' },
       { tool: 'move', label: 'Move', hint: 'Click and drag a tile to a new spot.' },
       { tool: 'pan', label: 'Pan', hint: 'Drag to move around the board.' },
-      { tool: 'place', label: 'Place', hint: 'Choose tiles to place on the board.' },
+      { tool: 'draw', label: 'Draw', hint: 'Choose tiles to place on the board.' },
       { tool: 'erase', label: 'Erase', hint: 'Remove squares (click or drag).' },
       { tool: 'links', label: 'Links', hint: 'Show the links between tiles and change them.' },
     ],
@@ -103,7 +98,12 @@ const PALETTE: { group: string; items: { tool: Tool; label: string; hint: string
       {
         tool: 'shop',
         label: 'Property',
-        hint: 'A property in the active district. Game setup chooses which become vacant plots.',
+        hint: 'An unassigned property. Use Districts to paint its district later.',
+      },
+      {
+        tool: 'districts',
+        label: 'Districts',
+        hint: 'Paint a district onto properties. A fifth property unassigns the oldest member.',
       },
     ],
   },
@@ -476,21 +476,20 @@ export function openEditor(
   let viewing = !!opts.view;
   let tool: Tool = viewing ? 'pan' : 'select';
   let settings = false;
-  /**
-   * Where the next property goes: the first district still short of four (so gaps are filled
-   * first), else a new district in the next unused color. Null when all ten are full.
-   */
-  const nextDistrict = (): DistrictChoice | null =>
-    districtChoices(board)
-      .filter((d) => d.count < BOARD_LIMITS.districtSize)
-      .sort((a, b) => (a.index ?? Infinity) - (b.index ?? Infinity))[0] ?? null;
+  let districtKey: string | null = null;
+  const activeDistrict = () => {
+    const choices = districtChoices(board);
+    const choice = choices.find((d) => d.key === districtKey) ?? choices[0];
+    districtKey = choice?.key ?? null;
+    return choice;
+  };
   let selected: number | null = null;
   let choosingLink = false;
   let selection = new Set<number>();
   let moving: { anchor: { x: number; y: number }; target: { x: number; y: number } } | null = null;
   let dragPointer: number | null = null;
   let marquee: { start: { x: number; y: number }; end: { x: number; y: number } } | null = null;
-  let placeTool: Tool = 'shop';
+  let drawTool: Tool = 'shop';
   const isPlacing = () =>
     tool !== 'select' && tool !== 'pan' && tool !== 'erase' && tool !== 'links' && tool !== 'move';
   const clearSelection = () => {
@@ -754,7 +753,7 @@ export function openEditor(
     const buttons = actionContent.querySelector<HTMLElement>('.ed-action-tools');
     const context = actionContent.querySelector<HTMLElement>('.ed-context-controls');
     const buttonKey = buttons?.textContent ?? '';
-    const contextKey = settings ? 'settings' : tool === 'shop' ? 'districts' : '';
+    const contextKey = settings ? 'settings' : tool === 'districts' ? 'districts' : '';
     const enter = (el: HTMLElement | null) => {
       if (el && !reduced)
         entranceAnimations.push(
@@ -781,6 +780,8 @@ export function openEditor(
     }
     if (buttonKey && buttonKey !== lastButtons) enter(buttons);
     if (contextKey === 'settings' && contextKey !== lastContext) enter(context);
+    if (contextKey === 'districts' && contextKey !== lastContext)
+      enter(actionContent.querySelector('.ed-district-colors'));
     lastPrompt = prompt?.textContent ?? '';
     lastButtons = buttonKey;
     lastContext = contextKey;
@@ -867,8 +868,6 @@ export function openEditor(
     recompute();
     redraw();
     drawInspector();
-    // The Property tile in the Tiles pane shows the next district's color.
-    if (tool === 'shop') drawPalette();
   };
   const doUndo = () => {
     const last = undo.pop();
@@ -1233,6 +1232,13 @@ export function openEditor(
   const place = (x: number, y: number) => {
     const i = indexAt(x, y);
     if (i >= 0 && board.squares[i].t === 'bank') return false;
+    if (tool === 'districts') {
+      if (i < 0 || board.squares[i].t !== 'shop') return false;
+      const choice = activeDistrict();
+      if (!choice || board.squares[i].d === choice.index) return false;
+      if (choice.index == null) board.districts.push({ name: choice.name, color: choice.color });
+      return assignPropertyDistrict(board, i, choice.index ?? board.districts.length - 1);
+    }
     if (tool === 'erase') {
       if (i < 0) return false;
       tileFx.push({ x, y, t0: performance.now(), erased: true });
@@ -1241,29 +1247,13 @@ export function openEditor(
       else if (selected != null && selected > i) selected--;
       return true;
     }
-    if (tool === 'select' || tool === 'pan' || tool === 'place' || tool === 'links' || tool === 'move')
+    if (tool === 'select' || tool === 'pan' || tool === 'draw' || tool === 'links' || tool === 'move')
       return false;
     const t: SquareType = tool;
-    let d = -1;
-    if (t === 'shop') {
-      // Properties fill districts automatically; painting over one keeps its district.
-      if (i >= 0 && board.squares[i].t === 'shop') return false;
-      const next = nextDistrict();
-      if (!next) return false;
-      if (next.index == null) board.districts.push({ name: next.name, color: next.color });
-      d = next.index ?? board.districts.length - 1;
-    }
+    if (t === 'shop' && i >= 0 && board.squares[i].t === 'shop') return false;
     const prev = i >= 0 ? board.squares[i] : null;
-    const sq: BoardSquareDef =
-      t === 'shop'
-        ? {
-            x,
-            y,
-            t,
-            d,
-          }
-        : // New warps and portals start unlinked (grey); linking them gives them a color.
-          { x, y, t };
+    // New properties have no district. New warps and portals start unlinked.
+    const sq: BoardSquareDef = { x, y, t };
     if (prev && JSON.stringify(prev) === JSON.stringify(sq)) return false;
     if (t === 'bank') {
       // Only one bank: moving it replaces the old one.
@@ -1908,7 +1898,7 @@ export function openEditor(
   const toolButtons = new Map<Tool, HTMLButtonElement>();
   const syncTools = () => {
     for (const [t, button] of toolButtons) {
-      const active = (t === 'place' ? isPlacing() : tool === t) && !settings;
+      const active = (t === 'draw' ? isPlacing() : tool === t) && !settings;
       button.classList.toggle('on', active);
       button.setAttribute('aria-pressed', String(active));
     }
@@ -1917,7 +1907,7 @@ export function openEditor(
     select: 'M5 3l14 10-7 1-3 7z',
     move: 'M8 8h8v8H8zM12 2v4M12 2l-2 2M12 2l2 2M12 22v-4M12 22l-2-2M12 22l2-2M2 12h4M2 12l2-2M2 12l2 2M22 12h-4M22 12l-2-2M22 12l-2 2',
     pan: 'M12 3v18M3 12h18M12 3l-3 3M12 3l3 3M12 21l-3-3M12 21l3-3M3 12l3-3M3 12l3 3M21 12l-3-3M21 12l-3 3',
-    place: 'M15 4l5 5M4 15L15 4a3.5 3.5 0 015 5L9 20l-6 1zM4 15l5 5',
+    draw: 'M15 4l5 5M4 15L15 4a3.5 3.5 0 015 5L9 20l-6 1zM4 15l5 5',
     erase: 'M4 13l9-10 8 8-9 10H9l-5-5zM8 9l8 8M12 21h9',
     links: 'M10 14a4 4 0 005.7 0l3-3a4 4 0 00-5.7-5.7l-1 1M14 10a4 4 0 00-5.7 0l-3 3a4 4 0 005.7 5.7l1-1',
   };
@@ -1935,7 +1925,7 @@ export function openEditor(
         'aria-label': label,
         'aria-pressed': 'false',
         onclick: () => {
-          tool = t === 'place' ? placeTool : t;
+          tool = t === 'draw' ? drawTool : t;
           clearSelection();
           settings = false;
           notice = '';
@@ -1957,7 +1947,6 @@ export function openEditor(
       ? (document.activeElement as HTMLElement).dataset.tool
       : null;
     clear(paletteList);
-    const next = nextDistrict();
     for (const g of PALETTE.filter((g) => g.group !== 'Tools')) {
       const section = h('section', { class: 'ed-tile-category', 'aria-label': g.group });
       section.append(h('div', { class: 'ed-side-sec-head' }, h('h4', null, g.group)));
@@ -1966,40 +1955,44 @@ export function openEditor(
         const example = h('canvas', { class: 'ed-tile-example', 'aria-hidden': 'true' }) as HTMLCanvasElement;
         example.width = 136;
         example.height = 148;
-        const tile = newGame({
-          rules: 'standard',
-          plots: 'none',
-          target: 5000,
-          roundCap: 0,
-          seed: 1,
-          seats: [{ name: 'Builder', cpu: true, ch: 'farmer' }],
-          board: {
-            ...board,
-            districts:
-              next && next.index == null
-                ? [...board.districts, { name: next.name, color: next.color }]
-                : board.districts,
-            cols: 1,
-            rows: 1,
-            edges: [],
-            bank: 0,
-            squares: [
-              {
-                x: 0,
-                y: 0,
-                t: it.tool as SquareType,
-                // The Property tile shows the color the next property will get.
-                ...(it.tool === 'shop'
-                  ? { d: next ? (next.index ?? board.districts.length) : -1, base: 200 }
-                  : {}),
-              },
-            ],
-          },
-        });
-        const ctx = example.getContext('2d')!;
-        ctx.scale(1.3, 1.3);
-        ctx.translate(-48, -44);
-        paintSquare(ctx, tile, tile.nodes[0]);
+        if (it.tool === 'districts') {
+          const ctx = example.getContext('2d')!;
+          DISTRICT_COLORS.slice(0, 4).forEach((color, i) => {
+            ctx.fillStyle = color;
+            ctx.beginPath();
+            ctx.roundRect(20 + (i % 2) * 51, 25 + Math.floor(i / 2) * 51, 45, 45, 10);
+            ctx.fill();
+          });
+        } else {
+          const tile = newGame({
+            rules: 'standard',
+            plots: 'none',
+            target: 5000,
+            roundCap: 0,
+            seed: 1,
+            seats: [{ name: 'Builder', cpu: true, ch: 'farmer' }],
+            board: {
+              ...board,
+              districts: board.districts,
+              cols: 1,
+              rows: 1,
+              edges: [],
+              bank: 0,
+              squares: [
+                {
+                  x: 0,
+                  y: 0,
+                  t: it.tool as SquareType,
+                  ...(it.tool === 'shop' ? { base: 100 } : {}),
+                },
+              ],
+            },
+          });
+          const ctx = example.getContext('2d')!;
+          ctx.scale(1.3, 1.3);
+          ctx.translate(-48, -44);
+          paintSquare(ctx, tile, tile.nodes[0]);
+        }
         row.append(
           h(
             'button',
@@ -2011,7 +2004,7 @@ export function openEditor(
               'aria-pressed': String(tool === it.tool),
               onclick: () => {
                 tool = it.tool;
-                placeTool = it.tool;
+                drawTool = it.tool;
                 clearSelection();
                 settings = false;
                 notice = '';
@@ -2063,7 +2056,7 @@ export function openEditor(
     if (destroyed) return;
     const from = actionbar.getBoundingClientRect();
     const previousPrompt = actionContent.querySelector<HTMLElement>('.prompt-text');
-    const next = nextDistrict();
+    const district = tool === 'districts' ? activeDistrict() : null;
     stopActionMorph();
     for (const animation of entranceAnimations) animation.cancel();
     entranceAnimations = [];
@@ -2123,11 +2116,11 @@ export function openEditor(
                       ? 'Click and drag a tile to move it · release to place'
                       : tool === 'pan'
                         ? 'Drag to move around the board · tap the zoom to recenter'
-                        : tool === 'shop'
-                          ? next
-                            ? `Property: goes into ${next.name} (${next.count} of ${BOARD_LIMITS.districtSize}) · click or drag to place`
-                            : 'All twelve districts have 4 properties'
-                          : `${label}: ${tool === 'erase' ? 'click or drag to remove squares' : 'click or drag to place tiles'}`),
+                        : tool === 'districts'
+                          ? `${district?.name ?? 'Districts'} · ${district?.count ?? 0}/4 properties · draw on properties`
+                          : tool === 'shop'
+                            ? 'Property: click or drag to draw unassigned properties'
+                            : `${label}: ${tool === 'erase' ? 'click or drag to remove squares' : 'click or drag to place tiles'}`),
       ),
       h(
         'div',
@@ -2193,6 +2186,36 @@ export function openEditor(
     );
     actionContent.append(controls);
     controls.append(inspector);
+    if (district && !settings) {
+      const colors = h('div', {
+        class: 'ed-district-colors',
+        role: 'group',
+        'aria-label': 'District colors',
+      });
+      for (const choice of districtChoices(board)) {
+        colors.append(
+          h('button', {
+            class: `ed-district-color${choice.key === district.key ? ' on' : ''}`,
+            style: `--district-color:${choice.color}`,
+            'aria-label': `${choice.name}: ${choice.count} of 4 properties`,
+            title: `${choice.name} · ${choice.count}/4${choice.count >= 4 ? ' · next property replaces oldest' : ''}`,
+            'aria-pressed': String(choice.key === district.key),
+            'data-district-key': choice.key,
+            onclick: () => {
+              districtKey = choice.key;
+              notice = '';
+              drawInspector();
+              [...actionContent.querySelectorAll<HTMLButtonElement>('.ed-district-color')]
+                .find((button) => button.dataset.districtKey === choice.key)
+                ?.focus({ preventScroll: true });
+              redraw();
+            },
+          }),
+        );
+      }
+      actionContent.append(colors);
+    }
+
     // Board settings: a side panel on the right while it is open.
     const keepScroll = settingsPanel.querySelector('.ed-side-body')?.scrollTop ?? 0;
     clear(settingsPanel);
@@ -2520,25 +2543,26 @@ export function openEditor(
         const dSel = h(
           'select',
           { 'aria-label': 'District' },
+          h('option', { value: '-1', selected: sq.d == null || sq.d < 0 }, 'No district'),
           ...board.districts.map((d, i) =>
             h(
               'option',
               {
                 value: String(i),
                 selected: i === sq.d,
-                disabled: i !== sq.d && !canAssignProperty(board, i, selected!),
               },
               d.name,
             ),
           ),
         ) as HTMLSelectElement;
         dSel.onchange = () => {
-          if (!canAssignProperty(board, Number(dSel.value), selected!)) {
-            dSel.value = String(sq.d);
-            return say('That district already has 4 properties.', true);
-          }
+          const district = Number(dSel.value);
+          if (district === (sq.d ?? -1)) return;
           snapshot();
-          sq.d = Number(dSel.value);
+          if (district < 0) {
+            delete sq.d;
+            delete sq.districtOrder;
+          } else assignPropertyDistrict(board, selected!, district);
           changed();
         };
         squareBody.append(
@@ -2547,9 +2571,19 @@ export function openEditor(
             'div',
             { class: 'ed-tile-value' },
             h('span', null, 'Starting value'),
-            h('strong', null, fmt(preview().nodes[selected!].base)),
+            h(
+              'strong',
+              null,
+              sq.d != null && board.districts[sq.d] ? fmt(preview().nodes[selected!].base) : 'No district',
+            ),
           ),
-          h('p', { class: 'hint ed-tile-note' }, 'Set the district’s average in Board settings.'),
+          h(
+            'p',
+            { class: 'hint ed-tile-note' },
+            sq.d != null && board.districts[sq.d]
+              ? 'Set the district’s average in Board settings.'
+              : 'Use Draw → Districts to assign a district before playing.',
+          ),
         );
       }
     }
@@ -2562,7 +2596,7 @@ export function openEditor(
 
     controls.hidden = true;
     actionbar.classList.toggle('ed-action-error', !!notice && noticeBad);
-    const hasOptions = tool === 'select' && selection.size > 0;
+    const hasOptions = (tool === 'select' && selection.size > 0) || (tool === 'districts' && !settings);
     actionbar.classList.toggle('status', !hasOptions);
     const nextPrompt = actionContent.querySelector<HTMLElement>('.prompt-text');
     // Keep an unchanged message on its original reveal timeline across inspector updates.

@@ -12433,3 +12433,45 @@ button.char-btn:hover img {
     font-size: 14px;
   }
 }
+
+/* Draw mode paints district membership separately from placing neutral properties. */
+.ed-district-colors {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+  padding: 4px;
+}
+.ed-district-color {
+  flex: none;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 2px solid rgba(255, 255, 255, 0.45);
+  border-radius: 9px;
+  background: var(--district-color);
+  cursor: pointer;
+  transition:
+    transform 0.15s,
+    box-shadow 0.15s;
+}
+.ed-district-color:hover {
+  transform: translateY(-2px);
+}
+.ed-district-color.on,
+.ed-district-color:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  box-shadow: 0 0 10px rgba(255, 209, 102, 0.4);
+}
+@media (max-height: 500px), (max-width: 760px) {
+  .ed-district-colors {
+    gap: 6px;
+  }
+  .ed-district-color {
+    width: 28px;
+    height: 28px;
+    border-radius: 7px;
+  }
+}

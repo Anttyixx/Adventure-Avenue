@@ -216,7 +216,7 @@ The builder opens a maximum-size 32 × 20 grid with a bank near the center.
 The bank is provided automatically, including for older incomplete boards, and cannot be
 erased or overwritten. It can be selected and moved; selections containing it have no Erase
 action. The erase tool skips it and groups cannot be placed over an unselected bank.
-The bank is not offered in the Place palette. New templates, remixes and reopened
+The bank is not offered in the Draw palette. New templates, remixes and reopened
 boards also have the full editing grid. Saved boards and exports keep that editing space.
 Starting a game (including test play) trims unused outer rows and columns from a copy;
 interior gaps, connections, warp partners and hex geometry stay intact.
@@ -288,7 +288,7 @@ It opens and resets at 300%. Wheel, pinch and - / + still use 5% steps, with for
 300% to 100%. Game zoom is unchanged. Camera scale eases with the game's 0.12 factor, or
 changes immediately with reduced motion. Pinching does not place tiles;
 board picking uses the current camera transform at every zoom. Form typing keeps its normal keys.
-An icon-only toolbar is centered vertically 10px from the left edge: Select, Move, Pan, Place and Erase.
+An icon-only toolbar is centered vertically 10px from the left edge: Select, Move, Pan, Draw and Erase.
 The Move tool directly picks up one tile on pointer down and snaps its preview to the grid while dragged. Releasing places it in one undoable operation, preserving tile data and links; occupied destination tiles are replaced, but the bank cannot be overwritten. The bank itself can be dragged. Escape, pointer cancellation, a two-finger pinch, or a drop outside the grid cancels without editing. Clicking without moving adds no undo entry. Select’s existing Move action still supports moving a selected group by clicking to place. Mouse/pen dragging and one-finger touch dragging share these rules.
 
 Hovering or focusing an icon shows its name; the active tool has a gold fill and inset
@@ -297,25 +297,18 @@ Board settings is in the top-left info bar.
 The builder has one Property tile instead of separate Shop and Vacant plot choices. The saved
 board records property locations and districts, not which start vacant. The editor preview and
 board thumbnails always show property tiles, and editing an old board discards its plot hints.
-Place uses a pencil icon. Only Place shows the tile pane on the right, styled like the side panels
+Draw uses a pencil icon. Only Draw shows the tile pane on the right, styled like the side panels
 (gold top edge, a Tiles title with a one-line hint, small uppercase group names). Its head stays at
 the top while the list scrolls. The chosen tile sits in a gold ring and lifts slightly. Tiles appear as art-only buttons in two columns, without individual
 card backgrounds, borders or captions. The enlarged art fills each column; no tile-name popup or selection checkmark is shown.
 Accessible button names and hints remain available. Selection uses a glow, with scroll position
 and keyboard focus kept after picking a tile.
-The categories are Properties (Property), Suits (Spade, Heart, Diamond, Club, Change suit, Random suit),
+The categories are Properties (Property, Districts), Suits (Spade, Heart, Diamond, Club, Change suit, Random suit),
 Specials (Venture, Roll-on, Take-a-break, Boon, Boom, Stockbroker, Arcade), and Transport
 (Warp, Cannon, Taxi).
-Choosing a tile keeps Place active; clicking or dragging on the board places it. Returning to
-Place remembers the last chosen tile. The pane is hidden for every other tool and board settings.
-**Districts are automatic.** There is no color picker: each new property goes into the first
-district that has fewer than four properties (so a gap left by erasing is filled first); when
-every district is full, the next property starts a new district in the next unused color and name
-(twelve colors, up to twelve districts). The action bar says where the next one goes ("Property: goes
-into Bay Market (2 of 4)"), and the Property tile in the Tiles pane shows that district's color.
-Painting over an existing property keeps its district. A property can still be moved to another
-district (with room) from the tile info panel. When all twelve districts are full, the action bar
-says so and properties can't be placed.
+Choosing a tile keeps Draw active; clicking or dragging on the board places it. Returning to
+Draw remembers the last chosen tile. The pane is hidden for every other tool and board settings.
+**Draw properties, then paint districts.** New property tiles have no district and use a neutral border. Properties can be drawn even when all twelve districts are full. Select Districts in the Properties palette to paint existing properties: the action bar shows all twelve rounded district-color squares, centered, with a selected outline and accessible name/count. Choose a color, then click or drag across properties. Empty cells and non-property tiles are ignored. A color creates its district only on the first actual assignment. Full colors stay visible and selected; painting a fifth property unassigns the oldest member, without erasing any property, keeping at most four members. Already-painted members are no-ops and do not become newest. Older boards use tile order until explicit assignment history exists; `BoardSquareDef.districtOrder` preserves assignment age through saves, exports, imports and movement. Undo restores both the new assignment and the displaced member in one step (one per drag stroke). The tile inspector offers No district and uses the same rollover behavior when recoloring. Unassigned properties and incomplete districts remain validation problems that must be fixed before play.
 
 Select clicks one tile or drags a selection rectangle around multiple tiles. Selected tiles glow
 the way a game shows its choices (a gold tint, a pulsing white outline glowing gold, and, for up to

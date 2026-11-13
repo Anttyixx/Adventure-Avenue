@@ -70,11 +70,22 @@ export function districtChoices(board: BoardDef): DistrictChoice[] {
   });
 }
 
-/** Replacing a tile already in this district does not consume another property slot. */
-export function canAssignProperty(board: BoardDef, district: number, replacing = -1) {
-  if (!board.districts[district]) return false;
-  const count = board.squares.filter(
-    (sq, i) => sq.t === 'shop' && sq.d === district && i !== replacing,
-  ).length;
-  return count < BOARD_LIMITS.districtSize;
+/** Paint a property, unassigning the oldest member if the district is already full. */
+export function assignPropertyDistrict(board: BoardDef, property: number, district: number): boolean {
+  const sq = board.squares[property];
+  if (!sq || sq.t !== 'shop' || !board.districts[district] || sq.d === district) return false;
+  const order = Math.max(0, ...board.squares.map((s) => s.districtOrder ?? 0)) + 1;
+  const members = board.squares
+    .map((s, i) => ({ s, i }))
+    .filter(({ s, i }) => s.t === 'shop' && s.d === district && i !== property)
+    // Older boards have no assignment order: use their tile order until painted again.
+    .sort((a, b) => (a.s.districtOrder ?? -1) - (b.s.districtOrder ?? -1) || a.i - b.i);
+  while (members.length >= BOARD_LIMITS.districtSize) {
+    const oldest = members.shift()!.s;
+    delete oldest.d;
+    delete oldest.districtOrder;
+  }
+  sq.d = district;
+  sq.districtOrder = order;
+  return true;
 }

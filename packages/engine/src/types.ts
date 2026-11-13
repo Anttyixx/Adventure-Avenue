@@ -242,6 +242,8 @@ export interface BoardSquareDef {
   t: SquareType;
   /** District index for shops and plots. */
   d?: number;
+  /** Editor assignment order: the oldest property leaves a full district when another is painted. */
+  districtOrder?: number;
   /** Legacy per-property price in older board files; new games use district averages. */
   base?: number;
   /** Legacy Auto flag, retained when importing older board files. */

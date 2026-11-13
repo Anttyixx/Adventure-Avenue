@@ -26,6 +26,18 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: '2026-11-13-draw-districts',
+    date: 'Nov 13, 2026',
+    title: 'Draw properties, then paint their districts',
+    features: [
+      {
+        tag: 'better',
+        title: 'Draw tool and district painting',
+        text: 'Place is now Draw. New properties start without a district. Choose Districts in the Properties section, pick a color in the action bar, then click or drag across properties to color them. Painting a fifth property removes the oldest member from that district, keeping four colored properties. Full colors stay available, and Undo restores the whole change.',
+      },
+    ],
+  },
+  {
     id: '2026-11-13-editor-move-tool',
     date: 'Nov 13, 2026',
     title: 'Drag tiles into place',

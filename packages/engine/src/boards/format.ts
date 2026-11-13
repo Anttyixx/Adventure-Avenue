@@ -429,6 +429,7 @@ export function boardToFile(def: BoardDef): BoardFile {
       const out: BoardSquareDef = { x: s.x, y: s.y, t: s.t };
       if (s.t === 'shop') {
         out.d = s.d;
+        if (s.districtOrder != null) out.districtOrder = s.districtOrder;
         out.base = s.base;
         if (s.autoBase) out.autoBase = true;
         if (s.plot) out.plot = true;
@@ -478,6 +479,7 @@ export function boardFromFile(data: unknown, id: string): { board?: BoardDef; er
     };
     if (q.t === 'shop') {
       out.d = isNum(q.d) ? Math.floor(q.d) : -1;
+      if (isNum(q.districtOrder)) out.districtOrder = Math.max(0, Math.floor(q.districtOrder));
       out.base = isNum(q.base) ? Math.round(q.base) : 0;
       if (q.autoBase === true) out.autoBase = true;
       if (q.plot) out.plot = true;

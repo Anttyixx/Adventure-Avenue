@@ -68,8 +68,8 @@ a default browser widget.
 | Be **told** something happened (no answer needed)                       | **Banner** (top center, fades) or the status line                                    | "Rosa's turn", "Bay Market stock up!"                        |
 | See **details on demand** about something on the board                  | **Tooltip**                                                                          | Hovering/tapping a square                                    |
 | Get to a **screen-wide tool** or info at any time                       | **Toolbar / info chip** (top corners)                                                | Zoom, Game log, Menu (with the Guide), game name and goal    |
-| Pick a **tool** in an editor                                            | **Tool rail** (icon buttons, left edge)                                              | Select, Move, Pan, Place, Erase                                    |
-| Pick **one color/category** while doing something else                  | Let **the game decide** and say so; a color row only if the player truly must choose | Districts and warp/portal colors (automatic)                 |
+| Pick a **tool** in an editor                                            | **Tool rail** (icon buttons, left edge)                                              | Select, Move, Pan, Draw, Erase                                    |
+| Pick **one color/category** while doing something else                  | Use an action-bar color row for deliberate district painting; otherwise let **the game decide** | District painting in the action bar; warp/portal colors stay automatic                 |
 
 Rules of thumb:
 
@@ -100,7 +100,7 @@ Rules of thumb:
 | A color                                         | Round **swatch** wrapping a hidden `<input type=color>`      |
 | A square on the board                           | **Board highlight** (`board.setChoices`)                     |
 | One of many pictured things                     | **Cards** (picture on top, title, one-line description)      |
-| A category while placing                        | Decide it automatically; say it in the action bar            |
+| A category while placing                        | District painting: action-bar color squares; otherwise decide automatically            |
 | Show that something needs fixing                | **Problem badge** (red / yellow) on it; list on select       |
 
 Never use: native-looking range sliders for money, free-typed numbers for money, dropdowns with
@@ -563,7 +563,7 @@ if (!(await ask(`Delete ${d.name}?`, 'Its 4 properties will be removed from the 
 ### 5.11 Tool rail (builder, left edge)
 
 - **Anatomy:** glass column of 44px icon buttons (24px line icons), vertically centered, 10px from
-  the left: Select (arrow), Move (tile with outward arrows), Pan (four arrows), Place (pencil), Erase (eraser).
+  the left: Select (arrow), Move (tile with outward arrows), Pan (four arrows), Draw (pencil), Erase (eraser).
 - **States:** active = gold fill with an inset light ring; name appears to the right on hover or
   focus. The action bar always explains the active tool in words.
 
@@ -590,9 +590,7 @@ if (!(await ask(`Delete ${d.name}?`, 'Its 4 properties will be removed from the 
   first, one plain sentence each saying how to fix it).
 - **In the full list:** errors first; rows tied to a thing are clickable (they select it and move
   the view to it).
-- **Don't** use a color row or picker for something the game can decide (districts and
-  warp/portal colors are assigned automatically; the action bar says what will happen:
-  "Property: goes into Bay Market (2 of 4)").
+- **District painting:** Draw → Properties → Districts shows all twelve rounded color squares centered in the action bar. Keep full colors visible; selected gets a gold outline, and accessible names/tooltips include district name and count. Do not color new properties automatically. Painting the fifth unassigns the oldest member without deleting tiles. Warp/portal link colors remain automatic.
 
 ### 5.14 Player cards (bottom right)
 
@@ -1340,3 +1338,5 @@ The builder adds Random suit to the existing two-column Suits palette and uses i
 ### Builder Move tool
 
 Add Move to the existing icon-only tool rail, beside Select. Use a tile with outward arrows icon, the existing hover name and selected treatment, and hide the Tiles pane. Use a grab cursor at rest and grabbing during a direct drag. Reuse the selected-tile movement preview, original-position outline, grid snapping, and red invalid-drop outline. The status says to drag and release; Escape cancels. Direct dragging works with a pointer or one finger, and two fingers cancel the drag before panning/zooming. Keep Select’s click-to-place group move. UI Lab’s Board builder: Move opens a sample board with the tool active.
+
+Draw replaces Place, retaining its pencil icon and tile pane. Properties contains a neutral Property option and a Districts option pictured as four rounded color squares. District painting expands the action bar for its color controls; other tools retain the collapsed status bar when they have no actions. Unassigned properties show No district in their inspector. The inspector uses the same four-member rollover policy. UI Lab has Board builder: Draw and Board builder: Districts previews.

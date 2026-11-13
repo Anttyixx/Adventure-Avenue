@@ -372,7 +372,7 @@ with the game's painters (`paintBoard`, `paintSquare`, `drawTileGlow`, `drawRing
 
 - **Info chip** (top left): name, save status, Board settings (with the problem-count badge).
 - **Toolbar** (top right): zoom chip (tap: reset zoom and recenter), Undo, Save, Test play, Menu.
-- **Tool rail** (left): Select, Move, Pan, Place, Erase. Move drags a single tile from pointer down to release, using the shared selection preview and atomic placement; cancellation never mutates the board. Pan also works with right/middle-drag,
+- **Tool rail** (left): Select, Move, Pan, Draw, Erase. Move drags a single tile from pointer down to release, using the shared selection preview and atomic placement; cancellation never mutates the board. Pan also works with right/middle-drag,
   Space+drag, two fingers and arrow keys; the camera eases (`pan`, `cameraPan`, `clampPan`).
 - **Tiles pane** (right, only while placing): the game's tile art; the chosen one glows.
 - **Side panels** (right): Board settings (grid, author, district cards with steppers, problems)
@@ -388,7 +388,7 @@ tile, and an error in `validateBoard` until replaced, so it never reaches a game
 switches the cached board picture between `paintBoard` and `paintTileTypes` (part of
 `boardImageKey`).
 
-Districts are automatic (`nextDistrict`), warp/portal colors are automatic (`transport.ts`), every
+Draw places neutral properties; its Districts palette paints membership using `editor-districts.ts` `assignPropertyDistrict`. An optional `BoardSquareDef.districtOrder` retains assignment chronology; painting into a full district unassigns its oldest member. Warp/portal colors are automatic (`transport.ts`), every
 edit is one undo step (`snapshot`), and `recompute` re-derives roads, the bank, transport links and
 problems after each change. Questions use the game-style `ask()` pop-up.
 
@@ -399,13 +399,13 @@ bar moves or erases the group. Movement is a preview until placement, so Cancel 
 the saved board. The base cache omits lifted tiles and their roads, then draws source outlines
 and snapped tile art above it. `ui/editor-selection.ts` translates hex groups in axial coordinates,
 checks bounds, replaces destination tiles, remaps indices and connects every adjacent tile.
-A committed move or group erase takes one undo snapshot. Place alone exposes the tile pane;
+A committed move or group erase takes one undo snapshot. Draw alone exposes the tile pane;
 Board settings is in the top-left info bar. Single selection draws a separate right-side options
 panel; the centered action bar switches to status styling whenever it has no controls.
 `selectionAnchor` chooses the cell nearest the group's center; it never tries to warp the OS cursor.
 `ensureEditorBank` seeds a missing bank and removes duplicate banks when opening an editing board.
 Painting and erasing skip the bank; selection groups cannot replace an unselected bank and their
-Erase action is hidden when they contain one. The Place icon is a pencil.
+Erase action is hidden when they contain one. The Draw icon is a pencil.
 
 ### District starting prices
 
@@ -420,10 +420,7 @@ already contain resolved base/value fields and keep them. New-game changes bump 
 
 ### Editor districts and problems
 
-`ui/editor-districts.ts` owns the ten default colors/names, `districtChoices` and
-`canAssignProperty`. Placing a property asks `nextDistrict()` in `ui/editor.ts`: the lowest-index
-district with fewer than four properties, else the first unused color as a new district (appended
-on first placement, so empty districts never enter saved data). There is no color picker.
+`ui/editor-districts.ts` owns the twelve default colors/names, lazy `districtChoices` and `assignPropertyDistrict`. Draw adds neutral properties without creating a district. Draw → Districts chooses a color in the action bar and paints existing properties. A district is appended on first actual assignment; full colors remain selectable. Adding a fifth member unassigns the oldest, using optional `BoardSquareDef.districtOrder` (tile order for legacy members). This order survives saves, exports, imports, movement and Undo. The tile inspector offers No district and the same reassignment behavior. Validation still requires each property to belong to a district and each district to have exactly four properties.
 
 `validateBoard` (`boards/format.ts`) returns `issues` besides the `errors`/`warnings` strings:
 each `BoardIssue` has a level, the board-wide text, the squares it concerns, a per-tile text and a
