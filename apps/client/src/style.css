@@ -12179,3 +12179,114 @@ button.char-btn:hover img {
   color: var(--muted);
   font-weight: 600;
 }
+
+/* Painted arcade art. The original CSS pictures remain available through ARCADE_ART_SET. */
+.arcade-art {
+  object-fit: contain;
+}
+.arcade-painted .mem-back {
+  background: var(--arcade-card-back) center / 100% 100% no-repeat;
+  box-shadow: none;
+}
+.arcade-painted .mem-back span {
+  visibility: hidden;
+}
+.arcade-painted .mem-front {
+  background:
+    var(--arcade-card-front) center / 100% 100% no-repeat,
+    #fff9e9;
+  box-shadow: none;
+}
+.arcade-painted .wheel-disc {
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+.arcade-painted .wheel-disc::before {
+  content: '';
+  position: absolute;
+  inset: 9%;
+  border-radius: 50%;
+  background: repeating-conic-gradient(#e5484d 0 30deg, #3e7bfa 30deg 60deg);
+}
+.arcade-painted .wheel-disc::after {
+  inset: 0;
+  border-radius: 0;
+  box-shadow: none;
+  background: var(--arcade-wheel-frame) center / contain no-repeat;
+  pointer-events: none;
+}
+.arcade-painted .wheel-num {
+  z-index: 1;
+  text-shadow:
+    0 1px 3px #101a33,
+    0 0 2px #101a33;
+}
+.arcade-painted .wheel-num.hit {
+  text-shadow: none;
+}
+.arcade-painted .wheel-pointer {
+  top: -9px;
+  width: 26px;
+  height: 32px;
+  border: 0;
+  background: var(--arcade-pointer) center / contain no-repeat;
+}
+.derby-finish {
+  width: 22px;
+  height: 22px;
+  vertical-align: bottom;
+}
+.bet-chip {
+  width: 24px;
+  height: 24px;
+  margin-right: 4px;
+}
+.arcade-painted .chest-box,
+.arcade-painted .chest.open .chest-box {
+  width: calc(86px * var(--s));
+  height: calc(86px * var(--s));
+  background: none;
+  box-shadow: none;
+}
+.arcade-painted .chest-lid,
+.arcade-painted .chest-lock {
+  display: none;
+}
+.chest-sprite {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  transition:
+    opacity 0.2s,
+    transform 0.2s;
+}
+.chest-sprite.opened {
+  opacity: 0;
+  transform: translateY(3px) scale(0.96);
+}
+.chest.open .chest-sprite.closed {
+  opacity: 0;
+}
+.chest.open .chest-sprite.opened {
+  opacity: 1;
+  transform: none;
+}
+@media (max-height: 500px), (max-width: 760px) {
+  .arcade-painted .chest-box,
+  .arcade-painted .chest.open .chest-box {
+    width: calc(64px * var(--s));
+    height: calc(64px * var(--s));
+  }
+  .bet-chip {
+    width: 18px;
+    height: 18px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .chest-sprite {
+    transition: none;
+  }
+}

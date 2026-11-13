@@ -24,6 +24,7 @@ import {
   type ReelSymbol,
 } from '@aa/engine';
 import { coinIconURL, starIconURL, suitIconURL, wildIconURL } from '../icons';
+import { propIconURL, ARCADE_ART_SET, type ArcadeSprite } from '../props';
 import { propertyIconURL } from '../art';
 import { FRAME_H, FRAME_W, Facing, drawCharacter, portraitURL } from '../sprites';
 import { TIMING as T } from '../timing';
@@ -49,6 +50,13 @@ const ABOUT: Record<ArcadeGame, string> = {
 
 // ------------------------------------------------------------------ symbol art
 
+function arcadeURL(name: ArcadeSprite, color = '#3e7bfa'): string {
+  return ARCADE_ART_SET === 'painted' ? propIconURL(`arcade-${name}`, color) : '';
+}
+function arcadeImage(name: ArcadeSprite, className = '') {
+  return h('img', { src: arcadeURL(name), alt: '', class: `arcade-art ${className}`, draggable: false });
+}
+
 const SYMBOL_NAME: Record<ReelSymbol, string> = {
   seven: 'Seven',
   coin: 'Coin',
@@ -58,6 +66,14 @@ const SYMBOL_NAME: Record<ReelSymbol, string> = {
 };
 
 function symbolArt(s: ReelSymbol): HTMLElement {
+  const art: Record<ReelSymbol, ArcadeSprite> = {
+    seven: 'seven',
+    coin: 'coin',
+    wild: 'star',
+    stock: 'diamond',
+    bell: 'clover',
+  };
+  if (arcadeURL(art[s])) return arcadeImage(art[s]);
   if (s === 'seven') return h('span', { class: 'sym-seven', 'aria-hidden': 'true' }, '7');
   const src =
     s === 'coin'
@@ -79,11 +95,20 @@ function prizeFace(prize: MemoryPrize, level: number): HTMLElement[] {
     case 'shopsDown':
       return [shop('#e5484d'), h('b', { class: 'bad' }, 'Shops -5%')];
     case 'gold':
-      return [h('img', { src: coinIconURL(), alt: '' }), h('b', null, fmt(K.memory.gold * level))];
+      return [
+        h('img', { src: arcadeURL('coin-pile') || coinIconURL(), alt: '' }),
+        h('b', null, fmt(K.memory.gold * level)),
+      ];
     case 'small':
-      return [h('img', { src: coinIconURL(), alt: '', class: 'small' }), h('b', null, fmt(K.memory.small))];
+      return [
+        h('img', { src: arcadeURL('coin') || coinIconURL(), alt: '', class: 'small' }),
+        h('b', null, fmt(K.memory.small)),
+      ];
     case 'wild':
-      return [h('img', { src: wildIconURL(), alt: '' }), h('b', { class: 'wild' }, 'Wild card')];
+      return [
+        h('img', { src: arcadeURL('wild') || wildIconURL(), alt: '' }),
+        h('b', { class: 'wild' }, 'Wild card'),
+      ];
   }
 }
 
@@ -116,7 +141,11 @@ export class ArcadeStage {
     this.sub.textContent = ABOUT[game];
     this.box = h(
       'div',
-      { class: `arcade-stage glass as-${slug}`, role: 'region', 'aria-label': game },
+      {
+        class: `arcade-stage glass as-${slug} ${arcadeURL('coin') ? 'arcade-painted' : ''}`,
+        role: 'region',
+        'aria-label': game,
+      },
       h(
         'div',
         { class: 'as-head' },
@@ -125,6 +154,10 @@ export class ArcadeStage {
       ),
       this.body,
     );
+    for (const name of ['card-back', 'card-front', 'wheel-frame', 'pointer'] as const) {
+      const url = arcadeURL(name);
+      if (url) this.box.style.setProperty(`--arcade-${name}`, `url("${url}")`);
+    }
     this.layer = h('div', { class: 'arcade-layer' }, this.box);
     hud.root.append(this.layer);
     // The toolbar's View board chip can hide the game to look at the board.
@@ -627,7 +660,19 @@ export class ArcadeStage {
     // Space numbers along the top, the finish flag at the end.
     const ruler = h('div', { class: 'derby-ruler', 'aria-hidden': 'true' }, h('span'));
     for (let i = 0; i <= track; i++)
-      ruler.append(h('span', null, i === track ? 'Finish' : i && i % 5 === 0 ? String(i) : ''));
+      ruler.append(
+        h(
+          'span',
+          null,
+          i === track
+            ? arcadeURL('finish')
+              ? arcadeImage('finish', 'derby-finish')
+              : 'Finish'
+            : i && i % 5 === 0
+              ? String(i)
+              : '',
+        ),
+      );
     wrap.append(ruler);
     for (const id of this.order) {
       const p = this.G.players[id];
@@ -802,7 +847,14 @@ export class ArcadeStage {
       };
     });
     paint();
-    const stepper = h('div', { class: 'aa-stake' }, minus, value, plus);
+    const stepper = h(
+      'div',
+      { class: 'aa-stake' },
+      arcadeURL('chip') ? arcadeImage('chip', 'bet-chip') : null,
+      minus,
+      value,
+      plus,
+    );
     const answer = await this.bar<{ choice: number; stake: number }>(
       p.id,
       max > 0 ? `${p.name}: place a bet?` : `${p.name} has no cash to bet`,
@@ -878,6 +930,20 @@ export class ArcadeStage {
           { class: 'chest-box', 'aria-hidden': 'true' },
           h('span', { class: 'chest-lid' }),
           h('span', { class: 'chest-lock' }),
+          arcadeURL('chest-closed')
+            ? h('img', {
+                class: 'chest-sprite closed',
+                src: arcadeURL('chest-closed', ['#3e7bfa', '#35b779', '#a05bea'][i]),
+                alt: '',
+              })
+            : null,
+          arcadeURL('chest-open')
+            ? h('img', {
+                class: 'chest-sprite opened',
+                src: arcadeURL('chest-open', ['#3e7bfa', '#35b779', '#a05bea'][i]),
+                alt: '',
+              })
+            : null,
         ),
         h('b', null, fmt(amount)),
         h('span', { class: 'chest-who' }),

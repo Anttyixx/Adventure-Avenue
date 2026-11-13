@@ -26,6 +26,19 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: '2026-11-12-arcade-sprite-art',
+    date: 'Nov 12, 2026',
+    title: 'Painted arcade prizes and location pins',
+    features: [
+      {
+        tag: 'better',
+        title: 'A matching arcade art set',
+        text: 'New sprites bring painted reel symbols, memory cards, treasure chests, wheel trim, betting chips and finish flags to all five arcade games. Location pins match the board art and keep their bounce and player colors.',
+      },
+    ],
+    extras: ['The original arcade and pin drawings remain available for rollback.'],
+  },
+  {
     id: '2026-11-13-motel-two-dice',
     date: 'Nov 13, 2026',
     title: 'Motel dice',

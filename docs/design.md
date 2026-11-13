@@ -738,6 +738,8 @@ Motel check-in uses the existing action-bar question: show the lodging fee, “A
 
 Tax Office board labels and tile-info headlines show the active player's actual fee, or “Receive” and the owner payout on their own turn. Estate Agencies show “Buy” for the owner and “Break” for rivals. Shop landing and Buy/Pass action bars omit the price; the board and tile info remain the price reference.
 
+Arcade art uses the same rounded painted style as board props (`arcade-v19/`). Memory cards retain their flip, reels retain their spin/lock feedback, and treasure chests crossfade between closed and open sprites; reduced motion suppresses transitions. Keep wheel numbers and alternating red/blue sectors separate from its gold frame so bets remain accurate. Pin sprites use a fixed cream center and recolored body, preserve tip alignment and bobbing, and freeze the bounce with reduced motion. Preserve the earlier CSS and vector art behind independent rollback flags.
+
 ### 5.17c Game setup
 
 Reopened online games keep guests on Continue Game until the host presses Resume; no Ready, rename or character controls are shown there. The host then sends the same saved turn to all connected guests before play starts. Reopened local games designate the first human as host, so Resume is always available.

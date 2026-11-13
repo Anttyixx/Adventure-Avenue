@@ -135,6 +135,7 @@ Requests refer to parts of the game by these names:
   - **UI Lab** (`#ui-lab`), **Stocks lab** (`#stocks-lab`), **board editor** (`#editor`).
 - **Stocks:** two systems chosen in game setup (`G.stocks`): `dynamic` (default) and `classic`
   (for old saves). See "Stock market" in the spec.
+- **Arcade art:** `arcade-v19/` supplies all five arcade games plus `location-pin`. Only chests and pins use tint masks. `ARCADE_ART_SET` / `PIN_ART_SET` restore the earlier CSS/SVG/canvas art independently. Keep wheel sectors and numbers in code; retain player sprites as Coin Derby racers.
 - **Board art:** property base/tint PNGs live in `apps/client/src/assets/properties-v3/`, other board art in Balloon travel uses `balloon-v18/` base/tint PNGs through `travel-art.ts`; keep the original canvas balloon as a fallback.
   `assets/tiles-v2/`, mapped in
   `props.ts` (`ART_SET`, `ART_SOURCES`). The previous property set and original Checkpoint/Circus/Motel pairs remain

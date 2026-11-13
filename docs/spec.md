@@ -737,6 +737,8 @@ paycheck.
   suits (counting wilds) -> stock purchase (Standard; only when landing or after a promotion) ->
   free direction next turn if landed.
 
+**Arcade and location art:** all five arcade games use the painted `arcade-v19/` PNG set: five reel symbols, memory-card back/front frame and prize icons, closed/open treasure chests, wheel rim/hub and pointer, a betting chip, coin pile and Coin Derby finish flag. Existing character sprites remain the racers. Numbers, odds and wheel sectors stay live UI so art cannot change or contradict an outcome. Blue chest straps and the map pin have aligned grey tint layers; other icons use fixed-color bases. Location pins keep the existing bounce and reduced-motion behavior on choices and focused properties, and also mark tiles found through the log. `ARCADE_ART_SET` and `PIN_ART_SET` independently restore the original art with `previous`; existing PNGs and CSS/vector fallbacks are preserved.
+
 **Active-player building labels:** Tax Offices show the actual amount the active player would pay (10% of their net worth), or receive when the owner lands (5% net worth). Estate Agencies show “Buy” on the owner’s turn and “Break” for other players. Amounts refresh when the active player or their net worth changes, including the board cache and tile tooltip. Shop arrival text uses its district/name without a price, and the Buy/Pass action bar omits the price row (the board and tile info retain it).
 
 **Promotion** clears all suits, adds 1 level and pays:

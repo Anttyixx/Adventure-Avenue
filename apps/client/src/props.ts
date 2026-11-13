@@ -10,7 +10,34 @@ import type { SceneryStamp } from './scenery';
 import type { ParkModule } from './park-scenes';
 import type { DecorationKey } from './town-terrain';
 
+export type ArcadeSprite =
+  | 'seven'
+  | 'coin'
+  | 'star'
+  | 'diamond'
+  | 'clover'
+  | 'wild'
+  | 'card-back'
+  | 'card-front'
+  | 'chest-closed'
+  | 'chest-open'
+  | 'wheel-frame'
+  | 'pointer'
+  | 'finish'
+  | 'chip'
+  | 'coin-pile';
+/** Use previous to restore the original SVG/CSS arcade art or vector choice pins. */
+export const ARCADE_ART_SET: string = 'painted';
+export const PIN_ART_SET: string = 'painted';
+const arcadeArt = import.meta.glob<string>('./assets/arcade-v19/*.png', {
+  eager: true,
+  query: '?url',
+  import: 'default',
+});
+
 export type PropKey =
+  | `arcade-${ArcadeSprite}`
+  | 'location-pin'
   | `shop${0 | 1 | 2 | 3 | 4}`
   | `star${0 | 1 | 2}`
   | `circus${0 | 1 | 2 | 3}`
@@ -170,6 +197,10 @@ const legacy = import.meta.glob<string>('./assets/props/*.png', {
 });
 
 const urls = Object.fromEntries([
+  ...Object.entries(arcadeArt).map(([path, url]) => [
+    path.replace(/^.*\//, '').replace('-base.png', '.png'),
+    { url, explicit: true },
+  ]),
   ...Object.entries(balloonRideArt).map(([path, url]) => [
     path.replace(/^.*\//, '').replace('-base.png', '.png'),
     { url, explicit: true },

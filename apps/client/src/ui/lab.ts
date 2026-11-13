@@ -119,7 +119,15 @@ const rnd = (n: number) => Math.floor(Math.random() * n);
  * Controls for UI elements that were just added or changed: they shake once and glow so they
  * are easy to find. Update this list with each change.
  */
-const RECENT = new Set(['Roll after a motel check-in', 'Check in again with two dice', 'Motel bonus roll']);
+const RECENT = new Set([
+  'Lucky Reels',
+  'Memory Blocks',
+  'Coin Derby',
+  'Lucky Wheel',
+  'Treasure Split',
+  'Arcade sprite artwork',
+  'Location pin sprites',
+]);
 
 /**
  * Which board the lab plays on: Town with portal links (square, the default) or Twin Lakes (hex),
@@ -1194,6 +1202,12 @@ export async function openLab(app: HTMLElement, section?: string) {
         await new Promise((r) => setTimeout(r, 3000));
         board.cardHoverPid = -1;
       }),
+      boardBtn('Location pin sprites', async () => {
+        board.spot = cur().node;
+        board.spotColor = PLAYER_COLORS[cur().color];
+        await new Promise((resolve) => setTimeout(resolve, 2000));
+        board.spot = -1;
+      }),
       boardBtn('Direction arrows', () => {
         setActive(cur().id);
         board.directionsPid = board.directionsPid === cur().id ? -1 : cur().id;
@@ -1773,6 +1787,56 @@ export async function openLab(app: HTMLElement, section?: string) {
     );
     row(
       s,
+      btn('Arcade sprite artwork', () => {
+        const names = [
+          'seven',
+          'coin',
+          'star',
+          'diamond',
+          'clover',
+          'wild',
+          'card-back',
+          'card-front',
+          'chest-closed',
+          'chest-open',
+          'wheel-frame',
+          'pointer',
+          'finish',
+          'chip',
+          'coin-pile',
+        ] as const;
+        const body = h(
+          'div',
+          {
+            style:
+              'display:grid;grid-template-columns:repeat(auto-fit,minmax(80px,1fr));gap:12px;min-width: min(580px,70vw)',
+          },
+          ...names.map((name) =>
+            h(
+              'figure',
+              { style: 'margin:0;text-align:center' },
+              h('img', {
+                src: propIconURL(`arcade-${name}`, '#3e7bfa'),
+                alt: name,
+                width: 64,
+                height: 64,
+                style: 'object-fit:contain',
+              }),
+              h('figcaption', { style: 'font-size:11px' }, name),
+            ),
+          ),
+          ...['#ff4d4d', '#3e7bfa', '#35c46a'].map((color) =>
+            h('img', {
+              src: propIconURL('location-pin', color),
+              alt: 'Location pin',
+              width: 64,
+              height: 64,
+              style: 'object-fit:contain',
+            }),
+          ),
+        );
+        const m = hud.modal('Arcade sprite artwork', body, { onClose: () => m.close() });
+      }),
       btn('Boon and Boom artwork', () => {
         const body = h(
           'div',

@@ -29,6 +29,7 @@ import {
   GROUND_SET,
   CLOSED_SET,
   GROUND_WARP_ART,
+  PIN_ART_SET,
   type PropKey,
 } from './props';
 import { paintMeadow } from './meadow';
@@ -1056,7 +1057,7 @@ export class BoardView {
     this.fx.push({
       t0: performance.now(),
       dur: T.logFocus,
-      draw: (ctx, k) => {
+      draw: (ctx, k, now) => {
         if (focus !== this.logFocus) return;
         ctx.save();
         ctx.globalAlpha = Math.min(1, (1 - k) * 5);
@@ -1064,6 +1065,10 @@ export class BoardView {
         ctx.lineWidth = 5;
         tileShape(ctx, this.G?.layout, center.x, center.y, TILE / 2 + 5, 10);
         ctx.stroke();
+        if (PIN_ART_SET === 'painted') {
+          const bob = reducedMotion() ? 4 : Math.abs(Math.sin(now / 260)) * 8;
+          drawPropCentered(ctx, 'location-pin', '#ffd166', center.x, center.y - TILE / 2 - 26 - bob, 34, 44);
+        }
         ctx.restore();
       },
     });
@@ -2164,36 +2169,41 @@ export class BoardView {
 
   /** Bouncing pins and labels over choice squares, drawn above the tokens. */
   private drawPins(ctx: CanvasRenderingContext2D, now: number, motion: boolean) {
-    if (!this.glow.length || this.spot >= 0 || this.choicePlain) return;
+    if ((!this.glow.length || this.choicePlain) && this.spot < 0) return;
     const G = this.G!;
-    for (const id of this.glow) {
+    const color = this.spot >= 0 ? this.spotColor : this.glowColor;
+    for (const id of this.spot >= 0 ? [this.spot] : this.glow) {
       const c = this.center(G.nodes[id]);
       const bob = motion ? Math.abs(Math.sin(now / 260 + id)) * 10 : 4;
       const label = this.choiceLabels.get(id);
       let top = c.y - TILE / 2 - 8 - bob;
       ctx.save();
-      if (this.choicePins) {
+      if (this.choicePins || this.spot >= 0) {
         // Pin: a round head with a point down onto the square.
         const r = 15;
         const hy = top - r - 6;
-        ctx.beginPath();
-        ctx.moveTo(c.x - 9, hy + 9);
-        ctx.lineTo(c.x, top + 4);
-        ctx.lineTo(c.x + 9, hy + 9);
-        ctx.arc(c.x, hy, r, 0.2 * Math.PI, 0.8 * Math.PI, true);
-        ctx.closePath();
-        ctx.fillStyle = this.glowColor;
-        ctx.strokeStyle = '#fff';
-        ctx.lineWidth = 4;
-        ctx.shadowColor = 'rgba(0,0,0,0.35)';
-        ctx.shadowBlur = 6;
-        ctx.stroke();
-        ctx.fill();
-        ctx.shadowBlur = 0;
-        ctx.fillStyle = '#fff';
-        ctx.beginPath();
-        ctx.arc(c.x, hy, 6, 0, Math.PI * 2);
-        ctx.fill();
+        if (!(
+          PIN_ART_SET === 'painted' && drawPropCentered(ctx, 'location-pin', color, c.x, top - 18, 34, 44)
+        )) {
+          ctx.beginPath();
+          ctx.moveTo(c.x - 9, hy + 9);
+          ctx.lineTo(c.x, top + 4);
+          ctx.lineTo(c.x + 9, hy + 9);
+          ctx.arc(c.x, hy, r, 0.2 * Math.PI, 0.8 * Math.PI, true);
+          ctx.closePath();
+          ctx.fillStyle = color;
+          ctx.strokeStyle = '#fff';
+          ctx.lineWidth = 4;
+          ctx.shadowColor = 'rgba(0,0,0,0.35)';
+          ctx.shadowBlur = 6;
+          ctx.stroke();
+          ctx.fill();
+          ctx.shadowBlur = 0;
+          ctx.fillStyle = '#fff';
+          ctx.beginPath();
+          ctx.arc(c.x, hy, 6, 0, Math.PI * 2);
+          ctx.fill();
+        }
         top = hy - r - 6;
       }
       if (label) {
