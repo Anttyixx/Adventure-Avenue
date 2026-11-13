@@ -2582,15 +2582,15 @@ input[type='range'] {
 }
 .res-cards {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-  gap: 8px;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 10px;
 }
 .res-card {
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  padding: 10px;
-  border-radius: 12px;
+  gap: 10px;
+  padding: 12px;
+  border-radius: 14px;
   background: rgba(255, 255, 255, 0.05);
   border-top: 4px solid var(--pc);
 }
@@ -2607,15 +2607,33 @@ input[type='range'] {
   gap: 8px;
   min-width: 0;
 }
+/* Places as medals: gold, silver, bronze, then plain. */
 .res-place {
   flex: none;
+  min-width: 40px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  text-align: center;
   font-family: var(--head);
-  font-size: 18px;
-  color: var(--accent);
+  font-size: 15px;
+  background: rgba(255, 255, 255, 0.12);
+  color: var(--text);
+}
+.res-place.p1 {
+  background: linear-gradient(#ffe08f, #f5b301);
+  color: #3b2a00;
+}
+.res-place.p2 {
+  background: linear-gradient(#f1f4fa, #b9c2d3);
+  color: #283247;
+}
+.res-place.p3 {
+  background: linear-gradient(#f2c59a, #c27c43);
+  color: #3a1f08;
 }
 .res-card-head .portrait {
-  width: 30px;
-  height: 30px;
+  width: 32px;
+  height: 32px;
 }
 .res-card-who {
   display: flex;
@@ -2625,7 +2643,7 @@ input[type='range'] {
 .res-card-who b {
   font-family: var(--head);
   font-weight: 400;
-  font-size: 15px;
+  font-size: 16px;
   color: var(--pc);
   white-space: nowrap;
   overflow: hidden;
@@ -2636,49 +2654,24 @@ input[type='range'] {
   font-size: 11px;
 }
 .res-nw {
-  font-family: var(--head);
-  font-size: 22px;
-}
-.res-split {
-  display: flex;
-  gap: 2px;
-  height: 8px;
-  border-radius: 999px;
-  overflow: hidden;
-  background: rgba(255, 255, 255, 0.08);
-}
-.res-split i {
-  flex-basis: 0;
-  min-width: 2px;
-}
-.res-split .cash,
-.res-split-key .cash i {
-  background: #7cf29a;
-}
-.res-split .prop,
-.res-split-key .prop i {
-  background: #ffd166;
-}
-.res-split .stock,
-.res-split-key .stock i {
-  background: #7db8ff;
-}
-.res-split-key {
+  margin-left: auto;
   display: flex;
   flex-direction: column;
-  gap: 1px;
-  font-size: 11px;
+  align-items: flex-end;
+  font-family: var(--head);
+  font-size: 22px;
+  line-height: 1.05;
+}
+.res-nw small {
+  font-family: var(--body);
+  font-size: 10px;
+  font-weight: 700;
   color: var(--muted);
 }
-.res-split-key span {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-}
-.res-split-key i {
-  width: 8px;
-  height: 8px;
-  border-radius: 2px;
+/* The player page's net worth ring, a little smaller on a results card. */
+.res-card .pv-donut {
+  width: 88px;
+  height: 88px;
 }
 .res-section h3 {
   margin: 0 0 6px;
@@ -2714,18 +2707,25 @@ input[type='range'] {
 }
 .res-table-wrap {
   overflow-x: auto;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.03);
+  box-shadow: inset 0 0 0 1px var(--glass-line);
 }
 .res-table {
   width: 100%;
   border-collapse: collapse;
   font-size: 13px;
+  font-variant-numeric: tabular-nums;
 }
 .res-table th,
 .res-table td {
-  padding: 5px 8px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  padding: 6px 12px;
   text-align: right;
   white-space: nowrap;
+}
+/* Every other row is faintly shaded so a row is easy to follow across. */
+.res-table tbody tr:not(.res-group):nth-child(even) {
+  background: rgba(255, 255, 255, 0.035);
 }
 .res-table tbody th {
   text-align: left;
@@ -2733,20 +2733,34 @@ input[type='range'] {
   color: var(--muted);
 }
 .res-table thead th {
-  vertical-align: bottom;
+  position: sticky;
+  top: 0;
+  padding-top: 10px;
+  padding-bottom: 8px;
+  background: rgba(22, 31, 60, 0.96);
+  border-bottom: 1px solid var(--glass-line);
+}
+/* Each player's column heading: their portrait and name in a chip of their color. */
+.res-who {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 2px 9px 2px 3px;
+  border-radius: 999px;
+  border: 1.5px solid var(--pc);
+  background: color-mix(in srgb, var(--pc) 22%, transparent);
   font-family: var(--head);
   font-weight: 400;
-  font-size: 14px;
-  color: var(--pc, var(--text));
+  font-size: 13px;
+  color: #fff;
 }
-.res-table thead th .portrait {
-  display: block;
-  width: 26px;
-  height: 26px;
-  margin: 0 0 2px auto;
+.res-who .portrait {
+  width: 20px;
+  height: 20px;
 }
 .res-group th {
-  padding-top: 12px;
+  padding-top: 14px;
+  padding-bottom: 4px;
   text-align: left !important;
   font-family: var(--head);
   font-weight: 400 !important;
@@ -2767,11 +2781,13 @@ input[type='range'] {
   .res-win-name {
     font-size: 20px;
   }
+  /* Two cards a row: the ring and its key need the width. */
   .res-cards {
-    grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
   }
-  .res-split-key {
-    display: none;
+  .res-card .pv-donut {
+    width: 76px;
+    height: 76px;
   }
   .res-table {
     font-size: 12px;

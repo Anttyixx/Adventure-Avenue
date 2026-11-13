@@ -10,6 +10,8 @@ export const TIMING = {
   step: 420,
   /** Pull into a portal, disappear briefly, then launch onto the destination tile. */
   portalStep: 1100,
+  /** How long a tapped character stays picked out (bigger, with its direction arrows). */
+  playerLook: 3000,
   /** Pause after a destination is chosen, before the token starts walking. */
   afterChoice: 500,
   /** Flying to a square (the old shared ride; kept for reference). */

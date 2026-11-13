@@ -944,11 +944,14 @@ Reopened online games keep guests on Continue Game until the host presses Resume
 ### Results (pop-up)
 
 - Winner strip (player-color gradient from the left, 5px left edge, 56px character, Lilita 26px
-  gold name), then player cards in an auto-fit grid (min 150px; 4px top edge in the player color,
-  the winner's card with a soft gold inset ring), each with place (Lilita gold), portrait, name in
-  their color, level, net worth (Lilita 22px) and an 8px pill bar split cash `#7cf29a` / property
-  `#ffd166` / stocks `#7db8ff`. Section headings in Lilita 16px; the stats table right-aligns
-  numbers, has gold uppercase group rows, and marks the best cell gold and bold with a small star.
+  gold name), then player cards in an auto-fit grid (min 250px, 300px on short screens; 4px top
+  edge in the player color, the winner's card with a soft gold inset ring). Each card: a place
+  medal pill (gold / silver / bronze gradients, then plain), portrait, name in their color, level,
+  "Net worth" with the amount (Lilita 22px) on the right, and below it the player page's net worth
+  ring (`overview.ts` `assetMix`, 88px here). Section headings in Lilita 16px. The stats table sits
+  in a faint glass panel: tabular numbers right-aligned, every other row shaded, player chips
+  (portrait + name, 1.5px border in their color) as column heads, gold uppercase group rows, the
+  best cell gold and bold with a small star.
 
 ### 5.19 Board overlays (canvas)
 

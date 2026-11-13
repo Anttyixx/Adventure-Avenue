@@ -967,11 +967,14 @@ their shares vanish. The game ends immediately and the richest remaining player 
 | Round limit    | When the round counter passes the limit                     | Highest net worth                  |
 
 **Results screen:** a pop-up with, from the top: the winner (character, "Rosa wins!" and why);
-a card per player in finishing order (1st, 2nd... or "Out" for bankrupt players) with their
-portrait, name, level, net worth and a bar of what it is made of (green cash, gold property, blue
-stocks, each amount listed under it; the list is hidden on short screens); "Net worth by round",
+a card per player in finishing order with their place as a medal (gold 1st, silver 2nd, bronze
+3rd, then plain; "Out" for bankrupt players), portrait, name, level and net worth, and the same
+net worth ring as on the player's page (cash, properties and, with stocks, stock, with a key of
+each amount and share; two cards a row on short screens); "Net worth by round",
 a line chart with round numbers, the goal as a dashed gold line, the winner's line thicker, and a
-key of names; and a **Stats** table with the players as columns in finishing order, in sections:
+key of names; and a **Stats** table (in its own panel, every other row shaded, each player's
+column headed by their portrait and name in a chip of their color) with the players as columns in
+finishing order, in sections:
 Wealth (net worth, highest net worth, cash, property, stocks), Income (fees collected, biggest
 fee, salary, dividends, commission, stock sales), Spending (fees paid, invested in shops, stock
 bought) and On the board (level, properties owned, districts dominated, shops bought, buyouts,
@@ -1568,7 +1571,9 @@ the roll can reach show the way from then on). **Looking at a player:** pointing
 player's character on the board, or at their player card, picks them out: their character grows
 (bigger than the active player's), is drawn on top of everyone, and shows their own direction
 arrows (not while they are walking or riding). Pointing at a character shows no tile pop-up
-unless that tile is a choice to pick. Touch screens keep the card's tap behavior. A token that stops part-way through a walk (a pop-up or a
+unless that tile is a choice to pick. On touch screens (no pointer), **tapping a character** picks
+them out the same way for 3 seconds (`TIMING.playerLook`); tapping a glowing choice square still
+picks it, and tapping a card still opens the player's page. A token that stops part-way through a walk (a pop-up or a
 choice on the way) stands still until it walks on. After a roll with only one way to go, the die
 first shrinks to sit beside the player, then they start walking (with a choice of where to go, the
 choice comes up straight away). Whenever a district's stock price moves, for any reason
@@ -1595,10 +1600,13 @@ the start of the top-right toolbar shows the zoom: 250% fully in on the player, 
 fully out (`ZOOM_MAX_OUT`), in 5% steps per wheel notch or key press (`ZOOM_STEP`); tapping it zooms back in);
 from 250% to 200% the player stays centered, between 200% and 150% the camera moves from the player to the board's center (`ZOOM_BLEND`),
 and from 150% down to 100% the board stays centered on the window (with the same margin on
-both sides, so it never runs under the toolbar, player cards or action bar) with room to spare (`ZOOM_OUT_EXTRA`: 25% further out than fitting the screen). While a choice is open the
-camera keeps the player centered and zooms out just enough to frame every glowing square around
-them (if they are too spread out for that, it frames them all instead; never closer than the
-player's own zoom). The game-over view shows the whole board.
+both sides, so it never runs under the toolbar, player cards or action bar) with room to spare (`ZOOM_OUT_EXTRA`: 25% further out than fitting the screen). While a choice is open (or a
+roll shows where it can go), the camera frames the player and every square offered: it centres on
+the middle of them all, in the area the HUD leaves free, and zooms until they reach its edges with
+a small margin round each tile and room above for the choice pins (`BoardView.autoFrame`; never
+closer than the usual close zoom, and not limited by the player's own earlier zoom). The player
+may still zoom: in, around that centre, or out as far as the normal fully-zoomed-out view; zooming
+out past the frame glides the centre to the board's centre, reaching it once the whole board fits. The game-over view shows the whole board.
 **Smaller screens** (the same windows where the action bar moves to the bottom left, e.g. phones
 in landscape): "centered" means centered between the left edge of the window and the left edge
 of the player cards, for the followed player, the zoomed-out board and framed views alike, and

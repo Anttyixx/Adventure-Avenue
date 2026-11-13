@@ -26,6 +26,24 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: '2026-11-13-zoom-results-tap',
+    date: 'Nov 13, 2026',
+    title: 'Better choice zoom and prettier results',
+    features: [
+      {
+        tag: 'better',
+        title: 'Choices fit the screen just right',
+        text: "When you can pick where to go, the camera frames you and every choice as tightly as fits, centred between them. Scroll out to see more of the board and the view slides over to the board's centre.",
+      },
+      {
+        tag: 'better',
+        title: 'A prettier results screen',
+        text: 'Each player gets a medal and the same net worth ring as their player page, and the stats table is easier to follow row by row.',
+      },
+    ],
+    extras: ['On phones, tap a character to see which ways they can go'],
+  },
+  {
     id: '2026-11-13-results-log-hover',
     date: 'Nov 13, 2026',
     title: 'Clearer results, a tidier log and a closer look at players',

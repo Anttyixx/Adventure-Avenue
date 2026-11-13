@@ -193,7 +193,11 @@ room, Continue resumes the saved game, and the board editor (`ui/editor.ts`).
     district's stock move, the winner), `peekWhole` (finding a property from a player's info page).
   - _Views waiting on the player_ allow manual zoom and give the player's zoom back when they
     end: `frameIds` (where a roll can reach; only on the roller's device), `fitIds` (set by
-    `setChoices`), `overviewHold` (trades).
+    `setChoices`), `overviewHold` (trades). Both `frameIds` and `fitIds` go through `autoFrame`:
+    the bounding box of the player and the offered squares (plus a tile margin and room for pins),
+    centred in the free area at the zoom that just fits it. The player's own zoom in that view
+    (`autoZ`) ranges down to the full zoom-out, and past the frame the centre eases to the board's
+    centre (fully there once the whole board fits).
   - `zoomMode` names the three modes for the zoom chip's border: `locked` (a timed show), `auto`
     (a view waiting on the player) or `free` (only the player's `zoomOut`). `onZoom(pct, mode)`
     reports both to the HUD.

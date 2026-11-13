@@ -236,9 +236,25 @@ export class BoardView {
   cardHoverPid = -1;
   /** The token under the pointer on the board. */
   private tokenHoverPid = -1;
-  /** The player being looked at (a hovered card first, else a hovered token), or -1. */
+  /** A token tapped on the board (touch screens have no hover): shown for a few seconds. */
+  private tapPid = -1;
+  private tapTimer = 0;
+  /** The player being looked at (a hovered card, a hovered or tapped token), or -1. */
   get hoverPid() {
-    return this.cardHoverPid >= 0 ? this.cardHoverPid : this.tokenHoverPid;
+    return this.cardHoverPid >= 0
+      ? this.cardHoverPid
+      : this.tokenHoverPid >= 0
+        ? this.tokenHoverPid
+        : this.tapPid;
+  }
+
+  /** Pick a player out for `ms` (a tap on their character): they grow and show their arrows. */
+  lookAtPlayer(pid: number, ms = T.playerLook) {
+    this.tapPid = pid;
+    clearTimeout(this.tapTimer);
+    this.tapTimer = window.setTimeout(() => {
+      if (this.tapPid === pid) this.tapPid = -1;
+    }, ms);
   }
   onPick: ((id: number) => void) | null = null;
   /**
@@ -312,6 +328,7 @@ export class BoardView {
     this.gateTimers.forEach(clearTimeout);
     clearTimeout(this.portalTimer);
     clearTimeout(this.logFocusTimer);
+    clearTimeout(this.tapTimer);
     cancelAnimationFrame(this.raf);
     window.removeEventListener('resize', this.resize);
     document.fonts?.removeEventListener('loadingdone', this.fontsLoaded);
@@ -1242,41 +1259,34 @@ export class BoardView {
   }
 
   /**
-   * While a choice is open, the zoom that keeps the player centered and still frames every
-   * glowing square around them inside the area the HUD leaves free (clear of the action bar,
-   * cards and toolbar). When the choices are too spread out for that, the view frames all of
-   * them in that area instead, zooming out as far as the whole board if it must.
+   * The automatic view for a choice or a roll (`fitIds`, `frameIds`): the player and every square
+   * offered, framed as tightly as fits. The camera centres on the middle of them all (in the area
+   * the HUD leaves free) and zooms until they reach its edges, keeping a margin around each tile
+   * and room above for the choice pins; never closer than the usual follow zoom.
    */
-  choiceView(at: { x: number; y: number }) {
-    const G = this.G!;
-    const pad = 70;
-    // Extra room above for the pins and labels over the choices.
-    const up = this.glow.length ? 90 : 0;
-    const { top, right, bottom, left } = this.insets;
-    const { fx: cx } = this.focusArea();
-    const cy = this.h / 2;
-    let z = Infinity;
-    for (const id of this.fitIds) {
-      const c = this.center(G.nodes[id]);
-      const ox = c.x - at.x;
-      const oy = c.y - at.y;
-      z = Math.min(z, ox >= 0 ? (this.w - right - cx) / (ox + pad) : (cx - left) / (pad - ox));
-      z = Math.min(z, oy >= 0 ? (this.h - bottom - cy) / (oy + pad) : (cy - top) / (pad + up - oy));
-    }
-    if (z >= this.zoomFor(1)) return { ...at, z };
-    const pts = [at, ...this.fitIds.map((id) => this.center(G.nodes[id]))];
+  autoFrame(): { x: number; y: number; z: number } | null {
+    const G = this.G;
+    const ids = [...(this.frameIds ?? []), ...this.fitIds];
+    if (!G || !ids.length) return null;
+    const pts = ids.map((id) => this.center(G.nodes[id]));
+    if (this.followPid >= 0) pts.push(this.tokenPos(this.followPid));
     const xs = pts.map((p) => p.x);
     const ys = pts.map((p) => p.y);
-    const w = Math.max(...xs) - Math.min(...xs) + pad * 2;
-    const h = Math.max(...ys) - Math.min(...ys) + pad * 2 + up;
+    // A tile reaches 43 units from its centre: a little more keeps it clear of the edge.
+    const pad = 64;
+    const up = this.glow.length && this.choicePins ? 70 : 0;
+    const x0 = Math.min(...xs) - pad,
+      x1 = Math.max(...xs) + pad;
+    const y0 = Math.min(...ys) - pad - up,
+      y1 = Math.max(...ys) + pad;
+    const { top, right, bottom, left } = this.insets;
     const fw = Math.max(100, this.w - left - right);
     const fh = Math.max(100, this.h - top - bottom);
-    const fz = Math.max(this.freeFit().z, Math.min(fw / w, fh / h));
+    const z = Math.min(this.followZoom(), fw / (x1 - x0), fh / (y1 - y0));
     return {
-      // Centered in the free area, not under the cards or the action bar.
-      x: (Math.min(...xs) + Math.max(...xs)) / 2 + this.freeShiftX() / fz,
-      y: (Math.min(...ys) + Math.max(...ys)) / 2 - up / 2 - (top - bottom) / 2 / fz,
-      z: fz,
+      x: (x0 + x1) / 2 + this.freeShiftX() / z,
+      y: (y0 + y1) / 2 - (top - bottom) / 2 / z,
+      z,
     };
   }
 
@@ -1401,7 +1411,7 @@ export class BoardView {
     if (this.autoView()) {
       // Zoom the automatic view around its own center; the player's zoom is kept for after.
       const near = this.followZoom();
-      const far = Math.min(near, this.freeFit().z);
+      const far = Math.min(near, this.zoomFor(ZOOM_MAX_OUT));
       const z = (this.autoZ ?? this.camTarget.z) * Math.pow(far / near, d / ZOOM_MAX_OUT);
       this.autoZ = Math.min(near, Math.max(far, z));
       return;
@@ -1490,14 +1500,8 @@ export class BoardView {
     const out = whole ? ZOOM_MAX_OUT : this.zoomOut;
     const z = this.zoomFor(out);
     // The active player sits in the middle of the screen (the grass carries on past the board).
-    let follow = this.followPid >= 0 ? this.tokenPos(this.followPid) : { x: this.ww / 2, y: this.wh / 2 };
-    let fz = z;
-    if (this.fitIds.length && out < ZOOM_MAX_OUT) {
-      // A choice is open: zoom out just enough to frame it (never closer than the player chose).
-      const v = this.choiceView(follow);
-      follow = v;
-      fz = Math.min(z, v.z);
-    }
+    const follow = this.followPid >= 0 ? this.tokenPos(this.followPid) : { x: this.ww / 2, y: this.wh / 2 };
+    const fz = z;
     // Zoomed out, the camera gradually lets go of the player and eases to the board's center,
     // which sits in the middle of the window (straight there for overviews).
     const overview =
@@ -1507,9 +1511,8 @@ export class BoardView {
     const mid = { x: this.ww / 2, y: this.wh / 2 };
     const c = { x: follow.x + (mid.x - follow.x) * b, y: follow.y + (mid.y - follow.y) * b };
     this.camTarget = { x: c.x, y: c.y, z: fz };
-    if (this.frameIds?.length) this.camTarget = this.frameSquares(this.frameIds);
-    // The player zoomed an automatic view that waits on them: same center, their zoom. A new
-    // view (or none) drops it, so the camera goes back to the zoom they had before.
+    // The player zoomed an automatic view that waits on them: their zoom. A new view (or none)
+    // drops it, so the camera goes back to the zoom they had before.
     const key = this.autoView()
       ? `${this.frameIds?.join() ?? ''}|${this.fitIds.join()}|${this.overviewHold}`
       : '';
@@ -1517,7 +1520,25 @@ export class BoardView {
       this.autoKey = key;
       this.autoZ = null;
     }
-    if (this.autoZ != null && !this.showHold && !this.peekWhole) this.camTarget.z = this.autoZ;
+    const frame = !overview ? this.autoFrame() : null;
+    if (frame) {
+      this.camTarget = frame;
+      // Zoomed out past the frame, the centre glides from the frame to the board's centre,
+      // reaching it once the whole board fits; zoomed in, it stays on the frame.
+      if (this.autoZ != null) {
+        const fit = Math.min(frame.z, this.freeFit().z);
+        const k =
+          this.autoZ >= frame.z || fit >= frame.z
+            ? 0
+            : Math.min(1, Math.log(frame.z / this.autoZ) / Math.log(frame.z / fit));
+        const e = k * k * (3 - 2 * k);
+        this.camTarget = {
+          x: frame.x + (mid.x - frame.x) * e,
+          y: frame.y + (mid.y - frame.y) * e,
+          z: this.autoZ,
+        };
+      }
+    } else if (this.autoZ != null && !this.showHold && !this.peekWhole) this.camTarget.z = this.autoZ;
     // A property found from the info pop-up: the whole board, and once the player zooms, the
     // view centers on that property.
     if (this.focusSquare >= 0 && this.overviewHold && this.autoZ != null && this.G) {
@@ -1708,6 +1729,12 @@ export class BoardView {
       return;
     }
     if (this.locked) return;
+    // A tap on a character picks that player out (the way to see their arrows without hover).
+    const pid = this.tokenAt(e.clientX, e.clientY);
+    if (pid >= 0) {
+      this.onHover?.(null, 0, 0);
+      return this.lookAtPlayer(pid);
+    }
     if (id != null) return this.onHover?.(id, e.clientX, e.clientY);
     // A portal: show where it leads (and its info, for touch screens with no hover).
     const gate = this.portalAt(e.clientX, e.clientY);

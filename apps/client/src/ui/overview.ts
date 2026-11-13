@@ -19,6 +19,7 @@ import {
   salary,
   squareFee,
   stockPrice,
+  propertyValue,
   stockValue,
   type GameState,
   type Player,
@@ -48,9 +49,7 @@ export interface OverviewHooks {
 export function playerOverview(G: GameState, p: Player, hooks: OverviewHooks): HTMLElement {
   const color = PLAYER_COLORS[p.color];
   const nw = netWorth(G, p);
-  const stock = stockValue(G, p);
   const owned = G.nodes.filter((s) => s.owner === p.id);
-  const props = owned.reduce((s, q) => s + q.value, 0);
   const ranked = ranking(G);
   const rank = ranked.findIndex((q) => q.id === p.id) + 1;
   const standard = G.rules === 'standard';
@@ -145,94 +144,7 @@ export function playerOverview(G: GameState, p: Player, hooks: OverviewHooks): H
   );
 
   // ---------------------------------------------------------------- what the net worth is made of
-  const values = { cash: p.cash, props, stock };
-  const positive = PARTS.filter((s) => standard || s.key !== 'stock');
-  const total = positive.reduce((s, part) => s + Math.max(0, values[part.key]), 0);
-  // An unfilled ring split by asset, with the hovered (or biggest) part named in the middle.
-  const parts = positive.map((part) => ({ ...part, v: Math.max(0, values[part.key]) }));
-  const biggest = parts.reduce((a, b) => (b.v > a.v ? b : a), parts[0]);
-  const ns = 'http://www.w3.org/2000/svg';
-  const svg = document.createElementNS(ns, 'svg');
-  svg.setAttribute('viewBox', '0 0 100 100');
-  svg.setAttribute('class', 'pv-donut-svg');
-  svg.setAttribute('role', 'img');
-  svg.setAttribute('aria-label', 'Net worth by asset');
-  const R = 40;
-  const C = 2 * Math.PI * R;
-  const track = document.createElementNS(ns, 'circle');
-  for (const [k, v] of Object.entries({ cx: 50, cy: 50, r: R, class: 'pv-donut-track' }))
-    track.setAttribute(k, String(v));
-  svg.append(track);
-  const midPct = h('b', null, '');
-  const what = h('span', null, '');
-  const show = (part: (typeof parts)[number] | null) => {
-    midPct.textContent = part && total ? `${Math.round((part.v / total) * 100)}%` : '-';
-    what.textContent = part ? part.label : 'Nothing yet';
-  };
-  // Each part is an arc of the ring, with a 2px gap on either side when there is more than one.
-  const shown = parts.filter((part) => part.v > 0);
-  const gap = shown.length > 1 ? 2 : 0;
-  let at = 0;
-  const arcs = new Map<string, SVGCircleElement>();
-  for (const part of shown) {
-    const len = (part.v / total) * C;
-    const arc = document.createElementNS(ns, 'circle');
-    for (const [k, v] of Object.entries({
-      cx: 50,
-      cy: 50,
-      r: R,
-      class: 'pv-donut-arc',
-      stroke: part.color,
-      'stroke-dasharray': `${Math.max(0.5, len - gap)} ${C}`,
-      'stroke-dashoffset': String(-at),
-    }))
-      arc.setAttribute(k, String(v));
-    const tip = document.createElementNS(ns, 'title');
-    tip.textContent = `${part.label}: ${fmt(part.v)} (${Math.round((part.v / total) * 100)}%)`;
-    arc.append(tip);
-    arc.addEventListener('pointerenter', () => show(part));
-    arc.addEventListener('pointerleave', () => show(biggest.v ? biggest : null));
-    arcs.set(part.key, arc);
-    svg.append(arc);
-    at += len;
-  }
-  show(biggest.v ? biggest : null);
-  const donut = h('div', { class: 'pv-donut' }, svg, h('div', { class: 'pv-donut-mid' }, midPct, what));
-  colA.append(
-    section(
-      'Net worth breakdown',
-      null,
-      h(
-        'div',
-        { class: 'pv-mix' },
-        donut,
-        h(
-          'div',
-          { class: 'pv-legend' },
-          ...parts.map((part) => {
-            const v = values[part.key];
-            const row = h(
-              'div',
-              { class: 'pv-leg' },
-              h('i', { style: `background:${part.color}` }),
-              h('span', null, part.label),
-              h('b', { class: v < 0 ? 'neg' : '' }, fmt(v)),
-              h('em', null, total && v > 0 ? `${Math.round((v / total) * 100)}%` : '-'),
-            );
-            row.onmouseenter = () => {
-              show(part);
-              arcs.get(part.key)?.classList.add('on');
-            };
-            row.onmouseleave = () => {
-              show(biggest.v ? biggest : null);
-              arcs.get(part.key)?.classList.remove('on');
-            };
-            return row;
-          }),
-        ),
-      ),
-    ),
-  );
+  colA.append(section('Net worth breakdown', null, assetMix(G, p)));
 
   // ---------------------------------------------------------------- properties
   // One list going down, by district: each row has the building on the left and its name, rent
@@ -323,6 +235,96 @@ export function playerOverview(G: GameState, p: Player, hooks: OverviewHooks): H
       ? h('button', { class: 'btn small ghost pv-close', onclick: () => hooks.onClose!() }, 'Close')
       : null,
     root,
+  );
+}
+
+/**
+ * What a player's net worth is made of: an unfilled ring split by asset (cash, properties and,
+ * with stocks, stock), the hovered (or biggest) part named in the middle, and a key with each
+ * amount and share. Used on a player's page and on the results screen.
+ */
+export function assetMix(G: GameState, p: Player): HTMLElement {
+  const standard = G.rules === 'standard';
+  const values = { cash: p.cash, props: propertyValue(G, p), stock: stockValue(G, p) };
+  const positive = PARTS.filter((s) => standard || s.key !== 'stock');
+  const total = positive.reduce((s, part) => s + Math.max(0, values[part.key]), 0);
+  const parts = positive.map((part) => ({ ...part, v: Math.max(0, values[part.key]) }));
+  const biggest = parts.reduce((a, b) => (b.v > a.v ? b : a), parts[0]);
+  const ns = 'http://www.w3.org/2000/svg';
+  const svg = document.createElementNS(ns, 'svg');
+  svg.setAttribute('viewBox', '0 0 100 100');
+  svg.setAttribute('class', 'pv-donut-svg');
+  svg.setAttribute('role', 'img');
+  svg.setAttribute('aria-label', 'Net worth by asset');
+  const R = 40;
+  const C = 2 * Math.PI * R;
+  const track = document.createElementNS(ns, 'circle');
+  for (const [k, v] of Object.entries({ cx: 50, cy: 50, r: R, class: 'pv-donut-track' }))
+    track.setAttribute(k, String(v));
+  svg.append(track);
+  const midPct = h('b', null, '');
+  const what = h('span', null, '');
+  const show = (part: (typeof parts)[number] | null) => {
+    midPct.textContent = part && total ? `${Math.round((part.v / total) * 100)}%` : '-';
+    what.textContent = part ? part.label : 'Nothing yet';
+  };
+  // Each part is an arc of the ring, with a 2px gap on either side when there is more than one.
+  const shown = parts.filter((part) => part.v > 0);
+  const gap = shown.length > 1 ? 2 : 0;
+  let at = 0;
+  const arcs = new Map<string, SVGCircleElement>();
+  for (const part of shown) {
+    const len = (part.v / total) * C;
+    const arc = document.createElementNS(ns, 'circle');
+    for (const [k, v] of Object.entries({
+      cx: 50,
+      cy: 50,
+      r: R,
+      class: 'pv-donut-arc',
+      stroke: part.color,
+      'stroke-dasharray': `${Math.max(0.5, len - gap)} ${C}`,
+      'stroke-dashoffset': String(-at),
+    }))
+      arc.setAttribute(k, String(v));
+    const tip = document.createElementNS(ns, 'title');
+    tip.textContent = `${part.label}: ${fmt(part.v)} (${Math.round((part.v / total) * 100)}%)`;
+    arc.append(tip);
+    arc.addEventListener('pointerenter', () => show(part));
+    arc.addEventListener('pointerleave', () => show(biggest.v ? biggest : null));
+    arcs.set(part.key, arc);
+    svg.append(arc);
+    at += len;
+  }
+  show(biggest.v ? biggest : null);
+  const donut = h('div', { class: 'pv-donut' }, svg, h('div', { class: 'pv-donut-mid' }, midPct, what));
+  return h(
+    'div',
+    { class: 'pv-mix' },
+    donut,
+    h(
+      'div',
+      { class: 'pv-legend' },
+      ...parts.map((part) => {
+        const v = values[part.key];
+        const row = h(
+          'div',
+          { class: 'pv-leg' },
+          h('i', { style: `background:${part.color}` }),
+          h('span', null, part.label),
+          h('b', { class: v < 0 ? 'neg' : '' }, fmt(v)),
+          h('em', null, total && v > 0 ? `${Math.round((v / total) * 100)}%` : '-'),
+        );
+        row.onmouseenter = () => {
+          show(part);
+          arcs.get(part.key)?.classList.add('on');
+        };
+        row.onmouseleave = () => {
+          show(biggest.v ? biggest : null);
+          arcs.get(part.key)?.classList.remove('on');
+        };
+        return row;
+      }),
+    ),
   );
 }
 

@@ -13,6 +13,7 @@ import {
 import { bodyURL, portraitURL } from '../sprites';
 import { fmt, h } from './dom';
 import type { Hud } from './hud';
+import { assetMix } from './overview';
 
 /** One row of the stats table: how to read it, and which end of it is best (none: no winner). */
 interface StatRow {
@@ -124,11 +125,7 @@ export function showResults(hud: Hud, G: GameState, onNew: () => void) {
         h('div', { class: 'res-win-why' }, `${G.endReason}.`),
       ),
     ),
-    h(
-      'div',
-      { class: 'res-cards' },
-      ...order.map((p, i) => playerCard(G, p, p.bankrupt ? 'Out' : PLACES[i], standard)),
-    ),
+    h('div', { class: 'res-cards' }, ...order.map((p, i) => playerCard(G, p, i))),
     h(
       'section',
       { class: 'res-section' },
@@ -154,14 +151,8 @@ export function showResults(hud: Hud, G: GameState, onNew: () => void) {
   requestAnimationFrame(() => drawChart(chart, G));
 }
 
-/** A player's card: place, portrait, name and level, net worth, and a bar of what it is made of. */
-function playerCard(G: GameState, p: Player, place: string, standard: boolean): HTMLElement {
-  const parts = [
-    { label: 'Cash', value: Math.max(0, p.cash), cls: 'cash' },
-    { label: 'Property', value: propertyValue(G, p), cls: 'prop' },
-    ...(standard ? [{ label: 'Stocks', value: stockValue(G, p), cls: 'stock' }] : []),
-  ];
-  const total = parts.reduce((n, x) => n + x.value, 0) || 1;
+/** A player's card: place, portrait, name and level, net worth, and the ring of what it is made of. */
+function playerCard(G: GameState, p: Player, place: number): HTMLElement {
   return h(
     'div',
     {
@@ -171,31 +162,23 @@ function playerCard(G: GameState, p: Player, place: string, standard: boolean): 
     h(
       'div',
       { class: 'res-card-head' },
-      h('span', { class: 'res-place' }, place),
+      h(
+        'span',
+        { class: `res-place p${p.bankrupt ? 'out' : place + 1}` },
+        p.bankrupt ? 'Out' : PLACES[place],
+      ),
       h('img', { class: 'portrait', src: portraitURL(p.ch), alt: '' }),
       h('div', { class: 'res-card-who' }, h('b', null, p.name), h('small', null, `Level ${p.level}`)),
+      h(
+        'div',
+        { class: 'res-nw' },
+        h('small', null, 'Net worth'),
+        // One span, so the coin stays beside the amount in this column.
+        h('span', null, p.bankrupt ? 'Bankrupt' : fmt(netWorth(G, p))),
+      ),
     ),
-    h('div', { class: 'res-nw' }, p.bankrupt ? 'Bankrupt' : fmt(netWorth(G, p))),
-    p.bankrupt
-      ? null
-      : h(
-          'div',
-          { class: 'res-split', title: 'What their net worth is made of' },
-          ...parts.map((x) =>
-            h('i', {
-              class: x.cls,
-              style: `flex-grow:${x.value / total}`,
-              title: `${x.label}: ${fmt(x.value)}`,
-            }),
-          ),
-        ),
-    p.bankrupt
-      ? null
-      : h(
-          'div',
-          { class: 'res-split-key' },
-          ...parts.map((x) => h('span', { class: x.cls }, h('i'), `${x.label} ${fmt(x.value)}`)),
-        ),
+    // The same ring as on the player's page.
+    p.bankrupt ? null : assetMix(G, p),
   );
 }
 
@@ -254,8 +237,12 @@ function statsTable(
             h(
               'th',
               { style: `--pc:${PLAYER_COLORS[p.color]}` },
-              h('img', { class: 'portrait', src: portraitURL(p.ch), alt: '' }),
-              h('span', null, p.name),
+              h(
+                'span',
+                { class: 'res-who' },
+                h('img', { class: 'portrait', src: portraitURL(p.ch), alt: '' }),
+                h('span', null, p.name),
+              ),
             ),
           ),
         ),
