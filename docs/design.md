@@ -573,7 +573,7 @@ if (!(await ask(`Delete ${d.name}?`, 'Its 4 properties will be removed from the 
   groups (LAYOUT with the Blank placeholder, PROPERTIES, SUITS, SPECIALS, TRANSPORT) use section
   headings; tiles are the game's own
   tile art in a two-column grid. The chosen tile glows like a game choice (pulsing white outline
-  in a gold glow + white rings spreading out, CSS `::before`/`::after` matched to the tile).
+  in a gold glow + white rings spreading out, painted by the same `drawTileGlow` renderer as the board).
   Shown only while placing.
 
 - **View chip** (`.ed-view-chip`, first in the toolbar): "View: Normal" / "View: Tile types",
@@ -1347,3 +1347,5 @@ Draw replaces Place, retaining its pencil icon and tile pane. Properties contain
 Use the actual setup surface as a short inert crossfade cover over the new board, with no new pop-up or loading controls. The board holds on the bank with its HUD and all tokens hidden before the first rendered frame. Players jump out in turn order and scale up from the bank door into their regular slots, staggered rather than simultaneous. Keep name plates hidden during this introduction. A soft rising sweep and bell chord are a one-shot Effects sound (`gameStart`); fade setup music out and hold game music until all players land.
 
 Once everyone is on the board, the HUD’s existing containers enter: info chip first, toolbar next, then player cards and the action bar. Animate opacity and additive `translate` so existing fixed positions, card stacking and action-bar centering are preserved. The new board itself fades in without transforming its canvas host (canvas dimensions must remain accurate). Hold input and engine turns until the entrance is complete. Honor reduced motion with immediate static visibility, and cancel all entrance work when the game is destroyed. Do not replay this on a saved resume or reconnect. See TIMING.opening* for all durations and UI Lab → Game opening for the real sequence. Remove Sound from the game menu; keep the Music toolbar chip and its existing pop-up.
+
+The Draw palette paints selection feedback with the exact shared `drawTileGlow` board renderer: gold tint, pulsing white outline, and two expanding rings in square/hex geometry. Its transparent overlay canvas has extra room for the rings, shares the artwork transform, and does not shift the selected art. Hover and keyboard focus use `tileShape` for the current grid instead of rectangular button backgrounds or outlines. Only the selected overlay animates, only while the pane is visible; pointer/focus changes repaint as needed, reduced motion gives a static outline, and closing/rebuilding the editor cancels pending work. UI Lab: Board builder: Draw.

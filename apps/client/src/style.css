@@ -8315,23 +8315,30 @@ div.sl-inline label {
 .ed-palette .ed-side-sec-head {
   margin: 0 0 6px;
 }
-/* The chosen tile lifts inside a gold ring; others brighten on hover. */
-.editor .ed-tool {
-  border-radius: 12px;
-  transition:
-    transform 0.12s,
-    background 0.15s;
-}
-.editor .ed-tool:hover {
-  background: rgba(255, 255, 255, 0.06);
-}
+/* Tile feedback is painted with the board's own square/hex geometry, not a button box. */
+.editor .ed-tool,
+.editor .ed-tool:hover,
 .editor .ed-tool.on {
-  background: rgba(255, 209, 102, 0.16);
-  box-shadow: inset 0 0 0 2px var(--accent);
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
 }
 .editor .ed-tool.on .ed-tile-example {
   filter: none;
-  transform: translateY(-2px);
+  transform: none;
+}
+.editor .ed-tool:focus-visible {
+  outline: none;
+}
+.ed-tile-feedback {
+  position: absolute;
+  left: -39.705882%;
+  top: -36.486486%;
+  width: 179.411765%;
+  height: auto;
+  max-width: none;
+  pointer-events: none;
+  z-index: 1;
 }
 .modal:has(.pop-menu) .modal-head {
   margin-bottom: 12px;
@@ -8460,57 +8467,9 @@ div.sl-inline label {
   outline-offset: 2px;
 }
 
-/* The chosen tile in the Tiles pane glows like a choice in a game: a pulsing white outline in a
-   gold glow, and white rings spreading out and fading. */
-.editor .ed-tool.on {
-  background: transparent;
-  box-shadow: none;
-}
-/* Matches the tile inside its picture (the art is the game's tile, drawn a little above center). */
-.editor .ed-tool.on::before,
-.editor .ed-tool.on::after {
-  content: '';
-  position: absolute;
-  inset: 11% 8% 13%;
-  border-radius: 12px;
-  pointer-events: none;
-}
-.editor .ed-tool.on::before {
-  border: 3px solid #fff;
-  box-shadow:
-    0 0 12px 2px var(--accent),
-    inset 0 0 10px rgba(255, 209, 102, 0.6);
-  animation: ed-tile-pulse 0.9s ease-in-out infinite alternate;
-}
-.editor .ed-tool.on::after {
-  border: 2px solid #fff;
-  animation: ed-tile-ring 1.4s ease-out infinite;
-}
-@keyframes ed-tile-pulse {
-  from {
-    opacity: 0.7;
-    box-shadow:
-      0 0 6px 1px var(--accent),
-      inset 0 0 6px rgba(255, 209, 102, 0.4);
-  }
-}
-@keyframes ed-tile-ring {
-  from {
-    transform: scale(1);
-    opacity: 0.9;
-  }
-  to {
-    transform: scale(1.14);
-    opacity: 0;
-  }
-}
 @media (prefers-reduced-motion: reduce) {
-  .editor .ed-tool.on::before,
   .ed-badge {
     animation: none;
-  }
-  .editor .ed-tool.on::after {
-    display: none;
   }
 }
 

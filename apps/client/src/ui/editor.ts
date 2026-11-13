@@ -1941,7 +1941,25 @@ export function openEditor(
     toolBar.append(button);
   }
 
+  let paletteFrame = 0;
+  let paletteFeedback: ((now: number) => boolean)[] = [];
+  const paletteMotion = matchMedia('(prefers-reduced-motion: reduce)');
+  const paintPaletteFeedback = () => {
+    paletteFrame = 0;
+    if (destroyed || palette.hidden) return;
+    const now = paletteMotion.matches ? 0 : performance.now();
+    const active = paletteFeedback.map((paint) => paint(now)).some(Boolean);
+    if (active && !paletteMotion.matches) paletteFrame = requestAnimationFrame(paintPaletteFeedback);
+  };
+  const requestPaletteFeedback = () => {
+    if (!destroyed && !paletteFrame) paletteFrame = requestAnimationFrame(paintPaletteFeedback);
+  };
+  paletteMotion.addEventListener('change', requestPaletteFeedback);
+
   const drawPalette = () => {
+    cancelAnimationFrame(paletteFrame);
+    paletteFrame = 0;
+    paletteFeedback = [];
     const scroll = paletteList.scrollTop;
     const focused = palette.contains(document.activeElement)
       ? (document.activeElement as HTMLElement).dataset.tool
@@ -1993,29 +2011,82 @@ export function openEditor(
           ctx.translate(-48, -44);
           paintSquare(ctx, tile, tile.nodes[0]);
         }
-        row.append(
-          h(
-            'button',
-            {
-              class: `ed-tool ${tool === it.tool ? 'on' : ''}`,
-              'aria-label': it.label,
-              'aria-description': it.hint,
-              'data-tool': it.tool,
-              'aria-pressed': String(tool === it.tool),
-              onclick: () => {
-                tool = it.tool;
-                drawTool = it.tool;
-                clearSelection();
-                settings = false;
-                notice = '';
-                drawPalette();
-                drawInspector();
-                redraw();
-              },
+        const feedback = h('canvas', {
+          class: 'ed-tile-feedback',
+          'aria-hidden': 'true',
+        }) as HTMLCanvasElement;
+        const dpr = Math.min(3, devicePixelRatio || 1);
+        feedback.width = 244 * dpr;
+        feedback.height = 256 * dpr;
+        let hovered = false;
+        let focused = false;
+        let painted = false;
+        const button = h(
+          'button',
+          {
+            class: `ed-tool ${tool === it.tool ? 'on' : ''}`,
+            'aria-label': it.label,
+            'aria-description': it.hint,
+            'data-tool': it.tool,
+            'aria-pressed': String(tool === it.tool),
+            onclick: () => {
+              tool = it.tool;
+              drawTool = it.tool;
+              clearSelection();
+              settings = false;
+              notice = '';
+              drawPalette();
+              drawInspector();
+              redraw();
             },
-            example,
-          ),
+          },
+          example,
+          feedback,
         );
+        const updateHover = (on: boolean) => {
+          hovered = on;
+          requestPaletteFeedback();
+        };
+        button.addEventListener('pointerenter', (event) => {
+          if (event.pointerType !== 'touch') updateHover(true);
+        });
+        button.addEventListener('pointerleave', () => updateHover(false));
+        button.addEventListener('focus', () => {
+          focused = button.matches(':focus-visible');
+          requestPaletteFeedback();
+        });
+        button.addEventListener('blur', () => {
+          focused = false;
+          requestPaletteFeedback();
+        });
+        paletteFeedback.push((now) => {
+          const selected = tool === it.tool;
+          const active = selected || hovered || focused;
+          if (!active && !painted) return false;
+          const ctx = feedback.getContext('2d')!;
+          if (painted || active) ctx.clearRect(0, 0, feedback.width, feedback.height);
+          painted = active;
+          if (!active) return false;
+          ctx.save();
+          // Same transform as the tile artwork, with overscan for both expanding rings.
+          ctx.setTransform(1.3 * dpr, 0, 0, 1.3 * dpr, (54 - 48 * 1.3) * dpr, (54 - 44 * 1.3) * dpr);
+          const c = cellCenter(board.layout, 0, 0);
+          if (selected) drawTileGlow(ctx, board.layout, c, '#ffd166', now, true);
+          else {
+            tileShape(ctx, board.layout, c.x, c.y, 46, 14);
+            ctx.fillStyle = 'rgba(255,209,102,0.16)';
+            ctx.fill();
+            ctx.strokeStyle = '#17213a';
+            ctx.lineWidth = 4;
+            ctx.stroke();
+            ctx.strokeStyle = '#ffd166';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+          }
+          ctx.restore();
+          return selected;
+        });
+        row.append(button);
       }
       section.append(row);
       paletteList.append(section);
@@ -2025,6 +2096,7 @@ export function openEditor(
       paletteList
         .querySelector<HTMLButtonElement>(`[data-tool="${focused}"]`)
         ?.focus({ preventScroll: true });
+    requestPaletteFeedback();
   };
 
   // ------------------------------------------------------------ inspector
@@ -2080,6 +2152,7 @@ export function openEditor(
     clear(actionContent);
     syncTools();
     palette.hidden = !isPlacing() || settings;
+    if (!palette.hidden) requestPaletteFeedback();
     root.classList.toggle('ed-placing', !palette.hidden);
     root.classList.toggle('ed-moving', !!moving);
     root.classList.toggle('ed-linking', choosingLink);
@@ -3112,6 +3185,8 @@ export function openEditor(
   function destroy() {
     destroyed = true;
     cancelAnimationFrame(zoomFrame);
+    cancelAnimationFrame(paletteFrame);
+    paletteMotion.removeEventListener('change', requestPaletteFeedback);
     window.removeEventListener('keydown', onKey);
     window.removeEventListener('keyup', onKeyUp);
     ro.disconnect();

@@ -26,6 +26,15 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: '2026-11-13-draw-tile-feedback',
+    date: 'Nov 13, 2026',
+    title: 'Draw-panel tiles match the board',
+    features: [],
+    extras: [
+      'Selected Draw-panel tiles use the board’s gold tint, pulsing white outline and expanding rings. Hover and keyboard highlights follow the current square or hex tile shape.',
+    ],
+  },
+  {
     id: '2026-11-13-bank-opening',
     date: 'Nov 13, 2026',
     title: 'A proper welcome to the board',

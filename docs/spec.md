@@ -299,7 +299,7 @@ board records property locations and districts, not which start vacant. The edit
 board thumbnails always show property tiles, and editing an old board discards its plot hints.
 Draw uses a pencil icon. Only Draw shows the tile pane on the right, styled like the side panels
 (gold top edge, a Tiles title with a one-line hint, small uppercase group names). Its head stays at
-the top while the list scrolls. The chosen tile sits in a gold ring and lifts slightly. Tiles appear as art-only buttons in two columns, without individual
+the top while the list scrolls. The chosen tile uses the board’s animated gold tint, pulsing white outline and expanding rings without shifting its artwork. Tiles appear as art-only buttons in two columns, without individual
 card backgrounds, borders or captions. The enlarged art fills each column; no tile-name popup or selection checkmark is shown.
 Accessible button names and hints remain available. Selection uses a glow, with scroll position
 and keyboard focus kept after picking a tile.
@@ -2060,3 +2060,5 @@ After everyone readies up, setup crossfades into a board centered on the bank (5
 Players emerge from the bank door in starting-turn order, 220ms apart, each with a 650ms arcing jump and a small-to-normal sprite scale. They settle into their normal bank slots, without changing logical positions, movement statistics or engine RNG. Token name plates remain hidden. After the last landing and a 180ms settling beat, game music begins and the info chip, toolbar, player cards and action bar fade/slide into view (520ms with 90ms offsets). The first engine turn starts only after that HUD entrance completes; the intro is not fast-CPU scaled.
 
 Only fresh matches play this entrance, on host and guests (`StartInfo.opening`, presentation only). Saved resumes, rejoining and later turn resyncs show existing positions normally. Closing/replacing a game cancels waits and token animation before any music or engine turns can start afterward. Reduced motion shows all players and the HUD immediately without jumps, zooms or staggered slides; music still waits until all players are visible. UI Lab includes Game opening, gameStart and Game menu controls. The game menu offers no sound controls because the toolbar Music chip already owns them.
+
+The Draw palette paints selection feedback with the exact shared `drawTileGlow` board renderer: gold tint, pulsing white outline, and two expanding rings in square/hex geometry. Its transparent overlay canvas has extra room for the rings, shares the artwork transform, and does not shift the selected art. Hover and keyboard focus use `tileShape` for the current grid instead of rectangular button backgrounds or outlines. Only the selected overlay animates, only while the pane is visible; pointer/focus changes repaint as needed, reduced motion gives a static outline, and closing/rebuilding the editor cancels pending work. UI Lab: Board builder: Draw.
