@@ -232,6 +232,14 @@ export class BoardView {
   walkTarget = -1;
   /** Before a roll: the player whose possible first steps are shown as sliding arrows, or -1. */
   directionsPid = -1;
+  /** A player card the pointer is over (set by the HUD): that player stands out, with arrows. */
+  cardHoverPid = -1;
+  /** The token under the pointer on the board. */
+  private tokenHoverPid = -1;
+  /** The player being looked at (a hovered card first, else a hovered token), or -1. */
+  get hoverPid() {
+    return this.cardHoverPid >= 0 ? this.cardHoverPid : this.tokenHoverPid;
+  }
   onPick: ((id: number) => void) | null = null;
   /**
    * A pop-up is on the screen (set by the HUD): tiles and portals give no info on hover or tap,
@@ -275,7 +283,10 @@ export class BoardView {
     this.resize();
     window.addEventListener('resize', this.resize);
     this.canvas.addEventListener('pointermove', this.pointerMove);
-    this.canvas.addEventListener('pointerleave', () => this.onHover?.(null, 0, 0));
+    this.canvas.addEventListener('pointerleave', () => {
+      this.tokenHoverPid = -1;
+      this.onHover?.(null, 0, 0);
+    });
     this.canvas.addEventListener('click', this.click);
     this.canvas.addEventListener('wheel', this.wheel, { passive: false });
     this.canvas.addEventListener('pointerdown', this.pinchDown);
@@ -1561,6 +1572,7 @@ export class BoardView {
       if (d && this.pinchDist) this.zoomBy(Math.log(this.pinchDist / d) * 0.8);
       this.pinchDist = d;
     }
+    this.tokenHoverPid = this.tokenAt(e.clientX, e.clientY);
     const id = this.squareAt(e.clientX, e.clientY);
     if (this.locked && !(id != null && this.glow.includes(id) && this.onPick)) {
       this.hoverId = null;
@@ -1572,8 +1584,33 @@ export class BoardView {
     this.canvas.style.cursor = (id != null && this.glow.includes(id)) || gate ? 'pointer' : 'default';
     if (this.routes.size) this.previewRoute(id != null && this.glow.includes(id) ? id : null);
     if (gate && this.onPortalHover) this.onPortalHover(gate, e.clientX, e.clientY);
+    // Pointing at a character is about the player: their arrows show, not the tile's pop-up
+    // (unless the tile is a choice to pick).
+    else if (this.tokenHoverPid >= 0 && !(id != null && this.glow.includes(id))) this.onHover?.(null, 0, 0);
     else this.onHover?.(id, e.clientX, e.clientY);
   };
+
+  /** The player whose character is under a screen point (the topmost), or -1. */
+  tokenAt(clientX: number, clientY: number): number {
+    if (!this.G) return -1;
+    const r = this.canvas.getBoundingClientRect();
+    const x = clientX - r.left;
+    const y = clientY - r.top;
+    // The same sizes drawTokens uses, in CSS pixels; the topmost (drawn last) wins.
+    let hit = -1;
+    for (const p of this.G.players) {
+      const t = this.tokens.get(p.id);
+      if (!t || !t.visible || p.bankrupt) continue;
+      const px = this.cam.z * 1.35 * t.size;
+      const g = this.worldToScreen(t.x, t.y);
+      const foot = g.y + 21 * this.cam.z - t.hop * this.cam.z;
+      const halfW = FRAME_W * px * 0.3;
+      if (x >= g.x - halfW && x <= g.x + halfW && y >= foot - FRAME_H * px * 0.85 && y <= foot + 4 * px) {
+        if (hit < 0 || p.id === this.activePid) hit = p.id;
+      }
+    }
+    return hit;
+  }
 
   /** The portal under a screen point, if any. */
   portalAt(cx: number, cy: number): PortalGate | null {
@@ -2149,9 +2186,25 @@ export class BoardView {
    * Arrows sliding out from the player's square toward each square their first step can reach
    * (any way but back), so they can see which way the roll will take them.
    */
+  /**
+   * Direction arrows: for the player about to roll (`directionsPid`), and for a player being
+   * looked at (a hovered token or card) unless they are on the move.
+   */
   private drawDirections(ctx: CanvasRenderingContext2D, now: number, motion: boolean) {
+    this.drawDirectionsFor(ctx, this.directionsPid, now, motion);
+    const look = this.hoverPid;
+    if (
+      look >= 0 &&
+      look !== this.directionsPid &&
+      !this.tokens.get(look)?.walking &&
+      !this.tokens.get(look)?.portal
+    )
+      this.drawDirectionsFor(ctx, look, now, motion);
+  }
+
+  private drawDirectionsFor(ctx: CanvasRenderingContext2D, pid: number, now: number, motion: boolean) {
     const G = this.G!;
-    const p = G.players[this.directionsPid];
+    const p = G.players[pid];
     if (!p || p.bankrupt) return;
     const here = G.nodes[p.node];
     const next = nextSteps(here, p.prev);
@@ -2214,7 +2267,9 @@ export class BoardView {
     const order = G.players
       .slice()
       .sort((a, b) => this.tokens.get(a.id)!.y - this.tokens.get(b.id)!.y)
-      .sort((a, b) => Number(a.id === this.activePid) - Number(b.id === this.activePid));
+      .sort((a, b) => Number(a.id === this.activePid) - Number(b.id === this.activePid))
+      // A player being looked at is drawn on top of everyone.
+      .sort((a, b) => Number(a.id === this.hoverPid) - Number(b.id === this.hoverPid));
     ctx.save();
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.imageSmoothingEnabled = false;
@@ -2224,7 +2279,8 @@ export class BoardView {
       // The winner keeps the active size through the victory and results.
       const active = p.id === this.activePid;
       // Grow into the active size, or shrink out of it, over a fraction of a second.
-      const want = active ? 1.416 : this.activePid >= 0 ? 0.6885 : 1;
+      // A hovered player (their token or card) grows past the active size so they are easy to find.
+      const want = p.id === this.hoverPid ? 1.65 : active ? 1.416 : this.activePid >= 0 ? 0.6885 : 1;
       t.size = motion ? t.size + (want - t.size) * (1 - Math.exp(-dt / 140)) : want;
       const px = base * t.size;
       const ground = this.worldToScreen(t.x, t.y);

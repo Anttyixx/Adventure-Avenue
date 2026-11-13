@@ -934,6 +934,21 @@ Reopened online games keep guests on Continue Game until the host presses Resume
   the top of the cards (`--dock-b`); on phones (`max-height: 500px`) it may run over the cards. It
   pops in (200ms, fade + 8px drop + scale .96 from the top right); Close, the button or Escape
   closes it. The log groups lines by turn, newest at the bottom. Rolls and arrivals are main rows; follow-up actions use an indented branch beneath their landing. Keep action icons, high-contrast text and colored player names. Tile-linked rows are full-width buttons with an arrow, a hover background and a visible keyboard focus outline. Clicking briefly frames and outlines the tile for 3 seconds, leaving movement choices intact. Legacy rows remain plain text. No extra confirmation is needed.
+- **Log entry grid** (`.log-entry`): a 22px icon column, 8px gap, the text, then the locate arrow.
+  Every icon (main rows, follow-ups and the waiting line) is the same 22px rounded square with a
+  15px centered picture; the text's line height is 20px plus 1px padding, so the icon centres on
+  the first line. Names in the log are bold Lilita at 14px with `line-height: 1`, so they never
+  stretch that line. Follow-ups hang off a 2px line that runs straight down from the centre of the
+  main icon. The turn header's portrait sits in the same 22px column.
+
+### Results (pop-up)
+
+- Winner strip (player-color gradient from the left, 5px left edge, 56px character, Lilita 26px
+  gold name), then player cards in an auto-fit grid (min 150px; 4px top edge in the player color,
+  the winner's card with a soft gold inset ring), each with place (Lilita gold), portrait, name in
+  their color, level, net worth (Lilita 22px) and an 8px pill bar split cash `#7cf29a` / property
+  `#ffd166` / stocks `#7db8ff`. Section headings in Lilita 16px; the stats table right-aligns
+  numbers, has gold uppercase group rows, and marks the best cell gold and bold with a small star.
 
 ### 5.19 Board overlays (canvas)
 

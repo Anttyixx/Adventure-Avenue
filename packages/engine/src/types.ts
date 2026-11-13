@@ -88,6 +88,22 @@ export interface Stats {
   salary: number;
   dividends: number;
   commission: number;
+  /** For the results screen; games saved before they existed read as 0 (`stat`). */
+  /** Squares walked (rides and warps don't count). */
+  steps?: number;
+  /** Venture cards drawn. */
+  ventures?: number;
+  /** Shops bought from the bank or a seller (not buyouts or auctions). */
+  shopsBought?: number;
+  /** Rivals' properties bought out. */
+  buyouts?: number;
+  /** Cash invested in shops. */
+  invested?: number;
+  /** The biggest single fee collected. */
+  biggestFee?: number;
+  /** Cash spent buying shares, and cash received selling them. */
+  stockBought?: number;
+  stockSold?: number;
 }
 
 export interface Player {

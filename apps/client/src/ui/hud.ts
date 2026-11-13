@@ -574,6 +574,14 @@ export class Hud {
       if (!el) {
         const pid = p.id;
         el = h('div', { class: 'pcard', role: 'button', tabindex: '0' });
+        // Pointing at a card picks the player out on the board: their character grows and shows
+        // which ways they can go.
+        el.addEventListener('pointerenter', (e) => {
+          if (e.pointerType === 'mouse') this.board.cardHoverPid = pid;
+        });
+        el.addEventListener('pointerleave', () => {
+          if (this.board.cardHoverPid === pid) this.board.cardHoverPid = -1;
+        });
         // A folded stack opens into a list first (the click goes on to this.cards); once open,
         // a card opens that player's info.
         el.onclick = () => {
@@ -1361,6 +1369,8 @@ export class Hud {
     const owner = sq.owner >= 0 ? G.players[sq.owner] : null;
     const dColor = sq.d >= 0 ? (G.districts[sq.d]?.color ?? '#ccc') : '#8a94a8';
     const property = sq.t === 'shop' || sq.t === 'plot';
+    /** The tooltip speaks to the player whose turn it is: their own building reads differently. */
+    const activeOwns = owner != null && G.players[G.order[G.turn]]?.id === owner.id;
     /** A detail line: muted label on the left, the amount on the right. */
     const row = (label: string, value: string) =>
       h('div', { class: 'tt-line' }, h('span', null, label), h('b', null, value));
@@ -1370,22 +1380,15 @@ export class Hud {
     if (property) {
       const shopLike = sq.t === 'shop' || sq.b === 'star3';
       if (owner) {
-        // Owned: what landing here costs is the headline; the shop's numbers follow.
-        {
-          const fee =
-            sq.b === 'tax' || sq.b === 'agency'
-              ? buildingLandingLabel(G, sq)
-              : sq.b === 'motel'
-                ? motelFee(G, sq)
-                : fmt(squareFee(G, sq));
-          const label =
-            sq.b === 'tax' && G.players[G.order[G.turn]]?.id === sq.owner
-              ? 'Receive'
-              : sq.b === 'agency'
-                ? 'Effect'
-                : 'Fee';
-          hero = this.ttHero(isClosed(owner) ? `${label} · shops closed` : label, fee, isClosed(owner));
-        }
+        // Owned: what landing here costs (or, at your own Tax Office, pays) is the headline.
+        const fee =
+          sq.b === 'tax' || sq.b === 'agency'
+            ? buildingLandingLabel(G, sq)
+            : sq.b === 'motel'
+              ? motelFee(G, sq)
+              : fmt(squareFee(G, sq));
+        const label = sq.b === 'tax' && activeOwns ? 'Receive' : sq.b === 'agency' ? 'Effect' : 'Fee';
+        hero = this.ttHero(isClosed(owner) ? `${label} · shops closed` : label, fee, isClosed(owner));
         if (sq.t === 'shop' || sq.b) lines.push(row('Value', fmt(sq.value)));
         if (shopLike) {
           lines.push(row('Max value', fmt(maxValue(G, sq))));
@@ -1400,13 +1403,7 @@ export class Hud {
       // Explain the effect for the active player, matching the fee or payout headline.
       if (sq.b && BUILDING_INFO[sq.b])
         extra.push(
-          h(
-            'p',
-            { class: 'tt-info' },
-            G.players[G.order[G.turn]]?.id === sq.owner
-              ? BUILDING_INFO[sq.b].owner
-              : BUILDING_INFO[sq.b].rival,
-          ),
+          h('p', { class: 'tt-info' }, activeOwns ? BUILDING_INFO[sq.b].owner : BUILDING_INFO[sq.b].rival),
         );
       if (sq.g >= 0) {
         // Who owns the rest of the district, as dots in the owners' colors.

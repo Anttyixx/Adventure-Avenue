@@ -654,9 +654,9 @@ export class HotSeat implements GameIO {
     }
   }
 
-  /** Takes down the trade terms shown to everyone not deciding. */
   /** Hold domination celebrations until every part of an accepted trade has finished. */
   private tradeAnimating = false;
+  /** Takes down the trade terms shown to everyone not deciding. */
   private tradeWatch: (() => void) | null = null;
 
   /** Give CPU choices a beat so players can follow along. */
@@ -773,7 +773,8 @@ export class HotSeat implements GameIO {
             ['Fee when rivals land here', fmt(feeIfOwned(G, req.sq, p.id))],
           ]),
           [
-            { label: 'Buy', value: true, main: true },
+            // The price is on the button: the question itself no longer repeats it.
+            { label: `Buy for ${fmt(req.price)}`, value: true, main: true },
             { label: 'Pass', value: false, secondary: true },
           ],
           color,
@@ -963,6 +964,8 @@ export class HotSeat implements GameIO {
         this.refresh();
         break;
       case 'roll': {
+        // Rolled: the way they can go is shown by the reachable squares now, not the arrows.
+        board.directionsPid = -1;
         this.refresh();
         this.movementRoll = { pid: e.pid, value: e.value };
         hud.action('rolling', `${G.players[e.pid].name} is rolling...`, 'move');

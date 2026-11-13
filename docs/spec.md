@@ -567,7 +567,7 @@ the Guide's Buildings tab says the same during a game ("2 left to build").
 | Circus        | 200G   | Pays the show fee: 100G (tier 0)                                                                                                           | Upgrade to 500 / 1,000 / 2,000G for 300 / 600 / 1,200G                                | Show fee           |
 | Balloonport   | 200G   | Pays 150G                                                                                                                                  | Fly to any square; that square's landing effect applies (bank counts as a bank visit) | 150G               |
 | Tax Office    | 200G   | Pays the owner 10% of the rival's own net worth                                                                                            | Bank pays the owner 5% of their net worth                                             | 10%                |
-| Motel         | 200G   | Pays 100G (`K.motelFee`). Passing players may check in and save unused movement (see below)                                           | Invest in any of your shops                                                           | 100G               |
+| Motel         | 200G   | Pays 100G (`K.motelFee`). Passing players may check in and save unused movement (see below)                                                | Invest in any of your shops                                                           | 100G               |
 | Estate Agency | 200G   | Rival takes a break: their shops close until their next turn                                                                               | Buy any unowned shop at its value                                                     | Break              |
 | 3-Star Shop   | 1,000G | Pays a shop fee on a 1,000G base, with district multipliers; buyouts allowed                                                               | Invest in any of your shops                                                           | Fee                |
 
@@ -966,8 +966,20 @@ their shares vanish. The game ends immediately and the richest remaining player 
 | Bankruptcy     | When a player can't cover debt                              | Highest net worth among the others |
 | Round limit    | When the round counter passes the limit                     | Highest net worth                  |
 
-**Results screen:** final ranking, a net-worth-by-round line chart with the target marked, and
-per-player totals for fees earned, fees paid, salary, dividends and commission. The save is cleared.
+**Results screen:** a pop-up with, from the top: the winner (character, "Rosa wins!" and why);
+a card per player in finishing order (1st, 2nd... or "Out" for bankrupt players) with their
+portrait, name, level, net worth and a bar of what it is made of (green cash, gold property, blue
+stocks, each amount listed under it; the list is hidden on short screens); "Net worth by round",
+a line chart with round numbers, the goal as a dashed gold line, the winner's line thicker, and a
+key of names; and a **Stats** table with the players as columns in finishing order, in sections:
+Wealth (net worth, highest net worth, cash, property, stocks), Income (fees collected, biggest
+fee, salary, dividends, commission, stock sales), Spending (fees paid, invested in shops, stock
+bought) and On the board (level, properties owned, districts dominated, shops bought, buyouts,
+venture cards, squares walked). The best number in a row gets a gold star (the lowest for fees
+paid; none when everyone is level); stock rows only show with Standard rules, and optional rows
+(biggest fee, dividends, commission, stock trades, investing, buyouts, dominations) are left out
+when every player has 0. The newer stats are tracked during play (`Stats` in `types.ts`, read
+with `stat()` so older saves show 0). The save is cleared.
 
 ## Rule sets and match options
 
@@ -1551,7 +1563,12 @@ While View board has the pop-up out of the way, the screen is unlocked.
   they hold and their value, districts with none dimmed, totals at the bottom).
 
 **Turn moments.** Before the roll, sliding arrows on the board point from the player's square to
-each square their first step can reach; they stay up until the player takes that first step. A token that stops part-way through a walk (a pop-up or a
+each square their first step can reach; they go away as soon as the die is rolled (the squares
+the roll can reach show the way from then on). **Looking at a player:** pointing the mouse at a
+player's character on the board, or at their player card, picks them out: their character grows
+(bigger than the active player's), is drawn on top of everyone, and shows their own direction
+arrows (not while they are walking or riding). Pointing at a character shows no tile pop-up
+unless that tile is a choice to pick. Touch screens keep the card's tap behavior. A token that stops part-way through a walk (a pop-up or a
 choice on the way) stands still until it walks on. After a roll with only one way to go, the die
 first shrinks to sit beside the player, then they start walking (with a choice of where to go, the
 choice comes up straight away). Whenever a district's stock price moves, for any reason

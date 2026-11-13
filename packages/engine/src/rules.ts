@@ -2,7 +2,7 @@
  * Derived values and pure state helpers. Nothing here asks for a decision or talks to the UI.
  */
 import { K } from './constants';
-import type { GameState, Market, Player, Square, BuildingKey } from './types';
+import type { GameState, Market, Player, Square, BuildingKey, Stats } from './types';
 
 export const ceil5 = (n: number) => Math.ceil(n / 5) * 5;
 
@@ -25,6 +25,16 @@ export function dominated(G: GameState, pid: number, g: number): boolean {
   if (g < 0) return false;
   const grp = G.groups[g];
   return grp.length >= 2 && grp.every((id) => G.nodes[id].owner === pid);
+}
+
+/** A player's tracked stat, 0 for games saved before it was tracked. */
+export function stat(p: Player, key: keyof Stats): number {
+  return p.stats[key] ?? 0;
+}
+
+/** Add to a player's tracked stat (or keep the larger, with `max`). */
+export function addStat(p: Player, key: keyof Stats, n: number, max = false) {
+  p.stats[key] = max ? Math.max(stat(p, key), n) : stat(p, key) + n;
 }
 
 export function isClosed(p: Player): boolean {

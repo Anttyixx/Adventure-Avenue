@@ -117,7 +117,7 @@ const rnd = (n: number) => Math.floor(Math.random() * n);
  * Controls for UI elements that were just added or changed: they shake once and glow so they
  * are easy to find. Update this list with each change.
  */
-const RECENT = new Set(['Game log', 'Log: landing and purchase', 'Tax Office and Estate Agency labels']);
+const RECENT = new Set(['Results screen', 'Game log', 'Point at a player', 'Direction arrows']);
 
 /**
  * Which board the lab plays on: Town with portal links (square, the default) or Twin Lakes (hex),
@@ -1185,6 +1185,12 @@ export async function openLab(app: HTMLElement, section?: string) {
         }
         p.prev = -1;
         refresh();
+      }),
+      boardBtn('Point at a player', async () => {
+        // As if the pointer were on the target player's card: they grow and show their arrows.
+        board.cardHoverPid = cur().id;
+        await new Promise((r) => setTimeout(r, 3000));
+        board.cardHoverPid = -1;
       }),
       boardBtn('Direction arrows', () => {
         setActive(cur().id);

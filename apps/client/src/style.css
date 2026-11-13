@@ -1264,10 +1264,10 @@ input[type='range'] {
 }
 .turn-head {
   display: grid;
-  grid-template-columns: 20px minmax(0, 1fr) auto;
+  grid-template-columns: 22px minmax(0, 1fr) auto;
   align-items: center;
-  gap: 2px 6px;
-  padding: 8px 10px;
+  gap: 0 8px;
+  padding: 8px 10px 8px 14px;
   background: rgba(255, 255, 255, 0.05);
   font-family: var(--head);
   font-size: 15px;
@@ -1280,6 +1280,8 @@ input[type='range'] {
 .turn-head .portrait.tiny {
   grid-column: 1;
   grid-row: 1 / span 2;
+  width: 22px;
+  height: 22px;
   margin-right: 0;
 }
 .turn-round {
@@ -1309,26 +1311,35 @@ input[type='range'] {
 }
 .log-line {
   display: block;
-  padding: 3px 0;
+  padding: 2px 0;
   font-size: 13px;
-  line-height: 1.45;
 }
 .log-line + .log-line {
   border-top: 1px solid rgba(255, 255, 255, 0.07);
 }
+/* One entry: a 22px icon column, the text, then the locate arrow. The icon lines up with the
+   text's first line (both 22px tall); names stay bold without stretching that line. */
 .log-entry {
   display: grid;
-  grid-template-columns: 20px minmax(0, 1fr) auto;
-  align-items: flex-start;
-  gap: 8px;
+  grid-template-columns: 22px minmax(0, 1fr) auto;
+  align-items: start;
+  column-gap: 8px;
   width: 100%;
-  padding: 6px 4px;
+  padding: 5px 4px;
   border: 0;
   border-radius: 7px;
   background: transparent;
   color: var(--text);
   font: inherit;
   text-align: left;
+}
+.log-entry .log-text {
+  line-height: 20px;
+  padding-top: 1px;
+}
+.log-entry .log-text .pname {
+  font-size: 14px;
+  line-height: 1;
 }
 .log-link {
   cursor: pointer;
@@ -1341,34 +1352,30 @@ input[type='range'] {
   outline-offset: -2px;
 }
 .log-locate {
+  align-self: center;
   color: var(--accent);
   font-size: 16px;
-  flex: none;
+  line-height: 1;
 }
+/* Follow-ups (what happened after a landing) hang off a line straight down from the centre of
+   the main entry's icon (4px entry padding + 11px half icon - 1px half line). */
 .log-children {
   list-style: none;
-  margin: 0 0 2px 13px;
-  padding: 0 0 0 12px;
+  margin: 0 0 2px 14px;
+  padding: 0 0 0 6px;
   border-left: 2px solid var(--glass-line);
 }
 .log-children .log-line {
   font-size: 12px;
 }
-.log-children .log-icon {
-  width: 17px;
-  height: 17px;
+.log-children .log-line + .log-line {
+  border-top: 0;
 }
-.log-children .log-icon svg {
-  width: 12px;
-  height: 12px;
-}
-.log-line.waiting {
-  display: flex;
-  gap: 8px;
-  padding: 7px 4px;
+.log-line.hint .log-entry {
+  color: var(--muted);
 }
 /* The line saying who the game is waiting on; the action that answers it fades in in its place. */
-.log-line.waiting {
+.log-line.waiting .log-entry {
   color: var(--muted);
   font-style: italic;
 }
@@ -1411,21 +1418,22 @@ input[type='range'] {
 }
 .log-icon {
   flex: none;
-  width: 20px;
-  height: 20px;
+  width: 22px;
+  height: 22px;
   border-radius: 6px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
 }
+/* The picture fills the same share of every icon, centred (block: no baseline gap under it). */
 .log-icon svg {
-  width: 14px;
-  height: 14px;
+  display: block;
+  width: 15px;
+  height: 15px;
 }
 .log-text {
   flex: 1;
   min-width: 0;
-  padding-top: 1px;
 }
 .log-others {
   grid-column: 2 / -1;
@@ -2541,63 +2549,233 @@ input[type='range'] {
     transform: scale(1.06);
   }
 }
-/* results */
-.res-reason {
-  font-family: var(--head);
-  font-size: 22px;
-  color: var(--accent);
-  margin: 8px 0;
+/* Results: the winner, a card per player (place, net worth and a bar of what it is made of),
+   net worth by round with a key, and a stats table with players as columns. */
+.results {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
 }
-.ranking {
-  padding: 0;
-  margin: 0;
-  list-style: none;
-  counter-reset: r;
-}
-.ranking li {
+.res-win {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 6px;
+  gap: 14px;
+  padding: 10px 14px;
+  border-radius: 14px;
+  background: linear-gradient(90deg, color-mix(in srgb, var(--pc) 35%, transparent), transparent);
   border-left: 5px solid var(--pc);
-  margin-bottom: 4px;
-  background: rgba(255, 255, 255, 0.05);
-  border-radius: 8px;
 }
-.ranking li::before {
-  counter-increment: r;
-  content: counter(r);
-  font-family: var(--head);
-  font-size: 20px;
-  width: 20px;
-  text-align: center;
-}
-.ranking span {
-  margin-left: auto;
-  font-family: var(--head);
-}
-.ranking small {
-  color: var(--muted);
+.res-win-body {
   width: 56px;
+  height: 56px;
+  object-fit: contain;
+  image-rendering: pixelated;
+}
+.res-win-name {
+  font-family: var(--head);
+  font-size: 26px;
+  color: var(--accent);
+}
+.res-win-why {
+  color: var(--muted);
+  font-size: 14px;
+}
+.res-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 8px;
+}
+.res-card {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.05);
+  border-top: 4px solid var(--pc);
+}
+.res-card.won {
+  background: rgba(255, 209, 102, 0.1);
+  box-shadow: inset 0 0 0 1px rgba(255, 209, 102, 0.45);
+}
+.res-card.out {
+  opacity: 0.55;
+}
+.res-card-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+.res-place {
+  flex: none;
+  font-family: var(--head);
+  font-size: 18px;
+  color: var(--accent);
+}
+.res-card-head .portrait {
+  width: 30px;
+  height: 30px;
+}
+.res-card-who {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.res-card-who b {
+  font-family: var(--head);
+  font-weight: 400;
+  font-size: 15px;
+  color: var(--pc);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.res-card-who small {
+  color: var(--muted);
+  font-size: 11px;
+}
+.res-nw {
+  font-family: var(--head);
+  font-size: 22px;
+}
+.res-split {
+  display: flex;
+  gap: 2px;
+  height: 8px;
+  border-radius: 999px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.08);
+}
+.res-split i {
+  flex-basis: 0;
+  min-width: 2px;
+}
+.res-split .cash,
+.res-split-key .cash i {
+  background: #7cf29a;
+}
+.res-split .prop,
+.res-split-key .prop i {
+  background: #ffd166;
+}
+.res-split .stock,
+.res-split-key .stock i {
+  background: #7db8ff;
+}
+.res-split-key {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  font-size: 11px;
+  color: var(--muted);
+}
+.res-split-key span {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.res-split-key i {
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+}
+.res-section h3 {
+  margin: 0 0 6px;
+  font-family: var(--head);
+  font-weight: 400;
+  font-size: 16px;
 }
 .chart {
   display: block;
-  margin: 12px auto;
+  margin: 0 auto;
 }
-.totals {
+.res-legend {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 4px 12px;
+  margin-top: 6px;
+  font-size: 12px;
+  font-weight: 700;
+}
+.res-legend span {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.res-legend i {
+  width: 14px;
+  height: 4px;
+  border-radius: 2px;
+}
+.res-legend i.target {
+  background: repeating-linear-gradient(90deg, #ffd166 0 5px, transparent 5px 8px);
+}
+.res-table-wrap {
+  overflow-x: auto;
+}
+.res-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 12px;
+  font-size: 13px;
 }
-.totals th,
-.totals td {
-  text-align: left;
-  padding: 4px;
+.res-table th,
+.res-table td {
+  padding: 5px 8px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  text-align: right;
+  white-space: nowrap;
 }
-.totals th {
-  color: var(--muted);
+.res-table tbody th {
+  text-align: left;
   font-weight: 400;
+  color: var(--muted);
+}
+.res-table thead th {
+  vertical-align: bottom;
+  font-family: var(--head);
+  font-weight: 400;
+  font-size: 14px;
+  color: var(--pc, var(--text));
+}
+.res-table thead th .portrait {
+  display: block;
+  width: 26px;
+  height: 26px;
+  margin: 0 0 2px auto;
+}
+.res-group th {
+  padding-top: 12px;
+  text-align: left !important;
+  font-family: var(--head);
+  font-weight: 400 !important;
+  font-size: 13px;
+  color: var(--accent) !important;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.res-table td.best {
+  color: var(--accent);
+  font-weight: 700;
+}
+.res-table td.best::before {
+  content: '★ ';
+  font-size: 11px;
+}
+@media (max-height: 500px) {
+  .res-win-name {
+    font-size: 20px;
+  }
+  .res-cards {
+    grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  }
+  .res-split-key {
+    display: none;
+  }
+  .res-table {
+    font-size: 12px;
+  }
 }
 
 /* banners */

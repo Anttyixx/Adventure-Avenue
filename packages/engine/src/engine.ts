@@ -27,6 +27,7 @@ import {
   canAfford,
   canPromote,
   expand,
+  addStat,
   isClosed,
   isProperty,
   investRoom,
@@ -86,6 +87,23 @@ const SUIT_TYPES = SUITS as string[];
 /** One payment: from (null = the bank), to (null = the bank), amount. */
 type Payment = [Player | null, Player | null, number];
 
+/** How arrivals at special squares read in the history (`Game.logArrival`). */
+const ARRIVAL_NAMES: Record<string, string> = {
+  bank: 'Bank',
+  venture: 'Venture square',
+  change: 'Change-of-suit tile',
+  roll: 'Roll-on',
+  break: 'Take-a-break',
+  hike: 'Price Up',
+  broker: 'Stockbroker',
+  taxi: 'Taxi',
+  swap: 'Swap',
+  spade: 'Spade tile',
+  heart: 'Heart tile',
+  diamond: 'Diamond tile',
+  club: 'Club tile',
+};
+
 export class Game {
   /** Roll-on / roll-again chain depth for the current turn. */
   chain = 0;
@@ -138,27 +156,12 @@ export class Game {
   /** A price-free location label for the history of a landing or transport arrival. */
   async logArrival(p: Player, sq: Square) {
     const district = this.G.districts[sq.d]?.name;
-    const special: Record<string, string> = {
-      bank: 'Bank',
-      venture: 'Venture square',
-      change: 'Change-of-suit tile',
-      roll: 'Roll-on',
-      break: 'Take-a-break',
-      hike: 'Price Up',
-      broker: 'Stockbroker',
-      taxi: 'Taxi',
-      swap: 'Swap',
-      spade: 'Spade tile',
-      heart: 'Heart tile',
-      diamond: 'Diamond tile',
-      club: 'Club tile',
-    };
     const name =
       sq.t === 'shop'
         ? `${district ?? 'District'} shop`
         : sq.t === 'plot'
           ? `${district ? district + ' ' : ''}${sq.b ? buildingName(sq.b) : 'vacant plot'}`
-          : (special[sq.t] ?? sq.t[0].toUpperCase() + sq.t.slice(1));
+          : (ARRIVAL_NAMES[sq.t] ?? sq.t[0].toUpperCase() + sq.t.slice(1));
     await this.log(`${p.name} landed on ${name}.`, p.id, 'move', [], { sq: sq.id, action: 'land' });
   }
 
@@ -408,6 +411,7 @@ export class Game {
       p.prev = p.node;
       p.node = next;
       left--;
+      addStat(p, 'steps', 1);
       await this.emit({ type: 'step', pid: p.id, from, to: next, left });
       if (i + 1 < path.length && G.nodes[next].t === 'portal' && G.nodes[next].link === path[i + 1]) {
         await this.warp(p, path[++i], 'portal');
@@ -703,6 +707,7 @@ export class Game {
     const owner = this.G.players[sq.owner];
     const price = sq.value * K.buyoutX;
     sq.owner = p.id;
+    addStat(p, 'buyouts', 1);
     await this.payAll(
       [
         [p, owner, sq.value * K.buyoutOwnerX],
@@ -724,6 +729,7 @@ export class Game {
   /** Buy an unowned square: pay `price` to `seller` (null = bank) and run expansion. */
   async buySquare(p: Player, sq: Square, price: number, seller: Player | null, verb: string) {
     sq.owner = p.id;
+    addStat(p, 'shopsBought', 1);
     await this.pay(p, seller, price, 'Purchase');
     await this.log(`${p.name} ${verb} a shop for ${price}G.`, p.id, 'property', [], { sq: sq.id });
     await this.transfer(sq, p.id);
@@ -758,6 +764,7 @@ export class Game {
     const sq = this.G.nodes[opt.sq];
     sq.value += amount;
     this.repairDistrict(sq.d, amount * K.investRepair);
+    addStat(p, 'invested', amount);
     await this.pay(p, null, amount, 'Investment', sq.id);
     await this.emit({ type: 'value', sqs: [sq.id] });
     await this.log(`${p.name} invested ${amount}G.`, p.id, 'property', [], { sq: sq.id });
@@ -771,6 +778,7 @@ export class Game {
     await this.pay(payer, owner, fee, 'Fee');
     payer.stats.feesPaid += fee;
     owner.stats.feesEarned += fee;
+    addStat(owner, 'biggestFee', fee, true);
     await this.log(`${payer.name} paid ${owner.name} ${fee}G.`, payer.id, 'money', [owner.id], { sq: sq.id });
     if (G.rules === 'standard' && sq.d >= 0) {
       for (const q of G.players) {
@@ -951,6 +959,7 @@ export class Game {
     let panel = await this.ask({ kind: 'venturePanel', pid: p.id, owner: G.vg.owner.slice() });
     if (!(panel >= 0 && panel < 64) || G.vg.owner[panel] >= 0) panel = G.vg.owner.findIndex((o) => o < 0);
     G.vg.owner[panel] = p.id;
+    addStat(p, 'ventures', 1);
     const card = CARDS[G.vg.cards[panel]];
     // Every line of 4+ panels through the new one pays 10G per panel (a full line of 8 pays 200G).
     const lines = linesThrough(G.vg.owner, panel, p.id);
@@ -1001,6 +1010,7 @@ export class Game {
     p.shares[d] += n;
     if (dynamicStocks(G)) this.repairDistrict(d, n);
     else bumpFactor(G, d, true, n);
+    addStat(p, 'stockBought', total);
     await this.pay(p, null, total, 'Stock');
     await this.log(`${p.name} bought ${n} ${G.districts[d].name} shares for ${total}G.`, p.id, 'stock');
   }
@@ -1030,6 +1040,7 @@ export class Game {
       m.cut[d] = Math.min(1 - K.confMin, m.cut[d] + cut - m.turnCut[d]);
       m.turnCut[d] = cut;
     } else bumpFactor(G, d, false, n);
+    addStat(p, 'stockSold', amount);
     await this.pay(null, p, amount, 'Stock sale');
     await this.log(`${p.name} sold ${n} ${G.districts[d].name} shares for ${amount}G.`, p.id, 'stock');
   }

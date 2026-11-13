@@ -26,6 +26,27 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: '2026-11-13-results-log-hover',
+    date: 'Nov 13, 2026',
+    title: 'Clearer results, a tidier log and a closer look at players',
+    features: [
+      {
+        tag: 'better',
+        title: 'A new results screen',
+        text: 'Each player gets a card with their place, net worth and what it is made of, the chart has a key, and a stats table compares everyone side by side: fees, salary, stocks, properties, buyouts, venture cards, squares walked and more, with the best in each row starred.',
+      },
+      {
+        tag: 'new',
+        title: 'Point at a player',
+        text: "Point at a character or a player card to make them grow and show which ways they can go. The active player's arrows now go away once they roll.",
+      },
+    ],
+    extras: [
+      'The game log lines its icons up neatly with the text',
+      'Buying a shop shows its price on the Buy button',
+    ],
+  },
+  {
     id: '2026-11-12-linked-game-log',
     date: 'Nov 12, 2026',
     title: 'Follow the action in the game log',

@@ -15,8 +15,8 @@ const ICON_PATHS: Record<IconKind, string> = {
   money: '<circle cx="12" cy="12" r="8"/><path d="M14.5 9.2a3.2 3.2 0 1 0 0 5.6V12h-2.2"/>',
   property: '<path d="M4 11.5 12 4.5l8 7"/><path d="M6.5 10v9.5h11V10"/><path d="M10.5 19.5v-5h3v5"/>',
   card: '<rect x="5.5" y="3.5" width="13" height="17" rx="2.5"/><path d="M10 9.5a2 2 0 1 1 2.6 1.9c-.4.2-.6.5-.6.9v.7"/><circle cx="12" cy="16" r=".6" fill="#fff"/>',
-  suit: '<path d="M12 3.5l2.5 5.2 5.7.8-4.1 4 1 5.6L12 16.4l-5.1 2.7 1-5.6-4.1-4 5.7-.8z"/>',
-  stock: '<path d="M4 18l5.5-5.5 3.5 3.5L20 9"/><path d="M15 9h5v5"/>',
+  suit: '<path d="M12 4.2l2.5 5.2 5.7.8-4.1 4 1 5.6L12 17.1l-5.1 2.7 1-5.6-4.1-4 5.7-.8z"/>',
+  stock: '<path d="M4 16.5l5.5-5.5 3.5 3.5L20 7.5"/><path d="M15 7.5h5v5"/>',
   arcade:
     '<rect x="4" y="13" width="16" height="6" rx="2"/><path d="M12 13V7"/><circle cx="12" cy="6" r="2.2"/>',
   effect: '<path d="M18.5 14.5A7 7 0 0 1 9.5 5.5a7 7 0 1 0 9 9z"/>',
@@ -180,14 +180,25 @@ export function logView(
     const body = h(
       'ul',
       { class: 'turn-lines' },
-      g.lines.length || waiting ? null : h('li', { class: 'log-line hint' }, 'Getting ready...'),
+      g.lines.length || waiting
+        ? null
+        : h(
+            'li',
+            { class: 'log-line hint' },
+            h('div', { class: 'log-entry' }, h('span'), 'Getting ready...'),
+          ),
       ...nestLog(g.lines).map(renderLine),
       waiting
         ? h(
             'li',
             { class: 'log-line waiting' },
-            kindIcon(waiting.kind),
-            h('span', { class: 'log-text' }, waiting.text),
+            // The same icon and text columns as every other entry.
+            h(
+              'div',
+              { class: 'log-entry' },
+              kindIcon(waiting.kind),
+              h('span', { class: 'log-text' }, waiting.text),
+            ),
           )
         : null,
     );
