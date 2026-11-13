@@ -63,6 +63,8 @@ export interface Answer {
 
 /** A copy of the game to start from: the state at a turn start plus the answers since. */
 export interface StartInfo {
+  /** Presentation only: lobby-ready launch, never a saved turn or resync. */
+  opening?: boolean;
   state: GameState;
   /** Decisions made before `state`. */
   seq: number;

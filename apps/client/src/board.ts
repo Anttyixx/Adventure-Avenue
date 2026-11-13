@@ -43,6 +43,7 @@ import { paintFoliage } from './foliage';
 import { drawBoonIcon, drawCoin, drawSparkle, SUIT_CHARS } from './icons';
 import { Facing, FRAME_H, FRAME_W, drawCharacter, drawCharacterGlow, facingFor } from './sprites';
 import { TIMING as T } from './timing';
+import { openingPlayerPose } from './game-opening';
 import { portalFlows, portalPartner } from './portal-links';
 import { taxiRoute } from './taxi-route';
 import { drawLink } from './portal-link-art';
@@ -87,6 +88,8 @@ interface Token {
   size: number;
   /** Mid-walk: stops the walk cycle if the next step does not start soon (a stop for a choice). */
   pause?: number;
+  /** Scale while emerging from the bank at the start of a fresh game. */
+  openingScale?: number;
 }
 
 interface Fx {
@@ -127,6 +130,10 @@ export class BoardView {
   ctx: CanvasRenderingContext2D;
   G: GameState | null = null;
   tokens = new Map<number, Token>();
+  openingActive = false;
+  private openingHudAt: number | null = null;
+  private openingHidden = new Set<number>();
+  private stopOpening: (() => void) | null = null;
   fx: Fx[] = [];
   screenFx: Fx[] = [];
   dirty = true;
@@ -346,6 +353,7 @@ export class BoardView {
 
   destroy() {
     this.alive = false;
+    this.stopOpening?.();
     this.gateTimers.forEach(clearTimeout);
     clearTimeout(this.portalTimer);
     clearTimeout(this.logFocusTimer);
@@ -386,12 +394,91 @@ export class BoardView {
     if (!this.G) return;
     for (const p of this.G.players) {
       const t = this.tokens.get(p.id)!;
-      t.visible = !p.bankrupt;
+      t.visible = !p.bankrupt && !this.openingHidden.has(p.id);
       if (t.walking) continue;
       const c = this.slotPos(p.id, p.node);
       t.x = c.x;
       t.y = c.y;
     }
+  }
+
+  /** Hide every player before the first board frame; this does not change game state. */
+  prepareOpening() {
+    this.openingActive = true;
+    this.openingHudAt = null;
+    this.openingHidden = new Set(this.G!.players.map((p) => p.id));
+    this.snapTokens();
+    this.cam = this.openingCamera();
+  }
+
+  private openingCamera() {
+    return { ...this.bankPos(), z: Math.min(2, this.w / 380, this.h / 300) };
+  }
+
+  /** Stagger players from the bank door into their normal starting slots. */
+  async playOpening(onJump: () => void, onLand: () => void) {
+    const G = this.G!;
+    const order = (G.order.length ? G.order : G.players.map((p) => p.id)).filter(
+      (id) => !G.players[id].bankrupt,
+    );
+    if (reducedMotion()) {
+      this.openingHidden.clear();
+      this.snapTokens();
+      return;
+    }
+    const from = this.bankPos();
+    const landed = new Set<number>();
+    const start = performance.now();
+    await new Promise<void>((resolve) => {
+      let frame = 0;
+      const finish = () => {
+        cancelAnimationFrame(frame);
+        this.stopOpening = null;
+        resolve();
+      };
+      this.stopOpening = finish;
+      const tick = () => {
+        if (!this.alive) return finish();
+        const elapsed = performance.now() - start;
+        for (const [index, pid] of order.entries()) {
+          const pose = openingPlayerPose(elapsed, index);
+          if (!pose.visible) continue;
+          const t = this.tokens.get(pid)!;
+          if (this.openingHidden.delete(pid)) onJump();
+          const to = this.slotPos(pid, G.players[pid].node);
+          t.visible = true;
+          t.walking = pose.progress < 1;
+          t.facing = t.walking ? facingFor(to.x - from.x, to.y - from.y) : Facing.Down;
+          t.x = from.x + (to.x - from.x) * pose.travel;
+          t.y = from.y + 8 + (to.y - from.y - 8) * pose.travel;
+          t.hop = pose.hop;
+          t.openingScale = pose.scale;
+          if (pose.progress === 1 && !landed.has(pid)) {
+            landed.add(pid);
+            onLand();
+          }
+        }
+        if (landed.size === order.length) finish();
+        else frame = requestAnimationFrame(tick);
+      };
+      tick();
+    });
+  }
+
+  revealOpeningHud() {
+    this.openingHudAt = performance.now();
+  }
+
+  finishOpening() {
+    this.openingActive = false;
+    this.openingHudAt = null;
+    this.openingHidden.clear();
+    for (const t of this.tokens.values()) {
+      delete t.openingScale;
+      t.walking = false;
+      t.hop = 0;
+    }
+    this.snapTokens();
   }
 
   slotPos(pid: number, node: number) {
@@ -1550,12 +1637,24 @@ export class BoardView {
    * centers between the left edge and the cards.
    */
   focusArea() {
-    if (this.centerLeft) {
-      const { left, right } = this.insets;
-      const aw = Math.max(100, this.w - left - right);
-      return { fx: left + aw / 2, fy: this.h / 2, aw, ah: this.h };
+    const { left, right } = this.insets;
+    const aw = this.centerLeft ? Math.max(100, this.w - left - right) : this.w;
+    const fx = this.centerLeft ? left + aw / 2 : this.w / 2;
+    if (this.openingActive) {
+      // Hidden cards must not push the bank off-center. Make room as those cards enter.
+      const k =
+        this.openingHudAt == null
+          ? 0
+          : Math.min(1, (performance.now() - this.openingHudAt) / (T.openingHud + 3 * T.openingHudStagger));
+      const e = k * k * (3 - 2 * k);
+      return {
+        fx: this.w / 2 + (fx - this.w / 2) * e,
+        fy: this.h / 2,
+        aw: this.w + (aw - this.w) * e,
+        ah: this.h,
+      };
     }
-    return { fx: this.w / 2, fy: this.h / 2, aw: this.w, ah: this.h };
+    return { fx, fy: this.h / 2, aw, ah: this.h };
   }
 
   /** Screen pixels from the camera's center to the middle of the area the HUD leaves free. */
@@ -1569,6 +1668,10 @@ export class BoardView {
   }
 
   updateCamera() {
+    if (this.openingActive) {
+      this.camTarget = this.openingCamera();
+      return;
+    }
     const whole = this.followPid < 0 || this.G?.over || this.overviewHold || this.showHold || this.peekWhole;
     const out = whole ? ZOOM_MAX_OUT : this.zoomOut;
     const z = this.zoomFor(out);
@@ -2387,7 +2490,7 @@ export class BoardView {
       // A hovered player (their token or card) grows past the active size so they are easy to find.
       const want = p.id === this.hoverPid ? 1.65 : active ? 1.416 : this.activePid >= 0 ? 0.6885 : 1;
       t.size = motion ? t.size + (want - t.size) * (1 - Math.exp(-dt / 140)) : want;
-      const px = base * t.size;
+      const px = base * t.size * (t.openingScale ?? 1);
       const ground = this.worldToScreen(t.x, t.y);
       const sx = Math.round(ground.x * this.dpr);
       const color = PLAYER_COLORS[p.color];
@@ -2451,8 +2554,8 @@ export class BoardView {
       // A soft dark outline in the sprite's own shape, all round it, to lift it off the board.
       drawCharacterGlow(ctx, p.ch, walking, facing, frame, sx, sy + px * 3, px);
       drawCharacter(ctx, p.ch, walking, facing, frame, sx, sy + px * 3, px);
-      // Name plate just above the character's head.
-      {
+      // Name plates join the HUD after every player has arrived.
+      if (!this.openingActive) {
         const fs = (active ? 14 : 11) * this.dpr;
         ctx.save();
         ctx.imageSmoothingEnabled = true;

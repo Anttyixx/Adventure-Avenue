@@ -22,7 +22,7 @@ import {
   type Square,
 } from '@aa/engine';
 import { paintSquare, squareCenter, type BoardView, type PortalGate } from '../board';
-import { closeSoundPopover, disposeSoundControls, soundButton, soundControls } from './soundpanel';
+import { closeSoundPopover, soundButton } from './soundpanel';
 import { BUILDING_INFO, buildingLandingLabel, motelFee, shortName, squareInfo, squareName } from '../names';
 import { boonIconURL, suitIconURL, wildIconURL } from '../icons';
 import { bodyURL, portraitURL } from '../sprites';
@@ -328,7 +328,6 @@ export class Hud {
 
   destroy() {
     closeSoundPopover(this.musicBtn);
-    disposeSoundControls(this.menu);
     this.messages.destroy();
     this.resize.disconnect();
     this.askChanges.disconnect();
@@ -384,10 +383,7 @@ export class Hud {
       this.fastBtn,
     );
     if (document.fullscreenEnabled) this.menu.append(item('Full screen', toggleFullscreen));
-    this.menu.append(
-      h('div', { class: 'gm-sound' }, h('div', { class: 'gm-label' }, 'Sound'), soundControls()),
-      item('Quit game', () => this.confirmQuit(), 'danger'),
-    );
+    this.menu.append(item('Quit game', () => this.confirmQuit(), 'danger'));
   }
 
   /**

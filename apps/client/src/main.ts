@@ -7,6 +7,7 @@ import { K, cloneState, newGame, type BoardDef } from '@aa/engine';
 import { sound } from './audio';
 import { boardForPlay } from './boardstore';
 import { HotSeat } from './host';
+import { fadeSetupScreen } from './game-opening';
 import { checkForUpdate } from './update';
 import { installCoins } from './coins';
 import type { GuestEvents, GuestRoom } from './net/guestroom';
@@ -71,10 +72,12 @@ function showSetup() {
     app,
     {
       onStart(opts, online) {
+        const departing = app.querySelector<HTMLElement>('.setup');
         close();
         const G = newGame({ ...opts, ...(opts.board ? { board: boardForPlay(opts.board) } : {}) });
         if (online && room) startHosted(room, G);
-        else play(G);
+        else play(G, showStart, true, true);
+        fadeSetupScreen(app, departing);
       },
       onBack() {
         close();
@@ -97,7 +100,7 @@ function showSetup() {
 
 /** Run a hosted online game on this device. */
 function startHosted(room: HostRoom, G: ReturnType<typeof newGame>) {
-  room.begin(G);
+  room.begin(G, true);
   const game = new HotSeat(
     app,
     G,
@@ -107,6 +110,7 @@ function startHosted(room: HostRoom, G: ReturnType<typeof newGame>) {
     },
     true,
     room,
+    true,
   );
   room.onNotice = (text) => game.hud.banner(text, '#ffd166', 3500);
   void game.start();
@@ -180,8 +184,10 @@ async function joinGame(code: string, name: string) {
     lobby: () => view?.update(),
     start: (s) => {
       if (!room) return;
+      const departing = app.querySelector<HTMLElement>('.setup');
       closeView();
       playGuest(room, s);
+      if (s.opening) fadeSetupScreen(app, departing);
     },
     closed: (reason) => {
       closeView();
@@ -247,6 +253,7 @@ function playGuest(room: GuestRoom, first: StartInfo) {
       },
       false,
       room,
+      s.opening === true,
     );
     game.seq = s.seq;
     void game.start();
@@ -268,8 +275,8 @@ function playGuest(room: GuestRoom, first: StartInfo) {
   run(first);
 }
 
-function play(G: ReturnType<typeof newGame>, onExit = showStart, saving = true) {
-  const host = new HotSeat(app, G, onExit, saving);
+function play(G: ReturnType<typeof newGame>, onExit = showStart, saving = true, opening = false) {
+  const host = new HotSeat(app, G, onExit, saving, null, opening);
   void host.start();
 }
 

@@ -408,7 +408,7 @@ Each element: **purpose**, **placement**, **anatomy**, **spec**, **behavior**, t
 - **Controls:** an inset group with Music/Effects labels, gold percentages and rounded gold-filled
   range sliders (28px touch area, 18px thumb); a full-width navy mute toggle below. These are
   audio levels, not money controls. All instances share live settings. Slider changes unmute;
-  Effects previews a coin sound on release. The game menu uses the same controls inline.
+  Effects previews a coin sound on release. The in-game menu omits duplicate audio controls; the toolbar Music chip is the entry point.
 - **Chip:** Music after Game log, before Menu; note icon with a desktop label, icon only on phones.
   Open chips have a gold inset edge; muted chips have a red icon. Menus/setup retain Sound labels.
 - **Access:** dialog name, expanded/control state, labelled sliders with percentage value text,
@@ -1340,3 +1340,10 @@ The builder adds Random suit to the existing two-column Suits palette and uses i
 Add Move to the existing icon-only tool rail, beside Select. Use a tile with outward arrows icon, the existing hover name and selected treatment, and hide the Tiles pane. Use a grab cursor at rest and grabbing during a direct drag. Reuse the selected-tile movement preview, original-position outline, grid snapping, and red invalid-drop outline. The status says to drag and release; Escape cancels. Direct dragging works with a pointer or one finger, and two fingers cancel the drag before panning/zooming. Keep Select’s click-to-place group move. UI Lab’s Board builder: Move opens a sample board with the tool active.
 
 Draw replaces Place, retaining its pencil icon and tile pane. Properties contains a neutral Property option and a Districts option pictured as four rounded color squares. District painting expands the action bar for its color controls; other tools retain the collapsed status bar when they have no actions. Unassigned properties show No district in their inspector. The inspector uses the same four-member rollover policy. UI Lab has Board builder: Draw and Board builder: Districts previews.
+
+
+### Fresh-game entrance
+
+Use the actual setup surface as a short inert crossfade cover over the new board, with no new pop-up or loading controls. The board holds on the bank with its HUD and all tokens hidden before the first rendered frame. Players jump out in turn order and scale up from the bank door into their regular slots, staggered rather than simultaneous. Keep name plates hidden during this introduction. A soft rising sweep and bell chord are a one-shot Effects sound (`gameStart`); fade setup music out and hold game music until all players land.
+
+Once everyone is on the board, the HUD’s existing containers enter: info chip first, toolbar next, then player cards and the action bar. Animate opacity and additive `translate` so existing fixed positions, card stacking and action-bar centering are preserved. The new board itself fades in without transforming its canvas host (canvas dimensions must remain accurate). Hold input and engine turns until the entrance is complete. Honor reduced motion with immediate static visibility, and cancel all entrance work when the game is destroyed. Do not replay this on a saved resume or reconnect. See TIMING.opening* for all durations and UI Lab → Game opening for the real sequence. Remove Sound from the game menu; keep the Music toolbar chip and its existing pop-up.

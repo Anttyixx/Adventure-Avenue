@@ -66,7 +66,21 @@ describe('reconnecting to a saved game', () => {
     expect(messages().some((m) => m.t === 'start')).toBe(false);
     room.begin(room.game!);
     expect(messages().find((m) => m.t === 'start').start.you).toEqual([1]);
+    expect(messages().find((m) => m.t === 'start').start.opening).toBeUndefined();
     expect(room.lobby().resuming).toBe(false);
+  });
+  it('marks fresh lobby launches for the entrance but drops the flag from later turn snapshots', async () => {
+    const room = await HostRoom.reopen(saved());
+    const conn = connection();
+    network.accept!(conn);
+    conn.hello();
+    room.begin(room.game!, true);
+    expect(conn.send.mock.calls.find(([m]) => m.t === 'start')?.[0].start.opening).toBe(true);
+    room.turnStart(1, room.game!);
+    const rejoin = connection();
+    network.accept!(rejoin);
+    rejoin.hello();
+    expect(rejoin.send.mock.calls.find(([m]) => m.t === 'start')?.[0].start.opening).toBeUndefined();
   });
   it('keeps the replacement connection online when the old connection closes', async () => {
     const room = await HostRoom.reopen(saved());

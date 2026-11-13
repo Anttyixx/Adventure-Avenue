@@ -448,11 +448,11 @@ export class HostRoom implements GameLink {
   }
 
   /** Send the starting state to everyone. Call before the host's game starts running. */
-  begin(G: GameState) {
+  begin(G: GameState, opening = false) {
     this.resuming = false;
     this.started = true;
     this.G = G;
-    this.snap = { state: cloneState(G), seq: 0, answers: [], you: [] };
+    this.snap = { state: cloneState(G), seq: 0, answers: [], you: [], ...(opening ? { opening: true } : {}) };
     for (const s of this.seats)
       if (s.kind === 'remote') this.send(s, { t: 'start', start: this.startFor(s) });
     this.listeners.forEach((f) => f());

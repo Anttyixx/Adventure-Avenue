@@ -120,7 +120,7 @@ const rnd = (n: number) => Math.floor(Math.random() * n);
  * Controls for UI elements that were just added or changed: they shake once and glow so they
  * are easy to find. Update this list with each change.
  */
-const RECENT = new Set(['Lucky Wheel']);
+const RECENT = new Set(['Game opening', 'Game menu', 'gameStart']);
 
 /**
  * Which board the lab plays on: Town with portal links (square, the default) or Twin Lakes (hex),
@@ -1675,6 +1675,31 @@ export async function openLab(app: HTMLElement, section?: string) {
      * player is the only person, `setup` puts them in place, then their turn starts and they roll.
      * `die` fixes the roll (by choosing the random seed that gives it).
      */
+    row(
+      s,
+      btn('Game opening', async () => {
+        const beforeMusic = sound.currentTrack;
+        const sample = newGame({
+          rules: 'standard',
+          target: 5000,
+          roundCap: 0,
+          seats: G.players.map((p) => ({ name: p.name, cpu: p.cpu, ch: p.ch })),
+          board: BUILT_IN_BOARDS[0],
+          seed: 42,
+        });
+        const mount = h('div', { class: 'arcade-lab-game' });
+        document.body.append(mount);
+        const host = new HotSeat(mount, sample, () => mount.remove(), false, null, true);
+        try {
+          await host.playOpening();
+          await wait(1400);
+        } finally {
+          host.destroy();
+          mount.remove();
+          sound.music(beforeMusic);
+        }
+      }),
+    );
     // A motel owned by a rival of p (a vacant plot or shop is turned into one if the board has none).
     const labMotel = (S: GameState, p: Player) => {
       let motel = S.nodes.find((n) => n.t === 'plot' && n.b === 'motel');

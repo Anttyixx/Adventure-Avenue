@@ -26,6 +26,21 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: '2026-11-13-bank-opening',
+    date: 'Nov 13, 2026',
+    title: 'A proper welcome to the board',
+    features: [
+      {
+        tag: 'better',
+        title: 'Players jump out of the bank',
+        text: 'When everyone is ready, setup fades into the board with a custom start chime. Players jump out of the bank one after another, then the game music starts and the UI slides into place. Saved games and reconnects continue normally.',
+      },
+    ],
+    extras: [
+      'Sound controls are available from the Music button in the game toolbar; the duplicate controls have been removed from the game menu.',
+    ],
+  },
+  {
     id: '2026-11-13-wheel-container-bets',
     date: 'Nov 13, 2026',
     title: 'Wheel bets stay with their choices',

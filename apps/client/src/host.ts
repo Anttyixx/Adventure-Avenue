@@ -52,6 +52,7 @@ import {
   tradeOnBoard,
   type PickCtx,
 } from './ui/pick';
+import { openingDelay } from './game-opening';
 import { sound, type Sfx, type Track } from './audio';
 import { closeSoundPopover } from './ui/soundpanel';
 import type { GameLink } from './net/link';
@@ -123,8 +124,16 @@ export class HotSeat implements GameIO {
     private saving = true,
     /** Online games: who answers each decision and how answers travel. */
     public link: GameLink | null = null,
+    /** Fresh matches only; saved games and resyncs already have players on the board. */
+    private opening = false,
   ) {
-    this.root = h('div', { class: 'game' });
+    this.root = h('div', { class: `game${opening ? ' game-opening' : ''}` });
+    if (opening) {
+      this.root.style.setProperty('--opening-board-ms', `${T.openingBoard}ms`);
+      this.root.inert = true;
+      this.root.setAttribute('aria-busy', 'true');
+      sound.music(null);
+    }
     parent.append(this.root);
     const boardHost = h('div', { class: 'board-host' });
     this.root.append(boardHost);
@@ -146,6 +155,7 @@ export class HotSeat implements GameIO {
     // Dev builds expose the running game for automated tests.
     if (IS_DEV_BUILD) (window as unknown as { __aaGame?: HotSeat }).__aaGame = this;
     this.board.setState(G);
+    if (opening) this.board.prepareOpening();
     this.hud.render(G);
     this.fast = readPref(FAST_KEY) === '1';
     this.hud.setFastLabel(this.fast);
@@ -167,8 +177,10 @@ export class HotSeat implements GameIO {
   private winReady = new Set<number>();
 
   async start() {
-    this.checkWinReady(true);
     try {
+      if (this.opening) await this.playOpening();
+      if (this.dead) return;
+      this.checkWinReady(true);
       await this.game.run();
     } catch (err) {
       if (!this.dead) {
@@ -182,7 +194,43 @@ export class HotSeat implements GameIO {
     }
   }
 
+  private openingAbort = new AbortController();
+  private openingPlay: Promise<void> | null = null;
+
+  /** The UI Lab uses the same entrance without starting any engine turns. */
+  playOpening(): Promise<void> {
+    if (!this.opening) return Promise.resolve();
+    return (this.openingPlay ??= (async () => {
+      const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+      sound.play('gameStart');
+      await openingDelay(reduced ? 0 : T.openingBoard, this.openingAbort.signal);
+      if (this.dead) return;
+      await this.board.playOpening(
+        () => sound.play('hop'),
+        () => sound.play('land'),
+      );
+      if (this.dead) return;
+      await openingDelay(reduced ? 0 : T.openingSettle, this.openingAbort.signal);
+      if (this.dead) return;
+      // No game music until the last player is safely on the board.
+      sound.music('game');
+      this.hud.status("Let's play!", 'move', true);
+      this.board.revealOpeningHud();
+      this.root.classList.add('game-opening-ui');
+      this.root.style.setProperty('--opening-hud-ms', `${T.openingHud}ms`);
+      this.root.style.setProperty('--opening-hud-stagger', `${T.openingHudStagger}ms`);
+      await openingDelay(reduced ? 0 : T.openingHud + 3 * T.openingHudStagger, this.openingAbort.signal);
+      if (this.dead) return;
+      this.board.finishOpening();
+      this.opening = false;
+      this.root.inert = false;
+      this.root.removeAttribute('aria-busy');
+      this.root.classList.remove('game-opening', 'game-opening-ui');
+    })());
+  }
+
   destroy() {
+    this.openingAbort.abort();
     this.arcade?.close();
     this.liveAuction?.stop();
     this.dead = true;
@@ -195,6 +243,7 @@ export class HotSeat implements GameIO {
   }
 
   private onKey = (e: KeyboardEvent) => {
+    if (this.opening) return;
     const tag = (e.target as HTMLElement)?.tagName;
     if (tag === 'INPUT' || tag === 'TEXTAREA') return;
     // Zoom with the keyboard too: - shows more of the board, + goes back in.
@@ -313,7 +362,7 @@ export class HotSeat implements GameIO {
 
   /** The scene's music, else the board music (the urgent theme once someone can win). */
   private playMusic() {
-    if (this.G.over) return;
+    if (this.G.over || this.opening) return;
     sound.music(this.scene ?? (this.winReady.size ? 'urgent' : 'game'));
   }
 

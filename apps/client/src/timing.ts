@@ -4,6 +4,13 @@
  * The Fast CPU toggle multiplies everything by FAST_CPU_SPEED during CPU turns.
  */
 export const TIMING = {
+  /** A fresh match: setup fade, staggered bank jumps, settling, then the HUD entrance. */
+  openingBoard: 500,
+  openingJump: 650,
+  openingStagger: 220,
+  openingSettle: 180,
+  openingHud: 520,
+  openingHudStagger: 90,
   /** A tile located from the game log stays highlighted for this long. */
   logFocus: 3000,
   /** Walking one square. */

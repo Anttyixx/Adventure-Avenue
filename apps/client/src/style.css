@@ -12453,3 +12453,78 @@ button.char-btn:hover img {
     border-radius: 7px;
   }
 }
+
+/* A fresh match opens on the bank before the player HUD and first turn arrive. */
+.setup-departing {
+  position: fixed !important;
+  inset: 0;
+  z-index: 100;
+  pointer-events: none;
+  transform-origin: center;
+}
+.game-opening {
+  overflow: hidden;
+}
+.game-opening .board-host {
+  pointer-events: none;
+}
+.game-opening:not(.game-opening-ui) .hud {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+.game-opening .board-host {
+  animation: opening-board var(--opening-board-ms, 500ms) ease-out both;
+}
+@keyframes opening-board {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+.game-opening-ui .hud > .top-left,
+.game-opening-ui .hud > .toolbar {
+  animation: opening-hud-top var(--opening-hud-ms) cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+.game-opening-ui .hud > .toolbar {
+  animation-delay: var(--opening-hud-stagger);
+}
+.game-opening-ui .hud > .cards-wrap,
+.game-opening-ui .hud > .prompt-center {
+  animation: opening-hud-bottom var(--opening-hud-ms) cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  animation-delay: calc(var(--opening-hud-stagger) * 2);
+}
+.game-opening-ui .hud > .prompt-center {
+  animation-delay: calc(var(--opening-hud-stagger) * 3);
+}
+@keyframes opening-hud-top {
+  from {
+    opacity: 0;
+    translate: 0 -20px;
+  }
+  to {
+    opacity: 1;
+    translate: 0 0;
+  }
+}
+@keyframes opening-hud-bottom {
+  from {
+    opacity: 0;
+    translate: 0 24px;
+  }
+  to {
+    opacity: 1;
+    translate: 0 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .game-opening .board-host,
+  .game-opening-ui .hud > .top-left,
+  .game-opening-ui .hud > .toolbar,
+  .game-opening-ui .hud > .cards-wrap,
+  .game-opening-ui .hud > .prompt-center {
+    animation: none;
+  }
+}

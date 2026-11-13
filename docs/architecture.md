@@ -489,3 +489,10 @@ or engine/network outcomes.
 prior layered buildings and original paired art. No old image files are overwritten.
 
 Online connections use PeerJS binary serialization, which chunks large snapshots. JSON serialization rejects messages above roughly 16KB and cannot carry saved-game snapshots reliably. Reopened rooms lock their seats but wait for Resume before sending start; lobby details are delivered first.
+
+
+### Fresh-match presentation
+
+`main.ts` explicitly marks only new setup launches for the opening; `HostRoom.begin(G, true)` forwards optional `StartInfo.opening` to guests. Saved resumes call `begin` without that flag, and `turnStart` snapshots omit it, so reconnect/resync never resets tokens to the bank. The field changes presentation only, with no engine actions or random draws.
+
+`HotSeat` prepares a hidden HUD and `BoardView.prepareOpening` before any frame, then awaits `playOpening` before `Game.run`. `game-opening.ts` owns the pure staggered player pose, abortable phase delays and real setup-surface crossfade. `BoardView.playOpening` uses a single cancellable animation frame loop for all bank jumps; `openingHidden` prevents token snapping/refreshes from exposing players early. A temporary bank camera ignores hidden HUD insets. Music is silenced at construction, and `gameStart` effects run independently until the final landing allows game music. HUD entrance uses additive translation; `finishOpening` restores normal token names/slots and camera behavior. `destroy` aborts phase waits and resolves any active token animation. The UI Lab can play the same sequence without running engine turns.

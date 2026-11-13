@@ -43,7 +43,8 @@ export type Sfx =
   | 'gavel'
   | 'cannon'
   | 'honk'
-  | 'whoosh';
+  | 'whoosh'
+  | 'gameStart';
 
 export const SFX_NAMES: Sfx[] = [
   'click',
@@ -83,6 +84,7 @@ export const SFX_NAMES: Sfx[] = [
   'cannon',
   'honk',
   'whoosh',
+  'gameStart',
 ];
 
 export type Track =
@@ -974,6 +976,15 @@ class AudioEngine {
         // A reel landing: a soft clunk with a little ring.
         this.tone(bus, 'triangle', 240, t, 0.12, 0.3, { to: 110 });
         this.tone(bus, 'square', freq('E6'), t + 0.02, 0.09, 0.05, { cutoff: 3200 });
+        break;
+      case 'gameStart':
+        // A soft rising sweep and a bright toy-town bell fanfare for the new board.
+        this.hiss(bus, t, 0.42, 0.08, 450, 2, 3600);
+        ['C5', 'E5', 'G5', 'C6'].forEach((note, i) => {
+          this.tone(bus, 'sine', freq(note), t + i * 0.12, 0.65, 0.18);
+          this.tone(bus, 'triangle', freq(note) * 2, t + i * 0.12, 0.28, 0.035);
+        });
+        this.tone(bus, 'sine', freq('C3'), t + 0.06, 0.65, 0.12);
         break;
       case 'turn':
         this.tone(bus, 'sine', freq('G5'), t, 0.25, 0.2);

@@ -1697,7 +1697,7 @@ ring/silent switch does not mute the game; the in-game Mute switch still does.
   while audible. Muted, zero-volume, audio-not-started and no-track states are explicit. It has
   gold-filled Music and Effects sliders with percentages and a Mute all sound / Unmute sound
   button. Adjusting a slider unmutes audio; changing Effects previews a coin sound. Controls
-  stay synchronized with the Sound section of the game menu, including while that menu is closed.
+  stay synchronized across chips. The in-game menu has no duplicate Sound section; use the toolbar’s Music button.
   The chip highlights while open. Close, Escape, a second chip click or clicking outside closes
   the pop-up; Close/Escape restores focus to its chip. It stays inside the viewport after resizing,
   scrolls internally on very short screens and supports keyboard/touch. Reduced motion disables
@@ -2051,3 +2051,12 @@ clear of the tile's border. Hex tiles narrow toward their top point, so their pi
 at 90% of the square size.
 
 Random suit tiles (`randomSuit`, map glyph `J`) are in the builder’s Suits category, show custom painted four-suit card artwork (`random-suit-v20/random-suit-base.png`, fixed colors, no tint layer), and can supply every suit for board validation. They use the same immediate pickup, animation and log as ordinary suits. Wild cards do not count as held suits for this tile. Online protocol version 50 separates this rule from older clients.
+
+
+### Fresh-match bank entrance
+
+After everyone readies up, setup crossfades into a board centered on the bank (500ms). The initial board frame has no player sprites or HUD. A new `gameStart` effect uses a soft rising sweep and ascending bell chord, respecting Effects/mute preferences. Setup music fades out immediately; game music does not start during the board reveal or bank jumps.
+
+Players emerge from the bank door in starting-turn order, 220ms apart, each with a 650ms arcing jump and a small-to-normal sprite scale. They settle into their normal bank slots, without changing logical positions, movement statistics or engine RNG. Token name plates remain hidden. After the last landing and a 180ms settling beat, game music begins and the info chip, toolbar, player cards and action bar fade/slide into view (520ms with 90ms offsets). The first engine turn starts only after that HUD entrance completes; the intro is not fast-CPU scaled.
+
+Only fresh matches play this entrance, on host and guests (`StartInfo.opening`, presentation only). Saved resumes, rejoining and later turn resyncs show existing positions normally. Closing/replacing a game cancels waits and token animation before any music or engine turns can start afterward. Reduced motion shows all players and the HUD immediately without jumps, zooms or staggered slides; music still waits until all players are visible. UI Lab includes Game opening, gameStart and Game menu controls. The game menu offers no sound controls because the toolbar Music chip already owns them.
