@@ -9320,7 +9320,7 @@ div.sl-inline label {
   perspective: 900px;
 }
 .mem-card {
-  height: 86px;
+  height: 112px;
   padding: 0;
   border: 0;
   border-radius: 12px;
@@ -9564,17 +9564,22 @@ div.sl-inline label {
 }
 .wheel-num {
   position: absolute;
-  left: 50%;
-  top: 50%;
-  width: 26px;
-  height: 26px;
-  margin: -13px;
+  left: var(--x);
+  top: var(--y);
+  width: 24px;
+  height: 24px;
+  margin: 0;
+  translate: -50% -50%;
+  rotate: calc(-1 * var(--turn, 0deg));
+  border: 1px solid rgba(255, 255, 255, 0.45);
+  box-sizing: border-box;
   border-radius: 50%;
   display: grid;
   place-items: center;
-  font: 400 15px var(--head);
+  background: rgba(16, 26, 51, 0.85);
+  font: 400 16px var(--head);
+  line-height: 1;
   color: #fff;
-  transform: rotate(calc(var(--i) * 30deg + 15deg)) translateY(-74px);
 }
 .wheel-num.hit {
   background: #fff;
@@ -9957,11 +9962,15 @@ div.sl-inline label {
     padding: 1px 6px;
   }
   .mem-grid {
-    grid-template-columns: repeat(3, 76px);
+    grid-template-columns: repeat(10, 40px);
     gap: 6px;
   }
   .mem-card {
-    height: 56px;
+    grid-column: span 2;
+    height: 88px;
+  }
+  .mem-card:nth-child(6) {
+    grid-column: 2 / span 2;
   }
   .mem-front img {
     height: 24px;
@@ -10008,15 +10017,13 @@ div.sl-inline label {
     gap: 10px;
   }
   .wheel-wrap {
-    width: 128px;
-    height: 128px;
+    width: 160px;
+    height: 160px;
   }
   .wheel-num {
-    width: 18px;
-    height: 18px;
-    margin: -9px;
-    font-size: 11px;
-    transform: rotate(calc(var(--i) * 30deg + 15deg)) translateY(-46px);
+    width: 22px;
+    height: 22px;
+    font-size: 14px;
   }
   .wheel-zones {
     width: 270px;
@@ -12288,5 +12295,59 @@ button.char-btn:hover img {
 @media (prefers-reduced-motion: reduce) {
   .chest-sprite {
     transition: none;
+  }
+}
+
+/* Keep live prize text within the card frame instead of over its ornamental border. */
+.mem-front {
+  box-sizing: border-box;
+  padding: 12px;
+  gap: 4px;
+}
+.mem-front img {
+  flex: none;
+  height: 30px;
+  max-width: 44px;
+}
+.mem-front img.small {
+  height: 24px;
+}
+.mem-front b.mem-label {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+  max-width: 100%;
+  margin: 0;
+  font: 700 15px/1.15 var(--body);
+  text-align: center;
+  overflow-wrap: anywhere;
+  color: #182641;
+}
+.mem-label .mem-amount {
+  font-variant-numeric: tabular-nums;
+}
+.mem-front .mem-label.good .mem-amount {
+  color: #126636;
+}
+.mem-front .mem-label.bad .mem-amount {
+  color: #ac2530;
+}
+.mem-front .mem-label.wild {
+  color: #6032a0;
+}
+@media (max-height: 500px), (max-width: 760px) {
+  .mem-front {
+    padding: 10px 12px;
+    gap: 3px;
+  }
+  .mem-front img {
+    height: 24px;
+  }
+  .mem-front img.small {
+    height: 20px;
+  }
+  .mem-front b.mem-label {
+    font-size: 14px;
   }
 }

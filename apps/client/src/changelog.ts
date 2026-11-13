@@ -26,6 +26,16 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: '2026-11-12-readable-arcade-text',
+    date: 'Nov 12, 2026',
+    title: 'Readable wheel numbers and memory prizes',
+    features: [],
+    extras: [
+      'Lucky Wheel numbers sit inside the rim on high-contrast badges and stay upright as the wheel spins.',
+      'Memory prizes use larger, short labels inside the card frames. Landscape phones use two rows of cards to keep text readable.',
+    ],
+  },
+  {
     id: '2026-11-12-arcade-sprite-art',
     date: 'Nov 12, 2026',
     title: 'Painted arcade prizes and location pins',

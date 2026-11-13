@@ -89,26 +89,31 @@ function symbolArt(s: ReelSymbol): HTMLElement {
 /** A memory card's face: a picture and a short label. */
 function prizeFace(prize: MemoryPrize, level: number): HTMLElement[] {
   const shop = (color: string) => h('img', { src: propertyIconURL('shop', 1, color), alt: '' });
+  const label = (name: string, value?: string, kind = '') =>
+    h(
+      'b',
+      { class: `mem-label ${kind}` },
+      h('span', { class: value ? 'mem-name' : 'mem-amount' }, name),
+      value ? h('span', { class: 'mem-amount' }, value) : null,
+    );
+
   switch (prize) {
     case 'shopsUp':
-      return [shop('#35c46a'), h('b', { class: 'good' }, 'Shops +10%')];
+      return [shop('#35c46a'), label('Shops', '+10%', 'good')];
     case 'shopsDown':
-      return [shop('#e5484d'), h('b', { class: 'bad' }, 'Shops -5%')];
+      return [shop('#e5484d'), label('Shops', '−5%', 'bad')];
     case 'gold':
       return [
         h('img', { src: arcadeURL('coin-pile') || coinIconURL(), alt: '' }),
-        h('b', null, fmt(K.memory.gold * level)),
+        label(fmt(K.memory.gold * level)),
       ];
     case 'small':
       return [
         h('img', { src: arcadeURL('coin') || coinIconURL(), alt: '', class: 'small' }),
-        h('b', null, fmt(K.memory.small)),
+        label(fmt(K.memory.small)),
       ];
     case 'wild':
-      return [
-        h('img', { src: arcadeURL('wild') || wildIconURL(), alt: '' }),
-        h('b', { class: 'wild' }, 'Wild card'),
-      ];
+      return [h('img', { src: arcadeURL('wild') || wildIconURL(), alt: '' }), label('Wild', 'card', 'wild')];
   }
 }
 
@@ -788,8 +793,13 @@ export class ArcadeStage {
   private wheelBoard() {
     if (this.disc) return;
     const disc = h('div', { class: 'wheel-disc' });
-    for (let n = 1; n <= K.wheel.spaces; n++)
-      disc.append(h('span', { class: 'wheel-num', style: `--i:${n - 1}` }, String(n)));
+    for (let n = 1; n <= K.wheel.spaces; n++) {
+      const angle = ((n - 0.5) * Math.PI * 2) / K.wheel.spaces;
+      // The center of each sector, well inside the painted rim. Text stays upright separately.
+      const x = (50 + 28 * Math.sin(angle)).toFixed(3);
+      const y = (50 - 28 * Math.cos(angle)).toFixed(3);
+      disc.append(h('span', { class: 'wheel-num', style: `--x:${x}%;--y:${y}%` }, String(n)));
+    }
     this.disc = disc;
     const zones = h('div', { class: 'wheel-zones' });
     WHEEL_BETS.forEach((name, i) => {
@@ -876,10 +886,13 @@ export class ArcadeStage {
     const seg = 360 / K.wheel.spaces;
     const end = 360 * 4 - ((n - 1) * seg + seg / 2);
     this.disc!.style.setProperty('--turn', `${end}deg`);
-    await this.anim(this.disc!, [{ rotate: '0deg' }, { rotate: `${end}deg` }], {
-      duration: T.arcadeWheel,
-      easing: 'cubic-bezier(.1,.7,.15,1)',
-    });
+    const spin = { duration: T.arcadeWheel, easing: 'cubic-bezier(.1,.7,.15,1)' };
+    await Promise.all([
+      this.anim(this.disc!, [{ rotate: '0deg' }, { rotate: `${end}deg` }], spin),
+      ...Array.from(this.disc!.querySelectorAll('.wheel-num')).map((number) =>
+        this.anim(number, [{ rotate: '0deg' }, { rotate: `${-end}deg` }], spin),
+      ),
+    ]);
     this.disc!.querySelectorAll('.wheel-num').forEach((el, i) => el.classList.toggle('hit', i + 1 === n));
     this.zones.forEach((z, i) => z.classList.toggle('hit', wheelWins(i, n)));
     // Each bet appears on its zone with what it won or lost.
