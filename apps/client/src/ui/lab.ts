@@ -14,6 +14,7 @@ import {
   PLAYER_COLORS,
   cloneState,
   cpuIO,
+  randInt,
   isShopLike,
   lineBonus,
   linesThrough,
@@ -87,6 +88,7 @@ export const LAB_SECTIONS = [
   { id: 'dialogs', title: 'Dialogs' },
   { id: 'games', title: 'Venture' },
   { id: 'arcade', title: 'Arcade Lab' },
+  { id: 'turns', title: 'Turn moments' },
   { id: 'art', title: 'Property designs' },
   { id: 'panels', title: 'Log, market & results' },
 ] as const;
@@ -99,7 +101,7 @@ const LAB_TABS: { id: string; title: string; sections: string[] }[] = [
   { id: 'new', title: 'New', sections: [] },
   { id: 'players', title: 'Players', sections: ['cards'] },
   { id: 'bar', title: 'Action bar', sections: ['prompts'] },
-  { id: 'board', title: 'Board', sections: ['board'] },
+  { id: 'board', title: 'Board', sections: ['board', 'turns'] },
   { id: 'dialogs', title: 'Dialogs', sections: ['dialogs'] },
   { id: 'games', title: 'Games', sections: ['games', 'arcade'] },
   { id: 'panels', title: 'Panels', sections: ['panels'] },
@@ -117,7 +119,7 @@ const rnd = (n: number) => Math.floor(Math.random() * n);
  * Controls for UI elements that were just added or changed: they shake once and glow so they
  * are easy to find. Update this list with each change.
  */
-const RECENT = new Set(['Results screen', 'Point at a player', 'Zoom modes', 'Roll and walk']);
+const RECENT = new Set(['Roll and choose where to land', 'Roll after a motel check-in']);
 
 /**
  * Which board the lab plays on: Town with portal links (square, the default) or Twin Lakes (hex),
@@ -1638,6 +1640,77 @@ export async function openLab(app: HTMLElement, section?: string) {
         await view.read();
         view.close();
       }),
+    );
+  }
+
+  // Real rolls in a separate, non-saving game, to see the whole moment as players do.
+  {
+    const s = addSection(
+      'turns',
+      'Turn moments',
+      'Real rolls with the target player, in a separate game. Your saved match is untouched.',
+    );
+    /**
+     * A real turn moment in a separate, non-saving game (like the arcade games below): the target
+     * player is the only person, `setup` puts them in place, then their turn starts and they roll.
+     * `die` fixes the roll (by choosing the random seed that gives it).
+     */
+    const rollMoment = async (setup: (G: GameState, p: Player) => void, die?: number) => {
+      const sample = cloneState(G);
+      sample.players.forEach((p) => {
+        p.cpu = p.id !== cur().id;
+        p.bankrupt = false;
+      });
+      const p = sample.players[cur().id];
+      sample.turn = Math.max(0, sample.order.indexOf(p.id));
+      setup(sample, p);
+      const mount = h('div', { class: 'arcade-lab-game' });
+      document.body.append(mount);
+      const host = new HotSeat(mount, sample, () => mount.remove(), false);
+      try {
+        await host.emit({ type: 'turnStart', pid: p.id, round: sample.round });
+        if (die) {
+          for (let seed = 1; seed < 100000; seed++)
+            if (1 + randInt({ rng: seed }, K.dieSides) === die) {
+              sample.rng = seed;
+              break;
+            }
+        }
+        await host.game.rollAndMove(p);
+        await new Promise((r) => setTimeout(r, 1500));
+      } finally {
+        host.destroy();
+        mount.remove();
+      }
+    };
+    row(
+      s,
+      btn('Roll and choose where to land', () =>
+        rollMoment((S, p) => {
+          // Free to go either way (as after leaving the bank), so the roll always offers a choice.
+          const start = S.nodes.find((n) => n.t !== 'bank' && n.nb.length === 2) ?? S.nodes[p.node];
+          p.node = start.id;
+          p.prev = -1;
+          delete p.motelMoves;
+        }, 4),
+      ),
+      btn('Roll after a motel check-in', () =>
+        rollMoment((S, p) => {
+          // Checked in at a motel last turn with 3 spaces left: they add to this roll, and the
+          // player may set off either way.
+          let motel = S.nodes.find((n) => n.t === 'plot' && n.b === 'motel');
+          if (!motel) {
+            motel = S.nodes.find((n) => n.t === 'plot') ?? S.nodes.find((n) => n.t === 'shop')!;
+            motel.t = 'plot';
+            motel.b = 'motel';
+            motel.value = K.plotCost;
+          }
+          motel.owner = S.players.find((q) => q.id !== p.id)?.id ?? -1;
+          p.node = motel.id;
+          p.prev = -1;
+          p.motelMoves = 3;
+        }),
+      ),
     );
   }
 

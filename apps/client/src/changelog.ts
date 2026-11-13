@@ -26,6 +26,13 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: '2026-11-13-motel-roll-text',
+    date: 'Nov 13, 2026',
+    title: 'Clearer motel rolls',
+    features: [],
+    extras: ['After a motel check-in, picking where to go says the roll plus the saved spaces'],
+  },
+  {
     id: '2026-11-13-zoom-results-tap',
     date: 'Nov 13, 2026',
     title: 'Better choice zoom and prettier results',

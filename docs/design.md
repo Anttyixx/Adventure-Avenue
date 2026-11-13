@@ -1268,6 +1268,9 @@ Board controls (the Board effects section, made with `boardBtn` in `lab.ts`, exc
 button) step the pop-up aside so the effect can be seen: it fades out (160ms), 0.5s later the
 effect plays, and 0.5s after it has finished (its promise resolves, then no board effects are left
 and the camera is at rest, at most 8s) it pops back in on the same tab and scroll position.
+The **Turn moments** section (Board tab) plays real rolls in a separate, non-saving game, like the
+Arcade Lab: "Roll and choose where to land" (the target player rolls a 4, free to go either way, so
+the glowing choices come up) and "Roll after a motel check-in" (3 saved spaces added to the roll).
 Opening or closing the pop-up by hand meanwhile cancels the return (`playOnBoard`). "Travel
 through a portal" walks the target player three tiles up to a portal, through it, and three tiles
 on. While the

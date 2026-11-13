@@ -81,7 +81,8 @@ export class HotSeat implements GameIO {
   speed = 1;
   /** Which human currently holds the device (for "Pass the device" prompts). */
   holder = -1;
-  private movementRoll: { pid: number; value: number } | null = null;
+  /** The roll being moved, with any saved motel spaces added to it (`bonus`). */
+  private movementRoll: { pid: number; value: number; bonus?: number } | null = null;
   venture: VentureView | null = null;
   /** The arcade game being played (its board stays up from the first choice to the last result). */
   arcade: ArcadeStage | null = null;
@@ -756,8 +757,14 @@ export class HotSeat implements GameIO {
           routes,
         );
         // The glowing squares are the choices; the bar only explains what to do.
+        // Saved motel spaces are added to the die: say so, rather than calling the total the roll.
+        const mr = this.movementRoll?.pid === p.id ? this.movementRoll : null;
+        const rolled =
+          mr?.bonus && mr.value + mr.bonus === req.steps
+            ? `rolled ${mr.value} + ${mr.bonus} saved = ${req.steps} spaces`
+            : `rolled ${req.steps}`;
         const node = await hud.prompt<number>(
-          `${p.name} rolled ${req.steps}. Tap a glowing square to move there.`,
+          `${p.name} ${rolled}. Tap a glowing square to move there.`,
           [],
           color,
         );
@@ -967,7 +974,7 @@ export class HotSeat implements GameIO {
         // Rolled: the way they can go is shown by the reachable squares now, not the arrows.
         board.directionsPid = -1;
         this.refresh();
-        this.movementRoll = { pid: e.pid, value: e.value };
+        this.movementRoll = { pid: e.pid, value: e.value, bonus: e.bonus };
         hud.action('rolling', `${G.players[e.pid].name} is rolling...`, 'move');
         sound.play('roll');
         const mover = G.players[e.pid];
