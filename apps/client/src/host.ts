@@ -1064,7 +1064,7 @@ export class HotSeat implements GameIO {
         this.movementRoll = null;
         const sq = G.nodes[e.sq];
         this.checkpointArrival = sq.t === 'plot' && sq.b === 'checkpoint';
-        const immediate = this.checkpointArrival || [...SUITS, 'change'].includes(sq.t);
+        const immediate = this.checkpointArrival || [...SUITS, 'change', 'randomSuit'].includes(sq.t);
         // A motel check-in (only a check-in saves spaces): the die goes into the motel.
         const saved = sq.t === 'plot' && sq.b === 'motel' ? (G.players[e.pid].motelMoves ?? 0) : 0;
         // Let tolls and suits announce themselves as soon as the final step ends.

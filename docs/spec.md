@@ -301,7 +301,7 @@ the top while the list scrolls. The chosen tile sits in a gold ring and lifts sl
 card backgrounds, borders or captions. The enlarged art fills each column; no tile-name popup or selection checkmark is shown.
 Accessible button names and hints remain available. Selection uses a glow, with scroll position
 and keyboard focus kept after picking a tile.
-The categories are Properties (Property), Suits (Spade, Heart, Diamond, Club, Change suit),
+The categories are Properties (Property), Suits (Spade, Heart, Diamond, Club, Change suit, Random suit),
 Specials (Venture, Roll-on, Take-a-break, Boon, Boom, Stockbroker, Arcade), and Transport
 (Warp, Cannon, Taxi).
 Choosing a tile keeps Place active; clicking or dragging on the board places it. Returning to
@@ -466,6 +466,7 @@ connect the complete board; portals are shortcuts. All three can be remixed in t
 | Effect                          | Passing                               | Landing                                               |
 | ------------------------------- | ------------------------------------- | ----------------------------------------------------- |
 | Suit squares and change-of-suit | Collect suit                          | Collect suit, then a venture card (suit squares only) |
+| Random suit                     | Collect one random missing suit; nothing if all four are held | Same, then draw a venture card |
 | Bank                            | Promotion check, win check, buy stock | Same, plus free direction next turn                   |
 | Rival's checkpoint              | Pay toll                              | Pay toll                                              |
 | Everything else                 | Nothing                               | Square's effect                                       |
@@ -827,6 +828,7 @@ player's next turn begins.
 | Swap             | Pick another player and trade places. You pick up a suit or visit the bank where you arrive       | Suits, bank, promotion, win                                   |
 | Arcade           | Play one random minigame (see Arcade minigames)                                                   | Cash, shop values, wild suit cards, stock                     |
 | Venture          | Venture grid                                                                                      | See Venture cards                                             |
+| Random suit | Gives exactly one randomly chosen missing suit on passing or arrival by any transport; no suit, cash or wild card if all four are held. Stopping also draws a venture card, even with all four suits. | Promotion; seeded randomness; never awards twice for one arrival |
 | Change-of-suit   | Gives the current suit, then rotates                                                              | Promotion                                                     |
 
 **Turn-start reset:** when a player's turn starts, their `onBreak`, `closed`, `boon` and `boost` are
@@ -2052,3 +2054,5 @@ Every tile picture is sized by its visible drawing, not by its image frame (fram
 amounts of empty space), so all pictures stand on the same base line at matching sizes and stay
 clear of the tile's border. Hex tiles narrow toward their top point, so their pictures are drawn
 at 90% of the square size.
+
+Random suit tiles (`randomSuit`, map glyph `J`) are in the builder’s Suits category, show custom painted four-suit card artwork (`random-suit-v20/random-suit-base.png`, fixed colors, no tint layer), and can supply every suit for board validation. They use the same immediate pickup, animation and log as ordinary suits. Wild cards do not count as held suits for this tile. Online protocol version 50 separates this rule from older clients.

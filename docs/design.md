@@ -1332,3 +1332,7 @@ roofs, awnings, banners and signs take the owner's color through explicit grey t
 Tier silhouettes grow from cottage to tower, boutique to mall and small tent to grand circus.
 Bank art keeps its gold roof. Keep all previous art files; property-only rollback uses
 `PROPERTY_SET` in `props.ts`. The existing layer inspector and Design gallery show the active set.
+
+### Random suit tile
+
+The builder adds Random suit to the existing two-column Suits palette and uses its normal tile inspector. The tile uses a custom fixed-color PNG (`random-suit-v20/random-suit-base.png`): an ivory card with a rounded gold rim, four colored suits and small gold shuffle arrows, matching the rounded board art; the four live suit symbols provide a fallback while art loads. It uses the suit color in Tile types view, a clear Random suit name and description, and the ordinary immediate suit pickup feedback. No prompt is needed: the engine chooses one missing suit. Landing also opens the usual venture board. UI Lab’s Random suit tile button demonstrates the tile and a real passing pickup with two suits missing.

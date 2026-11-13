@@ -55,6 +55,7 @@ export type PropKey =
   | 'diamond'
   | 'club'
   | 'change-ring'
+  | 'random-suit'
   | 'roll'
   | 'break'
   | 'boon'
@@ -185,6 +186,11 @@ const properties = import.meta.glob<string>('./assets/properties-v3/*.png', {
   query: '?url',
   import: 'default',
 });
+const randomSuitArt = import.meta.glob<string>('./assets/random-suit-v20/*.png', {
+  eager: true,
+  query: '?url',
+  import: 'default',
+});
 const layered = import.meta.glob<string>('./assets/tiles-v2/*.png', {
   eager: true,
   query: '?url',
@@ -197,6 +203,10 @@ const legacy = import.meta.glob<string>('./assets/props/*.png', {
 });
 
 const urls = Object.fromEntries([
+  ...Object.entries(randomSuitArt).map(([path, url]) => [
+    path.replace(/^.*\//, '').replace('-base.png', '.png'),
+    { url, explicit: true },
+  ]),
   ...Object.entries(arcadeArt).map(([path, url]) => [
     path.replace(/^.*\//, '').replace('-base.png', '.png'),
     { url, explicit: true },

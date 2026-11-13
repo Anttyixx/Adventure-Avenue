@@ -46,7 +46,7 @@ export function goals(G: GameState, p: Player): number[] {
   const out = G.nodes
     .filter((s) => {
       const si = (SUITS as string[]).indexOf(s.t);
-      return (si >= 0 && !p.suits[si]) || s.t === 'change';
+      return (si >= 0 && !p.suits[si]) || s.t === 'change' || s.t === 'randomSuit';
     })
     .map((s) => s.id);
   return out.length ? out : bank;

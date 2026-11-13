@@ -92,6 +92,7 @@ const ARRIVAL_NAMES: Record<string, string> = {
   bank: 'Bank',
   venture: 'Venture square',
   change: 'Change-of-suit tile',
+  randomSuit: 'Random suit tile',
   roll: 'Roll-on',
   break: 'Take-a-break',
   hike: 'Price Up',
@@ -385,6 +386,13 @@ export class Game {
           score += 100;
         }
         change = (change + 1) % 4;
+      } else if (sq.t === 'randomSuit') {
+        // Estimate one missing suit without consuming the game's RNG while scoring routes.
+        const missing = held.indexOf(false);
+        if (missing >= 0) {
+          held[missing] = true;
+          score += 100;
+        }
       } else if (sq.t === 'bank') {
         if (held.filter(Boolean).length + p.wild >= 4) score += 500;
       } else if (sq.t === 'plot' && sq.b === 'checkpoint' && sq.owner >= 0 && sq.owner !== p.id) {
@@ -439,7 +447,7 @@ export class Game {
   }
 
   async passSquare(p: Player, sq: Square, suitCollected = false) {
-    if (SUIT_TYPES.includes(sq.t) || sq.t === 'change') {
+    if (SUIT_TYPES.includes(sq.t) || sq.t === 'change' || sq.t === 'randomSuit') {
       if (!suitCollected) await this.collectSuit(p, sq, true);
     } else if (sq.t === 'bank') await this.bankVisit(p, false);
     else if (sq.t === 'plot' && sq.b === 'checkpoint' && sq.owner >= 0) {
@@ -487,7 +495,8 @@ export class Game {
     await this.logArrival(p, this.G.nodes[to]);
     // Touching a suit is enough, regardless of which ride moved this player.
     const dest = this.G.nodes[to];
-    if (SUIT_TYPES.includes(dest.t) || dest.t === 'change') await this.collectSuit(p, dest);
+    if (SUIT_TYPES.includes(dest.t) || dest.t === 'change' || dest.t === 'randomSuit')
+      await this.collectSuit(p, dest);
   }
 
   // ---------------------------------------------------------------- suits, bank, promotion
@@ -498,6 +507,11 @@ export class Game {
     if (sq.t === 'change') {
       si = this.G.changeSuit;
       this.G.changeSuit = (this.G.changeSuit + 1) % 4;
+    }
+    if (sq.t === 'randomSuit') {
+      const missing = SUITS.map((_, i) => i).filter((i) => !p.suits[i]);
+      if (!missing.length) return;
+      si = missing[randInt(this.G, missing.length)];
     }
     if (si < 0 || p.suits[si]) return;
     p.suits[si] = true;
@@ -556,6 +570,7 @@ export class Game {
       case 'heart':
       case 'diamond':
       case 'club':
+      case 'randomSuit':
         if (!suitCollected) await this.collectSuit(p, sq);
         return this.venture(p);
       case 'change':

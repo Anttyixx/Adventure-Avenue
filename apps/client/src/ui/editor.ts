@@ -114,6 +114,11 @@ const PALETTE: { group: string; items: { tool: Tool; label: string; hint: string
       { tool: 'diamond', label: 'Diamond', hint: 'Suit square.' },
       { tool: 'club', label: 'Club', hint: 'Suit square.' },
       { tool: 'change', label: 'Change suit', hint: 'Gives its current suit, then rotates.' },
+      {
+        tool: 'randomSuit',
+        label: 'Random suit',
+        hint: 'Gives one random missing suit when stepped on. Landing also draws a venture card.',
+      },
     ],
   },
   {

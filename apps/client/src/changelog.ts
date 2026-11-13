@@ -26,6 +26,18 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: '2026-11-13-random-suit-tile',
+    date: 'Nov 13, 2026',
+    title: 'A suit tile that fills the gaps',
+    features: [
+      {
+        tag: 'new',
+        title: 'Random suit tile',
+        text: 'Add it from the builder’s Suits category. Stepping on it gives one random suit you are missing, including when arriving by transport. Have all four? No suit is given. Stopping also draws a venture card, just like a normal suit square.',
+      },
+    ],
+  },
+  {
     id: '2026-11-12-wheel-bet-preview',
     date: 'Nov 12, 2026',
     title: 'See every bet before the wheel spins',

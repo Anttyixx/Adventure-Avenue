@@ -26,6 +26,7 @@ const GLYPHS: Record<string, SquareType> = {
   D: 'diamond',
   C: 'club',
   X: 'change',
+  J: 'randomSuit',
   R: 'roll',
   K: 'break',
   O: 'boon',

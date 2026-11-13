@@ -15,6 +15,8 @@ export type SquareType =
   | 'venture'
   | SuitType
   | 'change'
+  /** Gives one random missing suit whenever stepped on. Landing also draws a venture card. */
+  | 'randomSuit'
   | 'roll'
   | 'break'
   | 'boon'

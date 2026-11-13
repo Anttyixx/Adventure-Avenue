@@ -2849,7 +2849,7 @@ export const TILE_TYPE_COLORS: Record<TileCategory, { fill: string; label: strin
 /** Which kind of tile a square is, as the builder's palette groups them. */
 export function tileCategory(t: string): TileCategory {
   if (t === 'shop' || t === 'plot') return 'property';
-  if (['spade', 'heart', 'diamond', 'club', 'change'].includes(t)) return 'suit';
+  if (['spade', 'heart', 'diamond', 'club', 'change', 'randomSuit'].includes(t)) return 'suit';
   if (['warp', 'portal', 'cannon', 'taxi'].includes(t)) return 'transport';
   if (t === 'blank') return 'blank';
   return 'special';
@@ -3831,7 +3831,8 @@ function buildingIcon(
 }
 
 function specialIcon(ctx: CanvasRenderingContext2D, G: GameState, sq: Square, x: number, y: number) {
-  const key = sq.t === 'broker' && G.rules === 'easy' ? 'venture' : sq.t;
+  const key =
+    sq.t === 'randomSuit' ? 'random-suit' : sq.t === 'broker' && G.rules === 'easy' ? 'venture' : sq.t;
   const col =
     sq.t === 'portal' || sq.t === 'warp'
       ? sq.channel == null && !sq.toBank && (sq.link ?? -1) >= 0
@@ -3899,6 +3900,20 @@ function specialIcon(ctx: CanvasRenderingContext2D, G: GameState, sq: Square, x:
       ctx.fillStyle = i === 1 || i === 2 ? '#e5484d' : '#3a3f5c';
       ctx.font = '46px "Atkinson Hyperlegible", serif';
       ctx.fillText(SUIT_CHARS[i], x, y + 2);
+      break;
+    }
+    case 'randomSuit': {
+      ctx.fillStyle = '#fff8e8';
+      ctx.strokeStyle = '#c99a38';
+      ctx.lineWidth = 3;
+      roundRect(ctx, x - 23, y - 27, 46, 54, 7);
+      ctx.fill();
+      ctx.stroke();
+      ctx.font = '22px "Atkinson Hyperlegible", serif';
+      SUIT_CHARS.forEach((symbol, i) => {
+        ctx.fillStyle = ['#4c8dff', '#ff5fa2', '#ffc83d', '#35c46a'][i];
+        ctx.fillText(symbol, x + (i % 2 ? 11 : -11), y + (i < 2 ? -10 : 13));
+      });
       break;
     }
     case 'change': {

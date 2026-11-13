@@ -11,6 +11,7 @@ import {
   CARD_LIST,
   Game,
   K,
+  SUITS,
   PLAYER_COLORS,
   cloneState,
   cpuIO,
@@ -119,7 +120,7 @@ const rnd = (n: number) => Math.floor(Math.random() * n);
  * Controls for UI elements that were just added or changed: they shake once and glow so they
  * are easy to find. Update this list with each change.
  */
-const RECENT = new Set(['Lucky Wheel']);
+const RECENT = new Set(['Random suit tile']);
 
 /**
  * Which board the lab plays on: Town with portal links (square, the default) or Twin Lakes (hex),
@@ -1355,6 +1356,19 @@ export async function openLab(app: HTMLElement, section?: string) {
         p.closed = false;
         p.onBreak = false;
         refresh();
+      }),
+      boardBtn('Random suit tile', async () => {
+        const p = cur();
+        const sq = G.nodes.find((n) => n.t === 'randomSuit' || n.t === 'spade')!;
+        sq.t = 'randomSuit';
+        p.node = sq.id;
+        p.prev = -1;
+        p.suits = [true, false, true, false];
+        await game.passSquare(p, sq);
+        const suit = p.suits[1] ? 1 : 3;
+        refresh();
+        board.collectFx(p.id, ['♠', '♥', '♦', '♣'][suit], '#ffffff');
+        hud.tick(`${p.name} collected the ${SUITS[suit]}.`, 'suit');
       }),
       boardBtn('Suit pickup text', () => board.floatText(pos().x, pos().y, '♥', '#ff6b6b')),
       boardBtn('Suit collected in passing', () => board.collectFx(cur().id, '♠', '#ffffff')),

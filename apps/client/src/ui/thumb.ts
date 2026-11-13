@@ -11,6 +11,7 @@ const TYPE_COLOR: Record<string, string> = {
   heart: '#e5484d',
   diamond: '#e5484d',
   change: '#8a94a8',
+  randomSuit: '#e7bc50',
 };
 
 export function boardThumb(full: BoardDef, maxW = 220, maxH = 130): HTMLCanvasElement {

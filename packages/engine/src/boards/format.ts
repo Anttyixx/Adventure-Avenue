@@ -35,6 +35,7 @@ export const PLACEABLE: SquareType[] = [
   'diamond',
   'club',
   'change',
+  'randomSuit',
   'roll',
   'break',
   'boon',
@@ -194,13 +195,13 @@ export function validateBoard(def: BoardDef): BoardCheck {
       squares: banks.length > 1 ? banks.map(ix) : undefined,
     });
 
-  const hasChange = sq.some((s) => s.t === 'change');
+  const hasChange = sq.some((s) => s.t === 'change' || s.t === 'randomSuit');
   const missing = (['spade', 'heart', 'diamond', 'club'] as SquareType[]).filter(
     (t) => !sq.some((s) => s.t === t),
   );
   if (missing.length && !hasChange)
     error(
-      `Add the missing suit square${missing.length > 1 ? 's' : ''} (${missing.join(', ')}) or a change-of-suit square, so players can be promoted.`,
+      `Add the missing suit square${missing.length > 1 ? 's' : ''} (${missing.join(', ')}) or a change-of-suit or random suit square, so players can be promoted.`,
     );
 
   const props = sq.filter((s) => s.t === 'shop');

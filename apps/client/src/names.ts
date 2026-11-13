@@ -13,6 +13,7 @@ const SPECIAL: Record<string, string> = {
   diamond: 'Diamond square',
   club: 'Club square',
   change: 'Change-of-suit',
+  randomSuit: 'Random suit',
   roll: 'Roll-on',
   break: 'Take-a-break',
   boon: 'Boon',
@@ -77,6 +78,8 @@ export function squareInfo(G: GameState, sq: Square): string {
     diamond: suit,
     club: suit,
     change: 'Collect the suit shown (it changes each time someone passes).',
+    randomSuit:
+      'Step on it to collect one random missing suit. If you have all four, no suit is given. Landing also draws a venture card.',
     roll: 'Roll again and keep moving.',
     break: 'Take a break: your shops close until your next turn.',
     boon: 'Boon: earn 20% commission on every fee other players pay, until your next turn.',

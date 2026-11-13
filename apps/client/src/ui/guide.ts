@@ -131,6 +131,7 @@ function basics(G: GameState | null): Node[] {
         points(
           'Collect the four suits ♠ ♥ ♦ ♣ from suit squares and cards.',
           `Then pass the bank to be promoted: a salary of ${fmt(K.salaryBase)} + ${fmt(K.salaryLevel)} per level + ${Math.round(K.salaryShop * 100)}% of your shops' value.`,
+          'Random suit tiles give one missing suit when you step on them, including arriving by transport. With all four, no suit is given. Stop there to draw a venture card too.',
           'A wild card counts as any missing suit.',
         ),
       ),
