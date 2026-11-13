@@ -184,7 +184,10 @@ room, Continue resumes the saved game, and the board editor (`ui/editor.ts`).
   the owner's color) with vector fallbacks in `art.ts`.
 - **Each frame:** camera update, the cached board, then ambient animation, closed-shop gates,
   greyed tiles, choice glows, routes, tokens (pixel characters from `sprites.ts`), direction
-  arrows, pins, short-lived effects (`fx`: rings, coins, floating text) and the die.
+  arrows, pins, short-lived effects (`fx`: rings, coins, floating text) and the die (plus
+  `savedDie`, a motel's saved spaces: `rollDie(..., saved)` pops it out of the motel, `countStep`
+  counts it down before the new die, and `dieToMotel` sends the die into the motel at a check-in;
+  the engine's `move(p, n, die)` saves only `min(left, die)` there).
 - **Choices on the board:** `setChoices(ids, color, onPick, routes?, opts?)` makes squares glow
   and clickable; `clearChoices()` ends it. `highlight` lights squares without making them choices.
 - **Camera:** follows the active player (`followPid`) at the player's own zoom (`zoomOut`, set by

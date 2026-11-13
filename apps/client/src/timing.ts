@@ -34,6 +34,10 @@ export const TIMING = {
   dieHold: 1000,
   /** The die shrinking beside the player after a roll, before they start walking. */
   dieShrink: 420,
+  /** A motel's saved die popping out beside the new roll. */
+  diePop: 650,
+  /** The die flying into the motel at a check-in. */
+  dieToMotel: 800,
   /** Pause after landing so players see where the token stopped. */
   land: 1000,
   /** Everyone gets reading time before the bar can return to low-priority activity. */

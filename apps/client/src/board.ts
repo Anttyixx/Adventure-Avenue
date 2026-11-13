@@ -61,6 +61,8 @@ const isTown = (G: GameState | null) => !G || G.boardId === 'town';
 const TILE = 86;
 /** Ways the steps-left die can flip over: sideways, up and over, and the two diagonals. */
 const DIE_FLIPS = 4;
+/** Space between the new roll and a motel's saved die beside it (screen pixels). */
+const DIE_GAP = 62;
 
 // Asked several times a frame: keep the media query instead of parsing it each time.
 let motionQuery: MediaQueryList | null = null;
@@ -277,13 +279,31 @@ export class BoardView {
   die: {
     value: number;
     t0: number;
-    phase: 'rolling' | 'shown' | 'small';
+    /** 'motel': flying into the motel at a check-in (from `from` to `to`, world points). */
+    phase: 'rolling' | 'shown' | 'small' | 'motel';
     /** Steps left (small phase), the number before the last step, and when it changed. */
     count: number;
     prev: number;
     changed: number;
     /** How the last change flipped the die (never the same twice running). */
     flip?: number;
+    from?: { x: number; y: number };
+    to?: { x: number; y: number };
+  } | null = null;
+  /**
+   * The motel's saved die: it pops out of the motel beside the new roll, sits left of the
+   * player's head and counts down first. `from` is the motel (world point); `gone` is when it
+   * puffed away because a new check-in saves only this turn's die.
+   */
+  savedDie: {
+    value: number;
+    t0: number;
+    count: number;
+    prev: number;
+    changed: number;
+    flip?: number;
+    from: { x: number; y: number };
+    gone?: number;
   } | null = null;
   w = 0;
   h = 0;
@@ -435,16 +455,27 @@ export class BoardView {
   }
 
   private countStep(pid: number, left: number) {
-    // The die beside the player counts down as the step starts.
-    if (this.die?.phase === 'small' && pid === this.activePid && this.die.count !== left) {
-      this.die.prev = this.die.count;
-      this.die.count = left;
-      this.die.changed = performance.now();
-      // A different flip from last time: sideways, up and over, or along either diagonal.
-      const last = this.die.flip ?? -1;
-      const pick = Math.floor(Math.random() * (DIE_FLIPS - 1));
-      this.die.flip = pick >= last && last >= 0 ? pick + 1 : pick;
-    }
+    // The dice beside the player count down as the step starts: a motel's saved die first, then
+    // this turn's die.
+    const d = this.die;
+    if (d?.phase !== 'small' || pid !== this.activePid) return;
+    const s = this.savedDie;
+    if (s && !s.gone) {
+      this.flipTo(s, Math.max(0, left - d.value));
+      this.flipTo(d, Math.min(left, d.value));
+    } else this.flipTo(d, left);
+  }
+
+  /** Turn a die over to show `n`, with a different flip from last time. */
+  private flipTo(d: { count: number; prev: number; changed: number; flip?: number }, n: number) {
+    if (d.count === n) return;
+    d.prev = d.count;
+    d.count = n;
+    d.changed = performance.now();
+    // Sideways, up and over, or along either diagonal.
+    const last = d.flip ?? -1;
+    const pick = Math.floor(Math.random() * (DIE_FLIPS - 1));
+    d.flip = pick >= last && last >= 0 ? pick + 1 : pick;
   }
 
   private finishStep(t: Token, left: number) {
@@ -1195,31 +1226,68 @@ export class BoardView {
   /**
    * Roll the die on screen. With `shrinkFirst` it also waits for the die to shrink beside the
    * player before returning, so walking starts after it (not while it is still shrinking).
+   * `saved` spaces from a motel check-in pop out of the motel as a second die once the roll shows.
    */
   async rollDie(
     value: number,
     onResult?: () => void,
     resultHold: number = T.dieHold,
     shrinkFirst = false,
-    movement = value,
+    saved = 0,
   ) {
     const roll = reducedMotion() ? 250 : T.dieRoll;
     const die = {
       value,
       t0: performance.now(),
       phase: 'rolling' as const,
-      count: movement,
-      prev: movement,
+      count: value,
+      prev: value,
       changed: 0,
     };
     this.die = die;
+    this.savedDie = null;
     await this.wait(roll);
     this.die = { ...die, phase: 'shown', t0: performance.now() };
     onResult?.();
+    if (saved > 0) {
+      const p = this.G?.players[this.activePid];
+      const from = p ? this.center(this.G!.nodes[p.node]) : this.tokenPos(this.activePid);
+      this.savedDie = { value: saved, t0: performance.now(), count: saved, prev: saved, changed: 0, from };
+      // Long enough for the saved die to land beside the roll.
+      resultHold = Math.max(resultHold, T.diePop);
+    }
     if (resultHold > 0) await this.wait(resultHold);
     // Then it shrinks to sit beside the player and counts the steps down.
     if (this.die?.value === value) this.die = { ...this.die, phase: 'small', t0: performance.now() };
     if (shrinkFirst) await this.wait(T.dieShrink);
+  }
+
+  /**
+   * Checking in at a motel: this turn's die (showing the spaces saved) flies into the motel, and
+   * a saved die from last time still showing puffs away (only this turn's die is kept).
+   */
+  async dieToMotel(pid: number, sq: number, saved: number) {
+    const at = this.tokenPos(pid);
+    const from = { x: at.x + 30, y: at.y - 52 };
+    const d = this.die;
+    if (d && d.phase !== 'motel') {
+      this.flipTo(d, saved);
+      // Let the last flip finish before it sets off.
+      if (d.changed && performance.now() - d.changed < 280) await this.wait(280);
+    }
+    const base = this.die ?? { value: saved, count: saved, prev: saved, changed: 0 };
+    this.die = {
+      ...base,
+      count: saved,
+      prev: saved,
+      changed: 0,
+      phase: 'motel',
+      t0: performance.now(),
+      from,
+      to: this.center(this.G!.nodes[sq]),
+    };
+    if (this.savedDie) this.savedDie.gone = performance.now();
+    await this.wait(reducedMotion() ? 200 : T.dieToMotel);
   }
 
   // ------------------------------------------------------------ choices
@@ -2399,14 +2467,30 @@ export class BoardView {
   }
 
   private drawDie(ctx: CanvasRenderingContext2D, now: number) {
+    this.drawSavedDie(ctx, now);
     const d = this.die;
-    if (!d || this.activePid < 0) return;
+    if (!d) return;
+    if (d.phase === 'motel') {
+      // Into the motel: an arc from beside the player down onto the motel, shrinking away.
+      const k = Math.min(1, (now - d.t0) / (reducedMotion() ? 200 : T.dieToMotel));
+      if (k >= 1 || !d.from || !d.to) {
+        this.die = null;
+        return;
+      }
+      const e = ease(k);
+      const a = this.worldToScreen(d.from.x, d.from.y);
+      const b = this.worldToScreen(d.to.x, d.to.y);
+      ctx.save();
+      ctx.globalAlpha = k > 0.8 ? (1 - k) / 0.2 : 1;
+      ctx.translate(a.x + (b.x - a.x) * e, a.y + (b.y - a.y) * e - Math.sin(k * Math.PI) * 46);
+      ctx.rotate(k * Math.PI * 1.5);
+      this.paintDie(ctx, d.count, 34 * (1 - 0.75 * e));
+      ctx.restore();
+      return;
+    }
+    if (this.activePid < 0) return;
     const at = this.tokenPos(this.activePid);
-    const pos = this.worldToScreen(at.x, at.y);
-    const big = {
-      x: Math.min(this.w - 50, Math.max(50, pos.x + 70)),
-      y: Math.min(this.h - 50, Math.max(50, pos.y - 70)),
-    };
+    const big = this.bigDiePos(at);
     if (d.phase !== 'small') {
       const face = d.phase === 'rolling' ? 1 + (Math.floor(now / 70) % K.dieSides) : d.value;
       let sx = 1;
@@ -2426,9 +2510,85 @@ export class BoardView {
       ctx.restore();
       return;
     }
-    // Small: beside the player's head, easing in from where the roll was shown.
+    // Small: right of the player's head, easing in from where the roll was shown.
     const near = this.worldToScreen(at.x + 30, at.y - 52);
-    const kIn = ease(Math.min(1, (now - d.t0) / 380));
+    if (!this.paintCounter(ctx, d, big, near, d.t0, now)) this.die = null;
+  }
+
+  /** Where the rolled die shows, beside the player and kept on screen. */
+  private bigDiePos(at: { x: number; y: number }) {
+    const pos = this.worldToScreen(at.x, at.y);
+    return {
+      x: Math.min(this.w - 50, Math.max(50 + DIE_GAP, pos.x + 70)),
+      y: Math.min(this.h - 50, Math.max(50, pos.y - 70)),
+    };
+  }
+
+  /** The motel's saved die: out of the motel, left of the roll, then left of the player's head. */
+  private drawSavedDie(ctx: CanvasRenderingContext2D, now: number) {
+    const s = this.savedDie;
+    if (!s) return;
+    if (s.gone != null) {
+      // Puffs away: grows, fades, and a ring of little clouds spreads out.
+      const k = Math.min(1, (now - s.gone) / 420);
+      if (k >= 1) {
+        this.savedDie = null;
+        return;
+      }
+      if (this.activePid < 0) return;
+      const at = this.tokenPos(this.activePid);
+      const p = this.worldToScreen(at.x - 30, at.y - 52);
+      ctx.save();
+      ctx.translate(p.x, p.y);
+      ctx.globalAlpha = 1 - k;
+      this.paintDie(ctx, s.count, 34 * (1 + 0.35 * k));
+      ctx.fillStyle = '#ffffff';
+      for (let i = 0; i < 7; i++) {
+        const a = (i / 7) * Math.PI * 2;
+        ctx.beginPath();
+        ctx.arc(Math.cos(a) * (14 + 22 * k), Math.sin(a) * (14 + 22 * k), 7 * (1 - k * 0.6), 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.restore();
+      return;
+    }
+    const d = this.die;
+    if (!d || this.activePid < 0) return;
+    const at = this.tokenPos(this.activePid);
+    const big = this.bigDiePos(at);
+    const beside = { x: big.x - DIE_GAP, y: big.y };
+    if (d.phase !== 'small') {
+      // Pops out of the motel and lands beside the new roll.
+      const k = Math.min(1, (now - s.t0) / (reducedMotion() ? 1 : T.diePop * 0.8));
+      const m = this.worldToScreen(s.from.x, s.from.y);
+      const e = ease(k);
+      ctx.save();
+      ctx.translate(m.x + (beside.x - m.x) * e, m.y + (beside.y - m.y) * e - Math.sin(k * Math.PI) * 60);
+      const squash =
+        k >= 1 ? 1 + Math.sin(Math.min(1, (now - s.t0 - T.diePop * 0.8) / 300) * Math.PI) * 0.18 : 1;
+      ctx.scale(squash, 2 - squash);
+      ctx.rotate((1 - e) * -Math.PI * 1.5);
+      this.paintDie(ctx, s.value, 14 + 38 * e);
+      ctx.restore();
+      return;
+    }
+    const near = this.worldToScreen(at.x - 30, at.y - 52);
+    if (!this.paintCounter(ctx, s, beside, near, d.t0, now)) this.savedDie = null;
+  }
+
+  /**
+   * A small counting die: eases from `big` to `near` (from `t0`), flips over to each new number
+   * with a pop, and pops away at 0. False once it has gone.
+   */
+  private paintCounter(
+    ctx: CanvasRenderingContext2D,
+    d: { count: number; prev: number; changed: number; flip?: number },
+    big: { x: number; y: number },
+    near: { x: number; y: number },
+    t0: number,
+    now: number,
+  ) {
+    const kIn = ease(Math.min(1, (now - t0) / 380));
     let size = 52 + (34 - 52) * kIn;
     const x = big.x + (near.x - big.x) * kIn;
     let y = big.y + (near.y - big.y) * kIn;
@@ -2438,10 +2598,7 @@ export class BoardView {
     const flip = Math.abs(Math.cos(kc * Math.PI));
     size *= 1 + Math.sin(kc * Math.PI) * 0.25;
     // At 0 steps left the die pops away.
-    if (d.count === 0 && kc >= 1) {
-      this.die = null;
-      return;
-    }
+    if (d.count === 0 && kc >= 1) return false;
     if (d.count === 0) {
       size *= 1 - kc;
       y -= kc * 14;
@@ -2457,6 +2614,7 @@ export class BoardView {
     }
     this.paintDie(ctx, face, size);
     ctx.restore();
+    return true;
   }
 
   /** A die face of `size` CSS pixels centered on the origin (numbers past 7 are written out). */

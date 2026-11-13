@@ -153,14 +153,29 @@ describe('Motel', () => {
     });
     const move = vi.spyOn(resumed, 'move').mockResolvedValue(undefined);
     await resumed.rollAndMove(player);
-    expect(move).toHaveBeenLastCalledWith(player, 7);
+    expect(move).toHaveBeenLastCalledWith(player, 7, 5);
     expect(events.find((e) => e.type === 'roll')).toMatchObject({ value: 5, bonus: 2 });
     expect(player.motelMoves).toBeUndefined();
     events.length = 0;
     await resumed.rollAndMove(player);
     const roll = events.find((e) => e.type === 'roll')!;
     expect(roll.bonus).toBeUndefined();
-    expect(move).toHaveBeenLastCalledWith(player, roll.value);
+    expect(move).toHaveBeenLastCalledWith(player, roll.value, roll.value);
+  });
+
+  it("saves only what is left of this turn's die when checking in with saved spaces still left", async () => {
+    const { game, p, asked } = setup((r) => (r.kind === 'motelStop' ? true : undefined));
+    // 6 saved + a roll of 2: the motel is passed after 1 step, with 5 saved and 2 rolled left.
+    await game.move(p, 8, 2);
+    expect(asked.find((r) => r.kind === 'motelStop')).toMatchObject({ left: 2 });
+    expect(p.motelMoves).toBe(2);
+  });
+
+  it("saves part of this turn's die once the old saved spaces are used up", async () => {
+    const { game, p } = setup((r) => (r.kind === 'motelStop' ? true : undefined));
+    // 1 saved + a roll of 6: the first step uses the saved space, so all 6 of the roll are left.
+    await game.move(p, 7, 6);
+    expect(p.motelMoves).toBe(6);
   });
 
   it('cannot check into a closed motel or save zero spaces', async () => {

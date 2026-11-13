@@ -940,6 +940,7 @@ export class HotSeat implements GameIO {
         this.checkpointArrival = false;
         board.directionsPid = -1;
         board.die = null;
+        board.savedDie = null;
         board.frameIds = null;
         // A beat at the end of the previous turn before the next player starts.
         const handoff = board.activePid >= 0 && board.activePid !== e.pid;
@@ -997,7 +998,8 @@ export class HotSeat implements GameIO {
           // One way to go: the die shrinks first, then the player walks. With a choice of where
           // to go, the choice comes straight up as before.
           routes.length <= 1,
-          total,
+          // Saved motel spaces pop out of the motel as a second die.
+          e.bonus ?? 0,
         );
         // Once the die has landed, zoom out to show the player and every square the roll could
         // take them to: only on the screen of the human who rolled (they pick where to go).
@@ -1063,13 +1065,22 @@ export class HotSeat implements GameIO {
         const sq = G.nodes[e.sq];
         this.checkpointArrival = sq.t === 'plot' && sq.b === 'checkpoint';
         const immediate = this.checkpointArrival || [...SUITS, 'change'].includes(sq.t);
+        // A motel check-in (only a check-in saves spaces): the die goes into the motel.
+        const saved = sq.t === 'plot' && sq.b === 'motel' ? (G.players[e.pid].motelMoves ?? 0) : 0;
         // Let tolls and suits announce themselves as soon as the final step ends.
-        if (!immediate)
+        if (saved > 0)
+          hud.action(
+            'landing',
+            `${G.players[e.pid].name} checked in and saved ${saved} space${saved === 1 ? '' : 's'}.`,
+            'move',
+          );
+        else if (!immediate)
           hud.action('landing', `${G.players[e.pid].name} landed on ${shortName(G, sq)}.`, 'move');
         board.frameIds = null;
         sound.play('land');
         board.ring(e.sq, '#ffffff');
         board.walkTarget = -1;
+        if (saved > 0) await board.dieToMotel(e.pid, e.sq, saved);
         if (!immediate) await this.wait(T.land);
         break;
       }

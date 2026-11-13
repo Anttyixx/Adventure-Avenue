@@ -734,7 +734,7 @@ Trade offers keep the compact action bar layout: two colored offer columns and b
 
 Checkpoint and suit arrivals skip the generic landing announcement and pause, so the effect takes priority immediately. Checkpoint payment and toll-rise effects run without pauses between them, matching a pass-through; subsequent decisions restore normal pacing.
 
-Motel check-in uses the existing action-bar question: show the lodging fee, “Added to your next roll +N spaces”, and that checking in ends the turn. Check in and Keep moving are the only choices. Normal landings skip this prompt. Player cards show pending carryover as a status tag; roll-result text explains “5 + 2 saved = 7 spaces,” with the real die face preserved and the small movement counter starting at the total.
+Motel check-in uses the existing action-bar question: show the lodging fee, “Added to your next roll +N spaces”, and that checking in ends the turn. Check in and Keep moving are the only choices. Normal landings skip this prompt. Player cards show pending carryover as a status tag; roll-result text explains “5 + 2 saved = 7 spaces,” with the real die face preserved. Saved spaces are a second die: at check-in the counting die flips to the saved number and arcs into the motel tile, shrinking and fading (`T.dieToMotel`); on the next roll it pops out of the motel in an arc and lands left of the new die (`T.diePop`), then both shrink beside the head (saved left, new right). The saved die counts first. A saved die dropped by a second check-in puffs away (grows, fades, a ring of small white clouds).
 
 Tax Office board labels and tile-info headlines show the active player's actual fee, or “Receive” and the owner payout on their own turn. Estate Agencies show “Buy” for the owner and “Break” for rivals. Shop landing and Buy/Pass action bars omit the price; the board and tile info remain the price reference.
 
@@ -1270,7 +1270,9 @@ effect plays, and 0.5s after it has finished (its promise resolves, then no boar
 and the camera is at rest, at most 8s) it pops back in on the same tab and scroll position.
 The **Turn moments** section (Board tab) plays real rolls in a separate, non-saving game, like the
 Arcade Lab: "Roll and choose where to land" (the target player rolls a 4, free to go either way, so
-the glowing choices come up) and "Roll after a motel check-in" (3 saved spaces added to the roll).
+the glowing choices come up) "Roll after a motel check-in" (6 saved spaces and a roll of 7: the saved die pops out of the motel)
+and "Check in again with two dice" (4 saved and a roll of 3, one square before a motel: checking in
+keeps only the 3 and the old die puffs away).
 Opening or closing the pop-up by hand meanwhile cancels the return (`playOnBoard`). "Travel
 through a portal" walks the target player three tiles up to a portal, through it, and three tiles
 on. While the

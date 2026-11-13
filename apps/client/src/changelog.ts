@@ -26,6 +26,18 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: '2026-11-13-motel-two-dice',
+    date: 'Nov 13, 2026',
+    title: 'Motel dice',
+    features: [
+      {
+        tag: 'rules',
+        title: 'Saved spaces get their own die',
+        text: "Checking in at a motel sends your die into the motel. Next turn it pops back out beside your new roll, so you see two dice: the saved one counts down first, then the new one. Check in again on the way and only this turn's die is saved; the old one puffs away.",
+      },
+    ],
+  },
+  {
     id: '2026-11-13-motel-roll-text',
     date: 'Nov 13, 2026',
     title: 'Clearer motel rolls',

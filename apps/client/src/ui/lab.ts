@@ -119,7 +119,7 @@ const rnd = (n: number) => Math.floor(Math.random() * n);
  * Controls for UI elements that were just added or changed: they shake once and glow so they
  * are easy to find. Update this list with each change.
  */
-const RECENT = new Set(['Roll and choose where to land', 'Roll after a motel check-in']);
+const RECENT = new Set(['Roll after a motel check-in', 'Check in again with two dice', 'Motel bonus roll']);
 
 /**
  * Which board the lab plays on: Town with portal links (square, the default) or Twin Lakes (hex),
@@ -1126,7 +1126,7 @@ export async function openLab(app: HTMLElement, section?: string) {
           () => hud.action('motel-bonus', 'Rolled 5 + 2 saved = 7 spaces.', 'move'),
           T.dieHold,
           true,
-          7,
+          2,
         );
         setTimeout(() => (board.die = null), 1200);
       }),
@@ -1655,6 +1655,18 @@ export async function openLab(app: HTMLElement, section?: string) {
      * player is the only person, `setup` puts them in place, then their turn starts and they roll.
      * `die` fixes the roll (by choosing the random seed that gives it).
      */
+    // A motel owned by a rival of p (a vacant plot or shop is turned into one if the board has none).
+    const labMotel = (S: GameState, p: Player) => {
+      let motel = S.nodes.find((n) => n.t === 'plot' && n.b === 'motel');
+      if (!motel) {
+        motel = S.nodes.find((n) => n.t === 'plot') ?? S.nodes.find((n) => n.t === 'shop')!;
+        motel.t = 'plot';
+        motel.b = 'motel';
+        motel.value = K.plotCost;
+      }
+      motel.owner = S.players.find((q) => q.id !== p.id)?.id ?? -1;
+      return motel;
+    };
     const rollMoment = async (setup: (G: GameState, p: Player) => void, die?: number) => {
       const sample = cloneState(G);
       sample.players.forEach((p) => {
@@ -1696,20 +1708,24 @@ export async function openLab(app: HTMLElement, section?: string) {
       ),
       btn('Roll after a motel check-in', () =>
         rollMoment((S, p) => {
-          // Checked in at a motel last turn with 3 spaces left: they add to this roll, and the
-          // player may set off either way.
-          let motel = S.nodes.find((n) => n.t === 'plot' && n.b === 'motel');
-          if (!motel) {
-            motel = S.nodes.find((n) => n.t === 'plot') ?? S.nodes.find((n) => n.t === 'shop')!;
-            motel.t = 'plot';
-            motel.b = 'motel';
-            motel.value = K.plotCost;
-          }
-          motel.owner = S.players.find((q) => q.id !== p.id)?.id ?? -1;
+          // Checked in at a motel last turn with 6 spaces left, then rolls a 7: the saved die
+          // pops out of the motel beside the roll and counts down first. They may go either way.
+          const motel = labMotel(S, p);
           p.node = motel.id;
           p.prev = -1;
-          p.motelMoves = 3;
-        }),
+          p.motelMoves = 6;
+        }, 7),
+      ),
+      btn('Check in again with two dice', () =>
+        rollMoment((S, p) => {
+          // 4 saved + a roll of 3, one square before another motel: checking in there keeps
+          // only the roll's 3, and the old saved die puffs away.
+          const motel = labMotel(S, p);
+          const before = S.nodes.find((n) => n.nb.length === 2 && n.nb.includes(motel.id))!;
+          p.node = before.id;
+          p.prev = before.nb.find((id) => id !== motel.id)!;
+          p.motelMoves = 4;
+        }, 3),
       ),
     );
   }

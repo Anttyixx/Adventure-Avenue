@@ -328,7 +328,8 @@ export class Game {
       [],
       { action: 'roll' },
     );
-    await this.move(p, n + bonus);
+    // The saved spaces walk first, then this roll's die (see motelStop).
+    await this.move(p, n + bonus, n);
   }
 
   /** Every square the player could stop on after exactly n steps, with the best route to each. */
@@ -393,7 +394,11 @@ export class Game {
     return score;
   }
 
-  async move(p: Player, n: number) {
+  /**
+   * Walk n steps. `die` is this turn's die when the move is a roll that may include saved motel
+   * spaces: those are used first, so checking in again only saves what is left of this die.
+   */
+  async move(p: Player, n: number, die?: number) {
     const G = this.G;
     const dests = this.destinations(p, n);
     let choice = dests[0];
@@ -421,7 +426,9 @@ export class Game {
         await this.passSquare(p, G.nodes[p.node], arrivedByWarp);
         if (G.over) return;
         // Passing a motel: the player may stop there instead, giving up the rest of the roll.
-        if (await this.motelStop(p, G.nodes[p.node], left)) return;
+        // Only this turn's die can be saved again: any old saved spaces still left are lost.
+        const keep = die == null ? left : Math.min(left, die);
+        if (await this.motelStop(p, G.nodes[p.node], keep)) return;
       }
     }
     // Arrival at a paired portal does not immediately send the player back.
