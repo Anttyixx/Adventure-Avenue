@@ -617,8 +617,8 @@ multiplies it by 0.9.
 **Dynamic:**
 
 ```
-price_d = max(3, (average base value_d x 0.04 + average growth_d x 0.025) x factor_d x confidence_d x boost_d - offset_d)
-boost_d = 1 + 0.00075 x held_d x vol_d
+price_d = max(3, (average base value_d x 0.04 + average growth_d x 0.02) x factor_d x confidence_d x boost_d - offset_d)
+boost_d = 1 + 0.00085 x held_d x vol_d
 ```
 
 - **Starting prices:** at the start of a game each district gets a fixed whole-number `offset_d`
@@ -635,17 +635,16 @@ boost_d = 1 + 0.00075 x held_d x vol_d
   cards do. Classic stocks keep their 1G floor.
 
 - A shop's growth is its value above its base value (investing, ownership bonuses, venture cards
-  and arcade prizes; negative when a shop shrinks). Growth counts at 62.5% of the base-value rate:
-  a 50% rise in average shop value raises the underlying share price by 31.25%, before the other
-  multipliers (`districtWorth`). This reduces growth's direct price effect by about 16.7% from the previous
-  0.03 rate, without changing the shares-held boost. A plot's base is the cost of what was built on it.
+  and arcade prizes; negative when a shop shrinks). Growth counts at half the base-value rate
+  (2%): a 50% rise in average shop value raises the underlying share price by 25%, before the other
+  multipliers (`districtWorth`); every 100G of average growth adds 2G. (Earlier rates: 0.03, then 0.025.) A plot's base is the cost of what was built on it.
   The lower rate also softens losses from shrinking shops. Existing Dynamic saves use the new rate
   when loaded, so developed districts reprice immediately; Classic stocks are unchanged.
 - `held_d` is the total shares everyone holds in the district. The price rises in a straight line:
-  every 100 shares add 7.5% at volatility 1 (+0.75 for a 10G stock), with no cap. Trades never
+  every 100 shares add 8.5% at volatility 1 (+0.85 for a 10G stock), with no cap. Trades never
   touch the factor.
-- `vol_d` is the district's volatility, rolled evenly at game start between 1 and 2, so a district's
-  slope runs from +0.75 to +1.5 per 100 shares (10G stock). Players are never shown a district's
+- `vol_d` is the district's volatility, rolled evenly at game start between 1 and 1.882, so
+  every 100 shares add 8.5% (calmest) to 16% (wildest): +0.85 to +1.6 for a 10G stock. Players are never shown a district's
   volatility (the Stocks lab dev tool still labels it Calm, Normal or Wild, `volMood`).
 - A trade pays the average of the price before and after it (sells use the same), so buying 99
   shares at once costs the same as buying them in steps.

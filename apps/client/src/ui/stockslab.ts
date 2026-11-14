@@ -83,13 +83,13 @@ const GROUPS: { title: string; settings: Setting[] }[] = [
         key: 'growthRate',
         label: 'Price per shop growth',
         step: 0.005,
-        hint: 'Shop value above base (investing, ownership, cards) counts at this rate (default 0.025; base rate 0.04)',
+        hint: 'Shop value above base (investing, ownership, cards) counts at this rate (default 0.02; base rate 0.04)',
       },
       {
         key: 'shareSlope',
         label: 'Slope per share',
         step: 0.0001,
-        hint: 'Price rise per share held, as a part of the price (0.00075 = +7.5% per 100 shares at volatility 1)',
+        hint: 'Price rise per share held, as a part of the price (0.00085 = +8.5% per 100 shares at volatility 1)',
       },
       {
         key: 'shareStartMin',

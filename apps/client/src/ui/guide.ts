@@ -199,7 +199,7 @@ function stocks(G: GameState | null): Node[] {
             card(
               'What sets the price',
               null,
-              'The price follows the shops in the district: their starting value sets the base price, and shop growth raises it more gently. A 50% rise in average shop value adds 31.25% to the share price before other boosts.',
+              'The price follows the shops in the district: their starting value sets the base price, and shop growth raises it more gently. A 50% rise in average shop value adds 25% to the share price before other boosts.',
             ),
             card(
               'Demand and volatility',

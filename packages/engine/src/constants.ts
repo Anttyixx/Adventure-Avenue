@@ -54,15 +54,15 @@ export const K = {
   tradeDown: 0.9,
   /**
    * Dynamic stocks. Shop growth (value above the shops' base) counts at growthRate instead of
-   * stockRate: a 50% rise in average shop value adds 31.25% to the underlying share price.
+   * stockRate: a 50% rise in average shop value adds 25% to the underlying share price.
    */
-  growthRate: 0.025,
+  growthRate: 0.02,
   /**
    * Dynamic stocks' demand: the price rises in a straight line with the total shares all players
    * hold in a district: boost = 1 + shareSlope x held x volatility. At volatility 1 (the calmest),
-   * every 100 shares add 7.5% of the price (+0.75 for a 10G stock); at 2, +1.5 per 100. No cap.
+   * every 100 shares add 8.5% of the price (+0.85 for a 10G stock); at the wildest (volMax), 16%. No cap.
    */
-  shareSlope: 0.00075,
+  shareSlope: 0.00085,
   /**
    * Dynamic stocks' starting prices: the cheapest district's shares start at shareStartMin, the
    * most expensive at shareStartMax, the rest in between by their shops' average value. A whole
@@ -77,7 +77,8 @@ export const K = {
    * The lowest third of the range shows as Calm, the middle as Normal, the top as Wild.
    */
   volMin: 1,
-  volMax: 2,
+  /** 16% / 8.5%: the wildest district's 100 shares add 16%. */
+  volMax: 1.882,
   /**
    * Sell-offs: selling sellOff+ shares of one district in a turn (by anyone) dents its price by
    * `dent`; each further sellOff shares add dentDecay x the previous step, scaled smoothly

@@ -28,12 +28,17 @@ export const CHANGELOG: ChangelogEntry[] = [
   {
     id: '2026-11-14-stock-start-prices',
     date: 'Nov 14, 2026',
-    title: 'Fairer starting stock prices',
+    title: 'Fairer stock prices',
     features: [
       {
         tag: 'rules',
         title: 'Stocks start between 4G and 11G',
-        text: 'The district with the cheapest shops starts at 4G a share and the priciest at 11G, with the rest in between. Prices still rise and fall by the same amounts as before, and no share ever drops below 3G.',
+        text: 'The district with the cheapest shops starts at 4G a share and the priciest at 11G, with the rest in between. No share ever drops below 3G.',
+      },
+      {
+        tag: 'rules',
+        title: 'Shares count a bit more, growth a bit less',
+        text: 'Every 100 shares held now raise a price by 8.5% to 16% (was 7.5% to 15%). Shop growth moves prices 20% less, though investing still moves them more than buying shares.',
       },
     ],
   },

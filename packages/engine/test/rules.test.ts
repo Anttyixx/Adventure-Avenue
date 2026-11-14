@@ -121,8 +121,9 @@ describe('stocks and salary', () => {
   });
 
   it.each([
-    [300, 12.8625],
-    [-300, 6.7375],
+    // Base 8G +/- 100G average growth x 0.02, x the 200-share boost (1 + 0.00085 x 200 x 1.5).
+    [300, 10 * 1.255],
+    [-300, 6 * 1.255],
   ])(
     'prices a %iG change in shop value with gentler growth and the same demand boost',
     (change, expected) => {
@@ -138,15 +139,15 @@ describe('stocks and salary', () => {
       G.players[0].shares[0] = 100;
       G.players[1].shares[0] = 100;
       market(G).vol[0] = 1.5;
-      expect(stockPriceExact(G, 0)).toBeCloseTo(9.8);
+      expect(stockPriceExact(G, 0)).toBeCloseTo(8 * 1.255);
       // Spread the change across the district so the shrink case keeps every shop positive.
       shops.forEach((s) => {
         s.value += change / shops.length;
       });
       expect(stockPriceExact(G, 0)).toBeCloseTo(expected);
-      // Another 100 shares still adds the same demand multiplier: 1.225 -> 1.3375.
+      // Another 100 shares still adds the same demand multiplier: 1.255 -> 1.3825.
       G.players[1].shares[0] += 100;
-      expect(stockPriceExact(G, 0) / expected).toBeCloseTo(1.3375 / 1.225);
+      expect(stockPriceExact(G, 0) / expected).toBeCloseTo(1.3825 / 1.255);
     },
   );
 
@@ -259,7 +260,7 @@ describe('dynamic stock balance', () => {
     expect(sellOffCut(150)).toBeCloseTo(0.216);
     expect(sellOffCut(300)).toBeCloseTo(0.35424);
   });
-  it('makes 50% shop growth add 31.25% to the underlying dynamic share price', () => {
+  it('makes 50% shop growth add 25% to the underlying dynamic share price', () => {
     const { G } = makeGame();
     G.stocks = 'dynamic';
     const shops = G.nodes.filter((n) => n.d === 6 && n.t === 'shop');
@@ -272,7 +273,7 @@ describe('dynamic stock balance', () => {
     shops.forEach((n) => {
       n.value += 100;
     });
-    expect(districtWorth(G, 6) / before).toBeCloseTo(1.3125);
+    expect(districtWorth(G, 6) / before).toBeCloseTo(1.25);
     G.stocks = 'classic';
     expect(districtWorth(G, 6)).toBeCloseTo(300 * K.stockRate);
   });
