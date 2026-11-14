@@ -9,6 +9,7 @@ import {
   K,
   MAX_PLAYERS,
   PLAYER_COLORS,
+  seatColors,
   validateBoard,
   type BoardDef,
   type CharId,
@@ -93,7 +94,7 @@ export type SetupRoom = Pick<
 /** What the locked setup a joined player sees uses of their room. */
 export type GuestSetupRoom = Pick<
   GuestRoom,
-  'code' | 'seat' | 'lobby' | 'setLook' | 'setName' | 'setReady' | 'leave'
+  'code' | 'seat' | 'lobby' | 'setLook' | 'setColor' | 'setName' | 'setReady' | 'leave'
 >;
 
 /** Seconds between everyone being ready and the game starting (to change their mind). */
@@ -245,6 +246,8 @@ interface Spot {
   look: CharId;
   /** Tapped Ready (bots always are). */
   ready: boolean;
+  /** The color a player on this device has (index into PLAYER_COLORS); bots take what is left. */
+  color?: number;
 }
 
 /**
@@ -962,15 +965,27 @@ export function setupScreen(
       ready: false,
     };
   };
+  /** Every seat's color, in seat order (this device's players, then joined friends, then bots). */
+  const colorsNow = (): number[] =>
+    room
+      ? lobbySeatsNow().map((s, i) => s.color ?? i)
+      : seatColors([...people.map((x) => x.color), ...bots.map(() => undefined)]);
+  /** A new player on this device keeps the first color no other player has. */
+  const newPerson = (): Spot => {
+    const used = colorsNow().filter((_, i) => i < people.length + joined());
+    return { ...newSpot(), color: PLAYER_COLORS.findIndex((_, k) => !used.includes(k)) };
+  };
   {
-    const host = newSpot();
+    const host = newPerson();
     people.push({ ...host, name: cleanName(card.name) || host.name, look: card.look || host.look });
   }
-  /** The seat number (and so the color) of a player on this device or a bot. */
+  /** The seat number of a player on this device or a bot. */
   const seatOf = (x: Spot) => {
     const i = people.indexOf(x);
     return i >= 0 ? i : people.length + joined() + bots.indexOf(x);
   };
+  /** A seat's color (index into PLAYER_COLORS). */
+  const colorOf = (x: Spot) => colorsNow()[seatOf(x)] ?? seatOf(x);
   /** Characters held by people (this device's players and joined friends), except `but`'s. */
   const peopleLooks = (but: Spot | null) => {
     const out = new Map<CharId, string>();
@@ -986,10 +1001,23 @@ export function setupScreen(
     }
   };
   const choose = async (x: Spot) => {
+    // Colors other players have (people on this device and joined friends; bots give theirs up).
+    const colors = colorsNow();
+    const taken = new Map<number, string>();
+    people.forEach((q) => q !== x && taken.set(colorOf(q), q.name));
+    lobbySeatsNow().forEach((r, i) => r.kind === 'remote' && taken.set(colors[i] ?? i, r.name));
     const id = await pickCharacter({
       current: x.look,
       taken: peopleLooks(x),
-      color: PLAYER_COLORS[seatOf(x)],
+      color: PLAYER_COLORS[colorOf(x)],
+      colors: {
+        current: colorOf(x),
+        taken,
+        pick: (c) => {
+          x.color = c;
+          draw();
+        },
+      },
     });
     if (id) {
       x.look = id;
@@ -1002,7 +1030,12 @@ export function setupScreen(
   const sync = () => {
     if (!room) return;
     syncing = true;
-    const locals: LocalSeat[] = people.map((x) => ({ name: x.name, look: x.look, ready: x.ready }));
+    const locals: LocalSeat[] = people.map((x) => ({
+      name: x.name,
+      look: x.look,
+      ready: x.ready,
+      want: x.color,
+    }));
     const botSeats: LocalSeat[] = bots.map((x) => ({ name: x.name, look: x.look }));
     const seatKey = JSON.stringify([locals, botSeats]);
     if (seatKey !== sentSeats) {
@@ -1158,7 +1191,7 @@ export function setupScreen(
     seatCard({
       rename: renameOf(x),
       key: `s${x.id}`,
-      color: PLAYER_COLORS[seatOf(x)],
+      color: PLAYER_COLORS[colorOf(x)],
       look: x.look,
       pick: () => void choose(x),
       name: x.name,
@@ -1195,7 +1228,7 @@ export function setupScreen(
   const botCard = (x: Spot) =>
     seatCard({
       key: `s${x.id}`,
-      color: PLAYER_COLORS[seatOf(x)],
+      color: PLAYER_COLORS[colorOf(x)],
       look: x.look,
       name: x.name,
       tag: 'Bot',
@@ -1222,7 +1255,7 @@ export function setupScreen(
             key: `r:${x.name}`,
             el: seatCard({
               key: `r:${x.name}`,
-              color: PLAYER_COLORS[i],
+              color: PLAYER_COLORS[x.color ?? i],
               look,
               name: x.name,
               tag: x.online ? 'Joined online' : 'Away',
@@ -1240,7 +1273,7 @@ export function setupScreen(
       room4()
         ? addChips(
             () => {
-              people.push(newSpot());
+              people.push(newPerson());
               draw();
             },
             () => {
@@ -1322,8 +1355,8 @@ export function setupScreen(
       return;
     }
     const seats = [
-      ...people.map((x) => ({ name: x.name, cpu: false, ch: x.look })),
-      ...bots.map((x) => ({ name: x.name, cpu: true, ch: x.look })),
+      ...people.map((x) => ({ name: x.name, cpu: false, ch: x.look, color: colorOf(x) })),
+      ...bots.map((x) => ({ name: x.name, cpu: true, ch: x.look, color: colorOf(x) })),
     ];
     leaveRoom();
     handlers.onStart({ ...base, seats }, false);
@@ -1416,12 +1449,23 @@ export function guestSetup(root: HTMLElement, room: GuestSetupRoom, handlers: Gu
   const pick = (lobby: LobbyInfo, i: number) => {
     // Characters other people have can't be picked; CPUs take whatever is left.
     const taken = new Map<CharId, string>();
+    const colors = new Map<number, string>();
     lobby.seats.forEach((s, j) => {
-      if (j !== i && s.look && s.kind !== 'open' && s.kind !== 'cpu') taken.set(s.look, s.name);
+      if (j === i || s.kind === 'open' || s.kind === 'cpu') return;
+      if (s.look) taken.set(s.look, s.name);
+      colors.set(s.color ?? j, s.name);
     });
-    void pickCharacter({ current: lobby.seats[i].look ?? '', taken, color: PLAYER_COLORS[i] }).then(
-      (id) => id && room.setLook(id),
-    );
+    const mine = lobby.seats[i].color ?? i;
+    void pickCharacter({
+      current: lobby.seats[i].look ?? '',
+      taken,
+      color: PLAYER_COLORS[mine],
+      // Older hosts don't send colors, so they can't take a color change.
+      colors:
+        lobby.seats[i].color == null
+          ? undefined
+          : { current: mine, taken: colors, pick: (c) => room.setColor(c) },
+    }).then((id) => id && room.setLook(id));
   };
   /** Arrival order of the seats for the players column (see `byArrival`). */
   const seen: string[] = [];
@@ -1514,7 +1558,7 @@ export function guestSetup(root: HTMLElement, room: GuestSetupRoom, handlers: Gu
             const bot = x.kind === 'cpu';
             return seatCard({
               key,
-              color: PLAYER_COLORS[i],
+              color: PLAYER_COLORS[x.color ?? i],
               look: x.look ?? null,
               pick: mine && !lobby?.resuming ? () => pick(lobby!, i) : null,
               rename: mine && !lobby?.resuming ? rename(x.name) : undefined,

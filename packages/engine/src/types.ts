@@ -228,6 +228,8 @@ export interface SeatConfig {
   name: string;
   cpu: boolean;
   ch: CharId;
+  /** Index into PLAYER_COLORS the player chose; missing or taken: the first free color. */
+  color?: number;
 }
 
 export interface MatchOptions {

@@ -9,7 +9,7 @@
  * engine's `auction` decision (the only device in a hot-seat game, the host online); guests send
  * their bids to the host and draw the state it sends back.
  */
-import { PLAYER_COLORS, cpuBidLimit, type DecisionRequest, type GameState } from '@aa/engine';
+import { PLAYER_COLORS, cpuBidLimit, spendable, type DecisionRequest, type GameState } from '@aa/engine';
 import { SHOP_TIERS, STAR3_TIERS, propertyIconURL, tierFor } from '../art';
 import { squareName } from '../names';
 import { sound } from '../audio';
@@ -110,7 +110,9 @@ export class AuctionView {
   /** Whether a bidder can still bid: not passed, not leading, and able to pay the next bid. */
   canBid(pid: number, live = this.live) {
     return (
-      !live.passed.includes(pid) && live.highBidder !== pid && this.G.players[pid].cash >= this.next(live)
+      !live.passed.includes(pid) &&
+      live.highBidder !== pid &&
+      spendable(this.G, this.G.players[pid]) >= this.next(live)
     );
   }
 
@@ -157,7 +159,7 @@ export class AuctionView {
       const p = this.G.players[pid];
       const passed = live.passed.includes(pid);
       const lead = pid === live.highBidder;
-      const broke = !passed && !lead && p.cash < this.next();
+      const broke = !passed && !lead && spendable(this.G, p) < this.next();
       const st = lead ? 'Leading' : passed ? 'Passed' : broke ? 'Too pricey' : 'In';
       this.list.append(
         h(
@@ -267,7 +269,7 @@ export class AuctionView {
       if (passed) row.push(h('span', { class: 'au-tag' }, 'Passed'));
       else if (lead) row.push(h('span', { class: 'au-tag lead' }, 'You lead'));
       else {
-        if (p.cash < this.next()) bid.textContent = 'Too pricey';
+        if (spendable(this.G, p) < this.next()) bid.textContent = 'Too pricey';
         row.push(bid, pass);
       }
       this.barControls.append(

@@ -4,7 +4,9 @@
  * player whose connection drops until they come back.
  */
 import {
+  MAX_PLAYERS,
   PLAYER_COLORS,
+  seatColors,
   cloneState,
   cpuDecide,
   type CharId,
@@ -33,6 +35,8 @@ import {
 } from './protocol';
 
 interface Seat extends LobbySeat {
+  /** The color this player chose (players only; bots take what is left). */
+  want?: number;
   token?: string;
   conn?: DataConnection;
   /** Player id once the game starts. */
@@ -46,9 +50,11 @@ export interface LocalSeat {
   name: string;
   look: CharId;
   ready?: boolean;
+  /** The color the player chose, if any. */
+  want?: number;
 }
 
-const MAX_SEATS = PLAYER_COLORS.length;
+const MAX_SEATS = MAX_PLAYERS;
 
 const cleanSeatName = cleanName;
 
@@ -172,13 +178,23 @@ export class HostRoom implements GameLink {
     this.listeners.forEach((f) => f());
   }
 
+  /** Every seat's color: players' choices first, then the first free color for the rest. */
+  private colors(): number[] {
+    // A game that is running (or reopened) keeps the colors it has.
+    const G = this.G;
+    if (G) return this.seats.map((s) => G.players[s.pid]?.color ?? 0);
+    return seatColors(this.seats.map((s) => (s.kind === 'cpu' || s.kind === 'open' ? undefined : s.want)));
+  }
+
   lobby(): LobbyInfo {
+    const colors = this.colors();
     return {
       ...this.settings,
-      seats: this.seats.map(({ kind, name, look, online, ready }) => ({
+      seats: this.seats.map(({ kind, name, look, online, ready }, i) => ({
         kind,
         name,
         look,
+        color: colors[i],
         online,
         ready: kind === 'cpu' || kind === 'open' || !!ready,
       })),
@@ -257,6 +273,25 @@ export class HostRoom implements GameLink {
     this.changed();
   }
 
+  /** A joined player picks another color; refused (the lobby re-sent) if another player has it. */
+  private recolor(seat: Seat, color: unknown) {
+    if (this.started) return;
+    // Another player (not a bot) has it now, chosen or given.
+    const colors = this.colors();
+    const taken = this.seats.some(
+      (s, i) => s !== seat && s.kind !== 'cpu' && s.kind !== 'open' && colors[i] === color,
+    );
+    if (
+      typeof color === 'number' &&
+      Number.isInteger(color) &&
+      color >= 0 &&
+      color < PLAYER_COLORS.length &&
+      !taken
+    )
+      seat.want = color;
+    this.changed();
+  }
+
   /** A joined player renames themselves in the lobby. */
   private rename(seat: Seat, name: unknown) {
     if (this.started) return;
@@ -299,6 +334,7 @@ export class HostRoom implements GameLink {
     const seat = this.seats.find((s) => s.conn === conn);
     if (!seat) return;
     if (msg.t === 'look') this.relook(seat, msg.look);
+    else if (msg.t === 'color') this.recolor(seat, msg.color);
     else if (msg.t === 'name') this.rename(seat, msg.name);
     else if (msg.t === 'ready') this.setReady(seat, msg.ready);
     else if (msg.t === 'answer' && typeof msg.seq === 'number') this.answered(seat, msg.seq, msg.ans);
@@ -425,12 +461,13 @@ export class HostRoom implements GameLink {
   seatConfigs(cpu: (i: number) => { name: string; ch: CharId }): SeatConfig[] {
     const out: SeatConfig[] = [];
     const used = this.takenLooks(-1);
+    const colors = this.colors();
     this.seats.forEach((s, i) => {
       if (s.kind === 'cpu' && s.look) {
         s.pid = out.length;
         const ch = used.includes(s.look) ? freeCharacter(used) : s.look;
         used.push(ch);
-        out.push({ name: s.name, cpu: true, ch });
+        out.push({ name: s.name, cpu: true, ch, color: colors[i] });
         return;
       }
       if (s.kind === 'open' || s.kind === 'cpu') {
@@ -438,11 +475,11 @@ export class HostRoom implements GameLink {
         const want = cpu(i);
         const ch = used.includes(want.ch) ? freeCharacter(used) : want.ch;
         used.push(ch);
-        out.push({ name: want.name, cpu: true, ch });
+        out.push({ name: want.name, cpu: true, ch, color: colors[i] });
         return;
       }
       s.pid = out.length;
-      out.push({ name: s.name, cpu: false, ch: s.look! });
+      out.push({ name: s.name, cpu: false, ch: s.look!, color: colors[i] });
     });
     return out;
   }

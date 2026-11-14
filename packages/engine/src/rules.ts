@@ -187,14 +187,33 @@ export function stockPrice(G: GameState, d: number): number {
 }
 
 /**
- * What `n` shares cost (buying) or fetch (selling). Classic: the listed price. Dynamic: the
- * average of the price before and after the trade, so no one profits from moving it themselves.
+ * The whole-coin price per share for trading `n` shares. Classic: the listed price. Dynamic: the
+ * average of the price before and after the trade (so no one profits from moving it themselves),
+ * rounded, and never below the listed price when buying or above it when selling. Small trades
+ * barely move the price, so they go at the listed price.
  */
-export function shareTradeValue(G: GameState, d: number, n: number, buying: boolean): number {
-  if (!dynamicStocks(G)) return n * stockPrice(G, d);
+export function shareTradePrice(G: GameState, d: number, n: number, buying: boolean): number {
+  const listed = stockPrice(G, d);
+  if (!dynamicStocks(G) || n <= 0) return listed;
   const held = sharesHeld(G, d);
   const after = buying ? held + n : Math.max(0, held - n);
-  return (n * (stockPriceExact(G, d, held) + stockPriceExact(G, d, after))) / 2;
+  const avg = Math.round((stockPriceExact(G, d, held) + stockPriceExact(G, d, after)) / 2);
+  return buying ? Math.max(listed, avg) : Math.max(1, Math.min(listed, avg));
+}
+
+/** What `n` shares cost (buying) or fetch (selling) before any deal: n x the price per share. */
+export function shareTradeValue(G: GameState, d: number, n: number, buying: boolean): number {
+  return n * shareTradePrice(G, d, n, buying);
+}
+
+/**
+ * What a trade of `n` shares costs or pays, in whole gold: buying at `rate` off rounds up,
+ * selling at `rate` above rounds down. Tiny float errors (200 x 0.7 = 139.99999...) are ignored.
+ */
+export function shareTradeTotal(G: GameState, d: number, n: number, buying: boolean, rate = 0): number {
+  const raw = shareTradeValue(G, d, n, buying) * (buying ? 1 - rate : 1 + rate);
+  const clean = Math.round(raw * 1e6) / 1e6;
+  return buying ? Math.ceil(clean) : Math.floor(clean);
 }
 
 export function stockValue(G: GameState, p: Player): number {

@@ -23,7 +23,7 @@ import {
   dynamicStocks,
   market,
   sellOffCut,
-  shareTradeValue,
+  shareTradeTotal,
   canAfford,
   canPromote,
   expand,
@@ -1048,9 +1048,8 @@ export class Game {
     if (!ans) return this.log(`${p.name} passed on buying stock.`, p.id, 'stock');
     const d = ans.d;
     if (!(d >= 0 && d < G.factor.length)) return;
-    // Dynamic stocks: the price moves as the shares are bought, so they cost the average of
-    // before and after. Classic: the listed price.
-    const cost = (k: number) => Math.ceil(shareTradeValue(G, d, k, true) * (1 - discount));
+    // n x a whole-coin price per share (see shareTradePrice), less any discount.
+    const cost = (k: number) => shareTradeTotal(G, d, k, true, discount);
     let n = Math.min(Math.floor(ans.n), K.maxBuy);
     while (n > 0 && cost(n) > p.cash) n--;
     if (n <= 0) return;
@@ -1077,7 +1076,7 @@ export class Game {
     if (G.rules !== 'standard' || !(d >= 0 && d < p.shares.length)) return;
     n = Math.min(Math.floor(n), p.shares[d]);
     if (n <= 0) return;
-    const amount = Math.floor(shareTradeValue(G, d, n, false) * (1 + premium));
+    const amount = shareTradeTotal(G, d, n, false, premium);
     p.shares[d] -= n;
     if (dynamicStocks(G)) {
       // A sell-off: K.sellOff+ shares of one district sold in a turn dent it, more the more
@@ -1192,16 +1191,18 @@ export class Game {
    * the last bid or when one bidder is left. The screen runs that and answers one `auction`
    * decision with the winner and price, which are checked here.
    */
-  async auction(sq: Square, seller: Player | null, opening: number) {
+  async auction(sq: Square, seller: Player | null, opening: number, formerOwner?: Player) {
     const G = this.G;
     opening = Math.max(1, Math.round(opening));
     const step = Math.max(K.auctionStepMin, Math.round(sq.value * K.auctionStep));
     const start = G.turn;
     const bidders: number[] = [];
-    // Listed in turn order, starting after the active player.
+    // Listed in turn order, starting after the active player. Anyone in debt sits out, and so does
+    // the player who just sold this property to the bank (no buying it straight back).
     for (let i = 1; i <= G.order.length; i++) {
       const q = G.players[G.order[(start + i) % G.order.length]];
-      if (!q.bankrupt && (!seller || q.id !== seller.id)) bidders.push(q.id);
+      if (q.bankrupt || q.cash < 0 || q === seller || q === formerOwner) continue;
+      bidders.push(q.id);
     }
     await this.emit({
       type: 'auctionStart',
@@ -1224,7 +1225,8 @@ export class Game {
       : null;
     const winner = ans && bidders.includes(ans.winner) ? G.players[ans.winner] : null;
     const price = Math.round(ans?.price ?? 0);
-    if (!winner || price < opening || price > winner.cash) {
+    // A bid may go past the winner's cash while selling their stock and property could cover it.
+    if (!winner || price < opening || !canAfford(G, winner, price)) {
       const noBids = !ans || ans.winner < 0;
       if (noBids) {
         sq.owner = -1;
@@ -1249,6 +1251,8 @@ export class Game {
     );
     await this.transfer(sq, winner.id);
     await this.emit({ type: 'auctionEnd', sq: sq.id, winner: winner.id, price });
+    // The player whose turn it is settles debt at the end of the turn; anyone else sells now.
+    if (winner.cash < 0 && winner !== this.current) await this.settleDebt(winner);
   }
 
   // ---------------------------------------------------------------- debt and bankruptcy
@@ -1300,7 +1304,7 @@ export class Game {
         } else {
           sq.owner = -1;
           await this.emit({ type: 'owner', sq: sq.id, owner: -1 });
-          await this.auction(sq, null, a.amount);
+          await this.auction(sq, null, a.amount, p);
         }
       }
     }

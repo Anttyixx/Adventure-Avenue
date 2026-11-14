@@ -6,10 +6,34 @@ import { rand, shuffle } from './rng';
 import { computeRows, netWorth, shareOffsets } from './rules';
 import type { GameState, Market, MatchOptions, Player, Square } from './types';
 
-export const PLAYER_COLORS = ['#e5484d', '#3e7bfa', '#30a46c', '#a855f7', '#f76b15'];
+/** Player colors: one more than the most players, so players can swap colors in game setup. */
+export const PLAYER_COLORS = ['#e5484d', '#3e7bfa', '#30a46c', '#a855f7', '#f76b15', '#d6409f'];
 
 /** Players per match (humans and CPUs). */
-export const MAX_PLAYERS = PLAYER_COLORS.length;
+export const MAX_PLAYERS = 5;
+
+/**
+ * Each seat's color, in seat order: the color it asked for when that is valid and no earlier seat
+ * has it, otherwise the first color nobody has. With no wishes this is 0, 1, 2...
+ */
+export function seatColors(wants: (number | null | undefined)[]): number[] {
+  const out: number[] = [];
+  const used = new Set<number>();
+  wants.forEach((c, i) => {
+    if (c != null && Number.isInteger(c) && c >= 0 && c < PLAYER_COLORS.length && !used.has(c)) {
+      out[i] = c;
+      used.add(c);
+    }
+  });
+  wants.forEach((_, i) => {
+    if (out[i] != null) return;
+    const free = PLAYER_COLORS.findIndex((_, k) => !used.has(k));
+    out[i] = free;
+    used.add(free);
+  });
+  return out;
+}
+
 export function newGame(opts: MatchOptions): GameState {
   const board = opts.board ?? BOARDS[opts.boardId ?? 'town'];
   const seed = opts.seed ?? Math.floor(Math.random() * 2 ** 31);
@@ -53,12 +77,13 @@ export function newGame(opts: MatchOptions): GameState {
   }
   // One-way links: no stepping from `to` back to `from`.
   for (const [a, b] of board.oneWay ?? []) if (nodes[a]?.nb.includes(b)) (nodes[b].noGo ??= []).push(a);
+  const colors = seatColors(opts.seats.map((seat) => seat.color));
   const players: Player[] = opts.seats.map((seat, i) => ({
     id: i,
     slot: i,
     name: seat.name,
     ch: seat.ch,
-    color: i,
+    color: colors[i],
     cpu: seat.cpu,
     cash: K.startCash,
     level: 1,

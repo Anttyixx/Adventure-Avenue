@@ -11,7 +11,7 @@
 import type { BoardDef, CharId, GameState, PlotSetting, RuleSet, StockSystem } from '@aa/engine';
 
 /** Protocol version: a joiner on a different version is turned away. */
-export const NET_VERSION = 54;
+export const NET_VERSION = 55;
 
 export type SeatKind = 'host' | 'local' | 'remote' | 'open' | 'cpu';
 
@@ -19,6 +19,11 @@ export interface LobbySeat {
   kind: SeatKind;
   name: string;
   look: CharId | null;
+  /**
+   * Index into PLAYER_COLORS. The host fills in every seat's color (chosen or the first free
+   * one); missing in lobbies from older hosts.
+   */
+  color?: number;
   /** False while a joined player's connection is lost. */
   online: boolean;
   /** In the lobby: this player tapped Ready (bots always are). The game starts when all are. */
@@ -78,6 +83,8 @@ export type ToHost =
   | { t: 'hello'; v: number; token: string; name: string; look?: CharId }
   /** Pick a different character in the lobby (refused if someone else has it). */
   | { t: 'look'; look: CharId }
+  /** Pick a different color in the lobby (refused if another player has it). */
+  | { t: 'color'; color: number }
   /** Change name in the lobby. */
   | { t: 'name'; name: string }
   /** Ready (or not) to start, in the lobby. */

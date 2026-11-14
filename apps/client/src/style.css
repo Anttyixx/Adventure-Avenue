@@ -1173,10 +1173,18 @@ input[type='range'] {
   background: var(--pc);
   color: #fff;
 }
+/* Boon and Boom match the painted suits' symbol size: each image has its own clear margin, so
+   each gets its own box (pulled in so the row keeps its width). */
 .boon-ico {
   flex: none;
-  width: 18px;
-  height: 18px;
+  width: 17px;
+  height: 17px;
+  margin: -1px 0;
+}
+.boon-ico.boom {
+  width: 20px;
+  height: 20px;
+  margin: -3px -2px;
 }
 .pc-top .suits {
   margin-left: auto;
@@ -2552,36 +2560,319 @@ input[type='range'] {
     transform: scale(1.06);
   }
 }
-/* Results: the winner, a card per player (place, net worth and a bar of what it is made of),
-   net worth by round with a key, and a stats table with players as columns. */
+/* Results: a podium for the top three (medals) with ribbons for everyone else, then panels: the
+   stats table (drawn like the stock market's table), net worth by round, the stock market and
+   each player's net worth ring. The pop-up nearly fills the screen; on a tall screen the podium
+   stays put and the panels scroll under it, side by side on a wide one. */
+.modal.wide.full {
+  width: min(1600px, 100%);
+}
 .results {
   display: flex;
   flex-direction: column;
   gap: 14px;
 }
-.res-win {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  padding: 10px 14px;
-  border-radius: 14px;
-  background: linear-gradient(90deg, color-mix(in srgb, var(--pc) 35%, transparent), transparent);
-  border-left: 5px solid var(--pc);
+@media (min-height: 800px) and (min-width: 900px) {
+  .results-modal {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    overflow: hidden;
+  }
+  .results {
+    flex: 1;
+    min-height: 0;
+  }
+  .res-panels {
+    flex: 1;
+    min-height: 0;
+    overflow: auto;
+    padding-right: 4px;
+  }
 }
-.res-win-body {
-  width: 56px;
-  height: 56px;
-  object-fit: contain;
-  image-rendering: pixelated;
+.res-hero {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+.res-title {
+  text-align: center;
 }
 .res-win-name {
   font-family: var(--head);
-  font-size: 26px;
+  font-size: 30px;
+  line-height: 1.1;
   color: var(--accent);
 }
 .res-win-why {
   color: var(--muted);
   font-size: 14px;
+}
+/* The podium: 2nd, 1st, 3rd. Each step is a gold, silver or bronze block with a top edge in the
+   player's color; the player stands on it with their medal. */
+.res-podium {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 160px));
+  align-items: end;
+  gap: 6px;
+}
+.res-spot {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 0;
+}
+.res-stand {
+  position: relative;
+  animation: res-drop 0.45s ease-out both;
+}
+.res-body {
+  display: block;
+  width: 46px;
+  height: 72px;
+  object-fit: contain;
+  object-position: bottom;
+  image-rendering: pixelated;
+}
+.res-spot.p1 .res-body {
+  width: 54px;
+  height: 86px;
+}
+.res-medal {
+  position: absolute;
+  right: -28px;
+  bottom: 0;
+  width: 32px;
+  height: 43px;
+  filter: drop-shadow(0 2px 2px rgba(0, 0, 0, 0.35));
+}
+.res-spot.p1 .res-medal {
+  width: 38px;
+  height: 51px;
+  right: -34px;
+}
+.res-medal svg,
+.res-ribbon-ico svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+.res-medal .strap.a {
+  fill: #e5484d;
+}
+.res-medal .strap.b {
+  fill: #3e7bfa;
+}
+.res-medal .ring {
+  fill: none;
+  stroke-width: 2;
+}
+.res-medal text {
+  font-family: var(--head);
+  font-size: 17px;
+}
+.res-medal.m1 .disc {
+  fill: #f5b301;
+}
+.res-medal.m1 .ring {
+  stroke: #ffe08f;
+}
+.res-medal.m1 text {
+  fill: #3b2a00;
+}
+.res-medal.m2 .disc {
+  fill: #b9c2d3;
+}
+.res-medal.m2 .ring {
+  stroke: #f1f4fa;
+}
+.res-medal.m2 text {
+  fill: #283247;
+}
+.res-medal.m3 .disc {
+  fill: #c27c43;
+}
+.res-medal.m3 .ring {
+  stroke: #f2c59a;
+}
+.res-medal.m3 text {
+  fill: #3a1f08;
+}
+.res-name {
+  max-width: 100%;
+  margin-top: 4px;
+  font-family: var(--head);
+  font-weight: 400;
+  font-size: 17px;
+  color: color-mix(in srgb, var(--pc) 55%, #fff);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  animation: res-drop 0.45s ease-out both;
+}
+.res-amt {
+  font-family: var(--head);
+  font-size: 15px;
+  margin-bottom: 4px;
+  animation: res-drop 0.45s ease-out both;
+}
+.res-step {
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  width: 100%;
+  border-radius: 10px 10px 0 0;
+  border-top: 5px solid var(--pc);
+  box-shadow: inset 0 -10px 18px rgba(0, 0, 0, 0.18);
+  transform-origin: bottom;
+  animation: res-rise 0.5s cubic-bezier(0.2, 0.9, 0.3, 1.15) both;
+}
+.res-step span {
+  font-family: var(--head);
+  font-size: 34px;
+  line-height: 1.3;
+  opacity: 0.85;
+}
+.res-spot.p1 .res-step {
+  height: 96px;
+  background: linear-gradient(#ffe08f, #f5b301);
+  color: #3b2a00;
+}
+.res-spot.p2 .res-step {
+  height: 70px;
+  background: linear-gradient(#f1f4fa, #b9c2d3);
+  color: #283247;
+}
+.res-spot.p3 .res-step {
+  height: 50px;
+  background: linear-gradient(#f2c59a, #c27c43);
+  color: #3a1f08;
+}
+/* 3rd rises first, then 2nd, then 1st; each player appears once their step is up. */
+.res-spot > .res-step {
+  animation-delay: var(--d, 0s);
+}
+.res-spot > .res-stand,
+.res-spot > .res-name,
+.res-spot > .res-amt {
+  animation-delay: calc(var(--d, 0s) + 0.35s);
+}
+.res-spot.p3 {
+  --d: 0.15s;
+}
+.res-spot.p2 {
+  --d: 0.4s;
+}
+.res-spot.p1 {
+  --d: 0.65s;
+}
+@keyframes res-rise {
+  from {
+    transform: scaleY(0);
+  }
+}
+@keyframes res-drop {
+  from {
+    opacity: 0;
+    transform: translateY(-14px);
+  }
+}
+/* Everyone off the podium: a chip with a participation ribbon. */
+.res-ribbons {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+}
+.res-ribbon {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 12px 3px 6px;
+  border-radius: 999px;
+  border: 1.5px solid var(--pc);
+  background: color-mix(in srgb, var(--pc) 16%, transparent);
+  font-family: var(--head);
+  font-size: 14px;
+}
+.res-ribbon.out {
+  opacity: 0.6;
+}
+.res-ribbon-ico {
+  width: 20px;
+  height: 26px;
+}
+.res-ribbon-ico .tail {
+  fill: #6c7bd9;
+}
+.res-ribbon-ico .petals {
+  fill: #2bb3a6;
+}
+.res-ribbon-ico .core {
+  fill: #e8fbf8;
+}
+.res-ribbon-ico .star {
+  fill: #2bb3a6;
+}
+.res-ribbon-place {
+  color: var(--muted);
+  font-size: 13px;
+}
+.res-ribbon .portrait {
+  width: 22px;
+  height: 22px;
+}
+.res-ribbon b {
+  font-weight: 400;
+  color: color-mix(in srgb, var(--pc) 55%, #fff);
+}
+.res-ribbon-amt {
+  margin-left: 4px;
+}
+/* The panels: stacked on narrow screens, side by side on wide ones. */
+.res-panels {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-content: start;
+  gap: 12px;
+}
+.res-panel {
+  min-width: 0;
+  padding: 12px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.04);
+  box-shadow: inset 0 0 0 1px var(--glass-line);
+}
+@media (min-width: 1100px) {
+  .res-panels {
+    grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+    grid-template-areas:
+      'stats worth'
+      'stats stocks'
+      'mix mix';
+  }
+  .res-panels.no-stocks {
+    grid-template-areas:
+      'stats worth'
+      'stats mix';
+  }
+  .res-stats {
+    grid-area: stats;
+    align-self: start;
+  }
+  .res-worth {
+    grid-area: worth;
+  }
+  .res-stocks {
+    grid-area: stocks;
+  }
+  .res-mix {
+    grid-area: mix;
+  }
+}
+.res-foot {
+  margin-top: 0;
 }
 .res-cards {
   display: grid;
@@ -2676,11 +2967,14 @@ input[type='range'] {
   width: 88px;
   height: 88px;
 }
-.res-section h3 {
-  margin: 0 0 6px;
+.res-panel h3 {
+  margin: 0 0 8px;
   font-family: var(--head);
   font-weight: 400;
-  font-size: 16px;
+  font-size: 17px;
+}
+.chart-box {
+  width: 100%;
 }
 .chart {
   display: block;
@@ -2708,81 +3002,157 @@ input[type='range'] {
 .res-legend i.target {
   background: repeating-linear-gradient(90deg, #ffd166 0 5px, transparent 5px 8px);
 }
+/* The stats table, like the stock market's: a tab in each player's color heads a strip of their
+   color running down the table; stat names sit on the left in shaded cells; the best cell in a
+   row is gold with a star. */
 .res-table-wrap {
   overflow-x: auto;
-  border-radius: 12px;
-  background: rgba(255, 255, 255, 0.03);
-  box-shadow: inset 0 0 0 1px var(--glass-line);
 }
-.res-table {
+.res-grid {
   width: 100%;
-  border-collapse: collapse;
-  font-size: 13px;
+  border-collapse: separate;
+  border-spacing: 3px 2px;
+  font-size: 14px;
   font-variant-numeric: tabular-nums;
 }
-.res-table th,
-.res-table td {
-  padding: 6px 12px;
-  text-align: right;
+.res-grid th,
+.res-grid td {
+  padding: 5px 10px;
   white-space: nowrap;
 }
-/* Every other row is faintly shaded so a row is easy to follow across. */
-.res-table tbody tr:not(.res-group):nth-child(even) {
-  background: rgba(255, 255, 255, 0.035);
-}
-.res-table tbody th {
-  text-align: left;
+.rs-ph {
+  min-width: 82px;
+  padding: 6px 6px 5px !important;
+  border-radius: 10px 10px 0 0;
+  background: var(--pc);
+  text-align: center;
   font-weight: 400;
+}
+.rs-ph img {
+  display: block;
+  margin: 0 auto 2px;
+  width: 38px;
+  height: 38px;
+  image-rendering: pixelated;
+}
+.rs-pname {
+  display: block;
+  max-width: 110px;
+  margin: 0 auto;
+  font-family: var(--head);
+  font-size: 14px;
+  color: #fff;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.45);
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.rs-ph small {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.9);
+}
+.rs-ph.out {
+  opacity: 0.45;
+}
+.rs-label {
+  text-align: left;
+  font-weight: 700;
+  border-radius: 8px 0 0 8px;
+  background: rgba(255, 255, 255, 0.06);
+}
+.rs-cell {
+  text-align: right;
+  font-family: var(--head);
+  font-size: 15px;
+  background: color-mix(in srgb, var(--pc) 13%, transparent);
+  border-left: 2px solid var(--pc);
+  border-right: 2px solid var(--pc);
+}
+/* Every other row a little stronger, so a row is easy to follow across. */
+.res-grid tr:nth-child(odd) .rs-cell:not(.best) {
+  background: color-mix(in srgb, var(--pc) 22%, transparent);
+}
+.res-grid tr:nth-child(odd) .rs-label {
+  background: rgba(255, 255, 255, 0.1);
+}
+.res-grid tbody:last-child tr:last-child .rs-cell {
+  border-bottom: 2px solid var(--pc);
+  border-radius: 0 0 8px 8px;
+}
+.rs-cell.out {
   color: var(--muted);
 }
-.res-table thead th {
-  position: sticky;
-  top: 0;
-  padding-top: 10px;
-  padding-bottom: 8px;
-  background: rgba(22, 31, 60, 0.96);
-  border-bottom: 1px solid var(--glass-line);
+.res-grid tbody tr:not(.res-group):hover > * {
+  filter: brightness(1.25);
 }
-/* Each player's column heading: their portrait and name in a chip of their color. */
-.res-who {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  padding: 2px 9px 2px 3px;
-  border-radius: 999px;
-  border: 1.5px solid var(--pc);
-  background: color-mix(in srgb, var(--pc) 22%, transparent);
+.rs-cell.best {
+  background: linear-gradient(#ffe08f, #f5b301);
+  color: #3b2a00;
+}
+.rs-cell.best::before {
+  content: '★ ';
+  font-size: 12px;
+}
+/* Section names (Wealth, Income...) in the label column; the color strips carry on beside them. */
+.res-group th {
+  padding-top: 12px;
+  padding-bottom: 4px;
+  text-align: left;
   font-family: var(--head);
   font-weight: 400;
   font-size: 13px;
-  color: #fff;
-}
-.res-who .portrait {
-  width: 20px;
-  height: 20px;
-}
-.res-group th {
-  padding-top: 14px;
-  padding-bottom: 4px;
-  text-align: left !important;
-  font-family: var(--head);
-  font-weight: 400 !important;
-  font-size: 13px;
-  color: var(--accent) !important;
+  color: var(--accent);
   letter-spacing: 0.04em;
   text-transform: uppercase;
 }
-.res-table td.best {
-  color: var(--accent);
-  font-weight: 700;
+.res-group .rs-cell {
+  background: color-mix(in srgb, var(--pc) 6%, transparent) !important;
 }
-.res-table td.best::before {
-  content: '★ ';
-  font-size: 11px;
+@media (prefers-reduced-motion: reduce) {
+  .res-step,
+  .res-stand,
+  .res-name,
+  .res-amt {
+    animation: none;
+  }
 }
 @media (max-height: 500px) {
   .res-win-name {
-    font-size: 20px;
+    font-size: 22px;
+  }
+  .res-hero {
+    gap: 6px;
+  }
+  .res-podium {
+    grid-template-columns: repeat(3, minmax(0, 130px));
+  }
+  .res-body {
+    width: 34px;
+    height: 54px;
+  }
+  .res-spot.p1 .res-body {
+    width: 40px;
+    height: 64px;
+  }
+  .res-name {
+    font-size: 14px;
+  }
+  .res-amt {
+    font-size: 13px;
+  }
+  .res-spot.p1 .res-step {
+    height: 58px;
+  }
+  .res-spot.p2 .res-step {
+    height: 42px;
+  }
+  .res-spot.p3 .res-step {
+    height: 30px;
+  }
+  .res-step span {
+    font-size: 22px;
   }
   /* Two cards a row: the ring and its key need the width. */
   .res-cards {
@@ -2792,8 +3162,11 @@ input[type='range'] {
     width: 76px;
     height: 76px;
   }
-  .res-table {
+  .res-grid {
     font-size: 12px;
+  }
+  .rs-cell {
+    font-size: 13px;
   }
 }
 
@@ -2926,6 +3299,16 @@ input[type='range'] {
     width: 16px;
     height: 16px;
     margin: -2px -1.5px;
+  }
+  .boon-ico {
+    width: 12px;
+    height: 12px;
+    margin: 0;
+  }
+  .boon-ico.boom {
+    width: 14.5px;
+    height: 14.5px;
+    margin: -1px -1px;
   }
   .tag {
     font-size: 9px;
@@ -6125,6 +6508,60 @@ input[type='range'] {
 }
 .modal.char-pick {
   width: min(560px, 100%);
+}
+/* The color row (game setup): one round swatch per player color; taken ones are faded. */
+.char-colors {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+}
+.char-colors-label {
+  font-family: var(--head);
+  font-size: 13px;
+  color: var(--muted);
+  margin-right: 2px;
+}
+.color-swatch {
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border-radius: 50%;
+  border: 3px solid rgba(255, 255, 255, 0.18);
+  background: var(--sw);
+  cursor: pointer;
+  transition:
+    transform 0.12s,
+    border-color 0.12s,
+    box-shadow 0.12s;
+}
+.color-swatch:hover:not(:disabled) {
+  transform: scale(1.1);
+}
+.color-swatch.on {
+  border-color: #fff;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--sw) 55%, transparent);
+}
+.color-swatch {
+  position: relative;
+}
+/* Taken by another player: faded, with a slash across. */
+.color-swatch:disabled {
+  cursor: not-allowed;
+  opacity: 0.35;
+}
+.color-swatch:disabled::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: -3px;
+  bottom: -3px;
+  width: 3px;
+  margin-left: -1.5px;
+  border-radius: 2px;
+  background: #fff;
+  transform: rotate(45deg);
 }
 .char-grid {
   display: grid;
@@ -12268,11 +12705,6 @@ button.char-btn:hover img {
   height: 22px;
   vertical-align: bottom;
 }
-.bet-chip {
-  width: 24px;
-  height: 24px;
-  margin-right: 4px;
-}
 .arcade-painted .chest-box,
 .arcade-painted .chest.open .chest-box {
   width: calc(86px * var(--s));
@@ -12310,10 +12742,6 @@ button.char-btn:hover img {
   .arcade-painted .chest.open .chest-box {
     width: calc(64px * var(--s));
     height: calc(64px * var(--s));
-  }
-  .bet-chip {
-    width: 18px;
-    height: 18px;
   }
 }
 @media (prefers-reduced-motion: reduce) {

@@ -160,7 +160,11 @@ two options (use segmented pills), tiny ✕ glyphs as close buttons.
 Use tokens, not new literal colors, for anything on the dark interface. Meaning colors:
 
 - **Player color** `--pc` (`PLAYER_COLORS`: red `#e5484d`, blue `#3e7bfa`, green `#30a46c`,
-  purple `#a855f7`, orange `#f76b15`): that player's card edge, glow, dots, chips, owned tiles.
+  purple `#a855f7`, orange `#f76b15`, magenta `#d6409f`; six for at most five players, so they can
+  swap in game setup): that player's card edge, glow, dots, chips, owned tiles.
+- **Color swatches** (character picker in game setup, `.color-swatch`): 30px circles in the color
+  with a 3px faint rim; the player's own has a white rim and a soft glow of its color; taken ones
+  are at 35% with a white slash.
 - **District color** `--dc` (set per board, ten defaults in `ui/editor-districts.ts`): district
   card edge, swatches and dots, tile borders.
 - **Link color** `--lc`: a warp/portal pair's color (`transportColor()`; five colors, gold for
@@ -942,15 +946,35 @@ Reopened online games keep guests on Continue Game until the host presses Resume
 
 ### Results (pop-up)
 
-- Winner strip (player-color gradient from the left, 5px left edge, 56px character, Lilita 26px
-  gold name), then player cards in an auto-fit grid (min 250px, 300px on short screens; 4px top
-  edge in the player color, the winner's card with a soft gold inset ring). Each card: a place
-  medal pill (gold / silver / bronze gradients, then plain), portrait, name in their color, level,
-  "Net worth" with the amount (Lilita 22px) on the right, and below it the player page's net worth
-  ring (`overview.ts` `assetMix`, 88px here). Section headings in Lilita 16px. The stats table sits
-  in a faint glass panel: tabular numbers right-aligned, every other row shaded, player chips
-  (portrait + name, 1.5px border in their color) as column heads, gold uppercase group rows, the
-  best cell gold and bold with a small star.
+- `hud.modal(..., { wide: 'full' })`: up to 1600px wide (`.modal.wide.full`), class
+  `results-modal`. From 800px tall and 900px wide it is a column filling the screen: the hero is
+  fixed and `.res-panels` scrolls; shorter screens scroll the whole pop-up.
+- **Hero** (centered): Lilita 30px gold "X wins!" (22px on short screens) and the reason in muted
+  14px. **Podium** (`.res-podium`): three columns up to 160px (130px short), 2nd / 1st / 3rd. Steps
+  96 / 70 / 50px tall (58 / 42 / 30 short) in the place gradients (gold `#ffe08f`→`#f5b301`,
+  silver `#f1f4fa`→`#b9c2d3`, bronze `#f2c59a`→`#c27c43`), radius 10px on top, a 5px top edge in
+  the player's color, the place number in Lilita 34px. On each: the trimmed character (54×86 for
+  1st, 46×72 others), a **medal** SVG at its lower right (red/blue strap, disc in the place color
+  with a lighter ring and the number), the name in Lilita 17px (player color mixed 55% with white
+  for contrast) and net worth in Lilita 15px. Steps rise from the bottom (`res-rise`, 3rd, 2nd,
+  1st, 0.25s apart), the player then drops in (`res-drop`); none with reduced motion.
+- **Participation ribbons** (`.res-ribbon`): pill chips, 1.5px border in the player color over a
+  16% tint, a teal rosette SVG with lavender tails, muted place, 22px portrait, name, net worth.
+- **Panels** (`.res-panel`): faint glass (4% white, inset glass-line ring), radius 14px, padding
+  12px, Lilita 17px headings. Grid areas from 1100px: `stats worth / stats stocks / mix mix`
+  (without stocks: `stats worth / stats mix`). The chart redraws to its panel's width
+  (height 42% of it, 180-300px).
+- **Stats table** (`.res-grid`), modelled on the stock table (`.m-grid`): separate borders,
+  3px × 2px spacing. Column heads are tabs in the player color (radius 10px on top) with a 38px
+  portrait, Lilita 14px white name and a small uppercase place. Cells: Lilita 15px right-aligned,
+  13% tint of the player color (22% on odd rows) with 2px side borders in their color, the last
+  row closing the strip with a bottom border and rounded corners. Labels: bold, left, 6% white
+  (10% on odd rows), rounded on the left. Group rows: gold uppercase Lilita 13px in the label
+  column, the strips carrying on at a 6% tint. Best: the gold gradient with dark text and a ★.
+  Rows brighten on hover.
+- The net worth cards (`.res-card`) keep their earlier look: auto-fit grid (min 250px, 300px on
+  short screens), 4px top edge in the player color, winner with a soft gold inset ring, place pill,
+  portrait, name, level, net worth (Lilita 22px) and the 88px `assetMix` ring.
 
 ### 5.19 Board overlays (canvas)
 
@@ -1358,6 +1382,6 @@ Rename only the Draw palette category Properties to Buildings; keep the Property
 
 ### Shared painted HUD symbols
 
-Use the board’s painted suit and effect PNGs in player cards and player pages: blue Spade, red Heart, yellow Diamond, green Club, the existing green Boon coin burst and cleaned pink Boom coin burst. Missing suits use `symbols-v22/*-empty.png`: the sprite's own silhouette as a faint white slot with a soft rim. On player cards the suit images are drawn at 22px (16px on phones) with negative margins, since the PNGs keep a transparent margin round the symbol. Suit Yourself uses the purple/gold star card; Random Suit is a freestanding shuffle with no card. `symbols-v22/` preserves the toy-town style, transparent margins and fixed colors. Warp uses a flat equal-width/height four-point star, cream fixed rim and aligned grey tint. `SYMBOL_ART_SET` restores preserved art. The Stack chip uses three overlapping cards, with no arrow.
+Use the board’s painted suit and effect PNGs in player cards and player pages: blue Spade, red Heart, yellow Diamond, green Club, the existing green Boon coin burst and cleaned pink Boom coin burst. Missing suits use `symbols-v22/*-empty.png`: the sprite's own silhouette as a faint white slot with a soft rim. On player cards the suit images are drawn at 22px (16px on phones) with negative margins, since the PNGs keep a transparent margin round the symbol. An active Boon or Boom beside the name is sized so its symbol matches the suits: Boon 17px (12px on phones), Boom 20px (14.5px), each with its own negative margins (`.boon-ico`, `.boon-ico.boom`). Suit Yourself uses the purple/gold star card; Random Suit is a freestanding shuffle with no card. `symbols-v22/` preserves the toy-town style, transparent margins and fixed colors. Warp uses a flat equal-width/height four-point star, cream fixed rim and aligned grey tint. `SYMBOL_ART_SET` restores preserved art. The Stack chip uses three overlapping cards, with no arrow.
 
 Pop-up hover expansion keeps the existing card glide and cancellation guards. Observe mouse position through the backdrop rather than raising cards above the dialog or enabling pointer events. Actual dialog/action-bar controls retain precedence; card/button clicks and keyboard activation stay blocked. Moving off the stack folds it; View board restores ordinary interaction. UI Lab: Updated symbol artwork and Stack: hover during a pop-up.

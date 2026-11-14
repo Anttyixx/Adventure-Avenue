@@ -120,7 +120,17 @@ const rnd = (n: number) => Math.floor(Math.random() * n);
  * Controls for UI elements that were just added or changed: they shake once and glow so they
  * are easy to find. Update this list with each change.
  */
-const RECENT = new Set(['Venture grid (play)']);
+const RECENT = new Set([
+  'Results screen',
+  'Results screen (one bankrupt)',
+  'Character picker',
+  'Game setup',
+  'Toggle Boon',
+  'Toggle Boom',
+  'Lucky Wheel',
+  'Buy stock',
+  'Live auction',
+]);
 
 /**
  * Which board the lab plays on: Town with portal links (square, the default) or Twin Lakes (hex),
@@ -2377,7 +2387,8 @@ export async function openLab(app: HTMLElement, section?: string) {
       btn("What's new", () => openWhatsNew(document.body)),
       btn('Credits', () => openCredits(document.body)),
       btn('Character picker', async () => {
-        // Rosa and Milo have the first two characters, so those show as taken.
+        // Rosa and Milo have the first two characters and colors, so those show as taken.
+        let color = 2;
         const id = await pickCharacter({
           current: CHARACTERS[2].id,
           taken: new Map([
@@ -2385,8 +2396,16 @@ export async function openLab(app: HTMLElement, section?: string) {
             [CHARACTERS[1].id, 'Milo'],
           ]),
           color: PLAYER_COLORS[2],
+          colors: {
+            current: 2,
+            taken: new Map([
+              [0, 'Rosa'],
+              [1, 'Milo'],
+            ]),
+            pick: (c) => (color = c),
+          },
         });
-        result('Character picker', id ?? undefined);
+        result('Character picker', `${id ?? 'no character change'}, color ${color + 1}`);
       }),
       btn('Player card', () => openPlayerCard(document.body, () => {})),
       btn('Game setup', () => setup(0)),
@@ -2403,8 +2422,8 @@ export async function openLab(app: HTMLElement, section?: string) {
             roundCap: 30,
             plots: 'some',
             seats: [
-              { kind: 'host', name: 'Rosa', look: looks[0], online: true, ready: true },
-              { kind: 'remote', name: 'Milo', look: looks[1], online: true, ready: false },
+              { kind: 'host', name: 'Rosa', look: looks[0], color: 0, online: true, ready: true },
+              { kind: 'remote', name: 'Milo', look: looks[1], color: 1, online: true, ready: false },
               { kind: 'open', name: '', look: null, online: false },
               { kind: 'open', name: '', look: null, online: false },
             ],
@@ -2417,6 +2436,10 @@ export async function openLab(app: HTMLElement, section?: string) {
               lobby,
               setLook: (id) => {
                 lobby.seats[1].look = id;
+                view.update();
+              },
+              setColor: (color) => {
+                lobby.seats[1].color = color;
                 view.update();
               },
               setName: (name) => {
@@ -2571,6 +2594,14 @@ export async function openLab(app: HTMLElement, section?: string) {
         R.over = true;
         R.winner = ranking(R)[0].id;
         R.endReason = `Reached the ${R.target}G target`;
+        showResults(hud, R, () => hud.modalLayer.lastElementChild?.remove());
+      }),
+      btn('Results screen (one bankrupt)', () => {
+        const R = cloneState(G);
+        R.over = true;
+        R.players[R.players.length - 1].bankrupt = true;
+        R.winner = ranking(R)[0].id;
+        R.endReason = `${R.players[R.players.length - 1].name} went bankrupt`;
         showResults(hud, R, () => hud.modalLayer.lastElementChild?.remove());
       }),
     );

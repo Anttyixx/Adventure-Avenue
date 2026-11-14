@@ -16,7 +16,7 @@ import {
 } from '../src/rules';
 import { K } from '../src/constants';
 import { BOARDS } from '../src/boards/builtin';
-import { newGame } from '../src/setup';
+import { MAX_PLAYERS, PLAYER_COLORS, newGame, seatColors } from '../src/setup';
 import { cpuSeats } from '../src/headless';
 import { at, makeGame } from './helpers';
 
@@ -456,6 +456,27 @@ describe('auctions and trades', () => {
     }
   });
 
+  it('lets a bidder go past their cash when assets cover it, selling them right away', async () => {
+    let backingId = -1;
+    const { G, game, asked } = makeGame('standard', (r) => {
+      if (r.kind === 'auction') return r.seller >= 0 ? { winner: 1, price: r.opening } : null;
+      if (r.kind === 'debt') return r.assets.findIndex((a) => a.kind === 'square' && a.id === backingId);
+      return undefined;
+    });
+    const shop = at(G, 6, 0);
+    shop.owner = 0;
+    const bidder = G.players[1];
+    const backing = G.nodes.find((s) => s.t === 'shop' && s !== shop)!;
+    backingId = backing.id;
+    backing.owner = 1;
+    backing.value = shop.value * 4;
+    bidder.cash = Math.floor(shop.value / 2);
+    await game.voluntaryAuction(G.players[0], shop.id);
+    expect(shop.owner).toBe(1);
+    expect(asked.some((r) => r.kind === 'debt' && r.pid === 1)).toBe(true);
+    expect(bidder.cash).toBeGreaterThanOrEqual(0);
+  });
+
   it('returns an unsold property to the bank without charging any bidder', async () => {
     const { G, game, events } = makeGame('standard', (r) => (r.kind === 'auction' ? null : undefined));
     const shop = at(G, 6, 0);
@@ -726,5 +747,25 @@ describe('CPU choices', () => {
     for (const s of G.nodes) if (s.d === d && isShopLike(s)) s.owner = p.id;
     const ans = cpuDecide(G, { kind: 'buyStock', pid: 0, discount: 0, maxSpend: 3000 });
     expect(ans?.d).toBe(d);
+  });
+});
+
+describe('player colors', () => {
+  it('has one more color than the most players', () => {
+    expect(PLAYER_COLORS.length).toBe(MAX_PLAYERS + 1);
+    expect(new Set(PLAYER_COLORS).size).toBe(PLAYER_COLORS.length);
+  });
+
+  it('gives seats the color they chose, or the first free one, never the same twice', () => {
+    expect(seatColors([undefined, undefined, undefined])).toEqual([0, 1, 2]);
+    expect(seatColors([5, undefined, 0, undefined])).toEqual([5, 1, 0, 2]);
+    // A color an earlier seat has, or one that doesn't exist, falls back to a free one.
+    expect(seatColors([3, 3, 99, -1])).toEqual([3, 0, 1, 2]);
+  });
+
+  it('starts a game with the chosen colors', () => {
+    const seats = cpuSeats(3).map((s, i) => ({ ...s, color: [5, undefined, 1][i] }));
+    const G = newGame({ rules: 'standard', target: 5000, roundCap: 0, seats, seed: 1, board: BOARDS.town });
+    expect(G.players.map((p) => p.color)).toEqual([5, 0, 1]);
   });
 });

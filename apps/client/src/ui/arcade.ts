@@ -862,14 +862,7 @@ export class ArcadeStage {
       };
     });
     paint();
-    const stepper = h(
-      'div',
-      { class: 'aa-stake' },
-      arcadeURL('chip') ? arcadeImage('chip', 'bet-chip') : null,
-      minus,
-      value,
-      plus,
-    );
+    const stepper = h('div', { class: 'aa-stake' }, minus, value, plus);
     const answer = await this.bar<{ choice: number; stake: number }>(
       p.id,
       max > 0 ? `${p.name}: place a bet?` : `${p.name} has no cash to bet`,

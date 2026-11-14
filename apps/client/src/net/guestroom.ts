@@ -117,6 +117,11 @@ export class GuestRoom implements GameLink {
     this.send({ t: 'look', look });
   }
 
+  /** Ask the host for a different color (lobby only). */
+  setColor(color: number) {
+    this.send({ t: 'color', color });
+  }
+
   /** Rename this player (lobby only; the host cleans the name up). */
   setName(name: string) {
     this.send({ t: 'name', name });

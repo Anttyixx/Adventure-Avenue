@@ -14,6 +14,8 @@ import {
   maxValue,
   netWorth,
   salary,
+  shareTradePrice,
+  shareTradeTotal,
   shopFee,
   squareFee,
   stockPrice,
@@ -276,5 +278,32 @@ describe('dynamic stock balance', () => {
     expect(districtWorth(G, 6) / before).toBeCloseTo(1.25);
     G.stocks = 'classic';
     expect(districtWorth(G, 6)).toBeCloseTo(300 * K.stockRate);
+  });
+});
+
+describe('share trade totals', () => {
+  it('charges a whole number of gold per share: 10 shares at a listed 20G cost 200G', () => {
+    const { G } = makeGame();
+    const d = 0;
+    // Make the exact price a little under 20 (it shows as 20G).
+    G.market!.offset![d] = 0;
+    const base = stockPriceExact(G, d);
+    G.market!.offset![d] = base - 19.6;
+    expect(stockPrice(G, d)).toBe(20);
+    expect(shareTradeTotal(G, d, 10, true)).toBe(200);
+    expect(shareTradeTotal(G, d, 10, false)).toBe(200);
+    // Deals round up when buying and down when selling, with no float slips.
+    expect(shareTradeTotal(G, d, 10, true, 0.3)).toBe(140);
+    expect(shareTradeTotal(G, d, 10, false, 0.2)).toBe(240);
+  });
+
+  it('never buys under or sells over the listed price', () => {
+    const { G } = makeGame();
+    for (let d = 0; d < G.districts.length; d++) {
+      for (const n of [1, 10, 99]) {
+        expect(shareTradePrice(G, d, n, true)).toBeGreaterThanOrEqual(stockPrice(G, d));
+        expect(shareTradePrice(G, d, n, false)).toBeLessThanOrEqual(stockPrice(G, d));
+      }
+    }
   });
 });

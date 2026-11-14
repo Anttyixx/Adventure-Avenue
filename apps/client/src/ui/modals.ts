@@ -8,7 +8,8 @@ import {
   BUILDINGS,
   buildingAvailable,
   buildingsLeft,
-  shareTradeValue,
+  shareTradePrice,
+  shareTradeTotal,
   sharesHeld,
   stockPriceExact,
   clampFactor,
@@ -218,8 +219,16 @@ export async function stockModal(
     { class: 'btn main', onclick: () => n > 0 && hud.resolvePrompt({ d, n }) },
     mode === 'buy' ? 'Buy' : 'Sell',
   ) as HTMLButtonElement;
-  const unit = () => stockPrice(G, d) * (mode === 'buy' ? 1 - rate : 1 + rate);
-  const maxN = () => (mode === 'buy' ? Math.min(K.maxBuy, Math.floor(p.cash / unit())) : p.shares[d]);
+  /** The price per share for this many shares before any deal, and after it. */
+  const market = (k = n) => shareTradePrice(G, d, Math.max(1, k), mode === 'buy');
+  const unit = (k = n) => market(k) * (mode === 'buy' ? 1 - rate : 1 + rate);
+  const maxN = () => {
+    if (mode === 'sell') return p.shares[d];
+    // The most they can pay for: big buys cost a little more per share, so count down to it.
+    let k = Math.min(K.maxBuy, Math.floor(p.cash / unit(1)));
+    while (k > 0 && shareTradeTotal(G, d, k, true, rate) > p.cash) k--;
+    return k;
+  };
   /** The share price once this trade is done: more shares held raise it, fewer lower it. */
   const priceAfter = () => {
     const held = sharesHeld(G, d) + (mode === 'buy' ? n : -n);
@@ -227,9 +236,8 @@ export async function stockModal(
   };
   const sum = h('div', { class: 'm-sum m-card' });
   const update = () => {
-    // Trades cost (or fetch) the average of the price before and after, as in the engine.
-    const value = shareTradeValue(G, d, n, mode === 'buy');
-    const total = mode === 'buy' ? Math.ceil(value * (1 - rate)) : Math.floor(value * (1 + rate));
+    // The same whole-coin total the engine charges (or pays).
+    const total = shareTradeTotal(G, d, n, mode === 'buy', rate);
     const cashAfter = p.cash + (mode === 'buy' ? -total : total);
     const now = stockPrice(G, d);
     const after = priceAfter();
@@ -250,9 +258,9 @@ export async function stockModal(
       mLine('Market price', fmt(now), fmt(after), after > now ? 'up' : after < now ? 'down' : ''),
       mLine('Shares you hold', String(p.shares[d]), String(p.shares[d] + (mode === 'buy' ? n : -n)), 'held'),
       h('hr', { class: 'm-divider' }),
-      // What the player pays or gets: the price per share (fixed while they change the count; a
-      // deal crosses out the market's price and glows their own) and their cash.
-      perShare(now, unit(), !!rate),
+      // What the player pays or gets: the price per share (the listed price, a coin or so more on
+      // very big buys; a deal crosses out the market's price and glows their own) and their cash.
+      perShare(market(), unit(), !!rate),
       mLine('Your cash', fmt(p.cash), fmt(cashAfter), cashAfter < 0 ? 'down' : ''),
     );
     go.disabled = n <= 0;

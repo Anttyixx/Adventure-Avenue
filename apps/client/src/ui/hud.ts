@@ -922,7 +922,7 @@ export class Hud {
           // An active Boon or Boom shows as its symbol, like on the board.
           p.boon > 0
             ? h('img', {
-                class: 'boon-ico',
+                class: `boon-ico ${p.boon === K.boom ? 'boom' : ''}`,
                 src: boonIconURL(p.boon === K.boom ? 'boom' : 'boon'),
                 alt: p.boon === K.boom ? 'Boom' : 'Boon',
                 title: `${p.boon === K.boom ? 'Boom' : 'Boon'}: ${Math.round(p.boon * 100)}% commission on every fee paid until their next turn`,
@@ -1763,9 +1763,10 @@ export class Hud {
     this.askChanges.takeRecords();
   }
 
-  modal(title: string, body: Node, opts: { wide?: boolean | 'xl'; onClose?: () => void } = {}) {
+  /** `wide`: 760px; 'xl': as wide as its content; 'full': nearly the whole screen (results). */
+  modal(title: string, body: Node, opts: { wide?: boolean | 'xl' | 'full'; onClose?: () => void } = {}) {
     const box = h('div', {
-      class: `modal glass ${opts.wide ? 'wide' : ''} ${opts.wide === 'xl' ? 'xl' : ''}`,
+      class: `modal glass ${opts.wide ? 'wide' : ''} ${opts.wide === 'xl' || opts.wide === 'full' ? opts.wide : ''}`,
     });
     const head = h('div', { class: 'modal-head' }, h('h2', null, title));
     if (opts.onClose)

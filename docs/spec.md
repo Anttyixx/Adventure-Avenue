@@ -646,8 +646,13 @@ boost_d = 1 + 0.00085 x held_d x vol_d
 - `vol_d` is the district's volatility, rolled evenly at game start between 1 and 1.882, so
   every 100 shares add 8.5% (calmest) to 16% (wildest): +0.85 to +1.6 for a 10G stock. Players are never shown a district's
   volatility (the Stocks lab dev tool still labels it Calm, Normal or Wild, `volMood`).
-- A trade pays the average of the price before and after it (sells use the same), so buying 99
-  shares at once costs the same as buying them in steps.
+- A trade costs (or pays) a whole number of gold per share (`shareTradePrice`): the average of
+  the price before and after it, rounded, and never under the listed price when buying or over it
+  when selling. Small trades go at the listed price (10 shares at a listed 20G cost exactly 200G);
+  a very big one costs a coin or so more per share, so buying 99 shares at once costs about the
+  same as buying them in steps. Deals (10% off, 20% above) apply to that total, rounded up when
+  buying and down when selling (`shareTradeTotal`). The stock pop-up's "Price per share" shows
+  this price for the number of shares picked.
 - **Sell-off:** when 75+ shares of a district are sold in one turn (by anyone, in any number of
   sales), its price is dented by 12%; each further 75 shares add 0.8x the previous step, scaled
   smoothly (`sellOffCut`: 100 shares -15.4%, 150 -21.6%, 200 -26.9%, 300 -35.4%; capped
@@ -920,7 +925,12 @@ it gives + 20G and it can afford its cash side. CPUs never propose trades in the
 - **Live bidding:** there are no turns. Every bidder can bid or pass at any moment. A bid is always
   the next step up: the opening bid first, then + 10% of value (minimum 10G) over the high bid.
   The high bidder can't pass (their bid stands); a player who passes is out. A bidder who can't
-  pay the next bid counts as out ("Too pricey"). The auction ends:
+  pay the next bid counts as out ("Too pricey"). Paying means cash plus what selling all their
+  stock and property to the bank would raise (`spendable`, the same test as buying a shop), so a
+  bid may go past a player's cash. A winner left below 0G sells right away (the usual debt
+  choice) unless it is their turn, in which case they sell at the end of the turn as after any
+  purchase. Players already below 0G can't bid, and a player selling a shop to the bank can't bid
+  on that shop. The auction ends:
   - 5 seconds (`TIMING.auctionWindow`) after the last bid: the high bidder wins. There is one
     clock for everyone: every bid, by anyone, fills it back to 5 seconds for all bidders still in
     (passing does not). Only an auction among CPUs alone shortens it with Fast CPU speed;
@@ -980,20 +990,35 @@ their shares vanish. The game ends immediately and the richest remaining player 
 | Bankruptcy     | When a player can't cover debt                              | Highest net worth among the others |
 | Round limit    | When the round counter passes the limit                     | Highest net worth                  |
 
-**Results screen:** a pop-up with, from the top: the winner (character, "Rosa wins!" and why);
-a card per player in finishing order with their place as a medal (gold 1st, silver 2nd, bronze
-3rd, then plain; "Out" for bankrupt players), portrait, name, level and net worth, and the same
-net worth ring as on the player's page (cash, properties and, with stocks, stock, with a key of
-each amount and share; two cards a row on short screens); "Net worth by round",
-a line chart with round numbers, the goal as a dashed gold line, the winner's line thicker, and a
-key of names; and a **Stats** table (in its own panel, every other row shaded, each player's
-column headed by their portrait and name in a chip of their color) with the players as columns in
-finishing order, in sections:
+**Results screen:** a pop-up that nearly fills the screen (up to 1600px wide). At the top,
+centered: "Rosa wins!" and why, then a **podium** with the top three (2nd, 1st, 3rd from left to
+right; gold, silver and bronze steps topped with the player's color, the step's number on it).
+Each stands on their step with a medal (a gold, silver or bronze disc with the place number on a
+red and blue strap), their name in their color and their net worth. The steps rise one after
+another (3rd first), then each player drops in (no motion with reduced motion). Everyone else
+gets a **participation ribbon** chip under the podium: a teal rosette, their place ("4th", or
+"Out" for bankrupt players), portrait, name and net worth. Finishing order is the winner first,
+then by net worth, then bankrupt players.
+
+Under that are panels: **Stats**, **Net worth by round**, the **Stock market** (the same view
+as the stocks pop-up, Standard rules only) and **What net worth is made of** (a card per player
+with their place, portrait, name, level, net worth and the player page's net worth ring). On a
+screen 1100px or wider the stats table takes the left column and the chart and the stock market
+stack on the right, with the net worth cards across the bottom; narrower screens stack them all.
+On a screen at least 800px tall the podium stays put and the panels scroll under it; on shorter
+screens the whole pop-up scrolls. "Net worth by round" is a line chart that fills its panel, with
+round numbers, the goal as a dashed gold line, the winner's line thicker, and a key of names.
+
+The **Stats** table is drawn like the stock market's table: each player's column is a strip of
+their color (tinted cells with side borders in their color, every other row a little stronger)
+under a tab in their color with their portrait, name and place; stat names sit on the left in
+shaded cells; section names (Wealth, Income...) are gold capitals in the label column with the
+color strips carrying on beside them. The players are columns in finishing order, in sections:
 Wealth (net worth, highest net worth, cash, property, stocks), Income (fees collected, biggest
 fee, salary, dividends, commission, stock sales), Spending (fees paid, invested in shops, stock
 bought) and On the board (level, properties owned, districts dominated, shops bought, buyouts,
-venture cards, squares walked). The best number in a row gets a gold star (the lowest for fees
-paid; none when everyone is level); stock rows only show with Standard rules, and optional rows
+venture cards, squares walked). The best number in a row is a gold cell with a star (the lowest
+for fees paid; none when everyone is level); stock rows only show with Standard rules, and optional rows
 (biggest fee, dividends, commission, stock trades, investing, buyouts, dominations) are left out
 when every player has 0. The newer stats are tracked during play (`Stats` in `types.ts`, read
 with `stat()` so older saves show 0). The save is cleared.
@@ -1172,7 +1197,15 @@ softly at every size (nothing clips them). Headings capitalize every word. There
 - **Characters:** each seat starts with a different random character and a name. Tapping a human
   seat's character opens the character picker (all nine characters; ones other humans have are
   greyed out with their name, so no two players share one; a CPU holding the picked one switches
-  to a free one). Characters cannot change once the game
+  to a free one).
+- **Colors:** there are six player colors, one more than the most players, so players can swap.
+  The character picker in game setup ("Character and color") has a row of the six colors above
+  the characters: tapping a free one makes it that player's color at once (the seat card follows);
+  colors other humans have are faded with a slash and their name in the tooltip. Bots never keep
+  a color: they take the first free ones in seat order (`seatColors`). A new player on the host's
+  device gets the first color no human has. Online, a friend picks theirs the same way (`color`
+  message; the host refuses a color another human has) and the host sends every seat's color in
+  the lobby. Colors cannot change once the game starts. Characters cannot change once the game
   starts. **Names** start as before (the host's seat uses the main menu's player card name and
   character; a friend joins with the name on their player card or typed in the join box; other
   players on the host's device and bots get a suggested name), and **can be changed in game
@@ -1676,7 +1709,8 @@ API where available.
 
 **Type and color.** Lilita One for headings and numbers, Atkinson Hyperlegible for body text,
 Pixelify Sans only for pixel-themed labels. A dark navy UI shell around a bright daytime board.
-Player colors: red, blue, green, purple, then orange for a fifth player; district colors are vivid and easy to tell apart.
+Player colors: red, blue, green, purple, orange and magenta (players take them in that order
+unless they pick one in game setup); district colors are vivid and easy to tell apart.
 
 ## Sound and music
 

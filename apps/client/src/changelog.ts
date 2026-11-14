@@ -26,6 +26,37 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: '2026-11-14-podium-results',
+    date: 'Nov 14, 2026',
+    title: 'Podium finish',
+    features: [
+      {
+        tag: 'new',
+        title: 'A podium at the end of the game',
+        text: 'The top three stand on a podium with gold, silver and bronze medals, and everyone else gets a participation ribbon. Under it: a clearer stats table in the style of the stock market, net worth by round, the stock market and what each net worth is made of. Big screens show them side by side.',
+      },
+      {
+        tag: 'new',
+        title: 'Pick your color',
+        text: 'Tap your character in game setup to choose your color as well. There are now six colors, one more than the most players, so you can always swap. Colors other players have are crossed out.',
+      },
+      {
+        tag: 'rules',
+        title: 'Bid with what you own',
+        text: 'In an auction you can bid past your cash if selling your stock or property could cover it. If you win, you sell right away to pay. Players already in debt sit auctions out.',
+      },
+      {
+        tag: 'fix',
+        title: 'Stock prices add up',
+        text: 'Shares now cost a whole number of gold each: 10 shares at 20G cost 200G. Very big trades cost a coin or so more per share, shown before you buy.',
+      },
+    ],
+    extras: [
+      'Boon and Boom on player cards are the same size as the suits',
+      'No casino chip beside the Lucky Wheel bet',
+    ],
+  },
+  {
     id: '2026-11-14-stock-start-prices',
     date: 'Nov 14, 2026',
     title: 'Fairer fees and stock prices',
