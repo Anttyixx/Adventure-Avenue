@@ -3,7 +3,7 @@ import { districtStartingValues } from './property-values';
 import { BOARDS } from './boards/builtin';
 import { buildDeck } from './cards';
 import { rand, shuffle } from './rng';
-import { computeRows, netWorth } from './rules';
+import { computeRows, netWorth, shareOffsets } from './rules';
 import type { GameState, Market, MatchOptions, Player, Square } from './types';
 
 export const PLAYER_COLORS = ['#e5484d', '#3e7bfa', '#30a46c', '#a855f7', '#f76b15'];
@@ -116,6 +116,7 @@ export function newGame(opts: MatchOptions): GameState {
   );
   resetVentureGrid(G);
   G.market = newMarket(G);
+  G.market.offset = shareOffsets(G);
   G.hist.push(players.map((p) => netWorth(G, p)));
   return G;
 }

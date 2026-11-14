@@ -26,6 +26,18 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: '2026-11-14-stock-start-prices',
+    date: 'Nov 14, 2026',
+    title: 'Fairer starting stock prices',
+    features: [
+      {
+        tag: 'rules',
+        title: 'Stocks start between 4G and 11G',
+        text: 'The district with the cheapest shops starts at 4G a share and the priciest at 11G, with the rest in between. Prices still rise and fall by the same amounts as before, and no share ever drops below 3G.',
+      },
+    ],
+  },
+  {
     id: '2026-11-14-suits-trade-labels',
     date: 'Nov 14, 2026',
     title: 'Bigger suits',

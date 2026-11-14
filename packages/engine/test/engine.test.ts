@@ -223,6 +223,8 @@ describe('classic stocks', () => {
 describe('dynamic stocks', () => {
   it('prices rise with the shares held and fall back when they are sold', async () => {
     const { G, game } = makeGame('standard', (r) => (r.kind === 'buyStock' ? { d: 6, n: 99 } : undefined));
+    // The demand multiplier on the bare formula (no starting-price offset).
+    delete G.market!.offset;
     const p = G.players[0];
     const before = stockPriceExact(G, 6);
     const cost = Math.ceil(shareTradeValue(G, 6, 99, true));
@@ -628,6 +630,8 @@ describe('investing', () => {
 describe('shop growth and stock', () => {
   it('counts growth above base at the growth rate with dynamic stocks, and at the base rate in classic', () => {
     const { G } = makeGame();
+    // The bare formula, without the starting-price offset.
+    delete G.market!.offset;
     const shops = G.nodes.filter((s) => s.d === 0 && isShopLike(s));
     const before = stockPriceExact(G, 0);
     shops[0].value += 100;

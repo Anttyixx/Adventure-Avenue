@@ -150,8 +150,30 @@ export function stockPriceExact(G: GameState, d: number, held = sharesHeld(G, d)
   const worth = districtWorth(G, d);
   if (!worth) return 1;
   if (!dynamicStocks(G)) return Math.max(1, worth * G.factor[d]);
-  const boost = shareBoost(held, market(G).vol[d]);
-  return Math.max(1, worth * G.factor[d] * confidence(G, d) * boost);
+  const m = market(G);
+  const boost = shareBoost(held, m.vol[d]);
+  // The offset is a fixed shift: buying, sell-offs and cards move the price as they would
+  // without it, just from a lower start. Never below the minimum share price.
+  return Math.max(K.sharePriceMin, worth * G.factor[d] * confidence(G, d) * boost - (m.offset?.[d] ?? 0));
+}
+
+/**
+ * Each district's starting price offset (whole gold, subtracted all game): the cheapest
+ * district's shares start at K.shareStartMin, the most expensive at K.shareStartMax, and the rest
+ * in between in line with their shops' average value. Call at the start of a game, before any
+ * shop grows. Districts without shops get 0; when all districts are worth the same, all start
+ * at the minimum.
+ */
+export function shareOffsets(G: GameState): number[] {
+  const worth = G.districts.map((_, d) => districtWorth(G, d));
+  const known = worth.filter((w) => w > 0);
+  const lo = Math.min(...known);
+  const hi = Math.max(...known);
+  return worth.map((w) => {
+    if (w <= 0) return 0;
+    const k = hi > lo ? (w - lo) / (hi - lo) : 0;
+    return Math.round(w - (K.shareStartMin + k * (K.shareStartMax - K.shareStartMin)));
+  });
 }
 
 /** Dynamic stocks' demand boost (1 = none) for `held` shares held at volatility `vol`. */

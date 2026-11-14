@@ -167,6 +167,11 @@ export interface Market {
   /** Shares of each district sold this turn, and the dent that has caused this turn. */
   sold: number[];
   turnCut: number[];
+  /**
+   * Whole gold taken off each district's price all game, set at the start so starting prices run
+   * from K.shareStartMin to K.shareStartMax (see shareOffsets). Missing in older saves: none.
+   */
+  offset?: number[];
   /** Games saved before the sell-off rework: whole 5% dents (read once into `cut`). */
   dents?: number[];
 }

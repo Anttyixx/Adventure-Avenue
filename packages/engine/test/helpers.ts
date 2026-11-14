@@ -4,6 +4,7 @@ import { Game } from '../src/engine';
 import type { GameEvent } from '../src/events';
 import { cpuSeats } from '../src/headless';
 import { fromMap } from '../src/boards/maps';
+import { shareOffsets } from '../src/rules';
 import { newGame } from '../src/setup';
 import type { GameState, RuleSet } from '../src/types';
 
@@ -60,6 +61,8 @@ export function makeGame(rules: RuleSet = 'standard', answer: Answerer = () => u
       G.nodes[i].t = 'plot';
       G.nodes[i].value = 0;
     });
+  // Starting share prices follow the fixture's prices too.
+  G.market!.offset = shareOffsets(G);
   const events: GameEvent[] = [];
   const asked: DecisionRequest[] = [];
   const game = new Game(G, {

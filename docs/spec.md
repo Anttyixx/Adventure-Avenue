@@ -617,9 +617,22 @@ multiplies it by 0.9.
 **Dynamic:**
 
 ```
-price_d = (average base value_d x 0.04 + average growth_d x 0.025) x factor_d x confidence_d x boost_d
+price_d = max(3, (average base value_d x 0.04 + average growth_d x 0.025) x factor_d x confidence_d x boost_d - offset_d)
 boost_d = 1 + 0.00075 x held_d x vol_d
 ```
+
+- **Starting prices:** at the start of a game each district gets a fixed whole-number `offset_d`
+  (`G.market.offset`, `shareOffsets`) that brings its starting price into a 4G-11G range: the
+  district with the cheapest shops (lowest starting worth) starts at 4G, the most expensive at 11G,
+  and the others in between in line with their shops' average value
+  (`target = 4 + 7 x (worth - cheapest) / (priciest - cheapest)`, `offset = round(worth - target)`,
+  so a start can be up to half a gold off). The offset never changes during the game and sits
+  outside the multipliers: buying, sell-offs and Bull/Bear cards move the price by the same gold
+  as they would without it, so pricier districts swing more in percent. A district below its target
+  gets a negative offset (a small addition). When all districts are worth the same, all start at
+  4G; districts without shops have no offset. Saves without offsets keep their old prices.
+- **Lowest price:** no Dynamic share price goes below 3G (`K.sharePriceMin`), whatever sell-offs and
+  cards do. Classic stocks keep their 1G floor.
 
 - A shop's growth is its value above its base value (investing, ownership bonuses, venture cards
   and arcade prizes; negative when a shop shrinks). Growth counts at 62.5% of the base-value rate:

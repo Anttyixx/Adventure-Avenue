@@ -4,6 +4,7 @@ import {
   canPromote,
   districtWorth,
   sellOffCut,
+  shareOffsets,
   dominated,
   expand,
   lineBonus,
@@ -105,6 +106,7 @@ describe('fees, expansion and max value', () => {
 describe('stocks and salary', () => {
   it('prices stock from the average shop value', () => {
     const { G } = makeGame();
+    delete G.market!.offset;
     // Plaza: 320 / 340 / 360 / 380, average 350, x 0.04 = 14
     expect(stockPrice(G, 6)).toBe(14);
     G.factor[6] = 2;
@@ -113,6 +115,7 @@ describe('stocks and salary', () => {
 
   it('ignores vacant plots and non-shop buildings in the average', () => {
     const { G } = makeGame();
+    delete G.market!.offset;
     // Brick Row: shops 160, 200, 220 (180 is a vacant plot)
     expect(stockPrice(G, 0)).toBe(Math.round(((160 + 200 + 220) / 3) * 0.04));
   });
@@ -125,6 +128,7 @@ describe('stocks and salary', () => {
     (change, expected) => {
       const { G } = makeGame();
       G.stocks = 'dynamic';
+      delete market(G).offset;
       const shops = G.nodes.filter((s) => s.d === 0 && s.t === 'shop');
       expect(shops).toHaveLength(3);
       shops.forEach((s) => {
@@ -145,6 +149,50 @@ describe('stocks and salary', () => {
       expect(stockPriceExact(G, 0) / expected).toBeCloseTo(1.3375 / 1.225);
     },
   );
+
+  it('starts the cheapest district at 4G and the most expensive at 11G, the rest in between', () => {
+    const { G } = makeGame();
+    G.stocks = 'dynamic';
+    const worth = G.districts.map((_, d) => districtWorth(G, d));
+    const start = G.districts.map((_, d) => stockPriceExact(G, d));
+    const lo = worth.indexOf(Math.min(...worth));
+    const hi = worth.indexOf(Math.max(...worth));
+    // Whole-gold offsets: within half a gold of the target.
+    expect(Math.abs(start[lo] - K.shareStartMin)).toBeLessThanOrEqual(0.5);
+    expect(Math.abs(start[hi] - K.shareStartMax)).toBeLessThanOrEqual(0.5);
+    for (const [d, w] of worth.entries()) {
+      const target = 4 + (7 * (w - worth[lo])) / (worth[hi] - worth[lo]);
+      expect(Math.abs(start[d] - target)).toBeLessThanOrEqual(0.5);
+      expect(Number.isInteger(market(G).offset![d])).toBe(true);
+    }
+  });
+
+  it('keeps the offset fixed: demand moves the price by the same gold as without it', () => {
+    const { G } = makeGame();
+    G.stocks = 'dynamic';
+    const d = 0;
+    const off = market(G).offset![d];
+    G.players[0].shares[d] = 200;
+    const shifted = stockPriceExact(G, d);
+    delete market(G).offset;
+    expect(stockPriceExact(G, d) - shifted).toBeCloseTo(off);
+  });
+
+  it('never prices a dynamic share below 3G', () => {
+    const { G } = makeGame();
+    G.stocks = 'dynamic';
+    G.factor[0] = K.factorMin;
+    market(G).cut[0] = 1 - K.confMin;
+    expect(stockPriceExact(G, 0)).toBe(K.sharePriceMin);
+  });
+
+  it('gives every district the minimum start when all are worth the same', () => {
+    const { G } = makeGame();
+    G.stocks = 'dynamic';
+    for (const s of G.nodes) if (s.t === 'shop') s.base = s.value = 200;
+    const off = shareOffsets(G);
+    G.districts.forEach((_, d) => expect(districtWorth(G, d) - off[d]).toBeCloseTo(K.shareStartMin, 0));
+  });
 
   it('keeps Classic growth tied to total shop value', () => {
     const { G } = makeGame();

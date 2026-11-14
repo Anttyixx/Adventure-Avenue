@@ -91,6 +91,24 @@ const GROUPS: { title: string; settings: Setting[] }[] = [
         step: 0.0001,
         hint: 'Price rise per share held, as a part of the price (0.00075 = +7.5% per 100 shares at volatility 1)',
       },
+      {
+        key: 'shareStartMin',
+        label: 'Cheapest start',
+        step: 1,
+        hint: "The cheapest district's starting share price (new games; default 4G)",
+      },
+      {
+        key: 'shareStartMax',
+        label: 'Priciest start',
+        step: 1,
+        hint: "The most expensive district's starting share price (new games; default 11G)",
+      },
+      {
+        key: 'sharePriceMin',
+        label: 'Lowest price',
+        step: 1,
+        hint: 'No share price goes below this (default 3G)',
+      },
       { key: 'volMin', label: 'Volatility min', step: 0.01, hint: 'Calmest a district can roll' },
       { key: 'volMax', label: 'Volatility max', step: 0.01, hint: 'Wildest a district can roll' },
       {

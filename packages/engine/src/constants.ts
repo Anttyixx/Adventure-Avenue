@@ -64,6 +64,15 @@ export const K = {
    */
   shareSlope: 0.00075,
   /**
+   * Dynamic stocks' starting prices: the cheapest district's shares start at shareStartMin, the
+   * most expensive at shareStartMax, the rest in between by their shops' average value. A whole
+   * number of gold taken off each district's price for the whole game does this (Market.offset).
+   */
+  shareStartMin: 4,
+  shareStartMax: 11,
+  /** Dynamic stocks: no share price ever goes below this. */
+  sharePriceMin: 3,
+  /**
    * Each district's volatility, rolled evenly at game start: how strongly shares move its price.
    * The lowest third of the range shows as Calm, the middle as Normal, the top as Wild.
    */

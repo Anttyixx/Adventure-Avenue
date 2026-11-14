@@ -37,7 +37,8 @@ the RNG state (`rng`). Nothing in it depends on rendering, so it can be saved, c
 
 `newGame(options)` (`setup.ts`) builds a fresh state from a `BoardDef` and `MatchOptions`: places
 players at the bank, resolves district starting prices, picks vacant plots, rolls each
-district's stock volatility and shuffles the venture deck.
+district's stock volatility, fixes each district's share-price offset (`shareOffsets`: starts run
+4G-11G by shop value) and shuffles the venture deck.
 
 ### The turn flow (`engine.ts`)
 
@@ -70,7 +71,7 @@ answers) and real games (answers from the UI or the network).
 
 - `rules.ts`: pure functions over the state, no decisions: fees (`shopFee`, `squareFee`), shop
   limits (`maxValue`, `investRoom`), stock prices (`stockPrice`, `districtWorth`, `shareBoost`,
-  `sellOffCut`), money (`netWorth`, `salary`, `spendable`, `canAfford`), ownership (`dominated`,
+  `sellOffCut`, `shareOffsets`), money (`netWorth`, `salary`, `spendable`, `canAfford`), ownership (`dominated`,
   `expand`) and the venture grid's line bonuses.
 - `constants.ts`: every tunable number as `K` (with `K.cpu` for CPU behavior). Change balance
   here, not in the rules code. The Stocks lab can override the stock numbers live on a device.
