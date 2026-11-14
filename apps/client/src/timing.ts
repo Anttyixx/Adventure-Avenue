@@ -127,6 +127,11 @@ export const TIMING = {
 
   /** A live auction ends this long after the last bid (or after it opens, with no bids). */
   auctionWindow: 5000,
+  /**
+   * Online, the host keeps taking bids this long after its clock runs out, for friends' bids still
+   * on their way (their clock also runs a moment behind the host's).
+   */
+  auctionGrace: 1200,
   /** How long a CPU waits before bidding or passing in a live auction (a random time between). */
   auctionCpuMin: 700,
   auctionCpuMax: 2000,

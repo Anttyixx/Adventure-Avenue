@@ -961,9 +961,10 @@ Reopened online games keep guests on Continue Game until the host presses Resume
 - **Participation ribbons** (`.res-ribbon`): pill chips, 1.5px border in the player color over a
   16% tint, a teal rosette SVG with lavender tails, muted place, 22px portrait, name, net worth.
 - **Panels** (`.res-panel`): faint glass (4% white, inset glass-line ring), radius 14px, padding
-  12px, Lilita 17px headings. Grid areas from 1100px: `stats worth / stats stocks / mix mix`
-  (without stocks: `stats worth / stats mix`). The chart redraws to its panel's width
-  (height 42% of it, 180-300px).
+  12px, Lilita 17px headings. Order: chart, stats, stocks. Grid areas from 1100px:
+  `worth worth / stats stocks` (without stocks: `worth worth / stats stats`, the table centered at
+  its own width). The chart redraws to its panel's width (height 42% of it, 180-300px; 200px
+  from 1100px wide).
 - **Stats table** (`.res-grid`), modelled on the stock table (`.m-grid`): separate borders,
   3px × 2px spacing. Column heads are tabs in the player color (radius 10px on top) with a 38px
   portrait, Lilita 14px white name and a small uppercase place. Cells: Lilita 15px right-aligned,
@@ -971,10 +972,10 @@ Reopened online games keep guests on Continue Game until the host presses Resume
   row closing the strip with a bottom border and rounded corners. Labels: bold, left, 6% white
   (10% on odd rows), rounded on the left. Group rows: gold uppercase Lilita 13px in the label
   column, the strips carrying on at a 6% tint. Best: the gold gradient with dark text and a ★.
-  Rows brighten on hover.
-- The net worth cards (`.res-card`) keep their earlier look: auto-fit grid (min 250px, 300px on
-  short screens), 4px top edge in the player color, winner with a soft gold inset ring, place pill,
-  portrait, name, level, net worth (Lilita 22px) and the 88px `assetMix` ring.
+  Rows brighten on hover. The first Wealth row ("Made of", `.rs-ring`) holds each player's net
+  worth ring (`overview.ts` `netWorthRing`, 66px, 54px on short screens; middle text 14px / 8px),
+  and the Cash / Property / Stocks labels start with a 9px rounded dot in that part's color
+  (`NET_WORTH_PARTS`).
 
 ### 5.19 Board overlays (canvas)
 

@@ -558,6 +558,8 @@ export class HotSeat implements GameIO {
       cpu: (pid) => who(pid) === 'cpu',
       anyPerson: req.bidders.some((pid) => who(pid) !== 'cpu'),
       speed: this.speed,
+      // Bids from friends online need time to arrive (see `TIMING.auctionGrace`).
+      grace: req.bidders.some((pid) => who(pid) === 'remote') ? T.auctionGrace : 0,
       share: link?.auctionShare ? (l) => link.auctionShare!(seq, l) : undefined,
     });
     this.liveAuction = live;

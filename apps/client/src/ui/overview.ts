@@ -244,6 +244,46 @@ export function playerOverview(G: GameState, p: Player, hooks: OverviewHooks): H
  * amount and share. Used on a player's page and on the results screen.
  */
 export function assetMix(G: GameState, p: Player): HTMLElement {
+  const { donut, parts, values, total, biggest, show, arcs } = netWorthRing(G, p);
+  return h(
+    'div',
+    { class: 'pv-mix' },
+    donut,
+    h(
+      'div',
+      { class: 'pv-legend' },
+      ...parts.map((part) => {
+        const v = values[part.key];
+        const row = h(
+          'div',
+          { class: 'pv-leg' },
+          h('i', { style: `background:${part.color}` }),
+          h('span', null, part.label),
+          h('b', { class: v < 0 ? 'neg' : '' }, fmt(v)),
+          h('em', null, total && v > 0 ? `${Math.round((v / total) * 100)}%` : '-'),
+        );
+        row.onmouseenter = () => {
+          show(part);
+          arcs.get(part.key)?.classList.add('on');
+        };
+        row.onmouseleave = () => {
+          show(biggest.v ? biggest : null);
+          arcs.get(part.key)?.classList.remove('on');
+        };
+        return row;
+      }),
+    ),
+  );
+}
+
+/** The colors of the net worth ring's parts (cash, properties, stock), for keys elsewhere. */
+export const NET_WORTH_PARTS = PARTS;
+
+/**
+ * Just the net worth ring (`.pv-donut`): an arc per part, the hovered (or biggest) part's share in
+ * the middle. `assetMix` adds its key; the results table shows the ring on its own.
+ */
+export function netWorthRing(G: GameState, p: Player) {
   const standard = G.rules === 'standard';
   const values = { cash: p.cash, props: propertyValue(G, p), stock: stockValue(G, p) };
   const positive = PARTS.filter((s) => standard || s.key !== 'stock');
@@ -297,35 +337,7 @@ export function assetMix(G: GameState, p: Player): HTMLElement {
   }
   show(biggest.v ? biggest : null);
   const donut = h('div', { class: 'pv-donut' }, svg, h('div', { class: 'pv-donut-mid' }, midPct, what));
-  return h(
-    'div',
-    { class: 'pv-mix' },
-    donut,
-    h(
-      'div',
-      { class: 'pv-legend' },
-      ...parts.map((part) => {
-        const v = values[part.key];
-        const row = h(
-          'div',
-          { class: 'pv-leg' },
-          h('i', { style: `background:${part.color}` }),
-          h('span', null, part.label),
-          h('b', { class: v < 0 ? 'neg' : '' }, fmt(v)),
-          h('em', null, total && v > 0 ? `${Math.round((v / total) * 100)}%` : '-'),
-        );
-        row.onmouseenter = () => {
-          show(part);
-          arcs.get(part.key)?.classList.add('on');
-        };
-        row.onmouseleave = () => {
-          show(biggest.v ? biggest : null);
-          arcs.get(part.key)?.classList.remove('on');
-        };
-        return row;
-      }),
-    ),
-  );
+  return { donut, parts, values, total, biggest, show, arcs };
 }
 
 export function section(title: string, aside: string | null, ...body: Node[]): HTMLElement {

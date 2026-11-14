@@ -933,7 +933,10 @@ it gives + 20G and it can afford its cash side. CPUs never propose trades in the
   on that shop. The auction ends:
   - 5 seconds (`TIMING.auctionWindow`) after the last bid: the high bidder wins. There is one
     clock for everyone: every bid, by anyone, fills it back to 5 seconds for all bidders still in
-    (passing does not). Only an auction among CPUs alone shortens it with Fast CPU speed;
+    (passing does not). Online, when a friend on another device is bidding, the host keeps taking
+    bids for 1.2 seconds more after its clock runs out (`TIMING.auctionGrace`): a friend's bid
+    takes a moment to reach the host and their clock runs a moment behind. A bid in that time
+    counts and fills the clock again; a pass doesn't reopen it. Only an auction among CPUs alone shortens it with Fast CPU speed;
   - 5 seconds after it opens with no bids: the property returns to the bank, unowned, with no money paid to the seller;
   - as soon as the only bidder left has already placed a bid: they win at that bid. A sole eligible player who has not bid can still bid, pass or let the clock expire.
 - **Screen:** a pop-up in the middle of every player's screen ("Live auction") shows the lot (art,
@@ -1000,11 +1003,11 @@ gets a **participation ribbon** chip under the podium: a teal rosette, their pla
 "Out" for bankrupt players), portrait, name and net worth. Finishing order is the winner first,
 then by net worth, then bankrupt players.
 
-Under that are panels: **Stats**, **Net worth by round**, the **Stock market** (the same view
-as the stocks pop-up, Standard rules only) and **What net worth is made of** (a card per player
-with their place, portrait, name, level, net worth and the player page's net worth ring). On a
-screen 1100px or wider the stats table takes the left column and the chart and the stock market
-stack on the right, with the net worth cards across the bottom; narrower screens stack them all.
+Under that are panels: **Net worth by round**, **Stats** and the **Stock market** (the same view
+as the stocks pop-up, Standard rules only). On a screen 1100px or wider (a computer) the chart runs
+across the top (200px tall) with the stats table and the stock market side by side under it
+(without stocks the table is centered on its own); narrower screens stack them in that order,
+chart first.
 On a screen at least 800px tall the podium stays put and the panels scroll under it; on shorter
 screens the whole pop-up scrolls. "Net worth by round" is a line chart that fills its panel, with
 round numbers, the goal as a dashed gold line, the winner's line thicker, and a key of names.
@@ -1013,7 +1016,11 @@ The **Stats** table is drawn like the stock market's table: each player's column
 their color (tinted cells with side borders in their color, every other row a little stronger)
 under a tab in their color with their portrait, name and place; stat names sit on the left in
 shaded cells; section names (Wealth, Income...) are gold capitals in the label column with the
-color strips carrying on beside them. The players are columns in finishing order, in sections:
+color strips carrying on beside them. Wealth starts with a **Made of** row: each player's net
+worth ring (the player page's ring without its key: cash, properties and, with stocks, stock; the
+biggest part's share in the middle, each part's amount on hover), and the Cash, Property and
+Stocks rows under it have a dot in that part's color as their key. The players are columns in
+finishing order, in sections:
 Wealth (net worth, highest net worth, cash, property, stocks), Income (fees collected, biggest
 fee, salary, dividends, commission, stock sales), Spending (fees paid, invested in shops, stock
 bought) and On the board (level, properties owned, districts dominated, shops bought, buyouts,

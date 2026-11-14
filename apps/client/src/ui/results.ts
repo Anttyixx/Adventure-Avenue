@@ -14,11 +14,13 @@ import { bodyURL, portraitURL } from '../sprites';
 import { fmt, h } from './dom';
 import type { Hud } from './hud';
 import { marketView } from './market';
-import { assetMix } from './overview';
+import { NET_WORTH_PARTS, netWorthRing } from './overview';
 
 /** One row of the stats table: how to read it, and which end of it is best (none: no winner). */
 interface StatRow {
   label: string;
+  /** A part of the net worth ring: a dot in its color before the label. */
+  part?: 'cash' | 'props' | 'stock';
   value: (p: Player) => number;
   /** How the number shows (money unless a plain count). */
   money?: boolean;
@@ -35,9 +37,10 @@ const PLACES = ['1st', '2nd', '3rd', '4th', '5th'];
  * The end of a game, laid out to use a big screen:
  * - at the top, a podium with the top three (gold, silver and bronze medals) and, under it, a
  *   participation ribbon for everyone else;
- * - under that, panels that scroll: the stats table (players as columns, like the stock market's
- *   table), net worth by round, the stock market and what each player's net worth is made of.
- *   On a wide screen the panels sit side by side; on a narrow one they stack.
+ * - under that, panels that scroll: net worth by round, the stats table (players as columns, like
+ *   the stock market's table, starting with each player's net worth ring) and the stock market.
+ *   On a wide screen the chart runs across the top with the table and the stock market side by
+ *   side under it; on a narrow one they stack, chart first.
  */
 export function showResults(hud: Hud, G: GameState, onNew: () => void) {
   const winner = G.players[G.winner];
@@ -57,9 +60,16 @@ export function showResults(hud: Hud, G: GameState, onNew: () => void) {
       [
         { label: 'Net worth', value: (p) => netWorth(G, p), money: true, best: 'high' },
         { label: 'Highest net worth', value: peak, money: true, best: 'high' },
-        { label: 'Cash', value: (p) => p.cash, money: true, best: 'high' },
-        { label: 'Property', value: (p) => propertyValue(G, p), money: true, best: 'high' },
-        { label: 'Stocks', value: (p) => stockValue(G, p), money: true, best: 'high', stocks: true },
+        { label: 'Cash', value: (p) => p.cash, money: true, best: 'high', part: 'cash' },
+        { label: 'Property', value: (p) => propertyValue(G, p), money: true, best: 'high', part: 'props' },
+        {
+          label: 'Stocks',
+          value: (p) => stockValue(G, p),
+          money: true,
+          best: 'high',
+          stocks: true,
+          part: 'stock',
+        },
       ],
     ],
     [
@@ -146,12 +156,6 @@ export function showResults(hud: Hud, G: GameState, onNew: () => void) {
       { class: `res-panels ${standard ? '' : 'no-stocks'}` },
       h(
         'section',
-        { class: 'res-panel res-stats' },
-        h('h3', null, 'Stats'),
-        statsTable(G, order, sections, standard),
-      ),
-      h(
-        'section',
         { class: 'res-panel res-worth' },
         h('h3', null, 'Net worth by round'),
         chartBox,
@@ -164,15 +168,15 @@ export function showResults(hud: Hud, G: GameState, onNew: () => void) {
           h('span', null, h('i', { class: 'target' }), 'Goal'),
         ),
       ),
+      h(
+        'section',
+        { class: 'res-panel res-stats' },
+        h('h3', null, 'Stats'),
+        statsTable(G, order, sections, standard),
+      ),
       standard
         ? h('section', { class: 'res-panel res-stocks' }, h('h3', null, 'Stock market'), marketView(G, null))
         : null,
-      h(
-        'section',
-        { class: 'res-panel res-mix' },
-        h('h3', null, 'What net worth is made of'),
-        h('div', { class: 'res-cards' }, ...order.map((p) => playerCard(G, p, order.indexOf(p)))),
-      ),
     ),
     h(
       'div',
@@ -260,37 +264,6 @@ function ribbonChip(G: GameState, p: Player, place: number): HTMLElement {
   );
 }
 
-/** A player's card: place, portrait, name and level, net worth, and the ring of what it is made of. */
-function playerCard(G: GameState, p: Player, place: number): HTMLElement {
-  return h(
-    'div',
-    {
-      class: `res-card ${p.id === G.winner ? 'won' : ''} ${p.bankrupt ? 'out' : ''}`,
-      style: `--pc:${PLAYER_COLORS[p.color]}`,
-    },
-    h(
-      'div',
-      { class: 'res-card-head' },
-      h(
-        'span',
-        { class: `res-place p${p.bankrupt ? 'out' : place + 1}` },
-        p.bankrupt ? 'Out' : PLACES[place],
-      ),
-      h('img', { class: 'portrait', src: portraitURL(p.ch), alt: '' }),
-      h('div', { class: 'res-card-who' }, h('b', null, p.name), h('small', null, `Level ${p.level}`)),
-      h(
-        'div',
-        { class: 'res-nw' },
-        h('small', null, 'Net worth'),
-        // One span, so the coin stays beside the amount in this column.
-        h('span', null, p.bankrupt ? 'Bankrupt' : fmt(netWorth(G, p))),
-      ),
-    ),
-    // The same ring as on the player's page.
-    p.bankrupt ? null : assetMix(G, p),
-  );
-}
-
 /**
  * Every stat with the players as columns, drawn like the stock market's table: each player's
  * column is a strip of their color under a tab with their portrait, the stat names sit on the
@@ -317,6 +290,25 @@ function statsTable(
         ...order.map((p) => h('td', { class: 'rs-cell', style: `--pc:${PLAYER_COLORS[p.color]}` })),
       ),
     ];
+    // Wealth starts with each player's net worth ring: what their net worth is made of.
+    if (title === 'Wealth')
+      rows.push(
+        h(
+          'tr',
+          { class: 'rs-ring-row' },
+          h('th', { scope: 'row', class: 'rs-label' }, 'Made of'),
+          ...order.map((p) =>
+            h(
+              'td',
+              {
+                class: `rs-cell rs-ring ${p.bankrupt ? 'out' : ''}`,
+                style: `--pc:${PLAYER_COLORS[p.color]}`,
+              },
+              p.bankrupt ? '–' : netWorthRing(G, p).donut,
+            ),
+          ),
+        ),
+      );
     for (const r of shown) {
       const values = order.map((p) => (p.bankrupt && r.best ? NaN : r.value(p)));
       const live = values.filter((v) => !Number.isNaN(v));
@@ -327,7 +319,17 @@ function statsTable(
         h(
           'tr',
           null,
-          h('th', { scope: 'row', class: 'rs-label' }, r.label),
+          h(
+            'th',
+            { scope: 'row', class: 'rs-label' },
+            r.part
+              ? h('i', {
+                  class: 'rs-dot',
+                  style: `background:${NET_WORTH_PARTS.find((x) => x.key === r.part)!.color}`,
+                })
+              : null,
+            r.label,
+          ),
           ...order.map((p, i) => {
             const v = values[i];
             const best = marked && v === top;
@@ -381,7 +383,7 @@ function statsTable(
 
 function drawChart(cv: HTMLCanvasElement, G: GameState, width: number) {
   const W = Math.max(240, width);
-  const H = Math.round(Math.min(300, Math.max(180, W * 0.42)));
+  const H = Math.round(Math.min(window.innerWidth >= 1100 ? 200 : 300, Math.max(180, W * 0.42)));
   const dpr = Math.min(3, window.devicePixelRatio || 1);
   cv.width = W * dpr;
   cv.height = H * dpr;

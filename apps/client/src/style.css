@@ -2844,21 +2844,30 @@ input[type='range'] {
   background: rgba(255, 255, 255, 0.04);
   box-shadow: inset 0 0 0 1px var(--glass-line);
 }
+/* Wide screens (a computer): the chart across the top, the stats table and the stock market side
+   by side under it. Without stocks the table is as wide as it needs, centered. */
 @media (min-width: 1100px) {
   .res-panels {
     grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
     grid-template-areas:
-      'stats worth'
-      'stats stocks'
-      'mix mix';
+      'worth worth'
+      'stats stocks';
   }
   .res-panels.no-stocks {
     grid-template-areas:
-      'stats worth'
-      'stats mix';
+      'worth worth'
+      'stats stats';
+  }
+  .res-panels.no-stocks .res-grid {
+    width: auto;
+    min-width: 60%;
+    margin: 0 auto;
   }
   .res-stats {
     grid-area: stats;
+    align-self: start;
+  }
+  .res-stocks {
     align-self: start;
   }
   .res-worth {
@@ -2867,105 +2876,37 @@ input[type='range'] {
   .res-stocks {
     grid-area: stocks;
   }
-  .res-mix {
-    grid-area: mix;
+  .res-worth .chart-box {
+    max-height: 220px;
   }
+}
+/* Each player's net worth ring in the stats table, with a dot in each part's color on the Cash,
+   Property and Stocks rows. */
+.rs-ring {
+  text-align: center !important;
+  padding: 6px !important;
+}
+.rs-ring .pv-donut {
+  width: 66px;
+  height: 66px;
+  margin: 0 auto;
+}
+.rs-ring .pv-donut-mid b {
+  font-size: 14px;
+}
+.rs-ring .pv-donut-mid span {
+  font-size: 8px;
+}
+.rs-dot {
+  display: inline-block;
+  width: 9px;
+  height: 9px;
+  margin-right: 6px;
+  border-radius: 3px;
+  vertical-align: 0;
 }
 .res-foot {
   margin-top: 0;
-}
-.res-cards {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  gap: 10px;
-}
-.res-card {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  padding: 12px;
-  border-radius: 14px;
-  background: rgba(255, 255, 255, 0.05);
-  border-top: 4px solid var(--pc);
-}
-.res-card.won {
-  background: rgba(255, 209, 102, 0.1);
-  box-shadow: inset 0 0 0 1px rgba(255, 209, 102, 0.45);
-}
-.res-card.out {
-  opacity: 0.55;
-}
-.res-card-head {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  min-width: 0;
-}
-/* Places as medals: gold, silver, bronze, then plain. */
-.res-place {
-  flex: none;
-  min-width: 40px;
-  padding: 2px 8px;
-  border-radius: 999px;
-  text-align: center;
-  font-family: var(--head);
-  font-size: 15px;
-  background: rgba(255, 255, 255, 0.12);
-  color: var(--text);
-}
-.res-place.p1 {
-  background: linear-gradient(#ffe08f, #f5b301);
-  color: #3b2a00;
-}
-.res-place.p2 {
-  background: linear-gradient(#f1f4fa, #b9c2d3);
-  color: #283247;
-}
-.res-place.p3 {
-  background: linear-gradient(#f2c59a, #c27c43);
-  color: #3a1f08;
-}
-.res-card-head .portrait {
-  width: 32px;
-  height: 32px;
-}
-.res-card-who {
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-}
-.res-card-who b {
-  font-family: var(--head);
-  font-weight: 400;
-  font-size: 16px;
-  color: var(--pc);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.res-card-who small {
-  color: var(--muted);
-  font-size: 11px;
-}
-.res-nw {
-  margin-left: auto;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  font-family: var(--head);
-  font-size: 22px;
-  line-height: 1.05;
-}
-.res-nw small {
-  font-family: var(--body);
-  font-size: 10px;
-  font-weight: 700;
-  color: var(--muted);
-}
-/* The player page's net worth ring, a little smaller on a results card. */
-.res-card .pv-donut {
-  width: 88px;
-  height: 88px;
 }
 .res-panel h3 {
   margin: 0 0 8px;
@@ -3154,13 +3095,9 @@ input[type='range'] {
   .res-step span {
     font-size: 22px;
   }
-  /* Two cards a row: the ring and its key need the width. */
-  .res-cards {
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  }
-  .res-card .pv-donut {
-    width: 76px;
-    height: 76px;
+  .rs-ring .pv-donut {
+    width: 54px;
+    height: 54px;
   }
   .res-grid {
     font-size: 12px;

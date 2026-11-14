@@ -26,6 +26,23 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: '2026-11-14-results-layout',
+    date: 'Nov 14, 2026',
+    title: 'Tidier results',
+    features: [
+      {
+        tag: 'online',
+        title: 'Last-second bids count online',
+        text: "A friend's bid made just before the auction clock runs out now counts: the host waits a moment for bids still on their way before closing.",
+      },
+      {
+        tag: 'better',
+        title: 'Results, rearranged',
+        text: "Net worth by round now comes before the stats. Each player's net worth ring moved into the stats table, so the separate player cards are gone. On a computer the chart runs across the top with the stats and the stock market side by side under it.",
+      },
+    ],
+  },
+  {
     id: '2026-11-14-podium-results',
     date: 'Nov 14, 2026',
     title: 'Podium finish',

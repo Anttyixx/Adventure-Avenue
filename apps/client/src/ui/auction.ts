@@ -341,6 +341,8 @@ export class LiveAuction {
   private done: (r: { winner: number; price: number }) => void = () => {};
   private over = false;
   private window: number;
+  /** Set while the clock has run out and the auction waits `grace` for bids still on the way. */
+  private closing = false;
 
   constructor(
     private G: GameState,
@@ -353,6 +355,11 @@ export class LiveAuction {
       anyPerson: boolean;
       /** Fast CPU speed (1 = normal). */
       speed: number;
+      /**
+       * Online, how long to keep taking bids after the clock runs out: a friend's bid takes a
+       * moment to reach the host, and their clock runs a moment behind the host's.
+       */
+      grace?: number;
       share?: (live: AuctionLive) => void;
     },
   ) {
@@ -393,6 +400,9 @@ export class LiveAuction {
       const w = left[0];
       return this.finish(w, this.live.high);
     }
+    // A pass while closing keeps the grace timer running; a bid reopens the auction.
+    if (this.closing && !bid) return this.publish();
+    this.closing = false;
     this.publish();
     clearTimeout(this.timer);
     this.timer = window.setTimeout(() => this.timeUp(), Math.max(0, this.deadline - performance.now()));
@@ -407,6 +417,13 @@ export class LiveAuction {
 
   private timeUp() {
     if (this.over) return;
+    // Online: wait a moment for friends' bids that are still on their way.
+    const grace = this.opts.grace ?? 0;
+    if (grace > 0 && !this.closing) {
+      this.closing = true;
+      this.timer = window.setTimeout(() => this.timeUp(), grace);
+      return;
+    }
     if (this.live.highBidder >= 0) this.finish(this.live.highBidder, this.live.high);
     else this.finish(-1, 0);
   }
