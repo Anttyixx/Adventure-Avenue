@@ -226,6 +226,8 @@ export class BoardView {
   glowColor = '#fff';
   /** Text shown in a pill over choice squares (e.g. "Invest up to 250G"). */
   choiceLabels = new Map<number, string>();
+  /** A label's border color, where it differs from the choice color (a trade: the owner's). */
+  choiceLabelColors = new Map<number, string>();
   /** Draw a bouncing pin over each choice square. */
   choicePins = true;
   /**
@@ -1389,7 +1391,13 @@ export class BoardView {
     color: string,
     onPick: (id: number) => void,
     routes?: Map<number, number[]>,
-    opts: { labels?: Map<number, string>; pins?: boolean; fit?: boolean; plain?: boolean } = {},
+    opts: {
+      labels?: Map<number, string>;
+      labelColors?: Map<number, string>;
+      pins?: boolean;
+      fit?: boolean;
+      plain?: boolean;
+    } = {},
   ) {
     this.glow = ids;
     this.glowColor = color;
@@ -1399,6 +1407,7 @@ export class BoardView {
     // The camera zooms out to frame the choices unless told not to.
     this.fitIds = opts.fit === false ? [] : ids;
     this.choiceLabels = opts.labels ?? new Map();
+    this.choiceLabelColors = opts.labelColors ?? new Map();
     this.choicePins = opts.pins ?? true;
     this.choicePlain = opts.plain ?? false;
   }
@@ -1410,6 +1419,7 @@ export class BoardView {
     this.hoverRoute = null;
     this.fitIds = [];
     this.choiceLabels = new Map();
+    this.choiceLabelColors = new Map();
     this.choicePlain = false;
     this.highlight = [];
   }
@@ -2314,7 +2324,7 @@ export class BoardView {
         const w = moneyWidth(ctx, label, 18) + 20;
         const y = top - 14;
         ctx.fillStyle = 'rgba(16, 26, 51, 0.92)';
-        ctx.strokeStyle = this.glowColor;
+        ctx.strokeStyle = this.choiceLabelColors.get(id) ?? this.glowColor;
         ctx.lineWidth = 3;
         ctx.beginPath();
         ctx.roundRect(c.x - w / 2, y - 14, w, 28, 14);

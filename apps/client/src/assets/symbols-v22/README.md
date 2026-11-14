@@ -13,3 +13,7 @@ and must not auto-recolor their blue pixels. All files have a 512px transparent 
 Generated master: `exec-b8c77bca-f893-4b94-a12f-00ba668b40af.png`. Mechanically extracted,
 trimmed, cleared of detached export speckles, and resized; Warp's blue region was separated
 into the grey tint layer. Every earlier asset remains untouched in its original folder.
+
+`spade/heart/diamond/club-empty.png` (128px) are the missing-suit slots on player cards: each
+sprite's alpha silhouette as a faint white fill with a soft white rim, on the same canvas
+proportions so they line up with the full suits.

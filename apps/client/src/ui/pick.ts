@@ -384,6 +384,16 @@ export async function cannonOnBoard(
 // ------------------------------------------------------------ trades
 
 /** A property in a trade, as a chip with its district color (tapping it can remove it). */
+/** Each square's owner color: a trade's Give / Get labels are bordered in whoever owns it now. */
+function ownerColors(G: GameState, ids: number[]): Map<number, string> {
+  const out = new Map<number, string>();
+  for (const id of ids) {
+    const owner = G.players[G.nodes[id].owner];
+    if (owner) out.set(id, PLAYER_COLORS[owner.color]);
+  }
+  return out;
+}
+
 function tradeChip(G: GameState, id: number, onRemove?: () => void): HTMLElement {
   const sq = G.nodes[id];
   return h(
@@ -476,7 +486,11 @@ export async function tradeOnBoard(
     const labels = new Map<number, string>();
     for (const id of give) labels.set(id, 'Give');
     for (const id of get) labels.set(id, 'Get');
-    board.setChoices(ids, PLAYER_COLORS[p.color], toggle, undefined, { labels, pins: false });
+    board.setChoices(ids, PLAYER_COLORS[p.color], toggle, undefined, {
+      labels,
+      labelColors: ownerColors(G, ids),
+      pins: false,
+    });
   };
   const toggle = (id: number) => {
     const set = G.nodes[id].owner === p.id ? give : get;
@@ -568,6 +582,7 @@ export function watchTradeOnBoard(ctx: PickCtx, o: TradeOffer): () => void {
   for (const id of o.get) labels.set(id, `${b.name} gives`);
   board.setChoices([...o.give, ...o.get], PLAYER_COLORS[a.color], () => {}, undefined, {
     labels,
+    labelColors: ownerColors(G, [...o.give, ...o.get]),
     pins: false,
     fit: false,
   });
@@ -631,6 +646,7 @@ export async function answerTradeOnBoard(
   board.overviewHold = true;
   board.setChoices([...o.give, ...o.get], PLAYER_COLORS[a.color], () => {}, undefined, {
     labels,
+    labelColors: ownerColors(G, [...o.give, ...o.get]),
     pins: false,
   });
   const v = await hud.prompt<'yes' | 'no' | 'counter'>(body, [], b.color);

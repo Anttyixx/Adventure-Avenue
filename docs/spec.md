@@ -882,7 +882,7 @@ these are the main tools for completing districts.
    player cards and action bar leave free; everything but the two players' properties is dimmed.
    The action bar shows the deal: a row for each side with the chosen properties as chips and a
    cash amount beside its heading (minus/plus in 50G steps, or typed). The compact two-column offer sits beside its action buttons. Received offers use “You get” and “You give”; brighter headings, gold cash chips and slightly larger phone text improve readability. Tapping a property on the board adds or removes
-   it ("Give"/"Get" labels on the board); tapping a chip removes it.
+   it ("Give"/"Get" labels on the board, each bordered in the owner's color); tapping a chip removes it.
 2. Validation: at least one item, and neither side offers more cash than they hold.
 3. The partner sees the same zoomed-out board and an action bar listing both sides, with the offered
    squares marked ("You get" / "You give"), and accepts,

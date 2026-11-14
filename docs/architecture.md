@@ -490,7 +490,6 @@ prior layered buildings and original paired art. No old image files are overwrit
 
 Online connections use PeerJS binary serialization, which chunks large snapshots. JSON serialization rejects messages above roughly 16KB and cannot carry saved-game snapshots reliably. Reopened rooms lock their seats but wait for Resume before sending start; lobby details are delivered first.
 
-
 ### Fresh-match presentation
 
 `main.ts` explicitly marks only new setup launches for the opening; `HostRoom.begin(G, true)` forwards optional `StartInfo.opening` to guests. Saved resumes call `begin` without that flag, and `turnStart` snapshots omit it, so reconnect/resync never resets tokens to the bank. The field changes presentation only, with no engine actions or random draws.

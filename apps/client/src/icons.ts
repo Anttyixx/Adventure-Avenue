@@ -4,6 +4,13 @@
  */
 
 import { ART_SOURCES, SYMBOL_ART_SET } from './props';
+import clubEmpty from './assets/symbols-v22/club-empty.png';
+import diamondEmpty from './assets/symbols-v22/diamond-empty.png';
+import heartEmpty from './assets/symbols-v22/heart-empty.png';
+import spadeEmpty from './assets/symbols-v22/spade-empty.png';
+
+/** Missing painted suits: the same shape as the sprite, as a faint empty slot with a soft rim. */
+const EMPTY_SUITS = [spadeEmpty, heartEmpty, diamondEmpty, clubEmpty];
 
 /** Spades blue, hearts red, diamonds yellow, clubs green. */
 export const SUIT_COLORS = ['#4c8dff', '#e5484d', '#ffc83d', '#35c46a'];
@@ -24,7 +31,8 @@ const suitCache = new Map<string, string>();
 
 /** A suit icon: full color when held, a faint outline-like ghost when missing. */
 export function suitIconURL(i: number, on: boolean): string {
-  if (on && SYMBOL_ART_SET === 'painted') return ART_SOURCES[['spade', 'heart', 'diamond', 'club'][i]].base;
+  if (SYMBOL_ART_SET === 'painted')
+    return on ? ART_SOURCES[['spade', 'heart', 'diamond', 'club'][i]].base : EMPTY_SUITS[i];
   const key = `${i}|${on}`;
   let url = suitCache.get(key);
   if (!url) {

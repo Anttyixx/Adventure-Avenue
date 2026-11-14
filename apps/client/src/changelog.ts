@@ -26,6 +26,16 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: '2026-11-14-suits-trade-labels',
+    date: 'Nov 14, 2026',
+    title: 'Bigger suits',
+    features: [],
+    extras: [
+      'Suits on the player cards are bigger, and missing ones show as an empty slot in the same shape',
+      "Trade labels on the board are outlined in the owner's color",
+    ],
+  },
+  {
     id: '2026-11-13-painted-symbols-stack',
     date: 'Nov 13, 2026',
     title: 'Fresh symbols and a readable stack',

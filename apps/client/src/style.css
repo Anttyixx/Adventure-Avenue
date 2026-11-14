@@ -1185,9 +1185,12 @@ input[type='range'] {
   flex: none;
   align-items: center;
 }
+/* The painted suits leave a clear margin round the symbol in their image: draw them bigger and
+   pull the margin in so the row stays the same width. */
 .suits img {
-  width: 15.75px;
-  height: 15.75px;
+  width: 22px;
+  height: 22px;
+  margin: -3px -2px;
 }
 .wild {
   display: inline-flex;
@@ -2920,8 +2923,9 @@ input[type='range'] {
     margin: -3px 1px;
   }
   .suits img {
-    width: 11.55px;
-    height: 11.55px;
+    width: 16px;
+    height: 16px;
+    margin: -2px -1.5px;
   }
   .tag {
     font-size: 9px;

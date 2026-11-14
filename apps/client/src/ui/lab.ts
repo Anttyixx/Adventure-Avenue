@@ -120,7 +120,7 @@ const rnd = (n: number) => Math.floor(Math.random() * n);
  * Controls for UI elements that were just added or changed: they shake once and glow so they
  * are easy to find. Update this list with each change.
  */
-const RECENT = new Set(['Updated symbol artwork', 'Stack: hover during a pop-up', 'Cards: stack']);
+const RECENT = new Set(['Cards: list', 'Propose trade', 'Trade offer received']);
 
 /**
  * Which board the lab plays on: Town with portal links (square, the default) or Twin Lakes (hex),
