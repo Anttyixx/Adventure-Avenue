@@ -1,10 +1,12 @@
 /**
- * HD (vector) icons for the interface. Only the player sprites are pixel art; suits, wild
- * cards and coins are drawn smooth so they stay crisp at any size.
+ * Painted board symbols shared with the interface, with vector ghosts and rollback art.
+ * Only the player characters are pixel art.
  */
 
-/** Spades blue, hearts pink, diamonds yellow, clubs green. */
-export const SUIT_COLORS = ['#4c8dff', '#ff5fa2', '#ffc83d', '#35c46a'];
+import { ART_SOURCES, SYMBOL_ART_SET } from './props';
+
+/** Spades blue, hearts red, diamonds yellow, clubs green. */
+export const SUIT_COLORS = ['#4c8dff', '#e5484d', '#ffc83d', '#35c46a'];
 export const SUIT_CHARS = ['♠', '♥', '♦', '♣'];
 
 // 24 x 24 paths: spade, heart, diamond, club.
@@ -22,6 +24,7 @@ const suitCache = new Map<string, string>();
 
 /** A suit icon: full color when held, a faint outline-like ghost when missing. */
 export function suitIconURL(i: number, on: boolean): string {
+  if (on && SYMBOL_ART_SET === 'painted') return ART_SOURCES[['spade', 'heart', 'diamond', 'club'][i]].base;
   const key = `${i}|${on}`;
   let url = suitCache.get(key);
   if (!url) {
@@ -65,6 +68,7 @@ export type BoonKind = keyof typeof BOON_SYMBOLS;
 const boonCache = new Map<BoonKind, string>();
 
 export function boonIconURL(kind: BoonKind): string {
+  if (SYMBOL_ART_SET === 'painted') return ART_SOURCES[kind].base;
   let url = boonCache.get(kind);
   if (!url) {
     const s = BOON_SYMBOLS[kind];
@@ -99,6 +103,7 @@ let wildCache = '';
 
 /** Suit Yourself (wild) card: a purple card with a gold star. */
 export function wildIconURL(): string {
+  if (SYMBOL_ART_SET === 'painted') return ART_SOURCES['arcade-wild'].base;
   if (!wildCache) {
     wildCache = svgURL(
       '<defs><linearGradient id="w" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#b57bff"/><stop offset="1" stop-color="#6a3fd0"/></linearGradient></defs>' +

@@ -55,21 +55,21 @@ a default browser widget.
 
 ### 2.2 Which container?
 
-| The player needs to...                                                  | Use                                                                                  | Examples                                                     |
-| ----------------------------------------------------------------------- | ------------------------------------------------------------------------------------ | ------------------------------------------------------------ |
-| Make **this turn's** choice (2-6 options), or read what's happening now | **Action bar** (bottom center)                                                       | Buy this shop?, Roll, choose a building, "Rosa is moving..." |
-| Pick a **square** on the board                                          | **Board highlight** (glowing squares) + action bar explaining it                     | Choose where to move, cannon target, invest in a shop        |
-| Edit **many settings** or a **long list** while still seeing the board  | **Side panel** (right edge, nonmodal)                                                | Board settings, the selected tile's options, the Tiles pane  |
-| Read or decide something **big**, with the board out of the way         | **Pop-up** (centered, dims the board)                                                | Guide, menu, results                                         |
-| Make a choice that needs **a big view to choose from**                  | **Pop-up + action bar**: the view in a non-dimming pop-up, the choice in the bar     | Stock screen, venture board, arcade games, info pop-up       |
-| Answer a **yes/no** that can lose something                             | **Question pop-up** (small pop-up, Cancel + answer)                                  | Discard changes?, Delete district?, Quit game?               |
-| **Choose one of many things** that have pictures                        | **Card grid** in a pop-up                                                            | New board templates                                          |
-| **Manage a list** of saved things                                       | **List rows** in a pop-up                                                            | My boards                                                    |
-| Be **told** something happened (no answer needed)                       | **Banner** (top center, fades) or the status line                                    | "Rosa's turn", "Bay Market stock up!"                        |
-| See **details on demand** about something on the board                  | **Tooltip**                                                                          | Hovering/tapping a square                                    |
-| Get to a **screen-wide tool** or info at any time                       | **Toolbar / info chip** (top corners)                                                | Zoom, Game log, Menu (with the Guide), game name and goal    |
-| Pick a **tool** in an editor                                            | **Tool rail** (icon buttons, left edge)                                              | Select, Move, Pan, Draw, Erase                                    |
-| Pick **one color/category** while doing something else                  | Use an action-bar color row for deliberate district painting; otherwise let **the game decide** | District painting in the action bar; warp/portal colors stay automatic                 |
+| The player needs to...                                                  | Use                                                                                             | Examples                                                               |
+| ----------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------- |
+| Make **this turn's** choice (2-6 options), or read what's happening now | **Action bar** (bottom center)                                                                  | Buy this shop?, Roll, choose a building, "Rosa is moving..."           |
+| Pick a **square** on the board                                          | **Board highlight** (glowing squares) + action bar explaining it                                | Choose where to move, cannon target, invest in a shop                  |
+| Edit **many settings** or a **long list** while still seeing the board  | **Side panel** (right edge, nonmodal)                                                           | Board settings, the selected tile's options, the Tiles pane            |
+| Read or decide something **big**, with the board out of the way         | **Pop-up** (centered, dims the board)                                                           | Guide, menu, results                                                   |
+| Make a choice that needs **a big view to choose from**                  | **Pop-up + action bar**: the view in a non-dimming pop-up, the choice in the bar                | Stock screen, venture board, arcade games, info pop-up                 |
+| Answer a **yes/no** that can lose something                             | **Question pop-up** (small pop-up, Cancel + answer)                                             | Discard changes?, Delete district?, Quit game?                         |
+| **Choose one of many things** that have pictures                        | **Card grid** in a pop-up                                                                       | New board templates                                                    |
+| **Manage a list** of saved things                                       | **List rows** in a pop-up                                                                       | My boards                                                              |
+| Be **told** something happened (no answer needed)                       | **Banner** (top center, fades) or the status line                                               | "Rosa's turn", "Bay Market stock up!"                                  |
+| See **details on demand** about something on the board                  | **Tooltip**                                                                                     | Hovering/tapping a square                                              |
+| Get to a **screen-wide tool** or info at any time                       | **Toolbar / info chip** (top corners)                                                           | Zoom, Game log, Menu (with the Guide), game name and goal              |
+| Pick a **tool** in an editor                                            | **Tool rail** (icon buttons, left edge)                                                         | Select, Move, Pan, Draw, Erase                                         |
+| Pick **one color/category** while doing something else                  | Use an action-bar color row for deliberate district painting; otherwise let **the game decide** | District painting in the action bar; warp/portal colors stay automatic |
 
 Rules of thumb:
 
@@ -85,23 +85,23 @@ Rules of thumb:
 
 ### 2.3 Which control?
 
-| Input                                           | Control                                                      |
-| ----------------------------------------------- | ------------------------------------------------------------ |
-| The main thing to do                            | One gold **main button** (`.btn.main`)                       |
-| Other options in the same decision              | Navy **buttons** (`.btn`) or **ghost** buttons for "no/skip" |
-| Destructive yes                                 | Red **no** button (`.btn.no`) inside a question pop-up       |
-| A small action next to content (delete, more)   | **Icon button** (`.ed-icon-btn`, 30 × 30, line icon)         |
-| A quiet secondary action under a value          | **Text link button** (`.ed-link-btn`, gold 11px bold)        |
-| "Add another" at the end of a list              | **Dashed add row** (`.ed-add`)                               |
-| Choose 1 of 2-4 modes                           | **Segmented pills** (`.seg` + `.seg-btn`)                    |
-| A number in a **list** (several per screen)     | **Stepper** (`ui/stepper.ts`: − value +, hold to repeat)     |
-| One **big** amount (shares, investment, target) | **Digit picker** (`ui/digits.ts`)                            |
-| A name                                          | Text input; inside cards use the **inline-edit** style       |
-| A color                                         | Round **swatch** wrapping a hidden `<input type=color>`      |
-| A square on the board                           | **Board highlight** (`board.setChoices`)                     |
-| One of many pictured things                     | **Cards** (picture on top, title, one-line description)      |
-| A category while placing                        | District painting: action-bar color squares; otherwise decide automatically            |
-| Show that something needs fixing                | **Problem badge** (red / yellow) on it; list on select       |
+| Input                                           | Control                                                                     |
+| ----------------------------------------------- | --------------------------------------------------------------------------- |
+| The main thing to do                            | One gold **main button** (`.btn.main`)                                      |
+| Other options in the same decision              | Navy **buttons** (`.btn`) or **ghost** buttons for "no/skip"                |
+| Destructive yes                                 | Red **no** button (`.btn.no`) inside a question pop-up                      |
+| A small action next to content (delete, more)   | **Icon button** (`.ed-icon-btn`, 30 × 30, line icon)                        |
+| A quiet secondary action under a value          | **Text link button** (`.ed-link-btn`, gold 11px bold)                       |
+| "Add another" at the end of a list              | **Dashed add row** (`.ed-add`)                                              |
+| Choose 1 of 2-4 modes                           | **Segmented pills** (`.seg` + `.seg-btn`)                                   |
+| A number in a **list** (several per screen)     | **Stepper** (`ui/stepper.ts`: − value +, hold to repeat)                    |
+| One **big** amount (shares, investment, target) | **Digit picker** (`ui/digits.ts`)                                           |
+| A name                                          | Text input; inside cards use the **inline-edit** style                      |
+| A color                                         | Round **swatch** wrapping a hidden `<input type=color>`                     |
+| A square on the board                           | **Board highlight** (`board.setChoices`)                                    |
+| One of many pictured things                     | **Cards** (picture on top, title, one-line description)                     |
+| A category while placing                        | District painting: action-bar color squares; otherwise decide automatically |
+| Show that something needs fixing                | **Problem badge** (red / yellow) on it; list on select                      |
 
 Never use: native-looking range sliders for money, free-typed numbers for money, dropdowns with
 two options (use segmented pills), tiny ✕ glyphs as close buttons.
@@ -604,9 +604,8 @@ if (!(await ask(`Delete ${d.name}?`, 'Its 4 properties will be removed from the 
   pills with a 2px border (one step thicker than the glass default), Nunito 700 12px, padding 2px 9px; hover gives a gold border; `.on` (its pop-up is open) is
   gold with dark text, like the Info button; focus shows a gold ring.
 - **Card layouts** (`.cards-wrap.collapsed`, `hud.setCardsMode`): the layout chip shows only the
-  current layout as a 14px stroked SVG icon only (the name is its tooltip and aria-label), List (three bars) or Smart stack (a card
-  with an arrow rising out); a tap switches to the other one (`CARDS_MODES` in `hud.ts`).
-  Collapsed (Smart stack), every card shares one grid cell (`grid-area: var(--row) / 1`, with
+  current layout as a 14px stroked SVG icon only (the name is its tooltip and aria-label), List (three bars) or Stack (three overlapping cards); a tap switches to the other one (`CARDS_MODES` in `hud.ts`).
+  Collapsed (Stack), every card shares one grid cell (`grid-area: var(--row) / 1`, with
   `--stack-n` x 7px of room above for the peeking cards); the active card is in front
   and the others sit behind by turn order (`--d` = depth), each 7px higher and 5% narrower, filled
   with their `--pc` and their contents hidden (3 show, deeper ones fade out). Back cards use
@@ -644,7 +643,7 @@ if (!(await ask(`Delete ${d.name}?`, 'Its 4 properties will be removed from the 
   `pointer-events: none` on the top-left chips, the zoom chip and the player cards with their chips,
   and the board ignores hover, taps, wheel and pinches (glowing squares of a choice stay
   pickable). The action bar and the toolbar's View board, Game log, Music and Menu stay live. Use
-  this for every new pop-up: put it in one of those layers so the lock follows it.
+  this for every new pop-up: put it in one of those layers so the lock follows it. Mouse movement over the visible card region can still unfold the stack through the backdrop. It never highlights board tokens or enables card/chip clicks or keyboard activation; moving away folds it. Clicks on locked cards must not dismiss the pop-up behind them.
 - **Pop-up** (`.info-layer > .modal.info-pop`): one width (up to 1,000px). Game and Stocks take
   the height they need (max 640px); player pages (`.player`) all share one fixed height (400px;
   phones fill the free area; with three columns the properties list `.pv-props` scrolls inside
@@ -1333,14 +1332,13 @@ Bank art keeps its gold roof. Keep all previous art files; property-only rollbac
 
 ### Random suit tile
 
-The builder adds Random suit to the existing two-column Suits palette and uses its normal tile inspector. The tile uses a custom fixed-color PNG (`random-suit-v20/random-suit-base.png`): an ivory card with a rounded gold rim, four colored suits and small gold shuffle arrows, matching the rounded board art; the four live suit symbols provide a fallback while art loads. It uses the suit color in Tile types view, a clear Random suit name and description, and the ordinary immediate suit pickup feedback. No prompt is needed: the engine chooses one missing suit. Landing also opens the usual venture board. UI Lab’s Random suit tile button demonstrates the tile and a real passing pickup with two suits missing.
+The builder adds Random suit to the existing two-column Suits palette and uses its normal tile inspector. The tile uses a custom fixed-color PNG (`symbols-v22/random-suit-base.png`): four freestanding colored suits and small gold shuffle arrows, with no card backing, matching the rounded board art; the four live suit symbols provide a fallback while art loads. It uses the suit color in Tile types view, a clear Random suit name and description, and the ordinary immediate suit pickup feedback. No prompt is needed: the engine chooses one missing suit. Landing also opens the usual venture board. UI Lab’s Random suit tile button demonstrates the tile and a real passing pickup with two suits missing.
 
 ### Builder Move tool
 
 Add Move to the existing icon-only tool rail, beside Select. Use a tile with outward arrows icon, the existing hover name and selected treatment, and hide the Tiles pane. Use a grab cursor at rest and grabbing during a direct drag. Reuse the selected-tile movement preview, original-position outline, grid snapping, and red invalid-drop outline. The status says to drag and release; Escape cancels. Direct dragging works with a pointer or one finger, and two fingers cancel the drag before panning/zooming. Keep Select’s click-to-place group move. UI Lab’s Board builder: Move opens a sample board with the tool active.
 
 Draw replaces Place, retaining its pencil icon and tile pane. Buildings contains a neutral Property option, a Jackpot tile and a Districts option pictured with three rounded color regions. District painting expands the action bar for its color controls; other tools retain the collapsed status bar when they have no actions. Unassigned properties show No district in their inspector. The inspector uses the same four-member rollover policy. UI Lab has Board builder: Draw and Board builder: Districts previews.
-
 
 ### Fresh-game entrance
 
@@ -1355,3 +1353,9 @@ The Draw panel’s Districts icon contains exactly three colors. On a hex grid, 
 ### Jackpot in Buildings
 
 Rename only the Draw palette category Properties to Buildings; keep the Property tile, Districts brush and the game’s separate Properties chip names. Add Jackpot as a third art-only option, sharing square/hex hover and selection feedback. Its custom cream/gold public coin-vault sprite uses a fixed-color base PNG with no owner tint. Render it at the property art position with the current pot as live money text below; keep room between artwork and amount. The inspector describes the 10G pass contribution and land-to-claim rule, with no ownership or district controls. Contributions and payouts use ordinary money feedback, with the vault as the destination/source respectively. UI Lab has Buildings and Jackpot: pass and collect previews.
+
+### Shared painted HUD symbols
+
+Use the board’s painted suit and effect PNGs in player cards and player pages: blue Spade, red Heart, yellow Diamond, green Club, the existing green Boon coin burst and cleaned pink Boom coin burst. Missing suits retain their subdued vector ghosts. Suit Yourself uses the purple/gold star card; Random Suit is a freestanding shuffle with no card. `symbols-v22/` preserves the toy-town style, transparent margins and fixed colors. Warp uses a flat equal-width/height four-point star, cream fixed rim and aligned grey tint. `SYMBOL_ART_SET` restores preserved art. The Stack chip uses three overlapping cards, with no arrow.
+
+Pop-up hover expansion keeps the existing card glide and cancellation guards. Observe mouse position through the backdrop rather than raising cards above the dialog or enabling pointer events. Actual dialog/action-bar controls retain precedence; card/button clicks and keyboard activation stay blocked. Moving off the stack folds it; View board restores ordinary interaction. UI Lab: Updated symbol artwork and Stack: hover during a pop-up.

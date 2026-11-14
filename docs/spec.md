@@ -458,14 +458,14 @@ connect the complete board; portals are shortcuts. All three can be remixed in t
 
 **Pass vs land:**
 
-| Effect                          | Passing                               | Landing                                               |
-| ------------------------------- | ------------------------------------- | ----------------------------------------------------- |
-| Suit squares and change-of-suit | Collect suit                          | Collect suit, then a venture card (suit squares only) |
-| Jackpot | Passing player pays 10G into this tile’s pot | Collect the entire pot and reset to zero; no pass charge |
-| Random suit                     | Collect one random missing suit; nothing if all four are held | Same, then draw a venture card |
-| Bank                            | Promotion check, win check, buy stock | Same, plus free direction next turn                   |
-| Rival's checkpoint              | Pay toll                              | Pay toll                                              |
-| Everything else                 | Nothing                               | Square's effect                                       |
+| Effect                          | Passing                                                       | Landing                                                  |
+| ------------------------------- | ------------------------------------------------------------- | -------------------------------------------------------- |
+| Suit squares and change-of-suit | Collect suit                                                  | Collect suit, then a venture card (suit squares only)    |
+| Jackpot                         | Passing player pays 10G into this tile’s pot                  | Collect the entire pot and reset to zero; no pass charge |
+| Random suit                     | Collect one random missing suit; nothing if all four are held | Same, then draw a venture card                           |
+| Bank                            | Promotion check, win check, buy stock                         | Same, plus free direction next turn                      |
+| Rival's checkpoint              | Pay toll                                                      | Pay toll                                                 |
+| Everything else                 | Nothing                                                       | Square's effect                                          |
 
 Roll-on chains are capped at a depth of 3 so a turn always ends.
 
@@ -809,23 +809,23 @@ commissions, and leader-targeting cards act as catch-up.
 Every non-property square has one landing effect; temporary effects last until the affected
 player's next turn begins.
 
-| Square           | Landing effect                                                                                    | Interacts with                                                |
-| ---------------- | ------------------------------------------------------------------------------------------------- | ------------------------------------------------------------- |
-| Roll-on          | Roll again and keep moving (max chain depth 3)                                                    | Can reach another venture, bank or roll-on                    |
-| Take-a-break     | Your shops and buildings close: rivals pay nothing there                                          | Fees, tolls, dividends and commissions from your squares stop |
-| Boon             | 20% commission: the bank pays you 20% of every fee anyone else pays                               | Stacks with nothing; the higher rate wins                     |
-| Boom             | Same, at 50%                                                                                      | Same as Boon                                                  |
-| Stockbroker      | Buy stock (Standard). Becomes a Venture square in Easy rules                                      | Stock market                                                  |
-| Portal (retired) | Only in saved games: stepping on it jumps to its partner portal or the bank, then keep moving     | Boards now use portal links instead (see Custom boards)       |
-| Warp             | Stopping on it jumps to its partner warp or the bank; arrival does not teleport again             | Up to five pairs (auto colors) plus any number to the bank    |
-| Cannon           | Pick another player and warp to their square. Suits, Jackpot and bank still apply there; nothing else does | Suits, Jackpot, bank, promotion, win                          |
-| Price Up         | Your fees are 10% higher until your next turn (`K.hike`, multiplies any other boost)              | Shop and building fees you charge                             |
-| Taxi             | Pick any special square (not the bank, a taxi, a portal or a warp), ride there and use it         | Every special square's effect                                 |
-| Swap             | Pick another player and trade places. You pick up a suit or visit the bank where you arrive       | Suits, bank, promotion, win                                   |
-| Arcade           | Play one random minigame (see Arcade minigames)                                                   | Cash, shop values, wild suit cards, stock                     |
-| Venture          | Venture grid                                                                                      | See Venture cards                                             |
-| Random suit | Gives exactly one randomly chosen missing suit on passing or arrival by any transport; no suit, cash or wild card if all four are held. Stopping also draws a venture card, even with all four suits. | Promotion; seeded randomness; never awards twice for one arrival |
-| Change-of-suit   | Gives the current suit, then rotates                                                              | Promotion                                                     |
+| Square           | Landing effect                                                                                                                                                                                        | Interacts with                                                   |
+| ---------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------- |
+| Roll-on          | Roll again and keep moving (max chain depth 3)                                                                                                                                                        | Can reach another venture, bank or roll-on                       |
+| Take-a-break     | Your shops and buildings close: rivals pay nothing there                                                                                                                                              | Fees, tolls, dividends and commissions from your squares stop    |
+| Boon             | 20% commission: the bank pays you 20% of every fee anyone else pays                                                                                                                                   | Stacks with nothing; the higher rate wins                        |
+| Boom             | Same, at 50%                                                                                                                                                                                          | Same as Boon                                                     |
+| Stockbroker      | Buy stock (Standard). Becomes a Venture square in Easy rules                                                                                                                                          | Stock market                                                     |
+| Portal (retired) | Only in saved games: stepping on it jumps to its partner portal or the bank, then keep moving                                                                                                         | Boards now use portal links instead (see Custom boards)          |
+| Warp             | Stopping on it jumps to its partner warp or the bank; arrival does not teleport again                                                                                                                 | Up to five pairs (auto colors) plus any number to the bank       |
+| Cannon           | Pick another player and warp to their square. Suits, Jackpot and bank still apply there; nothing else does                                                                                            | Suits, Jackpot, bank, promotion, win                             |
+| Price Up         | Your fees are 10% higher until your next turn (`K.hike`, multiplies any other boost)                                                                                                                  | Shop and building fees you charge                                |
+| Taxi             | Pick any special square (not the bank, a taxi, a portal or a warp), ride there and use it                                                                                                             | Every special square's effect                                    |
+| Swap             | Pick another player and trade places. You pick up a suit or visit the bank where you arrive                                                                                                           | Suits, bank, promotion, win                                      |
+| Arcade           | Play one random minigame (see Arcade minigames)                                                                                                                                                       | Cash, shop values, wild suit cards, stock                        |
+| Venture          | Venture grid                                                                                                                                                                                          | See Venture cards                                                |
+| Random suit      | Gives exactly one randomly chosen missing suit on passing or arrival by any transport; no suit, cash or wild card if all four are held. Stopping also draws a venture card, even with all four suits. | Promotion; seeded randomness; never awards twice for one arrival |
+| Change-of-suit   | Gives the current suit, then rotates                                                                                                                                                                  | Promotion                                                        |
 
 **Turn-start reset:** when a player's turn starts, their `onBreak`, `closed`, `boon` and `boost` are
 cleared. This is what makes "until your next turn" effects expire.
@@ -1233,12 +1233,12 @@ watch them being played; their result screen closes by itself or with Close.
 against the right edge: **Stocks** (Standard rules only) opens the stock market pop-up,
 **Properties** opens the properties pop-up (each chip turns gold while its pop-up is open; tapping
 it again closes it), and the **layout chip** shows the cards' layout now as an icon only (its name
-is in its tooltip): **List** (three bars) or **Smart stack** (a card with an arrow rising out).
+is in its tooltip): **List** (three bars) or **Stack** (three overlapping cards).
 The chips have a 2px border. Tapping the layout chip switches to the other layout. The choice is remembered on
-that device (an older "folded" or Stack choice becomes Smart stack).
+that device (older folded, stack and smart preferences keep the same stacked layout).
 
 - **List:** every player card, one above the other.
-- **Smart stack:** the cards fold into a stack: only the active player's card shows in full, with
+- **Stack:** the cards fold into a stack: only the active player's card shows in full, with
   the other players' cards stacked behind it in turn order (the next player just behind, the
   player who just went at the back), each peeking out a little higher as a strip in that player's
   color. When the turn passes, the front card drops down out of the way, slips behind the stack and
@@ -1255,17 +1255,17 @@ must not change the stack's size or expose a larger panel. Opening/popping resto
 natural full height. Interrupted glides use the current layout's final pose, and only the latest
 glide may restore normal CSS transitions after it finishes.
 
-**Opening a stack** (the same gliding motion as switching layouts, one card just after another): in Smart stack, tapping a card doesn't open the player's info; tapping or
+**Opening a stack** (the same gliding motion as switching layouts, one card just after another): in Stack, tapping a card doesn't open the player's info; tapping or
 clicking the stack opens it into a list for 3 seconds, then it folds back. With a mouse, resting
 on the stack opens it until the mouse moves off the cards. While it is open, tapping a player's
-card opens their info. The chosen layout doesn't change. The chips stay fixed below the cards as the cards open, fold, or rise out of a smart stack.
+card opens their info. The chosen layout doesn't change. The chips stay fixed below the cards as the cards open, fold, or rise out of a stack.
 
 Switching between List and a stack is animated: the cards glide together into the stack (or fan
-back out to their places) one just after another; the active player's card glides straight to its slightly-out active spot as part of that motion (it never snaps out afterward); cards rising out of a smart stack and going
+back out to their places) one just after another; the active player's card glides straight to its slightly-out active spot as part of that motion (it never snaps out afterward); cards rising out of a stack and going
 back glide the same way.
 
 One rule decides every asset: only the player character sprites are pixel art. Everything else,
-including the board, the interface, suits, wild cards, coins and effects, is HD (PNG sprites for static board art, live vectors for UI and effects). _(Changed
+including the board, the interface, suits, wild cards, coins and effects, is HD (PNG sprites for static board art and shared player-card symbols, live vectors for the remaining UI and effects). _(Changed
 by the owner on Oct 23, 2026; the original spec drew suits, coins and wild cards as pixel art.)_
 
 **Board (HD canvas).** Logical size 1300 x 800 with 100-unit squares, scaled to the container and to
@@ -1526,8 +1526,7 @@ closes it. It updates live as the game goes on.
 **Pop-up lock.** While any pop-up is on the screen (the info pop-ups, the stock market or venture
 board during a choice, an arcade game, a dialog or the Menu), only these still work: the action bar's
 buttons, the View board chip (when it is shown), Game log, the Music chip and Menu. The info chip
-and its Info and Room buttons, the zoom chip, the player cards (no tap, no hover, no opening the
-stack) and the chips under them, and the board (no tile or portal info on hover or tap, no wheel or
+and its Info and Room buttons, the zoom chip, the player cards (no taps; mouse hover can still expand the stack) and the chips under them, and the board (no tile or portal info on hover or tap, no wheel or
 pinch zoom) do nothing until the pop-up closes. Squares glowing for a choice can still be tapped.
 While View board has the pop-up out of the way, the screen is unlocked.
 
@@ -1649,7 +1648,7 @@ API where available.
 
 - **Scoreboard:** portrait; level chip and full name on the top row, with the wild count and four suit
   icons at its top right (they drop below a very long name; collected suits in their own color:
-  spades blue, hearts pink, diamonds yellow, clubs green; missing ones faint grey; a full set hops
+  spades blue, hearts red, diamonds yellow, clubs green; missing ones faint grey; a full set hops
   until the player levels up); a player who has reached the target gets a pulsing golden glow on
   their net worth and portrait instead of a tag; an active Boon or Boom shows as its symbol after the name (the
   tooltip gives the commission); status tags (Closed, Fees +30%); a progress bar toward the target
@@ -2031,7 +2030,7 @@ and width and four equal-length arms. It has no pedestal, socket or upright crys
 pad beneath the token’s feet, with WARP above it, so the player appears to stand on the star. Side portals
 use a fixed jeweled frame and two separate animated vortex PNG layers. `assets/transport-v13/`
 contains aligned base/tint pairs for the earlier crystal and the portal components;
-`assets/warp-v14/` supplies the active floor star’s aligned base/tint pair. Matching link colors, bank gold and
+`assets/symbols-v22/` supplies the active painted floor star’s aligned base/tint pair; `warp-v14/` preserves the earlier pad. Matching link colors, bank gold and
 unlinked grey are preserved. `TRANSPORT_SET = previous` restores the earlier artwork; all prior
 files and tap/hover behavior remain available. Price Up, Taxi and Swap also have base-only PNG icons.
 
@@ -2051,8 +2050,7 @@ amounts of empty space), so all pictures stand on the same base line at matching
 clear of the tile's border. Hex tiles narrow toward their top point, so their pictures are drawn
 at 90% of the square size.
 
-Random suit tiles (`randomSuit`, map glyph `J`) are in the builder’s Suits category, show custom painted four-suit card artwork (`random-suit-v20/random-suit-base.png`, fixed colors, no tint layer), and can supply every suit for board validation. They use the same immediate pickup, animation and log as ordinary suits. Wild cards do not count as held suits for this tile. Online protocol version 50 separates this rule from older clients.
-
+Random suit tiles (`randomSuit`, map glyph `J`) are in the builder’s Suits category, show custom painted freestanding four-suit artwork (`symbols-v22/random-suit-base.png`, fixed colors, no tint layer), and can supply every suit for board validation. They use the same immediate pickup, animation and log as ordinary suits. Wild cards do not count as held suits for this tile. Online protocol version 50 separates this rule from older clients.
 
 ### Fresh-match bank entrance
 
@@ -2073,3 +2071,9 @@ The Draw pane’s category formerly named Properties is now Buildings: Property,
 Stopping on Jackpot collects its entire current pot and resets it to zero; stopping does not also charge 10G. An empty pot gives nothing. All stopping transport arrivals can collect, including Cannon, Taxi, Balloonport, warps, venture movement and either participant in a swap. A portal arrival with movement remaining contributes 10G when passing instead of claiming the pot. Arrival handling prevents duplicate payouts. New matches start with empty pots; optional `Square.pot` survives game saves/reconnects and defaults to zero for older saves. Board files do not seed or carry a played game’s pot.
 
 The cream/gold vault sprite is fixed-color (`jackpot-v21/jackpot-base.png`); the live pot amount is shown beneath it on both grids. Contributions animate from the passer to the tile, and payouts from the tile to the lander. Immediate money announcements avoid an extra landing pause; detailed clickable log entries remain without repeating the same action-bar message. CPU route scoring accounts for pass costs and pot rewards. Online protocol is 51. Existing maps remain unchanged; builders can add Jackpot to custom boards. UI Lab: Board builder: Buildings and Jackpot: pass and collect.
+
+### Shared painted suit and effect symbols
+
+`symbols-v22/` supplies blue Spade, red Heart, yellow Diamond and green Club sprites, the freestanding Random Suit shuffle (no card), the new purple/gold Suit Yourself card, a clean three-coin pink Boom burst, and a painted flat four-point Warp. Warp has equal visible width/height, no pedestal, a fixed cream rim and aligned grey tint layer for pair colors. Player cards and player pages use these same suits, Boom and the existing green Boon burst from v16; missing suits remain faint vector ghosts. All prior PNGs and vector fallbacks stay available through `SYMBOL_ART_SET = previous` in `props.ts`. No game rules change.
+
+During a pop-up, hovering the stack may unfold it for reading only; card/chip taps and keyboard activation remain blocked, as do zoom controls. View board restores ordinary interaction. The layout is named Stack and uses overlapping cards as its icon; stored `smart` preferences remain compatible.

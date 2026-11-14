@@ -120,7 +120,7 @@ const rnd = (n: number) => Math.floor(Math.random() * n);
  * Controls for UI elements that were just added or changed: they shake once and glow so they
  * are easy to find. Update this list with each change.
  */
-const RECENT = new Set(['Board builder: Buildings', 'Jackpot: pass and collect']);
+const RECENT = new Set(['Updated symbol artwork', 'Stack: hover during a pop-up', 'Cards: stack']);
 
 /**
  * Which board the lab plays on: Town with portal links (square, the default) or Twin Lakes (hex),
@@ -689,15 +689,27 @@ export async function openLab(app: HTMLElement, section?: string) {
         refresh();
         hud.tick('Extra status rows on some cards. Advance the turn or open the stack to check alignment.');
       }),
+      btn('Stack: hover during a pop-up', () => {
+        G.players.forEach((p, i) => {
+          p.suits = [true, true, true, true];
+          p.wild = 1;
+          p.boon = i % 2 ? K.boom : K.boon;
+        });
+        hud.setCardsMode('smart');
+        refresh();
+        setOpen(false);
+        hud.toggleInfo('game');
+        hud.tick('Hover over the stack to see the cards. Use View board before clicking them.');
+      }),
       btn('Cards: list', () => hud.setCardsMode('list')),
-      btn('Cards: smart stack', () => hud.setCardsMode('smart')),
+      btn('Cards: stack', () => hud.setCardsMode('smart')),
       // A folded stack opens into a list for a moment, as when tapped.
       btn('Cards: open the stack', () => {
         if (hud.cardsMode === 'list') hud.setCardsMode('smart');
         window.setTimeout(() => hud.openStack('tap'), 600);
       }),
-      // A player who isn't up gets paid: in a smart stack their card rises out for a moment.
-      btn('Smart stack: pay someone else', () => {
+      // A player who isn't up gets paid: in a stack their card rises out for a moment.
+      btn('Stack: pay someone else', () => {
         if (hud.cardsMode !== 'smart') hud.setCardsMode('smart');
         const others = G.players.filter((p) => p.id !== hud.activePid && !p.bankrupt);
         const p = others[rnd(others.length)];
@@ -1898,6 +1910,32 @@ export async function openLab(app: HTMLElement, section?: string) {
           ),
         );
         const m = hud.modal('Arcade sprite artwork', body, { onClose: () => m.close() });
+      }),
+      btn('Updated symbol artwork', () => {
+        const keys: PropKey[] = [
+          'spade',
+          'heart',
+          'diamond',
+          'club',
+          'random-suit',
+          'arcade-wild',
+          'warp',
+          'boon',
+          'boom',
+        ];
+        const body = h(
+          'div',
+          { style: 'display:flex;flex-wrap:wrap;justify-content:center;gap:16px' },
+          ...keys.map((key) =>
+            h(
+              'figure',
+              { style: 'margin:0;display:grid;justify-items:center;gap:6px' },
+              h('img', { src: propIconURL(key, '#9b63df'), alt: key, width: 88, height: 88 }),
+              h('figcaption', null, key === 'arcade-wild' ? 'Suit Yourself' : key),
+            ),
+          ),
+        );
+        const m = hud.modal('Updated symbol artwork', body, { onClose: () => m.close() });
       }),
       btn('Boon and Boom artwork', () => {
         const body = h(

@@ -26,6 +26,23 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: '2026-11-13-painted-symbols-stack',
+    date: 'Nov 13, 2026',
+    title: 'Fresh symbols and a readable stack',
+    features: [
+      {
+        tag: 'better',
+        title: 'Matching painted symbols',
+        text: 'Random Suit is now a freestanding shuffle of suits, Warp has a painted four-point star, and Boom keeps its coin burst with cleaner artwork. Player cards share the board’s Boon, Boom and suit sprites, plus a new Suit Yourself card. Spades are blue, hearts red, diamonds yellow and clubs green.',
+      },
+      {
+        tag: 'better',
+        title: 'See the stack during pop-ups',
+        text: 'Hover over the player-card stack to expand it while a pop-up is open. Card and button clicks stay locked until View board is selected. Smart stack is now called Stack, with a stacked-card icon.',
+      },
+    ],
+  },
+  {
     id: '2026-11-13-jackpot-tile',
     date: 'Nov 13, 2026',
     title: 'Build a shared jackpot',

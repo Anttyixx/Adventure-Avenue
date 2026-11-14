@@ -208,6 +208,14 @@ const legacy = import.meta.glob<string>('./assets/props/*.png', {
   import: 'default',
 });
 
+/** Restore the earlier board and HUD symbols without deleting any artwork. */
+export const SYMBOL_ART_SET: string = 'painted';
+const symbolArt = import.meta.glob<string>('./assets/symbols-v22/*.png', {
+  eager: true,
+  query: '?url',
+  import: 'default',
+});
+
 const urls = Object.fromEntries([
   ...Object.entries(jackpotArt).map(([path, url]) => [
     path.replace(/^.*\//, '').replace('-base.png', '.png'),
@@ -288,6 +296,18 @@ const urls = Object.fromEntries([
         path.replace(/^.*\//, '').replace('-base.png', '.png'),
         { url, explicit: true },
       ])
+    : []),
+  ...(ART_SET === 'layered' && SYMBOL_ART_SET === 'painted'
+    ? Object.entries(symbolArt)
+        .filter(
+          ([path]) =>
+            (!path.includes('/warp-') || GROUND_WARP_ART) &&
+            (!path.includes('/boom-') || BOOM_SET === 'whole'),
+        )
+        .map(([path, url]) => [
+          path.replace(/^.*\//, '').replace('-base.png', '.png'),
+          { url, explicit: true },
+        ])
     : []),
 ]) as Record<string, { url: string; explicit: boolean }>;
 

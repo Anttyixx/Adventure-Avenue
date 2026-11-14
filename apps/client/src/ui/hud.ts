@@ -120,6 +120,7 @@ export class Hud {
   private askChanges: MutationObserver;
   /** Watches pop-ups opening and closing, to lock the rest of the screen (see `updateLock`). */
   private lockWatch: MutationObserver;
+  private lockPointerEvents = new AbortController();
   /** Whether a pop-up is up and the screen behind it is locked. */
   locked = false;
   private askFrame = 0;
@@ -149,7 +150,7 @@ export class Hud {
     'Properties',
   );
   /**
-   * The layout chip: shows the player cards' layout now (List: every card; Smart stack: only the
+   * The layout chip: shows the player cards' layout now (List: every card; Stack: only the
    * active player's card in front, but a card that changes on someone else's turn rises out of
    * the stack for a moment). Tapping it switches to the other one.
    */
@@ -244,7 +245,7 @@ export class Hud {
     // Clicking or tapping the stack (its front card or the strips behind) opens it into a list
     // for a moment; a mouse resting on it keeps it open until it leaves.
     this.cards.addEventListener('click', () => {
-      if (this.stacked) this.openStack('tap');
+      if (!this.locked && this.stacked) this.openStack('tap');
     });
     this.cards.addEventListener('pointerenter', (e) => {
       if (e.pointerType === 'mouse') this.openStack('hover');
@@ -252,6 +253,47 @@ export class Hud {
     this.cards.addEventListener('pointerleave', (e) => {
       if (e.pointerType === 'mouse' && this.opened === 'hover') this.closeStack();
     });
+    // A dialog's backdrop catches pointer events before the cards. Observe the mouse at
+    // the shared board/HUD parent instead, keeping the existing click lock and the modal's own controls intact.
+    const over = (el: HTMLElement, e: MouseEvent) => {
+      const r = el.getBoundingClientRect();
+      return e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom;
+    };
+    const onPopup = (target: EventTarget | null) =>
+      target instanceof Element &&
+      target.closest('.modal, .prompt-center, .toolbar, .venture-board, .arcade-stage');
+    parent.addEventListener(
+      'pointermove',
+      (e) => {
+        if (!this.locked || e.pointerType !== 'mouse') return;
+        if (over(this.cards, e) && !onPopup(e.target)) this.openStack('hover');
+        else if (this.opened === 'hover') this.closeStack();
+      },
+      { capture: true, signal: this.lockPointerEvents.signal },
+    );
+    parent.addEventListener(
+      'pointerleave',
+      () => {
+        if (this.locked && this.opened === 'hover') this.closeStack();
+      },
+      { signal: this.lockPointerEvents.signal },
+    );
+    for (const type of ['pointerdown', 'click', 'dblclick', 'keydown'] as const) {
+      parent.addEventListener(
+        type,
+        (e) => {
+          if (!this.locked || onPopup(e.target)) return;
+          if (e instanceof KeyboardEvent && e.key !== 'Enter' && e.key !== ' ') return;
+          const atCards =
+            (e.target instanceof Node && this.cardsWrap.contains(e.target)) ||
+            (e instanceof MouseEvent && over(this.cardsWrap, e));
+          if (!atCards) return;
+          e.preventDefault();
+          e.stopImmediatePropagation();
+        },
+        { capture: true, signal: this.lockPointerEvents.signal },
+      );
+    }
     this.setCardsMode(this.cardsMode);
     // The info chip: the game's name, the goal, the Room button online and the Info button.
     this.infoChip.append(
@@ -286,7 +328,9 @@ export class Hud {
 
     this.cb = cb;
     this.fastBtn.onclick = cb.onToggleFast;
-    this.zoomChip.onclick = () => board.resetZoom();
+    this.zoomChip.onclick = () => {
+      if (!this.locked) board.resetZoom();
+    };
     board.onZoom = (pct, mode) => {
       // Only the text changes while zooming: update it in place (no new nodes for the observers).
       const text = this.zoomChip.firstChild;
@@ -332,6 +376,7 @@ export class Hud {
     this.resize.disconnect();
     this.askChanges.disconnect();
     this.lockWatch.disconnect();
+    this.lockPointerEvents.abort();
     cancelAnimationFrame(this.askFrame);
     clearTimeout(this.openTimer);
     this.stopAskMorph();
@@ -573,7 +618,7 @@ export class Hud {
         // Pointing at a card picks the player out on the board: their character grows and shows
         // which ways they can go.
         el.addEventListener('pointerenter', (e) => {
-          if (e.pointerType === 'mouse') this.board.cardHoverPid = pid;
+          if (!this.locked && e.pointerType === 'mouse') this.board.cardHoverPid = pid;
         });
         el.addEventListener('pointerleave', () => {
           if (this.board.cardHoverPid === pid) this.board.cardHoverPid = -1;
@@ -581,9 +626,10 @@ export class Hud {
         // A folded stack opens into a list first (the click goes on to this.cards); once open,
         // a card opens that player's info.
         el.onclick = () => {
-          if (!this.stacked) this.toggleInfo(this.infoPage === pid ? null : pid);
+          if (!this.locked && !this.stacked) this.toggleInfo(this.infoPage === pid ? null : pid);
         };
         el.onkeydown = (e) => {
+          if (this.locked) return;
           if (e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) {
             e.preventDefault();
             e.stopPropagation();
@@ -607,12 +653,12 @@ export class Hud {
     this.setCardsMode(on ? 'smart' : 'list');
   }
 
-  /** Show the player cards as a list or a smart stack, gliding every card from where it was. */
+  /** Show the player cards as a list or a stack, gliding every card from where it was. */
   setCardsMode(mode: CardsMode) {
     const on = mode !== 'list';
     const unfold = on !== this.stacked;
     const change = () => {
-      // A stack opened for a moment, and cards lifted out of a smart stack, go back first.
+      // A stack opened for a moment, and cards lifted out of a stack, go back first.
       clearTimeout(this.openTimer);
       this.opened = null;
       for (const t of this.popped.values()) clearTimeout(t);
@@ -652,7 +698,7 @@ export class Hud {
     const prev = this.stackFront;
     this.stackFront = front;
     const on = this.stacked;
-    // Smart stack: cards lifted out sit in a list above the stack, in turn order; the rest
+    // Stack: cards lifted out sit in a list above the stack, in turn order; the rest
     // stay in the stack, the active player's in front.
     const lifted = on ? ids.filter((id) => this.popped.has(id) && id !== front) : [];
     const stacked = ids.filter((id) => !lifted.includes(id));
@@ -706,7 +752,7 @@ export class Hud {
    * mouse leaves, `tap` for `T.stackOpen`. A hover takes over a tap's timer.
    */
   openStack(how: 'hover' | 'tap') {
-    if (!this.cardsCollapsed) return;
+    if (!this.cardsCollapsed || (this.locked && how === 'tap')) return;
     clearTimeout(this.openTimer);
     if (how === 'tap' && this.opened !== 'hover')
       this.openTimer = window.setTimeout(() => this.closeStack(), T.stackOpen);
@@ -732,7 +778,7 @@ export class Hud {
   }
 
   /**
-   * Smart stack: lift player `pid`'s card out of the stack into a list above it while it
+   * Stack: lift player `pid`'s card out of the stack into a list above it while it
    * updates, then put it back (`T.cardPop` after its last change). Every card glides from where
    * it was, as when folding.
    */
@@ -748,13 +794,13 @@ export class Hud {
     if (was == null) this.popPending = true;
     return was == null;
   }
-  /** Set when a card rose out of the smart stack during this update (see renderCards). */
+  /** Set when a card rose out of the stack during this update (see renderCards). */
   private popPending = false;
 
   /**
    * Change the cards' layout with `change`, gliding every card from where it was to its new place:
    * the one motion for folding and unfolding (the layout buttons, opening a stack for a moment)
-   * and for cards rising out of a smart stack. Front to back, one just after another.
+   * and for cards rising out of a stack. Front to back, one just after another.
    */
   private glide(change: () => void) {
     const generation = ++this.cardGlide;
@@ -843,7 +889,7 @@ export class Hud {
       p.cash,
     ]);
     if (this.cardSigs.get(p.id) === sig) return;
-    // Smart stack: when the cash or net worth of a card behind the front one changes (on someone
+    // Stack: when the cash or net worth of a card behind the front one changes (on someone
     // else's turn), it rises out of the stack for a moment so the change can be seen. A card that
     // only just rose starts its count-up and money chip once it has arrived.
     const moneyMoved = this.shown.has(p.id) && (prev.cash !== p.cash || prev.nw !== nw);
@@ -974,9 +1020,10 @@ export class Hud {
    * While a pop-up is on the screen (the info, stock market or properties pop-up, the stock
    * market or venture board during a choice, an arcade game or a dialog), the rest of the screen
    * is locked: only the action bar and the toolbar's View board, Game log, sound and Menu buttons
-   * still work. The info chip, the zoom chip, the player cards (their taps and hover) and the
+   * still work. The info chip, the zoom chip, the player cards (their taps) and the
    * chips under them, and the board (taps and hover) stand still until it closes. Looking at the
-   * board with View board unlocks it for as long as the pop-up is away.
+   * board with View board unlocks it for as long as the pop-up is away. The stack can still
+   * unfold on mouse hover; this is presentation only, never a card or board interaction.
    */
   private updateLock() {
     const layers = this.root.querySelectorAll<HTMLElement>(
@@ -991,8 +1038,8 @@ export class Hud {
     this.root.classList.toggle('locked', up);
     this.board.locked = up;
     if (up) {
-      // A stack opened by the mouse would never get its "pointer left" now: fold it back.
-      if (this.opened) this.closeStack();
+      if (this.opened === 'tap') this.closeStack();
+      this.board.cardHoverPid = -1;
       this.tooltip.classList.remove('show');
     }
   }
@@ -1833,19 +1880,18 @@ const STACK_SHOWN = 3;
 function stackTransform(d: number): string {
   return d ? `translateY(${-d * 7}px) scale(${1 - d * 0.05})` : 'none';
 }
-/** How the player cards are shown: a list or a smart stack. */
+/** How the player cards are shown: a list or a stack. */
 export type CardsMode = 'list' | 'smart';
 
 /** The layout chip's tooltip and icon (16 x 16) for each layout. */
 const CARDS_MODES: Record<CardsMode, { title: string; icon: string }> = {
   list: {
-    title: 'List: every player card is shown. Tap for Smart stack.',
+    title: 'List: every player card is shown. Tap for Stack.',
     icon: '<svg viewBox="0 0 16 16"><rect x="2.5" y="2" width="11" height="3" rx="1"/><rect x="2.5" y="6.5" width="11" height="3" rx="1"/><rect x="2.5" y="11" width="11" height="3" rx="1"/></svg>',
   },
   smart: {
-    title:
-      "Smart stack: the active player's card in front; cards that change pop out for a moment. Tap for List.",
-    icon: '<svg viewBox="0 0 16 16"><rect x="2" y="8.5" width="12" height="5" rx="1"/><path d="M8 6.5V1.5M5.5 4 8 1.5 10.5 4"/></svg>',
+    title: "Stack: the active player's card in front; cards that change pop out for a moment. Tap for List.",
+    icon: '<svg viewBox="0 0 16 16"><path d="M4 2.5h8M3 5h10"/><rect x="2" y="7.5" width="12" height="6" rx="1.5"/></svg>',
   },
 };
 const MODE_KEY = 'adventure-avenue-cards-mode';
@@ -1855,7 +1901,7 @@ function loadCardsMode(): CardsMode {
   try {
     const m = localStorage.getItem(MODE_KEY);
     if (m === 'list' || m === 'smart') return m;
-    // The old plain Stack layout is now the smart stack.
+    // Preserve the old saved Stack preference alongside the current internal smart value.
     if (m === 'stack') return 'smart';
     return localStorage.getItem(COLLAPSE_KEY) === '1' ? 'smart' : 'list';
   } catch {

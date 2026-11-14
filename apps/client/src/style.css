@@ -1007,8 +1007,8 @@ input[type='range'] {
 
 /* The chips below the player cards, in one row against the window's right edge: Stocks and
    Properties (each opens its pop-up; gold while it is open, like the Info button), then the
-   layout chip, which shows the cards' layout now (List or Smart stack) and switches to the other
-   on a tap. Smart stack folds the cards: the active player's card stays in front and the others
+   layout chip, which shows the cards' layout now (List or Stack) and switches to the other
+   on a tap. Stack folds the cards: the active player's card stays in front and the others
    sit behind it in turn order, each peeking out a little higher and narrower, showing only their
    color; a card that changes on someone else's turn rises out of it into a list above the stack
    for a moment. hud.ts stackCards sets each card's depth (--d) and row (--row) and plays the
@@ -1069,7 +1069,7 @@ input[type='range'] {
   stroke-linecap: round;
   stroke-linejoin: round;
 }
-/* Folded: one grid column. Cards lifted out of a smart stack take the rows above (--row 1, 2...);
+/* Folded: one grid column. Cards lifted out of a stack take the rows above (--row 1, 2...);
    the stack shares the last row, with room above it for the cards peeking out behind. */
 .hud .cards-wrap.collapsed .cards {
   display: grid;
@@ -10103,7 +10103,8 @@ div.sl-inline label {
 
 /* While a pop-up is up (hud.ts updateLock), only the action bar and the toolbar's View board,
    Game log, sound and Menu buttons work: the info chip, the zoom chip, the player cards and the
-   chips under them stop taking taps and hover. The board ignores taps itself (board.ts locked). */
+   chips under them stop taking taps. HUD pointer coordinates still allow read-only stack expansion
+   on hover through a backdrop. The board ignores taps itself (board.ts locked). */
 .hud.locked .top-left,
 .hud.locked .top-left > *,
 .hud.locked .cards-wrap,

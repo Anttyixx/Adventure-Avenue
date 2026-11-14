@@ -40,7 +40,7 @@ import { paintParkScenes } from './park-scenes-art';
 import { paintTownFeatures, paintTownTerrain } from './town-terrain-art';
 import { paintGround, warmGround, type GroundPainter } from './ground';
 import { paintFoliage } from './foliage';
-import { drawBoonIcon, drawCoin, drawSparkle, SUIT_CHARS } from './icons';
+import { drawBoonIcon, drawCoin, drawSparkle, SUIT_CHARS, SUIT_COLORS } from './icons';
 import { Facing, FRAME_H, FRAME_W, drawCharacter, drawCharacterGlow, facingFor } from './sprites';
 import { TIMING as T } from './timing';
 import { openingPlayerPose } from './game-opening';
@@ -4000,21 +4000,15 @@ function specialIcon(ctx: CanvasRenderingContext2D, G: GameState, sq: Square, x:
     case 'diamond':
     case 'club': {
       const i = (SUITS as string[]).indexOf(sq.t);
-      ctx.fillStyle = i === 1 || i === 2 ? '#e5484d' : '#3a3f5c';
+      ctx.fillStyle = SUIT_COLORS[i];
       ctx.font = '46px "Atkinson Hyperlegible", serif';
       ctx.fillText(SUIT_CHARS[i], x, y + 2);
       break;
     }
     case 'randomSuit': {
-      ctx.fillStyle = '#fff8e8';
-      ctx.strokeStyle = '#c99a38';
-      ctx.lineWidth = 3;
-      roundRect(ctx, x - 23, y - 27, 46, 54, 7);
-      ctx.fill();
-      ctx.stroke();
       ctx.font = '22px "Atkinson Hyperlegible", serif';
       SUIT_CHARS.forEach((symbol, i) => {
-        ctx.fillStyle = ['#4c8dff', '#ff5fa2', '#ffc83d', '#35c46a'][i];
+        ctx.fillStyle = SUIT_COLORS[i];
         ctx.fillText(symbol, x + (i % 2 ? 11 : -11), y + (i < 2 ? -10 : 13));
       });
       break;
@@ -4026,7 +4020,7 @@ function specialIcon(ctx: CanvasRenderingContext2D, G: GameState, sq: Square, x:
       ctx.beginPath();
       ctx.arc(x, y, 24, 0.3, Math.PI * 1.7);
       ctx.stroke();
-      ctx.fillStyle = i === 1 || i === 2 ? '#e5484d' : '#3a3f5c';
+      ctx.fillStyle = SUIT_COLORS[i];
       ctx.font = '32px "Atkinson Hyperlegible", serif';
       ctx.fillText(SUIT_CHARS[i], x, y + 2);
       break;

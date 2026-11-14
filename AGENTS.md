@@ -97,9 +97,9 @@ Requests refer to parts of the game by these names:
   - **Info button:** right of the info chip; it opens the **Game info pop-up** (`ui/info.ts`).
   - **Stocks chip** and **Properties chip:** below the player cards; they open the **stock market
     pop-up** and the **properties pop-up** (also `ui/info.ts`). Beside them, the **layout chip**
-    shows the cards' layout (List or Smart stack) and switches to the other on a tap.
+    shows the cards' layout (List or Stack) and switches to the other on a tap.
   - **pop-up lock:** while any pop-up is up, only the action bar and the toolbar's View board,
-    Game log, Music and Menu buttons work (`Hud.updateLock`, `.hud.locked`, `board.locked`).
+    Game log, Music and Menu buttons work (`Hud.updateLock`, `.hud.locked`, `board.locked`). The stack may expand on mouse hover for reading only; card/chip clicks remain locked.
   - **toolbar:** top right; the **zoom chip**, the **Game log** button (opens the **game log**
     panel in the top right, under the toolbar and above the player cards), the **Music** chip (current track and audio controls, `ui/soundpanel.ts`) and the **Menu** button (a centered
     pop-up that pauses games on this device; it holds the **Guide**, `ui/guide.ts`, a centered pop-up with tabs).
@@ -114,7 +114,7 @@ Requests refer to parts of the game by these names:
 - **District drawing:** Draw places unassigned properties. Its Buildings → Districts mode paints existing properties with an action-bar color; all twelve colors stay available. `assignPropertyDistrict` removes the oldest member from a full district and assigns the new tile. Persist optional `BoardSquareDef.districtOrder` across editor saves/exports/moves. Unassigned properties block play.
 - **New-game entrance:** Only ready-up launches pass the opening flag to `HotSeat` / `StartInfo`. It hides the HUD/tokens before the first frame, plays `gameStart`, then staggers bank jumps before game music and HUD entrance. `game-opening.ts`, `BoardView.prepareOpening/playOpening/finishOpening`, and `TIMING.opening*` own this presentation. Never replay on saved resumes or resyncs; cancellation must release pending work and prevent late music/turns. The game menu has no duplicate Sound controls; use the toolbar Music chip.
 - **Jackpot tile:** `jackpot` (map glyph `F`), in Draw → Buildings, has optional `Square.pot` (old saves default to zero). A passer pays `K.jackpotPass` (10G) into that tile; any stopping arrival collects the whole pot and clears it, without a pass charge. No owner, commissions or dividends. Portal-through movement defers pickup and pays the pass contribution instead. Money events carry `sq`; payouts animate from that tile to the player. Fixed-color art: `jackpot-v21/`.
-- **Random suit tile:** `randomSuit` (map glyph `J`) awards exactly one seeded random missing suit through `collectSuit`, including passing and transport arrivals. With all four held it awards nothing. Landing draws a venture card, like a fixed suit; preserve the arrival flag to avoid double pickup. Builder category: Suits; art: fixed-color `random-suit-v20/random-suit-base.png` (four suits and shuffle arrows).
+- **Random suit tile:** `randomSuit` (map glyph `J`) awards exactly one seeded random missing suit through `collectSuit`, including passing and transport arrivals. With all four held it awards nothing. Landing draws a venture card, like a fixed suit; preserve the arrival flag to avoid double pickup. Builder category: Suits; art: fixed-color `symbols-v22/random-suit-base.png` (four suits and shuffle arrows).
 - **Suit arrivals:** `Game.warp` collects destination suits for every transported player, including swapBack. Its callers pass `suitCollected` when continuing into pass/land handling, so change-suit tiles rotate once.
 - **Portal links:** `newGame` must register endpoint metadata even when a graph edge already exists. Keep `toSide` paired correctly, with a fallback for older saves. `portal-links.ts`, `portal-link-art.ts` and `portal-travel.ts` share direction and travel feedback; `TIMING.portalStep` controls its duration.
 - **Board** (`apps/client/src/board.ts`):
@@ -145,12 +145,14 @@ Requests refer to parts of the game by these names:
   `props.ts` (`ART_SET`, `ART_SOURCES`). The previous property set and original Checkpoint/Circus/Motel pairs remain
   unchanged in `assets/tiles-v2/` and `assets/props/`; `PROPERTY_SET` selects the property set. Base-only sprites never auto-recolor blue pixels. New recolorable sprites
   require an aligned grey `-tint.png`. `transport-v13/` preserves the crystal warp and supplies the portal frame / two vortex pairs
-  (`TRANSPORT_SET`). `warp-v14/` supplies the active flat four-point floor pad (`WARP_SET`), with
+  (`TRANSPORT_SET`). `symbols-v22/` supplies the active painted flat four-point floor pad (`warp-v14/` preserves the earlier pad) (`WARP_SET`), with
   equal height/width, equal arms, no pedestal, and uniform scaling in both grids.
-  `boom-v17/` is the Boom burst redrawn whole (the original's spikes were cut at the image edge;
-  `BOOM_SET = previous` restores it). `boon-v16/` supplies the green Boon burst with a 30% smaller plain coin (`BOON_SET`); v15 and the original
+  `symbols-v22/` cleans the three-coin Boom burst; `boom-v17/` preserves the earlier whole burst (the original's spikes were cut at the image edge;
+  `SYMBOL_ART_SET = previous` restores v17; `BOOM_SET = previous` restores the original). `boon-v16/` supplies the green Boon burst with a 30% smaller plain coin (`BOON_SET`); v15 and the original
   standalone coin remain preserved. Closed shops use the drawn gate by default; `CLOSED_SET = 'sprite'` restores the preserved painted PNG. Portal frames stay fixed; vortex
   phase must stay continuous and freeze with reduced motion. Keep legacy assets and canvas fallbacks for rollback.
+
+- **Shared symbol art:** `symbols-v22/` overrides suits (blue/red/yellow/green), Random Suit (freestanding shuffle), Suit Yourself (purple/gold star card), Warp (flat equal-sized four-point base/tint), and cleaned Boom (three coins). HUD icons share board mappings via `ART_SOURCES`; Boon reuses v16. `SYMBOL_ART_SET = previous` restores earlier mappings/vectors; preserve old assets. Stack retains internal saved `smart` mode. Pop-up hover uses HUD pointer coordinates through backdrops, with card/chip activation blocked; never raise cards above pop-ups or remove the existing glide generation guard.
 
 ## Commands
 
