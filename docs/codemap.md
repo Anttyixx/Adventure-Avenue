@@ -290,3 +290,5 @@ Arcade games on screen: `apps/client/src/ui/arcade.ts` (`ArcadeStage`: the board
 `assets/tiles-v2/README.md` describes the layered board PNGs and classic rollback. `props.ts` exports `ART_SET`, `ART_SOURCES` and `drawStamp`; `tile-assets.test.ts` checks coverage and matching base/mask dimensions.
 
 `assets/properties-v3/README.md`: new nineteen-building set, base/tint contract and property-only rollback (`PROPERTY_SET`).
+
+Jackpot tiles: `engine.ts` `Game.passSquare` contributes `K.jackpotPass`, and `collectJackpot` handles stopping payouts with optional saved `Square.pot`. `host.ts` money handling uses the tile as the contribution destination or payout source; `board.ts` draws its live pot and `jackpot-v21/` base sprite. Builder palette category: Buildings (Property, Districts, Jackpot). `jackpot.test.ts` covers the pot ledger, transports, persistence and CPU routes.

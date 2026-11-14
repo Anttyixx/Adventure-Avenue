@@ -136,3 +136,22 @@ describe('payment summary consolidation', () => {
     expect(paymentLogMatches(G, payment, 'Sam bought a shop for 100G.')).toBe(false);
   });
 });
+
+describe('Jackpot money messages', () => {
+  it.each([
+    [
+      'Jackpot contribution',
+      0,
+      -1,
+      10,
+      'Rosa added 10G to the jackpot.',
+      'Rosa added 10G to the jackpot. Pot: 40G.',
+    ],
+    ['Jackpot payout', -1, 0, 40, 'Rosa collected the 40G jackpot!', 'Rosa collected 40G from the jackpot!'],
+  ] as const)('announces %s once while retaining its detailed log', (reason, from, to, amount, text, log) => {
+    const event = { type: 'money' as const, reason, from, to, amount, sq: 2 };
+    expect(paymentActivity(G, event)?.text).toBe(text);
+    expect(paymentLogMatches(G, event, log)).toBe(true);
+    expect(paymentLogMatches(G, event, 'Rosa collected the heart.')).toBe(false);
+  });
+});

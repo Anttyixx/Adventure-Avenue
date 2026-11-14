@@ -26,6 +26,21 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: '2026-11-13-jackpot-tile',
+    date: 'Nov 13, 2026',
+    title: 'Build a shared jackpot',
+    features: [
+      {
+        tag: 'new',
+        title: 'Jackpot tile',
+        text: 'Find Jackpot in the Draw panel’s Buildings category. Each passing player adds 10G to its unowned pot. Stop there to collect the whole pot and reset it to zero. The current amount is shown on the tile, and pots stay saved with your game.',
+      },
+    ],
+    extras: [
+      'The Draw panel’s Properties category is now called Buildings. Property and Districts remain there alongside Jackpot.',
+    ],
+  },
+  {
     id: '2026-11-13-district-brush-icon',
     date: 'Nov 13, 2026',
     title: 'A clearer Districts drawing option',

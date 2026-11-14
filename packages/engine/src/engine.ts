@@ -90,6 +90,7 @@ type Payment = [Player | null, Player | null, number];
 /** How arrivals at special squares read in the history (`Game.logArrival`). */
 const ARRIVAL_NAMES: Record<string, string> = {
   bank: 'Bank',
+  jackpot: 'Jackpot',
   venture: 'Venture square',
   change: 'Change-of-suit tile',
   randomSuit: 'Random suit tile',
@@ -166,7 +167,7 @@ export class Game {
     await this.log(`${p.name} landed on ${name}.`, p.id, 'move', [], { sq: sq.id, action: 'land' });
   }
 
-  /** Move money. `from`/`to` null means the bank. */
+  /** Move cash. A null endpoint is public funds: normally the bank, or a jackpot identified by `sq`. */
   async pay(from: Player | null, to: Player | null, amount: number, reason: string, sq?: number) {
     await this.announcePayments(this.applyPayments([[from, to, amount]]), reason, sq);
   }
@@ -374,7 +375,7 @@ export class Game {
     const held = p.suits.slice();
     let change = G.changeSuit;
     let score = 0;
-    for (const id of path) {
+    for (const [index, id] of path.entries()) {
       const sq = G.nodes[id];
       const si = SUIT_TYPES.indexOf(sq.t);
       if (si >= 0 && !held[si]) {
@@ -393,6 +394,8 @@ export class Game {
           held[missing] = true;
           score += 100;
         }
+      } else if (sq.t === 'jackpot') {
+        score += index === path.length - 1 ? (sq.pot ?? 0) : -K.jackpotPass;
       } else if (sq.t === 'bank') {
         if (held.filter(Boolean).length + p.wild >= 4) score += 500;
       } else if (sq.t === 'plot' && sq.b === 'checkpoint' && sq.owner >= 0 && sq.owner !== p.id) {
@@ -427,7 +430,7 @@ export class Game {
       addStat(p, 'steps', 1);
       await this.emit({ type: 'step', pid: p.id, from, to: next, left });
       if (i + 1 < path.length && G.nodes[next].t === 'portal' && G.nodes[next].link === path[i + 1]) {
-        await this.warp(p, path[++i], 'portal');
+        await this.warp(p, path[++i], 'portal', undefined, left > 0);
         arrivedByWarp = true;
       }
       if (left > 0) {
@@ -449,6 +452,16 @@ export class Game {
   async passSquare(p: Player, sq: Square, suitCollected = false) {
     if (SUIT_TYPES.includes(sq.t) || sq.t === 'change' || sq.t === 'randomSuit') {
       if (!suitCollected) await this.collectSuit(p, sq, true);
+    } else if (sq.t === 'jackpot') {
+      sq.pot = (sq.pot ?? 0) + K.jackpotPass;
+      await this.pay(p, null, K.jackpotPass, 'Jackpot contribution', sq.id);
+      await this.log(
+        `${p.name} added ${K.jackpotPass}G to the jackpot. Pot: ${sq.pot}G.`,
+        p.id,
+        'money',
+        [],
+        { sq: sq.id },
+      );
     } else if (sq.t === 'bank') await this.bankVisit(p, false);
     else if (sq.t === 'plot' && sq.b === 'checkpoint' && sq.owner >= 0) {
       // A rival pays the toll; the owner pays nothing, but the toll still goes up.
@@ -486,8 +499,8 @@ export class Game {
     await this.log(`${p.name} passed their checkpoint. Its toll is now ${sq.toll}G.`, p.id, 'property');
   }
 
-  /** Jump straight to a square. `how` and `other` only tell the client how to show it. */
-  async warp(p: Player, to: number, how: TravelKind = 'warp', other?: number) {
+  /** Jump to a square. `passing` defers a portal-through jackpot to passSquare instead of paying it out. */
+  async warp(p: Player, to: number, how: TravelKind = 'warp', other?: number, passing = false) {
     const from = p.node;
     p.node = to;
     p.prev = -1;
@@ -497,6 +510,16 @@ export class Game {
     const dest = this.G.nodes[to];
     if (SUIT_TYPES.includes(dest.t) || dest.t === 'change' || dest.t === 'randomSuit')
       await this.collectSuit(p, dest);
+    if (dest.t === 'jackpot' && !passing) await this.collectJackpot(p, dest);
+  }
+
+  /** The shared pot has no owner, dividends or commissions. A landing never charges a pass fee. */
+  async collectJackpot(p: Player, sq: Square) {
+    const amount = sq.pot ?? 0;
+    sq.pot = 0;
+    if (amount <= 0) return;
+    await this.pay(null, p, amount, 'Jackpot payout', sq.id);
+    await this.log(`${p.name} collected ${amount}G from the jackpot!`, p.id, 'money', [], { sq: sq.id });
   }
 
   // ---------------------------------------------------------------- suits, bank, promotion
@@ -553,10 +576,10 @@ export class Game {
 
   // ---------------------------------------------------------------- landing
 
-  async land(p: Player, sq: Square, suitCollected = false): Promise<void> {
+  async land(p: Player, sq: Square, arrivalHandled = false): Promise<void> {
     const G = this.G;
     await this.emit({ type: 'land', pid: p.id, sq: sq.id });
-    if (!suitCollected) await this.logArrival(p, sq);
+    if (!arrivalHandled) await this.logArrival(p, sq);
     switch (sq.t) {
       case 'shop':
         return this.landShop(p, sq);
@@ -564,6 +587,9 @@ export class Game {
         return this.landPlot(p, sq);
       case 'bank':
         return this.bankVisit(p, true);
+      case 'jackpot':
+        if (!arrivalHandled) await this.collectJackpot(p, sq);
+        return;
       case 'venture':
         return this.venture(p);
       case 'spade':
@@ -571,10 +597,10 @@ export class Game {
       case 'diamond':
       case 'club':
       case 'randomSuit':
-        if (!suitCollected) await this.collectSuit(p, sq);
+        if (!arrivalHandled) await this.collectSuit(p, sq);
         return this.venture(p);
       case 'change':
-        if (!suitCollected) await this.collectSuit(p, sq);
+        if (!arrivalHandled) await this.collectSuit(p, sq);
         return;
       case 'roll':
         return this.rollAgain(p);

@@ -1113,7 +1113,8 @@ export class HotSeat implements GameIO {
         this.movementRoll = null;
         const sq = G.nodes[e.sq];
         this.checkpointArrival = sq.t === 'plot' && sq.b === 'checkpoint';
-        const immediate = this.checkpointArrival || [...SUITS, 'change', 'randomSuit'].includes(sq.t);
+        const immediate =
+          this.checkpointArrival || sq.t === 'jackpot' || [...SUITS, 'change', 'randomSuit'].includes(sq.t);
         // A motel check-in (only a check-in saves spaces): the die goes into the motel.
         const saved = sq.t === 'plot' && sq.b === 'motel' ? (G.players[e.pid].motelMoves ?? 0) : 0;
         // Let tolls and suits announce themselves as soon as the final step ends.
@@ -1149,7 +1150,8 @@ export class HotSeat implements GameIO {
         // Buying something: a beat after the choice before the coins go to the bank.
         if (['Purchase', 'Construction', 'Buyout', 'Renovation'].includes(e.reason))
           await this.wait(T.beforePay);
-        const from = this.playerPos(e.from);
+        const jackpotPayout = e.reason === 'Jackpot payout' && e.sq != null;
+        const from = jackpotPayout ? board.center(G.nodes[e.sq!]) : this.playerPos(e.from);
         // Paying for a property: the buyer claims it as the coins leave, not after.
         if (['Purchase', 'Construction', 'Buyout', 'Auction'].includes(e.reason) && e.from >= 0)
           for (const n of G.nodes)
@@ -1167,7 +1169,11 @@ export class HotSeat implements GameIO {
               board.ring(n.id, '#ffd166', true);
             }
         // An investment's coins fly into the shop being invested in, not to the bank.
-        const to = e.sq != null ? board.center(G.nodes[e.sq]) : this.playerPos(e.to);
+        const to = jackpotPayout
+          ? this.playerPos(e.to)
+          : e.sq != null
+            ? board.center(G.nodes[e.sq])
+            : this.playerPos(e.to);
         if (e.reason === 'Stock') sound.play('stockBuy');
         else if (e.reason === 'Stock sale') sound.play('stockSell');
         else sound.play(e.to >= 0 && (e.from < 0 || !G.players[e.to].cpu) ? 'coin' : 'pay');

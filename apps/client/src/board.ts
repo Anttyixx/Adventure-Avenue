@@ -4415,6 +4415,11 @@ function drawSquare(ctx: CanvasRenderingContext2D, G: GameState, sq: Square) {
             : `${squareFee(G, sq)}G`;
       if (owner) amount(fee);
     }
+  } else if (sq.t === 'jackpot') {
+    art(() => {
+      if (!drawPropCentered(ctx, 'jackpot', '#9aa3b8', c.x, artY, 57, 48)) drawCoin(ctx, c.x, artY, 20);
+    });
+    amount(`${sq.pot ?? 0}G`);
   } else if (sq.t === 'blank') {
     // A placeholder from the board builder: an empty tile with a dashed outline and a faint "?".
     ctx.save();

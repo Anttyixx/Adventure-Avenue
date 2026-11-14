@@ -247,7 +247,7 @@ function decide(G: GameState, req: DecisionRequest): unknown {
         const sq = G.nodes[r.node];
         let s = -goalDistance(G, p, r.node) * 10;
         const held = p.suits.slice();
-        for (const id of r.path) {
+        for (const [index, id] of r.path.entries()) {
           const si = (SUITS as string[]).indexOf(G.nodes[id].t);
           if (si >= 0 && !held[si]) {
             held[si] = true;
@@ -255,11 +255,13 @@ function decide(G: GameState, req: DecisionRequest): unknown {
           }
           if (G.nodes[id].t === 'bank' && held.filter(Boolean).length + p.wild >= 4) s += 200;
           const c = G.nodes[id];
+          if (c.t === 'jackpot' && index < r.path.length - 1) s -= K.jackpotPass / 5;
           if (c.t === 'plot' && c.b === 'checkpoint' && c.owner >= 0 && c.owner !== p.id) s -= c.toll / 5;
         }
         if ((sq.t === 'shop' || sq.t === 'plot') && sq.owner < 0 && p.cash > (sq.value || K.plotCost))
           s += 15;
         if (sq.owner >= 0 && sq.owner !== p.id) s -= squareFee(G, sq, p) / 10;
+        if (sq.t === 'jackpot') s += (sq.pot ?? 0) / 10;
         if (sq.t === 'venture') s += 5;
         s += rand(G);
         if (s > bestScore) {

@@ -570,7 +570,7 @@ if (!(await ask(`Delete ${d.name}?`, 'Its 4 properties will be removed from the 
 ### 5.12 Tiles pane (builder)
 
 - A side panel (§5.4) titled "Tiles" with the hint "Pick one, then click or drag on the board";
-  groups (LAYOUT with the Blank placeholder, PROPERTIES, SUITS, SPECIALS, TRANSPORT) use section
+  groups (LAYOUT with the Blank placeholder, BUILDINGS, SUITS, SPECIALS, TRANSPORT) use section
   headings; tiles are the game's own
   tile art in a two-column grid. The chosen tile glows like a game choice (pulsing white outline
   in a gold glow + white rings spreading out, painted by the same `drawTileGlow` renderer as the board).
@@ -590,7 +590,7 @@ if (!(await ask(`Delete ${d.name}?`, 'Its 4 properties will be removed from the 
   first, one plain sentence each saying how to fix it).
 - **In the full list:** errors first; rows tied to a thing are clickable (they select it and move
   the view to it).
-- **District painting:** Draw → Properties → Districts shows all twelve rounded color squares centered in the action bar. Keep full colors visible; selected gets a gold outline, and accessible names/tooltips include district name and count. Do not color new properties automatically. Painting the fifth unassigns the oldest member without deleting tiles. Warp/portal link colors remain automatic.
+- **District painting:** Draw → Buildings → Districts shows all twelve rounded color squares centered in the action bar. Keep full colors visible; selected gets a gold outline, and accessible names/tooltips include district name and count. Do not color new properties automatically. Painting the fifth unassigns the oldest member without deleting tiles. Warp/portal link colors remain automatic.
 
 ### 5.14 Player cards (bottom right)
 
@@ -1339,7 +1339,7 @@ The builder adds Random suit to the existing two-column Suits palette and uses i
 
 Add Move to the existing icon-only tool rail, beside Select. Use a tile with outward arrows icon, the existing hover name and selected treatment, and hide the Tiles pane. Use a grab cursor at rest and grabbing during a direct drag. Reuse the selected-tile movement preview, original-position outline, grid snapping, and red invalid-drop outline. The status says to drag and release; Escape cancels. Direct dragging works with a pointer or one finger, and two fingers cancel the drag before panning/zooming. Keep Select’s click-to-place group move. UI Lab’s Board builder: Move opens a sample board with the tool active.
 
-Draw replaces Place, retaining its pencil icon and tile pane. Properties contains a neutral Property option and a Districts option pictured with three rounded color regions. District painting expands the action bar for its color controls; other tools retain the collapsed status bar when they have no actions. Unassigned properties show No district in their inspector. The inspector uses the same four-member rollover policy. UI Lab has Board builder: Draw and Board builder: Districts previews.
+Draw replaces Place, retaining its pencil icon and tile pane. Buildings contains a neutral Property option, a Jackpot tile and a Districts option pictured with three rounded color regions. District painting expands the action bar for its color controls; other tools retain the collapsed status bar when they have no actions. Unassigned properties show No district in their inspector. The inspector uses the same four-member rollover policy. UI Lab has Board builder: Draw and Board builder: Districts previews.
 
 
 ### Fresh-game entrance
@@ -1351,3 +1351,7 @@ Once everyone is on the board, the HUD’s existing containers enter: info chip 
 The Draw palette paints selection feedback with the exact shared `drawTileGlow` board renderer: gold tint, pulsing white outline, and two expanding rings in square/hex geometry. Its transparent overlay canvas has extra room for the rings, shares the artwork transform, and does not shift the selected art. Hover and keyboard focus use `tileShape` for the current grid instead of rectangular button backgrounds or outlines. Only the selected overlay animates, only while the pane is visible; pointer/focus changes repaint as needed, reduced motion gives a static outline, and closing/rebuilding the editor cancels pending work. UI Lab: Board builder: Draw.
 
 The Draw panel’s Districts icon contains exactly three colors. On a hex grid, three equal inset pieces form a hexagon, with rounded corners and visible gaps between them. On a square grid, two rounded upper blocks sit above one wider rounded lower block, with matching gaps. The shared square/hex selection and hover feedback remains aligned around the icon. This affects only the brush icon; all twelve actual district colors remain available.
+
+### Jackpot in Buildings
+
+Rename only the Draw palette category Properties to Buildings; keep the Property tile, Districts brush and the game’s separate Properties chip names. Add Jackpot as a third art-only option, sharing square/hex hover and selection feedback. Its custom cream/gold public coin-vault sprite uses a fixed-color base PNG with no owner tint. Render it at the property art position with the current pot as live money text below; keep room between artwork and amount. The inspector describes the 10G pass contribution and land-to-claim rule, with no ownership or district controls. Contributions and payouts use ordinary money feedback, with the vault as the destination/source respectively. UI Lab has Buildings and Jackpot: pass and collect previews.

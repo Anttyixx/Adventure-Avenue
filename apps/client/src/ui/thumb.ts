@@ -5,6 +5,7 @@ import { cellCenter, tileShape, worldSize } from '../geometry';
 
 const TYPE_COLOR: Record<string, string> = {
   bank: '#ffd23f',
+  jackpot: '#e7b84a',
   venture: '#7b4bd6',
   spade: '#2f3554',
   club: '#2f3554',

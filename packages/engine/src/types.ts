@@ -12,6 +12,8 @@ export type SquareType =
   | 'shop'
   | 'plot'
   | 'bank'
+  /** Unowned shared pot: pay when passing, collect when stopping. */
+  | 'jackpot'
   | 'venture'
   | SuitType
   | 'change'
@@ -73,6 +75,8 @@ export interface Square {
   b: BuildingKey | null;
   lv: number;
   toll: number;
+  /** Money held by a jackpot tile (missing in older saved games means zero). */
+  pot?: number;
   /** Warp squares: where landing here takes you (-1 otherwise; missing in older saves). */
   link?: number;
   /** Transport color/pair slot (0–4). */

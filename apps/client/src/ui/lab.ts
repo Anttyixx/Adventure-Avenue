@@ -120,7 +120,7 @@ const rnd = (n: number) => Math.floor(Math.random() * n);
  * Controls for UI elements that were just added or changed: they shake once and glow so they
  * are easy to find. Update this list with each change.
  */
-const RECENT = new Set(['Board builder: Draw']);
+const RECENT = new Set(['Board builder: Buildings', 'Jackpot: pass and collect']);
 
 /**
  * Which board the lab plays on: Town with portal links (square, the default) or Twin Lakes (hex),
@@ -1700,6 +1700,37 @@ export async function openLab(app: HTMLElement, section?: string) {
         }
       }),
     );
+    row(
+      s,
+      btn('Jackpot: pass and collect', async () => {
+        const sample = cloneState(G);
+        const p = sample.players[cur().id];
+        const sq = sample.nodes.find((n) => n.t === 'venture')!;
+        sq.t = 'jackpot';
+        sq.owner = -1;
+        sq.d = -1;
+        sq.value = sq.base = 0;
+        sq.pot = 30;
+        p.node = sq.id;
+        p.cash = Math.max(100, p.cash);
+        const mount = h('div', { class: 'arcade-lab-game' });
+        document.body.append(mount);
+        const host = new HotSeat(mount, sample, () => mount.remove(), false);
+        host.board.followPid = host.board.activePid = p.id;
+        host.hud.activePid = p.id;
+        host.hud.render(sample);
+        try {
+          await wait(500);
+          await host.game.passSquare(p, sq);
+          await wait(1000);
+          await host.game.land(p, sq);
+          await wait(1800);
+        } finally {
+          host.destroy();
+          mount.remove();
+        }
+      }),
+    );
     // A motel owned by a rival of p (a vacant plot or shop is turned into one if the board has none).
     const labMotel = (S: GameState, p: Player) => {
       let motel = S.nodes.find((n) => n.t === 'plot' && n.b === 'motel');
@@ -2536,6 +2567,7 @@ export async function openLab(app: HTMLElement, section?: string) {
           ['Board builder: Return Ridge', null],
           ['Board builder: Problems', '.ed-info > button'],
           ['Board builder: Board settings', '.ed-info > button'],
+          ['Board builder: Buildings', '.ed-tool-button[aria-label="Draw"]'],
           ['Board builder: Draw', '.ed-tool-button[aria-label="Draw"]'],
           ['Board builder: Districts', '.ed-tool[data-tool="districts"]'],
           ['Board builder: Move', '.ed-tool-button[aria-label="Move"]'],

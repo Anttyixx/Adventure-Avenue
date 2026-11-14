@@ -20,6 +20,7 @@ import { convertPortalTiles } from './portal-tiles';
  */
 const GLYPHS: Record<string, SquareType> = {
   B: 'bank',
+  F: 'jackpot',
   V: 'venture',
   S: 'spade',
   H: 'heart',

@@ -29,6 +29,7 @@ export const BOARD_LIMITS = {
 export const PLACEABLE: SquareType[] = [
   'shop',
   'bank',
+  'jackpot',
   'venture',
   'spade',
   'heart',

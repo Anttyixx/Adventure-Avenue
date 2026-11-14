@@ -30,6 +30,7 @@ export function newGame(opts: MatchOptions): GameState {
       b: null,
       lv: 0,
       toll: K.toll0,
+      ...(s.t === 'jackpot' ? { pot: 0 } : {}),
       link: s.t === 'warp' || s.t === 'portal' ? (s.link ?? -1) : -1,
       channel: s.channel,
       toBank: s.toBank,

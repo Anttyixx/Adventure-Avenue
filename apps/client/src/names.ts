@@ -7,6 +7,7 @@ import { fmt } from './ui/dom';
 
 const SPECIAL: Record<string, string> = {
   bank: 'Bank',
+  jackpot: 'Jackpot',
   venture: 'Venture square',
   spade: 'Spade square',
   heart: 'Heart square',
@@ -72,6 +73,7 @@ export function squareInfo(G: GameState, sq: Square): string {
   const suit = 'Collect this suit, then draw a venture card. Get all four, then visit the bank to level up.';
   const info: Record<string, string> = {
     bank: 'Your salary when you level up here with all four suits. Landing lets you buy stock. Arrive with the target net worth to win.',
+    jackpot: `Pot: ${fmt(sq.pot ?? 0)}. Each passing player adds ${fmt(K.jackpotPass)}. Stop here to collect the entire pot; it then resets to zero. No one owns it.`,
     venture: 'Draw a venture card: pick a panel on the venture board.',
     spade: suit,
     heart: suit,

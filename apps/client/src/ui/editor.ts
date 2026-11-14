@@ -93,7 +93,7 @@ const PALETTE: { group: string; items: { tool: Tool; label: string; hint: string
     ],
   },
   {
-    group: 'Properties',
+    group: 'Buildings',
     items: [
       {
         tool: 'shop',
@@ -105,6 +105,7 @@ const PALETTE: { group: string; items: { tool: Tool; label: string; hint: string
         label: 'Districts',
         hint: 'Paint a district onto properties. A fifth property unassigns the oldest member.',
       },
+      { tool: 'jackpot', label: 'Jackpot', hint: 'Passing players add 10G. Stop here to collect the pot.' },
     ],
   },
   {
@@ -2598,6 +2599,14 @@ export function openEditor(
       );
       if (own.length)
         squareBody.append(h('div', { class: 'ed-tile-issues' }, ...own.map((x) => problemEntry(x, true))));
+      if (sq.t === 'jackpot')
+        squareBody.append(
+          h(
+            'p',
+            { class: 'hint' },
+            'Each passing player adds 10G. Stop here to collect the whole pot and reset it to zero. It has no owner or district; every new game starts with an empty pot.',
+          ),
+        );
       if (sq.t === 'bank')
         squareBody.append(
           h('p', { class: 'hint' }, 'Every board needs a bank. You can move it, but it cannot be erased.'),
