@@ -28,8 +28,13 @@ export const CHANGELOG: ChangelogEntry[] = [
   {
     id: '2026-11-14-stock-start-prices',
     date: 'Nov 14, 2026',
-    title: 'Fairer stock prices',
+    title: 'Fairer fees and stock prices',
     features: [
+      {
+        tag: 'rules',
+        title: 'Investing matters more than owning more',
+        text: 'Shop fees are now 18% of value (was 20%). Owning more of a district still raises fees, but less: x1.2, x1.45, and x2.21 for the whole district (was x1.3, x1.6, x2.8). Owning more also grows your shops a little less. Investing is now the main way to raise a fee.',
+      },
       {
         tag: 'rules',
         title: 'Stocks start between 4G and 11G',

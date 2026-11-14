@@ -28,13 +28,16 @@ export const K = {
     maxAverage: 1970,
     spread: 30,
   },
-  feeRate: 0.2,
+  /** A shop's basic fee: this share of its value (before the ownership multipliers). */
+  feeRate: 0.18,
   /** Fee multiplier by squares owned in the group (index = count, capped at 4). */
-  mult: [0, 1, 1.3, 1.6, 2.0],
-  domFee: 1.4,
+  mult: [0, 1, 1.2, 1.45, 1.7],
+  /** Owning the whole district: fees x domFee on top of mult (x2.21 in all), max value x domMax. */
+  domFee: 1.3,
   domMax: 1.5,
-  expand: 0.1,
-  expandDom: 0.3,
+  /** Each further property in a district grows your shops there by this much of base; domination by expandDom. */
+  expand: 0.075,
+  expandDom: 0.2,
   investCap: 999,
   buyoutX: 5,
   buyoutOwnerX: 3,

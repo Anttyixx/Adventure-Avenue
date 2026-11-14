@@ -45,30 +45,30 @@ describe('board', () => {
 });
 
 describe('fees, expansion and max value', () => {
-  it('charges value x 0.2 x M[k], rounded up to 5', () => {
+  it('charges value x 0.18 x M[k], rounded up to 5', () => {
     const { G } = makeGame();
     const a = at(G, 6, 0); // Bay Market 200
     a.owner = 0;
     expect(shopFee(G, a)).toBe(40);
-    a.value = 213;
-    expect(shopFee(G, a)).toBe(45); // 42.6 -> 45
+    a.value = 230;
+    expect(shopFee(G, a)).toBe(45); // 41.4 -> 45
   });
 
-  it('expands 10% of base for a 2nd square, 30% when dominating, and raises the fee', () => {
+  it('expands 7.5% of base for a 2nd square, 20% when dominating, and raises the fee', () => {
     const { G } = makeGame();
     const sqs = G.groups[at(G, 11, 1).g].map((id) => G.nodes[id]); // Greenway, 4 shops, no plot
     sqs[0].owner = 0;
     sqs[1].owner = 0;
     expand(G, 0, sqs[0].g);
-    expect(sqs[0].value).toBe(sqs[0].base * 1.1);
-    expect(shopFee(G, sqs[0])).toBe(Math.ceil((sqs[0].value * 0.2 * 1.3) / 5) * 5);
+    expect(sqs[0].value).toBe(sqs[0].base + Math.round(sqs[0].base * 0.075));
+    expect(shopFee(G, sqs[0])).toBe(Math.ceil((sqs[0].value * 0.18 * 1.2) / 5) * 5);
     sqs[2].owner = 0;
     sqs[3].owner = 0;
     expect(dominated(G, 0, sqs[0].g)).toBe(true);
     const before = sqs[3].value;
     expand(G, 0, sqs[0].g);
-    expect(sqs[3].value).toBe(before + sqs[3].base * 0.3);
-    expect(shopFee(G, sqs[3])).toBe(Math.ceil((sqs[3].value * 0.2 * 2.0 * 1.4) / 5) * 5);
+    expect(sqs[3].value).toBe(before + Math.round(sqs[3].base * 0.2));
+    expect(shopFee(G, sqs[3])).toBe(Math.ceil((sqs[3].value * 0.18 * 1.7 * 1.3) / 5) * 5);
   });
 
   it('applies the Price Hike boost', () => {
@@ -76,7 +76,7 @@ describe('fees, expansion and max value', () => {
     const a = at(G, 6, 0);
     a.owner = 1;
     G.players[1].boost = K.boostRate;
-    expect(shopFee(G, a)).toBe(55); // 40 * 1.3 = 52 -> 55
+    expect(shopFee(G, a)).toBe(50); // 36 * 1.3 = 46.8 -> 50
   });
 
   it('caps value at base x (1 + k), x 1.5 when dominated', () => {

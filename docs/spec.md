@@ -501,15 +501,15 @@ the same value, so net worth does not change.
 **Fee** charged to a rival who lands on an owned, open shop (rounded up to 5G):
 
 ```
-fee = value x 0.2 x M[k] x (1.4 if dominated) x boost
+fee = value x 0.18 x M[k] x (1.3 if dominated) x boost
 ```
 
-k = squares the owner holds in that group (capped at 4), M = [0, 1, 1.3, 1.6, 2.0]; boost = 1.3
+k = squares the owner holds in that group (capped at 4), M = [0, 1, 1.2, 1.45, 1.7] (owning all 4 of a district: x1.7 x 1.3 = x2.21); boost = 1.3
 while a Price Hike card is active.
 
 **Expansion.** When a player gets a 2nd or later square in a group (by buying, building, trading,
-auctions or buyouts), each of their shops in that group gains 10% of its base value. Owning every
-square in a group (domination, needs 2 or more squares) adds 30% of base instead. Vacant plots count
+auctions or buyouts), each of their shops in that group gains 7.5% of its base value. Owning every
+square in a group (domination, needs 2 or more squares) adds 20% of base instead. Vacant plots count
 as squares in their district, so domination requires building on the plot.
 
 **Investing.** Landing on your own shop lets you invest up to 999G, as long as cash plus what the
@@ -1805,22 +1805,22 @@ waiting for their copy to catch up.
 
 Most systems meet in four shared quantities: cash, shop value, group ownership and stock price.
 
-| System                 | Cash                                                                  | Shop value                | Ownership / groups                    | Stock price                        | Movement                     | Suits / promotion                      |
-| ---------------------- | --------------------------------------------------------------------- | ------------------------- | ------------------------------------- | ---------------------------------- | ---------------------------- | -------------------------------------- |
-| Buying shops           | Spent                                                                 |                           | +1 square; may expand or dominate     | Rises if expansion                 |                              |                                        |
-| Fees                   | Moved payer to owner; dividends and commissions paid by bank          |                           |                                       |                                    |                              |                                        |
-| Investing              | Spent                                                                 | Rises                     |                                       | Rises                              |                              | Raises next salary                     |
-| Expansion / domination |                                                                       | Rises (10% / 30% of base) |                                       | Rises                              |                              | Raises next salary                     |
-| Buyouts                | 5x paid, 3x to owner                                                  |                           | Transfers; expansion for buyer        | Rises if expansion                 |                              |                                        |
-| Vacant plots           | Build cost; building fees                                             | 3-Star Shop only          | Counts toward district and domination | 3-Star Shop only                   | Balloon, Home move players   |                                        |
-| Stocks                 | Spent or earned                                                       |                           |                                       | 10+ trades move factor             |                              |                                        |
-| Suits and bank         | Salary                                                                |                           |                                       |                                    | Bank sets free direction     | Promotion                              |
-| Venture cards          | Many                                                                  | Many                      | Forced buyout                         | Many                               | Roll again, zoom, +2 squares | Free suit, wild card, sudden promotion |
-| Special squares        | Boon / Boom commission                                                |                           |                                       |                                    | Roll-on, cannon, portals     | Cannon collects suits                  |
-| Arcade                 | Prizes                                                                | Memory Blocks +10% / -5%  |                                       | Via shop value; Reels gives shares |                              | Wild cards                             |
-| Trades and auctions    | Moved between players                                                 |                           | Transfers; expansion for receivers    | Rises if expansion                 |                              |                                        |
-| Breaks and closures    | Stops fees, tolls, dividends and commissions from the owner's squares |                           |                                       |                                    |                              |                                        |
-| Debt                   | Raised by selling                                                     |                           | Squares released and auctioned        | Stock sales drop factor            |                              |                                        |
+| System                 | Cash                                                                  | Shop value                 | Ownership / groups                    | Stock price                        | Movement                     | Suits / promotion                      |
+| ---------------------- | --------------------------------------------------------------------- | -------------------------- | ------------------------------------- | ---------------------------------- | ---------------------------- | -------------------------------------- |
+| Buying shops           | Spent                                                                 |                            | +1 square; may expand or dominate     | Rises if expansion                 |                              |                                        |
+| Fees                   | Moved payer to owner; dividends and commissions paid by bank          |                            |                                       |                                    |                              |                                        |
+| Investing              | Spent                                                                 | Rises                      |                                       | Rises                              |                              | Raises next salary                     |
+| Expansion / domination |                                                                       | Rises (7.5% / 20% of base) |                                       | Rises                              |                              | Raises next salary                     |
+| Buyouts                | 5x paid, 3x to owner                                                  |                            | Transfers; expansion for buyer        | Rises if expansion                 |                              |                                        |
+| Vacant plots           | Build cost; building fees                                             | 3-Star Shop only           | Counts toward district and domination | 3-Star Shop only                   | Balloon, Home move players   |                                        |
+| Stocks                 | Spent or earned                                                       |                            |                                       | 10+ trades move factor             |                              |                                        |
+| Suits and bank         | Salary                                                                |                            |                                       |                                    | Bank sets free direction     | Promotion                              |
+| Venture cards          | Many                                                                  | Many                       | Forced buyout                         | Many                               | Roll again, zoom, +2 squares | Free suit, wild card, sudden promotion |
+| Special squares        | Boon / Boom commission                                                |                            |                                       |                                    | Roll-on, cannon, portals     | Cannon collects suits                  |
+| Arcade                 | Prizes                                                                | Memory Blocks +10% / -5%   |                                       | Via shop value; Reels gives shares |                              | Wild cards                             |
+| Trades and auctions    | Moved between players                                                 |                            | Transfers; expansion for receivers    | Rises if expansion                 |                              |                                        |
+| Breaks and closures    | Stops fees, tolls, dividends and commissions from the owner's squares |                            |                                       |                                    |                              |                                        |
+| Debt                   | Raised by selling                                                     |                            | Squares released and auctioned        | Stock sales drop factor            |                              |                                        |
 
 **Order-sensitive spots to keep in the rebuild:**
 
@@ -1840,10 +1840,10 @@ tune it without touching rules code.
 | ----------------------------------------- | ------------------------------------------------------- | -------------------------------------------- |
 | `startCash`                               | 2,000G                                                  | New players                                  |
 | Target net worth                          | 5,000G default; 1,000-90,000G in 1,000G steps           | Win condition                                |
-| `feeRate`                                 | 0.2                                                     | Shop fee                                     |
-| `mult`                                    | [0, 1, 1.3, 1.6, 2.0] by squares owned in group         | Shop fee                                     |
-| `domFee`, `domMax`                        | 1.4, 1.5                                                | Fee and max value when dominating            |
-| `expand`, `expandDom`                     | 10%, 30% of base                                        | Expansion bonus                              |
+| `feeRate`                                 | 0.18                                                    | Shop fee                                     |
+| `mult`                                    | [0, 1, 1.2, 1.45, 1.7] by squares owned in group        | Shop fee                                     |
+| `domFee`, `domMax`                        | 1.3, 1.5                                                | Fee and max value when dominating            |
+| `expand`, `expandDom`                     | 7.5%, 20% of base                                       | Expansion bonus                              |
 | `investCap`                               | 999G per visit                                          | Investing                                    |
 | Max value                                 | base x (1 + k) (x 1.5 dominated)                        | Investing                                    |
 | `buyoutX`, `buyoutOwnerX`                 | 5x, 3x                                                  | Buyouts                                      |
