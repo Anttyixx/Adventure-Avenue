@@ -1975,12 +1975,59 @@ export function openEditor(
         example.height = 148;
         if (it.tool === 'districts') {
           const ctx = example.getContext('2d')!;
-          DISTRICT_COLORS.slice(0, 4).forEach((color, i) => {
-            ctx.fillStyle = color;
-            ctx.beginPath();
-            ctx.roundRect(20 + (i % 2) * 51, 25 + Math.floor(i / 2) * 51, 45, 45, 10);
-            ctx.fill();
-          });
+          const colors = DISTRICT_COLORS.slice(0, 3);
+          if (board.layout === 'hex') {
+            ctx.scale(1.3, 1.3);
+            ctx.translate(-48, -44);
+            const c = cellCenter('hex', 0, 0);
+            const radius = 78 / Math.sqrt(3);
+            const corners = Array.from({ length: 6 }, (_, i) => {
+              const angle = ((-90 + i * 60) * Math.PI) / 180;
+              return { x: c.x + Math.cos(angle) * radius, y: c.y + Math.sin(angle) * radius };
+            });
+            // Three equal pieces form one hexagon; inset each piece to leave clear seams.
+            [
+              [5, 0, 1],
+              [1, 2, 3],
+              [3, 4, 5],
+            ].forEach((sides, i) => {
+              const points = [c, ...sides.map((side) => corners[side])];
+              const middle = {
+                x: points.reduce((n, p) => n + p.x, 0) / points.length,
+                y: points.reduce((n, p) => n + p.y, 0) / points.length,
+              };
+              const inset = points.map((p) => ({
+                x: middle.x + (p.x - middle.x) * 0.88,
+                y: middle.y + (p.y - middle.y) * 0.88,
+              }));
+              ctx.beginPath();
+              inset.forEach((p, j) => {
+                const before = inset[(j + inset.length - 1) % inset.length];
+                const after = inset[(j + 1) % inset.length];
+                const a = Math.min(0.3, 5 / Math.hypot(before.x - p.x, before.y - p.y));
+                const b = Math.min(0.3, 5 / Math.hypot(after.x - p.x, after.y - p.y));
+                const x = p.x + (before.x - p.x) * a;
+                const y = p.y + (before.y - p.y) * a;
+                if (j === 0) ctx.moveTo(x, y);
+                else ctx.lineTo(x, y);
+                ctx.quadraticCurveTo(p.x, p.y, p.x + (after.x - p.x) * b, p.y + (after.y - p.y) * b);
+              });
+              ctx.closePath();
+              ctx.fillStyle = colors[i];
+              ctx.fill();
+            });
+          } else {
+            [
+              [20, 25, 45, 44],
+              [71, 25, 45, 44],
+              [20, 77, 96, 44],
+            ].forEach(([x, y, w, h], i) => {
+              ctx.fillStyle = colors[i];
+              ctx.beginPath();
+              ctx.roundRect(x, y, w, h, 10);
+              ctx.fill();
+            });
+          }
         } else {
           const tile = newGame({
             rules: 'standard',

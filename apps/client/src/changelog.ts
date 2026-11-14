@@ -26,6 +26,15 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: '2026-11-13-district-brush-icon',
+    date: 'Nov 13, 2026',
+    title: 'A clearer Districts drawing option',
+    features: [],
+    extras: [
+      'The Districts option uses three rounded, separated colors: three fitted pieces on hex grids, and two upper blocks with one wider lower block on square grids.',
+    ],
+  },
+  {
     id: '2026-11-13-draw-tile-feedback',
     date: 'Nov 13, 2026',
     title: 'Draw-panel tiles match the board',
