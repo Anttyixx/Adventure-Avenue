@@ -13,6 +13,7 @@ import {
   type DecisionRequest,
   type GameState,
   type SeatConfig,
+  type CpuLevel,
 } from '@aa/engine';
 import type { OnlineSave, SaveInfo } from '../save';
 import { CHARACTERS, freeCharacter } from '../sprites';
@@ -52,6 +53,8 @@ export interface LocalSeat {
   ready?: boolean;
   /** The color the player chose, if any. */
   want?: number;
+  /** Bots: how well they play. */
+  level?: CpuLevel;
 }
 
 const MAX_SEATS = MAX_PLAYERS;
@@ -190,11 +193,12 @@ export class HostRoom implements GameLink {
     const colors = this.colors();
     return {
       ...this.settings,
-      seats: this.seats.map(({ kind, name, look, online, ready }, i) => ({
+      seats: this.seats.map(({ kind, name, look, online, ready, level }, i) => ({
         kind,
         name,
         look,
         color: colors[i],
+        ...(kind === 'cpu' ? { level: level ?? 'normal' } : {}),
         online,
         ready: kind === 'cpu' || kind === 'open' || !!ready,
       })),
@@ -467,7 +471,7 @@ export class HostRoom implements GameLink {
         s.pid = out.length;
         const ch = used.includes(s.look) ? freeCharacter(used) : s.look;
         used.push(ch);
-        out.push({ name: s.name, cpu: true, ch, color: colors[i] });
+        out.push({ name: s.name, cpu: true, ch, color: colors[i], level: s.level ?? 'normal' });
         return;
       }
       if (s.kind === 'open' || s.kind === 'cpu') {
@@ -475,7 +479,7 @@ export class HostRoom implements GameLink {
         const want = cpu(i);
         const ch = used.includes(want.ch) ? freeCharacter(used) : want.ch;
         used.push(ch);
-        out.push({ name: want.name, cpu: true, ch, color: colors[i] });
+        out.push({ name: want.name, cpu: true, ch, color: colors[i], level: s.level ?? 'normal' });
         return;
       }
       s.pid = out.length;

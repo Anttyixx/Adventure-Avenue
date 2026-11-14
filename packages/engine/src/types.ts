@@ -112,6 +112,22 @@ export interface Stats {
   stockSold?: number;
 }
 
+/** How well a CPU plays (see cpu.ts). */
+export type CpuLevel = 'easy' | 'normal' | 'hard' | 'master';
+export const CPU_LEVELS: CpuLevel[] = ['easy', 'normal', 'hard', 'master'];
+
+/**
+ * A CPU's play style, rolled at the start of a game so no two CPUs play quite alike. Each is 0..1:
+ * `risk` low = keeps a big cash cushion, high = spends down to the bone (and bets bigger);
+ * `stocks` low = puts its money in shops, high = in shares; `trader` = how keen it is on trades
+ * and auctions.
+ */
+export interface CpuStyle {
+  risk: number;
+  stocks: number;
+  trader: number;
+}
+
 export interface Player {
   id: number;
   slot: number;
@@ -120,6 +136,10 @@ export interface Player {
   /** Index into PLAYER_COLORS. */
   color: number;
   cpu: boolean;
+  /** CPUs: how well they play (old saves: normal). */
+  cpuLevel?: CpuLevel;
+  /** CPUs: their play style (old saves: a middle-of-the-road one). */
+  style?: CpuStyle;
   cash: number;
   level: number;
   suits: [boolean, boolean, boolean, boolean];
@@ -230,6 +250,8 @@ export interface SeatConfig {
   ch: CharId;
   /** Index into PLAYER_COLORS the player chose; missing or taken: the first free color. */
   color?: number;
+  /** CPUs: how well they play (default normal). */
+  level?: CpuLevel;
 }
 
 export interface MatchOptions {

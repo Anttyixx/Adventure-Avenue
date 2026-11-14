@@ -8,10 +8,10 @@
  * the right seat and broadcasts it. Once per turn the host sends a hash of its state so a copy
  * that drifted can ask for the turn's starting state and replay from there.
  */
-import type { BoardDef, CharId, GameState, PlotSetting, RuleSet, StockSystem } from '@aa/engine';
+import type { BoardDef, CharId, CpuLevel, GameState, PlotSetting, RuleSet, StockSystem } from '@aa/engine';
 
 /** Protocol version: a joiner on a different version is turned away. */
-export const NET_VERSION = 55;
+export const NET_VERSION = 56;
 
 export type SeatKind = 'host' | 'local' | 'remote' | 'open' | 'cpu';
 
@@ -24,6 +24,8 @@ export interface LobbySeat {
    * one); missing in lobbies from older hosts.
    */
   color?: number;
+  /** Bots: how well they play (missing: normal). */
+  level?: CpuLevel;
   /** False while a joined player's connection is lost. */
   online: boolean;
   /** In the lobby: this player tapped Ready (bots always are). The game starts when all are. */

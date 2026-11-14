@@ -7447,13 +7447,33 @@ div.sl-inline label {
   white-space: nowrap;
 }
 .pv-cpu {
+  --lv: #7fb2ff;
   margin-left: 6px;
   padding: 1px 6px;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.1);
-  color: var(--muted);
+  border: 1px solid var(--lv);
+  background: color-mix(in srgb, var(--lv) 14%, transparent);
+  color: var(--lv);
   font-family: inherit;
   font-size: 10px;
+  font-weight: 700;
+  vertical-align: 4px;
+}
+.pv-cpu.lv-easy {
+  --lv: #7cf29a;
+}
+.pv-cpu.lv-hard {
+  --lv: #ffa057;
+}
+.pv-cpu.lv-master {
+  --lv: #d29bff;
+}
+/* The CPU's play style in words, after its level. */
+.pv-style {
+  margin-left: 6px;
+  font-family: var(--body);
+  font-size: 11px;
+  color: var(--muted);
   vertical-align: 4px;
 }
 .pv-sub {
@@ -11345,6 +11365,72 @@ button.seat-ready.on {
 
 .seat-ready.ghost {
   visibility: hidden;
+}
+/* A bot's difficulty chip, in the Ready chip's place: the same pill, outlined and lettered in the
+   level's color (Easy green, Normal blue, Hard orange, Master purple) with four pips, more lit the
+   harder. Tapping it moves to the next level. */
+.seat-level {
+  --lv: #7cf29a;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  align-self: stretch;
+  min-width: 82px;
+  padding: 3px 9px;
+  border: 2px solid var(--lv);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--lv) 14%, transparent);
+  color: var(--lv);
+  font: 700 12px var(--body);
+  white-space: nowrap;
+}
+button.seat-level {
+  cursor: pointer;
+  transition:
+    background 0.15s,
+    transform 0.15s;
+}
+button.seat-level:hover {
+  background: color-mix(in srgb, var(--lv) 26%, transparent);
+}
+button.seat-level:active {
+  transform: scale(0.95);
+}
+.seat-level.lv-normal {
+  --lv: #7fb2ff;
+}
+.seat-level.lv-hard {
+  --lv: #ffa057;
+}
+.seat-level.lv-master {
+  --lv: #d29bff;
+}
+.lv-pips {
+  display: inline-flex;
+  align-items: flex-end;
+  gap: 2px;
+  height: 11px;
+}
+.lv-pips i {
+  width: 3px;
+  border-radius: 1px;
+  background: color-mix(in srgb, var(--lv) 30%, transparent);
+}
+.lv-pips i:nth-child(1) {
+  height: 5px;
+}
+.lv-pips i:nth-child(2) {
+  height: 7px;
+}
+.lv-pips i:nth-child(3) {
+  height: 9px;
+}
+.lv-pips i:nth-child(4) {
+  height: 11px;
+}
+.lv-pips i.on {
+  background: var(--lv);
 }
 /* Continue game: the host's Resume chip, in the Ready chip's place, filled gold as the main action. */
 button.seat-ready.resume {

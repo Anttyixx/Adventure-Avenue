@@ -235,8 +235,7 @@ export class Game {
       p.closed = false;
     }
 
-    // CPUs only act before rolling to dump stock, which takes K.sellOff+ shares of a district.
-    if (!p.cpu || (G.rules === 'standard' && p.shares.some((n) => n >= K.sellOff))) await this.preRoll(p);
+    await this.preRoll(p);
     if (G.over) return;
 
     this.chain = 0;
@@ -278,18 +277,24 @@ export class Game {
 
   async preRoll(p: Player) {
     const G = this.G;
-    for (let guard = 0; guard < 200 && !G.over; guard++) {
+    // A CPU offers at most one trade and holds at most one auction a turn (it would otherwise
+    // offer the same refused deal again), and takes at most a few actions in all.
+    let traded = false;
+    let auctioned = false;
+    for (let guard = 0; guard < (p.cpu ? 6 : 200) && !G.over; guard++) {
       const canStock = G.rules === 'standard' && p.shares.some((n) => n > 0);
       const mine = ownedSquares(G, p.id);
       const act: PreRollAction = await this.ask({
         kind: 'preRoll',
         pid: p.id,
         canStock,
-        canAuction: mine.length > 0 && G.players.some((q) => q.id !== p.id && !q.bankrupt),
+        canAuction: !auctioned && mine.length > 0 && G.players.some((q) => q.id !== p.id && !q.bankrupt),
         canRenovate: mine.some((s) => s.t === 'plot' && s.b),
-        canTrade: G.players.some((q) => q.id !== p.id && !q.bankrupt),
+        canTrade: !traded && G.players.some((q) => q.id !== p.id && !q.bankrupt),
       });
       if (!act || act.act === 'roll') return;
+      if (p.cpu && act.act === 'trade') traded = true;
+      if (p.cpu && act.act === 'auction') auctioned = true;
       if (act.act === 'sellStock') await this.sellStock(p, act.d, act.n, 0);
       else if (act.act === 'trade') await this.trade(act.offer);
       else if (act.act === 'auction') await this.voluntaryAuction(p, act.sq);

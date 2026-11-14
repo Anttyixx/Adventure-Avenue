@@ -1179,7 +1179,11 @@ softly at every size (nothing clips them). Headings capitalize every word. There
 - **Ready up:** instead of a Start button, every person taps the **Ready** chip on their own seat
   (at the end of the card's bottom row; each player on the host's device has one, and a friend
   who joined has one on their own seat). Ready turns green with a tick; tapping it again takes it back. Bots are always
-  ready. There is no status line on screen (screen readers still hear what is needed: "Tap Ready
+  ready: in the Ready chip's place a bot has a **difficulty chip** (four pips, more lit the
+  harder, and the level's name in its color: Easy green, Normal blue, Hard orange, Master purple).
+  Tapping it moves to the next level (Easy, Normal, Hard, Master, then Easy again). A new bot
+  starts at the level last picked, remembered with the game options (`botLevel`). Online, the
+  host sends each bot's level in the lobby and joined players see the chip as a badge. There is no status line on screen (screen readers still hear what is needed: "Tap Ready
   to start", "Waiting for Ada, Pip", or a reason the game can't start).
   When everyone is ready the game starts: straight away when there is only one person, otherwise
   after a 3-second countdown ("Everyone's ready! Starting in 3...") that anyone can stop by
@@ -1232,36 +1236,74 @@ menu (no question once the game is over).
 
 ## CPU players
 
-CPUs use simple greedy rules with a cash buffer; they are good enough to fill seats, not to
-challenge strong players.
+Every CPU has a **difficulty** (Easy, Normal, Hard or Master, picked per bot in game setup) and a
+**play style** rolled at the start of the game. The difficulty sets what the CPU knows how to do
+and how well it judges it (`CPU_SKILL` in `cpu.ts`); the style tilts its choices so no two CPUs
+play quite alike. Old saves (no difficulty) and players a CPU stands in for online play as Normal
+with a middle-of-the-road style.
 
-| Decision                                | Rule                                                                                                                                                                                                                                                     |
-| --------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Direction at forks                      | Breadth-first search from each option (not turning back) to the nearest goal: the bank if it can promote or has reached the target, otherwise the nearest missing suit or change-of-suit square. Ties broken randomly                                    |
-| Buy a shop                              | If cash after buying >= 150G, or it already owns a square in that group                                                                                                                                                                                  |
-| Build on a plot                         | 50% chance of a 3-Star Shop if it keeps 500G after; otherwise a weighted pick (Tax 3, Checkpoint 2, Circus 2, Home 1, Agency 1, Balloonport 1) if it keeps 150G                                                                                          |
-| Invest                                  | 80% chance when cash > 900G: invest min(room, 60% of cash above 600G)                                                                                                                                                                                    |
-| Buyout                                  | If it owns a square in that group and keeps 600G after paying 5x                                                                                                                                                                                         |
-| Buy stock                               | At the bank or stockbroker when cash > 900G: the district whose stock looks best per coin (room its owners can still invest, its own shops counted fully; dividends from fees; a dent recovering; volatility), 55% of cash above 650G, minimum 10 shares |
-| Circus upgrade                          | If it keeps 500G after                                                                                                                                                                                                                                   |
-| Balloonport / zoom                      | Fly to its current movement goal                                                                                                                                                                                                                         |
-| Estate Agency                           | Buy the unowned shop in the group where it owns most, if it keeps 300G                                                                                                                                                                                   |
-| Venture panel, minigames, cannon target | Random (venture panels: see below)                                                                                                                                                                                                                       |
-| Auctions and trades                     | See Trading and auctions                                                                                                                                                                                                                                 |
-| Debt                                    | Sell stock first, then the cheapest property                                                                                                                                                                                                             |
+**Play style** (`Player.style`, three numbers from 0 to 1, rolled from the game's seed on a
+generator of its own, so it never changes the game's other randomness):
+
+- **risk:** a careful CPU keeps a cash cushion up to 1.5x its level's, a bold one as little as
+  half; bold CPUs also bet bigger in Lucky Wheel and sprint more in Coin Derby;
+- **stocks:** a stock-minded CPU puts more of its spare cash into shares (and a little less into
+  investing); a shop-minded one the other way round;
+- **trader:** how often it looks for a trade before rolling.
+
+The player page shows a CPU's difficulty ("Master CPU", in the level's color) and its style in
+words: Careful / Steady / Bold, then shopkeeper, all-rounder, investor or (keen traders) dealer.
+
+**What each difficulty does:**
+
+| Skill                                                                  | Easy                                                        | Normal                                                 | Hard                                                                                                                                        | Master                                                                       |
+| ---------------------------------------------------------------------- | ----------------------------------------------------------- | ------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------- |
+| Careless choices (random route, missed purchase, random venture panel) | 30%                                                         | 8%                                                     | 3%                                                                                                                                          | never                                                                        |
+| Routes                                                                 | suits first, money barely counts                            | suits, then fees and purchases at half weight          | measures the way to the next suit as it must walk it (no turning back, one-way roads, portals); fees, purchases and investing weighed fully | the same, and paying the leader counts extra                                 |
+| Cash cushion                                                           | 120G                                                        | 300G                                                   | sized to the biggest fee within one roll (80%), at least 125G                                                                               | the same, at least 100G                                                      |
+| Counts shares as spare cash                                            | no                                                          | no                                                     | 30%                                                                                                                                         | 85%                                                                          |
+| Buying shops                                                           | when it keeps its cushion (carelessly skips some)           | when it keeps its cushion, or always in a group it has | lowers its cushion for a shop that earns well (district count, domination)                                                                  | the same, and counts blocking a rival's domination                           |
+| Building on a plot                                                     | weighted pick                                               | weighted pick                                          | 3-Star Shop when it can, else Circus, Checkpoint, Tax Office... (Tax Office first late in the game)                                         | the same                                                                     |
+| Investing                                                              | 35% of the time, 35% of spare cash, in the roomiest shop    | 75%, 60%                                               | 95%, 75%, where 1G earns most (fee multiplier, its own shares' rise)                                                                        | always, all of its spare cash, and past its cash when its shares cover it    |
+| Buying shares                                                          | 35% of visits, 30% of spare cash, often a random district   | 80%, 50%, best-looking district                        | always, 60%, its own districts and holdings first, dividends weighed over the game                                                          | always, 90%                                                                  |
+| Selling shares before rolling                                          | only to crash a rival (stock dump, below)                   | the same                                               | also to cover a fee it can't pay within one roll (never enough to set off a sell-off)                                                       | the same                                                                     |
+| Buyouts                                                                | whenever it can (and sometimes on a whim)                   | with a shop in the group, keeping 600G                 | only when what the shop will earn beats the 4x value it costs                                                                               | the same, plus taking a shop from the leader                                 |
+| Auction bids                                                           | value x 1.25 (x 1.6 with a shop in the group), keeping 200G | the same x 1.2                                         | what the shop is worth to it (value + 60% of its earnings), up to its spare cash and shares                                                 | the same x 1.1, plus blocking a domination                                   |
+| Trades                                                                 | never                                                       | rarely offers one; accepts on shop values              | offers to buy a rival's lone shop in a group where it has 2+ (gold or a swap), counter-offers close deals, accepts on what shops earn       | the same, never pays the leader, and charges for handing anyone a domination |
+| Renovating, auctioning                                                 | never                                                       | never                                                  | turns idle buildings into 3-Star Shops; auctions a lone shop when cash is short and nothing else can be sold                                | the same                                                                     |
+| Arcade                                                                 | random picks, 20G bets                                      | the same                                               | bets by style, sprints when the bonus is worth it, spreads Treasure Split picks                                                             | the same                                                                     |
+
+Before rolling, CPUs from Normal up get the same choices as people (sell stock, trade, auction,
+renovate). A CPU offers at most one trade and holds at most one auction a turn, and takes at most
+a few actions in all, so it never repeats a refused offer.
 
 **Venture panels:** the CPU flips the free panel that completes a line of 4+ if it can, otherwise
 the one that joins the most of its own panels in a row (squared run lengths in each direction, only
 where an unbroken stretch of 4+ is still possible), random among equals.
 
-**Venture card choices:** Gift shares picks the district it would buy stock in; Bear market picks
-the district where rivals hold the most stock value (counting its own holdings against it).
+**Venture card choices:** Gift shares picks the district it would buy stock in; Bull market picks
+its biggest holding (or its own district); Bear market picks the district where rivals hold the
+most stock value (counting its own holdings against it; a Master counts the leader's double).
 
 **Stock dumps:** before rolling, a CPU sells all its shares of one district (75+) when a rival who
 is ahead of it has reached 85% of the goal and holds 500G+ of stock there, picking the district
 where that rival holds the most, to crash the price with a sell-off.
 
-**Not yet implemented for CPUs:** proposing trades, starting auctions, renovating. These are good targets for a "hard" CPU in the rebuild.
+**Debt:** shares first (Hard and Master sell just what they need, short of a sell-off), then the
+property it will miss least (the cheapest, for Easy and Normal).
+
+**Tuning (`npm run tournament`):** CPU-only matches on every built-in board (Standard rules,
+dynamic stocks, 10,000G goal, seats rotated). With one CPU of each level, out of 2,000 matches:
+Master wins 48%, Hard 35%, Normal 15%, Easy 2%. Two against two: Master beats Hard 59-41, Hard
+beats Normal 73-27, Normal beats Easy 89-11. Every style wins 24-28% of Master-only matches.
+What mattered most for a Master (win share lost with the skill turned off, two Masters against
+two without it): owning shares (-15 points), care (30% careless choices: -28), investing (-8),
+careful buyouts (-6), counting shares as spare cash (-4.5), planning the walk to the next suit
+(-4), investing past its cash on its shares (-3.6), smart investing (-3.4), the danger-sized
+cushion (-4) and acting before rolling (-3). Trading, blocking rivals and the finer share picks
+made little difference. In Master-only games the winner ends with about 30% more salary, 50%
+more fees, 60% more dividends and 57% more stock value than the others, and pays 25% less in
+fees: promotions (suits) drive the economy, shares and investing build the lead.
 
 ## Interface and art
 

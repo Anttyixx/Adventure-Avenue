@@ -7,6 +7,7 @@
 import {
   netWorth,
   BUILDABLE,
+  CPU_LEVELS,
   BUILT_IN_BOARDS,
   CARD_LIST,
   Game,
@@ -120,7 +121,7 @@ const rnd = (n: number) => Math.floor(Math.random() * n);
  * Controls for UI elements that were just added or changed: they shake once and glow so they
  * are easy to find. Update this list with each change.
  */
-const RECENT = new Set(['Results screen', 'Results screen (one bankrupt)', 'Live auction']);
+const RECENT = new Set(['Game setup', 'Joined game (locked setup)', 'Info: player page', 'Live auction']);
 
 /**
  * Which board the lab plays on: Town with portal links (square, the default) or Twin Lakes (hex),
@@ -200,7 +201,13 @@ function sampleState(): GameState {
     target: 5000,
     roundCap: 0,
     ...(labBoard() === 'portals' ? { board: portalTown() } : { boardId: labBoard() }),
-    seats: names.map((name, i) => ({ name, cpu: true, ch: chars[i] })),
+    // One bot of each level, so the player pages show them all.
+    seats: names.map((name, i) => ({
+      name,
+      cpu: true,
+      ch: chars[i],
+      level: CPU_LEVELS[i % CPU_LEVELS.length],
+    })),
   });
 }
 
@@ -2414,7 +2421,15 @@ export async function openLab(app: HTMLElement, section?: string) {
             seats: [
               { kind: 'host', name: 'Rosa', look: looks[0], color: 0, online: true, ready: true },
               { kind: 'remote', name: 'Milo', look: looks[1], color: 1, online: true, ready: false },
-              { kind: 'open', name: '', look: null, online: false },
+              {
+                kind: 'cpu',
+                name: 'Bram',
+                look: looks[2],
+                color: 2,
+                level: 'master',
+                online: true,
+                ready: true,
+              },
               { kind: 'open', name: '', look: null, online: false },
             ],
           };

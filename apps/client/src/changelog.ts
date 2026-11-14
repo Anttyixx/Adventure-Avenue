@@ -26,6 +26,29 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: '2026-11-14-cpu-levels',
+    date: 'Nov 14, 2026',
+    title: 'Smarter bots',
+    features: [
+      {
+        tag: 'new',
+        title: 'Four bot difficulties',
+        text: 'Each bot in game setup has a difficulty chip where Ready would be: tap it to cycle Easy, Normal, Hard and Master. New bots start at the last level you picked.',
+      },
+      {
+        tag: 'better',
+        title: 'Bots play the whole game',
+        text: 'Bots now trade, counter-offer, sell shares before a risky roll, renovate and auction, as well as buying, investing and trading stocks. Harder bots plan their route to the next suit, judge shops by what they will earn, invest where it pays most and avoid wasteful buyouts. Master bots also try to stop the leader.',
+      },
+      {
+        tag: 'new',
+        title: 'Every bot has a play style',
+        text: 'Bots get a random style each game: careful or bold, keener on shops or on shares, more or less into trading. You can see it on their player page.',
+      },
+    ],
+    extras: ['Bot levels show on their player page'],
+  },
+  {
     id: '2026-11-14-results-layout',
     date: 'Nov 14, 2026',
     title: 'Tidier results',

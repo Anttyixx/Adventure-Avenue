@@ -14,7 +14,9 @@
     "typecheck": "tsc -p packages/engine && tsc -p apps/client",
     "lint": "eslint .",
     "format": "prettier --write .",
-    "sim": "tsx packages/engine/scripts/sim.ts"
+    "sim": "tsx packages/engine/scripts/sim.ts",
+    "tournament": "tsx packages/engine/scripts/tournament.ts",
+    "tournament:winners": "tsx packages/engine/scripts/winners.ts"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.0",

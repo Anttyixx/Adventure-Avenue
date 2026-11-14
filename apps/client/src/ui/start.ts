@@ -6,7 +6,10 @@
  * setting shown but locked (`guestSetup`).
  */
 import {
+  CPU_LEVELS,
   K,
+  cpuLevelName,
+  type CpuLevel,
   MAX_PLAYERS,
   PLAYER_COLORS,
   seatColors,
@@ -248,6 +251,43 @@ interface Spot {
   ready: boolean;
   /** The color a player on this device has (index into PLAYER_COLORS); bots take what is left. */
   color?: number;
+  /** Bots: how well they play. */
+  level?: CpuLevel;
+}
+
+/** The difficulty chip's look per level: its name and how many of four pips are lit. */
+const LEVEL_PIPS: Record<CpuLevel, number> = { easy: 1, normal: 2, hard: 3, master: 4 };
+
+/**
+ * A bot's difficulty chip, in the Ready chip's place: four pips (more lit the harder) and the
+ * level's name in its color. With `onCycle` it is a button that moves to the next level
+ * (Easy, Normal, Hard, Master, then Easy again); without, a plain badge (joined players see it).
+ */
+export function levelChip(level: CpuLevel, onCycle?: () => void): HTMLElement {
+  const lit = LEVEL_PIPS[level];
+  const pips = h(
+    'span',
+    { class: 'lv-pips', 'aria-hidden': 'true' },
+    ...[1, 2, 3, 4].map((k) => h('i', { class: k <= lit ? 'on' : '' })),
+  );
+  const name = cpuLevelName(level);
+  if (!onCycle) return h('span', { class: `seat-level lv-${level}`, title: `${name} bot` }, pips, name);
+  return h(
+    'button',
+    {
+      class: `seat-level lv-${level}`,
+      title: `${name} bot. Tap for a different difficulty.`,
+      'aria-label': `Difficulty: ${name}. Tap to change.`,
+      onclick: onCycle,
+    },
+    pips,
+    name,
+  );
+}
+
+/** The level after `level` (Master goes back to Easy). */
+export function nextLevel(level: CpuLevel): CpuLevel {
+  return CPU_LEVELS[(CPU_LEVELS.indexOf(level) + 1) % CPU_LEVELS.length];
 }
 
 /**
@@ -894,7 +934,10 @@ export function setupScreen(
     stocks: 'dynamic' as StockSystem,
     rules: 'standard' as RuleSet,
     boardId: 'town',
+    botLevel: 'normal' as CpuLevel,
   });
+  /** New bots start at the level last picked for a bot. */
+  let botLevel: CpuLevel = CPU_LEVELS.includes(saved.botLevel) ? saved.botLevel : 'normal';
   /**
    * Seats are players on this device (the host first), then friends who joined, then bots.
    * Setup starts with only the host: bots and other players are added by hand (or join with the
@@ -1036,7 +1079,11 @@ export function setupScreen(
       ready: x.ready,
       want: x.color,
     }));
-    const botSeats: LocalSeat[] = bots.map((x) => ({ name: x.name, look: x.look }));
+    const botSeats: LocalSeat[] = bots.map((x) => ({
+      name: x.name,
+      look: x.look,
+      level: x.level ?? botLevel,
+    }));
     const seatKey = JSON.stringify([locals, botSeats]);
     if (seatKey !== sentSeats) {
       sentSeats = seatKey;
@@ -1233,6 +1280,13 @@ export function setupScreen(
       name: x.name,
       tag: 'Bot',
       kind: 'bot',
+      // The difficulty chip sits where a person's Ready chip would be.
+      ready: levelChip(x.level ?? botLevel, () => {
+        x.level = nextLevel(x.level ?? botLevel);
+        botLevel = x.level;
+        writeJSON(OPTS_KEY, { ...readJSON(OPTS_KEY, {}), botLevel });
+        draw();
+      }),
       remove: {
         label: 'Remove this bot',
         act: () => {
@@ -1277,7 +1331,7 @@ export function setupScreen(
               draw();
             },
             () => {
-              bots.push(newSpot());
+              bots.push({ ...newSpot(), level: botLevel });
               draw();
             },
           )
@@ -1341,7 +1395,7 @@ export function setupScreen(
   /** Start the game with the seats as they are now. */
   const startGame = () => {
     stopCountdown();
-    writeJSON(OPTS_KEY, { boardId, ...st });
+    writeJSON(OPTS_KEY, { boardId, ...st, botLevel });
     const board = getBoard(boardId) ?? BUILT_IN[0];
     const base = { ...st, board };
     if (room && joined() > 0) {
@@ -1356,7 +1410,13 @@ export function setupScreen(
     }
     const seats = [
       ...people.map((x) => ({ name: x.name, cpu: false, ch: x.look, color: colorOf(x) })),
-      ...bots.map((x) => ({ name: x.name, cpu: true, ch: x.look, color: colorOf(x) })),
+      ...bots.map((x) => ({
+        name: x.name,
+        cpu: true,
+        ch: x.look,
+        color: colorOf(x),
+        level: x.level ?? botLevel,
+      })),
     ];
     leaveRoom();
     handlers.onStart({ ...base, seats }, false);
@@ -1575,22 +1635,24 @@ export function guestSetup(root: HTMLElement, room: GuestSetupRoom, handlers: Gu
               kind: bot ? 'bot' : mine ? 'human' : 'joined',
               ready: lobby?.resuming
                 ? null
-                : mine
-                  ? h(
-                      'button',
-                      {
-                        class: `seat-ready ${x.ready ? 'on' : ''}`,
-                        'aria-pressed': String(!!x.ready),
-                        title: x.ready
-                          ? 'Tap if you are not ready after all'
-                          : 'Tap when you are ready to play',
-                        onclick: () => room.setReady(!x.ready),
-                      },
-                      x.ready ? '✓ Ready' : 'Ready',
-                    )
-                  : bot
-                    ? null
-                    : readyBadge(!!x.ready),
+                : bot
+                  ? levelChip(x.level ?? 'normal')
+                  : mine
+                    ? h(
+                        'button',
+                        {
+                          class: `seat-ready ${x.ready ? 'on' : ''}`,
+                          'aria-pressed': String(!!x.ready),
+                          title: x.ready
+                            ? 'Tap if you are not ready after all'
+                            : 'Tap when you are ready to play',
+                          onclick: () => room.setReady(!x.ready),
+                        },
+                        x.ready ? '✓ Ready' : 'Ready',
+                      )
+                    : bot
+                      ? null
+                      : readyBadge(!!x.ready),
             });
           }),
         ),

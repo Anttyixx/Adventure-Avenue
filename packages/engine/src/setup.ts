@@ -4,7 +4,7 @@ import { BOARDS } from './boards/builtin';
 import { buildDeck } from './cards';
 import { rand, shuffle } from './rng';
 import { computeRows, netWorth, shareOffsets } from './rules';
-import type { GameState, Market, MatchOptions, Player, Square } from './types';
+import type { CpuStyle, GameState, Market, MatchOptions, Player, Square } from './types';
 
 /** Player colors: one more than the most players, so players can swap colors in game setup. */
 export const PLAYER_COLORS = ['#e5484d', '#3e7bfa', '#30a46c', '#a855f7', '#f76b15', '#d6409f'];
@@ -78,6 +78,12 @@ export function newGame(opts: MatchOptions): GameState {
   // One-way links: no stepping from `to` back to `from`.
   for (const [a, b] of board.oneWay ?? []) if (nodes[a]?.nb.includes(b)) (nodes[b].noGo ??= []).push(a);
   const colors = seatColors(opts.seats.map((seat) => seat.color));
+  // Each CPU's play style comes from its own generator off the seed, so rolling it never changes
+  // the game's other randomness.
+  const styleOf = (i: number): CpuStyle => {
+    const r = { rng: (seed ^ Math.imul(i + 1, 0x9e3779b1)) | 0 };
+    return { risk: rand(r), stocks: rand(r), trader: rand(r) };
+  };
   const players: Player[] = opts.seats.map((seat, i) => ({
     id: i,
     slot: i,
@@ -85,6 +91,7 @@ export function newGame(opts: MatchOptions): GameState {
     ch: seat.ch,
     color: colors[i],
     cpu: seat.cpu,
+    ...(seat.cpu ? { cpuLevel: seat.level ?? 'normal', style: styleOf(i) } : {}),
     cash: K.startCash,
     level: 1,
     suits: [false, false, false, false],

@@ -9,6 +9,8 @@ import {
   BUILDINGS,
   K,
   PLAYER_COLORS,
+  cpuLevelName,
+  cpuStyleName,
   SUITS,
   canPromote,
   isClosed,
@@ -85,7 +87,23 @@ export function playerOverview(G: GameState, p: Player, hooks: OverviewHooks): H
       h(
         'div',
         { class: 'pv-id' },
-        h('div', { class: 'pv-name' }, p.name, p.cpu ? h('span', { class: 'pv-cpu' }, 'CPU') : null),
+        h(
+          'div',
+          { class: 'pv-name' },
+          p.name,
+          // CPUs show their level, and their play style in words (rolled at the start of the game).
+          p.cpu
+            ? h(
+                'span',
+                {
+                  class: `pv-cpu lv-${p.cpuLevel ?? 'normal'}`,
+                  title: `Plays as a ${cpuStyleName(p.style).toLowerCase()}`,
+                },
+                `${cpuLevelName(p.cpuLevel)} CPU`,
+              )
+            : null,
+          p.cpu ? h('span', { class: 'pv-style' }, cpuStyleName(p.style)) : null,
+        ),
         h(
           'div',
           { class: 'pv-sub' },

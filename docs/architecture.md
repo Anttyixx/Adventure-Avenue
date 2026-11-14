@@ -79,8 +79,15 @@ answers) and real games (answers from the UI or the network).
   `pay`, `log` helpers as the engine.
 - `arcade.ts`: the minigames. The engine decides every random outcome; the player only picks
   when to stop or what to back.
-- `cpu.ts`: `cpuDecide(G, request)` answers any decision with simple greedy rules (keep a cash
-  buffer, buy what pays back, prefer routes toward goals).
+- `cpu.ts`: `cpuDecide(G, request)` answers any decision for a CPU. Each CPU has a level
+  (`Player.cpuLevel`: easy, normal, hard, master; `CPU_SKILL` says what each knows how to do) and
+  a play style (`Player.style`: risk, stocks, trader; rolled in `newGame` from the seed on a
+  generator of its own). Choices go through a small `brain` (level + style): cash cushion
+  (`cushion`, sized to `dangerAhead` for hard/master), what a shop is worth to it (`ownValue`,
+  `loseValue`), route values (`routeValue`, `walkDistance` for forward-only planning), stock
+  picks (`stockAppeal`, `stockPick`), trades (`tradeIdea`, `answerTrade`), bids (`cpuBidLimit`)
+  and buyouts (`buyoutPays`). `packages/engine/scripts/tournament.ts` (levels, vs, ablate, try),
+  `winners.ts` and `actions.ts` play CPU-only matches to tune it.
 - `rng.ts`: a seeded generator whose state lives in `G.rng`. All randomness must use it.
 
 ### Boards

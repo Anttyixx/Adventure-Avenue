@@ -1,7 +1,7 @@
 import { cpuDecide } from './cpu';
 import { Game, type GameIO } from './engine';
 import { newGame } from './setup';
-import type { BoardDef, GameState, MatchOptions, RuleSet } from './types';
+import type { BoardDef, CpuLevel, GameState, MatchOptions, RuleSet } from './types';
 
 /** An IO where every seat is answered by the CPU rules and events are dropped. */
 export function cpuIO(getState: () => GameState): GameIO {
@@ -11,11 +11,13 @@ export function cpuIO(getState: () => GameState): GameIO {
   };
 }
 
-export function cpuSeats(n = 4): MatchOptions['seats'] {
+/** `n` CPU seats, at `levels` (one per seat; missing: normal). */
+export function cpuSeats(n = 4, levels: CpuLevel[] = []): MatchOptions['seats'] {
   return Array.from({ length: n }, (_, i) => ({
     name: `CPU ${i + 1}`,
     cpu: true,
     ch: `cpu${i}`,
+    level: levels[i] ?? 'normal',
   }));
 }
 
@@ -34,8 +36,21 @@ export async function simulate(
   roundCap = 0,
   board?: BoardDef,
   players = 4,
+  levels: CpuLevel[] = [],
 ): Promise<SimResult> {
-  const G = newGame({ rules, target, roundCap, seats: cpuSeats(players), seed, board });
+  const G = (await playMatch({ rules, target, roundCap, seats: cpuSeats(players, levels), seed, board })).G;
+  return {
+    rounds: G.round,
+    winner: G.winner,
+    winnerLevel: G.players[G.winner].level,
+    reason: G.endReason,
+  };
+}
+
+/** Play one CPU-only match to the end and return its final state. Guards against runaway matches. */
+export async function playMatch(opts: MatchOptions): Promise<{ G: GameState }> {
+  const G = newGame(opts);
+  const seed = opts.seed;
   const game = new Game(
     G,
     cpuIO(() => G),
@@ -45,10 +60,5 @@ export async function simulate(
     await game.playTurn();
     if (++turns > 4000) throw new Error(`Match with seed ${seed} did not finish`);
   }
-  return {
-    rounds: G.round,
-    winner: G.winner,
-    winnerLevel: G.players[G.winner].level,
-    reason: G.endReason,
-  };
+  return { G };
 }

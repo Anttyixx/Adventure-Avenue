@@ -63,7 +63,8 @@ When the spec and the code disagree, ask the owner which is right; then fix the 
 - **The engine (`packages/engine`) is UI-free and deterministic.** It never touches the DOM,
   timers or sockets. All randomness goes through `G.rng` (`rng.ts`), never `Math.random`, or
   online games fall out of step. Every tunable number lives in `src/constants.ts` as `K` (CPU
-  behavior under `K.cpu`, which `cpu.ts` calls `C`).
+  behavior under `K.cpu`, which `cpu.ts` calls `C`; each CPU difficulty's skills are in
+  `CPU_SKILL` in `cpu.ts`, tuned with `npm run tournament`).
 - **The engine talks to the outside only through `GameIO`:** `decide(request)` when a player
   must choose (see `decisions.ts`), `emit(event)` after every state change (see `events.ts`).
   Add a new choice by adding it to `DecisionMap`, answering it in the CPU (`cpu.ts`), in the
@@ -166,6 +167,7 @@ npm run format       # Prettier on everything
 npm run build        # production build to apps/client/dist
 npm run preview      # serve the build (http://localhost:4173)
 npm run sim -- 500   # CPU-only balance simulation (average match length, etc.)
+npm run tournament -- levels 1000   # CPU difficulties against each other (also: vs, ablate, try)
 ```
 
 ## Testing

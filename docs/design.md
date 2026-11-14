@@ -162,6 +162,13 @@ Use tokens, not new literal colors, for anything on the dark interface. Meaning 
 - **Player color** `--pc` (`PLAYER_COLORS`: red `#e5484d`, blue `#3e7bfa`, green `#30a46c`,
   purple `#a855f7`, orange `#f76b15`, magenta `#d6409f`; six for at most five players, so they can
   swap in game setup): that player's card edge, glow, dots, chips, owned tiles.
+- **CPU level colors** (`.seat-level`, `.pv-cpu`, `--lv`): Easy green `#7cf29a`, Normal blue
+  `#7fb2ff`, Hard orange `#ffa057`, Master purple `#d29bff`. The bot's **difficulty chip** in game
+  setup takes the Ready chip's place and shape (pill, 2px border in `--lv` over a 14% tint, bold
+  12px text in `--lv`, at least 82px wide) with four rising pips before the name (3px wide, 5 to
+  11px tall, lit in `--lv`, unlit at 30%). As a button it brightens on hover and presses in; for
+  joined players it is a plain badge. On the player page the "Master CPU" tag uses the same
+  colors (1px border), followed by the play style in muted 11px text.
 - **Color swatches** (character picker in game setup, `.color-swatch`): 30px circles in the color
   with a 3px faint rim; the player's own has a white rim and a soft glow of its color; taken ones
   are at 35% with a white slash.

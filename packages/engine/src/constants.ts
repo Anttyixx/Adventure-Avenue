@@ -200,5 +200,41 @@ export const K = {
     bidMax: 1.25,
     bidMaxGroup: 1.6,
     bidKeep: 200,
+    // The levelled CPUs (cpu.ts CPU_SKILL); tuned with scripts/tournament.ts.
+    /** Rival landings a square still gets over a whole game (scaled down as the game goes on). */
+    visits: 6,
+    /** The cushion a CPU sized to danger keeps: this share of the biggest fee within one roll. */
+    dangerShare: 0.8,
+    /** Keeping a rival from dominating a group: worth this many times the shop's value. */
+    blockValue: 1.5,
+    /** ...and in a trade, this share of what the shop would earn the rival. */
+    blockTrade: 1,
+    /** Stock picks for sharp CPUs: per shop it owns in the district, for a holding it keeps
+     * adding to, and against a district where the leader holds more than it does. */
+    stockSmartDividends: 3,
+    stockOwnBonus: 0.04,
+    stockHoldBonus: 0.08,
+    stockLeaderPenalty: 0.05,
+    /** Trades: what a CPU offers for a shop (x what the owner loses), the least it must gain,
+     * and how close an offer must be before it sends back a counter-offer. */
+    tradeOfferPay: 1.25,
+    tradeMinGain: 60,
+    tradeCounterNear: 0.75,
+    /** Auction bids: how much of a shop's future earnings a sharp CPU will pay. */
+    bidEarnings: 0.6,
+    /** A buyout must earn this many times the net worth it costs. */
+    buyoutMargin: 1.2,
+    /** Paths: share of salary lost per square to the next goal, gained per new suit; how much
+     * worse a fee it can't pay is; share of spare cash a stop at its own shop is worth; and a
+     * venture card or arcade stop. */
+    pathGoalStep: 0.03,
+    pathSuit: 0.25,
+    pathDebtPain: 0.5,
+    pathInvest: 0.05,
+    pathVenture: 40,
+    /** Buying: how much of a shop's earnings a sharp CPU lets eat into its cushion. */
+    buyEager: 0.5,
+    /** The smallest investment worth making. */
+    investMin: 50,
   },
 } as const;
