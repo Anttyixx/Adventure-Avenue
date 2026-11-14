@@ -58,6 +58,15 @@ export const CHANGELOG: ChangelogEntry[] = [
     ],
   },
   {
+    id: '2026-11-13-venture-hover-color',
+    date: 'Nov 13, 2026',
+    title: 'Player-colored venture highlights',
+    features: [],
+    extras: [
+      'Hovering an available venture card now highlights it in the color of the player choosing the card.',
+    ],
+  },
+  {
     id: '2026-11-13-painted-symbols-stack',
     date: 'Nov 13, 2026',
     title: 'Fresh symbols and a readable stack',

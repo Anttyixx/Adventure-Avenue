@@ -1282,6 +1282,8 @@ leave the camera to themselves.
 
 ### Arcade games (board + action bar)
 
+Available venture panels scale up on hover only while picking, with a 10px glow in the choosing player’s color (`--pc` on `.vgrid`, taken from `VentureView`’s player rather than the local viewer). Flipped panels keep their owner color and do not get the hover glow. UI Lab: Venture grid (play); choose a target player to preview their color.
+
 The venture board's layer keeps `--venture-ask` free at the bottom: `max(116px, --ask-free)`
 (94px on screens 500px tall or less), the room the action bar takes once it shows the card
 drawn, so the board never jumps or shrinks as the bar grows (the arcade layer does the same).

@@ -2520,7 +2520,7 @@ input[type='range'] {
 }
 .vgrid.picking .panel:not(:disabled):hover {
   transform: scale(1.12);
-  box-shadow: 0 0 10px #c9a7ff;
+  box-shadow: 0 0 10px var(--pc);
 }
 .panel.flipped {
   opacity: 1;

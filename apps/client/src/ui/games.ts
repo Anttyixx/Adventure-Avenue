@@ -24,6 +24,7 @@ export class VentureView {
     private pid: number,
   ) {
     const p = G.players[pid];
+    this.grid.style.setProperty('--pc', PLAYER_COLORS[p.color]);
     this.grid.setAttribute('aria-label', `Venture board · ${p.name}`);
     const box = h('div', { class: 'venture-board glass' }, this.grid);
     const layer = h('div', { class: 'venture-layer' }, box);

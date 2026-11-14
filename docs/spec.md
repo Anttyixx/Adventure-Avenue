@@ -792,7 +792,7 @@ On short screens the board shrinks to leave space for the action bar.
   result heading includes the same number. Guide → Venture cards lists all numbers, titles
   and effects, including clearly marked Standard-only cards. Numbering is independent of the
   randomly assigned panel position and persists when reopening the board or loading a save.
-- **Grid:** 64 panels, each pre-assigned a random card from the deck for the current rule set. A
+- **Grid:** 64 panels, each pre-assigned a random card from the deck for the current rule set. While choosing, hovering an available face-down panel gives it a glow in the choosing player’s color, rather than a fixed purple. Flipped/disabled panels do not get this hover highlight. A
   flipped panel takes the player's color. When every panel is flipped, the grid resets.
 - **Line bonus:** after flipping, count each straight line (row, column and both diagonals) of the
   player's color through that panel. Every line of 4 to 7 pays 10G per panel; a full line of 8
