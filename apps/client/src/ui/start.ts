@@ -255,23 +255,14 @@ interface Spot {
   level?: CpuLevel;
 }
 
-/** The difficulty chip's look per level: its name and how many of four pips are lit. */
-const LEVEL_PIPS: Record<CpuLevel, number> = { easy: 1, normal: 2, hard: 3, master: 4 };
-
 /**
- * A bot's difficulty chip, in the Ready chip's place: four pips (more lit the harder) and the
- * level's name in its color. With `onCycle` it is a button that moves to the next level
- * (Easy, Normal, Hard, Master, then Easy again); without, a plain badge (joined players see it).
+ * A bot's difficulty chip, in the Ready chip's place: the level's name in its color. With
+ * `onCycle` it is a button that moves to the next level (Easy, Normal, Hard, Master, then Easy
+ * again); without, a plain badge (joined players see it).
  */
 export function levelChip(level: CpuLevel, onCycle?: () => void): HTMLElement {
-  const lit = LEVEL_PIPS[level];
-  const pips = h(
-    'span',
-    { class: 'lv-pips', 'aria-hidden': 'true' },
-    ...[1, 2, 3, 4].map((k) => h('i', { class: k <= lit ? 'on' : '' })),
-  );
   const name = cpuLevelName(level);
-  if (!onCycle) return h('span', { class: `seat-level lv-${level}`, title: `${name} bot` }, pips, name);
+  if (!onCycle) return h('span', { class: `seat-level lv-${level}`, title: `${name} bot` }, name);
   return h(
     'button',
     {
@@ -280,7 +271,6 @@ export function levelChip(level: CpuLevel, onCycle?: () => void): HTMLElement {
       'aria-label': `Difficulty: ${name}. Tap to change.`,
       onclick: onCycle,
     },
-    pips,
     name,
   );
 }

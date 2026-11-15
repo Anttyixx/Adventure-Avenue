@@ -26,6 +26,19 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: '2026-11-15-stand-in-bots',
+    date: 'Nov 15, 2026',
+    title: 'Bots that play like you',
+    features: [
+      {
+        tag: 'online',
+        title: 'A Hard bot covers for you',
+        text: "If you lose your connection in an online game, a Hard bot plays your turns until you're back, in your style: bold or careful with cash, into shares or shops, keen on trades or not, going by how you'd played so far.",
+      },
+    ],
+    extras: ['Difficulty chips show just the level name'],
+  },
+  {
     id: '2026-11-14-cpu-levels',
     date: 'Nov 14, 2026',
     title: 'Smarter bots',

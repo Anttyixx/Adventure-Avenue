@@ -270,7 +270,11 @@ function playGuest(room: GuestRoom, first: StartInfo) {
   };
   room.on.seat = (pid, online) => {
     const name = game?.G.players[pid]?.name ?? 'A player';
-    game?.hud.tick(online ? `${name} reconnected.` : `${name} disconnected. A CPU plays for them for now.`);
+    game?.hud.tick(
+      online
+        ? `${name} reconnected.`
+        : `${name} disconnected. A Hard CPU plays for them, in their style, for now.`,
+    );
   };
   run(first);
 }

@@ -444,7 +444,9 @@ export class HostRoom implements GameLink {
       this.reseat(this.seats.filter((x) => x !== seat));
       return;
     } else {
-      this.onNotice(`${seat.name} disconnected. A CPU plays for them until they come back.`);
+      this.onNotice(
+        `${seat.name} disconnected. A Hard CPU plays for them, in their style, until they come back.`,
+      );
       this.broadcast({ t: 'seat', pid: seat.pid, online: false });
       // Anything they were deciding, a CPU decides now.
       for (const [seq, p] of this.pending)

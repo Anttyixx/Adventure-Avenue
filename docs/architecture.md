@@ -82,7 +82,9 @@ answers) and real games (answers from the UI or the network).
 - `cpu.ts`: `cpuDecide(G, request)` answers any decision for a CPU. Each CPU has a level
   (`Player.cpuLevel`: easy, normal, hard, master; `CPU_SKILL` says what each knows how to do) and
   a play style (`Player.style`: risk, stocks, trader; rolled in `newGame` from the seed on a
-  generator of its own). Choices go through a small `brain` (level + style): cash cushion
+  generator of its own). A person a CPU stands in for online (disconnected) is played at
+  `STAND_IN_LEVEL` (hard) in a style read from their play (`standInStyle`). Choices go through a
+  small `brain` (level + style): cash cushion
   (`cushion`, sized to `dangerAhead` for hard/master), what a shop is worth to it (`ownValue`,
   `loseValue`), route values (`routeValue`, `walkDistance` for forward-only planning), stock
   picks (`stockAppeal`, `stockPick`), trades (`tradeIdea`, `answerTrade`), bids (`cpuBidLimit`)

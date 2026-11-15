@@ -1179,8 +1179,8 @@ softly at every size (nothing clips them). Headings capitalize every word. There
 - **Ready up:** instead of a Start button, every person taps the **Ready** chip on their own seat
   (at the end of the card's bottom row; each player on the host's device has one, and a friend
   who joined has one on their own seat). Ready turns green with a tick; tapping it again takes it back. Bots are always
-  ready: in the Ready chip's place a bot has a **difficulty chip** (four pips, more lit the
-  harder, and the level's name in its color: Easy green, Normal blue, Hard orange, Master purple).
+  ready: in the Ready chip's place a bot has a **difficulty chip** (the level's name in its
+  color: Easy green, Normal blue, Hard orange, Master purple).
   Tapping it moves to the next level (Easy, Normal, Hard, Master, then Easy again). A new bot
   starts at the level last picked, remembered with the game options (`botLevel`). Online, the
   host sends each bot's level in the lobby and joined players see the chip as a badge. There is no status line on screen (screen readers still hear what is needed: "Tap Ready
@@ -1239,8 +1239,9 @@ menu (no question once the game is over).
 Every CPU has a **difficulty** (Easy, Normal, Hard or Master, picked per bot in game setup) and a
 **play style** rolled at the start of the game. The difficulty sets what the CPU knows how to do
 and how well it judges it (`CPU_SKILL` in `cpu.ts`); the style tilts its choices so no two CPUs
-play quite alike. Old saves (no difficulty) and players a CPU stands in for online play as Normal
-with a middle-of-the-road style.
+play quite alike. Old saves (no difficulty) play as Normal with a middle-of-the-road style; a
+person a CPU stands in for online (while disconnected) is played at Hard in a style read from how
+they played (see Disconnects under Online play).
 
 **Play style** (`Player.style`, three numbers from 0 to 1, rolled from the game's seed on a
 generator of its own, so it never changes the game's other randomness):
@@ -1850,7 +1851,12 @@ copy that falls behind speeds up its animations to catch up.
 differs asks to resync, and the host sends the state at the start of the current turn plus the
 answers since, which the guest replays.
 
-**Disconnects:** a guest who drops is played by a CPU until they come back; rejoining with the
+**Disconnects:** a guest who drops is played by a **Hard** CPU until they come back, in a play
+style read from how they have played (`standInStyle` in `cpu.ts`): bold if they keep little of
+their net worth as cash, careful if they keep a lot; keen on shares if much of what they spent
+went on shares rather than shops and investing; a trader if they have offered trades often. In
+the first rounds (little to go on) the style stays near the middle, fully their own by round 6.
+Everyone sees "Rosa disconnected. A Hard CPU plays for them, in their style, ..."; rejoining with the
 same code on the same device (a per-device token) gives them their seat back and replays the
 current turn. Guests retry the connection for about two minutes. If the host leaves, the game
 ends for everyone; the host's device keeps the save, which also remembers the room code and who

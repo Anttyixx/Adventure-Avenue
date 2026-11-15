@@ -1,5 +1,13 @@
 import { describe, expect, it } from 'vitest';
-import { CPU_SKILL, cpuBidLimit, cpuDecide, cpuLevelName, cpuStyleName } from '../src/cpu';
+import {
+  CPU_SKILL,
+  STAND_IN_LEVEL,
+  cpuBidLimit,
+  cpuDecide,
+  cpuLevelName,
+  cpuStyleName,
+  standInStyle,
+} from '../src/cpu';
 import { BOARDS } from '../src/boards/builtin';
 import { Game } from '../src/engine';
 import { cpuSeats, playMatch } from '../src/headless';
@@ -148,5 +156,42 @@ describe('sharper CPU decisions', () => {
           canTrade: true,
         }),
       ).toEqual({ act: 'roll' });
+  });
+});
+
+describe('stand-ins for disconnected players', () => {
+  it('plays a person at Hard, in a style read from how they played', () => {
+    expect(STAND_IN_LEVEL).toBe('hard');
+    const { G } = makeGame();
+    const [p, q] = G.players;
+    p.cpu = q.cpu = false;
+    G.round = 8;
+    // p kept almost nothing in cash and spent on shares; q sat on cash and bought shops.
+    p.cash = 100;
+    p.shares[0] = 300;
+    p.stats.stockBought = 3000;
+    q.cash = 5000;
+    q.stats.invested = 2000;
+    for (const s of G.nodes.filter((x) => x.t === 'shop').slice(0, 3)) s.owner = q.id;
+    G.log.push(
+      { text: `${q.name} declined ${p.name}'s trade.` },
+      { text: `${q.name} accepted ${p.name}'s trade.` },
+    );
+    const a = standInStyle(G, p);
+    const b = standInStyle(G, q);
+    expect(a.risk).toBeGreaterThan(b.risk);
+    expect(a.stocks).toBeGreaterThan(b.stocks);
+    expect(a.trader).toBeGreaterThan(b.trader);
+    expect(cpuStyleName(a)).toMatch(/^Bold/);
+    expect(cpuStyleName(b)).toMatch(/^Careful/);
+  });
+
+  it('stays near the middle in the first round', () => {
+    const { G } = makeGame();
+    const p = G.players[0];
+    p.cpu = false;
+    G.round = 1;
+    p.cash = 0;
+    expect(standInStyle(G, p)).toEqual({ risk: 0.5, stocks: 0.5, trader: 0.5 });
   });
 });

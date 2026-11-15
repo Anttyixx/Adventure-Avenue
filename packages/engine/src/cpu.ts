@@ -210,7 +210,37 @@ interface Brain {
 }
 
 function brain(G: GameState, p: Player): Brain {
+  // A person a CPU stands in for (online, while they are disconnected) is played at Hard, in a
+  // style read from how they have been playing.
+  if (!p.cpu) return { p, s: CPU_SKILL[STAND_IN_LEVEL], st: standInStyle(G, p) };
   return { p, s: CPU_SKILL[p.cpuLevel ?? 'normal'], st: p.style ?? PLAIN };
+}
+
+/** The level of the CPU that plays for a disconnected person. */
+export const STAND_IN_LEVEL: CpuLevel = 'hard';
+
+/**
+ * A play style matching how a person has played so far, for the CPU standing in for them:
+ * - risk: how little of their net worth they keep as cash (the less, the bolder);
+ * - stocks: how much of what they have spent went on shares rather than shops and investing;
+ * - trader: how many trades they have offered for the rounds played.
+ * Early on (little to go on) it stays close to the middle.
+ */
+export function standInStyle(G: GameState, p: Player): CpuStyle {
+  const worth = Math.max(1, netWorth(G, p));
+  const cashShare = Math.max(0, Math.min(1, p.cash / worth));
+  const shares = p.stats.stockBought ?? 0;
+  const shops = (p.stats.invested ?? 0) + G.nodes.reduce((t, s) => t + (s.owner === p.id ? s.value : 0), 0);
+  const offered = G.log.filter((l) => l.text.endsWith(`${p.name}'s trade.`)).length;
+  const rounds = Math.max(1, G.round);
+  // How much to trust what they have done: none in round 1, fully by round 6.
+  const sure = Math.min(1, (rounds - 1) / 5);
+  const lean = (v: number) => 0.5 + (Math.max(0, Math.min(1, v)) - 0.5) * sure;
+  return {
+    risk: lean(1 - cashShare * 1.4),
+    stocks: lean(shares + shops > 0 ? shares / (shares + shops) + 0.15 : 0.5),
+    trader: lean(0.3 + (offered / rounds) * 4),
+  };
 }
 
 /** A careless moment (more often on easier levels). */
