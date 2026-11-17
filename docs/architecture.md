@@ -317,6 +317,44 @@ is detached; `disposeSoundControls` releases their listeners when the HUD is des
 nonmodal sound pop-up handles positioning, dismissal, focus return and its own cleanup. The
 HUD places its Music chip between Game log and Menu.
 
+## Loading and speed
+
+What keeps the game quick to load and smooth to play (measured with a throttled phone-size
+browser: start-up went from 14.4 MB and 4.6 s to 4.4 MB and 1.7 s, and frames from 17 to 40+ a
+second):
+
+- **Only the art that is drawn is downloaded** (`props.ts`). `loadProps()` skips `LAZY_FILES`:
+  the painted-ground sets (`terrain-v12`, `terrain-v8`, `terrain-details-v9`,
+  `park-modules-v10`, `landscape-v4`, `scenery-v5`, `park-v6`) that `GROUND_SET = 'solid'` never
+  draws, apart from the foliage pieces in `SOLID_GROUND_ART`. If anything asks for a skipped image
+  (`propCanvas`), it is fetched then (`lateLoad`) and `onLateProp` listeners (the board) draw
+  again with it; `loadAllProps()` fetches everything (the Lab's sprite gallery). When switching a
+  look back on or using a new image from those sets on plain grass, add it to `SOLID_GROUND_ART`
+  (or nothing: it self-heals, a moment late).
+- **Images are only decoded at start-up.** Their pixels are read (`sourceOf`, `tintOf`) the first
+  time an image is drawn recolored; images with nothing to recolor are copied straight to a
+  canvas. This cut start-up work and memory (111 MB to 26 MB of heap).
+- **Built images are lossless WebP** (`webpImages` in `vite.config.ts`, using `sharp`): the same
+  pixels, about 40% smaller. Source PNGs are untouched and the dev server uses them as they are.
+- **Rarely used screens load on demand:** the UI Lab, Stocks lab, board builder, What's new and
+  the release notes (`changelog.ts`) are separate chunks, fetched with `import()` when opened.
+  Keep them out of the main script: nothing the menu or a game needs may import them directly
+  (the dev menu reads the Lab's sections from `ui/lab-sections.ts` for this reason). The build
+  warns "dynamic import will not move module into another chunk" if one slips back in.
+- **The board draws only as often as it needs to** (`BoardView.pace`). Every frame while anything
+  moves (camera, characters, effects, the die, hovers: compared as a small text "scene" each
+  frame) and for `IDLE_AFTER_MS` (600 ms) after; then 30 frames a second for the gentle
+  time-based motion (cloud shadows, idle characters, pulsing choices). New animated state that
+  must be smooth should either change something in that scene text or be added to it.
+- **Slow devices get a less sharp board** (`BoardView.watchSpeed`): if over 60% of 120 busy
+  frames take longer than 28 ms, the canvas drops from 3x to 2x pixels (then to 1.5x), never
+  lower, and only on sharp screens.
+
+The scripts used to measure this are not in the repo; the method: Playwright with CDP
+`Emulation.setCPUThrottlingRate` 4, a 844x390 3x viewport, network totals from
+`Network.loadingFinished`, frame times from `requestAnimationFrame`, hot spots from the CDP
+`Profiler`.
+
 ## Build and deploy
 
 - Vite builds `apps/client` into `apps/client/dist`. `vite.config.ts` injects `__BUILD__` (branch

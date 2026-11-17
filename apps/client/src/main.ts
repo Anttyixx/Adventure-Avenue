@@ -20,10 +20,8 @@ import { freeCharacter, loadCharacters, shuffledCharacters } from './sprites';
 import { loadProps } from './props';
 import { installVersionChip } from './ui/devmenu';
 import { IS_DEV_BUILD } from './build';
-import { openEditor, type EditorOptions } from './ui/editor';
+import type { EditorOptions } from './ui/editor';
 import { openCollection } from './ui/collection';
-import { openLab } from './ui/lab';
-import { applyLiveStockSettings, openStocksLab } from './ui/stockslab';
 import { mainMenu, type MenuOptions } from './ui/menu';
 import { guestSetup, randomName, setupScreen } from './ui/start';
 import { loadProfile } from './profile';
@@ -309,30 +307,39 @@ function showCollection() {
 function showEditor(board: BoardDef | null, back: () => void = showStart, opts: EditorOptions = {}) {
   sound.music('menu');
   history.replaceState(null, '', '#editor');
-  openEditor(
-    app,
-    board,
-    {
-      onExit() {
-        history.replaceState(null, '', location.pathname + location.search);
-        back();
+  // The builder is a big part of the code that most games never open: it loads when asked for.
+  void import('./ui/editor').then(({ openEditor }) =>
+    openEditor(
+      app,
+      board,
+      {
+        onExit() {
+          history.replaceState(null, '', location.pathname + location.search);
+          back();
+        },
+        onPlay(b, savedJSON) {
+          // Test play: one human against three CPUs, then back to the builder, still editing.
+          const chars = shuffledCharacters(4);
+          const seats = ['You', 'Rosa', 'Milo', 'Juno'].map((name, i) => ({
+            name,
+            cpu: i > 0,
+            ch: chars[i],
+          }));
+          play(
+            newGame({
+              rules: 'standard',
+              target: K.defaultTarget,
+              roundCap: 0,
+              seats,
+              board: boardForPlay(b),
+            }),
+            () => showEditor(b, back, { savedJSON }),
+            false,
+          );
+        },
       },
-      onPlay(b, savedJSON) {
-        // Test play: one human against three CPUs, then back to the builder, still editing.
-        const chars = shuffledCharacters(4);
-        const seats = ['You', 'Rosa', 'Milo', 'Juno'].map((name, i) => ({
-          name,
-          cpu: i > 0,
-          ch: chars[i],
-        }));
-        play(
-          newGame({ rules: 'standard', target: K.defaultTarget, roundCap: 0, seats, board: boardForPlay(b) }),
-          () => showEditor(b, back, { savedJSON }),
-          false,
-        );
-      },
-    },
-    opts,
+      opts,
+    ),
   );
 }
 
@@ -340,7 +347,15 @@ void checkForUpdate();
 installCoins();
 installVersionChip();
 // Dev builds can play with the Stocks lab's settings (see the lab).
-if (IS_DEV_BUILD) applyLiveStockSettings();
+/** Dev builds can play games with the Stocks lab's settings (the lab loads only when they are on). */
+async function liveStockSettings() {
+  try {
+    if (!IS_DEV_BUILD || localStorage.getItem('adventure-avenue-stocks-lab-live') !== '1') return;
+  } catch {
+    return;
+  }
+  (await import('./ui/stockslab')).applyLiveStockSettings();
+}
 // A soft click for every button press.
 document.addEventListener(
   'click',
@@ -353,13 +368,17 @@ document.addEventListener(
 function route() {
   const lab = location.hash.match(/^#ui-lab(?:\/(\w+))?/);
   const joinCode = new URLSearchParams(location.search).get('join');
-  if (location.hash.startsWith('#arcade-lab')) void openLab(app, 'arcade');
-  else if (lab) void openLab(app, lab[1]);
+  // The labs are dev tools: they load only when their address is opened.
+  const openLab = (tab?: string) => void import('./ui/lab').then((m) => m.openLab(app, tab));
+  if (location.hash.startsWith('#arcade-lab')) openLab('arcade');
+  else if (lab) openLab(lab[1]);
   else if (location.hash.startsWith('#stocks-lab'))
-    openStocksLab(app, () => {
-      location.hash = '';
-      location.reload();
-    });
+    void import('./ui/stockslab').then((m) =>
+      m.openStocksLab(app, () => {
+        location.hash = '';
+        location.reload();
+      }),
+    );
   else if (location.hash.startsWith('#editor')) showEditor(null);
   else if (guestInGame() && loadGuest() && (!joinCode || cleanCode(joinCode) === loadGuest()!.code)) {
     // This tab was in an online game as a guest: reloading goes straight back in.
@@ -375,6 +394,6 @@ function route() {
 }
 
 // Characters and properties are drawn from images, so load them before the first screen.
-Promise.all([loadCharacters(), loadProps()])
+Promise.all([loadCharacters(), loadProps(), liveStockSettings()])
   .catch((err) => console.error(err))
   .finally(route);

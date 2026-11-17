@@ -80,6 +80,11 @@ When the spec and the code disagree, ask the owner which is right; then fix the 
   with `h(tag, attrs, ...children)` from `ui/dom.ts`; money is written with `fmt(n)` ("1,200G",
   turned into a coin icon on screen by `coins.ts`). Styles are in one file, `src/style.css`,
   grouped by feature with a comment above each group.
+- **Keep it light** (see "Loading and speed" in `docs/architecture.md`): the UI Lab, Stocks lab,
+  board builder and release notes load on demand with `import()`, so never import them from code
+  the menu or a game uses; art the default look doesn't draw is not downloaded at start-up
+  (`LAZY_FILES` in `props.ts`); built images ship as lossless WebP (source art stays PNG); the
+  board draws 30 frames a second while nothing moves (`BoardView.pace`).
 - **UI look and feel follows `docs/design.md`.** Use its color tokens, fonts, button variants,
   surfaces and motion patterns; copy the nearest existing element instead of inventing a new
   style. If a change sets a new pattern (a new kind of element, color meaning or animation), add

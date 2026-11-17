@@ -5,7 +5,7 @@
 import { BUILD, IS_DEV_BUILD, VERSION_LABEL } from '../build';
 import { clearSave, loadSave } from '../save';
 import { h } from './dom';
-import { LAB_SECTIONS } from './lab';
+import { LAB_SECTIONS } from './lab-sections';
 
 const HOLD_MS = 3000;
 

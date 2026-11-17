@@ -21,6 +21,7 @@ import {
   drawProp,
   drawPropCentered,
   drawStamp,
+  onLateProp,
   propCanvas,
   PAINTED_LANDSCAPE,
   PARK_LANDSCAPE,
@@ -43,6 +44,14 @@ import { paintFoliage } from './foliage';
 import { drawBoonIcon, drawCoin, drawSparkle, SUIT_CHARS, SUIT_COLORS } from './icons';
 import { Facing, FRAME_H, FRAME_W, drawCharacter, drawCharacterGlow, facingFor } from './sprites';
 import { TIMING as T } from './timing';
+
+/** The board keeps drawing every frame for this long after anything last moved... */
+const IDLE_AFTER_MS = 600;
+/** ...then draws this often (30 frames a second) until something moves again. */
+const IDLE_FRAME_MS = 1000 / 30;
+/** A frame slower than this counts as slow, over windows of this many frames (see `watchSpeed`). */
+const SLOW_FRAME_MS = 28;
+const SPEED_WINDOW = 120;
 import { openingPlayerPose } from './game-opening';
 import { portalFlows, portalPartner } from './portal-links';
 import { taxiRoute } from './taxi-route';
@@ -328,6 +337,11 @@ export class BoardView {
     this.ctx = this.canvas.getContext('2d')!;
     this.resize();
     window.addEventListener('resize', this.resize);
+    // An image that wasn't loaded at start-up arrived (see props.ts): draw the board again with it.
+    this.offLateProp = onLateProp(() => {
+      this.looks = [];
+      this.dirty = true;
+    });
     this.canvas.addEventListener('pointermove', this.pointerMove);
     this.canvas.addEventListener('pointerleave', () => {
       this.tokenHoverPid = -1;
@@ -353,8 +367,11 @@ export class BoardView {
     this.dirty = true;
   }
 
+  private offLateProp: () => void = () => {};
+
   destroy() {
     this.alive = false;
+    this.offLateProp();
     this.stopOpening?.();
     this.gateTimers.forEach(clearTimeout);
     clearTimeout(this.portalTimer);
@@ -1934,7 +1951,7 @@ export class BoardView {
     const r = this.host.getBoundingClientRect();
     this.w = Math.max(1, r.width);
     this.h = Math.max(1, r.height);
-    this.dpr = Math.min(3, window.devicePixelRatio || 1);
+    this.dpr = Math.min(this.dprCap, window.devicePixelRatio || 1);
     this.canvas.width = Math.round(this.w * this.dpr);
     this.canvas.height = Math.round(this.h * this.dpr);
     this.canvas.style.width = `${this.w}px`;
@@ -1992,6 +2009,75 @@ export class BoardView {
 
   // ------------------------------------------------------------ frame
 
+  /** Until when the board draws every frame (something moved a moment ago). */
+  private busyUntil = 0;
+  private lastDraw = 0;
+  /** What could move between frames, as it was last frame (see `pace`). */
+  private lastScene = '';
+  /** Frames drawn in a row while busy, and how many of them were slow (see `watchSpeed`). */
+  private busyFrames = 0;
+  private slowFrames = 0;
+  private lastBusy = 0;
+  /** The most device pixels per CSS pixel the board draws at; lowered if the device can't keep up. */
+  private dprCap = 3;
+
+  /**
+   * Whether to draw this frame. While anything moves (the camera, a character, an effect, the
+   * die, a hover) the board draws every frame; once the scene has been still for a moment, only
+   * the gentle time-based motion is left (cloud shadows, idle characters, pulsing choices), and
+   * 30 frames a second shows that just as well for half the work. Most of a game is spent
+   * waiting for someone to choose, so this saves a lot of battery.
+   */
+  private pace(now: number): boolean {
+    let scene = `${this.cam.x.toFixed(1)},${this.cam.y.toFixed(1)},${this.cam.z.toFixed(4)}|${this.fx.length}|${this.dirty}|${this.activePid}|${this.hoverPid}|${this.hoverId}|${this.glow.length}|${this.spot}|${this.walkTarget}|${this.w}x${this.h}`;
+    for (const t of this.tokens.values())
+      scene += `|${t.x.toFixed(1)},${t.y.toFixed(1)},${t.hop.toFixed(1)},${t.visible}`;
+    if (this.die) scene += `|d${this.die.phase}${this.die.count}`;
+    if (this.savedDie) scene += `|s${this.savedDie.count}`;
+    const moving =
+      scene !== this.lastScene ||
+      this.fx.length > 0 ||
+      this.die?.phase === 'rolling' ||
+      this.dances.size > 0 ||
+      this.gates.size > 0 ||
+      this.openingActive;
+    this.lastScene = scene;
+    if (moving) this.busyUntil = now + IDLE_AFTER_MS;
+    if (now < this.busyUntil) {
+      this.watchSpeed(now);
+      this.lastDraw = now;
+      return true;
+    }
+    this.lastBusy = 0;
+    // A few ms early is fine: frames arrive on the screen's beat, not exactly on ours.
+    if (now - this.lastDraw < IDLE_FRAME_MS - 4) return false;
+    this.lastDraw = now;
+    return true;
+  }
+
+  /**
+   * A device that can't keep up while things move (most frames slower than about 35 a second,
+   * over a couple of seconds) gets a less sharp board: fewer pixels to fill each frame. Sharp
+   * screens go from 3x to 2x to 1.5x pixels; it never goes below 1.5x, and plain screens are
+   * left alone.
+   */
+  private watchSpeed(now: number) {
+    const dt = now - this.lastBusy;
+    this.lastBusy = now;
+    // The first busy frame, or a hiccup (a tab switch, the board picture being re-drawn): no reading.
+    if (dt <= 0 || dt > 250) return;
+    this.busyFrames++;
+    if (dt > SLOW_FRAME_MS) this.slowFrames++;
+    if (this.busyFrames < SPEED_WINDOW) return;
+    const slow = this.slowFrames / this.busyFrames;
+    this.busyFrames = this.slowFrames = 0;
+    const next = this.dpr > 2 ? 2 : this.dpr > 1.5 ? 1.5 : this.dpr;
+    if (slow > 0.6 && next < this.dpr) {
+      this.dprCap = next;
+      this.resize();
+    }
+  }
+
   private frame = (now: number) => {
     if (!this.alive) return;
     this.raf = requestAnimationFrame(this.frame);
@@ -1999,6 +2085,7 @@ export class BoardView {
     if (this.host.clientWidth !== Math.round(this.w) || this.host.clientHeight !== Math.round(this.h))
       this.resize();
     this.updateCamera();
+    if (!this.pace(now)) return;
     // The chip reads 250% fully zoomed in and 100% fully zoomed out (the whole board, clear of the HUD).
     const near = this.followZoom();
     const far = this.zoomFor(ZOOM_MAX_OUT);

@@ -26,6 +26,23 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: '2026-11-17-faster-loading',
+    date: 'Nov 17, 2026',
+    title: 'Faster and lighter',
+    features: [
+      {
+        tag: 'better',
+        title: 'Loads in a third of the data',
+        text: 'The game now downloads about 4 MB to start instead of 14 MB, and reaches the menu more than twice as fast. It also uses much less memory.',
+      },
+      {
+        tag: 'better',
+        title: 'Smoother, and easier on the battery',
+        text: 'The board draws at full speed while things move and eases off while everyone is thinking. Phones that struggle get a slightly less sharp board instead of a choppy one.',
+      },
+    ],
+  },
+  {
     id: '2026-11-15-stand-in-bots',
     date: 'Nov 15, 2026',
     title: 'Bots that play like you',

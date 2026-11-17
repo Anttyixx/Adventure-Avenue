@@ -313,8 +313,8 @@ const urls = Object.fromEntries([
 
 interface Source {
   data: ImageData;
-  /** Which pixels are the blue accent color. */
-  blue: Uint8Array;
+  /** Which pixels are the blue accent color (null: none, the image has an explicit tint layer or no accent). */
+  blue: Uint8Array | null;
 }
 /** Resolved file mapping, also used by the Lab to inspect base and tint layers. */
 export const ART_SOURCES = Object.fromEntries(
@@ -325,39 +325,141 @@ export const ART_SOURCES = Object.fromEntries(
       { base: base.url, tint: urls[name.replace('.png', '-tint.png')]?.url },
     ]),
 );
+
+/** The pieces of the painted-ground sets that plain grass still draws (foliage.ts: trees, ponds, flowers). */
+const SOLID_GROUND_ART = new Set([
+  'pond-lilies',
+  'pond-rocks',
+  'pond-reeds',
+  'park-tree',
+  'orchard-apple',
+  'scenery-shrubs',
+  'park-flowers',
+  'scenery-rocks',
+  'scenery-sapling',
+  'scenery-mushrooms',
+]);
+
+/**
+ * Art the default look never draws: the painted ground and its scenery (`GROUND_SET` 'solid'
+ * fills plain grass instead). It is not downloaded at start-up; anything that does ask for one of
+ * these (a Lab gallery, a look switched back on) loads it then (see `lateLoad`).
+ */
+const LAZY_FILES: Set<string> = new Set(
+  GROUND_SET === 'solid'
+    ? [landscape, sharpTerrain, connected, details, modules, scenery, park]
+        .flatMap((set) => Object.keys(set))
+        .map((path) => path.replace(/^.*\//, '').replace('-base.png', '.png'))
+        .filter((file) => !SOLID_GROUND_ART.has(file.replace(/(-tint)?\.png$/, '')))
+    : [],
+);
+
+/** Decoded image files by key ("shop", "shop-tint"...). */
+const images = new Map<string, HTMLImageElement>();
+/** Pixels of the images that have been drawn recolored (made the first time each is needed). */
 const sources = new Map<string, Source>();
-/** Tint layers by image name (see the top of the file). */
+/** Tint layers' pixels by image name (see the top of the file), made on first use. */
 const tintLayers = new Map<string, ImageData>();
+const pending = new Map<string, Promise<void>>();
 let loading: Promise<void> | null = null;
 
-/** Load every property image (safe to call more than once). */
+const keyOf = (file: string) => file.replace(/^.*\//, '').replace('.png', '');
+
+/** Download and decode one image file (once). */
+function loadFile(file: string): Promise<void> {
+  let job = pending.get(file);
+  if (!job) {
+    const img = new Image();
+    img.src = urls[file].url;
+    job = img.decode().then(() => void images.set(keyOf(file), img));
+    pending.set(file, job);
+  }
+  return job;
+}
+
+/**
+ * Load the images the game draws (safe to call more than once). Only downloading and decoding
+ * happen here: an image's pixels are read the first time it is drawn recolored.
+ */
 export function loadProps(): Promise<void> {
   loading ??= Promise.all(
-    Object.entries(urls).map(async ([path, { url, explicit }]) => {
-      const key = path.replace(/^.*\//, '').replace('.png', '');
-      const img = new Image();
-      img.src = url;
-      await img.decode();
-      const cv = document.createElement('canvas');
-      cv.width = img.naturalWidth;
-      cv.height = img.naturalHeight;
-      const ctx = cv.getContext('2d', { willReadFrequently: true })!;
-      ctx.drawImage(img, 0, 0);
-      const data = ctx.getImageData(0, 0, cv.width, cv.height);
-      if (key.endsWith('-tint')) {
-        tintLayers.set(key.slice(0, -5), data);
-        return;
-      }
-      const px = data.data;
-      const blue = new Uint8Array(cv.width * cv.height);
-      for (let i = 0; i < blue.length; i++) {
-        const [r, g, b] = [px[i * 4], px[i * 4 + 1], px[i * 4 + 2]];
-        blue[i] = !explicit && b > r + 40 && b > g + 12 ? 1 : 0;
-      }
-      sources.set(key, { data, blue });
-    }),
+    Object.keys(urls)
+      .filter((file) => !LAZY_FILES.has(file))
+      .map(loadFile),
   ).then(() => undefined);
   return loading;
+}
+
+/** Load every image, the ones the default look never draws too (the Lab's galleries show them all). */
+export function loadAllProps(): Promise<void> {
+  return Promise.all(Object.keys(urls).map(loadFile)).then(() => undefined);
+}
+
+const lateListeners = new Set<() => void>();
+/** Hear when an image that was not loaded at start-up arrives, to draw again with it. */
+export function onLateProp(f: () => void): () => void {
+  lateListeners.add(f);
+  return () => lateListeners.delete(f);
+}
+
+/** An image that was left out at start-up was asked for: fetch it (and its tint) and say so. */
+function lateLoad(key: string) {
+  const files = [`${key}.png`, `${key}-tint.png`].filter((f) => urls[f] && !pending.has(f));
+  if (!files.length) return;
+  void Promise.all(files.map(loadFile))
+    .then(() => lateListeners.forEach((f) => f()))
+    .catch(() => undefined);
+}
+
+function pixels(img: HTMLImageElement): ImageData {
+  const cv = document.createElement('canvas');
+  cv.width = img.naturalWidth;
+  cv.height = img.naturalHeight;
+  const ctx = cv.getContext('2d', { willReadFrequently: true })!;
+  ctx.drawImage(img, 0, 0);
+  return ctx.getImageData(0, 0, cv.width, cv.height);
+}
+
+/** An image's pixels (and which are accent blue), read from the decoded file the first time. */
+function sourceOf(key: string): Source | undefined {
+  const hit = sources.get(key);
+  if (hit) return hit;
+  const img = images.get(key);
+  if (!img) {
+    if (urls[`${key}.png`]) lateLoad(key);
+    return undefined;
+  }
+  const data = pixels(img);
+  let blue: Uint8Array | null = null;
+  // Only the oldest art marks its recolorable parts by being blue; the rest uses tint layers.
+  if (!urls[`${key}.png`].explicit) {
+    const px = data.data;
+    blue = new Uint8Array(data.width * data.height);
+    let any = false;
+    for (let i = 0; i < blue.length; i++) {
+      const r = px[i * 4];
+      const g = px[i * 4 + 1];
+      const bl = px[i * 4 + 2];
+      if (bl > r + 40 && bl > g + 12) {
+        blue[i] = 1;
+        any = true;
+      }
+    }
+    if (!any) blue = null;
+  }
+  const src = { data, blue };
+  sources.set(key, src);
+  return src;
+}
+
+function tintOf(key: string): ImageData | undefined {
+  const hit = tintLayers.get(key);
+  if (hit) return hit;
+  const img = images.get(`${key}-tint`);
+  if (!img) return undefined;
+  const data = pixels(img);
+  tintLayers.set(key, data);
+  return data;
 }
 
 function rgbToHsl(r: number, g: number, b: number): [number, number, number] {
@@ -399,13 +501,27 @@ export function propCanvas(key: PropKey, color: string): HTMLCanvasElement | nul
   const ck = `${key}|${color}`;
   const hit = tinted.get(ck);
   if (hit) return hit;
-  const src = sources.get(key);
+  const img = images.get(key);
+  if (!img) {
+    if (urls[`${key}.png`]) lateLoad(key);
+    return null;
+  }
+  // Nothing to recolor (no tint layer, newer art): the image as it is, with no pixel work.
+  if (!images.has(`${key}-tint`) && urls[`${key}.png`].explicit) {
+    const plain = document.createElement('canvas');
+    plain.width = img.naturalWidth;
+    plain.height = img.naturalHeight;
+    plain.getContext('2d')!.drawImage(img, 0, 0);
+    tinted.set(ck, plain);
+    return plain;
+  }
+  const src = sourceOf(key);
   if (!src) return null;
   const n = parseInt(color.slice(1), 16);
   const [th, ts, tl] = rgbToHsl((n >> 16) & 255, (n >> 8) & 255, n & 255);
   const out = new ImageData(new Uint8ClampedArray(src.data.data), src.data.width, src.data.height);
   const px = out.data;
-  const layer = tintLayers.get(key);
+  const layer = tintOf(key);
   if (layer) {
     // Colorize the grey layer and draw it over the image.
     const tp = layer.data;
@@ -422,7 +538,7 @@ export function propCanvas(key: PropKey, color: string): HTMLCanvasElement | nul
       for (let k = 0; k < 3; k++) px[i + k] = (c[k] * a + px[i + k] * under * (1 - a)) / outA;
       px[i + 3] = outA * 255;
     }
-  } else {
+  } else if (src.blue) {
     for (let i = 0; i < src.blue.length; i++) {
       if (!src.blue[i]) continue;
       const [, , l] = rgbToHsl(px[i * 4], px[i * 4 + 1], px[i * 4 + 2]);
@@ -467,11 +583,11 @@ const contentBoxes = new Map<string, { x: number; y: number; w: number; h: numbe
 function contentBox(key: PropKey, cv: HTMLCanvasElement) {
   const hit = contentBoxes.get(key);
   if (hit) return hit;
-  const src = sources.get(key);
+  const src = sourceOf(key);
   let box = { x: 0, y: 0, w: cv.width, h: cv.height };
   if (src) {
     const { data, width, height } = src.data;
-    const tint = tintLayers.get(key)?.data;
+    const tint = tintOf(key)?.data;
     let x0 = width;
     let y0 = height;
     let x1 = -1;

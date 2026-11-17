@@ -11,5 +11,8 @@
   "dependencies": {
     "@aa/engine": "*",
     "peerjs": "^1.5.4"
+  },
+  "devDependencies": {
+    "sharp": "^0.35.5"
   }
 }

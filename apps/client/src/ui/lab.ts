@@ -33,7 +33,7 @@ import {
   type TradeOffer,
 } from '@aa/engine';
 import { SHOP_TIERS, SHOP_TIER_NAMES, STAR3_TIERS, STAR3_TIER_NAMES, propertyIconURL } from '../art';
-import { propIconURL, drawProp, ART_SOURCES, type PropKey } from '../props';
+import { propIconURL, drawProp, loadAllProps, ART_SOURCES, type PropKey } from '../props';
 
 /** The grey unowned property art is drawn in (as on the board). */
 const UNOWNED_ART = '#8a94a8';
@@ -83,17 +83,7 @@ import {
   tradeOnBoard,
 } from './pick';
 
-export const LAB_SECTIONS = [
-  { id: 'cards', title: 'Player cards' },
-  { id: 'prompts', title: 'Action bar & banners' },
-  { id: 'board', title: 'Board effects' },
-  { id: 'dialogs', title: 'Dialogs' },
-  { id: 'games', title: 'Venture' },
-  { id: 'arcade', title: 'Arcade Lab' },
-  { id: 'turns', title: 'Turn moments' },
-  { id: 'art', title: 'Property designs' },
-  { id: 'panels', title: 'Log, market & results' },
-] as const;
+export { LAB_SECTIONS } from './lab-sections';
 
 /**
  * The control panel's tabs, each holding some sections. "New" shows only the controls in
@@ -2102,7 +2092,9 @@ export async function openLab(app: HTMLElement, section?: string) {
     );
     row(
       s,
-      btn('Tile sprites and tint layers', () => {
+      btn('Tile sprites and tint layers', async () => {
+        // This gallery shows every image, the ones the game doesn't load at start-up too.
+        await loadAllProps();
         const rows = Object.entries(ART_SOURCES).map(([key, source]) =>
           h(
             'div',

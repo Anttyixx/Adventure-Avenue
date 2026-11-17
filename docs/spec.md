@@ -1308,6 +1308,12 @@ fees: promotions (suits) drive the economy, shares and investing build the lead.
 
 ## Interface and art
 
+**Loading and speed.** The game downloads only the art the current look draws (about 4 MB to
+start, as lossless WebP) and loads the dev tools, the board builder and the release notes when
+they are opened. The board draws every frame while anything moves and 30 frames a second while
+the scene is still; a device that can't keep up gets a less sharp board (3x pixels down to 2x,
+then 1.5x) instead of a choppy one. Details: "Loading and speed" in `docs/architecture.md`.
+
 **Board and HUD (Oct 2026).** The board is centered on the whole screen; the toolbar, player cards
 and options panel float over it. Grass continues seamlessly past the board edge. Every property
 tile has a solid border in its district's color; an owned tile is filled with its owner's color

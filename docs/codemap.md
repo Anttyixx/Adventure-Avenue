@@ -138,15 +138,15 @@ vanish and launch-out poses used by `BoardView.portalStep`.
 
 ### Art
 
-| File                | What it does                                                                                                       | Key exports                                                                                                |
-| ------------------- | ------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------- |
-| `props.ts`          | Property images from `assets/props/*.png`, recolored to the owner (a `-tint.png` layer, or the image's blue parts) | `loadProps`, `drawProp`, `propCanvas`, `propIconURL`, `PropKey`                                            |
-| `art.ts`            | Shop and 3-Star Shop designs by value tier (vector fallbacks), icons for the UI                                    | `SHOP_TIERS`, `SHOP_TIER_NAMES`, `STAR3_TIERS`, `tierFor`, `drawShop`, `drawStar3`, `propertyIconURL`      |
-| `sprites.ts`        | Pixel characters (`assets/townsfolk`): idle/walk sheets, portraits                                                 | `CHARACTERS`, `loadCharacters`, `drawCharacter`, `portraitURL`, `bodyURL`, `characterURL`, `freeCharacter` |
-| `icons.ts`          | Vector icons: suits, boon/boom, wild card, coin, sparkle                                                           | `suitIconURL`, `boonIconURL`, `wildIconURL`, `drawCoin`, `drawSparkle`, `SUIT_COLORS`                      |
-| `coins.ts`          | Turns every "G" after an amount on screen into a coin icon                                                         | `installCoins`                                                                                             |
-| `assets/props/`     | Building and shop PNGs (`shop0-4`, `star0-2`, `circus0-3`, plot buildings, bank)                                   |                                                                                                            |
-| `assets/townsfolk/` | Character sprite sheets (CC BY 4.0, see Credits)                                                                   |                                                                                                            |
+| File                | What it does                                                                                                       | Key exports                                                                                                                |
+| ------------------- | ------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------- |
+| `props.ts`          | Property images from `assets/props/*.png`, recolored to the owner (a `-tint.png` layer, or the image's blue parts) | `loadProps` (only the art that is drawn), `loadAllProps`, `onLateProp`, `drawProp`, `propCanvas`, `propIconURL`, `PropKey` |
+| `art.ts`            | Shop and 3-Star Shop designs by value tier (vector fallbacks), icons for the UI                                    | `SHOP_TIERS`, `SHOP_TIER_NAMES`, `STAR3_TIERS`, `tierFor`, `drawShop`, `drawStar3`, `propertyIconURL`                      |
+| `sprites.ts`        | Pixel characters (`assets/townsfolk`): idle/walk sheets, portraits                                                 | `CHARACTERS`, `loadCharacters`, `drawCharacter`, `portraitURL`, `bodyURL`, `characterURL`, `freeCharacter`                 |
+| `icons.ts`          | Vector icons: suits, boon/boom, wild card, coin, sparkle                                                           | `suitIconURL`, `boonIconURL`, `wildIconURL`, `drawCoin`, `drawSparkle`, `SUIT_COLORS`                                      |
+| `coins.ts`          | Turns every "G" after an amount on screen into a coin icon                                                         | `installCoins`                                                                                                             |
+| `assets/props/`     | Building and shop PNGs (`shop0-4`, `star0-2`, `circus0-3`, plot buildings, bank)                                   |                                                                                                                            |
+| `assets/townsfolk/` | Character sprite sheets (CC BY 4.0, see Credits)                                                                   |                                                                                                                            |
 
 ### UI: `apps/client/src/ui`
 

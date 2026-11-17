@@ -13,9 +13,7 @@ import { cleanCode } from '../net/protocol';
 import { clear, h } from './dom';
 import { NAME_MAX, cleanName, ensureProfile, loadProfile, saveProfile } from '../profile';
 import { charButton, pickCharacter } from './charpick';
-import { hasUnseenUpdate } from '../changelog';
 import { openCredits } from './credits';
-import { openWhatsNew } from './whatsnew';
 import { closeSoundPopover, soundButton } from './soundpanel';
 
 const TOWN_COLORS = ['#f2a7a0', '#9fd3f0', '#a8e0a0', '#f5d77a', '#cdb4f0', '#f7bfdc', '#8fe3d6'];
@@ -330,9 +328,14 @@ export function mainMenu(
     { class: 'btn menu-sound menu-more', 'aria-haspopup': 'dialog', 'aria-expanded': 'false' },
     '☰ Menu',
   );
+  // The release notes are a big file of text: they load on their own, after the menu is up.
+  let unseen = false;
   const badge = () => {
-    menuBtn.querySelector('.new-dot')?.remove();
-    if (hasUnseenUpdate()) menuBtn.append(h('span', { class: 'new-dot' }, 'New'));
+    void import('../changelog').then(({ hasUnseenUpdate }) => {
+      unseen = hasUnseenUpdate();
+      menuBtn.querySelector('.new-dot')?.remove();
+      if (unseen) menuBtn.append(h('span', { class: 'new-dot' }, 'New'));
+    });
   };
   badge();
   menuBtn.onclick = () => openMenu();
@@ -384,8 +387,8 @@ export function mainMenu(
           item(
             "What's new",
             'The latest changes to the game',
-            () => openWhatsNew(root, badge),
-            hasUnseenUpdate(),
+            () => void import('./whatsnew').then(({ openWhatsNew }) => openWhatsNew(root, badge)),
+            unseen,
           ),
           item('Board collection', 'View, add, remove and edit your boards', () => handlers.onCollection()),
           item('Credits', 'Everyone whose art and music the game uses', () => openCredits(root)),
