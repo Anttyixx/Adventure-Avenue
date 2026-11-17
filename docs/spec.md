@@ -1234,6 +1234,18 @@ toggle (speeds up CPU turns and animations), Full screen, the Sound sliders and 
 game button. Quit asks for confirmation in a dialog over the menu before returning to the main
 menu (no question once the game is over).
 
+**Auto play.** Under Guide the menu has an **Auto play** switch for each person playing on this
+device ("Auto play: off / on"; with several people here, one each, "Auto play (Rosa): off"). While
+it is on, a bot plays that person's turns and answers everything asked of them (routes, purchases,
+trades offered to them, auction bids, arcade picks) until they turn it off. It is the same bot
+that covers a disconnected player: Hard, in a style read from how they have played (see
+Disconnects). It takes over from the person's next choice: a choice already on screen is still
+theirs to make. Their player card shows an "Auto play" tag, the status line says when it starts
+and stops, a line in the menu reminds them it is on, and Fast CPU speed hurries its turns too.
+It works in games on one device and online (each device switches it for its own players; the
+other players just see the choices arrive). It is not saved: a game continued later starts with
+it off.
+
 ## CPU players
 
 Every CPU has a **difficulty** (Easy, Normal, Hard or Master, picked per bot in game setup) and a

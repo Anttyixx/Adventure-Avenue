@@ -12,6 +12,7 @@ import {
   dominated,
   K,
   PLAYER_COLORS,
+  cpuBidLimit,
   cpuDecide,
   type DecisionAnswer,
   type DecisionKind,
@@ -56,7 +57,7 @@ import { openingDelay } from './game-opening';
 import { sound, type Sfx, type Track } from './audio';
 import { closeSoundPopover } from './ui/soundpanel';
 import type { GameLink } from './net/link';
-import { inviteURL } from './net/protocol';
+import { inviteURL, type AuctionLive } from './net/protocol';
 import { IS_DEV_BUILD } from './build';
 
 const FAST_KEY = 'adventure-avenue-fast';
@@ -145,6 +146,11 @@ export class HotSeat implements GameIO {
       quitQuestion: () => this.quitQuestion(),
       onGuide: () => guideModal(this.hud, this.G),
       onPause: (open) => this.setPaused(open),
+      autoPlayers: () =>
+        this.G.players
+          .filter((p) => !p.bankrupt && this.localHuman(p.id))
+          .map((p) => ({ pid: p.id, name: p.name, on: this.auto.has(p.id) })),
+      onToggleAuto: (pid) => this.setAuto(pid, !this.auto.has(pid)),
     });
     // The cards show net worth with stock moves counted once they have been announced.
     this.hud.worthOf = (p) => this.shownWorth(p);
@@ -260,10 +266,46 @@ export class HotSeat implements GameIO {
 
   updateSpeed() {
     const p = this.game.current;
-    this.speed = this.fast && p?.cpu ? FAST_CPU_SPEED : 1;
+    // Fast CPU speed also hurries a bot playing for someone on Auto play.
+    this.speed = this.fast && (p?.cpu || (p && this.auto.has(p.id))) ? FAST_CPU_SPEED : 1;
     // An online copy that fell behind the host hurries its animations to catch up.
     if (this.link?.behind(this.seq)) this.speed = Math.min(this.speed, 0.12);
     this.board.speed = this.speed;
+  }
+
+  /**
+   * Auto play: people on this device a bot is playing for until they turn it off (the game
+   * menu). The bot is the same stand-in that covers a disconnected player: Hard, in a style read
+   * from how they have played (`cpuDecide` for a player who is not a CPU). It takes over from
+   * their next choice; a choice already on screen is still theirs to make. Not saved: a game
+   * continued later starts with it off.
+   */
+  private auto = new Set<number>();
+
+  setAuto(pid: number, on: boolean) {
+    if (on) this.auto.add(pid);
+    else this.auto.delete(pid);
+    this.hud.autoPids = new Set(this.auto);
+    this.updateSpeed();
+    this.refresh();
+    const name = this.G.players[pid]?.name ?? 'Player';
+    this.hud.tick(on ? `Auto play on: a bot plays for ${name}.` : `Auto play off: ${name} is back.`);
+  }
+
+  /** True when a bot answers for this player on this device (a CPU seat here is not this). */
+  private autoPlays(pid: number): boolean {
+    return this.auto.has(pid);
+  }
+
+  /**
+   * A bot's answer for a person on Auto play. Online, the copies of the game must stay in step
+   * and only the host's random numbers count, so a guest's bot leaves them as they were.
+   */
+  private autoAnswer(req: DecisionRequest): unknown {
+    const keep = this.G.rng;
+    const ans = cpuDecide(this.G, req);
+    if (this.link && this.link.role !== 'host') this.G.rng = keep;
+    return ans;
   }
 
   /** What the quit dialog asks (null: the game is over, so just leave). */
@@ -459,7 +501,7 @@ export class HotSeat implements GameIO {
     // A live auction is run here for everyone at once (bids from people here and CPUs).
     if (req.kind === 'auction') return (await this.runAuction(seq, req as AuctionReq)) as DecisionAnswer<T>;
     const p = this.G.players[req.pid];
-    if (p.cpu) {
+    if (p.cpu || this.autoPlays(p.id)) {
       this.spectate(req as DecisionRequest);
       const ans = cpuDecide(this.G, req);
       this.waitOn(req as DecisionRequest);
@@ -507,9 +549,9 @@ export class HotSeat implements GameIO {
     if (who !== 'local') this.spectate(req);
     if (link.role === 'host') {
       let ans: unknown;
-      if (who === 'local') {
+      if (who === 'local' && !this.autoPlays(req.pid)) {
         ans = await this.oneAtATime(() => this.askHuman(req));
-      } else if (who === 'cpu') {
+      } else if (who === 'cpu' || who === 'local') {
         ans = cpuDecide(G, req);
         this.waitOn(req);
         await this.showCpu(req, ans);
@@ -525,7 +567,12 @@ export class HotSeat implements GameIO {
     }
     // Replaying a turn after rejoining: decisions already made aren't asked again.
     if (who === 'local' && !link.known?.(seq)) {
-      const mine = await this.oneAtATime(() => this.askHuman(req));
+      let mine: unknown;
+      if (this.autoPlays(req.pid)) {
+        mine = this.autoAnswer(req);
+        this.waitOn(req);
+        await this.showCpu(req, mine);
+      } else mine = await this.oneAtATime(() => this.askHuman(req));
       if (this.dead) return never();
       link.submit(seq, mine);
     } else if (who !== 'local') {
@@ -555,8 +602,9 @@ export class HotSeat implements GameIO {
       this.auction ?? new AuctionView(this.hud, G, req.sq, req.seller, req.opening, req.step, req.bidders);
     this.auction = view;
     const live = new LiveAuction(G, req, view, {
-      cpu: (pid) => who(pid) === 'cpu',
-      anyPerson: req.bidders.some((pid) => who(pid) !== 'cpu'),
+      // A person here on Auto play bids like a CPU.
+      cpu: (pid) => who(pid) === 'cpu' || this.autoPlays(pid),
+      anyPerson: req.bidders.some((pid) => who(pid) !== 'cpu' && !this.autoPlays(pid)),
       speed: this.speed,
       // Bids from friends online need time to arrive (see `TIMING.auctionGrace`).
       grace: req.bidders.some((pid) => who(pid) === 'remote') ? T.auctionGrace : 0,
@@ -564,7 +612,7 @@ export class HotSeat implements GameIO {
     });
     this.liveAuction = live;
     view.openBar(
-      req.bidders.filter((pid) => who(pid) === 'local'),
+      req.bidders.filter((pid) => who(pid) === 'local' && !this.autoPlays(pid)),
       (pid, act) => live.act(pid, act),
     );
     if (link)
@@ -594,9 +642,27 @@ export class HotSeat implements GameIO {
         this.auction ??
         new AuctionView(this.hud, this.G, req.sq, req.seller, req.opening, req.step, req.bidders);
       this.auction = view;
-      link.onAuctionLive = (s, l) => s === seq && view.show(l);
+      // On Auto play this device's player bids by itself: after each change, the next step up
+      // while it is within what the bot would pay, else a pass.
+      const mine = req.bidders.filter((pid) => link.who(pid) === 'local');
+      let autoTimer = 0;
+      const autoBid = (l: AuctionLive) => {
+        clearTimeout(autoTimer);
+        const pid = mine.find((id) => this.autoPlays(id));
+        if (pid == null || l.passed.includes(pid) || l.highBidder === pid || l.leftMs <= 0) return;
+        const bid = view.canBid(pid, l) && view.next(l) <= cpuBidLimit(this.G, pid, req.sq);
+        autoTimer = window.setTimeout(
+          () => !this.dead && link.auctionSend?.(seq, bid ? 'bid' : 'pass'),
+          T.auctionCpuMin + Math.random() * (T.auctionCpuMax - T.auctionCpuMin),
+        );
+      };
+      link.onAuctionLive = (s, l) => {
+        if (s !== seq) return;
+        view.show(l);
+        autoBid(l);
+      };
       view.openBar(
-        req.bidders.filter((pid) => link.who(pid) === 'local'),
+        mine.filter((pid) => !this.autoPlays(pid)),
         (_pid, act) => link.auctionSend?.(seq, act),
       );
     }

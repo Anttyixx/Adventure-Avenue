@@ -58,6 +58,10 @@ export interface HudCallbacks {
   onPause?(open: boolean): boolean;
   /** The question to confirm quitting with, or null to quit without asking (game over). */
   quitQuestion?(): string | null;
+  /** The people playing on this device, for the menu's Auto play switches (`on`: a bot plays for them). */
+  autoPlayers?(): { pid: number; name: string; on: boolean }[];
+  /** Turn Auto play on or off for one of them. */
+  onToggleAuto?(pid: number): void;
 }
 
 /** The narrowest a centered action bar may get before it moves to the bottom left corner. */
@@ -403,6 +407,42 @@ export class Hud {
   private menuModal: { close(): void } | null = null;
   /** Shown in the menu while it has paused the game (games on this device). */
   private pausedNote = h('div', { class: 'gm-paused', hidden: true }, 'Game paused');
+  /** The menu's Auto play switches: one per person playing on this device. */
+  private autoRows = h('div', { class: 'gm-auto' });
+  /** Players a bot is playing for (Auto play): their cards say so. */
+  autoPids = new Set<number>();
+
+  /** Draw the Auto play switches as they stand now (each time the menu opens or one is tapped). */
+  private drawAutoRows() {
+    clear(this.autoRows);
+    const players = this.cb.autoPlayers?.() ?? [];
+    for (const a of players) {
+      // One person here: "Auto play". Several: each by name.
+      const label = players.length > 1 ? `Auto play (${a.name})` : 'Auto play';
+      this.autoRows.append(
+        h(
+          'button',
+          {
+            class: `gm-item gm-toggle ${a.on ? 'on' : ''}`,
+            role: 'menuitemcheckbox',
+            'aria-checked': String(a.on),
+            title: a.on
+              ? 'A bot is playing for you. Tap to take over again.'
+              : 'Let a bot play for you until you turn this off.',
+            onclick: () => {
+              this.cb.onToggleAuto?.(a.pid);
+              this.drawAutoRows();
+            },
+          },
+          `${label}: ${a.on ? 'on' : 'off'}`,
+        ),
+      );
+    }
+    if (players.some((a) => a.on))
+      this.autoRows.append(
+        h('div', { class: 'gm-note' }, 'A bot plays your turns in your style. Turn it off to take over.'),
+      );
+  }
   /** The menu behind the Menu button: rules, settings and quit. */
   private buildMenu() {
     const item = (label: string, onclick: () => void, cls = '') =>
@@ -425,6 +465,7 @@ export class Hud {
         'Guide',
         close(() => this.cb.onGuide()),
       ),
+      this.autoRows,
       this.fastBtn,
     );
     if (document.fullscreenEnabled) this.menu.append(item('Full screen', toggleFullscreen));
@@ -441,6 +482,7 @@ export class Hud {
     this.menuBtn.classList.toggle('on', open);
     if (open) {
       closeSoundPopover(this.musicBtn);
+      this.drawAutoRows();
       const m = this.modal('Menu', this.menu, { onClose: () => this.toggleMenu(false) });
       m.el.classList.add('menu-modal');
       m.el.parentElement!.classList.add('menu-wrap');
@@ -868,6 +910,7 @@ export class Hud {
     if (p.boost > 1) tags.push('Fees +30%');
     if (p.motelMoves) tags.push(`Motel +${p.motelMoves} spaces`);
     if (p.bankrupt) tags.push('Bankrupt');
+    if (this.autoPids.has(p.id) && !p.bankrupt) tags.push('Auto play');
     // Reached the target: net worth and portrait pulse and glow (they win at the bank).
     const canWin = !p.bankrupt && nw >= G.target && !G.over;
     el.classList.toggle('can-win', canWin);

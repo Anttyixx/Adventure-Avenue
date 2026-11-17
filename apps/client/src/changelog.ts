@@ -26,6 +26,18 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: '2026-11-17-auto-play',
+    date: 'Nov 17, 2026',
+    title: 'Auto play',
+    features: [
+      {
+        tag: 'new',
+        title: 'Let a bot play for you',
+        text: 'Need to step away? Turn on Auto play in the game menu and a bot plays your turns in your style until you turn it off. It works in online games too.',
+      },
+    ],
+  },
+  {
     id: '2026-11-17-faster-loading',
     date: 'Nov 17, 2026',
     title: 'Faster and lighter',

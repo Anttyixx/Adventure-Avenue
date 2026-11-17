@@ -554,7 +554,9 @@ if (!(await ask(`Delete ${d.name}?`, 'Its 4 properties will be removed from the 
   the board builder's Menu and the main menu's Menu (What's new, Board editor, Credits). A
   "New" tag (`.tag`) can follow a row's title; the button that opens the menu carries the red
   "New" dot instead.
-- The in-game menu (`.game-menu .gm-item`) follows the same idea.
+- The in-game menu (`.game-menu .gm-item`) follows the same idea. Its switches (`.gm-toggle`:
+  Auto play, Fast CPU) read "Name: on / off" and get a green wash while on; a muted 12px note
+  (`.gm-note`) may sit under a switch that is on.
 
 ### 5.9 Card grid pop-up (choose one of many pictured things)
 

@@ -148,6 +148,12 @@ room, Continue resumes the saved game, and the board editor (`ui/editor.ts`).
 - It also handles pausing (the menu), Fast CPU speed, saving at each turn start, and the game
   over sequence.
 
+**Auto play.** `HotSeat.auto` holds the people on this device a bot is playing for (the game
+menu's switch; `setAuto`). `decide` / `decideOnline` answer for them with `cpuDecide` (the Hard
+stand-in in their own style) instead of asking, a guest's bot leaving `G.rng` untouched
+(`autoAnswer`) since only the host's random numbers count; live auctions treat them as CPUs
+(the host's `LiveAuction`, or timed bids sent by a guest).
+
 ### The board (`board.ts`)
 
 `BoardView` draws everything on one `<canvas>`:

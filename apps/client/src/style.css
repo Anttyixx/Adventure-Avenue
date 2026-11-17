@@ -6357,6 +6357,16 @@ input[type='range'] {
 .gm-paused[hidden] {
   display: none;
 }
+/* Auto play: a switch per person on this device, laid out like the menu's other rows, with a
+   line under them while a bot is playing for someone. */
+.gm-auto {
+  display: contents;
+}
+.gm-note {
+  padding: 0 4px;
+  font-size: 12px;
+  color: var(--muted);
+}
 .gm-item.resume {
   background: var(--accent);
   color: #3b2a00;
