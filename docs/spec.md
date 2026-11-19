@@ -304,7 +304,7 @@ card backgrounds, borders or captions. The enlarged art fills each column; no ti
 Accessible button names and hints remain available. Selection uses a glow, with scroll position
 and keyboard focus kept after picking a tile.
 The categories are Buildings (Property, Districts, Jackpot), Suits (Spade, Heart, Diamond, Club, Change suit, Random suit),
-Specials (Venture, Roll-on, Take-a-break, Boon, Boom, Stockbroker, Arcade), and Transport
+Specials (Gain 10G, Lose 10G, Venture, Roll-on, Take-a-break, Boon, Boom, Stockbroker, Arcade, Price Up, Swap), and Transport
 (Warp, Cannon, Taxi).
 Choosing a tile keeps Draw active; clicking or dragging on the board places it. Returning to
 Draw remembers the last chosen tile. The pane is hidden for every other tool and board settings.
@@ -2213,3 +2213,9 @@ The cream/gold vault sprite is fixed-color (`jackpot-v21/jackpot-base.png`); the
 `symbols-v22/` supplies blue Spade, red Heart, yellow Diamond and green Club sprites, the freestanding Random Suit shuffle (no card), the new purple/gold Suit Yourself card, a clean three-coin pink Boom burst, and a painted flat four-point Warp. Warp has equal visible width/height, no pedestal, a fixed cream rim and aligned grey tint layer for pair colors. Player cards and player pages use these same suits, Boom and the existing green Boon burst from v16; missing suits remain faint vector ghosts. All prior PNGs and vector fallbacks stay available through `SYMBOL_ART_SET = previous` in `props.ts`. No game rules change.
 
 During a pop-up, hovering the stack may unfold it for reading only; card/chip taps and keyboard activation remain blocked, as do zoom controls. View board restores ordinary interaction. The layout is named Stack and uses overlapping cards as its icon; stored `smart` preferences remain compatible.
+
+### Gain 10G and Lose 10G tiles
+
+Two unowned special tiles are available in Draw → Specials on both square and hex boards: `gain` (blue plus-coin icon) and `loss` (red minus-coin icon). Stopping pays exactly `K.cashTile` (10G) from the bank to the player, or from the player to the bank, respectively. Passing does nothing. Every stopping transport arrival counts, including cannon, balloon, taxi, warp, venture movement and either participant in a swap; a portal exit only counts if no movement remains. Shared arrival handling prevents double payments when transport is followed by landing. These are public cash transfers, unaffected by shop fees, Boon/Boom, closure, share dividends or other multipliers. A loss uses ordinary debt handling if cash is insufficient. No venture card or extra decision is offered.
+
+Both tiles save/export/import as ordinary board squares, with no owner, district or pot. Map glyphs are `+` and `-`. Existing default boards remain unchanged. Names, inspector descriptions, the Guide and activity log explain the fixed change; the log retains the landing root with a clickable money sub-entry. The action bar immediately announces one gain/loss result; sprites and floating money feedback show it on the board. Bots count the change only for stopping destinations. New fixed-color transparent PNGs are in `money-v23/`, with no tint layer or blue recoloring; the existing build converts them to lossless WebP. Earlier artwork is preserved. Online protocol 59 prevents mismatched clients from sharing a game. UI Lab: Gain and Lose tiles; Board builder: money tiles.

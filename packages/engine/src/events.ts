@@ -21,7 +21,7 @@ export type GameEvent =
    */
   | { type: 'warp'; pid: number; to: number; from?: number; how?: TravelKind; other?: number }
   | { type: 'land'; pid: number; sq: number }
-  /** `sq`: the tile involved (investment/contribution destination, or a Jackpot payout's source). */
+  /** `sq`: the tile involved (investment/contribution destination, or a Jackpot/Gain tile payout's source). */
   | { type: 'money'; from: number; to: number; amount: number; reason: string; sq?: number }
   | { type: 'owner'; sq: number; owner: number }
   | { type: 'value'; sqs: number[] }

@@ -50,6 +50,8 @@ export type PropKey =
   | 'agency'
   | 'bank'
   | 'jackpot'
+  | 'gain'
+  | 'loss'
   | 'venture'
   | 'spade'
   | 'heart'
@@ -187,6 +189,11 @@ const properties = import.meta.glob<string>('./assets/properties-v3/*.png', {
   query: '?url',
   import: 'default',
 });
+const moneyArt = import.meta.glob<string>('./assets/money-v23/*.png', {
+  eager: true,
+  query: '?url',
+  import: 'default',
+});
 const jackpotArt = import.meta.glob<string>('./assets/jackpot-v21/*.png', {
   eager: true,
   query: '?url',
@@ -217,6 +224,10 @@ const symbolArt = import.meta.glob<string>('./assets/symbols-v22/*.png', {
 });
 
 const urls = Object.fromEntries([
+  ...Object.entries(moneyArt).map(([path, url]) => [
+    path.replace(/^.*\//, '').replace('-base.png', '.png'),
+    { url, explicit: true },
+  ]),
   ...Object.entries(jackpotArt).map(([path, url]) => [
     path.replace(/^.*\//, '').replace('-base.png', '.png'),
     { url, explicit: true },

@@ -111,6 +111,10 @@ export function paymentActivity(G: GameState, event: Extract<GameEvent, { type: 
       return payer ? result(`${payer} bought shares for ${amount}.`, 'stock') : null;
     case 'Stock sale':
       return receiver ? result(`${receiver} sold shares for ${amount}.`, 'stock') : null;
+    case 'Gain tile':
+      return receiver ? result(`${receiver} gained ${amount}.`, 'money') : null;
+    case 'Loss tile':
+      return payer ? result(`${payer} lost ${amount}.`, 'money') : null;
     case 'Jackpot contribution':
       return payer ? result(`${payer} added ${amount} to the jackpot.`, 'money') : null;
     case 'Jackpot payout':
@@ -129,7 +133,9 @@ export function paymentLogMatches(
   text: string,
 ) {
   const actor =
-    G.players[['Stock sale', 'Jackpot payout'].includes(payment.reason) ? payment.to : payment.from]?.name;
+    G.players[
+      ['Stock sale', 'Jackpot payout', 'Gain tile'].includes(payment.reason) ? payment.to : payment.from
+    ]?.name;
   if (!actor || !text.startsWith(`${actor} `)) return false;
   const patterns: Record<string, RegExp> = {
     Purchase: / bought a shop for /,
@@ -141,6 +147,8 @@ export function paymentLogMatches(
     Stock: / bought \d+ .+ shares for /,
     'Stock sale': / sold \d+ .+ shares for /,
     Fee: / paid /,
+    'Gain tile': / gained .* on Gain /,
+    'Loss tile': / lost .* on Lose /,
     'Jackpot contribution': / added .* to the jackpot/,
     'Jackpot payout': / collected .* from the jackpot/,
   };

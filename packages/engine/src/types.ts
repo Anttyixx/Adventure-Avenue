@@ -14,6 +14,9 @@ export type SquareType =
   | 'bank'
   /** Unowned shared pot: pay when passing, collect when stopping. */
   | 'jackpot'
+  /** Fixed cash changes on stopping arrivals only. */
+  | 'gain'
+  | 'loss'
   | 'venture'
   | SuitType
   | 'change'

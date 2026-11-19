@@ -142,6 +142,7 @@ function basics(G: GameState | null): Node[] {
           'Venture (and suit squares): flip a venture card.',
           `Jackpot: each passing player adds ${fmt(K.jackpotPass)} to its pot. Stop on it to collect everything and reset the pot. No one owns it.`,
           'Roll on: roll again. Take a break: your shops close until your next turn.',
+          `Gain ${K.cashTile}G (blue) and Lose ${K.cashTile}G (red): receive or pay the bank when you stop here, including arriving by transport. Passing does nothing.`,
           'Boon and Boom: earn a share of the fees others pay.',
           'Warp: stop on it to jump to its partner, or gold ones to the bank. Portals beside tiles: step through to the matching portal (arrows show one-way ones).',
           'Cannon: fire to another player. Arcade: play a game (see the Arcade games tab).',

@@ -30,6 +30,8 @@ export const PLACEABLE: SquareType[] = [
   'shop',
   'bank',
   'jackpot',
+  'gain',
+  'loss',
   'venture',
   'spade',
   'heart',

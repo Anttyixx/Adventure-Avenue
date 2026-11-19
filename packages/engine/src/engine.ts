@@ -91,6 +91,8 @@ type Payment = [Player | null, Player | null, number];
 const ARRIVAL_NAMES: Record<string, string> = {
   bank: 'Bank',
   jackpot: 'Jackpot',
+  gain: 'Gain 10G',
+  loss: 'Lose 10G',
   venture: 'Venture square',
   change: 'Change-of-suit tile',
   randomSuit: 'Random suit tile',
@@ -401,6 +403,8 @@ export class Game {
         }
       } else if (sq.t === 'jackpot') {
         score += index === path.length - 1 ? (sq.pot ?? 0) : -K.jackpotPass;
+      } else if ((sq.t === 'gain' || sq.t === 'loss') && index === path.length - 1) {
+        score += sq.t === 'gain' ? K.cashTile : -K.cashTile;
       } else if (sq.t === 'bank') {
         if (held.filter(Boolean).length + p.wild >= 4) score += 500;
       } else if (sq.t === 'plot' && sq.b === 'checkpoint' && sq.owner >= 0 && sq.owner !== p.id) {
@@ -516,6 +520,22 @@ export class Game {
     if (SUIT_TYPES.includes(dest.t) || dest.t === 'change' || dest.t === 'randomSuit')
       await this.collectSuit(p, dest);
     if (dest.t === 'jackpot' && !passing) await this.collectJackpot(p, dest);
+    if ((dest.t === 'gain' || dest.t === 'loss') && !passing) await this.cashTile(p, dest);
+  }
+
+  /** Fixed public cash, without shop fees, commissions or dividends; never triggered by passing. */
+  async cashTile(p: Player, sq: Square) {
+    const gain = sq.t === 'gain';
+    await this.pay(gain ? null : p, gain ? p : null, K.cashTile, gain ? 'Gain tile' : 'Loss tile', sq.id);
+    await this.log(
+      `${p.name} ${gain ? 'gained' : 'lost'} ${K.cashTile}G on ${gain ? 'Gain' : 'Lose'} ${K.cashTile}G.`,
+      p.id,
+      'money',
+      [],
+      { sq: sq.id },
+    );
+    // A swapped-in player is not the current player and will not reach this turn's debt check.
+    if (!gain && p.cash < 0 && p !== this.current) await this.settleDebt(p);
   }
 
   /** The shared pot has no owner, dividends or commissions. A landing never charges a pass fee. */
@@ -592,6 +612,10 @@ export class Game {
         return this.landPlot(p, sq);
       case 'bank':
         return this.bankVisit(p, true);
+      case 'gain':
+      case 'loss':
+        if (!arrivalHandled) await this.cashTile(p, sq);
+        return;
       case 'jackpot':
         if (!arrivalHandled) await this.collectJackpot(p, sq);
         return;

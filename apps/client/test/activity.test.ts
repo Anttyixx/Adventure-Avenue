@@ -155,3 +155,15 @@ describe('Jackpot money messages', () => {
     expect(paymentLogMatches(G, event, 'Rosa collected the heart.')).toBe(false);
   });
 });
+
+describe('fixed cash tile activity', () => {
+  it.each([
+    ['Gain tile', -1, 0, 'Rosa gained 10G.', 'Rosa gained 10G on Gain 10G.'],
+    ['Loss tile', 0, -1, 'Rosa lost 10G.', 'Rosa lost 10G on Lose 10G.'],
+  ] as const)('announces %s once while retaining its detailed log', (reason, from, to, text, log) => {
+    const payment = { type: 'money', from, to, amount: 10, reason, sq: 3 } as const;
+    expect(paymentActivity(G, payment)).toEqual({ text, kind: 'money' });
+    expect(paymentLogMatches(G, payment, log)).toBe(true);
+    expect(paymentLogMatches(G, payment, 'Rosa landed on Gain 10G.')).toBe(false);
+  });
+});

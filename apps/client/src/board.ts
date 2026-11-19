@@ -4066,6 +4066,20 @@ function specialIcon(ctx: CanvasRenderingContext2D, G: GameState, sq: Square, x:
       ctx.font = '28px "Lilita One", sans-serif';
       ctx.fillText('G', x, y + 2);
       break;
+    case 'gain':
+    case 'loss':
+      ctx.fillStyle = sq.t === 'gain' ? '#3e7bfa' : '#e5484d';
+      ctx.beginPath();
+      ctx.arc(x, y, 28, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#ffd166';
+      ctx.beginPath();
+      ctx.arc(x, y, 21, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#73430f';
+      ctx.fillRect(x - 11, y - 3, 22, 6);
+      if (sq.t === 'gain') ctx.fillRect(x - 3, y - 11, 6, 22);
+      break;
     case 'venture':
     case 'broker':
       if (sq.t === 'broker' && G.rules === 'standard') {

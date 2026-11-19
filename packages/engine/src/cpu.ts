@@ -898,6 +898,8 @@ function routeValue(G: GameState, b: Brain, route: { node: number; path: number[
     if (spare(G, b) >= price) money += b.s.valuesShops ? ownValue(G, p, sq, b.s.blocks) * 0.5 : 60;
   }
   if (sq.t === 'jackpot') money += sq.pot ?? 0;
+  if (sq.t === 'gain') money += K.cashTile;
+  if (sq.t === 'loss') money -= K.cashTile;
   if (sq.t === 'venture' || (si(sq) >= 0 && !p.suits[si(sq)])) money += C.pathVenture;
   if (sq.t === 'arcade') money += C.pathVenture;
   if (sq.t === 'boon' || sq.t === 'boom') money += Math.min(200, ownedSquares(G, p.id).length * 15);
@@ -914,6 +916,8 @@ function si(sq: Square): number {
 function placeValue(G: GameState, b: Brain, node: number): number {
   const sq = G.nodes[node];
   let v = -goalDistance(G, b.p, node) * salary(G, b.p) * C.pathGoalStep;
+  if (sq.t === 'gain') v += K.cashTile;
+  if (sq.t === 'loss') v -= K.cashTile;
   if (sq.owner >= 0 && sq.owner !== b.p.id) v -= squareFee(G, sq, b.p) * b.s.pathSense * 0.2;
   return v;
 }

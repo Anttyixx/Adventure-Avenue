@@ -26,6 +26,18 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: '2026-11-14-gain-loss-tiles',
+    date: 'Nov 14, 2026',
+    title: 'Blue gains and red losses',
+    features: [
+      {
+        tag: 'new',
+        title: 'Gain 10G and Lose 10G tiles',
+        text: 'Find two new tiles under Draw → Specials. Stop on the blue plus coin to gain 10G from the bank, or the red minus coin to pay 10G. Passing does nothing; arriving by transport counts. Both have new painted sprites matching the board.',
+      },
+    ],
+  },
+  {
     id: '2026-11-19-rematch',
     date: 'Nov 19, 2026',
     title: 'Play again',

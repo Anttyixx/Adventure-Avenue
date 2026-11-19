@@ -111,7 +111,7 @@ const rnd = (n: number) => Math.floor(Math.random() * n);
  * Controls for UI elements that were just added or changed: they shake once and glow so they
  * are easy to find. Update this list with each change.
  */
-const RECENT = new Set(['Results screen', 'Info: player page', 'Game menu']);
+const RECENT = new Set(['Gain and Lose tiles', 'Board builder: money tiles']);
 
 /**
  * Which board the lab plays on: Town with portal links (square, the default) or Twin Lakes (hex),
@@ -1711,6 +1711,66 @@ export async function openLab(app: HTMLElement, section?: string) {
     );
     row(
       s,
+      btn('Board builder: money tiles', () => {
+        const board = structuredClone(BUILT_IN_BOARDS[0]);
+        const specials = board.squares.filter((sq) => sq.t === 'venture');
+        specials[0].t = 'gain';
+        specials[1].t = 'loss';
+        const mount = h('div', { class: 'lab-screen' });
+        root.append(mount);
+        const close = openEditor(mount, board, {
+          onExit: () => mount.remove(),
+          onPlay: () => mount.remove(),
+        });
+        mount.querySelector<HTMLButtonElement>('.ed-tool-button[aria-label="Draw"]')?.click();
+        mount.querySelector('.ed-tool[data-tool="gain"]')?.scrollIntoView({ block: 'nearest' });
+        mount.append(
+          h(
+            'button',
+            {
+              class: 'btn small lab-back',
+              onclick: () => {
+                close();
+                mount.remove();
+              },
+            },
+            'Back to UI Lab',
+          ),
+        );
+      }),
+      btn('Gain and Lose tiles', async () => {
+        const sample = cloneState(G);
+        const p = sample.players[cur().id];
+        const tiles = sample.nodes.filter((n) => n.t === 'venture').slice(0, 2);
+        tiles.forEach((sq, i) => {
+          sq.t = i ? 'loss' : 'gain';
+          sq.owner = -1;
+          sq.d = -1;
+          sq.value = sq.base = 0;
+        });
+        p.cash = Math.max(100, p.cash);
+        const mount = h('div', { class: 'arcade-lab-game' });
+        document.body.append(mount);
+        const host = new HotSeat(mount, sample, () => mount.remove(), false);
+        host.board.followPid = host.board.activePid = p.id;
+        host.hud.activePid = p.id;
+        host.hud.render(sample);
+        try {
+          for (const sq of tiles) {
+            p.node = sq.id;
+            host.board.snapTokens();
+            host.board.lookAt = host.board.frameSquares([sq.id]);
+            host.refresh();
+            await wait(600);
+            await host.game.passSquare(p, sq);
+            await host.game.land(p, sq);
+            await wait(1700);
+          }
+        } finally {
+          host.destroy();
+          mount.remove();
+        }
+      }),
       btn('Jackpot: pass and collect', async () => {
         const sample = cloneState(G);
         const p = sample.players[cur().id];

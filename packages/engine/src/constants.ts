@@ -6,6 +6,8 @@ export const K = {
   startCash: 2000,
   /** Each player contributes this much to an unowned jackpot when passing it. */
   jackpotPass: 10,
+  /** Gain/Lose tiles transfer this much public cash when a player stops on them. */
+  cashTile: 10,
   defaultTarget: 10000,
   /** The target net worth is picked in steps of targetStep, up to targetMax. */
   targetStep: 1000,

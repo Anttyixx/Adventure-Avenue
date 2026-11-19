@@ -13,6 +13,7 @@ import { convertPortalTiles } from './portal-tiles';
  *   X  change of suit  R  roll on                   K  take a break
  *   O  boon            M  boom                      T  stockbroker
  *   A  arcade          N  cannon                    Q  portal (pairs listed in `portals`)
+ *   +  gain 10G        -  lose 10G (stopping only)
  *   W  warp (where it leads is listed in the board's `warps`)
  *
  * Which properties start as vacant plots is set when a game starts (the plot setting), so maps
@@ -21,6 +22,8 @@ import { convertPortalTiles } from './portal-tiles';
 const GLYPHS: Record<string, SquareType> = {
   B: 'bank',
   F: 'jackpot',
+  '+': 'gain',
+  '-': 'loss',
   V: 'venture',
   S: 'spade',
   H: 'heart',

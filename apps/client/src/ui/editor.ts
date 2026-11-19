@@ -126,6 +126,8 @@ const PALETTE: { group: string; items: { tool: Tool; label: string; hint: string
   {
     group: 'Specials',
     items: [
+      { tool: 'gain', label: 'Gain 10G', hint: `Stop here to gain ${K.cashTile}G. Passing does nothing.` },
+      { tool: 'loss', label: 'Lose 10G', hint: `Stop here to lose ${K.cashTile}G. Passing does nothing.` },
       { tool: 'venture', label: 'Venture', hint: 'Flip a venture card.' },
       { tool: 'roll', label: 'Roll-on', hint: 'Roll again.' },
       { tool: 'break', label: 'Take-a-break', hint: 'Your shops close until your next turn.' },
@@ -2599,6 +2601,14 @@ export function openEditor(
       );
       if (own.length)
         squareBody.append(h('div', { class: 'ed-tile-issues' }, ...own.map((x) => problemEntry(x, true))));
+      if (sq.t === 'gain' || sq.t === 'loss')
+        squareBody.append(
+          h(
+            'p',
+            { class: 'hint' },
+            `Stop here to ${sq.t === 'gain' ? 'receive' : 'pay'} ${K.cashTile}G ${sq.t === 'gain' ? 'from' : 'to'} the bank. Passing does nothing. Transport arrivals count. It has no owner or district.`,
+          ),
+        );
       if (sq.t === 'jackpot')
         squareBody.append(
           h(
