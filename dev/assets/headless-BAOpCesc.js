@@ -1,0 +1,1 @@
+import{a}from"./index-CKCb3_yr.js";function u(e){return{decide:async c=>a(e(),c),emit:()=>{}}}function o(e=4,c=[]){return Array.from({length:e},(n,r)=>({name:`CPU ${r+1}`,cpu:!0,ch:`cpu${r}`,level:c[r]??"normal"}))}export{u as a,o as c};
