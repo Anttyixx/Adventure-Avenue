@@ -38,6 +38,13 @@ export interface GameLink {
   onAuctionAct?: ((seq: number, pid: number, act: 'bid' | 'pass') => void) | null;
   /** Guest: hears the host's live auction updates. */
   onAuctionLive?: ((seq: number, live: AuctionLive) => void) | null;
+  /**
+   * Fast CPU speed is the host's setting, for everyone. Host: share a change. Guest: the setting
+   * as it stands (from the game it started with or the latest change), and hear changes.
+   */
+  shareFast?(on: boolean): void;
+  hostFast?: boolean;
+  onFast?: ((on: boolean) => void) | null;
   /** Leave the game (closes connections). */
   leave(): void;
 }

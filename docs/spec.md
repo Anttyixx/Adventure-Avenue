@@ -993,6 +993,20 @@ their shares vanish. The game ends immediately and the richest remaining player 
 | Bankruptcy     | When a player can't cover debt                              | Highest net worth among the others |
 | Round limit    | When the round counter passes the limit                     | Highest net worth                  |
 
+**Rematch.** At the bottom of the results screen, beside a ghost **Back to start**, a gold
+**Play again** starts a new game straight away with the same players (names, characters, colors,
+bots and their difficulty; bots' play styles are rolled again), board, rules, goal, vacant plots
+and stocks, and a fresh shuffle, with the usual opening. Online, only the host has it: the new
+game goes to everyone still in the room (guests on the results screen go straight in; anyone who
+left is played by a CPU until they rejoin with the code), and guests see "Stay here: the host can
+start a rematch." beside their Back to start. A builder test play rematches on the same board.
+
+**Your-turn alert (online).** When a player's turn starts their phone gives a short double buzz
+(where the browser allows it), and while the game's tab is in the background its title blinks
+"Your turn! · Adventure Avenue" (or "Your move!" for a choice out of turn: a trade offered to
+them, an auction they can bid in, an arcade pick) until they come back to it. Games on one device
+don't do this, and players on Auto play aren't alerted.
+
 **Results screen:** a pop-up that nearly fills the screen (up to 1600px wide). At the top,
 centered: "Rosa wins!" and why, then a **podium** with the top three (2nd, 1st, 3rd from left to
 right; gold, silver and bronze steps topped with the player's color, the step's number on it).
@@ -1230,7 +1244,8 @@ softly at every size (nothing clips them). Headings capitalize every word. There
 
 In-game, the Menu button (top right) opens the menu as a pop-up in the middle of the screen, over
 everything; a game on this device pauses while it is open (online games carry on). It has Resume, a Fast CPU
-toggle (speeds up CPU turns and animations), Full screen, the Sound sliders and mute, and a red Quit
+toggle (speeds up CPU turns and animations; online it is the host's setting for everyone: the
+host's switch changes it on every device and guests have no switch), Full screen, the Sound sliders and mute, and a red Quit
 game button. Quit asks for confirmation in a dialog over the menu before returning to the main
 menu (no question once the game is over).
 
@@ -1664,8 +1679,10 @@ While View board has the pop-up out of the way, the screen is unlocked.
   board while it is open, and the page has a 5px top edge in their color. Its columns (stacked
   on narrow screens, with more room from the screen edges on phones): (1) the whole sprite, name,
   level, rank, suits and status tags, with the **net worth** big on the right of the head; under it
-  the bar toward the goal (hovering or focusing it pops up the percentage of the goal and how much
-  is left); a quiet line with what the **next promotion pays**; the **net worth breakdown** (an unfilled ring split into Cash,
+  the bar toward the goal (hovering or focusing it pops up "5,000G to go · 28% of the 7,000G goal",
+  or "Reached the 7,000G goal: back to the bank to win!"); under the bar a quiet line with how much
+  is still **to go** on the left ("5,000G to go", or a gold "Goal reached: get to the bank!") and
+  what the **next promotion pays** on the right; the **net worth breakdown** (an unfilled ring split into Cash,
   Properties and Stock, the hovered or biggest part's share in its middle, with a legend of values
   and shares) and, once the game is over,
   **net worth over the game** (a line per round with the goal dashed; hover for each round's value;
@@ -1765,7 +1782,7 @@ API where available.
   until the player levels up); a player who has reached the target gets a pulsing golden glow on
   their net worth and portrait instead of a tag; an active Boon or Boom shows as its symbol after the name (the
   tooltip gives the commission); status tags (Closed, Fees +30%); a progress bar toward the target
-  net worth in the player's color; along the bottom, cash on the left
+  net worth in the player's color (its tooltip: "5,000G to go · 28% of the 7,000G goal"); along the bottom, cash on the left
   with a coin in front of it and net worth on the right with the player's place (1st, 2nd...) in
   front of it; no "Cash"/"Net" labels.
   Cards are 10% larger on computer screens.

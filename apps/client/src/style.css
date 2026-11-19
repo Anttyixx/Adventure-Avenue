@@ -2908,6 +2908,13 @@ input[type='range'] {
 .res-foot {
   margin-top: 0;
 }
+/* A guest's note beside Back to start: the host starts any rematch. */
+.res-note {
+  margin-right: auto;
+  align-self: center;
+  font-size: 13px;
+  color: var(--muted);
+}
 .res-panel h3 {
   margin: 0 0 8px;
   font-family: var(--head);
@@ -7426,9 +7433,24 @@ div.sl-inline label {
   opacity: 1;
   translate: -50% 0;
 }
-/* What the next promotion pays: a quiet line under the bar. */
-.pv-promo {
+/* Under the bar: how much net worth the goal still needs (left) and what the next promotion pays
+   (right), in quiet 13px text with the amounts bright. */
+.pv-under {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 2px 12px;
   margin-top: 2px;
+  font-size: 13px;
+  color: var(--muted);
+}
+.pv-togo b {
+  color: var(--text);
+}
+.pv-togo.won b {
+  color: var(--accent);
+}
+.pv-promo {
   font-size: 13px;
   color: var(--muted);
 }

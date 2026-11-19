@@ -3,9 +3,9 @@
  * address asks for (#ui-lab, #stocks-lab, #editor, an invite link) or the main menu, and wires
  * the screens together: menu -> setup -> game, hosting, joining, resuming and the board editor.
  */
-import { K, cloneState, newGame, type BoardDef } from '@aa/engine';
+import { K, cloneState, newGame, type BoardDef, type GameState, type MatchOptions } from '@aa/engine';
 import { sound } from './audio';
-import { boardForPlay } from './boardstore';
+import { boardForPlay, getBoard } from './boardstore';
 import { HotSeat } from './host';
 import { fadeSetupScreen } from './game-opening';
 import { checkForUpdate } from './update';
@@ -74,7 +74,7 @@ function showSetup() {
         close();
         const G = newGame({ ...opts, ...(opts.board ? { board: boardForPlay(opts.board) } : {}) });
         if (online && room) startHosted(room, G);
-        else play(G, showStart, true, true);
+        else play(G, showStart, true, true, opts.board);
         fadeSetupScreen(app, departing);
       },
       onBack() {
@@ -96,6 +96,32 @@ function showSetup() {
   );
 }
 
+/**
+ * The settings for a rematch of a finished game: the same players (names, characters, colors,
+ * CPUs and their levels; their play styles are rolled again), board, rules, goal, plots and
+ * stocks, with a new seed. Null when the board can't be found (a test play from the builder
+ * passes it in).
+ */
+function rematchOptions(G: GameState, board?: BoardDef): MatchOptions | null {
+  const def = board ?? getBoard(G.boardId);
+  if (!def) return null;
+  return {
+    rules: G.rules,
+    target: G.target,
+    roundCap: G.roundCap,
+    plots: G.plots,
+    stocks: G.stocks,
+    board: boardForPlay(def),
+    seats: G.players.map((p) => ({
+      name: p.name,
+      cpu: p.cpu,
+      ch: p.ch,
+      color: p.color,
+      ...(p.cpu ? { level: p.cpuLevel ?? 'normal' } : {}),
+    })),
+  };
+}
+
 /** Run a hosted online game on this device. */
 function startHosted(room: HostRoom, G: ReturnType<typeof newGame>) {
   room.begin(G, true);
@@ -111,7 +137,22 @@ function startHosted(room: HostRoom, G: ReturnType<typeof newGame>) {
     true,
   );
   room.onNotice = (text) => game.hud.banner(text, '#ffd166', 3500);
+  hostRematch(room, game);
   void game.start();
+}
+
+/**
+ * The host's Play again: a new game with everyone still in the room, sent to them like the first
+ * one (guests still on the results screen go straight into it; anyone who left is played by a
+ * CPU until they rejoin with the code).
+ */
+function hostRematch(room: HostRoom, game: HotSeat) {
+  game.onRematch = (G) => {
+    const opts = rematchOptions(G);
+    if (!opts) return;
+    game.destroy();
+    startHosted(room, newGame(opts));
+  };
 }
 
 /** Reopen a saved online game: the same room code, and friends rejoin before the host resumes. */
@@ -153,6 +194,7 @@ async function resumeOnline(save: SaveInfo) {
           room,
         );
         room.onNotice = (text) => game.hud.banner(text, '#ffd166', 3500);
+        hostRematch(room, game);
         void game.start();
       },
       onBack() {
@@ -277,8 +319,22 @@ function playGuest(room: GuestRoom, first: StartInfo) {
   run(first);
 }
 
-function play(G: ReturnType<typeof newGame>, onExit = showStart, saving = true, opening = false) {
+function play(
+  G: ReturnType<typeof newGame>,
+  onExit = showStart,
+  saving = true,
+  opening = false,
+  /** The board played on, for a rematch when it isn't in the collection (a builder test play). */
+  board?: BoardDef,
+) {
   const host = new HotSeat(app, G, onExit, saving, null, opening);
+  // Play again: the same players, board and settings, straight into a new game.
+  host.onRematch = (done) => {
+    const opts = rematchOptions(done, board);
+    if (!opts) return;
+    host.destroy();
+    play(newGame(opts), onExit, saving, true, board);
+  };
   void host.start();
 }
 
@@ -335,6 +391,8 @@ function showEditor(board: BoardDef | null, back: () => void = showStart, opts: 
             }),
             () => showEditor(b, back, { savedJSON }),
             false,
+            false,
+            b,
           );
         },
       },

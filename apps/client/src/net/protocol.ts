@@ -11,7 +11,7 @@
 import type { BoardDef, CharId, CpuLevel, GameState, PlotSetting, RuleSet, StockSystem } from '@aa/engine';
 
 /** Protocol version: a joiner on a different version is turned away. */
-export const NET_VERSION = 57;
+export const NET_VERSION = 58;
 
 export type SeatKind = 'host' | 'local' | 'remote' | 'open' | 'cpu';
 
@@ -78,6 +78,8 @@ export interface StartInfo {
   answers: Answer[];
   /** The player ids this device answers for. */
   you: number[];
+  /** The host's Fast CPU setting (missing: off). */
+  fast?: boolean;
 }
 
 export type ToHost =
@@ -107,6 +109,8 @@ export type ToGuest =
   | { t: 'auction'; seq: number; live: AuctionLive }
   | { t: 'hash'; key: string; h: string }
   | { t: 'seat'; pid: number; online: boolean }
+  /** The host turned Fast CPU speed on or off (it is the host's setting, for everyone). */
+  | { t: 'fast'; on: boolean }
   | { t: 'bye'; reason: string };
 
 /** Room codes avoid letters that are easy to mix up (I/L/O). */

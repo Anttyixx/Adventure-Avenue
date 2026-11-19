@@ -954,6 +954,8 @@ Reopened online games keep guests on Continue Game until the host presses Resume
 
 ### Results (pop-up)
 
+- **Footer:** a ghost Back to start and the gold Play again (rematch) on the right; a guest online
+  sees a muted 13px note (`.res-note`) instead of Play again.
 - `hud.modal(..., { wide: 'full' })`: up to 1600px wide (`.modal.wide.full`), class
   `results-modal`. From 800px tall and 900px wide it is a column filling the screen: the hero is
   fixed and `.res-panels` scrolls; shorter screens scroll the whole pop-up.

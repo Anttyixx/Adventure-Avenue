@@ -41,6 +41,18 @@ const PARTS = [
   { key: 'stock', label: 'Stock', color: '#199e70' },
 ] as const;
 
+/**
+ * How far a player is from the goal, in words (the player cards' progress bar and the player
+ * page): "3,200G to go · 68% of the 10,000G goal", or that they can win at the bank.
+ */
+export function goalText(target: number, nw: number, out = false): string {
+  if (out) return 'Out of the game.';
+  const need = target - nw;
+  if (need <= 0) return `Reached the ${fmt(target)} goal: back to the bank to win!`;
+  const pct = Math.max(0, Math.floor((nw / target) * 100));
+  return `${fmt(need)} to go · ${pct}% of the ${fmt(target)} goal`;
+}
+
 export interface OverviewHooks {
   /** Shows a Close button in the corner (the info pop-up has its own in the action bar). */
   onClose?(): void;
@@ -134,11 +146,7 @@ export function playerOverview(G: GameState, p: Player, hooks: OverviewHooks): H
   // The bar toward the goal; hovering (or tapping) it shows how far along they are.
   const pct = Math.max(0, Math.min(100, (nw / G.target) * 100));
   const need = G.target - nw;
-  const tip = p.bankrupt
-    ? 'Out of the game.'
-    : need <= 0
-      ? `Reached the ${fmt(G.target)} goal: back to the bank to win!`
-      : `${Math.round(pct)}% of the ${fmt(G.target)} goal, ${fmt(need)} to go.`;
+  const tip = goalText(G.target, nw, p.bankrupt);
   colA.append(
     h(
       'div',
@@ -149,14 +157,26 @@ export function playerOverview(G: GameState, p: Player, hooks: OverviewHooks): H
         h('div', { class: 'bar-track' }, h('div', { class: 'bar-fill', style: `width:${pct}%` })),
         h('span', { class: 'pv-tip', role: 'tooltip' }, tip),
       ),
-      // What the next promotion pays (fees, salary and other totals are on the end-of-game screen).
+      // Under the bar: how much more net worth the goal needs (left), and what the next promotion
+      // pays (right). Fees, salary and other totals are on the end-of-game screen.
       p.bankrupt
         ? null
         : h(
             'div',
-            { class: 'pv-promo', title: 'Collect all four suits, then reach the bank' },
-            'Next promotion pays ',
-            h('b', null, fmt(salary(G, { ...p, level: p.level + 1 }))),
+            { class: 'pv-under' },
+            h(
+              'span',
+              { class: `pv-togo ${need <= 0 ? 'won' : ''}`, title: tip },
+              need <= 0
+                ? h('b', null, 'Goal reached: get to the bank!')
+                : [h('b', null, fmt(need)), ' to go'],
+            ),
+            h(
+              'span',
+              { class: 'pv-promo', title: 'Collect all four suits, then reach the bank' },
+              'Next promotion pays ',
+              h('b', null, fmt(salary(G, { ...p, level: p.level + 1 }))),
+            ),
           ),
     ),
   );

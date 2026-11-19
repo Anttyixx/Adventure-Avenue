@@ -163,8 +163,19 @@ export class HotSeat implements GameIO {
     this.board.setState(G);
     if (opening) this.board.prepareOpening();
     this.hud.render(G);
-    this.fast = readPref(FAST_KEY) === '1';
-    this.hud.setFastLabel(this.fast);
+    // Fast CPU speed is the host's call: a guest follows the host's setting and has no switch.
+    if (link?.role === 'guest') {
+      this.fast = !!link.hostFast;
+      this.hud.hideFast();
+      link.onFast = (on) => {
+        this.fast = on;
+        this.updateSpeed();
+      };
+    } else {
+      this.fast = readPref(FAST_KEY) === '1';
+      this.hud.setFastLabel(this.fast);
+      link?.shareFast?.(this.fast);
+    }
     window.addEventListener('keydown', this.onKey);
     this.setupOrientation();
   }
@@ -236,6 +247,7 @@ export class HotSeat implements GameIO {
   }
 
   destroy() {
+    this.stopTitleAlert();
     this.openingAbort.abort();
     this.arcade?.close();
     this.liveAuction?.stop();
@@ -258,9 +270,11 @@ export class HotSeat implements GameIO {
   };
 
   toggleFast() {
+    if (this.link?.role === 'guest') return;
     this.fast = !this.fast;
     this.hud.setFastLabel(this.fast);
     writePref(FAST_KEY, this.fast ? '1' : '0');
+    this.link?.shareFast?.(this.fast);
     this.updateSpeed();
   }
 
@@ -306,6 +320,55 @@ export class HotSeat implements GameIO {
     const ans = cpuDecide(this.G, req);
     if (this.link && this.link.role !== 'host') this.G.rng = keep;
     return ans;
+  }
+
+  /**
+   * Set by whoever started this game (main.ts) when it can be played again with the same players,
+   * board and settings: the results screen then has a Play again button. Guests never get one
+   * (the host starts the rematch for everyone).
+   */
+  onRematch: ((G: GameState) => void) | null = null;
+
+  /**
+   * Online, tell a player who may not be looking that they are needed: when their turn starts
+   * (`turn`) the phone gives a short buzz, and while the tab is in the background its title
+   * blinks "Your turn!" (or "Your move!" for a choice out of turn) until they come back. Games on
+   * one device don't do this: everyone is already at the screen.
+   */
+  private alertTurn(turn: boolean) {
+    if (!this.link || this.dead) return;
+    if (turn) {
+      try {
+        navigator.vibrate?.([150, 80, 150]);
+      } catch {
+        /* not allowed */
+      }
+    }
+    if (!document.hidden || this.titleTimer) return;
+    const text = turn ? 'Your turn!' : 'Your move!';
+    this.baseTitle = document.title;
+    let on = false;
+    const blink = () => {
+      on = !on;
+      document.title = on ? `${text} · ${this.baseTitle}` : this.baseTitle;
+    };
+    blink();
+    this.titleTimer = window.setInterval(blink, 1000);
+    document.addEventListener('visibilitychange', this.onVisible);
+  }
+
+  private titleTimer = 0;
+  private baseTitle = '';
+  private onVisible = () => {
+    if (!document.hidden) this.stopTitleAlert();
+  };
+
+  private stopTitleAlert() {
+    if (!this.titleTimer) return;
+    clearInterval(this.titleTimer);
+    this.titleTimer = 0;
+    document.title = this.baseTitle;
+    document.removeEventListener('visibilitychange', this.onVisible);
   }
 
   /** What the quit dialog asks (null: the game is over, so just leave). */
@@ -611,6 +674,7 @@ export class HotSeat implements GameIO {
       share: link?.auctionShare ? (l) => link.auctionShare!(seq, l) : undefined,
     });
     this.liveAuction = live;
+    if (req.bidders.some((pid) => who(pid) === 'local' && !this.autoPlays(pid))) this.alertTurn(false);
     view.openBar(
       req.bidders.filter((pid) => who(pid) === 'local' && !this.autoPlays(pid)),
       (pid, act) => live.act(pid, act),
@@ -645,6 +709,7 @@ export class HotSeat implements GameIO {
       // On Auto play this device's player bids by itself: after each change, the next step up
       // while it is within what the bot would pay, else a pass.
       const mine = req.bidders.filter((pid) => link.who(pid) === 'local');
+      if (mine.some((pid) => !this.autoPlays(pid))) this.alertTurn(false);
       let autoTimer = 0;
       const autoBid = (l: AuctionLive) => {
         clearTimeout(autoTimer);
@@ -688,6 +753,8 @@ export class HotSeat implements GameIO {
 
   /** A choice for a player on this device. */
   private async askHuman(req: DecisionRequest) {
+    // A choice out of turn (a trade offered to them, an arcade pick): flag a hidden tab too.
+    if (req.pid !== this.game.current?.id) this.alertTurn(false);
     // Online rooms may also have several people sharing this device. Keep party choices private.
     if (this.link && req.kind === 'arcadeChoice' && this.humans > 1 && this.holder !== req.pid) {
       await this.hud.passDevice(this.G.players[req.pid]);
@@ -1066,6 +1133,7 @@ export class HotSeat implements GameIO {
         if (this.saving) saveGame(G, this.link?.saveInfo?.());
         const p = G.players[e.pid];
         board.activePid = e.pid;
+        if (this.localHuman(e.pid) && !this.auto.has(e.pid)) this.alertTurn(true);
         board.followPid = e.pid;
         board.walkTarget = -1;
         hud.activePid = e.pid;
@@ -1449,10 +1517,20 @@ export class HotSeat implements GameIO {
           board.lookAt = null;
         }
         await this.wait(T.gameOver);
-        showResults(hud, G, () => {
-          this.destroy();
-          this.onExit();
-        });
+        const rematch = this.onRematch;
+        showResults(
+          hud,
+          G,
+          () => {
+            this.destroy();
+            this.onExit();
+          },
+          rematch
+            ? { onRematch: () => rematch(G) }
+            : this.link?.role === 'guest'
+              ? { note: 'Stay here: the host can start a rematch.' }
+              : {},
+        );
         break;
       }
       case 'log': {

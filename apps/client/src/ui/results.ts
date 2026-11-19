@@ -42,7 +42,16 @@ const PLACES = ['1st', '2nd', '3rd', '4th', '5th'];
  *   On a wide screen the chart runs across the top with the table and the stock market side by
  *   side under it; on a narrow one they stack, chart first.
  */
-export function showResults(hud: Hud, G: GameState, onNew: () => void) {
+export function showResults(
+  hud: Hud,
+  G: GameState,
+  onNew: () => void,
+  /**
+   * `onRematch`: a gold Play again button (same players, board and settings); without it, `note`
+   * says who can start one (a guest online waits for the host).
+   */
+  rematch: { onRematch?: () => void; note?: string } = {},
+) {
   const winner = G.players[G.winner];
   // Finishing order: the winner first, then by net worth, then players who went bankrupt.
   const alive = ranking(G);
@@ -181,7 +190,26 @@ export function showResults(hud: Hud, G: GameState, onNew: () => void) {
     h(
       'div',
       { class: 'btn-row res-foot' },
-      h('button', { class: 'btn main', onclick: () => onNew() }, 'Back to start'),
+      rematch.note ? h('span', { class: 'res-note' }, rematch.note) : null,
+      h(
+        'button',
+        { class: `btn ${rematch.onRematch ? 'ghost' : 'main'}`, onclick: () => onNew() },
+        'Back to start',
+      ),
+      rematch.onRematch
+        ? h(
+            'button',
+            {
+              class: 'btn main',
+              title: 'A new game with the same players, board and settings',
+              onclick: (e: Event) => {
+                (e.currentTarget as HTMLButtonElement).disabled = true;
+                rematch.onRematch!();
+              },
+            },
+            'Play again',
+          )
+        : null,
     ),
   );
   const m = hud.modal('Results', body, { wide: 'full' });

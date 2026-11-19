@@ -27,6 +27,7 @@ import { BUILDING_INFO, buildingLandingLabel, motelFee, shortName, squareInfo, s
 import { boonIconURL, suitIconURL, wildIconURL } from '../icons';
 import { bodyURL, portraitURL } from '../sprites';
 import { nameText } from './marquee';
+import { goalText } from './overview';
 import { clear, fmt, h } from './dom';
 import { TIMING as T } from '../timing';
 import { kindIcon, logView, namesInColor, type IconKind } from './log';
@@ -551,6 +552,11 @@ export class Hud {
     }
   };
 
+  /** Guests in an online game: Fast CPU speed is the host's setting, so no switch. */
+  hideFast() {
+    this.fastBtn.remove();
+  }
+
   setFastLabel(fast: boolean) {
     this.fastBtn.textContent = fast ? 'Fast CPU: on' : 'Fast CPU: off';
     this.fastBtn.classList.toggle('on', fast);
@@ -993,7 +999,7 @@ export class Hud {
         // Progress toward the target net worth.
         h(
           'div',
-          { class: 'bar-track', title: `${Math.round(pct)}% of the ${fmt(G.target)} target` },
+          { class: 'bar-track', title: goalText(G.target, nw, p.bankrupt) },
           h('div', { class: 'bar-fill', style: `width:${pct}%` }),
         ),
         h(

@@ -26,6 +26,28 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: '2026-11-19-rematch',
+    date: 'Nov 19, 2026',
+    title: 'Play again',
+    features: [
+      {
+        tag: 'new',
+        title: 'Rematch',
+        text: 'Play again on the results screen starts a new game with the same players, board and settings. Online, the host starts it for everyone.',
+      },
+      {
+        tag: 'online',
+        title: "Know when it's your turn",
+        text: 'Online, your phone buzzes when your turn starts, and if the game is in a background tab its title blinks "Your turn!" until you come back.',
+      },
+    ],
+    extras: [
+      'Player pages show how much is left to reach the goal',
+      'Clearer goal tooltip on the player cards',
+      "Online, Fast CPU is the host's setting for everyone",
+    ],
+  },
+  {
     id: '2026-11-17-auto-play',
     date: 'Nov 17, 2026',
     title: 'Auto play',

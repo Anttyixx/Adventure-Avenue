@@ -502,7 +502,15 @@ export class HostRoom implements GameLink {
   }
 
   private startFor(seat: Seat): StartInfo {
-    return { ...this.snap!, you: [seat.pid] };
+    return { ...this.snap!, you: [seat.pid], fast: this.fast };
+  }
+
+  /** The host's Fast CPU setting, sent to everyone (see GameLink.shareFast). */
+  private fast = false;
+  shareFast(on: boolean) {
+    if (on === this.fast) return;
+    this.fast = on;
+    this.broadcast({ t: 'fast', on });
   }
 
   // ------------------------------------------------------------ GameLink

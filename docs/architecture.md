@@ -148,6 +148,18 @@ room, Continue resumes the saved game, and the board editor (`ui/editor.ts`).
 - It also handles pausing (the menu), Fast CPU speed, saving at each turn start, and the game
   over sequence.
 
+**Rematch.** `HotSeat.onRematch` is set by `main.ts` (`play` for games on one device,
+`hostRematch` for hosted games): the results screen's Play again calls it with the finished
+state, and `rematchOptions` rebuilds the match options from it (players, board from the
+collection or the builder's test board, rules, goal, plots, stocks). Online, the host simply
+`room.begin`s the new game: guests get a `start` message like the first game's.
+
+**Your-turn alert.** `HotSeat.alertTurn` (online only): `turnStart` for a person on this device
+buzzes (`navigator.vibrate`); a hidden tab's title blinks until `visibilitychange` shows it again.
+
+**Fast CPU online.** The host's setting: `HostRoom.shareFast` sends `{ t: 'fast' }` and
+`StartInfo.fast`; a guest's `HotSeat` follows `GuestRoom.hostFast` and hides its switch.
+
 **Auto play.** `HotSeat.auto` holds the people on this device a bot is playing for (the game
 menu's switch; `setAuto`). `decide` / `decideOnline` answer for them with `cpuDecide` (the Hard
 stand-in in their own style) instead of asking, a guest's bot leaving `G.rng` untouched

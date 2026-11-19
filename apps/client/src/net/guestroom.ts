@@ -108,6 +108,10 @@ export class GuestRoom implements GameLink {
 
   onAuctionLive: ((seq: number, live: AuctionLive) => void) | null = null;
 
+  /** The host's Fast CPU setting (guests can't change it). */
+  hostFast = false;
+  onFast: ((on: boolean) => void) | null = null;
+
   auctionSend(seq: number, act: 'bid' | 'pass') {
     this.send({ t: 'auctionAct', seq, act });
   }
@@ -154,6 +158,7 @@ export class GuestRoom implements GameLink {
         this.hostHashes.clear();
         this.myHashes.clear();
         this.started = msg.start;
+        this.hostFast = !!msg.start.fast;
         this.on.start(msg.start);
         break;
       case 'ans':
@@ -168,6 +173,10 @@ export class GuestRoom implements GameLink {
         break;
       case 'seat':
         this.on.seat(msg.pid, msg.online);
+        break;
+      case 'fast':
+        this.hostFast = msg.on;
+        this.onFast?.(msg.on);
         break;
       case 'reject':
       case 'bye':
