@@ -1178,10 +1178,27 @@ softly at every size (nothing clips them). Headings capitalize every word. There
   smaller and faded, on both sides. Tapping a side board, swiping or the arrow keys move it: the
   row slides over while the new board grows into the middle. Under it a thin line shows where in
   the list the board is: a gold bar (one board's share of the line) slides along it, so any
-  number of boards fits; tapping the line jumps there. There are no board tool chips here: boards
-  are added, removed, hidden and edited in the board collection (main menu, Menu); hidden boards
-  are not offered here. The Board and Game Settings
-  headings are large.
+  number of boards fits; tapping the line jumps there. Under that a **tile key** lists the kinds
+  of tile the shown board has (properties first, then the bank, venture squares, suits and the
+  other special squares), each a small chip with the tile as the picture draws it and its name;
+  on phones it is one row that scrolls sideways. Joined players see the same key under the
+  host's board.
+
+**Board pictures** (game setup, the board collection, the builder's saved boards; `ui/thumb.ts`):
+a schematic of the board on grass with its roads, not the tiles' full art, but marked so each
+tile can be told apart. Properties are light tiles with a thick outline in their district's
+color (dashed for a vacant plot, grey and dashed with no district yet). The bank is a gold tile
+with a **B**; venture squares are purple with a white **?**; suits show ♠ ♥ ♦ ♣ in their colors
+(blue, red, amber, green) on a light tile; Change suit a ↻ on grey; Random suit four colored dots;
+Jackpot a gold coin; Gain 10G a white + on blue and Lose 10G a − on red; Roll on two die pips;
+Take a break a Z; Boon and Boom a % on green and on pink; Stock broker a green ▲; Arcade an A;
+Warp a blue four-point star; Portal a purple ring; Taxi a T on yellow; Cannon a C; Swap an S;
+Price Up a ↑ on orange; builder blanks a dashed outline. On tiles too small to read (very big
+boards in small pictures) the marks are left out and only the colors show. There are no board tool chips here: boards
+are added, removed, hidden and edited in the board collection (main menu, Menu); hidden boards
+are not offered here. The Board and Game Settings
+headings are large.
+
 - **Players** (in the players column): setup starts with only the host ("You · host"); bots and
   other players on this device are added by hand, and friends join with the code (the board and
   settings are remembered from the last game, the players are not). Each seat is a card like a

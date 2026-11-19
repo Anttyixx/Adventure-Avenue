@@ -5406,6 +5406,47 @@ input[type='range'] {
 
 /* ------------------------------------------------------------ board thumbnails & selects */
 
+/* The key under a board's picture in game setup: a chip per kind of tile on that board, with
+   the tile as the picture draws it. */
+.thumb-key {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 4px 6px;
+  flex: none;
+}
+.thumb-key-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 2px 8px 2px 3px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.07);
+  color: var(--muted);
+  font: 700 11px var(--body);
+  white-space: nowrap;
+}
+.thumb-key-item canvas {
+  flex: none;
+}
+/* Short screens (phones): one row that scrolls sideways, so the board's picture keeps its room. */
+@media (max-height: 500px) {
+  .thumb-key {
+    flex-wrap: nowrap;
+    justify-content: flex-start;
+    overflow-x: auto;
+    scrollbar-width: none;
+    -webkit-mask-image: linear-gradient(90deg, #000 92%, transparent);
+    mask-image: linear-gradient(90deg, #000 92%, transparent);
+  }
+  .thumb-key::-webkit-scrollbar {
+    display: none;
+  }
+  .thumb-key-item {
+    font-size: 10px;
+    padding: 1px 7px 1px 2px;
+  }
+}
 .thumb {
   border-radius: 8px;
   border: 1px solid var(--glass-line);
@@ -13652,8 +13693,9 @@ button.char-btn:hover img {
 
   .su {
     --thumb-pad: 4px;
-    /* The picture takes what is left of the screen's height after the top bar and labels. */
-    --thumb-h: max(48px, calc(100dvh - 200px));
+    /* The picture takes what is left of the screen's height after the top bar, labels and the
+       one-row tile key under it. */
+    --thumb-h: max(48px, calc(100dvh - 232px));
   }
   .su .car-thumb {
     border-radius: 10px;

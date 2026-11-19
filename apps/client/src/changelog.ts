@@ -26,6 +26,18 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: '2026-11-19-board-pictures',
+    date: 'Nov 19, 2026',
+    title: 'Easier board previews',
+    features: [
+      {
+        tag: 'better',
+        title: 'See what each tile is',
+        text: 'Board previews in game setup and the board collection now mark every tile: properties outlined in their district color, B for the bank, ? for venture squares, suit symbols, and a simple mark for every other square. Game setup shows a key of the tiles on the chosen board.',
+      },
+    ],
+  },
+  {
     id: '2026-11-19-guide',
     date: 'Nov 19, 2026',
     title: 'A clearer Guide',

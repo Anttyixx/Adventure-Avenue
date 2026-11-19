@@ -21,7 +21,7 @@ import {
   type StockSystem,
   type RuleSet,
 } from '@aa/engine';
-import { boardThumb } from './thumb';
+import { boardThumb, thumbKey } from './thumb';
 import { BUILT_IN, shownBoards, getBoard } from '../boardstore';
 import { freeCharacter } from '../sprites';
 import { NAME_MAX, PLAYER_NAMES, cleanName, loadProfile } from '../profile';
@@ -1145,6 +1145,8 @@ export function setupScreen(
       { class: 'setup-panel glass board-panel' },
       h('h3', null, 'Board'),
       mapCarousel(list, index, mapFrom, (to) => pickBoard(list, index, to)),
+      // What the picture's tiles are, for the board shown.
+      thumbKey(list[index].board),
     );
   };
 
@@ -1585,6 +1587,7 @@ export function guestSetup(root: HTMLElement, room: GuestSetupRoom, handlers: Gu
           ),
         ),
         board ? boardStage(board, false) : h('p', { class: 'hint' }, lobby ? lobby.boardName : 'Loading...'),
+        board ? thumbKey(board) : null,
       ),
       lobby
         ? rulesPanel({

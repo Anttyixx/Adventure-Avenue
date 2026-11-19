@@ -363,7 +363,13 @@ investing, the target net worth). Never repeat it in a list.
 ### 4.11 Thumbnails (`.ed-thumb` + `boardThumb`)
 
 A fixed frame (radius 8, grass `#7fc25a` fill) with the board picture centered inside.
-`boardThumb()` trims to the tiles, so a board never sits tiny in a corner. Card thumbnails fill the
+`boardThumb()` trims to the tiles, so a board never sits tiny in a corner. Tiles are marked so they
+can be told apart (`TILE_LOOK` in `thumb.ts`): properties a light face (`#fffaf0`) with a thick
+outline in the district color (17% of the tile; dashed for plots), other tiles a fill in their
+art's main color with a centered letter or symbol in Lilita (62% of the tile; 78% for suit
+symbols and arrows) or a tiny drawing; marks are skipped below 9px tiles. `thumbKey()` makes the
+key under game setup's picture: 18px tile icons in pill chips (7% white, muted bold 11px, 10px
+on phones in one sideways-scrolling row). Card thumbnails fill the
 card width at a fixed height (86px); list thumbnails are 112 × 64. Empty boards show "Empty grid".
 
 ### 4.12 Progress, icons and art
