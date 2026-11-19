@@ -25,14 +25,20 @@ export interface Card {
   title: string;
   text: string;
   std?: boolean;
+  /** What the card is about, for grouping in the Guide (no effect on play). Set it on new cards. */
+  kind: CardKind;
   run(game: Game, p: Player): Promise<void>;
 }
+
+/** The Guide's venture card groups. */
+export type CardKind = 'move' | 'cash' | 'value' | 'fees' | 'suits' | 'deals' | 'stocks';
 
 const list: Card[] = [
   // Movement
   {
     id: 'rollAgain',
     number: 1,
+    kind: 'move',
     title: 'Roll again',
     text: 'Roll the die and move again.',
     run: (g, p) => g.rollAgain(p),
@@ -40,6 +46,7 @@ const list: Card[] = [
   {
     id: 'move2',
     number: 2,
+    kind: 'move',
     title: 'Two more squares',
     text: 'Move 2 more squares.',
     run: (g, p) => g.move(p, 2),
@@ -47,6 +54,7 @@ const list: Card[] = [
   {
     id: 'zoomBank',
     number: 3,
+    kind: 'move',
     title: 'Zoom to the bank',
     text: 'Warp straight to the bank.',
     run: async (g, p) => {
@@ -58,6 +66,7 @@ const list: Card[] = [
   {
     id: 'zoomAny',
     number: 4,
+    kind: 'move',
     title: 'Zoom anywhere',
     text: 'Warp to any square. Its landing effect applies.',
     run: async (g, p) => {
@@ -71,6 +80,7 @@ const list: Card[] = [
   {
     id: 'bank50',
     number: 5,
+    kind: 'cash',
     title: 'Bank bonus',
     text: 'Roll the die: the bank pays you 50G times the roll.',
     run: async (g, p) => {
@@ -83,6 +93,7 @@ const list: Card[] = [
   {
     id: 'leader40',
     number: 6,
+    kind: 'cash',
     title: 'Tax the leader',
     text: 'Roll the die: the richest rival pays you 40G times the roll.',
     run: async (g, p) => {
@@ -98,6 +109,7 @@ const list: Card[] = [
   {
     id: 'lose10',
     number: 7,
+    kind: 'cash',
     title: 'Pickpocket',
     text: 'Lose 10% of your cash.',
     run: async (g, p) => {
@@ -109,6 +121,7 @@ const list: Card[] = [
   {
     id: 'giveAll30',
     number: 8,
+    kind: 'cash',
     title: 'Party time',
     text: 'Give every other player 30G.',
     run: async (g, p) => {
@@ -125,6 +138,7 @@ const list: Card[] = [
   {
     id: 'halfSalary',
     number: 9,
+    kind: 'cash',
     title: 'Bonus pay',
     text: 'Receive half a salary.',
     run: async (g, p) => {
@@ -136,6 +150,7 @@ const list: Card[] = [
   {
     id: 'giveLast',
     number: 10,
+    kind: 'cash',
     title: 'Charity',
     text: 'Give 10% of your cash to the player in last place.',
     run: async (g, p) => {
@@ -153,6 +168,7 @@ const list: Card[] = [
   {
     id: 'perProperty',
     number: 11,
+    kind: 'cash',
     title: 'Property dividend',
     text: 'Receive 30G for every property you own.',
     run: async (g, p) => {
@@ -165,6 +181,7 @@ const list: Card[] = [
   {
     id: 'shops10',
     number: 12,
+    kind: 'value',
     title: 'Renovation boom',
     text: 'All your shops rise 10% in value.',
     run: (g, p) => g.scaleShops(ownedShops(g.G, p.id), 1.1),
@@ -172,6 +189,7 @@ const list: Card[] = [
   {
     id: 'shop40',
     number: 13,
+    kind: 'value',
     title: 'Hot spot',
     text: 'One random shop of yours rises 40% in value.',
     run: async (g, p) => {
@@ -182,6 +200,7 @@ const list: Card[] = [
   {
     id: 'district15',
     number: 14,
+    kind: 'value',
     title: 'District festival',
     text: "A random district's shops rise 15% in value.",
     run: async (g) => {
@@ -197,6 +216,7 @@ const list: Card[] = [
   {
     id: 'allClose',
     number: 15,
+    kind: 'fees',
     title: 'Holiday',
     text: "Everyone's shops close until their next turn. Then roll again.",
     run: async (g, p) => {
@@ -208,6 +228,7 @@ const list: Card[] = [
   {
     id: 'oddEven',
     number: 16,
+    kind: 'fees',
     title: 'Odd or even',
     text: "Roll the die. Odd: your shops close. Even: everyone else's shops close.",
     run: async (g, p) => {
@@ -223,6 +244,7 @@ const list: Card[] = [
   {
     id: 'fees30',
     number: 17,
+    kind: 'fees',
     title: 'Price hike',
     text: 'Your fees rise 30% until your next turn.',
     run: async (_g, p) => {
@@ -232,6 +254,7 @@ const list: Card[] = [
   {
     id: 'commission50',
     number: 18,
+    kind: 'fees',
     title: 'Middleman',
     text: 'Earn 50% commission on every fee until your next turn.',
     run: async (_g, p) => {
@@ -242,6 +265,7 @@ const list: Card[] = [
   {
     id: 'freeHeart',
     number: 19,
+    kind: 'suits',
     title: 'Free heart',
     text: 'Collect the heart suit. If you have it already, take 100G.',
     run: async (g, p) => {
@@ -255,6 +279,7 @@ const list: Card[] = [
   {
     id: 'wild',
     number: 20,
+    kind: 'suits',
     title: 'Suit Yourself',
     text: 'Take a Suit Yourself card: it counts as any one missing suit.',
     run: async (g, p) => {
@@ -265,6 +290,7 @@ const list: Card[] = [
   {
     id: 'promo',
     number: 21,
+    kind: 'suits',
     title: 'Sudden promotion',
     text: 'You are promoted on the spot. Your suits are discarded.',
     run: (g, p) => g.promote(p, false),
@@ -273,6 +299,7 @@ const list: Card[] = [
   {
     id: 'investNow',
     number: 22,
+    kind: 'deals',
     title: 'Investment opportunity',
     text: 'Invest in any of your shops now.',
     run: (g, p) => g.investFlow(p, ownedShops(g.G, p.id)),
@@ -280,6 +307,7 @@ const list: Card[] = [
   {
     id: 'forcedBuyout',
     number: 23,
+    kind: 'deals',
     title: 'Hostile takeover',
     text: "You may buy any rival's property for 5 times its value.",
     run: async (g, p) => {
@@ -308,6 +336,7 @@ const list: Card[] = [
   {
     id: 'free20',
     number: 24,
+    kind: 'stocks',
     title: 'Gift shares',
     text: 'Receive 20 free shares in a district of your choice.',
     std: true,
@@ -322,6 +351,7 @@ const list: Card[] = [
   {
     id: 'up20',
     number: 25,
+    kind: 'stocks',
     title: 'Bull market',
     text: "Raise a district's stock price by 20%.",
     std: true,
@@ -337,6 +367,7 @@ const list: Card[] = [
   {
     id: 'down20',
     number: 26,
+    kind: 'stocks',
     title: 'Bear market',
     text: "Cut a district's stock price by 20%.",
     std: true,
@@ -352,6 +383,7 @@ const list: Card[] = [
   {
     id: 'dividend10',
     number: 27,
+    kind: 'stocks',
     title: 'Special dividend',
     text: 'Receive 10% of the value of your stock.',
     std: true,
@@ -363,6 +395,7 @@ const list: Card[] = [
   {
     id: 'tax2',
     number: 28,
+    kind: 'stocks',
     title: 'Stock tax',
     text: 'Pay 2G for every share you hold.',
     std: true,
@@ -371,6 +404,7 @@ const list: Card[] = [
   {
     id: 'buy10off',
     number: 29,
+    kind: 'stocks',
     title: 'Share sale',
     text: 'Buy stock at 10% off.',
     std: true,
@@ -379,6 +413,7 @@ const list: Card[] = [
   {
     id: 'sell20above',
     number: 30,
+    kind: 'stocks',
     title: 'Hot buyer',
     text: 'Sell stock at 20% above the market price.',
     std: true,

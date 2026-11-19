@@ -1568,61 +1568,86 @@ pop-up goes back beside the cards and the blur goes away.
 as dark glass overlays. Top right: the zoom chip, the Game log button and the Menu button (the menu
 also shows the round, target and rule set). **Guide** (`ui/guide.ts`, in the Menu, under Resume; the
 menu closes as it opens) opens a pop-up in the middle
-of the screen with a tab per topic: Basics (the goal, shops, buyouts, suits and promotion, special
-squares, before rolling, debt, controls), Stocks (buying and selling, dividends, what sets the
-price, demand and volatility, sell-offs; the classic rules for classic-stock games) and Vacant
-plots (a card per building with its art, price, what a rival and the owner get, and the circus
-upgrade prices), Arcade games (a card per game: Solo or Everyone plays, how it plays and what it
-pays, with the Lucky Reels prize list), and Venture cards (all 30 fixed numbers, titles and
-effects, with Standard-only cards marked). Each topic is a card with an icon, a title and a few
-short points. Easy rules show Basics, Arcade games and Venture cards. It reopens on the last tab read. Top left: the **info chip**, with the game's name, the goal (target net worth), online a Room
-button that shows the room code, and at its end the **Info** button (an "i" in a white outlined circle
-and the word Info; gold while open), which opens the **Game info pop-up** (see below). The board name and the
-round are on the Game info pop-up instead. Bottom center: the **action bar** (on
-narrow windows such as phones in landscape, where a centered bar would have less than 520px
-between the screen edge and the player cards, it sits in the bottom left corner instead and uses
-all the width up to the cards; this depends only on the window, not on what the bar shows; as a safety net, a centered bar
-whose options would not fit moves bottom left too and stays there at that window size). When it
-sits bottom left, the pop-ups over the board (the stock market, auctions, the venture board, arcade
-games and the info pop-up) line up on the left with it too, between the bar and the toolbar, so they
-use all the room up to the player cards. On phones the auction pop-up is compact (a smaller lot
-row, the high bid on one line, small bidder chips) so the bidders always fit. While the game waits on
-nobody here, it is the status line: one line saying what is going on now: what the game is waiting
-on a player to do ("Blue is buying stocks...", "Blue is deciding which space to go to...", see
-`ui/activity.ts`; turn handoffs have their own message, and rolling/walking are active phases) or else the last thing that happened, with the log icon for
-that kind of action and player names in their colors. A wait stays until the next action or wait replaces it. For observers (CPU or remote turns),
-a roll and destination choice are combined: “Rosa rolled a 5 and is deciding where to move...”.
-Card movement without a matching roll describes the number of spaces without claiming a die roll.
-Landing announces the named space. Completed actions and landings remain in the action bar
-for one second within their action; generic waiting is deferred for 1.2 seconds of quiet. A newer result, actual
-movement or a new turn replaces stale text immediately. The game does not pause for this timer;
-the game log shows the pending decision immediately. Local players receive their interactive choices immediately. Resolving a local prompt removes
-its pending waiting message from both the action bar and log. Confirmed purchases, buyouts,
-construction, renovations, investments, circus upgrades, stock trades and fees announce their
-result at the committed money event, before animation delays. Results are not announced as
-successful merely because a button was pressed; the engine must first confirm the action. Landing announcements are presentation-only, not extra saved log entries. When a player on this device has a choice to make, the bar morphs (eases its width and
-height, over 740ms) into their options, and morphs back to the status line once they answer. During a resize,
-text keeps its destination layout so it does not repeatedly wrap. New messages use a 220ms stepped reveal without sliding or changing their layout. Buttons
-are usable immediately and screen readers receive the complete message. Reduced motion skips
-the text reveal. Reparenting during resizing never restarts the reveal; repeated identical status messages reuse the same content, and size measurements
-retain fractional pixels to avoid a small text shift at the end of a resize. Rapid updates start from the
-bar's visible size, and changes to screen size or player-card space retarget the resize. Reduced
-motion skips the size animation. The UI Lab's “Action bar resize test” exercises short, long and
-interrupted prompts. In the toolbar, between the
-zoom chip and Music chip: the **Game log** button (gold while the log is open). It opens the game log
-(turn by turn, newest at the bottom, with scrollable history) as a glass panel in
-the top right, just under the toolbar and above the player cards, as wide as the cards; it pops in
-from the top right. On short phone screens the open panel may run down over the player cards so
-enough lines show. The current turn's card ends with a waiting
-line while the game waits, and the action that answers it fades in in its place. **Skipped
-choices are logged too** (a line each, also shown on the status line): "Rosa passed on buying a
-shop for 320G.", "Rosa passed on buying out Milo's shop for 1,600G.", "Rosa passed on buying
-stock.", "Rosa passed on selling stock.", "Rosa chose not to invest.", "Rosa passed on building on
-the vacant plot.", "Rosa passed on the 200G circus upgrade.", "Rosa passed on buying a shop."
-(Estate Agency), "Rosa passed on the hostile takeover.". Every roll and landing/transport arrival is recorded. Landings are parent entries; purchases, fees and follow-up actions appear indented beneath the landing that caused them, until the next roll or arrival. Each purchase keeps its amount and target tile. Tile-linked entries are keyboard-accessible buttons; selecting one outlines the tile in gold and focuses the camera for 3 seconds, then returns to the game view. This changes only the view, never the player's movement choices. Older saves keep flat text entries where tile IDs are unavailable. The log's Close button, the Game log button again or Escape closes it. Bottom right: the player cards stacked vertically in turn order (online, each device
-turns the order round so its own player's card is at the bottom; turns still go top to bottom) (net worth, cash, level,
-suits and progress bar); they are always shown. Player cards show the character's whole sprite
-(trimmed to its drawn pixels, no fade).
+of the screen (up to 900px wide) with a tab per topic. It reopens on the last tab read; Easy rules
+show How to play, Arcade games and Venture cards.
+
+- **How to play:** chips along the top (they stay put while the page scrolls) jump to each part:
+  numbered steps 1 Goal, 2 Move, 3 Buy, 4 Fees, 5 Districts (Rows in Easy rules), 6 Invest,
+  7 Suits, 8 Stocks (Standard rules only), then Special squares and Good to know. Each step is a
+  container with a small **animated example** on the left (a patch of board drawn with the game's
+  own art, looping every 6 seconds) and a numbered title with two or three short lines on the
+  right: the goal (the net worth bar fills, "Goal reached!", a walk to the bank, "You win!"); roll
+  and move (the die tumbles to a 4, four hops, the landing square glows); buy (a coin goes into an
+  empty grey shop, which turns red: "Yours!"); fees (a rival hops onto your shop, pays, and the
+  coins fly to you); districts (four shops turn yours one by one while the fee multiplier climbs
+  ×1, ×1.2, ×1.45, then ×2.21 "whole district!" with the shops glowing); invest (coins drop in,
+  the shop grows a size, its value rises: "Fees up!"); suits (the four suits fill in, a walk to the
+  bank, "Level up! +Salary" and the suits clear); stocks (a price line climbs, and a fee in the
+  district pays a dividend). Examples only play while on screen and start over each time one
+  scrolls into view; with reduced motion each holds a single telling frame. **Special squares**:
+  four groups (Good luck, Getting around, Watch out, Suits), a row per square with its picture,
+  name and one line. **Good to know**: before you roll, running out of money (numbered), and the
+  controls (keys shown as keycaps).
+- **Stocks:** a three-step flow (1 Buy → 2 Earn → 3 Sell), a worked dividend example
+  ("200G × 50 shares ÷ 250 = 40G for you"), what moves the price in two columns (▲ Goes up in
+  green, ▼ Goes down in red; the classic rules for classic-stock games) and Good to know boxes.
+- **Vacant plots:** three key facts (first to stop builds there; 3 of each building per board;
+  150G + the new price to renovate), then a card per building: picture, name and price, then
+  "Rivals stop" (red label) and "You stop" (green label) rows, the circus upgrade prices, and in a
+  game how many are left to build.
+- **Arcade games:** a card per game with a Solo / Everyone plays tag, numbered how-to steps and a
+  gold Prize box (Lucky Reels lists its prizes), and an Everyone plays note.
+- **Venture cards:** filter chips (All, Movement, Cash, Shop value, Fees, Suits, Property deals,
+  Stocks) over the cards grouped under a heading per group with its count. Each card has its fixed
+  number in a purple badge, its title and effect, and a Standard rules tag where it applies. The
+  group comes from each card's `kind` in `cards.ts` (Guide only, no effect on play). Top left: the **info chip**, with the game's name, the goal (target net worth), online a Room
+  button that shows the room code, and at its end the **Info** button (an "i" in a white outlined circle
+  and the word Info; gold while open), which opens the **Game info pop-up** (see below). The board name and the
+  round are on the Game info pop-up instead. Bottom center: the **action bar** (on
+  narrow windows such as phones in landscape, where a centered bar would have less than 520px
+  between the screen edge and the player cards, it sits in the bottom left corner instead and uses
+  all the width up to the cards; this depends only on the window, not on what the bar shows; as a safety net, a centered bar
+  whose options would not fit moves bottom left too and stays there at that window size). When it
+  sits bottom left, the pop-ups over the board (the stock market, auctions, the venture board, arcade
+  games and the info pop-up) line up on the left with it too, between the bar and the toolbar, so they
+  use all the room up to the player cards. On phones the auction pop-up is compact (a smaller lot
+  row, the high bid on one line, small bidder chips) so the bidders always fit. While the game waits on
+  nobody here, it is the status line: one line saying what is going on now: what the game is waiting
+  on a player to do ("Blue is buying stocks...", "Blue is deciding which space to go to...", see
+  `ui/activity.ts`; turn handoffs have their own message, and rolling/walking are active phases) or else the last thing that happened, with the log icon for
+  that kind of action and player names in their colors. A wait stays until the next action or wait replaces it. For observers (CPU or remote turns),
+  a roll and destination choice are combined: “Rosa rolled a 5 and is deciding where to move...”.
+  Card movement without a matching roll describes the number of spaces without claiming a die roll.
+  Landing announces the named space. Completed actions and landings remain in the action bar
+  for one second within their action; generic waiting is deferred for 1.2 seconds of quiet. A newer result, actual
+  movement or a new turn replaces stale text immediately. The game does not pause for this timer;
+  the game log shows the pending decision immediately. Local players receive their interactive choices immediately. Resolving a local prompt removes
+  its pending waiting message from both the action bar and log. Confirmed purchases, buyouts,
+  construction, renovations, investments, circus upgrades, stock trades and fees announce their
+  result at the committed money event, before animation delays. Results are not announced as
+  successful merely because a button was pressed; the engine must first confirm the action. Landing announcements are presentation-only, not extra saved log entries. When a player on this device has a choice to make, the bar morphs (eases its width and
+  height, over 740ms) into their options, and morphs back to the status line once they answer. During a resize,
+  text keeps its destination layout so it does not repeatedly wrap. New messages use a 220ms stepped reveal without sliding or changing their layout. Buttons
+  are usable immediately and screen readers receive the complete message. Reduced motion skips
+  the text reveal. Reparenting during resizing never restarts the reveal; repeated identical status messages reuse the same content, and size measurements
+  retain fractional pixels to avoid a small text shift at the end of a resize. Rapid updates start from the
+  bar's visible size, and changes to screen size or player-card space retarget the resize. Reduced
+  motion skips the size animation. The UI Lab's “Action bar resize test” exercises short, long and
+  interrupted prompts. In the toolbar, between the
+  zoom chip and Music chip: the **Game log** button (gold while the log is open). It opens the game log
+  (turn by turn, newest at the bottom, with scrollable history) as a glass panel in
+  the top right, just under the toolbar and above the player cards, as wide as the cards; it pops in
+  from the top right. On short phone screens the open panel may run down over the player cards so
+  enough lines show. The current turn's card ends with a waiting
+  line while the game waits, and the action that answers it fades in in its place. **Skipped
+  choices are logged too** (a line each, also shown on the status line): "Rosa passed on buying a
+  shop for 320G.", "Rosa passed on buying out Milo's shop for 1,600G.", "Rosa passed on buying
+  stock.", "Rosa passed on selling stock.", "Rosa chose not to invest.", "Rosa passed on building on
+  the vacant plot.", "Rosa passed on the 200G circus upgrade.", "Rosa passed on buying a shop."
+  (Estate Agency), "Rosa passed on the hostile takeover.". Every roll and landing/transport arrival is recorded. Landings are parent entries; purchases, fees and follow-up actions appear indented beneath the landing that caused them, until the next roll or arrival. Each purchase keeps its amount and target tile. Tile-linked entries are keyboard-accessible buttons; selecting one outlines the tile in gold and focuses the camera for 3 seconds, then returns to the game view. This changes only the view, never the player's movement choices. Older saves keep flat text entries where tile IDs are unavailable. The log's Close button, the Game log button again or Escape closes it. Bottom right: the player cards stacked vertically in turn order (online, each device
+  turns the order round so its own player's card is at the bottom; turns still go top to bottom) (net worth, cash, level,
+  suits and progress bar); they are always shown. Player cards show the character's whole sprite
+  (trimmed to its drawn pixels, no fade).
 
 **Info pop-ups** (`ui/info.ts`). Four kinds of pop-up show what a player may want to look up:
 **Game info** (the Info button), the **stock market** (the Stocks chip), the **properties** (the

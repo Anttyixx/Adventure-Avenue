@@ -952,6 +952,31 @@ Reopened online games keep guests on Continue Game until the host presses Resume
   stretch that line. Follow-ups hang off a 2px line that runs straight down from the centre of the
   main icon. The turn header's portrait sits in the same 22px column.
 
+### Guide (pop-up)
+
+- `hud.modal('Guide', ..., { wide: true })` with class `guide-modal` (up to 900px); the tabs are a
+  segmented control; the page scrolls at a fixed height (min(64vh, 540px), 60vh on phones).
+- **Jump / filter chips** (`.gd-chip`): small pills with a faint fill and a 1.5px glass-line
+  border; the selected one is solid gold with dark text. The row is sticky at the top of the page.
+- **Containers** (`.gd-box`, `.gd-step`, `.gd-sq-group`, `.gd-building`, `.gd-card`, `.gd-fact`,
+  `.gd-flow-step`): 5% white on the glass, a glass-line border, 12-14px radius, 10-14px padding;
+  Lilita titles (15-19px), 13-14px body text. Groups of them sit under a Lilita 19px heading with a
+  muted 13px line (`.gd-heading`).
+- **Numbers:** a 24px gold circle with dark Lilita digits (`.gd-num`) for steps; 18px faint-gold
+  circles for numbered lists (`.gd-steps`); a 30px purple rounded square for venture card numbers.
+- **Worked examples** (`.gd-example`): a 4px gold left edge over an 8% gold wash, a gold Lilita
+  title, the sum in Lilita 16px with the answer in gold.
+- **Up / down** (`.gd-updown`): two containers with a 3px top edge, green for ▲ and red for ▼.
+- **Labels** (`.gd-when em`): small uppercase pills, red-tinted for "Rivals stop", green for "You
+  stop". Prize boxes (`.gd-prize`): an 8% gold wash with a small uppercase gold label.
+- **Animated examples** (`.gx`): a 240x132 patch of grass (12px radius) drawn at `--s` (0.72 on
+  phones), holding blank path squares and the game's shop, bank and suit art, character sprites,
+  coins and Lilita pop-up words (white with a dark outline; gold for wins, green for money in, red
+  for money out). Every piece loops over 6s (`--gx`) with ease-in-out keyframes; use transform and
+  opacity, not layout. They run only on screen (IntersectionObserver), restart when they scroll in,
+  and hold one frame at 78% of the loop with reduced motion. CSS rules inside them must not match
+  the coin icon `coins.ts` puts into money text (use child selectors).
+
 ### Results (pop-up)
 
 - **Footer:** a ghost Back to start and the gold Play again (rematch) on the right; a guest online

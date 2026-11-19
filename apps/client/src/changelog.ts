@@ -26,6 +26,23 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: '2026-11-19-guide',
+    date: 'Nov 19, 2026',
+    title: 'A clearer Guide',
+    features: [
+      {
+        tag: 'better',
+        title: 'How to play, with animations',
+        text: 'The Guide now walks you through the game in numbered steps, each with a little animated example: rolling, buying, collecting fees, owning a district, investing, suits and stocks. Chips at the top jump to any step.',
+      },
+      {
+        tag: 'better',
+        title: 'Easier to read',
+        text: 'Stocks, vacant plots, arcade games and venture cards are broken into small boxes: a how-it-works flow, worked examples, labeled "Rivals stop / You stop" rows, and venture cards grouped with filter chips.',
+      },
+    ],
+  },
+  {
     id: '2026-11-14-gain-loss-tiles',
     date: 'Nov 14, 2026',
     title: 'Blue gains and red losses',

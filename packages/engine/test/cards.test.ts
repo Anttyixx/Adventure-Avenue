@@ -48,3 +48,13 @@ describe('venture card reference numbers', () => {
     }
   });
 });
+
+describe('venture card groups (the Guide)', () => {
+  it('gives every card a group, and only Standard cards are stock cards', () => {
+    const kinds = ['move', 'cash', 'value', 'fees', 'suits', 'deals', 'stocks'];
+    for (const card of CARD_LIST) {
+      expect(kinds).toContain(card.kind);
+      if (card.kind === 'stocks') expect(card.std).toBe(true);
+    }
+  });
+});

@@ -1775,6 +1775,9 @@ input[type='range'] {
 }
 
 /* The game guide: a tab per topic over a page that scrolls (the same height for every tab). */
+.modal.guide-modal {
+  width: min(900px, 100%);
+}
 .guide {
   display: flex;
   flex-direction: column;
@@ -1782,79 +1785,490 @@ input[type='range'] {
   min-height: 0;
 }
 .guide-page {
-  height: min(60vh, 460px);
+  height: min(64vh, 540px);
   overflow-y: auto;
   overscroll-behavior: contain;
   padding-right: 6px;
 }
-.guide-page > h4:first-child {
+.guide-tabs {
+  flex-wrap: wrap;
+}
+/* Chips at the top of a tab: jump to a step (How to play) or filter (Venture cards). They stay
+   at the top while the page scrolls. */
+.gd-jump {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 2px 0 10px;
+  background: rgba(16, 26, 51, 0.97);
+}
+.gd-chip {
+  padding: 4px 11px;
+  border-radius: 999px;
+  border: 1.5px solid var(--glass-line);
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text);
+  font: 700 12px var(--body);
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.gd-chip:hover {
+  background: rgba(255, 255, 255, 0.13);
+}
+.gd-chip.on {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: #3b2a00;
+}
+/* Headings over groups of containers. */
+.gd-heading {
+  margin: 16px 0 8px;
+}
+.gd-heading:first-child,
+.gd-jump + .gd-heading {
   margin-top: 0;
 }
-/* Each topic is a card: icon + title, then a few short points. */
-.guide-grid {
+.rules .gd-heading h3 {
+  margin: 0;
+  font-family: var(--head);
+  font-weight: 400;
+  font-size: 19px;
+}
+.rules .gd-heading p {
+  margin: 2px 0 0;
+  color: var(--muted);
+  font-size: 13px;
+}
+.rules .gd-note {
+  margin: 8px 0 0;
+  color: var(--muted);
+  font-size: 12px;
+}
+.gd-num {
+  display: inline-grid;
+  place-items: center;
+  flex: none;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: #3b2a00;
+  font-family: var(--head);
+  font-size: 14px;
+}
+/* How to play: each step is a container with its animated example on the left and a numbered
+   title with two or three short lines on the right. */
+.gd-step {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(270px, 1fr));
-  gap: 10px;
-}
-.guide-sec {
-  padding: 12px 14px;
-  border-radius: 12px;
-  background: rgba(255, 255, 255, 0.06);
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 10px;
+  padding: 12px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.05);
   border: 1px solid var(--glass-line);
+  scroll-margin-top: 48px;
 }
-.gs-head {
+.gd-step-head {
   display: flex;
   align-items: center;
   gap: 8px;
   margin-bottom: 6px;
 }
-.gs-head img {
+.rules .gd-step-head h4 {
+  margin: 0;
+  font-family: var(--head);
+  font-weight: 400;
+  font-size: 19px;
+}
+.gd-lines {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.gd-lines li {
+  position: relative;
+  padding-left: 14px;
+  font-size: 14px;
+  line-height: 1.45;
+}
+.gd-lines li + li {
+  margin-top: 4px;
+}
+.gd-lines li::before {
+  content: '';
+  position: absolute;
+  left: 2px;
+  top: 0.6em;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accent);
+}
+.gd-lines b {
+  color: var(--accent);
+}
+.gd-block {
+  scroll-margin-top: 48px;
+  margin-top: 6px;
+}
+/* Containers: a titled box with an optional icon. */
+.gd-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 10px;
+}
+.gd-box {
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--glass-line);
+}
+.gd-box-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+.gd-box-head img {
   width: 26px;
   height: 26px;
   object-fit: contain;
-  image-rendering: pixelated;
 }
-.rules .guide-sec h4 {
+.rules .gd-box-head h4 {
   margin: 0;
+  font-family: var(--head);
+  font-weight: 400;
+  font-size: 16px;
+}
+.rules .gd-box p {
+  font-size: 13px;
+  line-height: 1.45;
+}
+/* Numbered how-to steps inside a container. */
+.gd-steps {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  counter-reset: gd;
+}
+.gd-steps li {
+  position: relative;
+  padding-left: 26px;
+  font-size: 13px;
+  line-height: 1.45;
+  counter-increment: gd;
+}
+.gd-steps li + li {
+  margin-top: 4px;
+}
+.gd-steps li::before {
+  content: counter(gd);
+  position: absolute;
+  left: 0;
+  top: 1px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: rgba(255, 209, 102, 0.18);
+  color: var(--accent);
+  font: 12px/18px var(--head);
+  text-align: center;
+}
+/* Special squares: four groups, a row per square (picture, name, one line). */
+.gd-sq-groups {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 10px;
+}
+.gd-sq-group {
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--glass-line);
+}
+.gd-sq-group h5,
+.gd-updown h5 {
+  margin: 0 0 6px;
+  color: var(--accent);
+  font: 700 11px var(--body);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.gd-sq {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 4px 0;
+}
+.gd-sq + .gd-sq {
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+.gd-sq img {
+  flex: none;
+  width: 34px;
+  height: 34px;
+  object-fit: contain;
+}
+.gd-sq b {
+  display: block;
+  font-family: var(--head);
+  font-weight: 400;
+  font-size: 14px;
+}
+.gd-sq > div > span {
+  display: block;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.35;
+}
+/* Controls: a key or gesture, then what it does on the right. */
+.gd-keys {
+  display: grid;
+  gap: 5px;
+  font-size: 13px;
+}
+.gd-keys > div {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.gd-keys > div > span {
+  margin-left: auto;
+  color: var(--muted);
+}
+.gd-keys kbd {
+  padding: 1px 7px;
+  border-radius: 6px;
+  border: 1px solid var(--glass-line);
+  border-bottom-width: 2px;
+  background: rgba(255, 255, 255, 0.08);
+  font: 700 12px var(--body);
+}
+/* Stocks: a three-step flow, a worked example, what moves the price. */
+.gd-flow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: stretch;
+  gap: 8px;
+}
+.gd-flow-step {
+  flex: 1 1 170px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--glass-line);
+}
+.gd-flow-step b {
+  font-family: var(--head);
+  font-weight: 400;
   font-size: 17px;
 }
-.rules .guide-sec p {
+.rules .gd-flow-step p {
   font-size: 13px;
   line-height: 1.4;
 }
-.gs-list {
+.gd-arrow {
+  align-self: center;
+  color: var(--accent);
+  font-size: 20px;
+}
+.gd-example {
+  margin: 10px 0 0;
+  padding: 10px 14px;
+  border-radius: 10px;
+  border-left: 4px solid var(--accent);
+  background: rgba(255, 209, 102, 0.08);
+}
+.gd-example-title {
+  display: block;
+  margin-bottom: 2px;
+  font-family: var(--head);
+  font-weight: 400;
+  font-size: 15px;
+  color: var(--accent);
+}
+.rules .gd-example p {
+  font-size: 13px;
+}
+.rules .gd-example .gd-math {
+  margin-top: 4px;
+  font-family: var(--head);
+  font-size: 16px;
+}
+.gd-math b {
+  font-weight: 400;
+  color: var(--accent);
+}
+.gd-updown {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 10px;
+}
+.gd-up,
+.gd-down {
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--glass-line);
+  border-top: 3px solid var(--good);
+}
+.gd-down {
+  border-top-color: #e5484d;
+}
+.gd-updown .gd-up h5 {
+  color: var(--good);
+}
+.gd-updown .gd-down h5 {
+  color: #ff8a8f;
+}
+.gd-updown ul {
   margin: 0;
   padding-left: 18px;
   font-size: 13px;
-  line-height: 1.4;
+  line-height: 1.45;
 }
-.gs-list li + li {
-  margin-top: 3px;
+/* Key facts: a big value over a short label. */
+.gd-facts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 8px;
 }
-.gs-list li::marker {
+.gd-fact {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 10px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--glass-line);
+  text-align: center;
+}
+.gd-fact b {
+  font-family: var(--head);
+  font-weight: 400;
+  font-size: 19px;
   color: var(--accent);
 }
-.gs-tag {
+.gd-fact > span {
+  color: var(--muted);
+  font-size: 12px;
+}
+/* Vacant plot buildings: picture, name and price, then what happens when rivals stop and when
+   you stop, each with a colored label. */
+.gd-buildings {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 10px;
+}
+.gd-building {
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--glass-line);
+}
+.gd-building-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 4px;
+}
+.gd-building-head img {
+  width: 44px;
+  height: 44px;
+  object-fit: contain;
+}
+.gd-building-head b {
+  font-family: var(--head);
+  font-weight: 400;
+  font-size: 16px;
+}
+.gd-price {
+  margin-left: auto;
+  font-family: var(--head);
+  color: var(--accent);
+}
+.gd-when {
+  display: grid;
+  grid-template-columns: 84px 1fr;
+  align-items: start;
+  gap: 8px;
+  margin-top: 6px;
+  font-size: 13px;
+  line-height: 1.4;
+}
+.gd-when em {
+  padding: 2px 0;
+  border-radius: 999px;
+  font: 700 10px var(--body);
+  font-style: normal;
+  letter-spacing: 0.04em;
+  text-align: center;
+  text-transform: uppercase;
+}
+.gd-when.rival em {
+  background: rgba(229, 72, 77, 0.18);
+  color: #ff8a8f;
+}
+.gd-when.you em {
+  background: rgba(53, 196, 106, 0.18);
+  color: var(--good);
+}
+.rules .gd-left {
+  margin-top: 6px;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 700;
+}
+/* Arcade games: a tag (Solo / Everyone plays), numbered steps, the prize. */
+.gd-tag {
   display: inline-block;
-  margin-bottom: 6px;
   padding: 1px 9px;
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.1);
   color: var(--muted);
   font-size: 11px;
   font-weight: 700;
+  white-space: nowrap;
 }
-.gs-tag.all {
+.gd-tag.all {
   background: rgba(53, 196, 106, 0.18);
   color: var(--good);
 }
-.gs-prizes {
+.gd-game .gd-box-head .gd-tag {
+  margin-left: auto;
+}
+.gd-prize {
+  display: grid;
+  gap: 4px;
+  margin-top: 8px;
+  padding: 7px 10px;
+  border-radius: 8px;
+  background: rgba(255, 209, 102, 0.08);
+  font-size: 13px;
+  line-height: 1.4;
+}
+.gd-prize em {
+  color: var(--accent);
+  font: 700 10px var(--body);
+  font-style: normal;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.gd-table {
   display: grid;
   gap: 2px;
-  margin-top: 6px;
   font-size: 12px;
 }
-.gs-prizes > div {
+.gd-table > div {
   display: flex;
   justify-content: space-between;
   gap: 8px;
@@ -1862,75 +2276,1281 @@ input[type='range'] {
   border-radius: 6px;
   background: rgba(255, 255, 255, 0.05);
 }
-.gs-prizes b {
+.gd-table b {
   color: var(--accent);
-  font-weight: 700;
 }
-.rules .guide-intro {
-  margin: 0 0 10px;
-  color: var(--muted);
-  font-size: 13px;
-}
-.rules .guide-grid + .guide-intro {
-  margin: 10px 0 0;
-}
-.guide-plots {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-  gap: 8px;
-  margin-top: 10px;
-}
-.guide-plot {
+/* Venture cards: a heading per group, then cards with their number in a purple badge. */
+.rules .gd-cards-head {
   display: flex;
-  gap: 10px;
-  align-items: flex-start;
-  padding: 8px 10px;
-  border-radius: 10px;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid var(--glass-line);
-}
-.guide-plot img {
-  width: 52px;
-  height: 52px;
-  flex: none;
-  object-fit: contain;
-  image-rendering: pixelated;
-}
-.guide-plot-head {
-  display: flex;
-  justify-content: space-between;
+  align-items: center;
   gap: 8px;
-  margin-bottom: 2px;
-}
-.guide-plot-head b {
+  margin: 12px 0 6px;
   font-family: var(--head);
   font-weight: 400;
   font-size: 16px;
 }
-.guide-plot-head span {
+.gd-cards-head span {
+  padding: 0 7px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--muted);
+  font: 700 11px var(--body);
+}
+.gd-cards > .gd-cards-head:first-child {
+  margin-top: 0;
+}
+.gd-card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 8px;
+}
+.gd-card {
+  display: flex;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--glass-line);
+}
+.gd-card-num {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  background: linear-gradient(#a77bff, #7a4fe0);
+  color: #fff;
   font-family: var(--head);
-  color: var(--accent);
+  font-size: 15px;
 }
-/* In a game: how many more of the building the board allows, beside its price. */
-.guide-plot-head .guide-left {
-  margin-left: auto;
-  align-self: center;
-  color: var(--muted);
-  font-size: 11px;
-  font-weight: 700;
+.gd-card b {
+  margin-right: 6px;
+  font-family: var(--head);
+  font-weight: 400;
+  font-size: 15px;
 }
-.rules .guide-plot p {
+.rules .gd-card p {
+  margin-top: 2px;
   font-size: 13px;
-  line-height: 1.35;
+  line-height: 1.4;
 }
-.guide-plot em {
-  font-style: normal;
-  color: var(--muted);
+
+/* The animated examples (How to play). Each is a little patch of board, 240 x 132 drawn at
+   `--s` scale; every piece loops over 6 s (`--gx`, matching SCENE_MS in guide.ts). guide.ts only
+   runs them on screen, restarts each as it scrolls in, and holds one frame for reduced motion. */
+.gx {
+  --s: 1;
+  --gx: 6s;
+  position: relative;
+  flex: none;
+  width: calc(240px * var(--s));
+  height: calc(132px * var(--s));
+  overflow: hidden;
+  border-radius: 12px;
+  background:
+    radial-gradient(circle at 25% 20%, rgba(255, 255, 255, 0.14), transparent 60%),
+    linear-gradient(#86c766, #6fb252);
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.15);
 }
-.rules .guide-plot .guide-note {
-  margin-top: 3px;
-  font-size: 12px;
-  color: var(--muted);
+.gx-in {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 240px;
+  height: 132px;
+  transform: scale(var(--s));
+  transform-origin: 0 0;
+}
+.gx * {
+  animation-duration: var(--gx);
+  animation-iteration-count: infinite;
+  animation-timing-function: ease-in-out;
+  animation-fill-mode: both;
+}
+.gx-tile {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  border: 3px solid var(--bd, #e7dfcc);
+  background: #fffaf0;
+  box-shadow: 0 2px 0 rgba(0, 0, 0, 0.2);
+}
+.gx-tile img {
+  position: absolute;
+  width: 30px;
+  height: 30px;
+  object-fit: contain;
+}
+.gx-tile.gx-big {
+  position: absolute;
+  width: 52px;
+  height: 52px;
+}
+.gx-big img {
+  width: 40px;
+  height: 40px;
+}
+.gx-road {
+  background: #f3ead6;
+}
+.gx-row {
+  position: absolute;
+  display: flex;
+  gap: 6px;
+}
+.gx-tok {
+  position: absolute;
+  width: 26px;
+  height: 40px;
+  object-fit: contain;
+  object-position: bottom;
+  image-rendering: pixelated;
+  filter: drop-shadow(0 2px 0 rgba(0, 0, 0, 0.3));
+  z-index: 2;
+}
+.gx-coin {
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  opacity: 0;
+  z-index: 3;
+}
+.gx-pop {
+  position: absolute;
+  z-index: 4;
+  font-family: var(--head);
+  font-size: 15px;
+  color: #fff;
+  white-space: nowrap;
+  text-shadow:
+    0 1px 0 #1d2a4a,
+    0 0 4px rgba(16, 26, 51, 0.8);
+  opacity: 0;
+  translate: -50% 0;
+}
+.gx-now {
+  opacity: 0;
+}
+
+/* 1 Goal: the bar fills, "Goal reached!", a walk to the bank, "You win!". */
+.gx-bar {
+  position: absolute;
+  left: 20px;
+  top: 12px;
+  width: 200px;
+  height: 18px;
+  overflow: hidden;
+  border-radius: 9px;
+  background: rgba(16, 26, 51, 0.55);
+}
+.gx-fill {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 100%;
+  transform-origin: left;
+  background: linear-gradient(90deg, #f5b301, #ffe08f);
+  animation-name: gx-goal-fill;
+}
+@keyframes gx-goal-fill {
+  0% {
+    transform: scaleX(0.08);
+  }
+  45%,
+  100% {
+    transform: scaleX(1);
+  }
+}
+.gx-bar-label {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  color: #fff;
+  font: 700 10px var(--body);
+  text-shadow: 0 1px 2px #000;
+}
+.gx-goal .gx-reached {
+  left: 120px;
+  top: 34px;
+  color: #ffe08f;
+  animation-name: gx-goal-reached;
+}
+@keyframes gx-goal-reached {
+  0%,
+  44% {
+    opacity: 0;
+    transform: scale(0.6);
+  }
+  50%,
+  62% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  68%,
+  100% {
+    opacity: 0;
+  }
+}
+.gx-goal .gx-row {
+  left: 54px;
+  top: 78px;
+}
+.gx-goal .gx-walk {
+  left: 61px;
+  top: 52px;
+  animation-name: gx-goal-walk;
+}
+@keyframes gx-goal-walk {
+  0%,
+  55% {
+    transform: translate(0, 0);
+  }
+  61% {
+    transform: translate(23px, -12px);
+  }
+  67% {
+    transform: translate(46px, 0);
+  }
+  73% {
+    transform: translate(69px, -12px);
+  }
+  79%,
+  100% {
+    transform: translate(92px, 0);
+  }
+}
+.gx-goal .gx-win {
+  left: 166px;
+  top: 34px;
+  font-size: 18px;
+  color: #ffe08f;
+  animation-name: gx-goal-win;
+}
+@keyframes gx-goal-win {
+  0%,
+  80% {
+    opacity: 0;
+    transform: scale(0.5);
+  }
+  86% {
+    opacity: 1;
+    transform: scale(1.2);
+  }
+  90%,
+  97% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+/* 2 Move: the die tumbles to a 4, then four hops; the square it lands on glows. */
+.gx-die {
+  position: absolute;
+  left: 14px;
+  top: 14px;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: #fff;
+  box-shadow: 0 3px 0 rgba(0, 0, 0, 0.25);
+  animation-name: gx-roll;
+}
+.gx-die i {
+  position: absolute;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #1d2a4a;
+}
+.gx-die .tl {
+  left: 6px;
+  top: 6px;
+}
+.gx-die .tr {
+  right: 6px;
+  top: 6px;
+}
+.gx-die .bl {
+  left: 6px;
+  bottom: 6px;
+}
+.gx-die .br {
+  right: 6px;
+  bottom: 6px;
+}
+@keyframes gx-roll {
+  0% {
+    transform: rotate(0) scale(1);
+  }
+  8% {
+    transform: rotate(160deg) scale(1.2) translateY(-6px);
+  }
+  18% {
+    transform: rotate(360deg) scale(1);
+  }
+  100% {
+    transform: rotate(360deg) scale(1);
+  }
+}
+.gx-move .gx-five {
+  left: 12px;
+  top: 82px;
+  gap: 5px;
+}
+.gx-move .gx-hop {
+  left: 19px;
+  top: 56px;
+  animation-name: gx-hop;
+}
+@keyframes gx-hop {
+  0%,
+  24% {
+    transform: translate(0, 0);
+  }
+  30% {
+    transform: translate(22px, -14px);
+  }
+  36% {
+    transform: translate(45px, 0);
+  }
+  42% {
+    transform: translate(67px, -14px);
+  }
+  48% {
+    transform: translate(90px, 0);
+  }
+  54% {
+    transform: translate(112px, -14px);
+  }
+  60% {
+    transform: translate(135px, 0);
+  }
+  66% {
+    transform: translate(157px, -14px);
+  }
+  72%,
+  100% {
+    transform: translate(180px, 0);
+  }
+}
+.gx-move .gx-land {
+  animation-name: gx-land;
+}
+@keyframes gx-land {
+  0%,
+  72% {
+    box-shadow: 0 2px 0 rgba(0, 0, 0, 0.2);
+  }
+  78%,
+  96% {
+    box-shadow:
+      0 2px 0 rgba(0, 0, 0, 0.2),
+      0 0 0 4px #fff,
+      0 0 14px 6px rgba(255, 224, 143, 0.9);
+  }
+  100% {
+    box-shadow: 0 2px 0 rgba(0, 0, 0, 0.2);
+  }
+}
+
+/* 3 Buy: a coin goes into the empty shop, which turns your color: "Yours!". */
+.gx-buy .gx-big {
+  left: 94px;
+  top: 64px;
+}
+.gx-buy .gx-buyer {
+  left: 107px;
+  top: 34px;
+}
+.gx-buy .gx-pay {
+  left: 112px;
+  top: 40px;
+  animation-name: gx-pay;
+}
+@keyframes gx-pay {
+  0%,
+  12% {
+    opacity: 0;
+    transform: translate(0, 0);
+  }
+  16% {
+    opacity: 1;
+    transform: translate(16px, -10px);
+  }
+  32% {
+    opacity: 1;
+    transform: translate(0, 36px) scale(0.8);
+  }
+  36%,
+  100% {
+    opacity: 0;
+    transform: translate(0, 40px) scale(0.6);
+  }
+}
+.gx-buy .gx-was {
+  animation-name: gx-was;
+}
+.gx-buy .gx-now {
+  animation-name: gx-buy-now;
+}
+@keyframes gx-buy-now {
+  0%,
+  34% {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+  40% {
+    opacity: 1;
+    transform: scale(1.15);
+  }
+  46%,
+  94% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  100% {
+    opacity: 0;
+  }
+}
+@keyframes gx-was {
+  0%,
+  34% {
+    opacity: 1;
+  }
+  38%,
+  96% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+.gx-buy .gx-big {
+  animation-name: gx-buy-tile;
+}
+@keyframes gx-buy-tile {
+  0%,
+  36% {
+    background: #fffaf0;
+  }
+  42%,
+  94% {
+    background: #ffd9da;
+  }
+  100% {
+    background: #fffaf0;
+  }
+}
+.gx-buy .gx-cost {
+  left: 156px;
+  top: 34px;
+  color: #ff8a8f;
+  animation-name: gx-cost;
+}
+@keyframes gx-cost {
+  0%,
+  14% {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  20%,
+  34% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  42%,
+  100% {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+}
+.gx-buy .gx-yours {
+  left: 186px;
+  top: 80px;
+  color: #ffe08f;
+  font-size: 18px;
+  animation-name: gx-pop-late;
+}
+@keyframes gx-pop-late {
+  0%,
+  42% {
+    opacity: 0;
+    transform: scale(0.5);
+  }
+  48% {
+    opacity: 1;
+    transform: scale(1.15);
+  }
+  54%,
+  92% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+/* 4 Fees: a rival hops onto your shop; their fee flies over to you. */
+.gx-fees .gx-row {
+  left: 34px;
+  top: 76px;
+}
+.gx-fees .gx-rival {
+  left: 41px;
+  top: 50px;
+  animation-name: gx-rival;
+}
+@keyframes gx-rival {
+  0%,
+  6% {
+    transform: translate(0, 0);
+  }
+  14% {
+    transform: translate(23px, -16px);
+  }
+  22%,
+  100% {
+    transform: translate(46px, 0);
+  }
+}
+.gx-fees .gx-paid {
+  left: 100px;
+  top: 30px;
+  color: #ff8a8f;
+  animation-name: gx-cost-late;
+}
+@keyframes gx-cost-late {
+  0%,
+  24% {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  30%,
+  46% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  54%,
+  100% {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+}
+.gx-fees .gx-fly {
+  left: 96px;
+  top: 70px;
+}
+.gx-fees .gx-fly.a {
+  animation-name: gx-fly-a;
+}
+.gx-fees .gx-fly.b {
+  animation-name: gx-fly-b;
+}
+@keyframes gx-fly-a {
+  0%,
+  30% {
+    opacity: 0;
+    transform: translate(0, 0);
+  }
+  33% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 1;
+    transform: translate(96px, -44px);
+  }
+  53%,
+  100% {
+    opacity: 0;
+    transform: translate(100px, -46px);
+  }
+}
+@keyframes gx-fly-b {
+  0%,
+  36% {
+    opacity: 0;
+    transform: translate(0, 0);
+  }
+  39% {
+    opacity: 1;
+  }
+  56% {
+    opacity: 1;
+    transform: translate(96px, -44px);
+  }
+  59%,
+  100% {
+    opacity: 0;
+    transform: translate(100px, -46px);
+  }
+}
+.gx-you {
+  position: absolute;
+  left: 182px;
+  top: 12px;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  overflow: hidden;
+  border-radius: 50%;
+  border: 3px solid var(--pc);
+  background: #1d2a4a;
+  animation-name: gx-you;
+}
+.gx-you img {
+  width: 26px;
+  height: 40px;
+  margin-top: 8px;
+  object-fit: contain;
+  image-rendering: pixelated;
+}
+@keyframes gx-you {
+  0%,
+  50% {
+    transform: scale(1);
+  }
+  55% {
+    transform: scale(1.15);
+  }
+  62%,
+  100% {
+    transform: scale(1);
+  }
+}
+.gx-fees .gx-got {
+  left: 204px;
+  top: 64px;
+  color: #7cf29a;
+  font-size: 17px;
+  animation-name: gx-pop-late2;
+}
+@keyframes gx-pop-late2 {
+  0%,
+  54% {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  60%,
+  90% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+/* 5 District: four shops turn your color one by one; the fee multiplier climbs to domination. */
+.gx-district .gx-row {
+  left: 22px;
+  top: 74px;
+}
+.gx-district .gx-was {
+  animation-name: none;
+}
+.gx-district .own1 .gx-now {
+  animation-name: gx-own1;
+}
+.gx-district .own2 .gx-now {
+  animation-name: gx-own2;
+}
+.gx-district .own3 .gx-now {
+  animation-name: gx-own3;
+}
+.gx-district .own4 .gx-now {
+  animation-name: gx-own4;
+}
+@keyframes gx-own1 {
+  0%,
+  4% {
+    opacity: 0;
+  }
+  8%,
+  94% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+@keyframes gx-own2 {
+  0%,
+  19% {
+    opacity: 0;
+  }
+  23%,
+  94% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+@keyframes gx-own3 {
+  0%,
+  34% {
+    opacity: 0;
+  }
+  38%,
+  94% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+@keyframes gx-own4 {
+  0%,
+  49% {
+    opacity: 0;
+  }
+  53%,
+  94% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+.gx-district .gx-row .gx-tile {
+  animation-name: gx-dom;
+}
+@keyframes gx-dom {
+  0%,
+  52% {
+    box-shadow: 0 2px 0 rgba(0, 0, 0, 0.2);
+  }
+  58%,
+  92% {
+    box-shadow:
+      0 2px 0 rgba(0, 0, 0, 0.2),
+      0 0 12px 3px rgba(255, 224, 143, 0.85);
+  }
+  100% {
+    box-shadow: 0 2px 0 rgba(0, 0, 0, 0.2);
+  }
+}
+.gx-mults {
+  position: absolute;
+  left: 120px;
+  top: 24px;
+}
+.gx-mult {
+  position: absolute;
+  left: 0;
+  top: 0;
+  translate: -50% 0;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: rgba(16, 26, 51, 0.75);
+  color: #fff;
+  font-family: var(--head);
+  font-size: 15px;
+  white-space: nowrap;
+  opacity: 0;
+}
+.gx-mult.m4 {
+  background: linear-gradient(#ffe08f, #f5b301);
+  color: #3b2a00;
+}
+.gx-mult.m1 {
+  animation-name: gx-m1;
+}
+.gx-mult.m2 {
+  animation-name: gx-m2;
+}
+.gx-mult.m3 {
+  animation-name: gx-m3;
+}
+.gx-mult.m4 {
+  animation-name: gx-m4;
+}
+@keyframes gx-m1 {
+  0%,
+  5% {
+    opacity: 0;
+  }
+  8%,
+  19% {
+    opacity: 1;
+  }
+  22%,
+  100% {
+    opacity: 0;
+  }
+}
+@keyframes gx-m2 {
+  0%,
+  20% {
+    opacity: 0;
+  }
+  23%,
+  34% {
+    opacity: 1;
+  }
+  37%,
+  100% {
+    opacity: 0;
+  }
+}
+@keyframes gx-m3 {
+  0%,
+  35% {
+    opacity: 0;
+  }
+  38%,
+  49% {
+    opacity: 1;
+  }
+  52%,
+  100% {
+    opacity: 0;
+  }
+}
+@keyframes gx-m4 {
+  0%,
+  50% {
+    opacity: 0;
+    transform: scale(0.7);
+  }
+  55% {
+    opacity: 1;
+    transform: scale(1.12);
+  }
+  60%,
+  94% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+/* 6 Invest: coins drop into your shop, it grows a size, its value climbs: "Fees up!". */
+.gx-invest .gx-big {
+  left: 94px;
+  top: 60px;
+}
+.gx-invest .gx-drop {
+  top: -18px;
+}
+.gx-invest .gx-drop.a {
+  left: 104px;
+  animation-name: gx-drop-a;
+}
+.gx-invest .gx-drop.b {
+  left: 112px;
+  animation-name: gx-drop-b;
+}
+.gx-invest .gx-drop.c {
+  left: 120px;
+  animation-name: gx-drop-c;
+}
+@keyframes gx-drop-a {
+  0%,
+  4% {
+    opacity: 0;
+    transform: translateY(0);
+  }
+  6% {
+    opacity: 1;
+  }
+  18% {
+    opacity: 1;
+    transform: translateY(86px);
+  }
+  20%,
+  100% {
+    opacity: 0;
+    transform: translateY(90px);
+  }
+}
+@keyframes gx-drop-b {
+  0%,
+  12% {
+    opacity: 0;
+    transform: translateY(0);
+  }
+  14% {
+    opacity: 1;
+  }
+  26% {
+    opacity: 1;
+    transform: translateY(86px);
+  }
+  28%,
+  100% {
+    opacity: 0;
+    transform: translateY(90px);
+  }
+}
+@keyframes gx-drop-c {
+  0%,
+  20% {
+    opacity: 0;
+    transform: translateY(0);
+  }
+  22% {
+    opacity: 1;
+  }
+  34% {
+    opacity: 1;
+    transform: translateY(86px);
+  }
+  36%,
+  100% {
+    opacity: 0;
+    transform: translateY(90px);
+  }
+}
+.gx-invest .gx-was {
+  animation-name: gx-was-mid;
+}
+.gx-invest .gx-now {
+  animation-name: gx-now-mid;
+}
+@keyframes gx-was-mid {
+  0%,
+  38% {
+    opacity: 1;
+  }
+  42%,
+  96% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+@keyframes gx-now-mid {
+  0%,
+  38% {
+    opacity: 0;
+    transform: scale(0.7);
+  }
+  44% {
+    opacity: 1;
+    transform: scale(1.2);
+  }
+  50%,
+  94% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  100% {
+    opacity: 0;
+  }
+}
+.gx-vals {
+  position: absolute;
+  left: 156px;
+  top: 76px;
+  font-family: var(--head);
+  font-size: 14px;
+  color: #fff;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.6);
+}
+.gx-vals > span {
+  position: absolute;
+  left: 0;
+  top: 0;
+  white-space: nowrap;
+}
+.gx-v1 {
+  animation-name: gx-was-mid;
+}
+.gx-v2 {
+  color: #ffe08f;
+  animation-name: gx-now-mid;
+}
+.gx-invest .gx-up {
+  left: 50px;
+  top: 76px;
+  color: #7cf29a;
+  animation-name: gx-pop-late;
+}
+
+/* 7 Suits: the four fill in, a walk to the bank, "Level up!" and the suits clear. */
+.gx-slots {
+  position: absolute;
+  left: 62px;
+  top: 10px;
+  display: flex;
+  gap: 4px;
+  padding: 3px 6px;
+  border-radius: 999px;
+  background: rgba(16, 26, 51, 0.55);
+}
+.gx-slot {
+  position: relative;
+  width: 24px;
+  height: 24px;
+}
+.gx-slot img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+.gx-suits .s1 .gx-now {
+  animation-name: gx-suit1;
+}
+.gx-suits .s2 .gx-now {
+  animation-name: gx-suit2;
+}
+.gx-suits .s3 .gx-now {
+  animation-name: gx-suit3;
+}
+.gx-suits .s4 .gx-now {
+  animation-name: gx-suit4;
+}
+@keyframes gx-suit1 {
+  0%,
+  4% {
+    opacity: 0;
+    transform: scale(0.4);
+  }
+  8% {
+    opacity: 1;
+    transform: scale(1.3);
+  }
+  12%,
+  72% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  76%,
+  100% {
+    opacity: 0;
+  }
+}
+@keyframes gx-suit2 {
+  0%,
+  13% {
+    opacity: 0;
+    transform: scale(0.4);
+  }
+  17% {
+    opacity: 1;
+    transform: scale(1.3);
+  }
+  21%,
+  72% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  76%,
+  100% {
+    opacity: 0;
+  }
+}
+@keyframes gx-suit3 {
+  0%,
+  22% {
+    opacity: 0;
+    transform: scale(0.4);
+  }
+  26% {
+    opacity: 1;
+    transform: scale(1.3);
+  }
+  30%,
+  72% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  76%,
+  100% {
+    opacity: 0;
+  }
+}
+@keyframes gx-suit4 {
+  0%,
+  31% {
+    opacity: 0;
+    transform: scale(0.4);
+  }
+  35% {
+    opacity: 1;
+    transform: scale(1.3);
+  }
+  39%,
+  72% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  76%,
+  100% {
+    opacity: 0;
+  }
+}
+.gx-suits .gx-row {
+  left: 76px;
+  top: 82px;
+}
+.gx-suits .gx-walk {
+  left: 83px;
+  top: 56px;
+  animation-name: gx-suits-walk;
+}
+@keyframes gx-suits-walk {
+  0%,
+  42% {
+    transform: translate(0, 0);
+  }
+  50% {
+    transform: translate(23px, -14px);
+  }
+  58%,
+  100% {
+    transform: translate(46px, 0);
+  }
+}
+.gx-suits .gx-promo {
+  left: 120px;
+  top: 46px;
+  color: #ffe08f;
+  font-size: 16px;
+  animation-name: gx-promo;
+}
+@keyframes gx-promo {
+  0%,
+  60% {
+    opacity: 0;
+    transform: scale(0.5);
+  }
+  66% {
+    opacity: 1;
+    transform: scale(1.15);
+  }
+  72%,
+  94% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+/* 8 Stocks: the price line climbs; a fee in the district pays a dividend. */
+.gx-chart {
+  position: absolute;
+  left: 12px;
+  top: 12px;
+  width: 124px;
+  height: 62px;
+  padding: 4px;
+  border-radius: 8px;
+  background: rgba(16, 26, 51, 0.55);
+}
+.gx-chart polyline {
+  fill: none;
+  stroke: #7cf29a;
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-dasharray: 100;
+  animation: gx-line var(--gx) ease-out infinite both;
+}
+@keyframes gx-line {
+  0% {
+    stroke-dashoffset: 100;
+  }
+  45%,
+  100% {
+    stroke-dashoffset: 0;
+  }
+}
+.gx-price {
+  position: absolute;
+  left: 18px;
+  top: 86px;
+  font-family: var(--head);
+  font-size: 16px;
+  color: #fff;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.6);
+  animation-name: gx-price;
+}
+@keyframes gx-price {
+  0%,
+  30% {
+    opacity: 0.3;
+  }
+  45%,
+  100% {
+    opacity: 1;
+  }
+}
+.gx-stocks .gx-dshop {
+  position: absolute;
+  left: 172px;
+  top: 22px;
+}
+.gx-stocks .gx-div {
+  left: 184px;
+  top: 64px;
+  animation-name: gx-div;
+}
+@keyframes gx-div {
+  0%,
+  52% {
+    opacity: 0;
+    transform: translateY(-14px);
+  }
+  56% {
+    opacity: 1;
+  }
+  66% {
+    opacity: 1;
+    transform: translateY(18px);
+  }
+  70%,
+  100% {
+    opacity: 0;
+    transform: translateY(22px);
+  }
+}
+.gx-stocks .gx-dpop {
+  left: 192px;
+  top: 98px;
+  color: #7cf29a;
+  font-size: 14px;
+  animation-name: gx-pop-late2;
+}
+
+/* Phones (short screens) and narrow windows: smaller examples and text. */
+@media (max-height: 500px), (max-width: 720px) {
+  .gx {
+    --s: 0.72;
+  }
+  .gd-step {
+    gap: 12px;
+    padding: 10px;
+  }
+  .rules .gd-step-head h4 {
+    font-size: 16px;
+  }
+  .gd-lines li {
+    font-size: 13px;
+  }
+  .guide-page {
+    height: min(60vh, 540px);
+  }
 }
 
 /* market: map + district/player grid on top, shop cards below */
@@ -7881,31 +9501,6 @@ div.sl-inline label {
   line-height: 1;
   text-shadow: 0 1px 2px #000;
 }
-.guide-tabs {
-  flex-wrap: wrap;
-}
-.guide-cards {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-  display: grid;
-  gap: 8px;
-}
-.guide-card {
-  padding: 10px 12px;
-  border-radius: 10px;
-  background: rgba(255, 255, 255, 0.06);
-}
-.guide-card-heading {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  gap: 4px 12px;
-}
-.guide-card p {
-  margin: 4px 0 0;
-}
-
 /* Game setup: clear choices first, with secondary tools tucked away. */
 .setup-wrap {
   width: min(1120px, 100%);
