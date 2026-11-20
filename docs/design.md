@@ -1086,6 +1086,12 @@ Rules: animate `transform` and `opacity`; nothing loops unless it needs attentio
 animation has a `prefers-reduced-motion` path (CSS media query, or `matchMedia(...)` /
 `reducedMotion()` in code) that jumps to the end state.
 
+Hold-to-open (the version chip's 3-second hold for the dev menu): show progress as a gold SVG
+outline traced round the control's edge (`pathLength` 100, dash offset 100 to 0), sized to the
+control in pixels, not a clipped fill (iPhone Safari draws those outside rounded corners). The
+control swells to 1.08 and glows gold while held, shakes for the last moment and pops when done.
+Reduced motion: only the outline.
+
 ---
 
 ## 7. The board (canvas art)

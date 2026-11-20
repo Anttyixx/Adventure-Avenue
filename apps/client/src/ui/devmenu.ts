@@ -32,26 +32,57 @@ export function installVersionChip() {
   document.documentElement.classList.add('has-badge');
   if (!IS_DEV_BUILD) return;
 
-  // Hold for 3 seconds: the chip fills up, then the dev menu opens. Letting go early cancels.
+  // Hold for 3 seconds: a gold line traces round the chip's edge while the chip swells and glows,
+  // shakes for the last moment, then pops and the dev menu opens. Letting go early cancels. The
+  // line is an SVG outline sized to the chip (a clipped fill drew outside the pill on iPhones).
+  chip.style.setProperty('--hold', `${HOLD_MS}ms`);
   let timer = 0;
+  let ring: SVGSVGElement | null = null;
   const cancel = () => {
     clearTimeout(timer);
     chip.classList.remove('holding');
+    ring?.remove();
+    ring = null;
   };
   chip.addEventListener('pointerdown', (e) => {
     if (e.button !== 0) return;
     cancel();
-    // Restart the fill animation from empty.
+    ring = holdRing(chip.offsetWidth, chip.offsetHeight);
+    chip.append(ring);
+    // Restart the animation from the beginning.
     void chip.offsetWidth;
     chip.classList.add('holding');
     timer = window.setTimeout(() => {
       cancel();
+      chip.classList.remove('done');
+      void chip.offsetWidth;
+      chip.classList.add('done');
       openDevMenu();
     }, HOLD_MS);
   });
   for (const ev of ['pointerup', 'pointerleave', 'pointercancel'] as const) chip.addEventListener(ev, cancel);
   // A long press on a phone would otherwise open the browser's menu.
   chip.addEventListener('contextmenu', (e) => e.preventDefault());
+}
+
+/** The outline traced while holding the chip: a pill the chip's size, drawn as a stroke. */
+function holdRing(w: number, hgt: number): SVGSVGElement {
+  const ns = 'http://www.w3.org/2000/svg';
+  const svg = document.createElementNS(ns, 'svg');
+  svg.setAttribute('class', 'vc-ring');
+  svg.setAttribute('viewBox', `0 0 ${w} ${hgt}`);
+  svg.setAttribute('aria-hidden', 'true');
+  const rect = document.createElementNS(ns, 'rect');
+  const inset = 1.5;
+  rect.setAttribute('x', String(inset));
+  rect.setAttribute('y', String(inset));
+  rect.setAttribute('width', String(w - inset * 2));
+  rect.setAttribute('height', String(hgt - inset * 2));
+  rect.setAttribute('rx', String(hgt / 2 - inset));
+  // pathLength 100 lets the CSS trace it with a dash of 100 whatever the chip's size.
+  rect.setAttribute('pathLength', '100');
+  svg.append(rect);
+  return svg;
 }
 
 function openDevMenu() {

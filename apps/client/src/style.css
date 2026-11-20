@@ -5058,19 +5058,78 @@ input[type='range'] {
   color: var(--accent);
   margin-right: 4px;
 }
-/* Holding the chip (test builds): it fills up over 3 seconds, then the dev menu opens. */
-.version-chip::before {
-  content: '';
+/* Holding the chip (test builds, 3 seconds): a gold line traces round its edge while it swells
+   and glows, a quick shake at the end, then a pop as the dev menu opens. */
+.version-chip {
+  transform-origin: right bottom;
+}
+.vc-ring {
   position: absolute;
   inset: 0;
-  z-index: -1;
-  background: rgba(255, 209, 102, 0.35);
-  transform: scaleX(0);
-  transform-origin: left;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
 }
-.version-chip.holding::before {
-  transform: scaleX(1);
-  transition: transform 3s linear;
+.vc-ring rect {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 2.5;
+  stroke-linecap: round;
+  stroke-dasharray: 100;
+  stroke-dashoffset: 100;
+  animation: vc-trace var(--hold, 3s) linear forwards;
+}
+@keyframes vc-trace {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+.version-chip.holding {
+  color: var(--text);
+  animation: vc-charge var(--hold, 3s) ease-in forwards;
+}
+@keyframes vc-charge {
+  0% {
+    transform: scale(1);
+    box-shadow: 0 0 0 rgba(255, 209, 102, 0);
+  }
+  82% {
+    transform: scale(1.08);
+    box-shadow: 0 0 16px rgba(255, 209, 102, 0.5);
+  }
+  86% {
+    transform: scale(1.08) rotate(-2deg);
+  }
+  90% {
+    transform: scale(1.08) rotate(2deg);
+  }
+  94% {
+    transform: scale(1.08) rotate(-2deg);
+  }
+  98%,
+  100% {
+    transform: scale(1.08) rotate(0);
+    box-shadow: 0 0 16px rgba(255, 209, 102, 0.5);
+  }
+}
+.version-chip.done {
+  animation: vc-pop 0.35s ease-out;
+}
+@keyframes vc-pop {
+  0% {
+    transform: scale(1.14);
+    background: rgba(255, 209, 102, 0.55);
+    box-shadow: 0 0 22px rgba(255, 209, 102, 0.7);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .version-chip.holding,
+  .version-chip.done {
+    animation: none;
+  }
 }
 .dev-wrap {
   position: fixed;
