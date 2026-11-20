@@ -144,7 +144,7 @@ Requests refer to parts of the game by these names:
   - **main menu**, **game setup**, **What's new** (`changelog.ts`), **Credits**, **board
     collection** (`ui/collection.ts`, Menu pop-up: view, add, hide and remove boards), **board
     viewer** (the board builder opened read-only from the collection, with an Edit button).
-  - **version chip:** bottom right of the main menu only; holding it 3 s on test builds opens the
+  - **version chip:** bottom right of the main menu only; holding it 1.5 s on test builds opens the
     **dev menu**.
   - **UI Lab** (`#ui-lab`), **Stocks lab** (`#stocks-lab`), **board editor** (`#editor`).
 - **Stocks:** two systems chosen in game setup (`G.stocks`): `dynamic` (default) and `classic`
@@ -183,7 +183,7 @@ npm run tournament -- levels 1000   # CPU difficulties against each other (also:
 
 - **Engine:** Vitest tests in `packages/engine/test/` (`helpers.ts` has `makeGame()` with a small
   test board and scripted answers). Add a test for every rule change or rule bug fix.
-- **UI Lab:** `/#ui-lab` (or the dev menu: hold the version chip on the main menu for 3 seconds).
+- **UI Lab:** `/#ui-lab` (or the dev menu: hold the version chip on the main menu for 1.5 seconds).
   It builds a sample game and has a button for every UI element, in a pop-up that the version chip
   in the top left opens and closes (Board effects buttons hide it and zoom in on the target player while their effect plays, then bring it back) (scripts can preset `localStorage['aa-lab-open'] = '0'` to
   start with it closed). `/#stocks-lab` compares the

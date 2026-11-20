@@ -5058,76 +5058,55 @@ input[type='range'] {
   color: var(--accent);
   margin-right: 4px;
 }
-/* Holding the chip (test builds, 3 seconds): a gold line traces round its edge while it swells
-   and glows, a quick shake at the end, then a pop as the dev menu opens. */
+/* Holding the chip (test builds, 1.5 seconds): it swells and shakes harder and harder, then
+   grows into the dev menu (devmenu.ts `morph`). */
 .version-chip {
   transform-origin: right bottom;
 }
-.vc-ring {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  pointer-events: none;
-}
-.vc-ring rect {
-  fill: none;
-  stroke: var(--accent);
-  stroke-width: 2.5;
-  stroke-linecap: round;
-  stroke-dasharray: 100;
-  stroke-dashoffset: 100;
-  animation: vc-trace var(--hold, 3s) linear forwards;
-}
-@keyframes vc-trace {
-  to {
-    stroke-dashoffset: 0;
-  }
-}
 .version-chip.holding {
   color: var(--text);
-  animation: vc-charge var(--hold, 3s) ease-in forwards;
+  animation: vc-charge var(--hold, 1.5s) ease-in forwards;
 }
 @keyframes vc-charge {
   0% {
-    transform: scale(1);
-    box-shadow: 0 0 0 rgba(255, 209, 102, 0);
+    transform: scale(1) rotate(0);
   }
-  82% {
-    transform: scale(1.08);
-    box-shadow: 0 0 16px rgba(255, 209, 102, 0.5);
+  20% {
+    transform: scale(1.06) rotate(-1deg);
+  }
+  30% {
+    transform: scale(1.08) rotate(1deg);
+  }
+  40% {
+    transform: scale(1.1) rotate(-1.5deg);
+  }
+  50% {
+    transform: scale(1.12) rotate(1.5deg);
+  }
+  58% {
+    transform: scale(1.14) rotate(-2deg);
+  }
+  66% {
+    transform: scale(1.16) rotate(2deg);
+  }
+  73% {
+    transform: scale(1.18) rotate(-2.5deg);
+  }
+  80% {
+    transform: scale(1.2) rotate(2.5deg);
   }
   86% {
-    transform: scale(1.08) rotate(-2deg);
+    transform: scale(1.22) rotate(-3deg);
   }
-  90% {
-    transform: scale(1.08) rotate(2deg);
-  }
-  94% {
-    transform: scale(1.08) rotate(-2deg);
-  }
-  98%,
-  100% {
-    transform: scale(1.08) rotate(0);
-    box-shadow: 0 0 16px rgba(255, 209, 102, 0.5);
-  }
-}
-.version-chip.done {
-  animation: vc-pop 0.35s ease-out;
-}
-@keyframes vc-pop {
-  0% {
-    transform: scale(1.14);
-    background: rgba(255, 209, 102, 0.55);
-    box-shadow: 0 0 22px rgba(255, 209, 102, 0.7);
+  92% {
+    transform: scale(1.24) rotate(3deg);
   }
   100% {
-    transform: scale(1);
+    transform: scale(1.26) rotate(0);
   }
 }
 @media (prefers-reduced-motion: reduce) {
-  .version-chip.holding,
-  .version-chip.done {
+  .version-chip.holding {
     animation: none;
   }
 }

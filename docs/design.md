@@ -1086,11 +1086,12 @@ Rules: animate `transform` and `opacity`; nothing loops unless it needs attentio
 animation has a `prefers-reduced-motion` path (CSS media query, or `matchMedia(...)` /
 `reducedMotion()` in code) that jumps to the end state.
 
-Hold-to-open (the version chip's 3-second hold for the dev menu): show progress as a gold SVG
-outline traced round the control's edge (`pathLength` 100, dash offset 100 to 0), sized to the
-control in pixels, not a clipped fill (iPhone Safari draws those outside rounded corners). The
-control swells to 1.08 and glows gold while held, shakes for the last moment and pops when done.
-Reduced motion: only the outline.
+Hold-to-open (the version chip's 1.5-second hold for the dev menu): the control swells (to 1.26,
+from its corner) and shakes harder and harder while held, with no progress bar; at the end the
+chip grows into the dev menu in the middle of the screen (`morph` in `devmenu.ts`: the panel moves
+and scales from the chip's box, its corners as round as the pill, its contents fading in near full
+size, 420ms with a slight overshoot, the backdrop fading in). Closing shrinks the menu back into
+the chip, which reappears with a small pop. Reduced motion: no swell, shake or morph.
 
 ---
 
