@@ -1178,11 +1178,7 @@ softly at every size (nothing clips them). Headings capitalize every word. There
   smaller and faded, on both sides. Tapping a side board, swiping or the arrow keys move it: the
   row slides over while the new board grows into the middle. Under it a thin line shows where in
   the list the board is: a gold bar (one board's share of the line) slides along it, so any
-  number of boards fits; tapping the line jumps there. Under that a **tile key** lists the kinds
-  of tile the shown board has (properties first, then the bank, venture squares, suits and the
-  other special squares), each a small chip with the tile as the picture draws it and its name;
-  on phones it is one row that scrolls sideways. Joined players see the same key under the
-  host's board.
+  number of boards fits; tapping the line jumps there.
 
 **Board pictures** (game setup, the board collection, the builder's saved boards; `ui/thumb.ts`):
 a schematic of the board on grass with its roads, not the tiles' full art, but marked so each

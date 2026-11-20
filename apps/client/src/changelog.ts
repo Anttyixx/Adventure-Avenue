@@ -33,7 +33,7 @@ export const CHANGELOG: ChangelogEntry[] = [
       {
         tag: 'better',
         title: 'See what each tile is',
-        text: 'Board previews in game setup and the board collection now mark every tile: properties outlined in their district color, B for the bank, ? for venture squares, suit symbols, and a simple mark for every other square. Game setup shows a key of the tiles on the chosen board.',
+        text: 'Board previews in game setup and the board collection now mark every tile: properties outlined in their district color, B for the bank, ? for venture squares, suit symbols, and a simple mark for every other square.',
       },
     ],
   },

@@ -3,19 +3,18 @@
  * lists. Not the tiles' full art, but enough to tell them apart at a glance: properties are light
  * tiles outlined in their district's color, the bank is a gold tile with a B, suits show their
  * symbol in their color, venture squares a purple ?, and every other special square a simple mark
- * of its own (`TILE_LOOK`). `thumbKey` lists what a board has, for a key beside the picture.
+ * of its own (`TILE_LOOK`).
  */
 import type { BoardDef, BoardLayout } from '@aa/engine';
 import { boardForPlay } from '../boardstore';
 import { cellCenter, tileShape, worldSize } from '../geometry';
-import { h } from './dom';
 
 /** The light face of property tiles and most marked tiles. */
 const FACE = '#fffaf0';
 
 /** How a tile type looks: its fill, then a letter or symbol (`mark`) or a small drawing. */
 interface TileLook {
-  /** The name in the key. */
+  /** What the tile is (for reading the code). */
   name: string;
   fill: string;
   /** A letter or symbol drawn in the middle, in `ink`. */
@@ -111,35 +110,6 @@ const TILE_LOOK: Record<string, TileLook> = {
   swap: { name: 'Swap', fill: '#4cc3c9', mark: 'S', ink: '#0f3b3d' },
   blank: { name: 'Blank', fill: 'transparent' },
 };
-
-/** The key's order: properties first, then the squares players meet most. */
-const KEY_ORDER = [
-  'shop',
-  'plot',
-  'bank',
-  'venture',
-  'spade',
-  'heart',
-  'diamond',
-  'club',
-  'change',
-  'randomSuit',
-  'jackpot',
-  'gain',
-  'loss',
-  'roll',
-  'break',
-  'boon',
-  'boom',
-  'broker',
-  'arcade',
-  'warp',
-  'portal',
-  'taxi',
-  'cannon',
-  'swap',
-  'hike',
-];
 
 /**
  * Draw one tile of a picture: `t` its type, `color` its district color (properties), centered on
@@ -256,38 +226,4 @@ export function boardThumb(full: BoardDef, maxW = 220, maxH = 130): HTMLCanvasEl
     drawTile(ctx, board.layout, sq.t, color, c.x, c.y, s);
   }
   return cv;
-}
-
-/** One tile of the key, drawn the same way as on the picture. */
-function keyIcon(t: string, color: string | null): HTMLCanvasElement {
-  const size = 18;
-  const dpr = Math.min(3, window.devicePixelRatio || 1);
-  const cv = document.createElement('canvas');
-  cv.width = size * dpr;
-  cv.height = size * dpr;
-  cv.style.width = `${size}px`;
-  cv.style.height = `${size}px`;
-  const ctx = cv.getContext('2d')!;
-  ctx.scale(dpr, dpr);
-  drawTile(ctx, 'square', t, color, size / 2, size / 2, size - 1);
-  return cv;
-}
-
-/**
- * A key to a board's picture: a chip per kind of tile it has (properties first, in one of its
- * district colors), each with the tile as the picture draws it and its name.
- */
-export function thumbKey(full: BoardDef): HTMLElement {
-  const board = boardForPlay(full);
-  const has = new Set(board.squares.map((s) => s.t));
-  const firstColor = board.districts.find((d) => d.color)?.color ?? '#f5a524';
-  const chips = KEY_ORDER.filter((t) => has.has(t as never)).map((t) =>
-    h(
-      'span',
-      { class: 'thumb-key-item' },
-      keyIcon(t, t === 'shop' || t === 'plot' ? firstColor : null),
-      t === 'shop' ? 'Property' : t === 'plot' ? 'Vacant plot' : TILE_LOOK[t].name,
-    ),
-  );
-  return h('div', { class: 'thumb-key', 'aria-label': 'What the tiles are' }, ...chips);
 }
