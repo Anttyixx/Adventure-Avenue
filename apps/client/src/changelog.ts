@@ -3,8 +3,17 @@
  * entry at the top with every update players will notice. The `id` must be unique: the menu
  * shows a "New" badge until the player has opened the latest one.
  *
- * Each entry lists its biggest changes first as `features` (cards with a short heading), then
- * smaller ones as `extras` (compact chips). Fold similar changes into one feature.
+ * What's new shows a day at a time: every entry with the same `date` goes into one container
+ * (ui/whatsnew.ts), with the day's headline (its first `new` feature, else its first feature) as
+ * a large card, the other features in a box per tag, and every extra in one "Smaller changes"
+ * list. So when writing an entry:
+ * - Put the biggest changes in `features`, each with a short title and a sentence or two. Give
+ *   every update players will notice at least one feature; if all its changes are small, write
+ *   the biggest one or two up as features rather than leaving only extras.
+ * - Fold changes to the same thing into one line ("Bigger, clearer suits on player cards", not
+ *   three lines about suit size, outline and spacing). Keep `extras` to about four short phrases.
+ * - Tags: `new` (something players couldn't do before), `better`, `rules` (changes how the game
+ *   plays), `online`, `fix`.
  */
 export type ChangeTag = 'new' | 'better' | 'rules' | 'online' | 'fix';
 
@@ -25,6 +34,19 @@ export interface ChangelogEntry {
 }
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    id: '2026-11-20-whats-new',
+    date: 'Nov 20, 2026',
+    title: "A tidier What's new",
+    features: [
+      {
+        tag: 'better',
+        title: "What's new, a day at a time",
+        text: 'Each day of updates is now one box: the biggest change up top, the rest sorted into New, Improved, Rules, Online and Fixes, and the small stuff in one short list with Show more. No more walls of chips.',
+      },
+    ],
+    extras: ['Board pictures in game setup no longer show a tile key'],
+  },
   {
     id: '2026-11-19-board-pictures',
     date: 'Nov 19, 2026',

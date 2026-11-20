@@ -1085,6 +1085,23 @@ been read on this device, and What's new shows a "New" tag in the pop-up. **Cred
 work the game uses (art, fonts, libraries; data in `apps/client/src/credits.ts`), one card each with
 what was used, the license and links to their pages.
 
+**What's new** (main menu, Menu; `ui/whatsnew.ts`): the release notes in a pop-up (up to 760px
+wide) that scrolls, **a container per day**, newest first: every update with the same date goes
+into one, so a day of many small pushes reads as one update. The newest day starts open with a
+gold "Latest" badge; older days start folded (tap the header to open). Each day shows:
+
+- **Header:** the date, how many changes, and the day's update titles under it (the first three
+  and "+N more" on a busy day, all of them in the tooltip).
+- **Headline:** the day's first brand-new feature (else its first big change) as a large card with
+  its kind tag, a Lilita title and a sentence or two.
+- **Big changes by kind:** a container each for New (green), Improved (blue), Rules (gold), Online
+  (purple) and Fixes (coral), with a colored top edge, the kind and a count; each change is a row
+  with its title and a short line. A container shows four and hides the rest behind "Show N more".
+  The containers sit side by side when there is room.
+- **Smaller changes:** one list in two columns (a bold title and its detail for updates that were
+  only small changes), repeats dropped, the first six shown and the rest behind "Show N more".
+  A day with no big changes at all lifts its two biggest small ones up to cards.
+
 **Board collection** (main menu, Menu): every board the player has, the built-in ones and their
 own (saved on this device), over the title scene. A top bar holds **Back** (to the main menu) and
 the "Board Collection" title in the top left, and **Add a board** (import an `.aaboard.json`

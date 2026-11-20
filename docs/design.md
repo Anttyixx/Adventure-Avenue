@@ -981,6 +981,20 @@ Reopened online games keep guests on Continue Game until the host presses Resume
   and hold one frame at 78% of the loop with reduced motion. CSS rules inside them must not match
   the coin icon `coins.ts` puts into money text (use child selectors).
 
+### What's new (pop-up)
+
+- `.whats-new` glass card up to 760px wide; `.wn-list` scrolls. A day is a `details` container
+  (`.wn-entry`: 4% white, glass-line border, radius 14; the latest day gold-tinted with a gold
+  border). Header: Lilita 19px date, muted bold 12px count on the right with a ▸ that turns,
+  muted 13px update titles under it.
+- Kind colors (`--tc`, scoped to `.whats-new [data-tag]`): new `#7cf29a`, better `#8fb3ff`, rules
+  `#ffd166`, online `#d29bff`, fix `#ff9b8a`. Headline (`.wn-top`): 4px left edge in `--tc` over a
+  gradient wash, tag pill, Lilita 21px title, 14px text.
+- Kind containers (`.wn-section`) and Smaller changes (`.wn-small`): 5% white, radius 12, a 3px top
+  edge (`--tc`, or faint white for smaller changes), a small uppercase heading with a count pill;
+  rows split by a faint line (Lilita 15px title, muted 13px text); the small list is a two-column
+  bulleted grid. "Show N more" (`.wn-show`) is a small outlined pill.
+
 ### Results (pop-up)
 
 - **Footer:** a ghost Back to start and the gold Play again (rematch) on the right; a guest online

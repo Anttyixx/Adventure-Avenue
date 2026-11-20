@@ -7552,7 +7552,7 @@ input[type='range'] {
   background: rgba(16, 26, 51, 0.55);
 }
 .whats-new {
-  width: min(640px, 100%);
+  width: min(760px, 100%);
   max-height: min(80vh, 720px);
   display: flex;
   flex-direction: column;
@@ -7579,42 +7579,54 @@ input[type='range'] {
   padding-right: 4px;
 }
 .wn-entry {
-  padding: 10px 12px;
+  padding: 12px 14px;
   border-radius: 14px;
-  background: rgba(255, 255, 255, 0.05);
-  border-left: 4px solid rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--glass-line);
 }
 .wn-entry.latest {
-  border-left-color: var(--accent);
-  background: rgba(255, 209, 102, 0.08);
+  border-color: rgba(255, 209, 102, 0.45);
+  background: rgba(255, 209, 102, 0.06);
 }
+/* The day's header: badge, date and how many changes, with its update titles under them. */
 .wn-title {
   display: flex;
-  align-items: baseline;
-  gap: 8px;
-  flex-wrap: wrap;
+  flex-direction: column;
+  gap: 2px;
   cursor: pointer;
   list-style: none;
 }
 .wn-title::-webkit-details-marker {
   display: none;
 }
-.wn-title::after {
+.wn-title-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.wn-title-row::after {
   content: '▸';
   color: var(--muted);
   transition: transform 0.15s;
 }
-.wn-entry[open] > .wn-title::after {
+.wn-entry[open] .wn-title-row::after {
   transform: rotate(90deg);
 }
 .wn-title b {
   font-family: var(--head);
   font-weight: 400;
-  font-size: 18px;
+  font-size: 19px;
 }
 .wn-title small {
   margin-left: auto;
   color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+.wn-updates {
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.35;
 }
 .wn-badge {
   font-size: 11px;
@@ -7624,64 +7636,51 @@ input[type='range'] {
   color: #3b2a00;
   font-weight: 700;
 }
-.wn-features {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 8px;
-  margin-top: 10px;
-}
-.wn-feature {
+/* Colors per kind of change. */
+.wn-top,
+.wn-section {
   --tc: #8fb3ff;
+}
+.whats-new [data-tag='new'] {
+  --tc: #7cf29a;
+}
+.whats-new [data-tag='better'] {
+  --tc: #8fb3ff;
+}
+.whats-new [data-tag='rules'] {
+  --tc: #ffd166;
+}
+.whats-new [data-tag='online'] {
+  --tc: #d29bff;
+}
+.whats-new [data-tag='fix'] {
+  --tc: #ff9b8a;
+}
+/* The headline: the day's first big change, large. */
+.wn-top {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  gap: 3px;
-  padding: 9px 11px;
-  border-radius: 12px;
-  background: rgba(255, 255, 255, 0.06);
-  border-top: 3px solid var(--tc);
-}
-.wn-feature[data-tag='new'] {
-  --tc: #7cf29a;
-}
-.wn-feature[data-tag='better'] {
-  --tc: #8fb3ff;
-}
-.wn-feature[data-tag='rules'] {
-  --tc: #ffd166;
-}
-.wn-feature[data-tag='online'] {
-  --tc: #d29bff;
-}
-.wn-feature[data-tag='fix'] {
-  --tc: #ff9b8a;
-}
-.wn-feature.top {
-  grid-column: 1 / -1;
+  gap: 4px;
+  margin-top: 12px;
   padding: 12px 14px;
+  border-radius: 12px;
+  border-left: 4px solid var(--tc);
   background: linear-gradient(
     120deg,
-    color-mix(in srgb, var(--tc) 20%, transparent),
-    rgba(255, 255, 255, 0.05)
+    color-mix(in srgb, var(--tc) 18%, transparent),
+    rgba(255, 255, 255, 0.04)
   );
 }
-.wn-feature b {
-  font-size: 15px;
-}
-.wn-feature.top b {
+.wn-top b {
   font-family: var(--head);
   font-weight: 400;
   font-size: 21px;
 }
-.wn-feature p {
+.wn-top p {
   margin: 0;
-  font-size: 13px;
-  line-height: 1.35;
-  color: var(--muted);
-}
-.wn-feature.top p {
   font-size: 14px;
-  color: inherit;
+  line-height: 1.45;
 }
 .wn-tag {
   font-size: 10px;
@@ -7693,31 +7692,113 @@ input[type='range'] {
   background: color-mix(in srgb, var(--tc) 25%, transparent);
   color: var(--tc);
 }
-.wn-extras {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 5px;
-  margin-top: 10px;
+/* The other big changes: a container per kind, side by side when there is room. */
+.wn-sections {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 8px;
+  margin-top: 8px;
 }
-.wn-extras small {
-  margin-right: 2px;
-  font-size: 11px;
-  font-weight: 700;
-  text-transform: uppercase;
+.wn-section,
+.wn-small {
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.05);
+  border-top: 3px solid var(--tc, rgba(255, 255, 255, 0.25));
+}
+.wn-section h4,
+.wn-small h4 {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0 0 6px;
+  color: var(--tc, var(--muted));
+  font: 700 11px var(--body);
   letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.wn-section h4 span,
+.wn-small h4 span {
+  padding: 0 6px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--muted);
+  letter-spacing: 0;
+}
+.wn-row + .wn-row {
+  margin-top: 6px;
+  padding-top: 6px;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+.wn-row b {
+  display: block;
+  font-family: var(--head);
+  font-weight: 400;
+  font-size: 15px;
+}
+.wn-row p {
+  margin: 1px 0 0;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.4;
+}
+/* Smaller changes: one list in two columns; the rest behind Show more. */
+.wn-small {
+  margin-top: 8px;
+}
+.wn-small ul {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+  gap: 4px 16px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.wn-small li {
+  position: relative;
+  padding-left: 12px;
+  font-size: 13px;
+  line-height: 1.4;
+}
+.wn-small li::before {
+  content: '';
+  position: absolute;
+  left: 1px;
+  top: 0.6em;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--muted);
+}
+.wn-small li b {
+  font-weight: 700;
+}
+.wn-small li b + span {
   color: var(--muted);
 }
-.wn-chip {
-  font-size: 12px;
-  padding: 3px 9px;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.08);
+.wn-small li b + span::before {
+  content: ': ';
 }
-@media (max-width: 520px) {
-  .wn-features {
-    grid-template-columns: 1fr;
-  }
+.wn-small li.wn-more,
+.wn-section .wn-row.wn-more {
+  display: none;
+}
+.wn-small.all li.wn-more,
+.wn-section.all .wn-row.wn-more {
+  display: block;
+}
+.wn-show {
+  margin-top: 8px;
+  padding: 3px 12px;
+  border-radius: 999px;
+  border: 1.5px solid var(--glass-line);
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text);
+  font: 700 12px var(--body);
+  cursor: pointer;
+}
+.wn-show:hover {
+  background: rgba(255, 255, 255, 0.12);
 }
 .wn-build {
   margin: 0;

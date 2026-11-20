@@ -39,7 +39,10 @@ When the spec and the code disagree, ask the owner which is right; then fix the 
   `main`, bump `VERSION` to the version being released.
 - **For every change players will notice:**
   1. Add an entry at the top of `apps/client/src/changelog.ts` (shown in "What's new" on the main
-     menu): biggest changes as `features`, small ones as `extras`.
+     menu): biggest changes as `features`, small ones as `extras`. What's new merges each day's
+     entries into one container, so: give every entry at least one feature (write the biggest
+     small change up as one if need be), fold changes to the same thing into one line, and keep
+     `extras` to about four short phrases (see the comment at the top of `changelog.ts`).
   2. Update `docs/spec.md` so it describes the new behavior.
   3. UI changes: design and build them by `docs/design.md`: first choose the container and
      controls with its section 2 ("How to make design decisions"), then follow the element's
