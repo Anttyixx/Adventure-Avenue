@@ -35,6 +35,18 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: '2026-11-20-music-on-load',
+    date: 'Nov 20, 2026',
+    title: 'Music right away',
+    features: [
+      {
+        tag: 'fix',
+        title: 'Music starts when the page loads',
+        text: 'The menu music now starts as soon as the game opens, instead of waiting for your first click, wherever your browser allows it. If you turned the music off, it stays off. Some browsers still hold all sound until you first tap the page.',
+      },
+    ],
+  },
+  {
     id: '2026-11-20-whats-new',
     date: 'Nov 20, 2026',
     title: "A tidier What's new",

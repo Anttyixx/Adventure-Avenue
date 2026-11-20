@@ -649,6 +649,12 @@ class AudioEngine {
         if (this.silent) void this.silent.play().catch(() => {});
       }
     });
+    // Set up the sound right away and ask to start: browsers that allow sound before a tap (a
+    // site the player has played before, or autoplay allowed in settings) start the menu music
+    // as soon as the page loads. The others keep it paused until the first tap or key above.
+    // Turned-off music stays silent either way (its volume is zero).
+    this.ensure();
+    void this.ctx?.resume().catch(() => {});
   }
 
   /** Looping silent clip that makes iOS treat the page as media playback (see below). */
@@ -683,7 +689,7 @@ class AudioEngine {
     return this.ctx?.state === 'running';
   }
 
-  /** Create the audio graph (only after a user gesture). */
+  /** Create the audio graph (at start-up; it stays paused until the browser allows sound). */
   private ensure() {
     if (this.ctx) return;
     const AC =
