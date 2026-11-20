@@ -940,7 +940,7 @@ it gives + 20G and it can afford its cash side. CPUs never propose trades in the
   - 5 seconds after it opens with no bids: the property returns to the bank, unowned, with no money paid to the seller;
   - as soon as the only bidder left has already placed a bid: they win at that bid. A sole eligible player who has not bid can still bid, pass or let the clock expire.
 - **Screen:** a pop-up in the middle of every player's screen ("Live auction") shows the lot (art,
-  name, value and the bid step), the high bid and leader (it pops and a coin chimes on each new
+  name, value and the bid step), the high bid and leader (it pops and the spend sound plays on each new
   bid), a countdown bar with the seconds left (gold, turning red for the last 2 seconds; every bid
   fills it again), and each bidder (In, Leading, Passed, Too pricey). The View board chip hides
   it. The action bar says who leads ("Kai leads with 340G", or the opening bid) and when it ends
@@ -1464,7 +1464,12 @@ before the name so it never covers the character.
 
 **Motion.** Tokens tween between squares (260 ms, eased, with a hop) and step through walk frames
 every 120 ms (idle frames every 260 ms). The active player has a bobbing pixel arrow; after a roll the die shrinks to sit beside their head and flips to the new number of steps left on each step (each flip along a different axis from the last: sideways, up and over, or a diagonal), popping away when they arrive. Each character has a name plate just above their head. When a human on this device rolls, the camera zooms out to frame them and every square the roll could take them to (and the routes there) in the space the HUD leaves free (the info pop-up may cover it), until they start walking. Pixel coins fly from
-payer to payee; floating text shows money changes.
+payer to payee; floating text shows money changes. Money spent by choice (buying, investing,
+building, stocks, bids, a Motel check-in) flies straight to where it goes. Money lost against the
+player's will (shop fees, venture cards, arcade losses, Lose and Jackpot tiles, stock tax) bursts
+out of the player instead: the coins pop out, land in a scatter on the ground beside them, rest a
+moment, then fly one by one to whoever gets the money, whose "+" appears as they arrive (a plain
+flight with reduced motion). `LOSS_COINS` in `host.ts` switches back to the straight flight.
 
 **Action bar.** The current player's options (and most yes/no questions: buying a shop, a buyout,
 upgrading a circus, selling a property in debt, bidding) appear in the action bar: one row of a
@@ -1876,7 +1881,7 @@ ring/silent switch does not mute the game; the in-game Mute switch still does.
   as the new one fades in. The music stops for the winning fanfare at the end of a game.
 - **Effects:** the auction clock ticks once per second as it counts down (a dry wood-block tick;
   a brighter double beep for the last 2 seconds; no tick when a bid fills it back up) and a gavel
-  knocks when the auction ends, sold or not; a domination fanfare, venture line and full-row jingles, button clicks, dice roll, each step (a soft tap as the token touches each square; the lift-off "hop" sound is switched off for now and kept in `audio.ts`), landing, gaining and paying money, buying a
+  knocks when the auction ends, sold or not; a domination fanfare, venture line and full-row jingles, button clicks, dice roll, each step (a soft tap as the token touches each square; the lift-off "hop" sound is switched off for now and kept in `audio.ts`), landing, money (three sounds: a bright rising bell for money coming in, two coins dropping into a till for money spent by choice, and a falling "bwoop" with coins clinking on the ground for money lost against the player's will, as the coins spill; a player receiving lost money hears the bell as the coins reach them; `MONEY_SOUNDS` in `audio.ts` restores the earlier pair), buying a
   shop, buying stock (a short register click and "ching"), selling stock (two quick falling coin clinks into a soft "ching"), buying out a rival's property (a brass stab, a rising run and a cash-register ring), a shop's value going up, collecting a suit, promotion, venture cards, a card flipping over (a paper swish and a click), slot reels ticking as they spin and clunking as each stops, warps, the start of a
   human player's turn, a new round, bankruptcy and the win fanfare.
 - **Settings:** Sound buttons on the main menu, setup and collection open a compact navy-glass
@@ -1885,7 +1890,7 @@ ring/silent switch does not mute the game; the in-game Mute switch still does.
   The pop-up shows the live current track title and scene, plus a subtle level animation only
   while audible. Muted, zero-volume, audio-not-started and no-track states are explicit. It has
   gold-filled Music and Effects sliders with percentages and a Mute all sound / Unmute sound
-  button. Adjusting a slider unmutes audio; changing Effects previews a coin sound. Controls
+  button. Adjusting a slider unmutes audio; changing Effects previews the money-in sound. Controls
   stay synchronized across chips. The in-game menu has no duplicate Sound section; use the toolbar’s Music button.
   The chip highlights while open. Close, Escape, a second chip click or clicking outside closes
   the pop-up; Close/Escape restores focus to its chip. It stays inside the viewport after resizing,

@@ -35,6 +35,23 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: '2026-11-20-money-sounds',
+    date: 'Nov 20, 2026',
+    title: 'New money sounds',
+    features: [
+      {
+        tag: 'new',
+        title: 'Losing money hurts now',
+        text: 'When you have to pay, like a shop fee, a bad venture card or an arcade loss, your coins burst out onto the ground beside you before flying off to whoever gets them. Buying things still sends your coins straight there.',
+      },
+      {
+        tag: 'better',
+        title: 'Different sounds for money',
+        text: 'Money now has three sounds: a bright chime when it comes in, a coin drop when you spend by choice, and a sad "bwoop" with coins clinking when you lose it.',
+      },
+    ],
+  },
+  {
     id: '2026-11-20-music-on-load',
     date: 'Nov 20, 2026',
     title: 'Music right away',

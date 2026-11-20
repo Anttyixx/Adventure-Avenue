@@ -54,7 +54,7 @@ import {
   type PickCtx,
 } from './ui/pick';
 import { openingDelay } from './game-opening';
-import { sound, type Sfx, type Track } from './audio';
+import { moneySfx, sound, type MoneyKind, type Sfx, type Track } from './audio';
 import { closeSoundPopover } from './ui/soundpanel';
 import type { GameLink } from './net/link';
 import { inviteURL, type AuctionLive } from './net/protocol';
@@ -72,6 +72,36 @@ const GAME_MUSIC: Record<ArcadeGame, Track> = {
 };
 
 const never = <T>() => new Promise<T>(() => {});
+
+/**
+ * How money lost against a player's will animates: `spill` bursts the coins out of the player onto
+ * the ground before they fly to whoever gets them (`BoardView.spillCoins`); `direct` sends them
+ * straight there, like a purchase.
+ */
+const LOSS_COINS: 'spill' | 'direct' = 'spill';
+
+/** Payments a player makes by choice: buying, investing, building, stocks, bids and check-ins. */
+const SPEND_REASONS = new Set([
+  'Purchase',
+  'Buyout',
+  'Auction',
+  'Investment',
+  'Construction',
+  'Renovation',
+  'Circus upgrade',
+  'Motel check-in',
+  'Stock',
+]);
+
+/**
+ * What a payment is to the player: money coming in (from the bank), money spent by choice, or
+ * money lost against their will (shop fees, venture cards, arcade losses, Lose and Jackpot tiles,
+ * stock tax). It picks the sound and, for losses, the coin spill.
+ */
+export function moneyKind(e: { from: number; reason: string }): MoneyKind {
+  if (e.from < 0) return 'get';
+  return SPEND_REASONS.has(e.reason) ? 'spend' : 'lose';
+}
 
 export class HotSeat implements GameIO {
   game: Game;
@@ -1311,14 +1341,31 @@ export class HotSeat implements GameIO {
           : e.sq != null
             ? board.center(G.nodes[e.sq])
             : this.playerPos(e.to);
+        const kind = moneyKind(e);
         if (e.reason === 'Stock') sound.play('stockBuy');
         else if (e.reason === 'Stock sale') sound.play('stockSell');
-        else sound.play(e.to >= 0 && (e.from < 0 || !G.players[e.to].cpu) ? 'coin' : 'pay');
-        board.coins(from, to, Math.ceil(e.amount / 50));
-        if (e.to >= 0) board.floatText(to.x, to.y, `+${fmt(e.amount)}`, '#7cf29a');
+        else sound.play(moneySfx(kind));
+        const coins = Math.ceil(e.amount / 50);
+        const gained = () => {
+          if (e.to >= 0) board.floatText(to.x, to.y, `+${fmt(e.amount)}`, '#7cf29a');
+        };
+        let pause: number = T.money;
+        if (kind === 'lose' && LOSS_COINS === 'spill') {
+          // Lost money bursts out of the player onto the ground, then flies to whoever gets it;
+          // a player receiving it hears it come in as the coins arrive.
+          const ms = board.spillCoins(from, to, coins, () => {
+            gained();
+            if (e.to >= 0) sound.play(moneySfx('get'));
+          });
+          // The spill already runs at the game's speed; `wait` applies it again.
+          pause = Math.max(pause, ms / this.speed);
+        } else {
+          board.coins(from, to, coins);
+          gained();
+        }
         if (e.from >= 0) board.floatText(from.x, from.y + 22, `-${fmt(e.amount)}`, '#ff8a8a');
         this.refresh();
-        if (!this.passing && !this.checkpointArrival) await this.wait(T.money);
+        if (!this.passing && !this.checkpointArrival) await this.wait(pause);
         break;
       }
       case 'owner':

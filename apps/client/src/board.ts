@@ -1296,6 +1296,98 @@ export class BoardView {
     }
   }
 
+  /**
+   * Money lost against the player's will (a fee, a bad card, an arcade loss): the coins burst out
+   * of the player, land in a scatter on the ground beside them, rest a moment, then fly one by one
+   * to `to`. `onArrive` runs as the first coin gets there. Returns how long it all takes (ms).
+   * With reduced motion it is the plain flight of `coins`.
+   */
+  spillCoins(
+    from: { x: number; y: number },
+    to: { x: number; y: number },
+    n: number,
+    onArrive?: () => void,
+  ): number {
+    if (reducedMotion()) {
+      this.coins(from, to, n);
+      if (onArrive) setTimeout(onArrive, 650);
+      return 650;
+    }
+    const sp = this.speed;
+    const count = Math.max(4, Math.min(10, n));
+    const burst = 460 * sp;
+    const rest = 380 * sp;
+    const fly = 600 * sp;
+    const gap = 55 * sp;
+    const start = performance.now();
+    // Each coin's landing spot: spread round the player's feet, a wider ring left and right than
+    // front and back so the scatter reads as lying on the ground.
+    const spots = Array.from({ length: count }, (_, i) => {
+      const a = (i / count) * Math.PI * 2 + (Math.random() - 0.5) * 0.6;
+      const r = 34 + Math.random() * 20;
+      return {
+        x: from.x + Math.cos(a) * r,
+        y: from.y + 12 + Math.sin(a) * r * 0.42,
+        pop: 70 + Math.random() * 45,
+        flip: Math.random() * Math.PI,
+      };
+    });
+    const total = burst + rest + fly + gap * (count - 1);
+    spots.forEach((s, i) => {
+      const leave = burst + rest + i * gap;
+      this.fx.push({
+        t0: start,
+        dur: leave + fly,
+        draw: (ctx, k) => {
+          const t = k * (leave + fly);
+          let x: number;
+          let y: number;
+          let shadow = 0;
+          if (t < burst) {
+            // Out of the player, up and over, down onto its spot with a small bounce.
+            const q = t / burst;
+            const e = 1 - (1 - q) * (1 - q);
+            x = from.x + (s.x - from.x) * e;
+            const ground = from.y - 18 + (s.y - from.y + 18) * q;
+            const hop =
+              q < 0.78 ? Math.sin((q / 0.78) * Math.PI) * s.pop : Math.sin(((q - 0.78) / 0.22) * Math.PI) * 7;
+            y = ground - hop;
+            shadow = q;
+          } else if (t < leave) {
+            // Lying on the ground, glinting.
+            x = s.x;
+            y = s.y;
+            shadow = 1;
+          } else {
+            const q = Math.min(1, (t - leave) / fly);
+            const e = ease(q);
+            x = s.x + (to.x - s.x) * e;
+            y = s.y + (to.y - s.y) * e - Math.sin(q * Math.PI) * 55;
+            shadow = Math.max(0, 1 - q * 3);
+          }
+          if (shadow > 0) {
+            ctx.save();
+            ctx.globalAlpha = 0.25 * shadow;
+            ctx.fillStyle = '#000';
+            ctx.beginPath();
+            ctx.ellipse(t < burst ? x : s.x, s.y + 6, 8, 3, 0, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.restore();
+          }
+          // A spinning coin squashes side to side while it flies; flat on the ground it rests.
+          const spin = t < burst || t >= leave ? Math.abs(Math.cos(s.flip + t / 70)) : 1;
+          ctx.save();
+          ctx.translate(x, y);
+          ctx.scale(0.35 + 0.65 * spin, 1);
+          drawCoin(ctx, 0, 0, 9);
+          ctx.restore();
+        },
+      });
+    });
+    if (onArrive) setTimeout(onArrive, burst + rest + fly);
+    return total;
+  }
+
   /** Players doing a little dance (after a promotion): when it started and how long it lasts. */
   private dances = new Map<number, { start: number; ms: number }>();
 

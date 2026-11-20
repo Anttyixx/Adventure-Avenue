@@ -56,7 +56,7 @@ import { openCredits } from './credits';
 import { pickCharacter } from './charpick';
 import { resumeLobby } from './online';
 import { soundControls } from './soundpanel';
-import { SFX_NAMES, TRACK_NAMES, sound, type Sfx, type Track } from '../audio';
+import { moneySfx, SFX_NAMES, TRACK_NAMES, sound, type Sfx, type Track } from '../audio';
 import { guestSetup, setupScreen, type SetupRoom } from './start';
 import type { LobbyInfo, LobbySeat } from '../net/protocol';
 import type { LocalSeat } from '../net/hostroom';
@@ -111,7 +111,14 @@ const rnd = (n: number) => Math.floor(Math.random() * n);
  * Controls for UI elements that were just added or changed: they shake once and glow so they
  * are easy to find. Update this list with each change.
  */
-const RECENT = new Set(["What's new"]);
+const RECENT = new Set([
+  'Coins: lose a fee to a rival',
+  'Coins: lose to the bank',
+  'Coins: spend on a purchase',
+  'coinGet',
+  'coinSpend',
+  'coinLose',
+]);
 
 /**
  * Which board the lab plays on: Town with portal links (square, the default) or Twin Lakes (hex),
@@ -1275,6 +1282,30 @@ export async function openLab(app: HTMLElement, section?: string) {
         board.coins(pos(), to, 3);
         board.floatText(pos().x, pos().y + 22, '-120G', '#ff8a8a');
         board.floatText(to.x, to.y, '+120G', '#7cf29a');
+      }),
+    );
+    row(
+      s,
+      boardBtn('Coins: lose a fee to a rival', () => {
+        // Money lost against the player's will: the coins spill out first, then fly over.
+        const q = G.players[(target + 1) % G.players.length];
+        const to = board.tokenPos(q.id);
+        sound.play(moneySfx('lose'));
+        board.floatText(pos().x, pos().y + 22, '-240G', '#ff8a8a');
+        board.spillCoins(pos(), to, 5, () => {
+          sound.play(moneySfx('get'));
+          board.floatText(to.x, to.y, '+240G', '#7cf29a');
+        });
+      }),
+      boardBtn('Coins: lose to the bank', () => {
+        sound.play(moneySfx('lose'));
+        board.floatText(pos().x, pos().y + 22, '-400G', '#ff8a8a');
+        board.spillCoins(pos(), board.bankPos(), 8);
+      }),
+      boardBtn('Coins: spend on a purchase', () => {
+        sound.play(moneySfx('spend'));
+        board.coins(pos(), board.bankPos(), 4);
+        board.floatText(pos().x, pos().y + 22, '-200G', '#ff8a8a');
       }),
     );
     row(

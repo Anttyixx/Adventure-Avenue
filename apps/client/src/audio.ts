@@ -1,8 +1,9 @@
 /**
  * Sound effects and background music, synthesized with the Web Audio API (no audio files).
  *
- * Browsers only allow audio after the player touches the page, so the audio context is created
- * on the first pointer or key press; music asked for before then starts at that moment.
+ * The audio context is created at start-up and asks to start right away; browsers that only allow
+ * audio after the player touches the page start it on the first pointer or key press, and music
+ * asked for before then starts at that moment.
  * Volumes are saved per device.
  */
 
@@ -14,6 +15,9 @@ export type Sfx =
   | 'land'
   | 'coin'
   | 'pay'
+  | 'coinGet'
+  | 'coinSpend'
+  | 'coinLose'
   | 'buy'
   | 'buyout'
   | 'shopClose'
@@ -46,6 +50,22 @@ export type Sfx =
   | 'whoosh'
   | 'gameStart';
 
+/**
+ * Which money sounds play: `new` has one for money coming in (`coinGet`), one for spending by
+ * choice (`coinSpend`) and one for money lost against the player's will (`coinLose`);
+ * `previous` restores the earlier pair (`coin` for money in, `pay` for money out).
+ */
+const MONEY_SOUNDS: 'new' | 'previous' = 'new';
+
+/** The kind of money moment: coming in, spent by choice, or lost against the player's will. */
+export type MoneyKind = 'get' | 'spend' | 'lose';
+
+/** The sound for a money moment (see `MONEY_SOUNDS`). */
+export function moneySfx(kind: MoneyKind): Sfx {
+  if (MONEY_SOUNDS === 'previous') return kind === 'get' ? 'coin' : 'pay';
+  return kind === 'get' ? 'coinGet' : kind === 'spend' ? 'coinSpend' : 'coinLose';
+}
+
 export const SFX_NAMES: Sfx[] = [
   'click',
   'roll',
@@ -54,6 +74,9 @@ export const SFX_NAMES: Sfx[] = [
   'land',
   'coin',
   'pay',
+  'coinGet',
+  'coinSpend',
+  'coinLose',
   'buy',
   'buyout',
   'shopClose',
@@ -843,6 +866,8 @@ class AudioEngine {
         this.tone(bus, 'triangle', 392, t, 0.12, 0.3);
         this.tone(bus, 'triangle', 523, t + 0.07, 0.16, 0.3);
         break;
+      // 'coin' and 'pay' are the previous money sounds, not played now: MONEY_SOUNDS (above)
+      // switches back to them.
       case 'coin':
         this.tone(bus, 'square', 988, t, 0.08, 0.16, { cutoff: 5000 });
         this.tone(bus, 'square', 1319, t + 0.07, 0.28, 0.16, { cutoff: 5000 });
@@ -851,6 +876,33 @@ class AudioEngine {
         this.tone(bus, 'square', 784, t, 0.08, 0.13, { cutoff: 3000 });
         this.tone(bus, 'square', 523, t + 0.08, 0.22, 0.13, { cutoff: 2500 });
         break;
+      case 'coinGet':
+        // Money coming in: a bright, rising two-note bell with a shimmer on top.
+        this.tone(bus, 'triangle', 1568, t, 0.07, 0.2);
+        this.tone(bus, 'triangle', 2093, t + 0.06, 0.35, 0.2);
+        this.tone(bus, 'sine', 4186, t + 0.06, 0.25, 0.05);
+        this.hiss(bus, t + 0.06, 0.08, 0.05, 8000, 2);
+        break;
+      case 'coinSpend':
+        // Spending by choice: two quick coins dropping into a till, then a soft settled ring.
+        this.tone(bus, 'triangle', 2349, t, 0.05, 0.13);
+        this.hiss(bus, t, 0.03, 0.06, 6500, 3);
+        this.tone(bus, 'triangle', 1760, t + 0.055, 0.05, 0.12);
+        this.hiss(bus, t + 0.055, 0.03, 0.06, 6000, 3);
+        this.tone(bus, 'sine', 1175, t + 0.11, 0.24, 0.16);
+        break;
+      case 'coinLose': {
+        // Money lost against the player's will: a falling "bwoop" as the coins burst out, then
+        // the clinks of them landing on the ground (timed with board.spillCoins).
+        this.tone(bus, 'triangle', 988, t, 0.32, 0.18, { to: 392 });
+        this.tone(bus, 'square', 494, t, 0.3, 0.04, { to: 196, cutoff: 1500 });
+        for (let i = 0; i < 5; i++) {
+          const at = t + 0.3 + i * 0.045 + Math.random() * 0.03;
+          this.tone(bus, 'triangle', 2600 + Math.random() * 1200, at, 0.04, 0.07);
+          this.hiss(bus, at, 0.025, 0.04, 7000, 4);
+        }
+        break;
+      }
       case 'buy':
         this.notes(['C5', 'E5', 'G5', 'C6'], t, 0.07, 'square', 0.13);
         this.tone(bus, 'triangle', freq('C6'), t + 0.28, 0.4, 0.2);

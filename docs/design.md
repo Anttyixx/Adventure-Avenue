@@ -1047,6 +1047,11 @@ Reopened online games keep guests on Continue Game until the host presses Resume
   `#e5484d` with white text for errors, yellow `#ffc21a` with dark text for warnings, white ring
   and a soft shadow. It shows a number when there's one to give (properties missing), else "!".
   The same badge sits on the button that opens the full list (Board settings) with the count.
+- **Coins** (`BoardView.coins` / `spillCoins`): money spent by choice flies straight from payer
+  to payee as up to 8 pixel coins on an arc. Money lost against the player's will spills: 4-10
+  coins pop out of the player (460ms), land on an ellipse round their feet with small shadows and
+  a bounce, rest (380ms), then fly one by one 55ms apart (600ms each) to the payee. Coins spin
+  (squash sideways) while in the air. Reduced motion: the straight flight.
 - **Link line** (selected warp/portal, `drawLink`): a quadratic arc whose bend is at the **middle
   of the line, at right angles to it** (upper side), bend = 14% of length (16-90 units) — gentle,
   always visible. Dark 9px outline, 4px line in the link color at 55% opacity, white source ring,

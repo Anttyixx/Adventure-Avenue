@@ -1,5 +1,5 @@
 /** Shared music/sound pop-up and inline controls for menus, setup and the game toolbar. */
-import { sound, TRACK_NAMES } from '../audio';
+import { moneySfx, sound, TRACK_NAMES } from '../audio';
 import { h } from './dom';
 
 const ICON_ON =
@@ -46,7 +46,7 @@ export function soundControls(): HTMLElement {
     };
     input.oninput = () =>
       sound.set({ [key]: +input.value / 100, ...(sound.prefs.muted ? { muted: false } : {}) });
-    if (key === 'sfx') input.onchange = () => sound.play('coin');
+    if (key === 'sfx') input.onchange = () => sound.play(moneySfx('get'));
     rows.push(sync);
     return h('label', { class: 'snd-row' }, h('span', { class: 'snd-label' }, text), out, input);
   };

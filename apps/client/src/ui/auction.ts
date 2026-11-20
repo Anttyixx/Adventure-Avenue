@@ -12,7 +12,7 @@
 import { PLAYER_COLORS, cpuBidLimit, spendable, type DecisionRequest, type GameState } from '@aa/engine';
 import { SHOP_TIERS, STAR3_TIERS, propertyIconURL, tierFor } from '../art';
 import { squareName } from '../names';
-import { sound } from '../audio';
+import { moneySfx, sound } from '../audio';
 import { portraitURL } from '../sprites';
 import { TIMING as T } from '../timing';
 import type { AuctionLive } from '../net/protocol';
@@ -123,7 +123,7 @@ export class AuctionView {
     this.live = live;
     this.deadline = performance.now() + live.leftMs;
     if (raised) {
-      sound.play('coin');
+      sound.play(moneySfx('spend'));
       this.high.classList.remove('pop');
       void this.high.offsetWidth;
       this.high.classList.add('pop');
