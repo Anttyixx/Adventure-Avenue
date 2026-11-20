@@ -47,7 +47,7 @@ export const CHANGELOG: ChangelogEntry[] = [
       {
         tag: 'better',
         title: 'Different sounds for money',
-        text: 'Money now has three sounds: a bright chime when it comes in, a coin drop when you spend by choice, and a sad "bwoop" with coins clinking when you lose it.',
+        text: 'Money now has three real coin sounds: coins clinking into your pile when money comes in, coins counted onto a counter when you spend by choice, and a handful of change dropped and bouncing on the ground when you lose it.',
       },
     ],
   },

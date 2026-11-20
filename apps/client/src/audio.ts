@@ -811,6 +811,18 @@ class AudioEngine {
     osc.stop(at + dur + 0.05);
   }
 
+  /**
+   * One coin hitting something: a metallic ping made of out-of-tune partials (what makes it sound
+   * like metal, not a note) over a tiny tick of noise, all gone in `dur` seconds.
+   */
+  private clink(at: number, f: number, vol: number, dur: number) {
+    const bus = this.sfxBus;
+    this.tone(bus, 'sine', f, at, dur, vol, { attack: 0.002 });
+    this.tone(bus, 'sine', f * 2.76, at, dur * 0.6, vol * 0.45, { attack: 0.002 });
+    this.tone(bus, 'sine', f * 5.4, at, dur * 0.35, vol * 0.2, { attack: 0.002 });
+    this.hiss(bus, at, 0.015, vol * 0.5, 8000, 2);
+  }
+
   private hiss(bus: AudioNode, at: number, dur: number, vol: number, band: number, q = 1, sweepTo?: number) {
     const ctx = this.ctx!;
     const src = ctx.createBufferSource();
@@ -877,30 +889,43 @@ class AudioEngine {
         this.tone(bus, 'square', 523, t + 0.08, 0.22, 0.13, { cutoff: 2500 });
         break;
       case 'coinGet':
-        // Money coming in: a bright, rising two-note bell with a shimmer on top.
-        this.tone(bus, 'triangle', 1568, t, 0.07, 0.2);
-        this.tone(bus, 'triangle', 2093, t + 0.06, 0.35, 0.2);
-        this.tone(bus, 'sine', 4186, t + 0.06, 0.25, 0.05);
-        this.hiss(bus, t + 0.06, 0.08, 0.05, 8000, 2);
+        // Money coming in: coins clinking into your pile, each a little higher, with a sparkle.
+        this.clink(t, 2350, 0.12, 0.22);
+        this.clink(t + 0.07, 2800, 0.12, 0.24);
+        this.clink(t + 0.13, 3500, 0.11, 0.32);
+        this.tone(bus, 'sine', 5274, t + 0.13, 0.3, 0.025);
         break;
       case 'coinSpend':
-        // Spending by choice: two quick coins dropping into a till, then a soft settled ring.
-        this.tone(bus, 'triangle', 2349, t, 0.05, 0.13);
-        this.hiss(bus, t, 0.03, 0.06, 6500, 3);
-        this.tone(bus, 'triangle', 1760, t + 0.055, 0.05, 0.12);
-        this.hiss(bus, t + 0.055, 0.03, 0.06, 6000, 3);
-        this.tone(bus, 'sine', 1175, t + 0.11, 0.24, 0.16);
+        // Spending by choice: a few coins counted out onto a counter, steady and tidy, the
+        // last one settling with a short wobble.
+        this.clink(t, 2600, 0.12, 0.16);
+        this.clink(t + 0.075, 2450, 0.11, 0.16);
+        this.clink(t + 0.15, 2700, 0.11, 0.2);
+        this.clink(t + 0.22, 2550, 0.05, 0.08);
+        this.clink(t + 0.26, 2550, 0.03, 0.06);
         break;
       case 'coinLose': {
-        // Money lost against the player's will: a falling "bwoop" as the coins burst out, then
-        // the clinks of them landing on the ground (timed with board.spillCoins).
-        this.tone(bus, 'triangle', 988, t, 0.32, 0.18, { to: 392 });
-        this.tone(bus, 'square', 494, t, 0.3, 0.04, { to: 196, cutoff: 1500 });
-        for (let i = 0; i < 5; i++) {
-          const at = t + 0.3 + i * 0.045 + Math.random() * 0.03;
-          this.tone(bus, 'triangle', 2600 + Math.random() * 1200, at, 0.04, 0.07);
-          this.hiss(bus, at, 0.025, 0.04, 7000, 4);
+        // Money lost against the player's will: a handful of change dropped on the ground. A soft
+        // falling note as the coins burst out, then each coin hits and bounces (the gaps shrink
+        // and it gets quieter, a little lower than spending) as they land beside the player,
+        // timed with board.spillCoins, and a last coin rattling flat.
+        this.tone(bus, 'sine', 880, t, 0.3, 0.07, { to: 330 });
+        this.hiss(bus, t, 0.12, 0.05, 3000, 1, 1200);
+        for (let c = 0; c < 4; c++) {
+          const f = 1900 + Math.random() * 700;
+          let at = t + 0.3 + c * 0.05 + Math.random() * 0.03;
+          let gap = 0.09 + Math.random() * 0.03;
+          let v = 0.1;
+          for (let b = 0; b < 4; b++) {
+            this.clink(at, f, v, 0.12);
+            at += gap;
+            gap *= 0.62;
+            v *= 0.55;
+          }
         }
+        // The rattle of the last coin spinning down.
+        for (let i = 0; i < 7; i++)
+          this.clink(t + 0.62 + i * (0.05 - i * 0.005), 2100, 0.03 * (1 - i / 8), 0.05);
         break;
       }
       case 'buy':
