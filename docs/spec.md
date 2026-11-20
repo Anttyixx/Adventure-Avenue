@@ -940,7 +940,7 @@ it gives + 20G and it can afford its cash side. CPUs never propose trades in the
   - 5 seconds after it opens with no bids: the property returns to the bank, unowned, with no money paid to the seller;
   - as soon as the only bidder left has already placed a bid: they win at that bid. A sole eligible player who has not bid can still bid, pass or let the clock expire.
 - **Screen:** a pop-up in the middle of every player's screen ("Live auction") shows the lot (art,
-  name, value and the bid step), the high bid and leader (it pops and the spend sound plays on each new
+  name, value and the bid step), the high bid and leader (it pops and a coin chimes on each new
   bid), a countdown bar with the seconds left (gold, turning red for the last 2 seconds; every bid
   fills it again), and each bidder (In, Leading, Passed, Too pricey). The View board chip hides
   it. The action bar says who leads ("Kai leads with 340G", or the opening bid) and when it ends
@@ -1881,7 +1881,7 @@ ring/silent switch does not mute the game; the in-game Mute switch still does.
   as the new one fades in. The music stops for the winning fanfare at the end of a game.
 - **Effects:** the auction clock ticks once per second as it counts down (a dry wood-block tick;
   a brighter double beep for the last 2 seconds; no tick when a bid fills it back up) and a gavel
-  knocks when the auction ends, sold or not; a domination fanfare, venture line and full-row jingles, button clicks, dice roll, each step (a soft tap as the token touches each square; the lift-off "hop" sound is switched off for now and kept in `audio.ts`), landing, money (three coin sounds, each built from metallic clinks: coins clinking into a pile, each a little higher, for money coming in; a few coins counted out onto a counter for money spent by choice; and a handful of change bursting out with a jangle of coins knocking together, then dropping on the ground, each coin bouncing and the last one rattling flat, for money lost against the player's will, timed with the coin spill; a player receiving lost money hears coins come in as they reach them; `MONEY_SOUNDS` in `audio.ts` restores the earlier pair), buying a
+  knocks when the auction ends, sold or not; a domination fanfare, venture line and full-row jingles, button clicks, dice roll, each step (a soft tap as the token touches each square; the lift-off "hop" sound is switched off for now and kept in `audio.ts`), landing, money (the classic chiptune pair for money coming in, a rising two-note chime, and money spent by choice, a falling two-note blip, plus a matching one for money lost against the player's will: a sad three-note fall as the coins spill out, then little blips of coins landing beside the player; a player receiving lost money hears the money-in chime as the coins reach them; `MONEY_SOUNDS` in `audio.ts` also keeps the metallic coin-clink set tried before), buying a
   shop, buying stock (a short register click and "ching"), selling stock (two quick falling coin clinks into a soft "ching"), buying out a rival's property (a brass stab, a rising run and a cash-register ring), a shop's value going up, collecting a suit, promotion, venture cards, a card flipping over (a paper swish and a click), slot reels ticking as they spin and clunking as each stops, warps, the start of a
   human player's turn, a new round, bankruptcy and the win fanfare.
 - **Settings:** Sound buttons on the main menu, setup and collection open a compact navy-glass

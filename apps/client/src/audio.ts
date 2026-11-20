@@ -18,6 +18,7 @@ export type Sfx =
   | 'coinGet'
   | 'coinSpend'
   | 'coinLose'
+  | 'coinDrop'
   | 'buy'
   | 'buyout'
   | 'shopClose'
@@ -51,19 +52,23 @@ export type Sfx =
   | 'gameStart';
 
 /**
- * Which money sounds play: `new` has one for money coming in (`coinGet`), one for spending by
- * choice (`coinSpend`) and one for money lost against the player's will (`coinLose`);
- * `previous` restores the earlier pair (`coin` for money in, `pay` for money out).
+ * Which money sounds play: `classic` (the default) keeps the original chiptune pair for money in
+ * (`coin`) and money spent by choice (`pay`) and adds a matching one for money lost against the
+ * player's will (`coinLose`); `clinks` is the set of metallic coin sounds tried before
+ * (`coinGet`, `coinSpend`, `coinDrop`); `previous` is the original pair alone (`pay` for losses).
  */
-const MONEY_SOUNDS: 'new' | 'previous' = 'new';
+const MONEY_SOUNDS: 'classic' | 'clinks' | 'previous' = 'classic';
 
 /** The kind of money moment: coming in, spent by choice, or lost against the player's will. */
 export type MoneyKind = 'get' | 'spend' | 'lose';
 
 /** The sound for a money moment (see `MONEY_SOUNDS`). */
 export function moneySfx(kind: MoneyKind): Sfx {
-  if (MONEY_SOUNDS === 'previous') return kind === 'get' ? 'coin' : 'pay';
-  return kind === 'get' ? 'coinGet' : kind === 'spend' ? 'coinSpend' : 'coinLose';
+  if (MONEY_SOUNDS === 'clinks')
+    return kind === 'get' ? 'coinGet' : kind === 'spend' ? 'coinSpend' : 'coinDrop';
+  if (kind === 'get') return 'coin';
+  if (kind === 'spend' || MONEY_SOUNDS === 'previous') return 'pay';
+  return 'coinLose';
 }
 
 export const SFX_NAMES: Sfx[] = [
@@ -77,6 +82,7 @@ export const SFX_NAMES: Sfx[] = [
   'coinGet',
   'coinSpend',
   'coinLose',
+  'coinDrop',
   'buy',
   'buyout',
   'shopClose',
@@ -894,8 +900,7 @@ class AudioEngine {
         this.tone(bus, 'triangle', 392, t, 0.12, 0.3);
         this.tone(bus, 'triangle', 523, t + 0.07, 0.16, 0.3);
         break;
-      // 'coin' and 'pay' are the previous money sounds, not played now: MONEY_SOUNDS (above)
-      // switches back to them.
+      // Money in (`coin`), money spent (`pay`) and money lost (`coinLose`): see MONEY_SOUNDS.
       case 'coin':
         this.tone(bus, 'square', 988, t, 0.08, 0.16, { cutoff: 5000 });
         this.tone(bus, 'square', 1319, t + 0.07, 0.28, 0.16, { cutoff: 5000 });
@@ -904,6 +909,20 @@ class AudioEngine {
         this.tone(bus, 'square', 784, t, 0.08, 0.13, { cutoff: 3000 });
         this.tone(bus, 'square', 523, t + 0.08, 0.22, 0.13, { cutoff: 2500 });
         break;
+      case 'coinLose': {
+        // Money lost against the player's will, in the same chiptune voice as `coin` and `pay`:
+        // a sad three-note fall (E5, C5, then A4 sagging flat) as the coins burst out, then quick
+        // little square blips of coins landing on the ground (timed with board.spillCoins).
+        this.tone(bus, 'square', freq('E5'), t, 0.09, 0.13, { cutoff: 3000 });
+        this.tone(bus, 'square', freq('C5'), t + 0.09, 0.09, 0.13, { cutoff: 2600 });
+        this.tone(bus, 'square', freq('A4'), t + 0.18, 0.3, 0.13, { cutoff: 2200, to: freq('A4') * 0.9 });
+        for (let i = 0; i < 5; i++) {
+          const at = t + 0.34 + i * 0.05 + Math.random() * 0.02;
+          this.tone(bus, 'square', 1568 + Math.random() * 600, at, 0.035, 0.06 - i * 0.008, { cutoff: 5000 });
+        }
+        break;
+      }
+      // The metallic coin set (`MONEY_SOUNDS = 'clinks'`), not played now.
       case 'coinGet':
         // Money coming in: coins clinking into your pile, each a little higher, the last ringing.
         this.clink(t, 3300, 0.07, 0.18);
@@ -919,7 +938,7 @@ class AudioEngine {
         this.clink(t + 0.22, 3500, 0.03, 0.06);
         this.clink(t + 0.255, 3500, 0.018, 0.05);
         break;
-      case 'coinLose': {
+      case 'coinDrop': {
         // Money lost against the player's will: a handful of change bursting out of the player
         // with a jangle (coins knocking together), then each coin hitting the ground and
         // bouncing (gaps shrinking, quieter, a little lower than spending) as they land beside

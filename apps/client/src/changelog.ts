@@ -46,8 +46,8 @@ export const CHANGELOG: ChangelogEntry[] = [
       },
       {
         tag: 'better',
-        title: 'Different sounds for money',
-        text: 'Money now has three real coin sounds: coins clinking into your pile when money comes in, coins counted onto a counter when you spend by choice, and a handful of change jangling out and bouncing on the ground when you lose it.',
+        title: 'A sound for losing money',
+        text: 'Getting and spending money keep their classic chimes, and losing money now has its own sad little tune with coins landing on the ground.',
       },
     ],
   },

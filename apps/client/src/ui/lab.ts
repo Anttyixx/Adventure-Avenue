@@ -111,13 +111,7 @@ const rnd = (n: number) => Math.floor(Math.random() * n);
  * Controls for UI elements that were just added or changed: they shake once and glow so they
  * are easy to find. Update this list with each change.
  */
-const RECENT = new Set([
-  'Classic: money in',
-  'Classic: money out',
-  'New: money in',
-  'New: spend',
-  'New: lose',
-]);
+const RECENT = new Set(['Money in', 'Money spent', 'Money lost', 'Coins: lose a fee to a rival']);
 
 /**
  * Which board the lab plays on: Town with portal links (square, the default) or Twin Lakes (hex),
@@ -2314,15 +2308,19 @@ export async function openLab(app: HTMLElement, section?: string) {
   // Sound effects, music and the volume settings.
   {
     const s = addSection('sound', 'Sound', 'Tap the page once first: browsers only play sound after a tap.');
-    // The money sounds side by side: the classic pair (still in audio.ts, switched back on with
-    // MONEY_SOUNDS) and the new three.
+    // The money sounds side by side: the classic set the game plays (see MONEY_SOUNDS in
+    // audio.ts) and the metallic coin set tried before.
     row(
       s,
-      btn('Classic: money in', () => sound.play('coin')),
-      btn('Classic: money out', () => sound.play('pay')),
-      btn('New: money in', () => sound.play('coinGet')),
-      btn('New: spend', () => sound.play('coinSpend')),
-      btn('New: lose', () => sound.play('coinLose')),
+      btn('Money in', () => sound.play('coin')),
+      btn('Money spent', () => sound.play('pay')),
+      btn('Money lost', () => sound.play('coinLose')),
+    );
+    row(
+      s,
+      btn('Coin clinks: in', () => sound.play('coinGet')),
+      btn('Coin clinks: spent', () => sound.play('coinSpend')),
+      btn('Coin clinks: lost', () => sound.play('coinDrop')),
     );
     row(s, ...SFX_NAMES.map((n) => btn(n, () => sound.play(n))));
     row(

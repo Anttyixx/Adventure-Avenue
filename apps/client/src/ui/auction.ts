@@ -123,7 +123,7 @@ export class AuctionView {
     this.live = live;
     this.deadline = performance.now() + live.leftMs;
     if (raised) {
-      sound.play(moneySfx('spend'));
+      sound.play(moneySfx('get'));
       this.high.classList.remove('pop');
       void this.high.offsetWidth;
       this.high.classList.add('pop');
