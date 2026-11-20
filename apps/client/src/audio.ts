@@ -812,15 +812,31 @@ class AudioEngine {
   }
 
   /**
-   * One coin hitting something: a metallic ping made of out-of-tune partials (what makes it sound
-   * like metal, not a note) over a tiny tick of noise, all gone in `dur` seconds.
+   * One coin hitting something. A struck coin rings at several out-of-tune frequencies at once (a
+   * metal disc's modes, roughly 1 : 1.59 : 2.14 : 2.65 : 3.16), each a touch detuned at random and
+   * doubled slightly sharp so it shimmers, the higher ones dying sooner; a bright click of noise
+   * marks the hit. `f` is the lowest ring (3-5 kHz for small change), `dur` how long it rings.
    */
   private clink(at: number, f: number, vol: number, dur: number) {
     const bus = this.sfxBus;
-    this.tone(bus, 'sine', f, at, dur, vol, { attack: 0.002 });
-    this.tone(bus, 'sine', f * 2.76, at, dur * 0.6, vol * 0.45, { attack: 0.002 });
-    this.tone(bus, 'sine', f * 5.4, at, dur * 0.35, vol * 0.2, { attack: 0.002 });
-    this.hiss(bus, at, 0.015, vol * 0.5, 8000, 2);
+    const modes: [number, number, number][] = [
+      // ratio, loudness, how long (share of dur)
+      [1, 1, 1],
+      [1.59, 0.7, 0.75],
+      [2.14, 0.5, 0.55],
+      [2.65, 0.35, 0.4],
+      [3.16, 0.2, 0.3],
+    ];
+    for (const [ratio, loud, len] of modes) {
+      const fr = f * ratio * (0.99 + Math.random() * 0.02);
+      if (fr > 16000) continue;
+      this.tone(bus, 'sine', fr, at, dur * len, vol * loud, { attack: 0.001 });
+      // A twin a hair sharper on the low modes: the two beat together like a real ringing coin
+      // (only there, to keep the many coins of a spill light on phones).
+      if (ratio < 2)
+        this.tone(bus, 'sine', fr * 1.006, at, dur * len * 0.8, vol * loud * 0.5, { attack: 0.001 });
+    }
+    this.hiss(bus, at, 0.008, vol * 0.9, 9000, 1.5);
   }
 
   private hiss(bus: AudioNode, at: number, dur: number, vol: number, band: number, q = 1, sweepTo?: number) {
@@ -889,43 +905,42 @@ class AudioEngine {
         this.tone(bus, 'square', 523, t + 0.08, 0.22, 0.13, { cutoff: 2500 });
         break;
       case 'coinGet':
-        // Money coming in: coins clinking into your pile, each a little higher, with a sparkle.
-        this.clink(t, 2350, 0.12, 0.22);
-        this.clink(t + 0.07, 2800, 0.12, 0.24);
-        this.clink(t + 0.13, 3500, 0.11, 0.32);
-        this.tone(bus, 'sine', 5274, t + 0.13, 0.3, 0.025);
+        // Money coming in: coins clinking into your pile, each a little higher, the last ringing.
+        this.clink(t, 3300, 0.07, 0.18);
+        this.clink(t + 0.07, 3700, 0.07, 0.2);
+        this.clink(t + 0.14, 4300, 0.075, 0.45);
         break;
       case 'coinSpend':
-        // Spending by choice: a few coins counted out onto a counter, steady and tidy, the
-        // last one settling with a short wobble.
-        this.clink(t, 2600, 0.12, 0.16);
-        this.clink(t + 0.075, 2450, 0.11, 0.16);
-        this.clink(t + 0.15, 2700, 0.11, 0.2);
-        this.clink(t + 0.22, 2550, 0.05, 0.08);
-        this.clink(t + 0.26, 2550, 0.03, 0.06);
+        // Spending by choice: a few coins counted out onto a counter, steady and tidy, the last
+        // one settling with a short wobble.
+        this.clink(t, 3600, 0.07, 0.14);
+        this.clink(t + 0.075, 3400, 0.065, 0.14);
+        this.clink(t + 0.15, 3750, 0.07, 0.3);
+        this.clink(t + 0.22, 3500, 0.03, 0.06);
+        this.clink(t + 0.255, 3500, 0.018, 0.05);
         break;
       case 'coinLose': {
-        // Money lost against the player's will: a handful of change dropped on the ground. A soft
-        // falling note as the coins burst out, then each coin hits and bounces (the gaps shrink
-        // and it gets quieter, a little lower than spending) as they land beside the player,
-        // timed with board.spillCoins, and a last coin rattling flat.
-        this.tone(bus, 'sine', 880, t, 0.3, 0.07, { to: 330 });
-        this.hiss(bus, t, 0.12, 0.05, 3000, 1, 1200);
+        // Money lost against the player's will: a handful of change bursting out of the player
+        // with a jangle (coins knocking together), then each coin hitting the ground and
+        // bouncing (gaps shrinking, quieter, a little lower than spending) as they land beside
+        // the player, timed with board.spillCoins, and a last coin rattling flat.
+        for (let i = 0; i < 9; i++)
+          this.clink(t + i * 0.014 + Math.random() * 0.02, 3800 + Math.random() * 1800, 0.035, 0.09);
         for (let c = 0; c < 4; c++) {
-          const f = 1900 + Math.random() * 700;
+          const f = 2900 + Math.random() * 900;
           let at = t + 0.3 + c * 0.05 + Math.random() * 0.03;
           let gap = 0.09 + Math.random() * 0.03;
-          let v = 0.1;
+          let v = 0.065;
           for (let b = 0; b < 4; b++) {
-            this.clink(at, f, v, 0.12);
+            this.clink(at, f, v, b === 0 ? 0.25 : 0.1);
             at += gap;
             gap *= 0.62;
             v *= 0.55;
           }
         }
-        // The rattle of the last coin spinning down.
-        for (let i = 0; i < 7; i++)
-          this.clink(t + 0.62 + i * (0.05 - i * 0.005), 2100, 0.03 * (1 - i / 8), 0.05);
+        // The rattle of the last coin spinning down, faster and faster.
+        for (let i = 0; i < 8; i++)
+          this.clink(t + 0.62 + i * (0.05 - i * 0.005), 3100, 0.022 * (1 - i / 9), 0.04);
         break;
       }
       case 'buy':
