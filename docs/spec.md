@@ -1477,7 +1477,12 @@ fixed height (92px; 64px on small screens) centered at the bottom of the screen 
 wide as its content up to a maximum that leaves a gap to the player cards on either side.
 On small screens that room is narrow, so the question sits above the buttons (which scroll
 sideways when there are many).
-The question sits on the left, the buttons on the right. Questions stay short ("Buy this Bay
+The question sits on the left, the buttons on the right (two plain choices stack, the main one on
+top, on larger screens). The bar has rounded 22px corners and a border in the deciding player's
+color that glows softly while it waits; the main button is a chunky gold button with a light
+sweeping across it, and the headline amount (usually the cost) sits on a small swaying gold ticket.
+The status line is a pill with a round icon that pops in, and "is moving..." ends in three
+bouncing dots. Questions stay short ("Buy this Bay
 Market shop?", "Buy out Milo's Bay Market shop at 5x?") and the numbers that go with them (price,
 cash after, your cash, value, high bid...) show as chips under the question, most important first. It slides up when a question is asked and back down once it
 is answered, and is hidden otherwise. Building and renovating use a building picker in the bar: the question and a hint on the left,

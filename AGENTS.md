@@ -29,7 +29,9 @@ When the spec and the code disagree, ask the owner which is right; then fix the 
   save deeper technical detail for when the owner asks for it.
 - **Branches.** Work happens on `dev`. Only merge or push to `main` when the owner says the build
   is stable. Pushing `dev` deploys the preview to `/dev/` on GitHub Pages; pushing `main` deploys
-  the site root.
+  the site root. `ui-refresh` is a test branch for the UI redesign (made from `dev`); pushing it
+  deploys to `/ui-refresh/` (https://anttyixx.github.io/Adventure-Avenue/ui-refresh/). It is merged
+  into `dev` only when the owner says so.
 - **End every reply that changes something with the playable link** for the branch updated, and
   say which build it is (the short commit hash, shown in the game's version chip):
   - `dev`: https://anttyixx.github.io/Adventure-Avenue/dev/ (e.g. "dev build `bbca06e`")

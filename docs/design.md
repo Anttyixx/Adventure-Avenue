@@ -448,11 +448,20 @@ Each element: **purpose**, **placement**, **anatomy**, **spec**, **behavior**, t
     ellipsis when long. "Rosa is buying stocks...", "Board settings · 2 problems to fix".
   - **Options**: question on the left (player-color dot first, or a `question()` fact strip),
     buttons on the right with the main one gold.
-- **Spec:** glass, 2px border in `--pc` (the deciding player's color), min height 92px (options),
+- **Spec:** glass with a soft top light (a navy gradient and a 1px inner highlight), 22px corners
+  shared by both modes (the 44px status line is a pill, the taller question bar a soft rectangle,
+  and the morph only changes size), 2px border in `--pc` (the deciding player's color) that glows
+  softly in and out while waiting (`ab-glow`, 2.4s), min height 92px (options),
   grows up to 75% taller for rich content, width = content (max 920px; no minimum width, so a
   short message gets a short bar on every screen size).
 - **Motion:** morphs size between states (740ms, content laid out at its final size so text never
   jumps); new text is revealed with a 220ms left-to-right sweep; new controls fade/settle 220ms.
+- **Pieces:** the main button is a chunky gold "toy" button (12px corners, 3px darker base, a light
+  sweeping across every 3.2s, pressing down onto its base); the question's `big` fact (usually the
+  cost) is a gold ticket with a small uppercase label that sways gently; two plain choices stack
+  with the main one on top (not on small screens). The status line's icon is round and pops in
+  when the line changes, and a trailing "..." becomes three bouncing dots (`statusText` in
+  `hud.ts`).
 - **Do:** say what to do when the choice is on the board ("Tap a glowing square to move there").
 - **Don't:** put forms, lists or scrolling areas here (→ side panel / pop-up).
 - **Picker variant** (`.bp`, building on a vacant plot / renovating, `buildPrompt` in

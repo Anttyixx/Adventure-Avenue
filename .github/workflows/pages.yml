@@ -1,12 +1,13 @@
 # Builds the client and publishes it to the gh-pages branch:
 #   main -> site root      (https://<owner>.github.io/<repo>/)
 #   dev  -> /dev/ preview  (https://<owner>.github.io/<repo>/dev/)
+#   ui-refresh -> /ui-refresh/ preview (a test branch for the UI redesign)
 # GitHub Pages must be set to "Deploy from a branch" -> gh-pages / (root).
 name: Deploy to GitHub Pages
 
 on:
   push:
-    branches: [main, dev]
+    branches: [main, dev, ui-refresh]
   workflow_dispatch:
 
 permissions:
@@ -49,13 +50,15 @@ jobs:
           fi
           cd "$SITE"
           if [ "$BRANCH" = "main" ]; then
-            # Replace the live site but keep the dev preview.
-            find . -mindepth 1 -maxdepth 1 ! -name .git ! -name dev -exec rm -rf {} +
+            # Replace the live site but keep the preview folders.
+            find . -mindepth 1 -maxdepth 1 ! -name .git ! -name dev ! -name ui-refresh -exec rm -rf {} +
             cp -r "$SRC"/. .
           else
-            rm -rf dev
-            mkdir dev
-            cp -r "$SRC"/. dev/
+            # Each preview branch has its own folder, named after the branch.
+            DIR="$BRANCH"
+            rm -rf "$DIR"
+            mkdir "$DIR"
+            cp -r "$SRC"/. "$DIR"/
             if [ ! -f index.html ]; then
               cat > index.html <<'HTML'
           <!doctype html><meta charset="utf-8"><title>Adventure Avenue</title>

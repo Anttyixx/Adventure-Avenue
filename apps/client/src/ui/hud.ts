@@ -75,6 +75,14 @@ const ZOOM_TITLES = {
   locked: 'Locked zoom: the game is showing something. Your zoom comes back in a moment.',
 };
 
+/** A status line's text with names in their colors; a trailing "..." becomes three bouncing dots. */
+function statusText(G: GameState | undefined, text: string): (string | HTMLElement)[] {
+  const waiting = text.endsWith('...');
+  const parts = namesInColor(G, waiting ? text.slice(0, -3) : text);
+  if (waiting) parts.push(h('span', { class: 'ab-dots', 'aria-label': '...' }, h('i'), h('i'), h('i')));
+  return parts;
+}
+
 /** How long the game log takes to slide up to make room for a new line. */
 const LOG_SLIDE_MS = 320;
 
@@ -1233,7 +1241,7 @@ export class Hud {
           'div',
           { class: 'prompt-text ask-status' },
           kindIcon(cur.kind),
-          h('span', { class: 'tick-text' }, ...namesInColor(this.G, cur.text)),
+          h('span', { class: 'tick-text' }, ...statusText(this.G, cur.text)),
         ),
       );
     }

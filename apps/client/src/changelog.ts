@@ -35,6 +35,19 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: '2026-11-21-ui-action-bar',
+    date: 'Nov 21, 2026',
+    title: 'A livelier action bar',
+    features: [
+      {
+        tag: 'better',
+        title: 'A new look for the action bar',
+        text: "The action bar has softer rounded corners and a border in the player's color that glows while they decide. The main button is a chunky gold button with a shine, and the price sits on its own gold ticket.",
+      },
+    ],
+    extras: ['Status line is a pill with a popping icon and bouncing dots'],
+  },
+  {
     id: '2026-11-21-log-typing',
     date: 'Nov 21, 2026',
     title: 'A smoother game log',
