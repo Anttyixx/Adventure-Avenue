@@ -203,7 +203,13 @@ export function logView(
         : null,
     );
     list.append(
-      h('section', { class: `turn-card ${live ? 'live' : ''}`, style: `--pc:${color}` }, head, body),
+      h(
+        'section',
+        // `data-key` lets the HUD find the same turn after a redraw, to slide it into place.
+        { class: `turn-card ${live ? 'live' : ''}`, style: `--pc:${color}`, 'data-key': g.key },
+        head,
+        body,
+      ),
     );
   }
   return list;

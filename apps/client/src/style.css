@@ -1418,15 +1418,7 @@ input[type='range'] {
     opacity: 0.45;
   }
 }
-.log-line.log-new {
-  animation: log-new 0.45s ease-out;
-}
-@keyframes log-new {
-  from {
-    opacity: 0;
-    filter: blur(2px);
-  }
-}
+/* New log lines type in (hud.ts `typeIn`) while the log slides up to make room (`animateLog`). */
 .log-icon {
   flex: none;
   width: 22px;

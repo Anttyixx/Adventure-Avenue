@@ -75,6 +75,25 @@ const ZOOM_TITLES = {
   locked: 'Locked zoom: the game is showing something. Your zoom comes back in a moment.',
 };
 
+/** How long the game log takes to slide up to make room for a new line. */
+const LOG_SLIDE_MS = 320;
+
+/**
+ * The action bar's typing reveal, also used by the game log: the text uncovers left to right in
+ * quick steps. The whole text stays laid out in place (for wrapping, selection and screen
+ * readers); only what shows changes. A JS animation, so it keeps going if a wrapper moves.
+ */
+function typeIn(el: HTMLElement) {
+  if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  el.animate(
+    [
+      { clipPath: 'inset(0 100% 0 0)', opacity: 0.6 },
+      { clipPath: 'inset(0 0% 0 0)', opacity: 1 },
+    ],
+    { duration: 220, easing: 'steps(16, end)' },
+  );
+}
+
 export class Hud {
   root: HTMLElement;
   toolbar = h('div', { class: 'toolbar' });
@@ -1223,17 +1242,11 @@ export class Hud {
   /** Reveal the complete laid-out message without moving text or delaying its buttons. */
   private revealAskText() {
     const text = this.ask.querySelector<HTMLElement>('.prompt-text');
-    if (!text || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-    // A JS animation stays on the same timeline when the resize wrapper is removed.
-    // Keep the whole message in the DOM for wrapping, selection and screen readers.
-    text.animate(
-      [
-        { clipPath: 'inset(0 100% 0 0)', opacity: 0.6 },
-        { clipPath: 'inset(0 0% 0 0)', opacity: 1 },
-      ],
-      { duration: 220, easing: 'steps(16, end)' },
-    );
+    if (text) typeIn(text);
   }
+
+  /** The waiting line the game log last showed, so a new one types in. */
+  private logWaitShown: string | undefined;
 
   /** Release the temporary layout before measuring or replacing the bar's content. */
   private stopAskMorph() {
@@ -1400,6 +1413,13 @@ export class Hud {
     // Stay at the newest entries unless the reader scrolled up.
     const atBottom = !old || old.scrollHeight - old.scrollTop - old.clientHeight < 40;
     const keep = old?.scrollTop ?? 0;
+    // Where each turn sat on screen, so after the redraw they slide up into their new places
+    // (not on the log's first draw, which just appears).
+    const animate = !toBottom && this.logSeen >= 0;
+    const before = new Map<string, number>();
+    if (old && animate)
+      for (const card of old.querySelectorAll<HTMLElement>('.turn-card'))
+        before.set(card.dataset.key ?? '', card.getBoundingClientRect().top);
     clear(this.logBox);
     const G = this.G;
     // Lines added since the last render fade in (in place of the waiting line they answer).
@@ -1439,6 +1459,8 @@ export class Hud {
       list,
     );
     list.scrollTop = toBottom || atBottom ? list.scrollHeight : keep;
+    if (animate) this.animateLog(list, before);
+    this.logWaitShown = this.waiting?.text;
     // New lines settle after this (coin icons swap in, fonts finish), which can leave the newest
     // line half hidden: stick to the bottom again once they have.
     if (toBottom || atBottom) {
@@ -1446,6 +1468,50 @@ export class Hud {
       requestAnimationFrame(stick);
       setTimeout(stick, 120);
     }
+  }
+
+  /**
+   * After a redraw of the log: the turns slide up from where they were (a new turn rises in from
+   * below them), new lines type in like the action bar's text, and so does a changed waiting line.
+   */
+  private animateLog(list: HTMLElement, before: Map<string, number>) {
+    if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    let shift = 0;
+    const added: HTMLElement[] = [];
+    for (const card of list.querySelectorAll<HTMLElement>('.turn-card')) {
+      const was = before.get(card.dataset.key ?? '');
+      if (was == null) {
+        added.push(card);
+        continue;
+      }
+      const dy = was - card.getBoundingClientRect().top;
+      if (Math.abs(dy) < 1) continue;
+      shift = Math.max(shift, dy);
+      card.animate([{ transform: `translateY(${dy}px)` }, { transform: 'none' }], {
+        duration: LOG_SLIDE_MS,
+        easing: 'cubic-bezier(0.2, 0.8, 0.3, 1)',
+      });
+    }
+    for (const card of added)
+      card.animate(
+        [
+          { transform: `translateY(${Math.max(shift, 24)}px)`, opacity: 0 },
+          { transform: 'none', opacity: 1 },
+        ],
+        { duration: LOG_SLIDE_MS, easing: 'cubic-bezier(0.2, 0.8, 0.3, 1)' },
+      );
+    // New lines also rise in a little, so they come up from below even when the log is short
+    // enough that nothing above has to move.
+    for (const line of list.querySelectorAll<HTMLElement>('.log-new')) {
+      line.animate([{ transform: 'translateY(10px)' }, { transform: 'none' }], {
+        duration: LOG_SLIDE_MS,
+        easing: 'cubic-bezier(0.2, 0.8, 0.3, 1)',
+      });
+      const entry = line.querySelector<HTMLElement>(':scope > .log-entry');
+      if (entry) typeIn(entry);
+    }
+    const wait = list.querySelector<HTMLElement>('.log-line.waiting > .log-entry');
+    if (wait && this.waiting?.text !== this.logWaitShown) typeIn(wait);
   }
 
   // ------------------------------------------------------------ tooltip

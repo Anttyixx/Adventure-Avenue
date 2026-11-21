@@ -35,6 +35,18 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: '2026-11-21-log-typing',
+    date: 'Nov 21, 2026',
+    title: 'A smoother game log',
+    features: [
+      {
+        tag: 'better',
+        title: 'The game log types as things happen',
+        text: 'New lines in the game log type in like the action bar, and the log slides up smoothly to make room instead of jumping.',
+      },
+    ],
+  },
+  {
     id: '2026-11-20-money-sounds',
     date: 'Nov 20, 2026',
     title: 'New money sounds',

@@ -111,7 +111,7 @@ const rnd = (n: number) => Math.floor(Math.random() * n);
  * Controls for UI elements that were just added or changed: they shake once and glow so they
  * are easy to find. Update this list with each change.
  */
-const RECENT = new Set(['Money in', 'Money spent', 'Money lost', 'Coins: lose a fee to a rival']);
+const RECENT = new Set(['Log: lines typing in', 'Game log']);
 
 /**
  * Which board the lab plays on: Town with portal links (square, the default) or Twin Lakes (hex),
@@ -2603,6 +2603,27 @@ export async function openLab(app: HTMLElement, section?: string) {
         await game.log(`${p.name} bought a shop for ${sq.value}G.`, p.id, 'property', [], { sq: sq.id });
         refresh();
         hud.toggleLog(true);
+      }),
+      btn('Log: lines typing in', async () => {
+        // Opens the log, then a waiting line and new entries arrive one at a time: each types in
+        // and the log slides up to make room.
+        const p = G.players[G.order[G.turn]];
+        const sq = G.nodes.find((n) => n.t === 'shop')!;
+        hud.toggleLog(true);
+        const pause = () => new Promise((r) => setTimeout(r, 900));
+        hud.status(`${p.name} is deciding...`, 'wait');
+        await pause();
+        await game.log(`${p.name} rolled a 5.`, p.id, 'move', [], { action: 'roll' });
+        hud.refreshLog();
+        await pause();
+        hud.status(`${p.name} is moving...`, 'move');
+        await pause();
+        await game.logArrival(p, sq);
+        hud.refreshLog();
+        await pause();
+        await game.log(`${p.name} bought a shop for ${sq.value}G.`, p.id, 'property', [], { sq: sq.id });
+        refresh();
+        hud.refreshLog();
       }),
 
       btn('Game menu', () => hud.toggleMenu(true)),
