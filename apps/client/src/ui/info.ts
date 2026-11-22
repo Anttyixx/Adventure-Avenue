@@ -34,7 +34,7 @@ export type InfoPage = 'game' | 'stocks' | 'props' | number;
 
 const STILL = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
 /** The pop-ups' opening and closing motion (as for the stock market and View board). */
-const AWAY = { transform: 'translateY(14px) scale(0.97)', opacity: 0 };
+const AWAY = { transform: 'translateY(30px) scale(0.96)', opacity: 0 };
 const HERE = { transform: 'none', opacity: 1 };
 
 export class InfoPopup {
@@ -83,7 +83,13 @@ export class InfoPopup {
     this.render();
     this.unplace = keepClearOfCards(hud, this.box);
     if (STILL()) return;
-    this.box.animate([AWAY, HERE], { duration: 240, easing: 'cubic-bezier(0.2, 0.8, 0.2, 1)' });
+    // The pop-up rises into place with a little overshoot, then its parts rise in one after
+    // another and the net worth ring draws itself.
+    this.box.animate([AWAY, { transform: 'translateY(-4px) scale(1.01)', opacity: 1, offset: 0.7 }, HERE], {
+      duration: 320,
+      easing: 'cubic-bezier(0.2, 0.8, 0.2, 1)',
+    });
+    riseIn(this.box, 90);
     if (!this.bar.hidden) this.morphBar(ask, null);
   }
 
@@ -338,6 +344,7 @@ export class InfoPopup {
               easing: ease,
             });
           // ...and the new page's parts pop in, one after another.
+          fresh.querySelectorAll('.pv-donut').forEach((d) => d.classList.add('drawing'));
           popParts(fresh).forEach((el, i) =>
             el.animate(
               [
@@ -463,6 +470,25 @@ export class InfoPopup {
     );
     this.fitTabs();
   }
+}
+
+/** Opening: the page's parts rise in one after another and the net worth ring draws itself. */
+function riseIn(box: HTMLElement, delay: number) {
+  box.querySelectorAll('.pv-donut').forEach((d) => d.classList.add('drawing'));
+  popParts(box).forEach((el, i) =>
+    el.animate(
+      [
+        { opacity: 0, transform: 'translateY(10px)' },
+        { opacity: 1, transform: 'none' },
+      ],
+      {
+        duration: 260,
+        delay: delay + Math.min(i, 10) * 40,
+        easing: 'cubic-bezier(0.2, 0.8, 0.2, 1)',
+        fill: 'backwards',
+      },
+    ),
+  );
 }
 
 /** The parts of a page that pop out and in on a page change (outermost ones only). */

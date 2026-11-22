@@ -166,13 +166,6 @@ export function playerOverview(G: GameState, p: Player, hooks: OverviewHooks): H
             { class: 'pv-under' },
             h(
               'span',
-              { class: `pv-togo ${need <= 0 ? 'won' : ''}`, title: tip },
-              need <= 0
-                ? h('b', null, 'Goal reached: get to the bank!')
-                : [h('b', null, fmt(need)), ' to go'],
-            ),
-            h(
-              'span',
               { class: 'pv-promo', title: 'Collect all four suits, then reach the bank' },
               'Next promotion pays ',
               h('b', null, fmt(salary(G, { ...p, level: p.level + 1 }))),
@@ -182,7 +175,7 @@ export function playerOverview(G: GameState, p: Player, hooks: OverviewHooks): H
   );
 
   // ---------------------------------------------------------------- what the net worth is made of
-  colA.append(section('Net worth breakdown', null, assetMix(G, p)));
+  colA.append(section('Net worth breakdown', null, assetMix(G, p), quickFacts(G, p, need)));
 
   // ---------------------------------------------------------------- properties
   // One list going down, by district: each row has the building on the left and its name, rent
@@ -282,7 +275,12 @@ export function playerOverview(G: GameState, p: Player, hooks: OverviewHooks): H
  * amount and share. Used on a player's page and on the results screen.
  */
 export function assetMix(G: GameState, p: Player): HTMLElement {
-  const { donut, parts, values, total, biggest, show, arcs } = netWorthRing(G, p);
+  const { donut, parts, values, total, rest, show, arcs } = netWorthRing(G, p, { total: true });
+  // How many properties and shares make up those parts.
+  const count: Record<string, number> = {
+    props: G.nodes.filter((s) => s.owner === p.id).length,
+    stock: p.shares.reduce((a, n) => a + n, 0),
+  };
   return h(
     'div',
     { class: 'pv-mix' },
@@ -296,7 +294,7 @@ export function assetMix(G: GameState, p: Player): HTMLElement {
           'div',
           { class: 'pv-leg' },
           h('i', { style: `background:${part.color}` }),
-          h('span', null, part.label),
+          h('span', null, part.label, count[part.key] ? h('small', null, ` (${count[part.key]})`) : null),
           h('b', { class: v < 0 ? 'neg' : '' }, fmt(v)),
           h('em', null, total && v > 0 ? `${Math.round((v / total) * 100)}%` : '-'),
         );
@@ -305,12 +303,51 @@ export function assetMix(G: GameState, p: Player): HTMLElement {
           arcs.get(part.key)?.classList.add('on');
         };
         row.onmouseleave = () => {
-          show(biggest.v ? biggest : null);
+          rest();
           arcs.get(part.key)?.classList.remove('on');
         };
         return row;
       }),
     ),
+  );
+}
+
+/**
+ * Three quick facts under the net worth chart: how far to the goal, which suits they hold, and
+ * how far ahead of the next player (or behind the leader) they are.
+ */
+function quickFacts(G: GameState, p: Player, need: number): HTMLElement {
+  const ranked = ranking(G).filter((q) => !q.bankrupt);
+  const mine = netWorth(G, p);
+  const first = ranked[0];
+  const second = ranked[1];
+  const lead =
+    !first || !second || p.bankrupt
+      ? null
+      : first.id === p.id
+        ? { label: 'Lead over 2nd', v: mine - netWorth(G, second) }
+        : { label: 'Behind 1st', v: mine - netWorth(G, first) };
+  const box = (label: string, value: Node | string, cls = '') =>
+    h('div', { class: `pv-q ${cls}` }, h('span', null, label), h('b', null, value));
+  return h(
+    'div',
+    { class: 'pv-quick' },
+    box('To the goal', p.bankrupt ? '-' : need <= 0 ? 'Reached!' : fmt(need), need <= 0 ? 'good' : ''),
+    h(
+      'div',
+      { class: 'pv-q' },
+      h('span', null, 'Suits'),
+      h(
+        'b',
+        { class: 'pv-q-suits' },
+        ...SUITS.map((_, i) =>
+          h('img', { src: suitIconURL(i, p.suits[i]), alt: p.suits[i] ? SUITS[i] : '' }),
+        ),
+      ),
+    ),
+    lead
+      ? box(lead.label, `${lead.v >= 0 ? '+' : ''}${fmt(lead.v)}`, lead.v >= 0 ? 'good' : 'bad')
+      : box('Lead over 2nd', '-'),
   );
 }
 
@@ -321,7 +358,7 @@ export const NET_WORTH_PARTS = PARTS;
  * Just the net worth ring (`.pv-donut`): an arc per part, the hovered (or biggest) part's share in
  * the middle. `assetMix` adds its key; the results table shows the ring on its own.
  */
-export function netWorthRing(G: GameState, p: Player) {
+export function netWorthRing(G: GameState, p: Player, opts: { total?: boolean } = {}) {
   const standard = G.rules === 'standard';
   const values = { cash: p.cash, props: propertyValue(G, p), stock: stockValue(G, p) };
   const positive = PARTS.filter((s) => standard || s.key !== 'stock');
@@ -346,6 +383,15 @@ export function netWorthRing(G: GameState, p: Player) {
     midPct.textContent = part && total ? `${Math.round((part.v / total) * 100)}%` : '-';
     what.textContent = part ? part.label : 'Nothing yet';
   };
+  // At rest the middle shows the net worth itself (`total`), or else the biggest part's share;
+  // pointing at a part shows that part's share.
+  const nwNow = netWorth(G, p);
+  const rest = () => {
+    if (opts.total) {
+      midPct.textContent = fmt(nwNow);
+      what.textContent = 'Net worth';
+    } else show(biggest.v ? biggest : null);
+  };
   // Each part is an arc of the ring, with a 2px gap on either side when there is more than one.
   const shown = parts.filter((part) => part.v > 0);
   const gap = shown.length > 1 ? 2 : 0;
@@ -368,14 +414,19 @@ export function netWorthRing(G: GameState, p: Player) {
     tip.textContent = `${part.label}: ${fmt(part.v)} (${Math.round((part.v / total) * 100)}%)`;
     arc.append(tip);
     arc.addEventListener('pointerenter', () => show(part));
-    arc.addEventListener('pointerleave', () => show(biggest.v ? biggest : null));
+    arc.addEventListener('pointerleave', rest);
     arcs.set(part.key, arc);
     svg.append(arc);
     at += len;
   }
-  show(biggest.v ? biggest : null);
-  const donut = h('div', { class: 'pv-donut' }, svg, h('div', { class: 'pv-donut-mid' }, midPct, what));
-  return { donut, parts, values, total, biggest, show, arcs };
+  rest();
+  const donut = h(
+    'div',
+    { class: `pv-donut ${opts.total ? 'total' : ''}` },
+    svg,
+    h('div', { class: 'pv-donut-mid' }, opts.total ? what : null, midPct, opts.total ? null : what),
+  );
+  return { donut, parts, values, total, biggest, show, rest, arcs };
 }
 
 export function section(title: string, aside: string | null, ...body: Node[]): HTMLElement {

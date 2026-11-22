@@ -698,6 +698,17 @@ if (!(await ask(`Delete ${d.name}?`, 'Its 4 properties will be removed from the 
 
 ### 5.15 Info pop-up (pop-up + action bar)
 
+- **Refreshed look (UI refresh, P1):** 22px corners, a soft top light, and an even edge all the way
+  round: a 2px ring in the player's color with a faint glow on a player's page, the thin glass line
+  on Game info, the stock market and the properties (no top edge). Opening: the pop-up rises 30px
+  with a little overshoot (320ms), its parts rise in 40ms apart and the net worth ring spins in
+  and draws its parts (`riseIn` in `info.ts`, `.pv-donut.drawing`). No one-sided edges inside:
+  property rows are inset tiles with a hairline, the district shown as a 2px ring round the
+  building's picture. Player page net worth: the ring (140px, 104px on phones) has the net worth
+  in the middle (a part's share on hover); Cash / Properties (count) / Stock (shares) are inset rows;
+  three quick facts below (`.pv-quick`): to the goal, suits held, lead over 2nd (green) or behind
+  1st (red).
+
 - **Info button** (`.info-btn`): a pill at the end of the info chip, an "i" in a white outlined circle and "Info";
   gold (`.on`) while the Game info pop-up is open. The Stocks and Properties chips under the player
   cards open the stock market and properties pop-ups the same way (5.14).

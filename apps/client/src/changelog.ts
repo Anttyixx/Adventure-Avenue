@@ -45,7 +45,11 @@ export const CHANGELOG: ChangelogEntry[] = [
         text: "Every player card has a border in that player's color, with the color fading in behind their character. The card of whoever's turn it is floats gently with a soft gold glow.",
       },
     ],
-    extras: ['Goal bars glide, new suits pop, ranks bump and cash flashes as it changes'],
+    extras: [
+      'Goal bars glide, new suits pop, ranks bump and cash flashes as it changes',
+      "Pop-ups get rounded edges in the player's color and rise in with a bounce",
+      'Player pages show net worth in the ring, with goal, suits and lead below',
+    ],
   },
   {
     id: '2026-11-21-ui-action-bar',

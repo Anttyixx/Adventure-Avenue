@@ -112,12 +112,10 @@ const rnd = (n: number) => Math.floor(Math.random() * n);
  * are easy to find. Update this list with each change.
  */
 const RECENT = new Set([
-  'Build',
-  'Cards: list',
-  'Cards: stack',
-  'Next player (card stack)',
-  'Toggle ♠',
-  'Toggle ♥',
+  'Info: player page',
+  'Info: game page',
+  'Info: stocks page',
+  'Info: properties page',
 ]);
 
 /**

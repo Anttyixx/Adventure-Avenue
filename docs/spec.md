@@ -1699,6 +1699,12 @@ show How to play, Arcade games and Venture cards.
   the goal bar glides to its new length with a light sweep, a new suit pops in, a changed rank
   bumps and the cash flashes green or red as it counts.
 
+**Info pop-ups** (`ui/info.ts`). They have rounded corners and an even border: in the player's
+color on a player's page, a thin glass line on the others. They rise in with a little bounce, their
+parts appearing one after another. A player's page shows their net worth in the middle of a ring
+split into cash, properties and stock (it draws itself in as the page opens), the three parts as
+rows with how many properties and shares, then three quick facts: how far to the goal, which suits
+they hold, and how far they lead the next player (or trail the leader).
 **Info pop-ups** (`ui/info.ts`). Four kinds of pop-up show what a player may want to look up:
 **Game info** (the Info button), the **stock market** (the Stocks chip), the **properties** (the
 Properties chip) and a **player's page** (their player card). They sit in the middle of the screen like the stock market (up to
