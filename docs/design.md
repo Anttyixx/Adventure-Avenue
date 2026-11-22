@@ -498,7 +498,13 @@ Each element: **purpose**, **placement**, **anatomy**, **spec**, **behavior**, t
   inset gold ring, a soft gold glow, lifted 3px); Build / Skip stack like any two-choice question
   (side by side on phones); the tip has the player's color as a 2px ring all round (no top edge);
   how many more of a building the board allows is a row of `K.buildingLimit` dots in the card's
-  top right (filled gold = still free, red outlines when none are left). Cards join the bar's wave.
+  own flow, centered above the picture so they never touch its edge (filled gold = still free, red
+  outlines when none are left); every card is the same size. Cards join the bar's wave.
+  Layout (`chooseAskLayout`): like any question, the question, hint and cards on the left and Build /
+  Skip stacked on the right (`.bp-side`), as long as the cards stay at least 74px wide; a centered
+  bar too narrow for that moves to the bottom-left corner while the picker is up (`askLeft`; the
+  board doesn't move); only if even that is too narrow (phones) do the cards span the bar's width
+  under the question, with Build / Skip beside the question.
   Choosing is two steps (select, then the main button or a second tap on the card) so one stray
   tap never commits money. Phones: cards become picture + price only, buttons sit in a row beside
   the details. The bar lifts its height cap for it (`.prompt-center:has(.bp)`).

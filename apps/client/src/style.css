@@ -11243,13 +11243,47 @@ div.sl-inline label {
     0 12px 30px rgba(0, 0, 0, 0.35),
     inset 0 1px 0 rgba(255, 255, 255, 0.1);
 }
+/* The dots sit in the card's own flow, centered above the picture, so they never touch its edge. */
 .bp-left {
-  top: 5px;
-  right: 6px;
+  position: static;
   display: flex;
+  justify-content: center;
   gap: 3px;
+  height: 5px;
+  margin-bottom: 2px;
   padding: 0;
   background: none;
+}
+/* Every card the same size, whatever its name or price. */
+.bp-cards {
+  grid-auto-rows: 1fr;
+}
+.bp-card {
+  width: 100%;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+.bp-price {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+/* Laid out like any question: the question, hint and cards on the left, Build / Skip stacked
+   on the right and centered top to bottom (hud.ts chooseAskLayout adds .bp-side when the cards
+   stay readable that way). */
+.bp.bp-side {
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas:
+    'info actions'
+    'cards actions';
+  gap: 10px 20px;
+}
+.bp.bp-side .bp-info {
+  min-height: 0;
+}
+.bp.bp-side .bp-actions {
+  align-self: center;
 }
 .bp-left i {
   width: 5px;
@@ -11275,9 +11309,11 @@ div.sl-inline label {
     padding: 7px 2px 3px;
   }
   .bp-left {
-    top: 3px;
-    right: 4px;
     gap: 2px;
+    height: 4px;
+  }
+  .bp.bp-side .bp-actions {
+    flex-direction: column;
   }
   .bp-left i {
     width: 4px;

@@ -555,8 +555,10 @@ Each building can be built at most 3 times, except with All, which has no buildi
 first player to stop on a plot may build one of seven buildings; each has an effect on rivals and
 a different one for its owner. Built plots show only the building's art on the tile (no name).
 The build (and renovate) bar shows how many more of each building can still go up on the board
-as three little dots in each card's top right corner, one per building the board allows, filled
-in gold for each that can still be built (red outlines when none are left);
+as three little dots above each building's picture, one per building the board allows, filled
+in gold for each that can still be built (red outlines when none are left). Like other questions,
+the picker shows the question and the building cards (all the same size) on the left and Build /
+Skip on the right; on phones the cards run across the bar under the question;
 the Guide's Buildings tab says the same during a game ("2 left to build").
 
 | Building      | Cost   | When a rival lands                                                                                                                         | When the owner lands                                                                  | Fee label on board |

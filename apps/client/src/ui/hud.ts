@@ -84,6 +84,8 @@ function statusText(G: GameState | undefined, text: string): (string | HTMLEleme
   return parts;
 }
 
+/** The narrowest a building card may be beside Build / Skip before the cards go full width. */
+const BP_CARD_MIN = 74;
 /** How long an emptied action bar waits for its next message before sliding away. */
 const ASK_EMPTY_HOLD = 1200;
 /** How long the action bar takes to resize (morph) between two contents. */
@@ -295,6 +297,8 @@ export class Hud {
   private askFrame = 0;
   /** Window width at which a centered action bar overflowed, so it stays bottom left at this size. */
   private abLeftAt = 0;
+  /** The bar's current content (a building picker) needs the bottom-left corner's room. */
+  private askLeft = false;
   /** Round, target and rules, shown at the top of the game menu. */
   gameInfo = h('div', { class: 'gm-info' });
   /** The current player's options, centered near the bottom of the board. */
@@ -781,7 +785,9 @@ export class Hud {
     // uses all the room up to the cards. Decided by the window, never by what the bar shows.
     const centeredRoom = W - 2 * (Math.max(this.leftInset, right) + 14);
     const narrow = centeredRoom < AB_CENTER_MIN || this.abLeftAt === W;
-    this.root.classList.toggle('ab-left', !portraitStack && narrow);
+    // (The one exception: a building picker that only fits beside Build / Skip in the corner,
+    // `askLeft`, moves there for as long as it is up; the board stays put.)
+    this.root.classList.toggle('ab-left', !portraitStack && (narrow || this.askLeft));
     // The same smaller screens center the board between the left edge and the player cards.
     this.board.centerLeft = !portraitStack && narrow && right > 0;
   }
@@ -1579,6 +1585,28 @@ export class Hud {
   private chooseAskLayout() {
     const a = this.ask;
     a.classList.remove('ab-col');
+    // The building picker lays out like a question too: the question and its building cards on
+    // the left, Build / Skip on the right. Only when that leaves the cards too small to read do
+    // the cards spread across the bar's full width under the question (`.bp-side` off).
+    const bp = a.querySelector<HTMLElement>('.bp');
+    if (bp) {
+      bp.classList.add('bp-side');
+      const card = bp.querySelector<HTMLElement>('.bp-card');
+      const small = () => !!card && card.offsetWidth < BP_CARD_MIN;
+      // Centered, the bar may be too narrow for that; the bottom-left corner has more room.
+      if (small() && !this.askLeft && !this.root.classList.contains('ab-left')) {
+        this.askLeft = true;
+        this.updateInsets();
+        if (small()) {
+          this.askLeft = false;
+          this.updateInsets();
+        }
+      }
+      if (small()) bp.classList.remove('bp-side');
+    } else if (this.askLeft) {
+      this.askLeft = false;
+      this.updateInsets();
+    }
     if (!a.classList.contains('show') || a.classList.contains('status') || a.classList.contains('stacked'))
       return;
     const text = a.querySelector<HTMLElement>(':scope > .prompt-text');
