@@ -769,8 +769,13 @@ if (!(await ask(`Delete ${d.name}?`, 'Its 4 properties will be removed from the 
 
 ### 5.16 Banner
 
-- A pill near the top center: Lilita 26px, glass, 3px border in the meaning color. Rises in, fades
-  up and out. One short line: "Round 5", "Rosa's turn", "Bay Market stock up! 12G → 14G".
+- A pill near the top center: Lilita 26px on a dark glass gradient, with a 2px ring in the
+  meaning color (`--bc`, as a box-shadow). It pops in with a small overshoot (`banner-in`) and
+  rises and shrinks a little as it fades out. One short line: "Rosa's turn", "Bay Market stock
+  up! 12G → 14G". There is no banner for a new round.
+- **Turn banner** (`.banner.turn`): the player's full-body character (`.banner-char`, 58x64) stands
+  at the left edge, its feet on the pill and its head above it, and hops once just after the pill
+  lands (`banner-hop`); the ring is the player's color. Reduced motion: no pop or hop.
 - Banners stack in a column (8px apart). When one leaves, the ones still showing glide up into
   its place (`hud.dropBanner`: `T.bannerShift` 360ms, `cubic-bezier(0.2, 0.8, 0.2, 1)`, on
   `translate` so it doesn't fight the rise-in or fade-out) instead of jumping there.
@@ -1017,6 +1022,13 @@ Reopened online games keep guests on Continue Game until the host presses Resume
   the first line. Names in the log are bold Lilita at 14px with `line-height: 1`, so they never
   stretch that line. Follow-ups hang off a 2px line that runs straight down from the centre of the
   main icon. The turn header's portrait sits in the same 22px column.
+- **Turn cards** (`.turn-card`): each turn is a box with the player cards' look: the player's
+  color fading in behind a dark glass gradient and a 2px ring in their color. The header
+  (`.turn-head`) shows their full-body character (26x30), their name in a light tint of their
+  color and "Round N" at the right, over a thin divider. The live turn glows softly and floats
+  (`log-live-glow`, `log-live-float`). Inside, a timeline in the player's color runs down the
+  left, and each line's icon becomes a 10px dot in its action color on it (a new dot pops in);
+  the waiting line is a hollow dot. Follow-up branches use a line in the player's color.
 
 ### Guide (pop-up)
 

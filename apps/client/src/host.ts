@@ -1176,14 +1176,14 @@ export class HotSeat implements GameIO {
         );
         this.refresh();
         if (this.localHuman(p.id)) sound.play('turn');
-        hud.banner(`${p.name}'s turn`, PLAYER_COLORS[p.color], T.turnBanner);
+        hud.banner(`${p.name}'s turn`, PLAYER_COLORS[p.color], T.turnBanner, p.ch);
         this.movementRoll = null;
         await this.wait((p.cpu ? T.turnStartCpu : T.turnStartHuman) + (handoff ? T.turnPanExtra : 0));
         break;
       }
       case 'roundStart':
+        // No banner for a new round (the round is in the info chip): only turns get one.
         sound.play('round');
-        hud.banner(`Round ${e.round}`, '#ffd166', T.roundBanner);
         this.refresh();
         break;
       case 'roll': {

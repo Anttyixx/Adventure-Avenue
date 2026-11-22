@@ -3,7 +3,7 @@
  * actions in the order they happened. Lines that affect other players show those players as chips.
  */
 import { PLAYER_COLORS, type GameState, type LogKind, type LogLine } from '@aa/engine';
-import { portraitURL } from '../sprites';
+import { bodyURL, portraitURL } from '../sprites';
 import { h } from './dom';
 
 /** Log kinds plus `wait`: three dots for a player making up their mind. */
@@ -126,13 +126,14 @@ export function logView(
     const live = g.key === currentKey && !G.over;
     const waiting = live ? opts.waiting : undefined;
     const fresh = live ? (opts.fresh ?? 0) : 0;
+    // The player's whole character (no frame) on the left, their name in their color, the round
+    // on the right. The live turn is marked by its box glowing and floating, not a tag.
     const head = h(
       'div',
       { class: 'turn-head' },
-      p ? h('img', { class: 'portrait tiny', src: portraitURL(p.ch), alt: '' }) : null,
-      h('b', { style: `color:${color}` }, p ? `${p.name}'s turn` : 'Earlier'),
+      p ? h('img', { class: 'turn-char', src: bodyURL(p.ch), alt: '' }) : null,
+      h('b', { style: `color:color-mix(in srgb, ${color} 55%, #fff)` }, p ? p.name : 'Earlier'),
       g.round != null ? h('span', { class: 'turn-round' }, `Round ${g.round}`) : null,
-      live ? h('span', { class: 'turn-live' }, 'Now') : null,
     );
     const freshLines = new Set(fresh ? g.lines.slice(-fresh) : []);
     const renderLine = ({ line: l, children }: LogNode): HTMLElement => {

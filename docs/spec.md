@@ -1004,6 +1004,10 @@ game goes to everyone still in the room (guests on the results screen go straigh
 left is played by a CPU until they rejoin with the code), and guests see "Stay here: the host can
 start a rematch." beside their Back to start. A builder test play rematches on the same board.
 
+**Turn banner.** When a turn starts, a pill near the top of the screen says "Rosa's turn" in a
+ring of the player's color, with their character standing at its left and hopping once. A new
+round has no banner of its own (it still plays its sound).
+
 **Your-turn alert (online).** When a player's turn starts their phone gives a short double buzz
 (where the browser allows it), and while the game's tab is in the background its title blinks
 "Your turn! · Adventure Avenue" (or "Your move!" for a choice out of turn: a trade offered to
@@ -1690,7 +1694,7 @@ show How to play, Arcade games and Venture cards.
   shop for 320G.", "Rosa passed on buying out Milo's shop for 1,600G.", "Rosa passed on buying
   stock.", "Rosa passed on selling stock.", "Rosa chose not to invest.", "Rosa passed on building on
   the vacant plot.", "Rosa passed on the 200G circus upgrade.", "Rosa passed on buying a shop."
-  (Estate Agency), "Rosa passed on the hostile takeover.". Every roll and landing/transport arrival is recorded. Landings are parent entries; purchases, fees and follow-up actions appear indented beneath the landing that caused them, until the next roll or arrival. Each purchase keeps its amount and target tile. Tile-linked entries are keyboard-accessible buttons; selecting one outlines the tile in gold and focuses the camera for 3 seconds, then returns to the game view. This changes only the view, never the player's movement choices. Older saves keep flat text entries where tile IDs are unavailable. New entries, and a changed waiting line, type in with the action bar's typing reveal, and the log slides up smoothly to make room for them (a new turn's card rises in from below); with reduced motion they just appear. The log's Close button, the Game log button again or Escape closes it. Bottom right: the player cards stacked vertically in turn order (online, each device
+  (Estate Agency), "Rosa passed on the hostile takeover.". Every roll and landing/transport arrival is recorded. Landings are parent entries; purchases, fees and follow-up actions appear indented beneath the landing that caused them, until the next roll or arrival. Each purchase keeps its amount and target tile. Tile-linked entries are keyboard-accessible buttons; selecting one outlines the tile in gold and focuses the camera for 3 seconds, then returns to the game view. This changes only the view, never the player's movement choices. Older saves keep flat text entries where tile IDs are unavailable. New entries, and a changed waiting line, type in with the action bar's typing reveal, and the log slides up smoothly to make room for them (a new turn's card rises in from below); with reduced motion they just appear. Each turn is a box in that player's colors with their character, name and round at the top; its lines hang off a timeline as colored dots, and the box of the turn being played glows and floats gently. The log's Close button, the Game log button again or Escape closes it. Bottom right: the player cards stacked vertically in turn order (online, each device
   turns the order round so its own player's card is at the bottom; turns still go top to bottom) (net worth, cash, level,
   suits and progress bar); they are always shown. Player cards show the character's whole sprite
   (trimmed to its drawn pixels, no fade). Every card has a border in its player's color all the

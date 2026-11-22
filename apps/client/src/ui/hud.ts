@@ -2299,8 +2299,17 @@ export class Hud {
     });
   }
 
-  banner(text: string, color?: string, ms = 1400) {
-    const el = h('div', { class: 'banner', style: color ? `--bc:${color}` : '' }, text);
+  /**
+   * A banner across the top of the board for a moment. With `ch` (a character) it is a turn
+   * banner: that character stands at its left end, head poking out above it, and hops in.
+   */
+  banner(text: string, color?: string, ms = 1400, ch?: unknown) {
+    const el = h(
+      'div',
+      { class: `banner ${ch != null ? 'turn' : ''}`, style: color ? `--bc:${color}` : '' },
+      ch != null ? h('img', { class: 'banner-char', src: bodyURL(ch), alt: '' }) : null,
+      h('span', null, text),
+    );
     this.bannerLayer.append(el);
     setTimeout(() => el.classList.add('out'), ms);
     setTimeout(() => this.dropBanner(el), ms + 500);

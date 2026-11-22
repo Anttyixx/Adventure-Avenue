@@ -111,12 +111,7 @@ const rnd = (n: number) => Math.floor(Math.random() * n);
  * Controls for UI elements that were just added or changed: they shake once and glow so they
  * are easy to find. Update this list with each change.
  */
-const RECENT = new Set([
-  'Info: player page',
-  'Info: game page',
-  'Info: stocks page',
-  'Info: properties page',
-]);
+const RECENT = new Set(['Turn banner', 'Turn banners: short and long names', 'Game log']);
 
 /**
  * Which board the lab plays on: Town with portal links (square, the default) or Twin Lakes (hex),
@@ -1028,12 +1023,13 @@ export async function openLab(app: HTMLElement, section?: string) {
     );
     row(
       s,
-      btn('Turn banner', () => hud.banner(`${cur().name}'s turn`, PLAYER_COLORS[cur().color], 1300)),
-      btn('Round banner', () => hud.banner(`Round ${G.round}`, '#ffd166', 1400)),
-      // The round chip leaves first: the turn chip under it glides up into its place.
-      btn('Round then turn banners', () => {
-        hud.banner(`Round ${G.round}`, '#ffd166', 900);
-        hud.banner(`${cur().name}'s turn`, PLAYER_COLORS[cur().color], 2600);
+      btn('Turn banner', () =>
+        hud.banner(`${cur().name}'s turn`, PLAYER_COLORS[cur().color], 1300, cur().ch),
+      ),
+      // Banners size to their words: a short name and a long one.
+      btn('Turn banners: short and long names', () => {
+        hud.banner(`Al's turn`, PLAYER_COLORS[1], 2200, G.players[1]?.ch);
+        hud.banner(`Bartholomew's turn`, PLAYER_COLORS[2], 2200, G.players[2]?.ch);
       }),
       btn('Promotion banner', () => {
         board.confetti(cur().id);
