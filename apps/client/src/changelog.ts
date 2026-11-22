@@ -35,6 +35,19 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: '2026-11-22-ui-player-cards',
+    date: 'Nov 22, 2026',
+    title: 'Livelier player cards',
+    features: [
+      {
+        tag: 'better',
+        title: 'Player cards in their colors',
+        text: "Every player card has a border in that player's color, with the color fading in behind their character. The card of whoever's turn it is floats gently with a soft gold glow.",
+      },
+    ],
+    extras: ['Goal bars glide, new suits pop, ranks bump and cash flashes as it changes'],
+  },
+  {
     id: '2026-11-21-ui-action-bar',
     date: 'Nov 21, 2026',
     title: 'A livelier action bar',

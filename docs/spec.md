@@ -1691,7 +1691,11 @@ show How to play, Arcade games and Venture cards.
   (Estate Agency), "Rosa passed on the hostile takeover.". Every roll and landing/transport arrival is recorded. Landings are parent entries; purchases, fees and follow-up actions appear indented beneath the landing that caused them, until the next roll or arrival. Each purchase keeps its amount and target tile. Tile-linked entries are keyboard-accessible buttons; selecting one outlines the tile in gold and focuses the camera for 3 seconds, then returns to the game view. This changes only the view, never the player's movement choices. Older saves keep flat text entries where tile IDs are unavailable. New entries, and a changed waiting line, type in with the action bar's typing reveal, and the log slides up smoothly to make room for them (a new turn's card rises in from below); with reduced motion they just appear. The log's Close button, the Game log button again or Escape closes it. Bottom right: the player cards stacked vertically in turn order (online, each device
   turns the order round so its own player's card is at the bottom; turns still go top to bottom) (net worth, cash, level,
   suits and progress bar); they are always shown. Player cards show the character's whole sprite
-  (trimmed to its drawn pixels, no fade).
+  (trimmed to its drawn pixels, no fade). Every card has a border in its player's color all the
+  way round, with that color fading in from behind the character. The card of the player whose
+  turn it is slides out a little, floats gently and has a soft gold glow. When something changes,
+  the goal bar glides to its new length with a light sweep, a new suit pops in, a changed rank
+  bumps and the cash flashes green or red as it counts.
 
 **Info pop-ups** (`ui/info.ts`). Four kinds of pop-up show what a player may want to look up:
 **Game info** (the Info button), the **stock market** (the Stocks chip), the **properties** (the

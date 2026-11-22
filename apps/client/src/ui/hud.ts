@@ -394,6 +394,8 @@ export class Hud {
   private pops = new Map<number, number>();
   private cardEls = new Map<number, HTMLElement>();
   /** What each card last showed, to skip rebuilding cards that did not change. */
+  /** Each card's goal bar, suits and rank when last drawn, so changes can animate. */
+  private cardMemo = new Map<number, { pct: number; suits: boolean[]; rank?: number }>();
   private cardSigs = new Map<number, string>();
   private promptResolve: ((v: any) => void) | null = null;
   private mainButton: HTMLButtonElement | null = null;
@@ -1189,6 +1191,32 @@ export class Hud {
     );
     const delta = p.cash - prev.cash;
     const known = this.shown.has(p.id);
+    // What changed since the card was last drawn, for its little motions: the goal bar glides
+    // from where it was (with a light sweep), newly collected suits pop, a changed rank bumps and
+    // the cash flashes green or red as it counts.
+    const memo = this.cardMemo.get(p.id);
+    this.cardMemo.set(p.id, { pct, suits: [...p.suits], rank });
+    const still = matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (memo && !still) {
+      const fill = el.querySelector<HTMLElement>('.bar-fill');
+      if (fill && Math.abs(memo.pct - pct) > 0.2) {
+        fill.classList.add('moving');
+        fill
+          .animate([{ width: `${memo.pct}%` }, { width: `${pct}%` }], {
+            duration: 700,
+            easing: 'cubic-bezier(0.2, 0.8, 0.2, 1)',
+          })
+          .finished.then(
+            () => fill.classList.remove('moving'),
+            () => {},
+          );
+      }
+      const suitImgs = el.querySelectorAll<HTMLElement>('.suits > img');
+      p.suits.forEach((got, i) => got && !memo.suits[i] && suitImgs[i]?.classList.add('got'));
+      if (memo.rank != null && rank != null && memo.rank !== rank)
+        el.querySelector('.rank')?.classList.add('bump');
+      if (delta && known) cashEl.classList.add(delta > 0 ? 'flash-up' : 'flash-down');
+    }
     const animate = () => {
       if (delta && known && el.isConnected) this.moneyPop(el, p.id, delta);
       countUp(nwEl, prev.nw, nw, plain);

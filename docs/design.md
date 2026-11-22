@@ -645,9 +645,15 @@ if (!(await ask(`Delete ${d.name}?`, 'Its 4 properties will be removed from the 
 
 ### 5.14 Player cards (bottom right)
 
-- Glass card, radius 12, **5px left edge in `--pc`**; whole character sprite left; name (Lilita)
+- Glass card, radius 12, **2px border in `--pc` all the way round** (every card) and the player's
+  color fading in from behind the character (55%) to navy under the numbers (UI refresh, Option K);
+  whole character sprite left; name (Lilita)
   - level badge + suits on top; progress bar; cash (coin) bottom-left, rank badge + net worth
-    bottom-right. Active player: breathing `--pc` glow on an `::after` layer. Money changes pop out
+    bottom-right. Active player: the card slides out 12px, floats 3px up and down (`pc-float`,
+    2.2s, on the separate `translate` property so it adds to the stack's transforms) and a soft
+    gold glow breathes just outside its border (`::after`). Small motions on change: the goal bar
+    glides to its new length with a light sweep (700ms), a newly collected suit pops, a changed
+    rank bumps, the cash flashes green or red as it counts. Money changes pop out
     beside the card ("+120G" green / "-50G" red). Can win: net worth and portrait pulse gold.
     Clicking opens that player's page in the info pop-up.
 - **Chips under the cards** (`.cards-bar` of `.cards-chip.glass`): one row, right-aligned, 5px
