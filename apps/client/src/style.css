@@ -6888,6 +6888,30 @@ input[type='range'] {
     0 12px 30px rgba(0, 0, 0, 0.35),
     inset 0 1px 0 rgba(255, 255, 255, 0.1);
 }
+/* Room for everything inside the bar: the padding keeps content clear of the 22px corners, and the
+   parts that clip (the question's text box and its row of facts) get a little inner room, taken
+   back with a negative margin, so the gold ticket's base, its sway, the popping icon and the
+   bouncing dots are never cut off. */
+.prompt-center {
+  padding: 8px 18px 8px 24px;
+}
+.prompt-center .prompt-text.rich {
+  padding: 6px 8px 8px;
+  margin: -6px -8px -8px;
+}
+.prompt-center .facts {
+  padding: 4px 6px 6px 3px;
+  margin: -4px -6px -6px -3px;
+  max-height: 76px;
+}
+.prompt-center.status .prompt-text.ask-status {
+  overflow: visible;
+}
+@media (max-height: 500px), (max-width: 760px) {
+  .prompt-center:not(.status) {
+    padding: 6px 14px;
+  }
+}
 /* The status line's icon is round and pops in each time the line changes. */
 .prompt-center.status .ask-status > .log-icon {
   width: 28px;

@@ -459,7 +459,10 @@ Each element: **purpose**, **placement**, **anatomy**, **spec**, **behavior**, t
 - **Pieces:** the main button is a chunky gold "toy" button (12px corners, 3px darker base, a light
   sweeping across every 3.2s, pressing down onto its base); the question's `big` fact (usually the
   cost) is a gold ticket with a small uppercase label that sways gently; two plain choices stack
-  with the main one on top (not on small screens). The status line's icon is round and pops in
+  with the main one on top (not on small screens). Nothing inside may be clipped: the bar's padding
+  keeps content clear of the corners (8px 18px 8px 24px; 6px 14px on phones), and the question's
+  text box and facts row get a few pixels of inner room (taken back with negative margins) so the
+  ticket's base and sway, the popping icon and the dots always show. The status line's icon is round and pops in
   when the line changes, and a trailing "..." becomes three bouncing dots (`statusText` in
   `hud.ts`).
 - **Do:** say what to do when the choice is on the board ("Tap a glowing square to move there").
