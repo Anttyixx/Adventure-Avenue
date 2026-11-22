@@ -93,11 +93,14 @@ const ASK_WAVE_WAIT = 200;
 /** Buttons wait until the bar has nearly finished resizing, then pop in. */
 const ASK_BUTTONS_WAIT = 480;
 /** Pieces the wave moves whole, never split into letters. */
-const WAVE_UNIT = '.dot, .log-icon, .ab-dots, .gc, .fact, .btn, img, svg';
+const WAVE_UNIT = '.dot, .log-icon, .ab-dots, .gc, .fact, .btn, img, svg, .bp-card';
 /** Text that waves in letter by letter. */
-const WAVE_TEXT = '.tick-text, .rich-title, .prompt-text:not(.rich)';
+const WAVE_TEXT = '.tick-text, .rich-title, .prompt-text:not(.rich), .bp-title';
 /** Wrappers the wave looks inside; anything else in the bar moves as one piece. */
-const WAVE_OPEN = '.ask-content, .prompt-text, .ask-status, .rich-body, .facts, .btn-row';
+const WAVE_OPEN =
+  '.ask-content, .prompt-text, .ask-status, .rich-body, .facts, .btn-row, .bp, .bp-info, .bp-cards, .bp-actions';
+/** Never animated by the wave (the building picker's tip shows and hides on its own). */
+const WAVE_SKIP = '.ask-leaving, .bp-tip';
 
 /**
  * The pieces of the action bar's content in reading order, for the wave: each letter of its text
@@ -132,7 +135,7 @@ function waveUnits(root: HTMLElement): Element[] {
         if (text && child.data.trim()) split(child);
         continue;
       }
-      if (!(child instanceof Element) || child.classList.contains('ask-leaving')) continue;
+      if (!(child instanceof Element) || child.matches(WAVE_SKIP)) continue;
       // Already split (prepared before the bar measured itself): reuse the pieces.
       if (child.classList.contains('wv') || child.classList.contains('wv-unit')) {
         units.push(child);

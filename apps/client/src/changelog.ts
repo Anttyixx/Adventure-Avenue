@@ -45,7 +45,10 @@ export const CHANGELOG: ChangelogEntry[] = [
         text: "The action bar has softer rounded corners and a border in the player's color that glows while they decide. The main button is a chunky gold button with a shine, and the price sits on its own gold ticket.",
       },
     ],
-    extras: ['Status line is a pill with a popping icon and bouncing dots'],
+    extras: [
+      'Status line is a pill with a popping icon and bouncing dots',
+      'Building picker matches the new bar; dots show how many are left',
+    ],
   },
   {
     id: '2026-11-21-log-typing',

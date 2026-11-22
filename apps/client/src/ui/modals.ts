@@ -637,13 +637,18 @@ export function buildPrompt(
         'aria-pressed': 'false',
       },
       h('img', { src: propIconURL(key, color), alt: '' }),
+      // How many more may go up, as a dot per building the board allows (filled = still free).
       left == null
         ? null
         : h(
             'span',
-            { class: `bp-left ${left ? '' : 'none'}`, title: `${left} more can be built` },
-            h('b', null, String(left)),
-            h('span', { class: 'bp-left-word' }, ' left'),
+            {
+              class: `bp-left ${left ? '' : 'none'}`,
+              role: 'img',
+              'aria-label': `${left} of ${K.buildingLimit} left`,
+              title: `${left} more can be built`,
+            },
+            ...Array.from({ length: K.buildingLimit }, (_, i) => h('i', { class: i < left ? 'on' : '' })),
           ),
       h('span', { class: 'bp-name' }, def.name),
       h('span', { class: 'bp-price' }, fmt(cost(def.b))),

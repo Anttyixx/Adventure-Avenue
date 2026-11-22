@@ -494,6 +494,11 @@ Each element: **purpose**, **placement**, **anatomy**, **spec**, **behavior**, t
   "Rivals:"/"You:" lines, kept inside the picker's width), and a row of same-size cards below (inset surface,
   radius 10, picture 40px, Lilita name 11px, gold price; selected = gold tint + 2px inset gold
   ring + lifted; unavailable = greyscale picture and muted text, still selectable to read why).
+  Refreshed look: cards are 14px inset tiles with an even 1px hairline (selected: gold tint, 2px
+  inset gold ring, a soft gold glow, lifted 3px); Build / Skip stack like any two-choice question
+  (side by side on phones); the tip has the player's color as a 2px ring all round (no top edge);
+  how many more of a building the board allows is a row of `K.buildingLimit` dots in the card's
+  top right (filled gold = still free, red outlines when none are left). Cards join the bar's wave.
   Choosing is two steps (select, then the main button or a second tap on the card) so one stray
   tap never commits money. Phones: cards become picture + price only, buttons sit in a row beside
   the details. The bar lifts its height cap for it (`.prompt-center:has(.bp)`).

@@ -11093,6 +11093,89 @@ div.sl-inline label {
   }
 }
 
+/* The building picker in the refreshed action bar: cards are soft inset tiles with an even
+   hairline edge (no one-sided edges anywhere), the chosen one gold and lifted; Build / Skip stack
+   like any two-choice question; the details tip has the player's color as a ring all round; how
+   many more of a building may go up is a row of dots (filled = still free). */
+.bp-card {
+  border-radius: 14px;
+  padding: 9px 4px 6px;
+  background: rgba(255, 255, 255, 0.05);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+}
+.bp-card:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+.bp-card[aria-pressed='true'] {
+  background: rgba(255, 209, 102, 0.16);
+  box-shadow:
+    inset 0 0 0 2px var(--accent),
+    0 4px 12px rgba(255, 209, 102, 0.2);
+  transform: translateY(-3px);
+}
+/* A plain line of text (the wave splits it into words, which a flex row would space apart). */
+.bp-info .bp-title {
+  display: block;
+}
+.bp-actions {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 6px;
+}
+.bp-actions .btn {
+  padding: 7px 22px;
+}
+.bp-tip {
+  border: 0;
+  border-radius: 16px;
+  background: linear-gradient(180deg, rgba(28, 40, 74, 0.97), rgba(16, 26, 51, 0.97));
+  box-shadow:
+    0 0 0 2px var(--pc),
+    0 12px 30px rgba(0, 0, 0, 0.35),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+.bp-left {
+  top: 5px;
+  right: 6px;
+  display: flex;
+  gap: 3px;
+  padding: 0;
+  background: none;
+}
+.bp-left i {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.4);
+}
+.bp-left i.on {
+  background: var(--accent);
+  box-shadow: 0 0 4px rgba(255, 209, 102, 0.6);
+}
+.bp-left.none i {
+  box-shadow: inset 0 0 0 1px rgba(255, 138, 138, 0.6);
+}
+@media (max-height: 500px), (max-width: 760px) {
+  .bp-actions {
+    flex-direction: row;
+  }
+  .bp-actions .btn {
+    padding: 6px 10px;
+  }
+  .bp-card {
+    padding: 7px 2px 3px;
+  }
+  .bp-left {
+    top: 3px;
+    right: 4px;
+    gap: 2px;
+  }
+  .bp-left i {
+    width: 4px;
+    height: 4px;
+  }
+}
+
 /* ------------------------------------------------------------ main menu: Continue, Join, Rejoin */
 
 /* Continue: a slim green row under Play (the save's round, board and players' colors). */
