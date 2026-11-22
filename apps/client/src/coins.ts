@@ -42,6 +42,11 @@ function walk(root: Node) {
   found.forEach(convert);
 }
 
+/** Turn money in `root` into coin icons now (the watcher would do it a moment later). */
+export function coinify(root: Node) {
+  walk(root);
+}
+
 export function installCoins() {
   walk(document.body);
   new MutationObserver((records) => {

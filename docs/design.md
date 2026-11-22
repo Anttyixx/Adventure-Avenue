@@ -457,7 +457,14 @@ Each element: **purpose**, **placement**, **anatomy**, **spec**, **behavior**, t
   facts and buttons have `overflow: visible`; too many buttons wrap to a new line instead of
   scrolling), so buttons, glows and every animation always keep clear space to the edge.
 - **Motion:** morphs size between states (740ms, content laid out at its final size so text never
-  jumps); new text is revealed with a 220ms left-to-right sweep; new controls fade/settle 220ms.
+  jumps). Content changes as a bouncy wave (`waveIn` / `waveOut` in `hud.ts`): the old content
+  is lifted out, pinned to the point the bar grows from (bottom middle, or bottom left), and
+  lifts and fades away letter by letter (180ms each, a few ms apart); the new content rises in
+  letter by letter and piece by piece (icon, coins, ticket, buttons each move whole: up from 6px
+  and 85% with a small overshoot, 380ms each, at most 16ms apart, the whole wave within about
+  0.45s). While the bar resizes the new wave waits 300ms, until the bar is nearly its new size,
+  so nothing shows before there is room for it. Money is turned into coins before the text is
+  split into letters.
 - **Pieces:** the main button is a chunky gold "toy" button (12px corners, 3px darker base, a light
   sweeping across every 3.2s, pressing down onto its base); the question's `big` fact (usually the
   cost) is a gold ticket with a small uppercase label that sways gently; two plain choices stack
@@ -1074,19 +1081,19 @@ Reopened online games keep guests on Continue Game until the host presses Resume
 
 ## 6. Motion
 
-| What                                        | Time                        | Easing                                       |
-| ------------------------------------------- | --------------------------- | -------------------------------------------- |
-| Hover / press                               | 80-150ms                    | default                                      |
-| Layer fade, modal entrance                  | 200-220ms                   | ease-out                                     |
-| Side panel slide-in (16px)                  | 220ms                       | `cubic-bezier(0.2, 0.8, 0.2, 1)`             |
-| Pop-up open / close                         | 220ms / 160ms               | `cubic-bezier(0.2, 0.9, 0.3, 1.2)` / ease-in |
-| Market panel / log morph                    | 260-280ms                   | `cubic-bezier(0.2, 0.8, 0.2, 1)`             |
-| Action bar morph                            | 740ms                       | `cubic-bezier(0.2, 0.8, 0.2, 1)`             |
-| New action bar text sweep                   | 220ms                       | `steps(16, end)`                             |
-| Banner rise / fade                          | 350ms / 450ms               | ease-out                                     |
-| Camera pan / zoom easing (builder and game) | per frame, factor 0.12-0.15 | —                                            |
-| Loops (breathe, pulse, link dots)           | 1.1-2.6s                    | ease-in-out / linear                         |
-| Game pacing (walks, coins, pauses)          | `timing.ts`                 | never hard-coded                             |
+| What                                        | Time                        | Easing                                              |
+| ------------------------------------------- | --------------------------- | --------------------------------------------------- |
+| Hover / press                               | 80-150ms                    | default                                             |
+| Layer fade, modal entrance                  | 200-220ms                   | ease-out                                            |
+| Side panel slide-in (16px)                  | 220ms                       | `cubic-bezier(0.2, 0.8, 0.2, 1)`                    |
+| Pop-up open / close                         | 220ms / 160ms               | `cubic-bezier(0.2, 0.9, 0.3, 1.2)` / ease-in        |
+| Market panel / log morph                    | 260-280ms                   | `cubic-bezier(0.2, 0.8, 0.2, 1)`                    |
+| Action bar morph                            | 740ms                       | `cubic-bezier(0.2, 0.8, 0.2, 1)`                    |
+| Action bar content wave in / out            | 380ms / 180ms per piece     | overshoot `cubic-bezier(0.2,0.9,0.3,1.2)` / ease-in |
+| Banner rise / fade                          | 350ms / 450ms               | ease-out                                            |
+| Camera pan / zoom easing (builder and game) | per frame, factor 0.12-0.15 | —                                                   |
+| Loops (breathe, pulse, link dots)           | 1.1-2.6s                    | ease-in-out / linear                                |
+| Game pacing (walks, coins, pauses)          | `timing.ts`                 | never hard-coded                                    |
 
 Patterns: **morph** (measure old size, change content, animate width/height to the new size with
 `overflow: hidden`), **pop** (scale .92 → 1 + fade), **rise** (10px up + fade), **slide** (side

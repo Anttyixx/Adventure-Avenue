@@ -6689,7 +6689,8 @@ input[type='range'] {
   padding: 9px 18px 9px 12px;
   border-color: var(--glass-line);
 }
-.prompt-center.status .prompt-text.ask-status {
+/* (Not tied to .status: a status line keeps its layout while it waves out under a new question.) */
+.prompt-center .prompt-text.ask-status:not(.rich) {
   display: flex;
   align-items: center;
   gap: 8px;
@@ -6927,22 +6928,39 @@ input[type='range'] {
     justify-content: center;
   }
 }
-/* The status line's icon is round and pops in each time the line changes. */
-.prompt-center.status .ask-status > .log-icon {
+/* The status line's icon is round. */
+.prompt-center .ask-status > .log-icon {
   width: 28px;
   height: 28px;
   border-radius: 50%;
-  animation: ab-icon-pop 0.5s cubic-bezier(0.2, 0.9, 0.3, 1.3);
 }
-@keyframes ab-icon-pop {
-  from {
-    transform: scale(0.4) rotate(-20deg);
-    opacity: 0;
-  }
-  60% {
-    transform: scale(1.15) rotate(6deg);
-    opacity: 1;
-  }
+/* The wave (hud.ts waveIn / waveOut): new content rises in letter by letter and piece by piece,
+   old content lifts out. Letters need to be blocks to move; words stay together on a line. Text
+   boxes that clip (to cut long text short) get a little inner room so the bounce isn't cut. */
+.wv,
+.wv-word {
+  display: inline-block;
+}
+.wv-word {
+  white-space: nowrap;
+}
+.prompt-center .tick-text,
+.prompt-center .rich-title,
+.prompt-center .prompt-text:not(.rich) {
+  padding: 6px 2px;
+  margin: -6px -2px;
+}
+/* Old content waving out, pinned to the point the bar grows from (bottom middle, or bottom left). */
+.ask-leaving {
+  position: absolute;
+  left: 50%;
+  top: 100%;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+}
+.ask-leaving.from-left {
+  left: 0;
 }
 /* "Milo is moving..." ends in three bouncing dots instead of "...". */
 .ab-dots {
@@ -7056,7 +7074,6 @@ input[type='range'] {
 }
 @media (prefers-reduced-motion: reduce) {
   .prompt-center.show:not(.status),
-  .prompt-center.status .ask-status > .log-icon,
   .ab-dots i,
   .prompt-center .btn.main::after,
   .prompt-center .fact.big {

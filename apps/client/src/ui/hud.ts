@@ -29,6 +29,7 @@ import { bodyURL, portraitURL } from '../sprites';
 import { nameText } from './marquee';
 import { goalText } from './overview';
 import { clear, fmt, h } from './dom';
+import { coinify } from '../coins';
 import { TIMING as T } from '../timing';
 import { kindIcon, logView, namesInColor, type IconKind } from './log';
 import { InfoPopup, type InfoPage } from './info';
@@ -81,6 +82,106 @@ function statusText(G: GameState | undefined, text: string): (string | HTMLEleme
   const parts = namesInColor(G, waiting ? text.slice(0, -3) : text);
   if (waiting) parts.push(h('span', { class: 'ab-dots', 'aria-label': '...' }, h('i'), h('i'), h('i')));
   return parts;
+}
+
+/** How long new action bar content waits while the bar resizes (it is nearly full size by then). */
+const ASK_WAVE_WAIT = 300;
+/** Pieces the wave moves whole, never split into letters. */
+const WAVE_UNIT = '.dot, .log-icon, .ab-dots, .gc, .fact, .btn, img, svg';
+/** Text that waves in letter by letter. */
+const WAVE_TEXT = '.tick-text, .rich-title, .prompt-text:not(.rich)';
+/** Wrappers the wave looks inside; anything else in the bar moves as one piece. */
+const WAVE_OPEN = '.ask-content, .prompt-text, .ask-status, .rich-body, .facts, .btn-row';
+
+/**
+ * The pieces of the action bar's content in reading order, for the wave: each letter of its text
+ * (wrapped in `.wv`, inside a `.wv-word` that keeps words together) and each whole piece (icon,
+ * coin, ticket, button: `.wv-unit`). Money is turned into coins first, so "340G" is not split
+ * before it can become "340" and a coin.
+ */
+function waveUnits(root: HTMLElement): Element[] {
+  coinify(root);
+  const units: Element[] = [];
+  const split = (node: Text) => {
+    const frag = document.createDocumentFragment();
+    for (const part of node.data.split(/(\s+)/)) {
+      if (!part) continue;
+      if (/^\s+$/.test(part)) {
+        frag.append(part);
+        continue;
+      }
+      const word = h('span', { class: 'wv-word' });
+      for (const ch of part) {
+        const s = h('span', { class: 'wv' }, ch);
+        word.append(s);
+        units.push(s);
+      }
+      frag.append(word);
+    }
+    node.replaceWith(frag);
+  };
+  const visit = (el: Element, text: boolean) => {
+    for (const child of [...el.childNodes]) {
+      if (child instanceof Text) {
+        if (text && child.data.trim()) split(child);
+        continue;
+      }
+      if (!(child instanceof Element) || child.classList.contains('ask-leaving')) continue;
+      if (child.matches(WAVE_UNIT)) {
+        child.classList.add('wv-unit');
+        units.push(child);
+      } else if (text || child.matches(WAVE_TEXT)) visit(child, true);
+      else if (child.matches(WAVE_OPEN)) visit(child, false);
+      else {
+        child.classList.add('wv-unit');
+        units.push(child);
+      }
+    }
+  };
+  visit(root, root.matches(WAVE_TEXT));
+  return units;
+}
+
+/**
+ * New content arrives as a quick bouncy wave: each letter and piece rises in with a small
+ * overshoot, one just after another (the whole wave takes at most about 0.45s).
+ */
+function waveIn(root: HTMLElement, delay = 0) {
+  const units = waveUnits(root);
+  if (!units.length || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  const step = Math.min(16, 450 / units.length);
+  units.forEach((u, i) =>
+    u.animate(
+      [
+        { opacity: 0, transform: 'translateY(6px) scale(0.85)' },
+        { opacity: 1, transform: 'translateY(-2px) scale(1.04)', offset: 0.6 },
+        { opacity: 1, transform: 'none' },
+      ],
+      {
+        duration: 380,
+        delay: delay + i * step,
+        easing: 'cubic-bezier(0.2, 0.9, 0.3, 1.2)',
+        fill: 'backwards',
+      },
+    ),
+  );
+}
+
+/** Old content leaves as a fast wave (lifting and fading); returns when it is done (ms). */
+function waveOut(layer: HTMLElement): number {
+  const units = [...layer.querySelectorAll('.wv, .wv-unit')];
+  const parts = units.length ? units : [...layer.children];
+  const step = Math.min(8, 140 / Math.max(1, parts.length));
+  parts.forEach((u, i) =>
+    u.animate(
+      [
+        { opacity: 1, transform: 'none' },
+        { opacity: 0, transform: 'translateY(-6px) scale(0.9)' },
+      ],
+      { duration: 180, delay: i * step, easing: 'ease-in', fill: 'forwards' },
+    ),
+  );
+  return 180 + parts.length * step + 40;
 }
 
 /** How long the game log takes to slide up to make room for a new line. */
@@ -1221,9 +1322,11 @@ export class Hud {
     )
       return;
     const from = this.askSize();
+    const leaving = this.leaveAsk();
     this.fillStatus();
     this.morphAsk(from);
     this.revealAskText();
+    this.playLeave(leaving);
   }
 
   private fillStatus() {
@@ -1249,8 +1352,57 @@ export class Hud {
 
   /** Reveal the complete laid-out message without moving text or delaying its buttons. */
   private revealAskText() {
-    const text = this.ask.querySelector<HTMLElement>('.prompt-text');
-    if (text) typeIn(text);
+    // New content waves in letter by letter (and piece by piece: icon, ticket, buttons). While the
+    // bar is resizing it waits until the bar is nearly its new size, so nothing shows before
+    // there is room for it.
+    waveIn(this.ask, this.ask.classList.contains('morphing') ? ASK_WAVE_WAIT : 0);
+    // Splitting the text into letters is our own change: don't let the watcher re-morph for it.
+    this.askChanges.takeRecords();
+  }
+
+  /**
+   * Lift the bar's current content out before it is replaced, pinned where it is, so it can wave
+   * out (`playLeave`) while the new content comes in. Nothing when the bar is hidden.
+   */
+  private leaveAsk(): HTMLElement | null {
+    const a = this.ask;
+    if (!a.classList.contains('show') || matchMedia('(prefers-reduced-motion: reduce)').matches) return null;
+    const box = a.getBoundingClientRect();
+    const style = getComputedStyle(a);
+    // The bar grows from its bottom middle (or its bottom left when it sits bottom left), so the
+    // lifted content is pinned to that point and stays put on screen while the bar resizes.
+    const fromLeft = this.root.classList.contains('ab-left');
+    const anchorX = fromLeft ? box.left + parseFloat(style.borderLeftWidth) : box.left + box.width / 2;
+    const anchorY = box.bottom - parseFloat(style.borderBottomWidth);
+    const layer = h('div', {
+      class: `ask-leaving ${fromLeft ? 'from-left' : ''}`,
+      'aria-hidden': 'true',
+      inert: '',
+    });
+    const old = [...a.children].filter((c) => !c.classList.contains('ask-leaving')) as HTMLElement[];
+    const places = old.map((c) => c.getBoundingClientRect());
+    old.forEach((c, i) => {
+      const r = places[i];
+      Object.assign(c.style, {
+        position: 'absolute',
+        margin: '0',
+        left: `${r.left - anchorX}px`,
+        top: `${r.top - anchorY}px`,
+        width: `${r.width}px`,
+        height: `${r.height}px`,
+      });
+      layer.append(c);
+    });
+    return layer.childElementCount ? layer : null;
+  }
+
+  /** Put the lifted content back on top and wave it out quickly, then remove it. */
+  private playLeave(layer: HTMLElement | null) {
+    if (!layer || !this.ask.classList.contains('show')) return;
+    this.ask.append(layer);
+    this.askChanges.takeRecords();
+    const done = waveOut(layer);
+    window.setTimeout(() => layer.remove(), done);
   }
 
   /** The waiting line the game log last showed, so a new one types in. */
@@ -1320,6 +1472,8 @@ export class Hud {
     if (this.askTextSqueezed()) return true;
     const box = a.getBoundingClientRect();
     for (const el of a.querySelectorAll<HTMLElement>('button, .prompt-text, .facts, .m-card, .digits')) {
+      // Content on its way out (waving away) doesn't count.
+      if (el.closest('.ask-leaving')) continue;
       const r = el.getBoundingClientRect();
       if (!r.width) continue;
       if (
@@ -1695,6 +1849,7 @@ export class Hud {
     this.messages.decision();
     // The bar morphs from whatever it showed (the status line or other options) to these.
     const from = this.askSize();
+    const leaving = this.leaveAsk();
     clear(this.ask);
     this.ask.classList.remove('status');
     this.ask.classList.add('show');
@@ -1743,6 +1898,7 @@ export class Hud {
       }
       this.morphAsk(from);
       this.revealAskText();
+      this.playLeave(leaving);
     });
   }
 

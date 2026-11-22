@@ -1483,7 +1483,8 @@ top, on larger screens). The bar has a border in the deciding player's
 color that glows softly while it waits; the main button is a chunky gold button with a light
 sweeping across it, and the headline amount (usually the cost) sits on a small swaying gold ticket.
 The status line is a pill with a round icon that pops in, and "is moving..." ends in three
-bouncing dots. Questions stay short ("Buy this Bay
+bouncing dots. When the bar's content changes, the old words lift away letter by letter and the
+new ones bounce in like a little wave, once the bar has made room for them. Questions stay short ("Buy this Bay
 Market shop?", "Buy out Milo's Bay Market shop at 5x?") and the numbers that go with them (price,
 cash after, your cash, value, high bid...) show as chips under the question, most important first. It slides up when a question is asked and back down once it
 is answered, and is hidden otherwise. Building and renovating use a building picker in the bar: the question and a hint on the left,
