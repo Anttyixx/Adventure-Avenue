@@ -463,8 +463,12 @@ Each element: **purpose**, **placement**, **anatomy**, **spec**, **behavior**, t
   letter by letter and piece by piece (icon, coins, ticket, buttons each move whole: up from 6px
   and 85% with a small overshoot, 380ms each, at most 16ms apart, the whole wave within about
   0.45s). While the bar resizes the new wave waits 300ms, until the bar is nearly its new size,
-  so nothing shows before there is room for it. Money is turned into coins before the text is
-  split into letters.
+  so nothing shows before there is room for it. Buttons pop in separately (from 60% with a bounce,
+  420ms, 70ms apart) once the bar has finished resizing (700ms), or straight after the text when
+  it doesn't resize, and shrink away (220ms) when they leave. During a resize the new content is
+  laid out at its final size and pinned exactly where it will end up (to the bar's bottom and the
+  point it grows from), so it never moves or snaps. Money is turned into coins and the text split
+  into letters before the bar measures its new size, since both change the text's width a little.
 - **Pieces:** the main button is a chunky gold "toy" button (12px corners, 3px darker base, a light
   sweeping across every 3.2s, pressing down onto its base); the question's `big` fact (usually the
   cost) is a gold ticket with a small uppercase label that sways gently; two plain choices stack

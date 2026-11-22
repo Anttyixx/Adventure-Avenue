@@ -84,8 +84,10 @@ function statusText(G: GameState | undefined, text: string): (string | HTMLEleme
   return parts;
 }
 
-/** How long new action bar content waits while the bar resizes (it is nearly full size by then). */
+/** How long new action bar text waits while the bar resizes (it is nearly full size by then). */
 const ASK_WAVE_WAIT = 300;
+/** Buttons wait until the bar has finished resizing (its morph takes 740ms), then pop in. */
+const ASK_BUTTONS_WAIT = 700;
 /** Pieces the wave moves whole, never split into letters. */
 const WAVE_UNIT = '.dot, .log-icon, .ab-dots, .gc, .fact, .btn, img, svg';
 /** Text that waves in letter by letter. */
@@ -127,6 +129,11 @@ function waveUnits(root: HTMLElement): Element[] {
         continue;
       }
       if (!(child instanceof Element) || child.classList.contains('ask-leaving')) continue;
+      // Already split (prepared before the bar measured itself): reuse the pieces.
+      if (child.classList.contains('wv') || child.classList.contains('wv-unit')) {
+        units.push(child);
+        continue;
+      }
       if (child.matches(WAVE_UNIT)) {
         child.classList.add('wv-unit');
         units.push(child);
@@ -146,11 +153,13 @@ function waveUnits(root: HTMLElement): Element[] {
  * New content arrives as a quick bouncy wave: each letter and piece rises in with a small
  * overshoot, one just after another (the whole wave takes at most about 0.45s).
  */
-function waveIn(root: HTMLElement, delay = 0) {
+function waveIn(root: HTMLElement, delay = 0, buttonsAt = 0) {
   const units = waveUnits(root);
   if (!units.length || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-  const step = Math.min(16, 450 / units.length);
-  units.forEach((u, i) =>
+  const buttons = units.filter((u) => u.matches('.btn'));
+  const rest = units.filter((u) => !u.matches('.btn'));
+  const step = Math.min(16, 450 / Math.max(1, rest.length));
+  rest.forEach((u, i) =>
     u.animate(
       [
         { opacity: 0, transform: 'translateY(6px) scale(0.85)' },
@@ -165,6 +174,19 @@ function waveIn(root: HTMLElement, delay = 0) {
       },
     ),
   );
+  // Buttons pop in one after another: once the bar is done resizing, or right after the text
+  // when it doesn't resize.
+  const start = Math.max(buttonsAt, delay + Math.min(rest.length * step, 200));
+  buttons.forEach((u, i) =>
+    u.animate(
+      [
+        { opacity: 0, transform: 'translateY(8px) scale(0.6)' },
+        { opacity: 1, transform: 'translateY(-3px) scale(1.08)', offset: 0.6 },
+        { opacity: 1, transform: 'none' },
+      ],
+      { duration: 420, delay: start + i * 70, easing: 'cubic-bezier(0.2, 0.9, 0.3, 1.3)', fill: 'backwards' },
+    ),
+  );
 }
 
 /** Old content leaves as a fast wave (lifting and fading); returns when it is done (ms). */
@@ -174,14 +196,21 @@ function waveOut(layer: HTMLElement): number {
   const step = Math.min(8, 140 / Math.max(1, parts.length));
   parts.forEach((u, i) =>
     u.animate(
-      [
-        { opacity: 1, transform: 'none' },
-        { opacity: 0, transform: 'translateY(-6px) scale(0.9)' },
-      ],
-      { duration: 180, delay: i * step, easing: 'ease-in', fill: 'forwards' },
+      // Buttons shrink away; letters and other pieces lift and fade.
+      u.matches('.btn')
+        ? [
+            { opacity: 1, transform: 'none' },
+            { opacity: 1, transform: 'scale(1.06)', offset: 0.3 },
+            { opacity: 0, transform: 'scale(0.6)' },
+          ]
+        : [
+            { opacity: 1, transform: 'none' },
+            { opacity: 0, transform: 'translateY(-6px) scale(0.9)' },
+          ],
+      { duration: u.matches('.btn') ? 220 : 180, delay: i * step, easing: 'ease-in', fill: 'forwards' },
     ),
   );
-  return 180 + parts.length * step + 40;
+  return 220 + parts.length * step + 40;
 }
 
 /** How long the game log takes to slide up to make room for a new line. */
@@ -1324,6 +1353,7 @@ export class Hud {
     const from = this.askSize();
     const leaving = this.leaveAsk();
     this.fillStatus();
+    waveUnits(this.ask);
     this.morphAsk(from);
     this.revealAskText();
     this.playLeave(leaving);
@@ -1355,7 +1385,8 @@ export class Hud {
     // New content waves in letter by letter (and piece by piece: icon, ticket, buttons). While the
     // bar is resizing it waits until the bar is nearly its new size, so nothing shows before
     // there is room for it.
-    waveIn(this.ask, this.ask.classList.contains('morphing') ? ASK_WAVE_WAIT : 0);
+    const morphing = this.ask.classList.contains('morphing');
+    waveIn(this.ask, morphing ? ASK_WAVE_WAIT : 0, morphing ? ASK_BUTTONS_WAIT : 0);
     // Splitting the text into letters is our own change: don't let the watcher re-morph for it.
     this.askChanges.takeRecords();
   }
@@ -1512,9 +1543,17 @@ export class Hud {
     if (Math.abs(to.w - from.w) < 1 && Math.abs(to.h - from.h) < 1) return;
     const style = getComputedStyle(a);
     const content = h('div', { class: 'ask-content' });
-    // Keep the destination layout, including phone/stacked prompts, for the whole morph.
+    const bl = parseFloat(style.borderLeftWidth);
+    const pl = parseFloat(style.paddingLeft);
+    // Keep the destination layout, including phone/stacked prompts, for the whole morph, pinned
+    // exactly where it will sit when the bar is done resizing. The bar grows from its bottom
+    // middle (bottom left when it sits bottom left), so the content is pinned to the bottom and
+    // to that point, and never moves while the bar resizes around it.
     Object.assign(content.style, {
-      width: `${to.w - parseFloat(style.borderLeftWidth) - parseFloat(style.borderRightWidth) - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight)}px`,
+      position: 'absolute',
+      bottom: style.paddingBottom,
+      left: this.root.classList.contains('ab-left') ? `${pl}px` : `calc(50% + ${bl + pl - to.w / 2}px)`,
+      width: `${to.w - bl - parseFloat(style.borderRightWidth) - pl - parseFloat(style.paddingRight)}px`,
       height: `${to.h - parseFloat(style.borderTopWidth) - parseFloat(style.borderBottomWidth) - parseFloat(style.paddingTop) - parseFloat(style.paddingBottom)}px`,
       flexDirection: style.flexDirection,
       alignItems: style.alignItems,
@@ -1896,6 +1935,9 @@ export class Hud {
         if (b.main) this.mainButton = el;
         row.append(el);
       }
+      // Coins and letters in place before the bar measures its new size: both change the text's
+      // width a little, and the bar must resize to the final layout, not one that rewraps later.
+      waveUnits(this.ask);
       this.morphAsk(from);
       this.revealAskText();
       this.playLeave(leaving);
