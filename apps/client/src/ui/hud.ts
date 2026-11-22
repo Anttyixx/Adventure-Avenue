@@ -30,6 +30,7 @@ import { nameText } from './marquee';
 import { goalText } from './overview';
 import { clear, fmt, h } from './dom';
 import { coinify } from '../coins';
+import { POP_OUT } from './motion';
 import { TIMING as T } from '../timing';
 import { kindIcon, logView, namesInColor, type IconKind } from './log';
 import { InfoPopup, type InfoPage } from './info';
@@ -166,12 +167,15 @@ function waveIn(root: HTMLElement, delay = 0, buttonsAt = 0) {
   const buttons = units.filter((u) => u.matches('.btn'));
   const rest = units.filter((u) => !u.matches('.btn'));
   const step = Math.min(12, 340 / Math.max(1, rest.length));
+  // Each piece ends at its own opacity, so a disabled button or a sold-out card is dim from the
+  // moment it appears (never bright for a moment, then dimmed).
+  const own = (u: Element) => parseFloat(getComputedStyle(u).opacity) || 1;
   rest.forEach((u, i) =>
     u.animate(
       [
         { opacity: 0, transform: 'translateY(6px) scale(0.85)' },
-        { opacity: 1, transform: 'translateY(-2px) scale(1.04)', offset: 0.6 },
-        { opacity: 1, transform: 'none' },
+        { opacity: own(u), transform: 'translateY(-2px) scale(1.04)', offset: 0.6 },
+        { opacity: own(u), transform: 'none' },
       ],
       {
         duration: 300,
@@ -188,8 +192,8 @@ function waveIn(root: HTMLElement, delay = 0, buttonsAt = 0) {
     u.animate(
       [
         { opacity: 0, transform: 'translateY(8px) scale(0.6)' },
-        { opacity: 1, transform: 'translateY(-3px) scale(1.08)', offset: 0.6 },
-        { opacity: 1, transform: 'none' },
+        { opacity: own(u), transform: 'translateY(-3px) scale(1.08)', offset: 0.6 },
+        { opacity: own(u), transform: 'none' },
       ],
       { duration: 340, delay: start + i * 55, easing: 'cubic-bezier(0.2, 0.9, 0.3, 1.3)', fill: 'backwards' },
     ),
@@ -1277,7 +1281,7 @@ export class Hud {
     const up =
       !this.peeking &&
       ([...layers].some((l) => !l.hidden && l.childElementCount > 0) ||
-        this.modalLayer.querySelector('.modal-wrap') != null);
+        this.modalLayer.querySelector('.modal-wrap:not(.closing)') != null);
     if (up === this.locked) return;
     this.locked = up;
     this.root.classList.toggle('locked', up);
@@ -2247,11 +2251,24 @@ export class Hud {
     // Dialogs opened from the menu (quit, rules) go over it.
     if (this.menuModal) wrap.classList.add('over-menu');
     this.modalLayer.append(wrap);
-    return {
-      el: box,
-      body,
-      close: () => wrap.remove(),
+    // Closing plays the opening backwards, refined: a tiny lift, then it sinks and fades as the
+    // backdrop clears. The screen unlocks straight away (the closing box no longer counts).
+    let closing = false;
+    const close = () => {
+      if (closing) return;
+      closing = true;
+      wrap.classList.add('closing');
+      this.updateLock();
+      if (matchMedia('(prefers-reduced-motion: reduce)').matches || !wrap.isConnected) return wrap.remove();
+      box.getAnimations().forEach((a) => a.cancel());
+      box.animate(POP_OUT, { duration: 220, easing: 'ease-in', fill: 'forwards' });
+      wrap.animate([{ opacity: 1 }, { opacity: 0 }], {
+        duration: 220,
+        easing: 'ease-in',
+        fill: 'forwards',
+      }).onfinish = () => wrap.remove();
     };
+    return { el: box, body, close };
   }
 
   /** A blocking "pass the device" screen for hot-seat play. */

@@ -1628,7 +1628,18 @@ input[type='range'] {
   max-height: 100%;
   overflow: auto;
   padding: 16px;
-  animation: easein 0.22s ease-out;
+  /* Rises in with a little overshoot (closing reverses it: hud.ts modal, motion.ts POP_OUT). */
+  animation: pop-rise 0.32s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+@keyframes pop-rise {
+  from {
+    opacity: 0;
+    transform: translateY(24px) scale(0.96);
+  }
+  70% {
+    opacity: 1;
+    transform: translateY(-3px) scale(1.01);
+  }
 }
 .modal.wide {
   width: min(760px, 100%);

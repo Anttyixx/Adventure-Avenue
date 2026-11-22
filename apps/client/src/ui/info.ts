@@ -21,6 +21,7 @@ import { bodyURL, portraitURL } from '../sprites';
 import { suitIconURL, wildIconURL } from '../icons';
 import { clear, fmt, h } from './dom';
 import type { Hud } from './hud';
+import { POP_OUT } from './motion';
 import { marketView } from './market';
 import { shortName } from '../names';
 import { keepClearOfCards } from './modals';
@@ -144,7 +145,20 @@ export class InfoPopup {
     if (STILL()) return finish();
     // The pop-up sinks away and stays hidden once it has (no frame of it popping back).
     const plain = this.bar.hidden;
-    this.box.animate([HERE, AWAY], { duration: 200, easing: 'ease-in', fill: 'forwards' }).onfinish = (e) => {
+    // Its parts tuck away (last first) as the whole pop-up lifts a touch, then sinks and shrinks.
+    popParts(this.box)
+      .reverse()
+      .forEach((el, i) =>
+        el.animate([HERE, { opacity: 0, transform: 'translateY(6px)' }], {
+          duration: 140,
+          delay: Math.min(i, 8) * 15,
+          easing: 'ease-in',
+          fill: 'forwards',
+        }),
+      );
+    this.box.animate(POP_OUT, { duration: 240, delay: 40, easing: 'ease-in', fill: 'forwards' }).onfinish = (
+      e,
+    ) => {
       if (!reopened()) this.layer.hidden = true;
       (e.target as Animation).cancel();
       // No stand-in bar to hand over: the real one has been showing all along.
