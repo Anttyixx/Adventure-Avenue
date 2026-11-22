@@ -301,8 +301,6 @@ export class Hud {
   private abLeftAt = 0;
   /** The bar's current content (a building picker) needs the bottom-left corner's room. */
   private askLeft = false;
-  /** Round, target and rules, shown at the top of the game menu. */
-  gameInfo = h('div', { class: 'gm-info' });
   /** The current player's options, centered near the bottom of the board. */
   ask = h('div', { class: 'prompt-center glass' });
   cardsWrap = h('div', { class: 'cards-wrap' });
@@ -578,8 +576,8 @@ export class Hud {
   /** The menu's contents, shown in a pop-up in the middle of the screen. */
   menu = h('div', { class: 'game-menu', role: 'menu' });
   private menuModal: { close(): void } | null = null;
-  /** Shown in the menu while it has paused the game (games on this device). */
-  private pausedNote = h('div', { class: 'gm-paused', hidden: true }, 'Game paused');
+  /** The gold highlight that slides between the menu's rows. */
+  private menuHl = h('span', { class: 'gm-hl', 'aria-hidden': 'true' });
   /** The menu's Auto play switches: one per person playing on this device. */
   private autoRows = h('div', { class: 'gm-auto' });
   /** Players a bot is playing for (Auto play): their cards say so. */
@@ -592,57 +590,108 @@ export class Hud {
     for (const a of players) {
       // One person here: "Auto play". Several: each by name.
       const label = players.length > 1 ? `Auto play (${a.name})` : 'Auto play';
-      this.autoRows.append(
-        h(
-          'button',
-          {
-            class: `gm-item gm-toggle ${a.on ? 'on' : ''}`,
-            role: 'menuitemcheckbox',
-            'aria-checked': String(a.on),
-            title: a.on
-              ? 'A bot is playing for you. Tap to take over again.'
-              : 'Let a bot play for you until you turn this off.',
-            onclick: () => {
-              this.cb.onToggleAuto?.(a.pid);
-              this.drawAutoRows();
-            },
-          },
-          `${label}: ${a.on ? 'on' : 'off'}`,
-        ),
+      const row = gmRow(
+        'auto',
+        label,
+        a.on ? 'A CPU is playing for you' : 'A CPU plays for you',
+        () => {
+          this.cb.onToggleAuto?.(a.pid);
+          this.drawAutoRows();
+        },
+        a.on,
       );
+      row.title = a.on
+        ? 'A bot is playing for you. Tap to take over again.'
+        : 'Let a bot play for you until you turn this off.';
+      this.autoRows.append(row);
     }
-    if (players.some((a) => a.on))
-      this.autoRows.append(
-        h('div', { class: 'gm-note' }, 'A bot plays your turns in your style. Turn it off to take over.'),
-      );
   }
   /** The menu behind the Menu button: rules, settings and quit. */
   private buildMenu() {
-    const item = (label: string, onclick: () => void, cls = '') =>
-      h('button', { class: `gm-item ${cls}`, role: 'menuitem', onclick }, label);
     const close = (f: () => void) => () => {
       this.toggleMenu(false);
       f();
     };
-    this.fastBtn.className = 'gm-item gm-toggle';
-    this.menu.append(
-      this.pausedNote,
-      this.gameInfo,
-      item(
-        'Resume',
-        close(() => {}),
-        'resume',
-      ),
-      // The game guide (rules, stocks, vacant plots, cards, arcade): the menu closes as it opens.
-      item(
+    // Rows share one gold highlight that slides to the row under the pointer or keyboard focus.
+    const rows = h(
+      'div',
+      { class: 'gm-rows' },
+      this.menuHl,
+      gmRow(
+        'guide',
         'Guide',
+        'Rules, squares and cards',
         close(() => this.cb.onGuide()),
       ),
       this.autoRows,
       this.fastBtn,
     );
-    if (document.fullscreenEnabled) this.menu.append(item('Full screen', toggleFullscreen));
-    this.menu.append(item('Quit game', () => this.confirmQuit(), 'danger'));
+    if (document.fullscreenEnabled)
+      rows.append(gmRow('full', 'Full screen', 'Fill the whole screen', toggleFullscreen));
+    rows.append(
+      gmRow(
+        'quit',
+        'Quit game',
+        'Saved at the start of each turn',
+        () => this.confirmQuit(),
+        false,
+        'danger',
+      ),
+    );
+    const slide = (e: Event) => {
+      const row = (e.target as HTMLElement).closest?.('.gm-item') as HTMLElement | null;
+      if (!row || !rows.contains(row)) return;
+      this.menuHl.style.transform = `translateY(${row.offsetTop}px)`;
+      this.menuHl.style.height = `${row.offsetHeight}px`;
+      this.menuHl.classList.add('on');
+    };
+    rows.addEventListener('pointerover', slide);
+    rows.addEventListener('focusin', slide);
+    rows.addEventListener('pointerleave', () => {
+      if (!rows.contains(document.activeElement)) this.menuHl.classList.remove('on');
+    });
+    rows.addEventListener('focusout', (e) => {
+      if (!rows.contains(e.relatedTarget as Node)) this.menuHl.classList.remove('on');
+    });
+    this.menu.append(
+      rows,
+      h('button', { class: 'gm-resume', role: 'menuitem', onclick: close(() => {}) }, 'Resume'),
+    );
+  }
+
+  /** The menu's own header: a pulsing pause mark, "Game paused" and whose turn it is, and ×. */
+  private menuHead(paused: boolean) {
+    const G = this.G;
+    const p = G ? G.players[G.order[G.turn]] : undefined;
+    const round = G
+      ? G.roundCap
+        ? `Round ${Math.min(G.round, G.roundCap)} / ${G.roundCap}`
+        : `Round ${G.round}`
+      : '';
+    return h(
+      'div',
+      { class: 'gm-head' },
+      paused ? h('span', { class: 'gm-pause', 'aria-hidden': 'true' }, h('i'), h('i')) : null,
+      h(
+        'div',
+        { class: 'gm-title' },
+        h('h2', null, paused ? 'Game paused' : 'Menu'),
+        G
+          ? h(
+              'div',
+              { class: 'gm-sub' },
+              `${round} · `,
+              p ? h('span', { class: 'gm-dot', style: `background:${PLAYER_COLORS[p.color]}` }) : null,
+              p ? `${p.name}'s turn` : '',
+            )
+          : null,
+      ),
+      h(
+        'button',
+        { class: 'gm-close', 'aria-label': 'Close', onclick: () => this.toggleMenu(false) },
+        svgIcon('M2 2l8 8M10 2l-8 8', 12),
+      ),
+    );
   }
 
   /**
@@ -653,11 +702,15 @@ export class Hud {
     if (open === !!this.menuModal) return;
     this.menuBtn.setAttribute('aria-expanded', String(open));
     this.menuBtn.classList.toggle('on', open);
+    // A game on this device pauses while the menu is open (online games keep going).
+    const paused = (this.cb.onPause?.(open) ?? false) && open;
     if (open) {
       closeSoundPopover(this.musicBtn);
       this.drawAutoRows();
-      const m = this.modal('Menu', this.menu, { onClose: () => this.toggleMenu(false) });
+      this.menuHl.classList.remove('on');
+      const m = this.modal('Menu', this.menu);
       m.el.classList.add('menu-modal');
+      m.el.querySelector('.modal-head')!.replaceWith(this.menuHead(paused));
       m.el.parentElement!.classList.add('menu-wrap');
       // Tapping outside the box closes it.
       m.el.parentElement!.addEventListener('pointerdown', (e) => {
@@ -668,7 +721,6 @@ export class Hud {
       this.menuModal?.close();
       this.menuModal = null;
     }
-    this.pausedNote.hidden = !(this.cb.onPause?.(open) ?? false) || !open;
   }
 
   /** Ask before quitting, in a dialog over the menu. */
@@ -730,8 +782,11 @@ export class Hud {
   }
 
   setFastLabel(fast: boolean) {
-    this.fastBtn.textContent = fast ? 'Fast CPU: on' : 'Fast CPU: off';
-    this.fastBtn.classList.toggle('on', fast);
+    const row = gmRow('fast', 'Fast CPU', 'Speed up CPU turns', null, fast);
+    this.fastBtn.className = row.className;
+    this.fastBtn.setAttribute('role', 'menuitemcheckbox');
+    this.fastBtn.setAttribute('aria-checked', String(fast));
+    this.fastBtn.replaceChildren(...row.childNodes);
   }
 
   /** Scale the player cards down (CSS zoom) when they would run into the toolbar. */
@@ -798,15 +853,6 @@ export class Hud {
 
   render(G: GameState) {
     this.G = G;
-    const roundText = G.roundCap
-      ? `Round ${Math.min(G.round, G.roundCap)} / ${G.roundCap}`
-      : `Round ${G.round}`;
-    clear(this.gameInfo);
-    this.gameInfo.append(
-      h('span', null, roundText),
-      h('span', null, `Target ${fmt(G.target)}`),
-      h('span', null, G.rules === 'standard' ? 'Standard' : 'Easy'),
-    );
     clear(this.chipGoal);
     this.chipGoal.append('Goal ', h('b', null, fmt(G.target)));
     // Easy rules have no stock market.
@@ -2353,6 +2399,58 @@ function countUp(el: HTMLElement, from: number, to: number, f = fmt) {
     else el.classList.remove('up', 'down');
   };
   requestAnimationFrame(tick);
+}
+
+/** The game menu's row pictures (24x24 stroke paths), one per row kind. */
+const GM_ICONS: Record<string, string> = {
+  guide: 'M4 5h6a3 3 0 0 1 3 3v12a2 2 0 0 0-2-2H4zM20 5h-6a3 3 0 0 0-3 3v12a2 2 0 0 1 2-2h7z',
+  auto: 'M8 8h8a3 3 0 0 1 3 3v5a3 3 0 0 1-3 3H8a3 3 0 0 1-3-3v-5a3 3 0 0 1 3-3zM12 8V5M9.5 13v.5M14.5 13v.5',
+  fast: 'M13 3L5 13h6l-1 8 8-10h-6z',
+  full: 'M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5',
+  quit: 'M10 4H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h4M15 8l4 4-4 4M19 12H9',
+};
+
+/**
+ * One game-menu row: a colored icon tile, a Lilita name with a short muted line under it, and
+ * (for switches, when `on` is given) a switch on the right.
+ */
+function gmRow(
+  kind: string,
+  label: string,
+  sub: string,
+  onclick: (() => void) | null,
+  on?: boolean,
+  cls = '',
+): HTMLButtonElement {
+  const toggle = on !== undefined && kind !== 'quit';
+  return h(
+    'button',
+    {
+      class: `gm-item gm-${kind} ${toggle ? 'gm-toggle' : ''} ${on ? 'on' : ''} ${cls}`,
+      role: toggle ? 'menuitemcheckbox' : 'menuitem',
+      ...(toggle ? { 'aria-checked': String(on) } : {}),
+      ...(onclick ? { onclick } : {}),
+    },
+    h('span', { class: 'gm-ico', 'aria-hidden': 'true' }, svgIcon(GM_ICONS[kind], 24)),
+    h('span', { class: 'gm-text' }, h('b', null, label), h('small', null, sub)),
+    toggle ? h('span', { class: 'gm-switch', 'aria-hidden': 'true' }) : null,
+  ) as HTMLButtonElement;
+}
+
+/** A small stroked SVG from one path, drawn in the current text color. */
+function svgIcon(d: string, box: number) {
+  const ns = 'http://www.w3.org/2000/svg';
+  const svg = document.createElementNS(ns, 'svg');
+  svg.setAttribute('viewBox', `0 0 ${box} ${box}`);
+  svg.setAttribute('fill', 'none');
+  svg.setAttribute('stroke', 'currentColor');
+  svg.setAttribute('stroke-width', box > 12 ? '2.2' : '2');
+  svg.setAttribute('stroke-linecap', 'round');
+  svg.setAttribute('stroke-linejoin', 'round');
+  const path = document.createElementNS(ns, 'path');
+  path.setAttribute('d', d);
+  svg.append(path);
+  return svg;
 }
 
 function toggleFullscreen() {

@@ -1066,13 +1066,16 @@ start, so every other system checks one flag (`rules`).
 | Lucky Reels "three stocks"            | 10 shares                                    | 150G                      |
 
 **Main menu:** the title screen has the title on top and, under it, **Play**: the one big gold
-button, which opens game setup (with a join code for friends). A "Have a code?" field sits on its
+button (it breathes gently and a shine sweeps across it now and then), which opens game setup (with a join code for friends). A "Have a code?" field sits on its
 right side; typing in it never presses the button. Once all four letters are in, the button turns
 blue and reads **Join** ("Join game KQZD"); pressing it (or Enter in the field) joins that game.
 When rejoining a running game needs the player's name there, or joining failed, a slim strip under
 the button holds the name field and the reason. **Continue** (only with a saved game) is a smaller
 green row centered under it (narrower and shorter than Play) showing the round, board and how long ago it was saved, with a colored dot per
-player. **Rejoin** is a small chip in the top left corner ("Rejoin KQZD, as Milo, 5 min ago") while
+player. Behind it the title scene stays lively but calm: soft rays turn slowly around the sun as
+it glows, clouds drift, a pair of birds flaps across the sky now and then, the title floats, and the
+shops along the street take turns doing a little hop (none of this with reduced motion).
+**Rejoin** is a small chip in the top left corner ("Rejoin KQZD, as Milo, 5 min ago") while
 this device has an online game to go back to. In the top right corner sit the **player card**
 button (the same shape as Sound and Menu: the card's whole character on the left, its name on the
 right; the first time the game opens it gets a random friendly name and character, saved until
@@ -1280,20 +1283,27 @@ headings are large.
   faded, with reduced motion).
 
 In-game, the Menu button (top right) opens the menu as a pop-up in the middle of the screen, over
-everything; a game on this device pauses while it is open (online games carry on). It has Resume, a Fast CPU
-toggle (speeds up CPU turns and animations; online it is the host's setting for everyone: the
-host's switch changes it on every device and guests have no switch), Full screen, the Sound sliders and mute, and a red Quit
-game button. Quit asks for confirmation in a dialog over the menu before returning to the main
+everything; a game on this device pauses while it is open (online games carry on). It has a gold
+ring. Its header reads "Game paused" beside a pulsing pause mark ("Menu", with no mark, online),
+with "Round 3 · Rosa's turn" (a dot in the player's color) under it, and a round × button. Below
+are rows, each with a colored icon, a name and a short line saying what it does: Guide, Auto play,
+a Fast CPU switch (speeds up CPU turns and animations; online it is the host's setting for
+everyone: the host's switch changes it on every device and guests have no switch), Full screen and
+a red Quit game ("Saved at the start of each turn"). A gold highlight slides to the row under the
+pointer or keyboard focus, the rows slide in one after another when it opens, and a big gold
+**Resume** button with a passing shine sits at the bottom. Quit asks for confirmation in a dialog over the menu before returning to the main
 menu (no question once the game is over).
 
 **Auto play.** Under Guide the menu has an **Auto play** switch for each person playing on this
-device ("Auto play: off / on"; with several people here, one each, "Auto play (Rosa): off"). While
+device (a row with a switch, "A CPU plays for you"; with several people here, one each, "Auto
+play (Rosa)"). While
 it is on, a bot plays that person's turns and answers everything asked of them (routes, purchases,
 trades offered to them, auction bids, arcade picks) until they turn it off. It is the same bot
 that covers a disconnected player: Hard, in a style read from how they have played (see
 Disconnects). It takes over from the person's next choice: a choice already on screen is still
 theirs to make. Their player card shows an "Auto play" tag, the status line says when it starts
-and stops, a line in the menu reminds them it is on, and Fast CPU speed hurries its turns too.
+and stops, its row in the menu says "A CPU is playing for you", and Fast CPU speed hurries its
+turns too.
 It works in games on one device and online (each device switches it for its own players; the
 other players just see the choices arrive). It is not saved: a game continued later starts with
 it off.
@@ -1616,7 +1626,7 @@ pop-up goes back beside the cards and the blur goes away.
 
 **Layout.** Scrolling panels hide their scrollbars (they still scroll). The board fills the whole game screen edge to edge, and everything else floats over it
 as dark glass overlays. Top right: the zoom chip, the Game log button and the Menu button (the menu
-also shows the round, target and rule set). **Guide** (`ui/guide.ts`, in the Menu, under Resume; the
+also shows the round and whose turn it is). **Guide** (`ui/guide.ts`, in the Menu, under Resume; the
 menu closes as it opens) opens a pop-up in the middle
 of the screen (up to 900px wide) with a tab per topic. It reopens on the last tab read; Easy rules
 show How to play, Arcade games and Venture cards.

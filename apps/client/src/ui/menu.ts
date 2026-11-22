@@ -19,7 +19,8 @@ import { closeSoundPopover, soundButton } from './soundpanel';
 const TOWN_COLORS = ['#f2a7a0', '#9fd3f0', '#a8e0a0', '#f5d77a', '#cdb4f0', '#f7bfdc', '#8fe3d6'];
 
 /**
- * Sky, drifting clouds, hills and a little street of shops. With `walkers`, four pixel
+ * Sky with a turning sun, drifting clouds and passing birds, hills and a little street of
+ * shops that hop in turn. With `walkers`, four pixel
  * characters stroll along the road. Returns the element and a cleanup function.
  */
 export function titleScene(walkers = true): { el: HTMLElement; stop: () => void } {
@@ -57,6 +58,8 @@ export function titleScene(walkers = true): { el: HTMLElement; stop: () => void 
     { class: 'scene', 'aria-hidden': 'true' },
     h('div', { class: 'sun' }),
     ...clouds,
+    // Now and then a pair of birds flaps across the sky.
+    h('div', { class: 'birds' }, h('i', { class: 'bird' }), h('i', { class: 'bird' })),
     h('div', { class: 'hill back' }),
     h('div', { class: 'hill mid' }),
     h('div', { class: 'street' }, ...shops),

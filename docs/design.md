@@ -599,9 +599,18 @@ if (!(await ask(`Delete ${d.name}?`, 'Its 4 properties will be removed from the 
   the board builder's Menu and the main menu's Menu (What's new, Board editor, Credits). A
   "New" tag (`.tag`) can follow a row's title; the button that opens the menu carries the red
   "New" dot instead.
-- The in-game menu (`.game-menu .gm-item`) follows the same idea. Its switches (`.gm-toggle`:
-  Auto play, Fast CPU) read "Name: on / off" and get a green wash while on; a muted 12px note
-  (`.gm-note`) may sit under a switch that is on.
+- **Game menu** (`.menu-modal`, `hud.buildMenu`): 330px wide, radius 22, near-opaque navy with a
+  2px gold ring (`rgba(255,209,102,.7)`): it belongs to the game, not a player. Its own header
+  (`.gm-head`, replacing the modal head): a pulsing gold pause mark (`.gm-pause`, only while the
+  game is paused), "Game paused" in Lilita 21px with a 12px muted line "Round N · ● Name's turn"
+  (`.gm-dot` in the player's color), and a 30px round × (`.gm-close`). Rows (`gmRow`, 48px):
+  a 30px icon tile (radius 9; Guide purple, Auto play teal, Fast CPU orange, Full screen blue,
+  Quit a faint red with a red icon and red name), a Lilita 16px name and an 11px muted line.
+  Switch rows (`.gm-toggle`) end in a 38x22 pill switch whose knob slides right and turns the
+  track green. One gold highlight (`.gm-hl`) slides to the row under the pointer or focus. Rows
+  slide in 8px from the left, 60ms apart, on open. **Resume** (`.gm-resume`) is a full-width
+  chunky gold button (gradient, 4px darker gold edge, a shine sweep every 4s) at the bottom.
+  Phones (`max-height: 500px`): 40px rows and smaller icon tiles so it fits.
 
 ### 5.9 Card grid pop-up (choose one of many pictured things)
 
@@ -1332,6 +1341,13 @@ The main menu's Play button doubles as Join: a field inside the big button (righ
 adding a second button. The button is a `div.menu-btn` holding a real `<button>` for the label
 area and a `<label>` for the field, since an input can't sit inside a button; clicks on the field
 never press it. Secondary actions under it (Continue) are slimmer rows, never a second big button.
+
+**Title scene motion** (`titleScene`, menu and setup): kept calm and slow. Rays turn behind the
+sun (80s a turn, faint, masked off the disk) while it glows (6s); clouds drift; two CSS birds
+(`.birds`) cross the sky for about a third of a 34s loop; the logo bobs; the shops hop one at a
+time (`shop-hop`, squash and stretch on `translate`/`scale`, 1.4s apart). **Play** breathes (a gold glow around it swells and fades over 3.2s; the button never
+moves, so it stays easy to press) and a shine sweeps across it every 5s; both pause on hover or focus. All
+of it stops with reduced motion (birds hidden).
 
 The main menu is a single viewport with no page scrolling or overscroll. Keep top-corner Sound
 and Menu and the version chip reachable. The title always sits above the actions; on short screens

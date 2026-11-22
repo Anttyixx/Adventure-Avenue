@@ -35,6 +35,21 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: '2026-11-22-ui-menus',
+    date: 'Nov 22, 2026',
+    title: 'A new game menu',
+    features: [
+      {
+        tag: 'better',
+        title: 'A fresh game menu',
+        text: 'The game menu says the game is paused and whose turn it is. Each option has its own colored icon and a short line on what it does, Auto play and Fast CPU are switches, and Resume is a big gold button.',
+      },
+    ],
+    extras: [
+      'The title screen comes alive: turning sun rays, passing birds, hopping shops and a shining Play button',
+    ],
+  },
+  {
     id: '2026-11-22-ui-player-cards',
     date: 'Nov 22, 2026',
     title: 'Livelier player cards',
