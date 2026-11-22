@@ -1472,13 +1472,14 @@ moment, then fly one by one to whoever gets the money, whose "+" appears as they
 flight with reduced motion). `LOSS_COINS` in `host.ts` switches back to the straight flight.
 
 **Action bar.** The current player's options (and most yes/no questions: buying a shop, a buyout,
-upgrading a circus, selling a property in debt, bidding) appear in the action bar: one row of a
-fixed height (92px; 64px on small screens) centered at the bottom of the screen edge to edge, as
-wide as its content up to a maximum that leaves a gap to the player cards on either side.
+upgrading a circus, selling a property in debt, bidding) appear in the action bar: one rounded
+container centered at the bottom of the screen edge to edge, as wide and as tall as its content
+(up to a width that leaves a gap to the player cards on either side), with the same 26px corners
+in both modes and clear space around everything inside it.
 On small screens that room is narrow, so the question sits above the buttons (which scroll
 sideways when there are many).
 The question sits on the left, the buttons on the right (two plain choices stack, the main one on
-top, on larger screens). The bar has rounded 22px corners and a border in the deciding player's
+top, on larger screens). The bar has a border in the deciding player's
 color that glows softly while it waits; the main button is a chunky gold button with a light
 sweeping across it, and the headline amount (usually the cost) sits on a small swaying gold ticket.
 The status line is a pill with a round icon that pops in, and "is moving..." ends in three

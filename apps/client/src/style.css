@@ -6854,12 +6854,10 @@ input[type='range'] {
 .prompt-center .fact.big b {
   font-size: 15px;
 }
-/* The redesigned bar (UI refresh): the status line and the question bar share 22px corners, so
-   the short status line is a pill and the taller question bar a soft rectangle, and the morph
-   between them only changes size. Questions keep the 2px border in the deciding player's color,
-   which glows softly while waiting; a soft top light gives both a little depth. */
+/* The redesigned bar (UI refresh): questions keep the 2px border in the deciding player's color,
+   which glows softly while waiting; a soft top light gives both modes a little depth. Its shape
+   and spacing are set below ("One container for both modes"). */
 .prompt-center {
-  border-radius: 22px;
   background: linear-gradient(180deg, rgba(28, 40, 74, 0.94), rgba(16, 26, 51, 0.94));
 }
 .prompt-center.show:not(.status) {
@@ -6883,33 +6881,50 @@ input[type='range'] {
   }
 }
 .prompt-center.status {
-  padding: 9px 18px 9px 9px;
+  padding: 10px 20px 10px 10px;
   box-shadow:
     0 12px 30px rgba(0, 0, 0, 0.35),
     inset 0 1px 0 rgba(255, 255, 255, 0.1);
 }
-/* Room for everything inside the bar: the padding keeps content clear of the 22px corners, and the
-   parts that clip (the question's text box and its row of facts) get a little inner room, taken
-   back with a negative margin, so the gold ticket's base, its sway, the popping icon and the
-   bouncing dots are never cut off. */
+/* One container for both modes: its corners are always 26px and it grows to fit what is inside,
+   so a one-line status (52px tall with its border) is a pill and a question is a taller rounded
+   box. The padding
+   is generous and nothing inside clips, so buttons, their glow and every animation (the button's
+   hop, the ticket's sway, the icon's pop, the dots) always keep clear space to the edge. */
 .prompt-center {
-  padding: 8px 18px 8px 24px;
+  border-radius: 26px;
+  min-height: 0;
+  max-height: none;
+  padding: 16px 20px 16px 24px;
 }
-.prompt-center .prompt-text.rich {
-  padding: 6px 8px 8px;
-  margin: -6px -8px -8px;
+.prompt-center.stacked {
+  padding: 14px 18px;
 }
+.prompt-center .prompt-text {
+  max-height: none;
+}
+.prompt-center .prompt-text.rich,
 .prompt-center .facts {
-  padding: 4px 6px 6px 3px;
-  margin: -4px -6px -6px -3px;
-  max-height: 76px;
+  overflow: visible;
+  max-height: none;
 }
 .prompt-center.status .prompt-text.ask-status {
   overflow: visible;
 }
+/* The buttons wrap onto another line instead of scrolling inside a clipped strip. */
+.prompt-center .btn-row {
+  overflow: visible;
+  flex-wrap: wrap;
+  padding: 0;
+  margin: 0;
+}
 @media (max-height: 500px), (max-width: 760px) {
   .prompt-center:not(.status) {
-    padding: 6px 14px;
+    padding: 14px 16px;
+  }
+  .prompt-center.show .btn-row,
+  .prompt-center.show .btn-row:has(> :nth-child(4)) {
+    justify-content: center;
   }
 }
 /* The status line's icon is round and pops in each time the line changes. */
@@ -6968,7 +6983,7 @@ input[type='range'] {
   background: linear-gradient(180deg, #ffe08a, #ffc93c);
   box-shadow:
     0 3px 0 #c98f12,
-    0 6px 14px rgba(255, 209, 102, 0.3);
+    0 4px 10px rgba(255, 209, 102, 0.25);
 }
 .prompt-center .btn.main:not(.no):hover:not(:disabled) {
   background: linear-gradient(180deg, #ffe9a8, #ffd25a);

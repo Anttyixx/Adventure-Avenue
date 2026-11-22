@@ -448,21 +448,20 @@ Each element: **purpose**, **placement**, **anatomy**, **spec**, **behavior**, t
     ellipsis when long. "Rosa is buying stocks...", "Board settings · 2 problems to fix".
   - **Options**: question on the left (player-color dot first, or a `question()` fact strip),
     buttons on the right with the main one gold.
-- **Spec:** glass with a soft top light (a navy gradient and a 1px inner highlight), 22px corners
-  shared by both modes (the 44px status line is a pill, the taller question bar a soft rectangle,
-  and the morph only changes size), 2px border in `--pc` (the deciding player's color) that glows
-  softly in and out while waiting (`ab-glow`, 2.4s), min height 92px (options),
-  grows up to 75% taller for rich content, width = content (max 920px; no minimum width, so a
-  short message gets a short bar on every screen size).
+- **Spec:** one container for both modes. Glass with a soft top light (a navy gradient and a 1px
+  inner highlight); corners always 26px; it grows to fit its content (no fixed height): the
+  one-line status line is 52px tall with its border, so it is a pill, and a question is a taller
+  rounded box. 2px border in `--pc` (the deciding player's color) that glows softly in and out
+  while waiting (`ab-glow`, 2.4s). Width = content (max 920px, no minimum). Padding 16px 20px 16px
+  24px (status 10px 20px 10px 10px; phones 14px 16px), and nothing inside clips (the text box,
+  facts and buttons have `overflow: visible`; too many buttons wrap to a new line instead of
+  scrolling), so buttons, glows and every animation always keep clear space to the edge.
 - **Motion:** morphs size between states (740ms, content laid out at its final size so text never
   jumps); new text is revealed with a 220ms left-to-right sweep; new controls fade/settle 220ms.
 - **Pieces:** the main button is a chunky gold "toy" button (12px corners, 3px darker base, a light
   sweeping across every 3.2s, pressing down onto its base); the question's `big` fact (usually the
   cost) is a gold ticket with a small uppercase label that sways gently; two plain choices stack
-  with the main one on top (not on small screens). Nothing inside may be clipped: the bar's padding
-  keeps content clear of the corners (8px 18px 8px 24px; 6px 14px on phones), and the question's
-  text box and facts row get a few pixels of inner room (taken back with negative margins) so the
-  ticket's base and sway, the popping icon and the dots always show. The status line's icon is round and pops in
+  with the main one on top (not on small screens). See Spec for the spacing rule. The status line's icon is round and pops in
   when the line changes, and a trailing "..." becomes three bouncing dots (`statusText` in
   `hud.ts`).
 - **Do:** say what to do when the choice is on the board ("Tap a glowing square to move there").
