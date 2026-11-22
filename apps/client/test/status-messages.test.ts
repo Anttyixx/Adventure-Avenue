@@ -78,7 +78,8 @@ describe('action bar lifecycle priorities', () => {
     q.push({ text: 'B' });
     q.decision();
     vi.advanceTimersByTime(5000);
-    expect(q.current?.text).toBe('A');
+    // Neither the pending "B" nor the old "A" comes back after a choice: the next message is new.
+    expect(q.current).toBeNull();
     q.phase('next', { text: 'Next' });
     q.push({ text: 'C' }, T.actionResult, true);
     q.destroy();

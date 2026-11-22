@@ -456,19 +456,24 @@ Each element: **purpose**, **placement**, **anatomy**, **spec**, **behavior**, t
   24px (status 10px 20px 10px 10px; phones 14px 16px), and nothing inside clips (the text box,
   facts and buttons have `overflow: visible`; too many buttons wrap to a new line instead of
   scrolling), so buttons, glows and every animation always keep clear space to the edge.
-- **Motion:** morphs size between states (740ms, content laid out at its final size so text never
+- **Motion:** morphs size between states (520ms, content laid out at its final size so text never
   jumps). Content changes as a bouncy wave (`waveIn` / `waveOut` in `hud.ts`): the old content
   is lifted out, pinned to the point the bar grows from (bottom middle, or bottom left), and
-  lifts and fades away letter by letter (180ms each, a few ms apart); the new content rises in
+  lifts and fades away letter by letter (140ms each, a few ms apart); the new content rises in
   letter by letter and piece by piece (icon, coins, ticket, buttons each move whole: up from 6px
-  and 85% with a small overshoot, 380ms each, at most 16ms apart, the whole wave within about
-  0.45s). While the bar resizes the new wave waits 300ms, until the bar is nearly its new size,
+  and 85% with a small overshoot, 300ms each, at most 12ms apart, the whole wave within about
+  0.35s). While the bar resizes the new wave waits 200ms, until the bar is nearly its new size,
   so nothing shows before there is room for it. Buttons pop in separately (from 60% with a bounce,
-  420ms, 70ms apart) once the bar has finished resizing (700ms), or straight after the text when
-  it doesn't resize, and shrink away (220ms) when they leave. During a resize the new content is
+  340ms, 55ms apart) once the bar has nearly finished resizing (480ms), or straight after the text when
+  it doesn't resize, and shrink away (170ms) when they leave. During a resize the new content is
   laid out at its final size and pinned exactly where it will end up (to the bar's bottom and the
   point it grows from), so it never moves or snaps. Money is turned into coins and the text split
   into letters before the bar measures its new size, since both change the text's width a little.
+  After a choice the question waves out and the bar stays at its size, empty, until the next
+  message arrives, then morphs straight to it (`clearAsk`); the status from before the question is
+  never shown again (`StatusMessages.decision` clears it). If nothing comes within 1.2s the bar
+  slides away. The fit check (`askOverflows`) measures pieces by layout, ignoring transforms, so a
+  bounce or hop never counts as not fitting (which would blur the board and stack the buttons).
 - **Pieces:** the main button is a chunky gold "toy" button (12px corners, 3px darker base, a light
   sweeping across every 3.2s, pressing down onto its base); the question's `big` fact (usually the
   cost) is a gold ticket with a small uppercase label that sways gently; two plain choices stack
@@ -1092,8 +1097,8 @@ Reopened online games keep guests on Continue Game until the host presses Resume
 | Side panel slide-in (16px)                  | 220ms                       | `cubic-bezier(0.2, 0.8, 0.2, 1)`                    |
 | Pop-up open / close                         | 220ms / 160ms               | `cubic-bezier(0.2, 0.9, 0.3, 1.2)` / ease-in        |
 | Market panel / log morph                    | 260-280ms                   | `cubic-bezier(0.2, 0.8, 0.2, 1)`                    |
-| Action bar morph                            | 740ms                       | `cubic-bezier(0.2, 0.8, 0.2, 1)`                    |
-| Action bar content wave in / out            | 380ms / 180ms per piece     | overshoot `cubic-bezier(0.2,0.9,0.3,1.2)` / ease-in |
+| Action bar morph                            | 520ms                       | `cubic-bezier(0.2, 0.8, 0.2, 1)`                    |
+| Action bar content wave in / out            | 300ms / 140ms per piece     | overshoot `cubic-bezier(0.2,0.9,0.3,1.2)` / ease-in |
 | Banner rise / fade                          | 350ms / 450ms               | ease-out                                            |
 | Camera pan / zoom easing (builder and game) | per frame, factor 0.12-0.15 | —                                                   |
 | Loops (breathe, pulse, link dots)           | 1.1-2.6s                    | ease-in-out / linear                                |

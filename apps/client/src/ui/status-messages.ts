@@ -58,9 +58,13 @@ export class StatusMessages {
     }
     this.schedule();
   }
-  /** Real choices are never delayed by old announcements. */
+  /**
+   * Real choices are never delayed by old announcements, and what was showing before the choice
+   * is never shown again after it: the next message is a new one.
+   */
   decision() {
     clearTimeout(this.timer);
+    this.current = null;
     this.pending = [];
     this.waiting = null;
     this.event = false;

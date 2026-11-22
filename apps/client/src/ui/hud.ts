@@ -84,10 +84,14 @@ function statusText(G: GameState | undefined, text: string): (string | HTMLEleme
   return parts;
 }
 
+/** How long an emptied action bar waits for its next message before sliding away. */
+const ASK_EMPTY_HOLD = 1200;
+/** How long the action bar takes to resize (morph) between two contents. */
+const ASK_MORPH_MS = 520;
 /** How long new action bar text waits while the bar resizes (it is nearly full size by then). */
-const ASK_WAVE_WAIT = 300;
-/** Buttons wait until the bar has finished resizing (its morph takes 740ms), then pop in. */
-const ASK_BUTTONS_WAIT = 700;
+const ASK_WAVE_WAIT = 200;
+/** Buttons wait until the bar has nearly finished resizing, then pop in. */
+const ASK_BUTTONS_WAIT = 480;
 /** Pieces the wave moves whole, never split into letters. */
 const WAVE_UNIT = '.dot, .log-icon, .ab-dots, .gc, .fact, .btn, img, svg';
 /** Text that waves in letter by letter. */
@@ -151,14 +155,14 @@ function waveUnits(root: HTMLElement): Element[] {
 
 /**
  * New content arrives as a quick bouncy wave: each letter and piece rises in with a small
- * overshoot, one just after another (the whole wave takes at most about 0.45s).
+ * overshoot, one just after another (the whole wave takes at most about 0.35s).
  */
 function waveIn(root: HTMLElement, delay = 0, buttonsAt = 0) {
   const units = waveUnits(root);
   if (!units.length || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
   const buttons = units.filter((u) => u.matches('.btn'));
   const rest = units.filter((u) => !u.matches('.btn'));
-  const step = Math.min(16, 450 / Math.max(1, rest.length));
+  const step = Math.min(12, 340 / Math.max(1, rest.length));
   rest.forEach((u, i) =>
     u.animate(
       [
@@ -167,7 +171,7 @@ function waveIn(root: HTMLElement, delay = 0, buttonsAt = 0) {
         { opacity: 1, transform: 'none' },
       ],
       {
-        duration: 380,
+        duration: 300,
         delay: delay + i * step,
         easing: 'cubic-bezier(0.2, 0.9, 0.3, 1.2)',
         fill: 'backwards',
@@ -176,7 +180,7 @@ function waveIn(root: HTMLElement, delay = 0, buttonsAt = 0) {
   );
   // Buttons pop in one after another: once the bar is done resizing, or right after the text
   // when it doesn't resize.
-  const start = Math.max(buttonsAt, delay + Math.min(rest.length * step, 200));
+  const start = Math.max(buttonsAt, delay + Math.min(rest.length * step, 150));
   buttons.forEach((u, i) =>
     u.animate(
       [
@@ -184,7 +188,7 @@ function waveIn(root: HTMLElement, delay = 0, buttonsAt = 0) {
         { opacity: 1, transform: 'translateY(-3px) scale(1.08)', offset: 0.6 },
         { opacity: 1, transform: 'none' },
       ],
-      { duration: 420, delay: start + i * 70, easing: 'cubic-bezier(0.2, 0.9, 0.3, 1.3)', fill: 'backwards' },
+      { duration: 340, delay: start + i * 55, easing: 'cubic-bezier(0.2, 0.9, 0.3, 1.3)', fill: 'backwards' },
     ),
   );
 }
@@ -193,7 +197,7 @@ function waveIn(root: HTMLElement, delay = 0, buttonsAt = 0) {
 function waveOut(layer: HTMLElement): number {
   const units = [...layer.querySelectorAll('.wv, .wv-unit')];
   const parts = units.length ? units : [...layer.children];
-  const step = Math.min(8, 140 / Math.max(1, parts.length));
+  const step = Math.min(6, 110 / Math.max(1, parts.length));
   parts.forEach((u, i) =>
     u.animate(
       // Buttons shrink away; letters and other pieces lift and fade.
@@ -207,10 +211,10 @@ function waveOut(layer: HTMLElement): number {
             { opacity: 1, transform: 'none' },
             { opacity: 0, transform: 'translateY(-6px) scale(0.9)' },
           ],
-      { duration: u.matches('.btn') ? 220 : 180, delay: i * step, easing: 'ease-in', fill: 'forwards' },
+      { duration: u.matches('.btn') ? 170 : 140, delay: i * step, easing: 'ease-in', fill: 'forwards' },
     ),
   );
-  return 220 + parts.length * step + 40;
+  return 170 + parts.length * step + 40;
 }
 
 /** How long the game log takes to slide up to make room for a new line. */
@@ -1345,6 +1349,7 @@ export class Hud {
     if (this.promptResolve) return;
     const cur = this.currentStatus();
     if (
+      !this.askHeld &&
       this.ask.classList.contains('status') &&
       this.shownStatus?.text === cur?.text &&
       this.shownStatus?.kind === cur?.kind
@@ -1364,6 +1369,7 @@ export class Hud {
     const cur = this.currentStatus();
     this.shownStatus = cur;
     clear(a);
+    this.releaseAskSize();
     a.classList.remove('stacked');
     a.classList.add('status');
     a.style.removeProperty('--pc');
@@ -1501,23 +1507,36 @@ export class Hud {
   private askOverflows(): boolean {
     const a = this.ask;
     if (this.askTextSqueezed()) return true;
-    const box = a.getBoundingClientRect();
+    // Where an element sits in the bar's layout, ignoring transforms: the wave's bounce and the
+    // main button's hop briefly grow or move pieces, and must never count as not fitting.
+    const place = (el: HTMLElement) => {
+      let x = 0;
+      let y = 0;
+      let n: HTMLElement | null = el;
+      while (n && n !== a) {
+        x += n.offsetLeft;
+        y += n.offsetTop;
+        n = n.offsetParent as HTMLElement | null;
+      }
+      return n === a ? { left: x, top: y, right: x + el.offsetWidth, bottom: y + el.offsetHeight } : null;
+    };
     for (const el of a.querySelectorAll<HTMLElement>('button, .prompt-text, .facts, .m-card, .digits')) {
       // Content on its way out (waving away) doesn't count.
-      if (el.closest('.ask-leaving')) continue;
-      const r = el.getBoundingClientRect();
-      if (!r.width) continue;
-      if (
-        r.left < box.left - 2 ||
-        r.right > box.right + 2 ||
-        r.top < box.top - 2 ||
-        r.bottom > box.bottom + 2
-      )
+      if (el.closest('.ask-leaving') || !el.offsetWidth) continue;
+      const r = place(el);
+      if (!r) continue;
+      if (r.left < -2 || r.right > a.clientWidth + 2 || r.top < -2 || r.bottom > a.clientHeight + 2)
         return true;
     }
-    return [...a.querySelectorAll<HTMLElement>('.btn-row, .tb-btns')].some(
-      (r) => r.scrollWidth > r.clientWidth + 2,
-    );
+    // A button row whose buttons reach past its own edge (by layout, not animation).
+    return [...a.querySelectorAll<HTMLElement>('.btn-row, .tb-btns')].some((row) => {
+      const edge = place(row);
+      if (!edge) return false;
+      return [...row.children].some((c) => {
+        const r = place(c as HTMLElement);
+        return !!r && r.right > edge.left + row.clientWidth + 2;
+      });
+    });
   }
 
   /** Measure once, then resize the shell without repeatedly rewrapping its text. */
@@ -1571,7 +1590,7 @@ export class Hud {
         { width: `${from.w}px`, height: `${from.h}px`, minHeight: '0px' },
         { width: `${to.w}px`, height: `${to.h}px`, minHeight: '0px' },
       ],
-      { duration: 740, easing: 'cubic-bezier(0.2, 0.8, 0.2, 1)' },
+      { duration: ASK_MORPH_MS, easing: 'cubic-bezier(0.2, 0.8, 0.2, 1)' },
     );
     this.askAnim = anim;
     const end = () => {
@@ -1890,6 +1909,7 @@ export class Hud {
     const from = this.askSize();
     const leaving = this.leaveAsk();
     clear(this.ask);
+    this.releaseAskSize();
     this.ask.classList.remove('status');
     this.ask.classList.add('show');
     // Picture buttons need the width: the question goes on one line above them.
@@ -1954,10 +1974,54 @@ export class Hud {
   private finishPrompt() {
     this.promptResolve = null;
     this.mainButton = null;
-    // The choice is complete. Never restore its old "deciding" message while effects animate.
+    // The choice is complete. Never restore its old "deciding" message (or an older status) while
+    // effects animate: the question waves out and the bar waits, empty, for the next message.
     this.messages.decision();
-    this.showStatus();
+    this.clearAsk();
     if (this.logOpen) this.renderLog();
+  }
+
+  /** While the emptied bar waits for its next message (see `clearAsk`); hides it if none comes. */
+  private askEmptyTimer = 0;
+  /** True while the bar is emptied and held at its old size, waiting for the next message. */
+  private askHeld = false;
+
+  /**
+   * Empty the action bar after a choice: its content waves out and the bar keeps its size, so the
+   * next status line morphs straight from it (no old status in between). If nothing new comes
+   * soon, the bar slides away as usual.
+   */
+  private clearAsk() {
+    const a = this.ask;
+    clearTimeout(this.askEmptyTimer);
+    if (!a.classList.contains('show') || matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      this.showStatus();
+      return;
+    }
+    const { w, h: ht } = this.askSize() ?? { w: 0, h: 0 };
+    const leaving = this.leaveAsk();
+    clear(a);
+    this.shownStatus = null;
+    a.classList.remove('stacked');
+    a.classList.add('status');
+    a.style.removeProperty('--pc');
+    Object.assign(a.style, { width: `${w}px`, height: `${ht}px` });
+    this.playLeave(leaving);
+    this.askChanges.takeRecords();
+    this.askHeld = true;
+    this.askEmptyTimer = window.setTimeout(() => {
+      if (this.promptResolve || !this.askHeld) return;
+      // Nothing new to say: let the (empty) bar slide away, or show what arrived meanwhile.
+      this.showStatus();
+    }, ASK_EMPTY_HOLD);
+  }
+
+  /** Let the bar size itself again after `clearAsk` held it. */
+  private releaseAskSize() {
+    clearTimeout(this.askEmptyTimer);
+    this.askHeld = false;
+    this.ask.style.removeProperty('width');
+    this.ask.style.removeProperty('height');
   }
 
   cancelPrompt() {
