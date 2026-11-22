@@ -477,7 +477,10 @@ Each element: **purpose**, **placement**, **anatomy**, **spec**, **behavior**, t
 - **Pieces:** the main button is a chunky gold "toy" button (12px corners, 3px darker base, a light
   sweeping across every 3.2s, pressing down onto its base); the question's `big` fact (usually the
   cost) is a gold ticket with a small uppercase label that sways gently; two plain choices stack
-  with the main one on top (not on small screens). See Spec for the spacing rule. The status line's icon is round and pops in
+  with the main one on top. Layout order (`chooseAskLayout` in `hud.ts`): buttons beside the
+  question first, on every screen size; under it (`.ab-col`, side by side, centered) only if they
+  would wrap, the title would be cut or the question squeezed; spread over the cards with the blur
+  (`.ab-over`) only if even that doesn't fit. See Spec for the spacing rule. The status line's icon is round and pops in
   when the line changes, and a trailing "..." becomes three bouncing dots (`statusText` in
   `hud.ts`).
 - **Do:** say what to do when the choice is on the board ("Tap a glowing square to move there").

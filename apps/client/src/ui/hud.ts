@@ -1539,10 +1539,41 @@ export class Hud {
     });
   }
 
+  /**
+   * Buttons beside the question when they fit, under it when they don't: try the side-by-side
+   * layout first and switch to the stacked one (`.ab-col`) only if the buttons wrap onto a second
+   * line, the question's title is cut short or the question is squeezed narrow. (If even that
+   * doesn't fit, `fitAskOver` spreads the bar over the cards as the last resort.)
+   */
+  private chooseAskLayout() {
+    const a = this.ask;
+    a.classList.remove('ab-col');
+    if (!a.classList.contains('show') || a.classList.contains('status') || a.classList.contains('stacked'))
+      return;
+    const text = a.querySelector<HTMLElement>(':scope > .prompt-text');
+    const row = a.querySelector<HTMLElement>(':scope > .btn-row');
+    const btns = row ? ([...row.children] as HTMLElement[]) : [];
+    if (!text || !btns.length) return;
+    // A row laid out as a column on purpose (two stacked choices) isn't "wrapped".
+    const wrapped =
+      getComputedStyle(row!).flexDirection !== 'column' &&
+      btns.some((b) => b.offsetTop > btns[0].offsetTop + btns[0].offsetHeight / 2);
+    const title = text.querySelector<HTMLElement>('.rich-title');
+    const cut = !!title && title.scrollWidth > title.clientWidth + 2;
+    // Squeezed: a narrow question that has to wrap or is cut (a short one is just short).
+    const cs = getComputedStyle(text);
+    const line = parseFloat(cs.lineHeight) || parseFloat(cs.fontSize) * 1.3;
+    const squeezed =
+      text.clientWidth < 150 &&
+      (text.scrollWidth > text.clientWidth + 2 || (!title && text.offsetHeight > line * 1.6));
+    if (wrapped || cut || squeezed) a.classList.add('ab-col');
+  }
+
   /** Measure once, then resize the shell without repeatedly rewrapping its text. */
   private morphAsk(from: { w: number; h: number } | null) {
     const a = this.ask;
     this.updateInsets();
+    this.chooseAskLayout();
     // Safety net: if a centered bar still can't fit its options (a measurement taken mid-animation,
     // an odd browser), move it bottom left for this window size instead of letting buttons spill.
     if (

@@ -6912,10 +6912,12 @@ input[type='range'] {
 .prompt-center.status .prompt-text.ask-status {
   overflow: visible;
 }
-/* The buttons wrap onto another line instead of scrolling inside a clipped strip. */
+/* The buttons wrap onto another line instead of scrolling inside a clipped strip; the bar's own
+   width limit (the room beside the player cards) decides how many fit beside the question. */
 .prompt-center .btn-row {
   overflow: visible;
   flex-wrap: wrap;
+  max-width: none;
   padding: 0;
   margin: 0;
 }
@@ -7061,16 +7063,34 @@ input[type='range'] {
     transform: rotate(-0.5deg) translateY(-1px);
   }
 }
-/* Two plain choices stack, the main one on top, on screens with room for it. */
+/* Two plain choices stack, the main one on top, beside the question (a narrow column of buttons
+   leaves the question room). When the buttons go under the question instead (.ab-col), they sit
+   side by side. */
+.prompt-center:not(.stacked):not(.ab-col) .btn-row:has(> .btn:nth-child(2):last-child):not(:has(.pic)) {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 6px;
+}
 @media (min-height: 501px) and (min-width: 761px) {
-  .prompt-center:not(.stacked) .btn-row:has(> .btn:nth-child(2):last-child):not(:has(.pic)) {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 6px;
-  }
-  .prompt-center:not(.stacked) .btn-row:has(> .btn:nth-child(2):last-child):not(:has(.pic)) .btn {
+  .prompt-center:not(.stacked):not(.ab-col)
+    .btn-row:has(> .btn:nth-child(2):last-child):not(:has(.pic))
+    .btn {
     padding: 7px 22px;
   }
+}
+/* Buttons under the question: only when they don't fit beside it (hud.ts chooseAskLayout). */
+.prompt-center.ab-col {
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: center;
+  gap: 8px;
+}
+.prompt-center.ab-col .prompt-text {
+  flex: none;
+}
+.prompt-center.ab-col .btn-row {
+  max-width: none;
+  justify-content: center;
 }
 @media (prefers-reduced-motion: reduce) {
   .prompt-center.show:not(.status),
@@ -7093,8 +7113,9 @@ input[type='range'] {
   max-width: calc(100vw - 12px);
 }
 @media (max-height: 500px), (max-width: 760px) {
-  /* Small screens: the room between the edge and the cards is narrow, so the question sits
-     above the buttons (which scroll sideways if there are many). */
+  /* Small screens: smaller type and buttons. The buttons still sit to the right of the question
+     when they fit; only when they don't does the bar put them underneath (.ab-col, hud.ts
+     chooseAskLayout). */
   .prompt-center {
     --ab-h: 78px;
     bottom: 8px;
@@ -7105,14 +7126,10 @@ input[type='range'] {
     max-width: calc(100% - var(--free-left, 0px) - var(--free-right, 0px) - 16px);
   }
   .prompt-center {
-    flex-direction: column;
-    align-items: stretch;
-    justify-content: center;
-    gap: 5px;
+    gap: 12px;
     padding: 5px 8px;
   }
   .prompt-center .prompt-text {
-    flex: none;
     font-size: 12px;
     line-height: 1.25;
   }
@@ -7120,11 +7137,7 @@ input[type='range'] {
     -webkit-line-clamp: 2;
   }
   .prompt-center .btn-row {
-    max-width: none;
     justify-content: center;
-  }
-  .prompt-center .btn-row:has(> :nth-child(4)) {
-    justify-content: flex-start;
   }
   .prompt-center .btn {
     font-size: 13px;

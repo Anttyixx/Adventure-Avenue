@@ -1476,10 +1476,11 @@ upgrading a circus, selling a property in debt, bidding) appear in the action ba
 container centered at the bottom of the screen edge to edge, as wide and as tall as its content
 (up to a width that leaves a gap to the player cards on either side), with the same 26px corners
 in both modes and clear space around everything inside it.
-On small screens that room is narrow, so the question sits above the buttons (which scroll
-sideways when there are many).
-The question sits on the left, the buttons on the right (two plain choices stack, the main one on
-top, on larger screens). The bar has a border in the deciding player's
+The question sits on the left and the buttons on the right, on every screen size (two plain
+choices stack, the main one on top). Only when the buttons don't fit beside the question (they
+would wrap, or the question would be cut short or squeezed) do they move underneath it; and only if
+even that doesn't fit beside the player cards does the bar spread over them, blurring the board
+behind (the last resort). The bar has a border in the deciding player's
 color that glows softly while it waits; the main button is a chunky gold button with a light
 sweeping across it, and the headline amount (usually the cost) sits on a small swaying gold ticket.
 The status line is a pill with a round icon that pops in, and "is moving..." ends in three
