@@ -84,8 +84,6 @@ function statusText(G: GameState | undefined, text: string): (string | HTMLEleme
   return parts;
 }
 
-/** The narrowest a building card may be beside Build / Skip before the cards go full width. */
-const BP_CARD_MIN = 74;
 /** How long an emptied action bar waits for its next message before sliding away. */
 const ASK_EMPTY_HOLD = 1200;
 /** How long the action bar takes to resize (morph) between two contents. */
@@ -1585,15 +1583,14 @@ export class Hud {
   private chooseAskLayout() {
     const a = this.ask;
     a.classList.remove('ab-col');
-    // The building picker lays out like a question too: the question and its building cards on
-    // the left, Build / Skip on the right. Only when that leaves the cards too small to read do
-    // the cards spread across the bar's full width under the question (`.bp-side` off).
+    // The building picker: the question with Build / Skip side by side in the top right, the
+    // building cards across the full width below. When a centered bar squeezes the cards so their
+    // names are cut short, the bar uses the bottom-left corner's room while the picker is up.
     const bp = a.querySelector<HTMLElement>('.bp');
     if (bp) {
-      bp.classList.add('bp-side');
-      const card = bp.querySelector<HTMLElement>('.bp-card');
-      const small = () => !!card && card.offsetWidth < BP_CARD_MIN;
-      // Centered, the bar may be too narrow for that; the bottom-left corner has more room.
+      // Too small: the cards are squeezed so their names get cut short.
+      const names = [...bp.querySelectorAll<HTMLElement>('.bp-name')];
+      const small = () => names.some((n) => n.offsetWidth > 0 && n.scrollWidth > n.clientWidth + 1);
       if (small() && !this.askLeft && !this.root.classList.contains('ab-left')) {
         this.askLeft = true;
         this.updateInsets();
@@ -1602,7 +1599,6 @@ export class Hud {
           this.updateInsets();
         }
       }
-      if (small()) bp.classList.remove('bp-side');
     } else if (this.askLeft) {
       this.askLeft = false;
       this.updateInsets();

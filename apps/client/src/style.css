@@ -11208,7 +11208,8 @@ div.sl-inline label {
    many more of a building may go up is a row of dots (filled = still free). */
 .bp-card {
   border-radius: 14px;
-  padding: 9px 4px 6px;
+  padding: 10px 8px 8px;
+  gap: 3px;
   background: rgba(255, 255, 255, 0.05);
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
 }
@@ -11227,12 +11228,13 @@ div.sl-inline label {
   display: block;
 }
 .bp-actions {
-  flex-direction: column;
-  align-items: stretch;
-  gap: 6px;
+  flex-direction: row;
+  align-items: center;
+  align-self: start;
+  gap: 8px;
 }
 .bp-actions .btn {
-  padding: 7px 22px;
+  padding: 8px 20px;
 }
 .bp-tip {
   border: 0;
@@ -11269,22 +11271,7 @@ div.sl-inline label {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-/* Laid out like any question: the question, hint and cards on the left, Build / Skip stacked
-   on the right and centered top to bottom (hud.ts chooseAskLayout adds .bp-side when the cards
-   stay readable that way). */
-.bp.bp-side {
-  grid-template-columns: minmax(0, 1fr) auto;
-  grid-template-areas:
-    'info actions'
-    'cards actions';
-  gap: 10px 20px;
-}
-.bp.bp-side .bp-info {
-  min-height: 0;
-}
-.bp.bp-side .bp-actions {
-  align-self: center;
-}
+
 .bp-left i {
   width: 5px;
   height: 5px;
@@ -11306,14 +11293,11 @@ div.sl-inline label {
     padding: 6px 10px;
   }
   .bp-card {
-    padding: 7px 2px 3px;
+    padding: 7px 5px 6px;
   }
   .bp-left {
     gap: 2px;
     height: 4px;
-  }
-  .bp.bp-side .bp-actions {
-    flex-direction: column;
   }
   .bp-left i {
     width: 4px;

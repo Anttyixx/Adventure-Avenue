@@ -500,11 +500,11 @@ Each element: **purpose**, **placement**, **anatomy**, **spec**, **behavior**, t
   how many more of a building the board allows is a row of `K.buildingLimit` dots in the card's
   own flow, centered above the picture so they never touch its edge (filled gold = still free, red
   outlines when none are left); every card is the same size. Cards join the bar's wave.
-  Layout (`chooseAskLayout`): like any question, the question, hint and cards on the left and Build /
-  Skip stacked on the right (`.bp-side`), as long as the cards stay at least 74px wide; a centered
-  bar too narrow for that moves to the bottom-left corner while the picker is up (`askLeft`; the
-  board doesn't move); only if even that is too narrow (phones) do the cards span the bar's width
-  under the question, with Build / Skip beside the question.
+  Layout: the question and hint top left, Build / Skip side by side in the top right, the cards
+  across the full width below (cards padded 10px 8px 8px, 7px 5px 6px on phones, so nothing inside
+  nears their edge). If a centered bar squeezes the cards so their names are cut short, the bar
+  moves to the bottom-left corner while the picker is up (`askLeft` in `chooseAskLayout`; the board
+  doesn't move).
   Choosing is two steps (select, then the main button or a second tap on the card) so one stray
   tap never commits money. Phones: cards become picture + price only, buttons sit in a row beside
   the details. The bar lifts its height cap for it (`.prompt-center:has(.bp)`).
