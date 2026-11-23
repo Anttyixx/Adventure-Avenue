@@ -111,7 +111,7 @@ const rnd = (n: number) => Math.floor(Math.random() * n);
  * Controls for UI elements that were just added or changed: they shake once and glow so they
  * are easy to find. Update this list with each change.
  */
-const RECENT = new Set(['Game log']);
+const RECENT = new Set(['Game log', 'Log: venture card pop-up']);
 
 /**
  * Which board the lab plays on: Town with portal links (square, the default) or Twin Lakes (hex),
@@ -2596,6 +2596,7 @@ export async function openLab(app: HTMLElement, section?: string) {
     row(
       s,
       btn('Game log', () => hud.toggleLog()),
+      btn('Log: venture card pop-up', () => hud.showCard('allClose')),
       btn('Log: landing and purchase', async () => {
         const p = G.players[G.order[G.turn]];
         const sq = G.nodes.find((n) => n.t === 'shop')!;

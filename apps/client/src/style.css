@@ -1711,6 +1711,45 @@ input[type='range'] {
   display: none;
 }
 /* A new line's dot pops in: played by hud.ts `enterLogLine`, so it carries on across redraws. */
+/* A venture card opened from the log: a purple card with its number badge, title and text. */
+.modal.vc-modal {
+  width: min(380px, 100%);
+}
+.vc-pop {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  margin-top: 8px;
+  padding: 14px;
+  border-radius: 16px;
+  background: linear-gradient(160deg, rgba(123, 75, 214, 0.35), rgba(123, 75, 214, 0.12));
+  box-shadow: inset 0 0 0 2px rgba(167, 128, 240, 0.55);
+}
+.vc-num {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 40px;
+  height: 40px;
+  border-radius: 11px;
+  background: #7b4bd6;
+  color: #fff;
+  font: 400 20px var(--head);
+}
+.vc-body {
+  min-width: 0;
+}
+.vc-title {
+  display: block;
+  font: 400 21px var(--head);
+  line-height: 1.15;
+}
+.vc-body p {
+  margin: 4px 0 0;
+  font-size: 15px;
+  line-height: 1.4;
+}
 .turn-lines .log-line.waiting .log-icon {
   background: transparent !important;
   box-shadow: inset 0 0 0 2px var(--muted);

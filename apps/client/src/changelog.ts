@@ -35,6 +35,19 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: '2026-11-23-log-cards',
+    date: 'Nov 23, 2026',
+    title: 'Clearer venture cards in the game log',
+    features: [
+      {
+        tag: 'better',
+        title: 'Venture cards in the game log',
+        text: "The game log now says which card a player drew, with what the card did tucked underneath, instead of saying the same thing twice. Tap the card's entry to see the full card.",
+      },
+    ],
+    extras: ['Game log entries come in more slowly and smoothly', 'Every venture card now says what it did'],
+  },
+  {
     id: '2026-11-22-ui-menus',
     date: 'Nov 22, 2026',
     title: 'A new game menu',

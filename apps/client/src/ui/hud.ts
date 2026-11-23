@@ -6,6 +6,7 @@ import { StatusMessages } from './status-messages';
  * and banners. HotSeat (host.ts) drives it; `prompt()` is how most human decisions are asked.
  */
 import {
+  CARDS,
   PLAYER_COLORS,
   K,
   SUITS,
@@ -228,9 +229,11 @@ function waveOut(layer: HTMLElement): number {
 }
 
 /** How long the game log takes to slide lines into their new places, and new lines to come in. */
-const LOG_SLIDE_MS = 420;
-/** The log's easing: quick to start, settling gently. */
-const LOG_EASE = 'cubic-bezier(0.22, 1, 0.36, 1)';
+const LOG_SLIDE_MS = 650;
+/** The log's easing: an unhurried ease-out that settles softly, with no snap at the start. */
+const LOG_EASE = 'cubic-bezier(0.33, 1, 0.68, 1)';
+/** When several lines arrive together, each starts this much after the one before. */
+const LOG_STAGGER_MS = 110;
 
 /**
  * The action bar's typing reveal, also used by the game log: the text uncovers left to right in
@@ -1827,6 +1830,7 @@ export class Hud {
       waiting: this.waiting ?? undefined,
       fresh,
       onTile: (id) => this.board.focusLogTile(id),
+      onCard: (id) => this.showCard(id),
     });
     this.logBox.append(
       h(
@@ -1871,10 +1875,11 @@ export class Hud {
   private animateLog(list: HTMLElement, before: LogRects) {
     const now = performance.now();
     // Forget lines that finished coming in long ago.
-    for (const [key, t] of this.logBorn) if (now - t > LOG_SLIDE_MS * 2) this.logBorn.delete(key);
+    for (const [key, t] of this.logBorn) if (now - t > LOG_SLIDE_MS * 3) this.logBorn.delete(key);
     if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
     const slide = { duration: LOG_SLIDE_MS, easing: LOG_EASE };
     let shift = 0;
+    let fresh = 0;
     const added: HTMLElement[] = [];
     for (const card of list.querySelectorAll<HTMLElement>('.turn-card')) {
       const was = before.cards.get(card.dataset.key ?? '');
@@ -1903,7 +1908,8 @@ export class Hud {
         const key = line.dataset.line!;
         const old = before.lines.get(key);
         if (old == null) {
-          if (!this.logBorn.has(key)) this.logBorn.set(key, now);
+          // Lines arriving together come in one after another, not all at once.
+          if (!this.logBorn.has(key)) this.logBorn.set(key, now + LOG_STAGGER_MS * fresh++);
           this.enterLogLine(line, now - this.logBorn.get(key)!);
           continue;
         }
@@ -1917,7 +1923,7 @@ export class Hud {
     for (const card of added)
       card.animate(
         [
-          { transform: `translateY(${Math.max(shift, 28)}px) scale(0.97)`, opacity: 0 },
+          { transform: `translateY(${Math.min(Math.max(shift, 16), 40)}px)`, opacity: 0 },
           { transform: 'none', opacity: 1 },
         ],
         slide,
@@ -1932,11 +1938,12 @@ export class Hud {
    */
   private enterLogLine(line: HTMLElement, elapsed: number) {
     if (elapsed >= LOG_SLIDE_MS) return;
+    // A negative `elapsed` is a line waiting its turn (staggered): it holds hidden until then.
     const at = (a: Animation) => (a.currentTime = elapsed);
     at(
       line.animate(
         [
-          { opacity: 0, transform: 'translateY(12px)' },
+          { opacity: 0, transform: 'translateY(8px)' },
           { opacity: 1, transform: 'none' },
         ],
         { duration: LOG_SLIDE_MS, easing: LOG_EASE, fill: 'backwards' },
@@ -1946,15 +1953,26 @@ export class Hud {
     if (icon)
       at(
         icon.animate(
-          [{ transform: 'scale(0)' }, { transform: 'scale(1.4)', offset: 0.6 }, { transform: 'scale(1)' }],
-          { duration: 400, easing: 'cubic-bezier(0.2, 0.9, 0.3, 1.4)', fill: 'backwards' },
+          [
+            { transform: 'scale(0.2)', opacity: 0 },
+            { transform: 'scale(1.15)', opacity: 1, offset: 0.55 },
+            { transform: 'scale(1)', opacity: 1 },
+          ],
+          { duration: 560, easing: 'cubic-bezier(0.33, 1, 0.68, 1)', fill: 'backwards' },
         ),
       );
-    const entry = line.querySelector<HTMLElement>(':scope > .log-entry');
-    if (entry && elapsed < 220) {
-      const t = typeInAnim(entry);
-      if (t) at(t);
-    }
+    // The text uncovers smoothly left to right, a moment after the line starts to rise.
+    const text = line.querySelector<HTMLElement>(':scope > .log-entry > .log-text');
+    if (text && !matchMedia('(prefers-reduced-motion: reduce)').matches)
+      at(
+        text.animate(
+          [
+            { clipPath: 'inset(-4px 100% -4px 0)', opacity: 0.3 },
+            { clipPath: 'inset(-4px 0% -4px 0)', opacity: 1 },
+          ],
+          { duration: 520, delay: 80, easing: 'cubic-bezier(0.25, 0.6, 0.35, 1)', fill: 'backwards' },
+        ),
+      );
   }
 
   // ------------------------------------------------------------ tooltip
@@ -2410,6 +2428,26 @@ export class Hud {
       }).onfinish = () => wrap.remove();
     };
     return { el: box, body, close };
+  }
+
+  /**
+   * A venture card's details, opened from its line in the game log: its number, title and what
+   * it does, on a purple card like the venture board's.
+   */
+  showCard(id: string) {
+    const card = CARDS[id];
+    if (!card) return;
+    const m = this.modal(
+      'Venture card',
+      h(
+        'div',
+        { class: 'vc-pop' },
+        h('span', { class: 'vc-num' }, String(card.number)),
+        h('div', { class: 'vc-body' }, h('b', { class: 'vc-title' }, card.title), h('p', null, card.text)),
+      ),
+      { onClose: () => m.close() },
+    );
+    m.el.classList.add('vc-modal');
   }
 
   /** A blocking "pass the device" screen for hot-seat play. */

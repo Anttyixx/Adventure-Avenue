@@ -173,8 +173,9 @@ const list: Card[] = [
     text: 'Receive 30G for every property you own.',
     run: async (g, p) => {
       const amt = 30 * ownedSquares(g.G, p.id).length;
+      if (!amt) return g.log(`${p.name} owns no properties, so nothing happens.`, p.id, 'money');
       await g.pay(null, p, amt, 'Venture');
-      if (amt) await g.log(`${p.name} received ${amt}G for their properties.`, p.id, 'money');
+      await g.log(`${p.name} received ${amt}G for their properties.`, p.id, 'money');
     },
   },
   // Shop value
@@ -184,7 +185,16 @@ const list: Card[] = [
     kind: 'value',
     title: 'Renovation boom',
     text: 'All your shops rise 10% in value.',
-    run: (g, p) => g.scaleShops(ownedShops(g.G, p.id), 1.1),
+    run: async (g, p) => {
+      const shops = ownedShops(g.G, p.id);
+      if (!shops.length) return g.log(`${p.name} has no shops, so nothing happens.`, p.id, 'property');
+      await g.log(
+        `${p.name}'s ${shops.length === 1 ? 'shop' : `${shops.length} shops`} rose 10% in value.`,
+        p.id,
+        'property',
+      );
+      await g.scaleShops(shops, 1.1);
+    },
   },
   {
     id: 'shop40',
@@ -194,7 +204,18 @@ const list: Card[] = [
     text: 'One random shop of yours rises 40% in value.',
     run: async (g, p) => {
       const sq = g.randomOf(ownedShops(g.G, p.id));
-      if (sq) await g.scaleShops([sq], 1.4);
+      if (!sq) return g.log(`${p.name} has no shops, so nothing happens.`, p.id, 'property');
+      const district = g.G.districts[sq.d]?.name;
+      await g.log(
+        `${p.name}'s ${district ? district + ' ' : ''}shop rose 40% in value.`,
+        p.id,
+        'property',
+        [],
+        {
+          sq: sq.id,
+        },
+      );
+      await g.scaleShops([sq], 1.4);
     },
   },
   {
@@ -205,7 +226,7 @@ const list: Card[] = [
     text: "A random district's shops rise 15% in value.",
     run: async (g) => {
       const d = randInt(g.G, g.G.districts.length);
-      await g.log(`${g.G.districts[d].name} is booming!`, undefined, 'property');
+      await g.log(`${g.G.districts[d].name}'s shops rose 15% in value.`, undefined, 'property');
       await g.scaleShops(
         g.G.nodes.filter((s) => s.d === d && isShopLike(s)),
         1.15,
@@ -221,6 +242,7 @@ const list: Card[] = [
     text: "Everyone's shops close until their next turn. Then roll again.",
     run: async (g, p) => {
       for (const q of g.G.players) q.closed = true;
+      await g.log("Everyone's shops close until their next turn.", p.id, 'effect');
       await g.emit({ type: 'closed', pids: g.G.players.filter((q) => !q.bankrupt).map((q) => q.id) });
       await g.rollAgain(p);
     },
@@ -236,7 +258,11 @@ const list: Card[] = [
       await g.emit({ type: 'roll', pid: p.id, value: n });
       if (n % 2) p.closed = true;
       else for (const q of g.G.players) if (q !== p) q.closed = true;
-      await g.log(n % 2 ? `${p.name}'s shops close.` : `Everyone else's shops close.`, p.id, 'effect');
+      await g.log(
+        `${p.name} rolled a ${n}: ${n % 2 ? 'their' : "everyone else's"} shops close.`,
+        p.id,
+        'effect',
+      );
       const shut = n % 2 ? [p] : g.G.players.filter((q) => q !== p && !q.bankrupt);
       await g.emit({ type: 'closed', pids: shut.map((q) => q.id) });
     },
@@ -247,8 +273,9 @@ const list: Card[] = [
     kind: 'fees',
     title: 'Price hike',
     text: 'Your fees rise 30% until your next turn.',
-    run: async (_g, p) => {
+    run: async (g, p) => {
       p.boost = 1.3;
+      await g.log(`${p.name}'s fees are 30% higher until their next turn.`, p.id, 'effect');
     },
   },
   {
@@ -257,8 +284,9 @@ const list: Card[] = [
     kind: 'fees',
     title: 'Middleman',
     text: 'Earn 50% commission on every fee until your next turn.',
-    run: async (_g, p) => {
+    run: async (g, p) => {
       p.boon = Math.max(p.boon, 0.5);
+      await g.log(`${p.name} earns 50% commission on every fee until their next turn.`, p.id, 'effect');
     },
   },
   // Suits
@@ -269,10 +297,13 @@ const list: Card[] = [
     title: 'Free heart',
     text: 'Collect the heart suit. If you have it already, take 100G.',
     run: async (g, p) => {
-      if (p.suits[1]) await g.pay(null, p, 100, 'Venture');
-      else {
+      if (p.suits[1]) {
+        await g.log(`${p.name} already had the heart, so they took 100G.`, p.id, 'money');
+        await g.pay(null, p, 100, 'Venture');
+      } else {
         p.suits[1] = true;
         await g.emit({ type: 'suit', pid: p.id, suit: 1 });
+        await g.log(`${p.name} collected the heart.`, p.id, 'suit');
       }
     },
   },
@@ -285,6 +316,7 @@ const list: Card[] = [
     run: async (g, p) => {
       p.wild++;
       await g.emit({ type: 'suit', pid: p.id, suit: -1 });
+      await g.log(`${p.name} took a Suit Yourself card.`, p.id, 'suit');
     },
   },
   {
@@ -389,7 +421,10 @@ const list: Card[] = [
     std: true,
     run: async (g, p) => {
       const v = p.shares.reduce((s, n, d) => s + n * stockPrice(g.G, d), 0);
-      await g.pay(null, p, Math.floor(v * 0.1), 'Dividend');
+      const pay = Math.floor(v * 0.1);
+      if (!pay) return g.log(`${p.name} has no stock, so nothing happens.`, p.id, 'stock');
+      await g.log(`${p.name} received ${pay}G in dividends.`, p.id, 'stock');
+      await g.pay(null, p, pay, 'Dividend');
     },
   },
   {
@@ -399,7 +434,12 @@ const list: Card[] = [
     title: 'Stock tax',
     text: 'Pay 2G for every share you hold.',
     std: true,
-    run: (g, p) => g.pay(p, null, p.shares.reduce((s, n) => s + n, 0) * 2, 'Stock tax'),
+    run: async (g, p) => {
+      const tax = p.shares.reduce((s, n) => s + n, 0) * 2;
+      if (!tax) return g.log(`${p.name} has no stock, so nothing happens.`, p.id, 'stock');
+      await g.log(`${p.name} paid ${tax}G in stock tax.`, p.id, 'stock');
+      await g.pay(p, null, tax, 'Stock tax');
+    },
   },
   {
     id: 'buy10off',
@@ -418,7 +458,7 @@ const list: Card[] = [
     text: 'Sell stock at 20% above the market price.',
     std: true,
     run: async (g, p) => {
-      if (!p.shares.some((n) => n > 0)) return;
+      if (!p.shares.some((n) => n > 0)) return g.log(`${p.name} has no stock to sell.`, p.id, 'stock');
       const ans = await g.ask({ kind: 'sellStock', pid: p.id, premium: 0.2 });
       if (ans) await g.sellStock(p, ans.d, ans.n, 0.2);
       else await g.log(`${p.name} passed on selling stock.`, p.id, 'stock');

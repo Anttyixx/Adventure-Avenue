@@ -131,19 +131,27 @@ export class Game {
     await this.io.emit(e);
   }
 
+  /**
+   * While a venture card plays out: its log line's id, so what the card does nests under it. A
+   * new roll or landing (the card moving the player) starts its own group instead.
+   */
+  private logUnder?: string;
+
   /** Add a log line to the current turn. `involves` lists other players the action affects. */
   async log(
     text: string,
     color?: number,
     kind?: LogKind,
     involves?: number[],
-    details: Pick<LogLine, 'sq' | 'action'> = {},
+    details: Pick<LogLine, 'sq' | 'action' | 'card'> = {},
   ) {
     const G = this.G;
+    if (details.action) this.logUnder = undefined;
     const root = G.log.find(
       (l) => l.round === G.round && l.turn === G.turn && (l.action === 'land' || l.action === 'roll'),
     );
-    const parent = !details.action && root?.action === 'land' ? root : undefined;
+    const under = this.logUnder ? G.log.find((l) => l.id === this.logUnder) : undefined;
+    const parent = details.action ? undefined : (under ?? (root?.action === 'land' ? root : undefined));
     const id = String((G.logSeq = (G.logSeq ?? 0) + 1));
     const line: LogLine = { text, color, round: G.round, turn: G.turn, kind, id, ...details };
     if (parent?.id) {
@@ -1055,7 +1063,10 @@ export class Game {
     // Everyone keeps the card up until the player who drew it has read it and closes it; only
     // then is it logged and any line bonus paid.
     await this.ask({ kind: 'ventureRead', pid: p.id, card: card.id });
-    await this.log(`Venture card: ${card.title}. ${card.text}`, p.id, 'card');
+    // The line just names the card (the log opens its details); what it does nests under it.
+    await this.log(`${p.name} drew ${card.title}.`, p.id, 'card', [], { card: card.id });
+    const cardLine = this.G.log[0].id;
+    this.logUnder = cardLine;
     if (bonus) {
       const desc = lines.map((l) => l.length).join(' and ');
       await this.log(
@@ -1066,6 +1077,7 @@ export class Game {
       await this.pay(null, p, bonus, 'Line bonus');
     }
     await card.run(this, p);
+    if (this.logUnder === cardLine) this.logUnder = undefined;
   }
 
   // ---------------------------------------------------------------- stocks

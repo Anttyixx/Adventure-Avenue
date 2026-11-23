@@ -11,7 +11,7 @@
 import type { BoardDef, CharId, CpuLevel, GameState, PlotSetting, RuleSet, StockSystem } from '@aa/engine';
 
 /** Protocol version: a joiner on a different version is turned away. */
-export const NET_VERSION = 59;
+export const NET_VERSION = 60;
 
 export type SeatKind = 'host' | 'local' | 'remote' | 'open' | 'cpu';
 

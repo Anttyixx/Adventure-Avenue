@@ -1394,16 +1394,13 @@ export class HotSeat implements GameIO {
         if (!this.passing && !this.checkpointArrival) await this.wait(T.value);
         break;
       case 'suit': {
-        this.suitMessage = e.suit >= 0 ? `${G.players[e.pid].name} collected the ${SUITS[e.suit]}.` : null;
-        if (e.passing)
-          hud.tick(
-            this.suitMessage ?? `${G.players[e.pid].name} collected a wild card.`,
-            'suit',
-            T.actionResult,
-            true,
-          );
-        else
-          hud.action('suit', this.suitMessage ?? `${G.players[e.pid].name} collected a wild card.`, 'suit');
+        // The same words as its log line, so the line isn't announced a second time.
+        this.suitMessage =
+          e.suit >= 0
+            ? `${G.players[e.pid].name} collected the ${SUITS[e.suit]}.`
+            : `${G.players[e.pid].name} took a Suit Yourself card.`;
+        if (e.passing) hud.tick(this.suitMessage, 'suit', T.actionResult, true);
+        else hud.action('suit', this.suitMessage, 'suit');
         sound.play('suit');
         const text = e.suit >= 0 ? SUIT_CHARS[e.suit] : 'Wild card!';
         const color = e.suit === 1 || e.suit === 2 ? '#ff6b6b' : '#ffffff';
@@ -1595,7 +1592,7 @@ export class HotSeat implements GameIO {
           break;
         }
         // The venture card itself was already on screen with the board.
-        if (e.text.startsWith('Venture card: ')) break;
+        if (e.card || e.text.startsWith('Venture card: ')) break;
         if (e.text.endsWith("'s trade.") && e.text.includes(' accepted ')) this.tradeAnimating = true;
         if (e.text.endsWith("'s trade.") && (e.text.includes(' accepted ') || e.text.includes(' declined ')))
           hud.action('trade', e.text, e.kind);

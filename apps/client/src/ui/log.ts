@@ -2,7 +2,7 @@
  * Game log grouped by turn: one card per turn (newest last, like a chat) with that turn's
  * actions in the order they happened. Lines that affect other players show those players as chips.
  */
-import { PLAYER_COLORS, type GameState, type LogKind, type LogLine } from '@aa/engine';
+import { CARDS, PLAYER_COLORS, type GameState, type LogKind, type LogLine } from '@aa/engine';
 import { bodyURL, portraitURL } from '../sprites';
 import { h } from './dom';
 
@@ -110,7 +110,13 @@ export function nestLog(lines: LogLine[]): LogNode[] {
 export function logView(
   G: GameState,
   currentKey: string,
-  opts: { waiting?: { text: string; kind?: IconKind }; fresh?: number; onTile?: (id: number) => void } = {},
+  opts: {
+    waiting?: { text: string; kind?: IconKind };
+    fresh?: number;
+    onTile?: (id: number) => void;
+    /** A venture card line was selected: show that card. */
+    onCard?: (id: string) => void;
+  } = {},
 ): HTMLElement {
   const groups = groupLog(G);
   // The turn in progress always gets a card, even before anything has happened in it.
@@ -144,14 +150,18 @@ export function logView(
       if (l.color != null && l.color >= 0 && l.color !== g.pid) others.add(l.color);
       others.delete(g.pid);
       const sq = l.sq;
-      const clickable = sq != null && !!G.nodes[sq] && !!opts.onTile;
+      // A card line opens the card; other lines with a tile show the tile.
+      const card = l.card && CARDS[l.card] && opts.onCard ? l.card : undefined;
+      const clickable = !!card || (sq != null && !!G.nodes[sq] && !!opts.onTile);
       const entry = h(
         clickable ? 'button' : 'div',
         {
-          class: `log-entry ${clickable ? 'log-link' : ''}`,
-          ...(clickable
-            ? { type: 'button', title: 'Show this tile on the board', onclick: () => opts.onTile?.(sq!) }
-            : {}),
+          class: `log-entry ${clickable ? 'log-link' : ''} ${card ? 'log-card' : ''}`,
+          ...(card
+            ? { type: 'button', title: 'Show this card', onclick: () => opts.onCard?.(card) }
+            : clickable
+              ? { type: 'button', title: 'Show this tile on the board', onclick: () => opts.onTile?.(sq!) }
+              : {}),
         },
         kindIcon(l.action === 'land' ? 'property' : l.kind),
         h('span', { class: 'log-text' }, ...namesInColor(G, l.text)),

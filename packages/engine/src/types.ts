@@ -172,6 +172,12 @@ export interface LogLine {
   /** Tile to locate when this entry is selected. */
   sq?: number;
   action?: 'roll' | 'land';
+  /**
+   * A venture card drawn (its id, a key of CARDS): the line just names the card ("Rosa drew
+   * Holiday."), the log opens the card's details from it, and what the card did nests under it.
+   * Missing in older saves, whose card lines spell the card out instead.
+   */
+  card?: string;
   /** The player the line is about (their color), if any. */
   color?: number;
   /** Turn the line belongs to: the round and the index into `order` of the player taking it. */
