@@ -213,64 +213,6 @@ input[type='range'] {
     scale: 1.04;
   }
 }
-/* Two birds crossing the sky: on screen for about a third of the loop, then gone a while. */
-.birds {
-  position: absolute;
-  top: 18%;
-  left: -60px;
-  width: 44px;
-  height: 24px;
-  animation: birds-fly 34s linear infinite;
-  animation-delay: 3s;
-}
-.bird {
-  position: absolute;
-  width: 20px;
-  height: 8px;
-  animation: bird-flap 0.5s ease-in-out infinite alternate;
-}
-.bird:last-child {
-  left: 24px;
-  top: 12px;
-  scale: 0.8;
-  animation-delay: -0.2s;
-}
-.bird::before,
-.bird::after {
-  content: '';
-  position: absolute;
-  top: 0;
-  width: 10px;
-  height: 8px;
-  border-top: 2.5px solid #34507a;
-  border-radius: 60% 60% 0 0;
-}
-.bird::before {
-  left: 0;
-}
-.bird::after {
-  right: 0;
-}
-@keyframes bird-flap {
-  to {
-    transform: scaleY(-0.6) translateY(-3px);
-  }
-}
-@keyframes birds-fly {
-  0% {
-    translate: 0 0;
-  }
-  10% {
-    translate: 30vw -18px;
-  }
-  20% {
-    translate: 60vw 6px;
-  }
-  32%,
-  100% {
-    translate: calc(100vw + 120px) -10px;
-  }
-}
 .cloud {
   position: absolute;
   width: 160px;
@@ -373,31 +315,6 @@ input[type='range'] {
 }
 .scene-shop:nth-child(even) {
   margin-bottom: 10px;
-}
-/* The shops take turns doing a little hop, one every 1.4 seconds along the street. */
-.scene-shop {
-  animation: shop-hop 12.6s ease-out infinite;
-  animation-delay: calc(var(--i) * 1.4s);
-}
-@keyframes shop-hop {
-  0%,
-  6%,
-  100% {
-    translate: 0 0;
-    scale: 1 1;
-  }
-  1.5% {
-    translate: 0 0;
-    scale: 1.06 0.92;
-  }
-  3% {
-    translate: 0 -12px;
-    scale: 0.96 1.06;
-  }
-  4.8% {
-    translate: 0 0;
-    scale: 1.04 0.95;
-  }
 }
 .road {
   position: absolute;
@@ -577,15 +494,9 @@ input[type='range'] {
 @media (prefers-reduced-motion: reduce) {
   .sun,
   .sun::before,
-  .birds,
-  .bird,
-  .scene-shop,
   .menu-play::before,
   .menu-play::after {
     animation: none;
-  }
-  .birds {
-    display: none;
   }
 }
 .menu-btn:disabled {

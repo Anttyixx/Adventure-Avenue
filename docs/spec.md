@@ -1073,8 +1073,7 @@ When rejoining a running game needs the player's name there, or joining failed, 
 the button holds the name field and the reason. **Continue** (only with a saved game) is a smaller
 green row centered under it (narrower and shorter than Play) showing the round, board and how long ago it was saved, with a colored dot per
 player. Behind it the title scene stays lively but calm: soft rays turn slowly around the sun as
-it glows, clouds drift, a pair of birds flaps across the sky now and then, the title floats, and the
-shops along the street take turns doing a little hop (none of this with reduced motion).
+it glows, clouds drift and the title floats (none of this with reduced motion).
 **Rejoin** is a small chip in the top left corner ("Rejoin KQZD, as Milo, 5 min ago") while
 this device has an online game to go back to. In the top right corner sit the **player card**
 button (the same shape as Sound and Menu: the card's whole character on the left, its name on the

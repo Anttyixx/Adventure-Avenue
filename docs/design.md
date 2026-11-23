@@ -1346,11 +1346,10 @@ area and a `<label>` for the field, since an input can't sit inside a button; cl
 never press it. Secondary actions under it (Continue) are slimmer rows, never a second big button.
 
 **Title scene motion** (`titleScene`, menu and setup): kept calm and slow. Rays turn behind the
-sun (80s a turn, faint, masked off the disk) while it glows (6s); clouds drift; two CSS birds
-(`.birds`) cross the sky for about a third of a 34s loop; the logo bobs; the shops hop one at a
-time (`shop-hop`, squash and stretch on `translate`/`scale`, 1.4s apart). **Play** breathes (a gold glow around it swells and fades over 3.2s; the button never
+sun (80s a turn, faint, masked off the disk) while it glows (6s); clouds drift; the logo bobs.
+The shops stay still and there are no birds (the owner prefers the scene calm). **Play** breathes (a gold glow around it swells and fades over 3.2s; the button never
 moves, so it stays easy to press) and a shine sweeps across it every 5s; both pause on hover or focus. All
-of it stops with reduced motion (birds hidden).
+of it stops with reduced motion.
 
 The main menu is a single viewport with no page scrolling or overscroll. Keep top-corner Sound
 and Menu and the version chip reachable. The title always sits above the actions; on short screens
