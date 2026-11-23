@@ -5181,21 +5181,21 @@ input[type='range'] {
   display: flex;
   align-items: center;
   gap: 14px;
-  height: 76px;
-  padding: 0 34px 0 18px;
+  height: 80px;
+  padding: 0 36px 0 30px;
   /* The character hops up from below the edge, so nothing ever pokes out. */
   overflow: hidden;
   font-size: 32px;
   background:
-    radial-gradient(90px 80px at 44px 100%, color-mix(in srgb, var(--bc) 45%, transparent), transparent 75%),
+    radial-gradient(90px 80px at 54px 100%, color-mix(in srgb, var(--bc) 45%, transparent), transparent 75%),
     linear-gradient(180deg, rgba(28, 40, 74, 0.95), rgba(16, 26, 51, 0.95));
 }
 .banner-char {
   flex: none;
   align-self: flex-end;
-  width: 54px;
-  height: 66px;
-  margin-bottom: 4px;
+  width: 48px;
+  height: 56px;
+  margin-bottom: 12px;
   object-fit: contain;
   object-position: center bottom;
   image-rendering: pixelated;
@@ -5397,14 +5397,14 @@ input[type='range'] {
   }
   .banner.turn {
     gap: 10px;
-    height: 56px;
-    padding: 0 24px 0 14px;
+    height: 60px;
+    padding: 0 26px 0 22px;
     font-size: 23px;
   }
   .banner-char {
-    width: 40px;
-    height: 48px;
-    margin-bottom: 3px;
+    width: 36px;
+    height: 40px;
+    margin-bottom: 10px;
   }
 }
 
