@@ -41,6 +41,11 @@ export const CHANGELOG: ChangelogEntry[] = [
     features: [
       {
         tag: 'better',
+        title: 'A tidier game log',
+        text: 'The turn being played is open at the top of the game log, and earlier turns fold away to a single line. When a new turn starts, the last one folds up and the new one grows in. Tap any earlier turn to open it again.',
+      },
+      {
+        tag: 'better',
         title: 'Venture cards in the game log',
         text: "The game log now says which card a player drew, with what the card did tucked underneath, instead of saying the same thing twice. Tap the card's entry to see the full card.",
       },

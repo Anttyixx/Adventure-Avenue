@@ -104,8 +104,10 @@ export function nestLog(lines: LogLine[]): LogNode[] {
 }
 
 /**
- * The log, oldest turn at the top and the current turn at the bottom. `waiting` adds a line to
- * the current turn saying who the game is waiting on; the newest `fresh` lines fade in.
+ * The log, newest turn at the top: the turn being played is open, with new entries growing it
+ * downward, and every earlier turn is folded to its header (tap one to open it: `open` lists the
+ * turns opened by hand, `onToggle` is told when a header is tapped). `waiting` adds a line to the
+ * current turn saying who the game is waiting on; the newest `fresh` lines fade in.
  */
 export function logView(
   G: GameState,
@@ -116,6 +118,10 @@ export function logView(
     onTile?: (id: number) => void;
     /** A venture card line was selected: show that card. */
     onCard?: (id: string) => void;
+    /** Earlier turns opened by hand (by key); every other earlier turn is folded. */
+    open?: Set<string>;
+    /** An earlier turn's header was tapped. */
+    onToggle?: (key: string) => void;
   } = {},
 ): HTMLElement {
   const groups = groupLog(G);
@@ -123,13 +129,14 @@ export function logView(
   if (!G.over && groups[0]?.key !== currentKey) {
     groups.unshift({ key: currentKey, round: G.round, pid: G.order[G.turn], lines: [] });
   }
-  groups.reverse();
   const list = h('div', { class: 'log-list' });
   if (!groups.length) list.append(h('p', { class: 'hint' }, 'Nothing has happened yet.'));
   for (const g of groups) {
     const p = g.pid >= 0 ? G.players[g.pid] : null;
     const color = p ? PLAYER_COLORS[p.color] : '#8a94a8';
     const live = g.key === currentKey && !G.over;
+    // Earlier turns fold to their header; after the game ends the last turn stays open.
+    const folded = !live && !(G.over && g === groups[0]) && !opts.open?.has(g.key);
     const waiting = live ? opts.waiting : undefined;
     const fresh = live ? (opts.fresh ?? 0) : 0;
     // The player's whole character (no frame) on the left, their name in their color, the round
@@ -215,13 +222,44 @@ export function logView(
           )
         : null,
     );
+    // An earlier turn's header is a button that folds or opens it, with how much happened and
+    // a chevron; the turn's entries sit in a body the HUD can grow and shrink smoothly.
+    let top: HTMLElement = head;
+    if (!live && opts.onToggle) {
+      const count = g.lines.length;
+      head.append(
+        // The word drops on a narrow log, leaving the number (the title still says it).
+        h(
+          'span',
+          { class: 'turn-count', title: `${count} ${count === 1 ? 'event' : 'events'}` },
+          String(count),
+          h('span', { class: 'turn-count-word' }, count === 1 ? ' event' : ' events'),
+        ),
+        h('span', { class: 'turn-chevron', 'aria-hidden': 'true' }),
+      );
+      top = h(
+        'button',
+        {
+          type: 'button',
+          class: 'turn-toggle',
+          'aria-expanded': String(!folded),
+          title: folded ? 'Show this turn' : 'Fold this turn',
+          onclick: () => opts.onToggle?.(g.key),
+        },
+        head,
+      );
+    }
     list.append(
       h(
         'section',
-        // `data-key` lets the HUD find the same turn after a redraw, to slide it into place.
-        { class: `turn-card ${live ? 'live' : ''}`, style: `--pc:${color}`, 'data-key': g.key },
-        head,
-        body,
+        // `data-key` lets the HUD find the same turn after a redraw, to animate it.
+        {
+          class: `turn-card ${live ? 'live' : ''} ${folded ? 'folded' : ''}`,
+          style: `--pc:${color}`,
+          'data-key': g.key,
+        },
+        top,
+        h('div', { class: 'turn-body' }, body),
       ),
     );
   }
