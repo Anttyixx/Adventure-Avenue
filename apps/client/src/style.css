@@ -5157,8 +5157,9 @@ input[type='range'] {
   z-index: 9;
 }
 /* Banners (UI refresh): a pill as wide as its words, a 2px ring in its color all the way round,
-   springing up with a little overshoot and floating away. A turn banner has the player's
-   character at its left end, head poking out above the pill, hopping in just after it. */
+   springing up with a little overshoot and floating away. A turn banner is a little taller,
+   with the player's character standing inside at its left end over a wash of their color,
+   hopping up into place just after the banner lands. */
 .banner {
   position: relative;
   font-family: var(--head);
@@ -5177,14 +5178,24 @@ input[type='range'] {
     transform 0.45s;
 }
 .banner.turn {
-  padding-left: 80px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  height: 76px;
+  padding: 0 34px 0 18px;
+  /* The character hops up from below the edge, so nothing ever pokes out. */
+  overflow: hidden;
+  font-size: 32px;
+  background:
+    radial-gradient(90px 80px at 44px 100%, color-mix(in srgb, var(--bc) 45%, transparent), transparent 75%),
+    linear-gradient(180deg, rgba(28, 40, 74, 0.95), rgba(16, 26, 51, 0.95));
 }
 .banner-char {
-  position: absolute;
-  left: 12px;
-  bottom: 5px;
-  width: 58px;
-  height: 64px;
+  flex: none;
+  align-self: flex-end;
+  width: 54px;
+  height: 66px;
+  margin-bottom: 4px;
   object-fit: contain;
   object-position: center bottom;
   image-rendering: pixelated;
@@ -5203,18 +5214,16 @@ input[type='range'] {
 }
 @keyframes banner-hop {
   0% {
-    opacity: 0;
-    transform: translateY(20px);
+    transform: translateY(72px);
   }
   50% {
-    opacity: 1;
-    transform: translateY(-8px);
+    transform: translateY(-4px);
   }
   75% {
     transform: none;
   }
   88% {
-    transform: translateY(-3px);
+    transform: translateY(-2px);
   }
 }
 .banner.out {
@@ -5385,6 +5394,17 @@ input[type='range'] {
   }
   .banner {
     font-size: 18px;
+  }
+  .banner.turn {
+    gap: 10px;
+    height: 56px;
+    padding: 0 24px 0 14px;
+    font-size: 23px;
+  }
+  .banner-char {
+    width: 40px;
+    height: 48px;
+    margin-bottom: 3px;
   }
 }
 

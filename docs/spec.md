@@ -1005,7 +1005,7 @@ left is played by a CPU until they rejoin with the code), and guests see "Stay h
 start a rematch." beside their Back to start. A builder test play rematches on the same board.
 
 **Turn banner.** When a turn starts, a pill near the top of the screen says "Rosa's turn" in a
-ring of the player's color, with their character standing at its left and hopping once. A new
+ring of the player's color, with their character standing inside it at the left and hopping up into place. A new
 round has no banner of its own (it still plays its sound).
 
 **Your-turn alert (online).** When a player's turn starts their phone gives a short double buzz

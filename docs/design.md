@@ -782,9 +782,11 @@ if (!(await ask(`Delete ${d.name}?`, 'Its 4 properties will be removed from the 
   meaning color (`--bc`, as a box-shadow). It pops in with a small overshoot (`banner-in`) and
   rises and shrinks a little as it fades out. One short line: "Rosa's turn", "Bay Market stock
   up! 12G → 14G". There is no banner for a new round.
-- **Turn banner** (`.banner.turn`): the player's full-body character (`.banner-char`, 58x64) stands
-  at the left edge, its feet on the pill and its head above it, and hops once just after the pill
-  lands (`banner-hop`); the ring is the player's color. Reduced motion: no pop or hop.
+- **Turn banner** (`.banner.turn`): taller (76px; 56px on phones) with Lilita 32px (23px on
+  phones). The player's full-body character (`.banner-char`, 54x66; 40x48 on phones) stands fully
+  inside at the left end over a soft wash of their color, and hops up from below the edge just
+  after the pill lands (`banner-hop`, clipped by the pill, so nothing pokes out); the ring is the
+  player's color. Reduced motion: no pop or hop.
 - Banners stack in a column (8px apart). When one leaves, the ones still showing glide up into
   its place (`hud.dropBanner`: `T.bannerShift` 360ms, `cubic-bezier(0.2, 0.8, 0.2, 1)`, on
   `translate` so it doesn't fight the rise-in or fade-out) instead of jumping there.

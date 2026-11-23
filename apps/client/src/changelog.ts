@@ -62,7 +62,7 @@ export const CHANGELOG: ChangelogEntry[] = [
       {
         tag: 'better',
         title: 'Turn banners and game log in player colors',
-        text: "The turn banner shows the player's character hopping beside their name (the round banner is gone). In the game log, each turn is a box in the player's colors, with its actions as dots on a timeline.",
+        text: "The turn banner is bigger, with the player's character hopping up inside it beside their name (the round banner is gone). In the game log, each turn is a box in the player's colors, with its actions as dots on a timeline.",
       },
     ],
     extras: [
