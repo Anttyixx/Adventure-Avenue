@@ -111,7 +111,7 @@ const rnd = (n: number) => Math.floor(Math.random() * n);
  * Controls for UI elements that were just added or changed: they shake once and glow so they
  * are easy to find. Update this list with each change.
  */
-const RECENT = new Set(['Game log', 'Log: landing and purchase']);
+const RECENT = new Set(['Log: play a turn', 'Log: several lines at once', 'Game log']);
 
 /**
  * Which board the lab plays on: Town with portal links (square, the default) or Twin Lakes (hex),
@@ -297,6 +297,48 @@ export async function openLab(app: HTMLElement, section?: string) {
     board.dirty = true;
     board.snapTokens();
     hud.render(G);
+  };
+  /**
+   * The game log's test turn: events reach the open log one at a time, `gap` ms apart, as a real
+   * turn feeds them (statuses that become waiting lines, a roll, a landing with a purchase under
+   * it, a venture card with what it did under the card), then the next player's turn begins.
+   */
+  const playLogTurn = async (gap: number) => {
+    const pause = () => new Promise((r) => setTimeout(r, gap));
+    const p = G.players[G.order[G.turn]];
+    const shop = G.nodes.find((n) => n.t === 'shop')!;
+    const venture = G.nodes.find((n) => n.t === 'venture') ?? shop;
+    const step = async (f: () => Promise<void> | void) => {
+      await f();
+      refresh();
+      hud.refreshLog();
+      await pause();
+    };
+    await step(() => hud.status(`${p.name} is deciding what to do...`, 'wait'));
+    await step(() => game.log(`${p.name} rolled a 3.`, p.id, 'move', [], { action: 'roll' }));
+    await step(() => hud.status(`${p.name} is moving...`, 'move'));
+    await step(() => game.logArrival(p, shop));
+    await step(() =>
+      game.log(`${p.name} bought a shop for ${shop.value}G.`, p.id, 'property', [], { sq: shop.id }),
+    );
+    await step(() => game.logArrival(p, venture));
+    await step(() => game.log(`${p.name} drew Holiday.`, p.id, 'card', [], { card: 'allClose' }));
+    await step(async () => {
+      // What the card did hangs under the card's line, as in a real game.
+      const card = G.log[0].id;
+      await game.log("Everyone's shops close until their next turn.", p.id, 'effect');
+      G.log[0].parent = card;
+    });
+    await step(() => {
+      G.turn = (G.turn + 1) % G.order.length;
+      setActive(G.order[G.turn]);
+      hud.status(`${G.players[G.order[G.turn]].name} is deciding what to do...`, 'wait');
+    });
+    await step(() =>
+      game.log(`${G.players[G.order[G.turn]].name} rolled a 6.`, G.order[G.turn], 'move', [], {
+        action: 'roll',
+      }),
+    );
   };
   const setActive = (pid: number) => {
     board.activePid = pid;
@@ -2628,6 +2670,24 @@ export async function openLab(app: HTMLElement, section?: string) {
         hud.refreshLog();
       }),
 
+      btn('Log: play a turn', async () => {
+        // A whole turn arrives in the open log one event at a time, the way a game feeds it:
+        // waiting lines, a roll, a landing, a purchase, a venture card with what it did nested
+        // beneath it, then the next player's turn starting in a new box.
+        hud.toggleLog(true);
+        await playLogTurn(1000);
+      }),
+      btn('Log: several lines at once', async () => {
+        // Three lines in one go: they should come in one after another, not all together.
+        hud.toggleLog(true);
+        const p = G.players[G.order[G.turn]];
+        const sq = G.nodes.find((n) => n.t === 'shop')!;
+        await game.log(`${p.name} rolled a 2.`, p.id, 'move', [], { action: 'roll' });
+        await game.logArrival(p, sq);
+        await game.log(`${p.name} paid 40G.`, p.id, 'money', [], { sq: sq.id });
+        refresh();
+        hud.refreshLog();
+      }),
       btn('Game menu', () => hud.toggleMenu(true)),
       btn('Quit confirm', () => hud.confirmQuit()),
       btn('Room code button', () => hud.setRoom('KQZD', inviteURL('KQZD'))),

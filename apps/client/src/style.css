@@ -1654,15 +1654,16 @@ input[type='range'] {
   display: flex;
   align-items: center;
   gap: 8px;
-  margin: 0 10px;
-  padding: 8px 2px 6px;
+  /* Everything in the header (the character included) stays at least 10px inside the ring. */
+  margin: 0 12px;
+  padding: 10px 2px 8px;
   background: none;
   border-bottom: 1px solid rgba(255, 255, 255, 0.12);
 }
 .turn-char {
-  width: 26px;
-  height: 30px;
-  margin: -6px 0 -4px;
+  width: 24px;
+  height: 28px;
+  margin: 0;
   object-fit: contain;
   object-position: center bottom;
   image-rendering: pixelated;
@@ -1674,7 +1675,7 @@ input[type='range'] {
 }
 .turn-lines {
   position: relative;
-  padding: 6px 10px 8px;
+  padding: 6px 12px 10px;
 }
 /* The timeline, 3px in the player's color, drawn as a piece from each dot down to the next one,
    stopping 3px short of both, so every dot sits in a clear gap (whatever the box's color behind

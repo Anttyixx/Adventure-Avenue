@@ -1037,7 +1037,7 @@ Reopened online games keep guests on Continue Game until the host presses Resume
   main icon. The turn header's portrait sits in the same 22px column.
 - **Turn cards** (`.turn-card`): each turn is a box with the player cards' look: the player's
   color fading in behind a dark glass gradient and a 2px ring in their color. The header
-  (`.turn-head`) shows their full-body character (26x30), their name in a light tint of their
+  (`.turn-head`, at least 10px inside the ring on every side, character included) shows their full-body character (24x28), their name in a light tint of their
   color and "Round N" at the right, over a thin divider. The live turn glows softly and floats
   (`log-live-glow`, `log-live-float`). Inside, a timeline in the player's color runs down the
   left, and each line's icon becomes a 10px dot in its action color on it (a new dot pops in);
