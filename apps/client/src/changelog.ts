@@ -47,6 +47,7 @@ export const CHANGELOG: ChangelogEntry[] = [
     ],
     extras: [
       'The title screen comes alive: turning sun rays, passing birds, hopping shops and a shining Play button',
+      'The action bar no longer sits blank after a choice: it moves straight on to what happens next',
     ],
   },
   {

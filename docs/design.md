@@ -469,10 +469,11 @@ Each element: **purpose**, **placement**, **anatomy**, **spec**, **behavior**, t
   laid out at its final size and pinned exactly where it will end up (to the bar's bottom and the
   point it grows from), so it never moves or snaps. Money is turned into coins and the text split
   into letters before the bar measures its new size, since both change the text's width a little.
-  After a choice the question waves out and the bar stays at its size, empty, until the next
-  message arrives, then morphs straight to it (`clearAsk`); the status from before the question is
-  never shown again (`StatusMessages.decision` clears it). If nothing comes within 1.2s the bar
-  slides away. The fit check (`askOverflows`) measures pieces by layout, ignoring transforms, so a
+  After a choice the question waves out and the bar morphs straight to the next message
+  (`clearAsk`); the status from before the question is never shown again
+  (`StatusMessages.decision` clears it). The bar is never left sitting empty: if no new message
+  arrives within 40ms (`ASK_EMPTY_HOLD`), it morphs to a fresh "Rosa's turn..." line
+  (`turnStatus`) until the next real message replaces it. The fit check (`askOverflows`) measures pieces by layout, ignoring transforms, so a
   bounce or hop never counts as not fitting (which would blur the board and stack the buttons).
 - **Pieces:** the main button is a chunky gold "toy" button (12px corners, 3px darker base, a light
   sweeping across every 3.2s, pressing down onto its base); the question's `big` fact (usually the

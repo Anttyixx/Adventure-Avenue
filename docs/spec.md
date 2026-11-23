@@ -1682,7 +1682,8 @@ show How to play, Arcade games and Venture cards.
   for one second within their action; generic waiting is deferred for 1.2 seconds of quiet. A newer result, actual
   movement or a new turn replaces stale text immediately. The game does not pause for this timer;
   the game log shows the pending decision immediately. Local players receive their interactive choices immediately. Resolving a local prompt removes
-  its pending waiting message from both the action bar and log. Confirmed purchases, buyouts,
+  its pending waiting message from both the action bar and log; the bar is never left blank: it
+  morphs straight to the next message, or to "Rosa's turn..." if none has arrived yet. Confirmed purchases, buyouts,
   construction, renovations, investments, circus upgrades, stock trades and fees announce their
   result at the committed money event, before animation delays. Results are not announced as
   successful merely because a button was pressed; the engine must first confirm the action. Landing announcements are presentation-only, not extra saved log entries. When a player on this device has a choice to make, the bar morphs (eases its width and

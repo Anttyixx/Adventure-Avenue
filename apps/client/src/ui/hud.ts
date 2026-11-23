@@ -85,8 +85,11 @@ function statusText(G: GameState | undefined, text: string): (string | HTMLEleme
   return parts;
 }
 
-/** How long an emptied action bar waits for its next message before sliding away. */
-const ASK_EMPTY_HOLD = 1200;
+/**
+ * How long an emptied action bar waits for its next message (most come at once) before morphing
+ * to a fresh "Rosa's turn..." line instead: it is never left empty and blank.
+ */
+const ASK_EMPTY_HOLD = 40;
 /** How long the action bar takes to resize (morph) between two contents. */
 const ASK_MORPH_MS = 520;
 /** How long new action bar text waits while the bar resizes (it is nearly full size by then). */
@@ -2125,7 +2128,7 @@ export class Hud {
   /**
    * Empty the action bar after a choice: its content waves out and the bar keeps its size, so the
    * next status line morphs straight from it (no old status in between). If nothing new comes
-   * soon, the bar slides away as usual.
+   * within a moment, it morphs to a fresh line saying whose turn it is, never sitting blank.
    */
   private clearAsk() {
     const a = this.ask;
@@ -2147,9 +2150,17 @@ export class Hud {
     this.askHeld = true;
     this.askEmptyTimer = window.setTimeout(() => {
       if (this.promptResolve || !this.askHeld) return;
-      // Nothing new to say: let the (empty) bar slide away, or show what arrived meanwhile.
+      // Nothing new yet: say whose turn it is until the next real message replaces it.
+      if (!this.currentStatus()) this.messages.fallback(this.turnStatus());
       this.showStatus();
     }, ASK_EMPTY_HOLD);
+  }
+
+  /** A neutral status line for gaps: "Rosa's turn..." (or "One moment..." before a game). */
+  private turnStatus(): { text: string; kind: IconKind } {
+    const G = this.G;
+    const p = G && !G.over ? G.players[G.order[G.turn]] : undefined;
+    return { text: p ? `${p.name}'s turn...` : 'One moment...', kind: 'wait' };
   }
 
   /** Let the bar size itself again after `clearAsk` held it. */
