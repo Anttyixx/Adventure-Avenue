@@ -165,7 +165,6 @@ export function logView(
         },
         kindIcon(l.action === 'land' ? 'property' : l.kind),
         h('span', { class: 'log-text' }, ...namesInColor(G, l.text)),
-        clickable ? h('span', { class: 'log-locate', 'aria-hidden': 'true' }, '›') : null,
         others.size
           ? h(
               'span',

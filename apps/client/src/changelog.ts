@@ -45,7 +45,11 @@ export const CHANGELOG: ChangelogEntry[] = [
         text: "The game log now says which card a player drew, with what the card did tucked underneath, instead of saying the same thing twice. Tap the card's entry to see the full card.",
       },
     ],
-    extras: ['Game log entries come in more slowly and smoothly', 'Every venture card now says what it did'],
+    extras: [
+      'Game log entries come in more slowly and smoothly',
+      'Every venture card now says what it did',
+      'Tappable log entries are marked with a diamond; a thicker timeline with gaps around each dot',
+    ],
   },
   {
     id: '2026-11-22-ui-menus',

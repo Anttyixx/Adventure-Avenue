@@ -1551,12 +1551,6 @@ input[type='range'] {
   outline: 2px solid var(--accent);
   outline-offset: -2px;
 }
-.log-locate {
-  align-self: center;
-  color: var(--accent);
-  font-size: 16px;
-  line-height: 1;
-}
 /* Follow-ups (what happened after a landing) hang off a line straight down from the centre of
    the main entry's icon (4px entry padding + 11px half icon - 1px half line). */
 .log-children {
@@ -1682,16 +1676,37 @@ input[type='range'] {
   position: relative;
   padding: 6px 10px 8px;
 }
-/* The timeline: a line in the player's color down the dots' column. */
-.turn-lines::before {
+/* The timeline, 3px in the player's color, drawn as a piece from each dot down to the next one,
+   stopping 3px short of both, so every dot sits in a clear gap (whatever the box's color behind
+   it). Each piece belongs to its line, so it moves with it while the log animates.
+   A line's dot centre is 17px down (2px line + 5px entry padding + 5px dot margin + 5px half dot)
+   and 15px in (4px entry padding + 6px dot margin + 5px). */
+.turn-lines > .log-line,
+.log-children > .log-line {
+  position: relative;
+}
+.turn-lines > .log-line:not(:last-child)::before,
+.turn-lines > .log-line:has(> .log-children)::before,
+.log-children > .log-line:has(> .log-children)::before {
   content: '';
   position: absolute;
-  left: 24px;
-  top: 14px;
-  bottom: 16px;
-  width: 2px;
-  border-radius: 1px;
+  left: 13.5px;
+  width: 3px;
+  /* 17px dot centre + 5px half dot + 3px gap. */
+  top: 25px;
+  /* Down to 3px above the next line's dot (2px + 5px + 5px into that line). */
+  bottom: -9px;
+  border-radius: 2px;
   background: color-mix(in srgb, var(--pc) 60%, transparent);
+  pointer-events: none;
+}
+/* The last line, and a line's branch of follow-ups, stop at their last follow-up's level. */
+.turn-lines > .log-line:last-child:has(> .log-children)::before,
+.log-children > .log-line:has(> .log-children)::before {
+  bottom: 12px;
+}
+.log-children > .log-line:has(> .log-children)::before {
+  background: color-mix(in srgb, var(--pc) 40%, transparent);
 }
 .turn-lines .log-line + .log-line {
   border-top: 0;
@@ -1699,13 +1714,21 @@ input[type='range'] {
 .turn-lines .log-entry {
   position: relative;
 }
-/* Each action is a dot on the line (its kind's color), ringed in the log's navy. */
+/* Each action is a dot on the line (its kind's color). An entry you can tap (it shows a tile or
+   a card) has a diamond instead: a square turned 45deg on the `rotate` property, so the
+   pop-in's scale (on `transform`) leaves it turned. */
 .turn-lines .log-icon {
   width: 10px;
   height: 10px;
   margin: 5px 6px;
   border-radius: 50%;
-  box-shadow: 0 0 0 2px #16213f;
+}
+.turn-lines .log-link .log-icon {
+  width: 9px;
+  height: 9px;
+  margin: 5.5px 6.5px;
+  border-radius: 2px;
+  rotate: 45deg;
 }
 .turn-lines .log-icon svg {
   display: none;
@@ -1754,8 +1777,10 @@ input[type='range'] {
   background: transparent !important;
   box-shadow: inset 0 0 0 2px var(--muted);
 }
-.log-children {
-  border-left-color: color-mix(in srgb, var(--pc) 40%, transparent);
+/* Follow-ups keep their indent; their branch line is drawn by the line above (see the timeline). */
+.turn-lines .log-children {
+  padding-left: 8px;
+  border-left: 0;
 }
 @media (prefers-reduced-motion: reduce) {
   .turn-card.live {
