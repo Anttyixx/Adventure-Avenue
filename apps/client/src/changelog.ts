@@ -48,6 +48,7 @@ export const CHANGELOG: ChangelogEntry[] = [
     extras: [
       'The title screen has slowly turning sun rays and a shining Play button',
       'The action bar no longer sits blank after a choice: it moves straight on to what happens next',
+      'Game log entries slide, fade and pop in smoothly',
     ],
   },
   {

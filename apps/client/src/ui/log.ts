@@ -136,6 +136,9 @@ export function logView(
       g.round != null ? h('span', { class: 'turn-round' }, `Round ${g.round}`) : null,
     );
     const freshLines = new Set(fresh ? g.lines.slice(-fresh) : []);
+    // A stable key per line (its saved id, or its place in the turn for older saves), so the HUD
+    // can find the same line after a redraw and slide it smoothly into its new place.
+    const lineKey = (l: LogLine) => l.id ?? `${g.key}#${g.lines.indexOf(l)}`;
     const renderLine = ({ line: l, children }: LogNode): HTMLElement => {
       const others = new Set(l.involves ?? []);
       if (l.color != null && l.color >= 0 && l.color !== g.pid) others.add(l.color);
@@ -173,7 +176,7 @@ export function logView(
       );
       return h(
         'li',
-        { class: `log-line ${freshLines.has(l) ? 'log-new' : ''}` },
+        { class: `log-line ${freshLines.has(l) ? 'log-new' : ''}`, 'data-line': lineKey(l) },
         entry,
         children.length ? h('ul', { class: 'log-children' }, ...children.map(renderLine)) : null,
       );
@@ -192,7 +195,7 @@ export function logView(
       waiting
         ? h(
             'li',
-            { class: 'log-line waiting' },
+            { class: 'log-line waiting', 'data-line': `${g.key}#wait` },
             // The same icon and text columns as every other entry.
             h(
               'div',

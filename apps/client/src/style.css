@@ -1710,17 +1710,7 @@ input[type='range'] {
 .turn-lines .log-icon svg {
   display: none;
 }
-.turn-lines .log-new .log-icon {
-  animation: log-dot-pop 0.4s cubic-bezier(0.2, 0.9, 0.3, 1.4);
-}
-@keyframes log-dot-pop {
-  from {
-    transform: scale(0);
-  }
-  60% {
-    transform: scale(1.4);
-  }
-}
+/* A new line's dot pops in: played by hud.ts `enterLogLine`, so it carries on across redraws. */
 .turn-lines .log-line.waiting .log-icon {
   background: transparent !important;
   box-shadow: inset 0 0 0 2px var(--muted);
@@ -1729,8 +1719,7 @@ input[type='range'] {
   border-left-color: color-mix(in srgb, var(--pc) 40%, transparent);
 }
 @media (prefers-reduced-motion: reduce) {
-  .turn-card.live,
-  .turn-lines .log-new .log-icon {
+  .turn-card.live {
     animation: none;
   }
 }

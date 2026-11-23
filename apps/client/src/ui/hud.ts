@@ -227,8 +227,10 @@ function waveOut(layer: HTMLElement): number {
   return 170 + parts.length * step + 40;
 }
 
-/** How long the game log takes to slide up to make room for a new line. */
-const LOG_SLIDE_MS = 320;
+/** How long the game log takes to slide lines into their new places, and new lines to come in. */
+const LOG_SLIDE_MS = 420;
+/** The log's easing: quick to start, settling gently. */
+const LOG_EASE = 'cubic-bezier(0.22, 1, 0.36, 1)';
 
 /**
  * The action bar's typing reveal, also used by the game log: the text uncovers left to right in
@@ -236,14 +238,31 @@ const LOG_SLIDE_MS = 320;
  * readers); only what shows changes. A JS animation, so it keeps going if a wrapper moves.
  */
 function typeIn(el: HTMLElement) {
-  if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-  el.animate(
+  typeInAnim(el);
+}
+
+/** `typeIn`, returning the animation (none with reduced motion) so a caller can resume it. */
+function typeInAnim(el: HTMLElement): Animation | null {
+  if (matchMedia('(prefers-reduced-motion: reduce)').matches) return null;
+  return el.animate(
     [
       { clipPath: 'inset(0 100% 0 0)', opacity: 0.6 },
       { clipPath: 'inset(0 0% 0 0)', opacity: 1 },
     ],
     { duration: 220, easing: 'steps(16, end)' },
   );
+}
+
+/** The screen top of what holds a log line: the line it hangs under, else its turn box. */
+function logHolderTop(line: HTMLElement): number {
+  const holder = line.parentElement?.closest('[data-line], .turn-card');
+  return holder ? holder.getBoundingClientRect().top : 0;
+}
+
+/** Where the log's turns (screen top and height) and lines (top within their holder) sat. */
+interface LogRects {
+  cards: Map<string, { top: number; height: number }>;
+  lines: Map<string, number>;
 }
 
 export class Hud {
@@ -288,6 +307,12 @@ export class Hud {
   /** How many log lines the open log last showed, so new ones can fade in. */
   private logSeen = -1;
   private logHeadId: string | undefined;
+  /**
+   * When each recent log line first appeared (by its `data-line` key). The log redraws several
+   * times per action; a line still coming in carries on from where it was instead of restarting
+   * or snapping to its end.
+   */
+  private logBorn = new Map<string, number>();
   /** The action bar morphing between sizes (status line, options). */
   private askAnim: Animation | null = null;
   /** Holds the new content at its final width while the surrounding bar resizes. */
@@ -1775,10 +1800,15 @@ export class Hud {
     // Where each turn sat on screen, so after the redraw they slide up into their new places
     // (not on the log's first draw, which just appears).
     const animate = !toBottom && this.logSeen >= 0;
-    const before = new Map<string, number>();
-    if (old && animate)
-      for (const card of old.querySelectorAll<HTMLElement>('.turn-card'))
-        before.set(card.dataset.key ?? '', card.getBoundingClientRect().top);
+    const before: LogRects = { cards: new Map(), lines: new Map() };
+    if (old && animate) {
+      for (const card of old.querySelectorAll<HTMLElement>('.turn-card')) {
+        const r = card.getBoundingClientRect();
+        before.cards.set(card.dataset.key ?? '', { top: r.top, height: r.height });
+        for (const line of card.querySelectorAll<HTMLElement>('[data-line]'))
+          before.lines.set(line.dataset.line!, line.getBoundingClientRect().top - logHolderTop(line));
+      }
+    }
     clear(this.logBox);
     const G = this.G;
     // Lines added since the last render fade in (in place of the waiting line they answer).
@@ -1830,47 +1860,101 @@ export class Hud {
   }
 
   /**
-   * After a redraw of the log: the turns slide up from where they were (a new turn rises in from
-   * below them), new lines type in like the action bar's text, and so does a changed waiting line.
+   * After a redraw of the log, everything moves smoothly instead of jumping:
+   * - each turn box slides from where it was (screen position, so scrolling is covered too), and
+   *   a box that grew opens downward rather than snapping taller;
+   * - inside a box, each line slides from its old place (relative to its box, so it never moves
+   *   twice);
+   * - a new line fades and rises in, its dot pops and its text types in; a new turn box rises in.
+   * A line still coming in from an earlier redraw carries on from where it was (`logBorn`).
    */
-  private animateLog(list: HTMLElement, before: Map<string, number>) {
+  private animateLog(list: HTMLElement, before: LogRects) {
+    const now = performance.now();
+    // Forget lines that finished coming in long ago.
+    for (const [key, t] of this.logBorn) if (now - t > LOG_SLIDE_MS * 2) this.logBorn.delete(key);
     if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    const slide = { duration: LOG_SLIDE_MS, easing: LOG_EASE };
     let shift = 0;
     const added: HTMLElement[] = [];
     for (const card of list.querySelectorAll<HTMLElement>('.turn-card')) {
-      const was = before.get(card.dataset.key ?? '');
-      if (was == null) {
+      const was = before.cards.get(card.dataset.key ?? '');
+      if (!was) {
         added.push(card);
         continue;
       }
-      const dy = was - card.getBoundingClientRect().top;
-      if (Math.abs(dy) < 1) continue;
+      const r = card.getBoundingClientRect();
+      const dy = was.top - r.top;
       shift = Math.max(shift, dy);
-      card.animate([{ transform: `translateY(${dy}px)` }, { transform: 'none' }], {
-        duration: LOG_SLIDE_MS,
-        easing: 'cubic-bezier(0.2, 0.8, 0.3, 1)',
-      });
+      const grew = r.height - was.height;
+      // Slide from the old place; if it grew, uncover its new bottom part as it goes (a clip, so
+      // nothing reflows and the scroll position stays put; sides and top stay open for the glow).
+      if (Math.abs(dy) >= 1 || grew >= 1)
+        card.animate(
+          [
+            {
+              transform: `translateY(${dy}px)`,
+              clipPath: `inset(-24px -24px ${Math.max(0, grew)}px -24px round 12px)`,
+            },
+            { transform: 'none', clipPath: 'inset(-24px -24px 0px -24px round 12px)' },
+          ],
+          slide,
+        );
+      for (const line of card.querySelectorAll<HTMLElement>('[data-line]')) {
+        const key = line.dataset.line!;
+        const old = before.lines.get(key);
+        if (old == null) {
+          if (!this.logBorn.has(key)) this.logBorn.set(key, now);
+          this.enterLogLine(line, now - this.logBorn.get(key)!);
+          continue;
+        }
+        const born = this.logBorn.get(key);
+        if (born != null && now - born < LOG_SLIDE_MS) this.enterLogLine(line, now - born);
+        // Relative to what holds it (its turn box, or the line it hangs under), which moves itself.
+        const ly = old - (line.getBoundingClientRect().top - logHolderTop(line));
+        if (Math.abs(ly) >= 1) line.animate([{ translate: `0 ${ly}px` }, { translate: '0 0' }], slide);
+      }
     }
     for (const card of added)
       card.animate(
         [
-          { transform: `translateY(${Math.max(shift, 24)}px)`, opacity: 0 },
+          { transform: `translateY(${Math.max(shift, 28)}px) scale(0.97)`, opacity: 0 },
           { transform: 'none', opacity: 1 },
         ],
-        { duration: LOG_SLIDE_MS, easing: 'cubic-bezier(0.2, 0.8, 0.3, 1)' },
+        slide,
       );
-    // New lines also rise in a little, so they come up from below even when the log is short
-    // enough that nothing above has to move.
-    for (const line of list.querySelectorAll<HTMLElement>('.log-new')) {
-      line.animate([{ transform: 'translateY(10px)' }, { transform: 'none' }], {
-        duration: LOG_SLIDE_MS,
-        easing: 'cubic-bezier(0.2, 0.8, 0.3, 1)',
-      });
-      const entry = line.querySelector<HTMLElement>(':scope > .log-entry');
-      if (entry) typeIn(entry);
-    }
     const wait = list.querySelector<HTMLElement>('.log-line.waiting > .log-entry');
     if (wait && this.waiting?.text !== this.logWaitShown) typeIn(wait);
+  }
+
+  /**
+   * A new log line comes in: it fades and rises a little, its dot pops and its text types in.
+   * `elapsed` (ms) resumes a line that started coming in before the last redraw.
+   */
+  private enterLogLine(line: HTMLElement, elapsed: number) {
+    if (elapsed >= LOG_SLIDE_MS) return;
+    const at = (a: Animation) => (a.currentTime = elapsed);
+    at(
+      line.animate(
+        [
+          { opacity: 0, transform: 'translateY(12px)' },
+          { opacity: 1, transform: 'none' },
+        ],
+        { duration: LOG_SLIDE_MS, easing: LOG_EASE, fill: 'backwards' },
+      ),
+    );
+    const icon = line.querySelector<HTMLElement>(':scope > .log-entry > .log-icon');
+    if (icon)
+      at(
+        icon.animate(
+          [{ transform: 'scale(0)' }, { transform: 'scale(1.4)', offset: 0.6 }, { transform: 'scale(1)' }],
+          { duration: 400, easing: 'cubic-bezier(0.2, 0.9, 0.3, 1.4)', fill: 'backwards' },
+        ),
+      );
+    const entry = line.querySelector<HTMLElement>(':scope > .log-entry');
+    if (entry && elapsed < 220) {
+      const t = typeInAnim(entry);
+      if (t) at(t);
+    }
   }
 
   // ------------------------------------------------------------ tooltip
