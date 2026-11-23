@@ -42,7 +42,7 @@ export const CHANGELOG: ChangelogEntry[] = [
       {
         tag: 'better',
         title: 'A tidier game log',
-        text: 'The turn being played is open at the top of the game log, and earlier turns fold away to a single line. When a new turn starts, the last one folds up and the new one grows in. Tap any earlier turn to open it again.',
+        text: 'The turn being played sits open at the top of the game log, and earlier turns fold away to a single line above it. When a new turn starts, the last one folds up and the new one grows in. Tap any earlier turn to open it again.',
       },
       {
         tag: 'better',

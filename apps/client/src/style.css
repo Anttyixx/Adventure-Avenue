@@ -1612,8 +1612,22 @@ input[type='range'] {
   gap: 0;
   padding: 6px 8px 8px;
 }
-.log-list > .turn-card:not(:last-child) {
+.log-list {
+  position: relative;
+}
+.log-list > .turn-card:not(:last-of-type) {
   margin-bottom: 10px;
+}
+/* With earlier turns the panel takes its full height (its max-height caps it), so the turn being
+   played can sit at the top and grow down into a fixed space. */
+.log-panel.has-history {
+  height: 100%;
+}
+.log-panel.has-history .log-list {
+  flex: 1;
+}
+.log-spacer {
+  flex: none;
 }
 /* Clipped while it grows or shrinks (hud.ts `logGrow`). */
 .log-list .log-moving {

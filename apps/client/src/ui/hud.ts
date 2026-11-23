@@ -1804,8 +1804,13 @@ export class Hud {
       return;
     }
     const old = this.logBox.querySelector('.log-list');
-    // Newest turn at the top: the log stays at the top unless the reader scrolled down.
+    // The turn being played is kept at the top of the panel, unless the reader scrolled away
+    // from it (or is opening an earlier turn, below).
     const keep = old?.scrollTop ?? 0;
+    // A new turn starting brings the log back to it.
+    const liveKey = `${this.G.round}:${this.G.turn}`;
+    const pinned = !old || Math.abs(keep - this.logPinTop) < 40 || liveKey !== this.logLiveKey;
+    this.logLiveKey = liveKey;
     // What was there before the redraw, so what changed can grow, shrink or fade in smoothly
     // (not on the log's first draw, which just appears).
     const animate = !first && this.logSeen >= 0;
@@ -1840,9 +1845,18 @@ export class Hud {
       open: this.logOpenTurns,
       onToggle: (key) => {
         if (!this.logOpenTurns.delete(key)) this.logOpenTurns.add(key);
+        // Reading an earlier turn: leave the scroll where the reader put it.
+        this.logPinTop = NaN;
         this.renderLog();
       },
     });
+    // Room after the last turn, so it can scroll up to the top of the panel (see `followLog`). It
+    // starts as tall as before, so restoring the scroll below is not cut short by a shorter list.
+    const spacerWas = old?.querySelector<HTMLElement>('.log-spacer')?.style.height ?? '0px';
+    list.append(h('div', { class: 'log-spacer', 'aria-hidden': 'true', style: `height:${spacerWas}` }));
+    // With earlier turns the panel takes its full height, so the current turn has a fixed space
+    // to sit at the top of and grow down into.
+    this.logPanel.classList.toggle('has-history', list.querySelectorAll('.turn-card').length > 1);
     this.logBox.append(
       h(
         'div',
@@ -1862,9 +1876,62 @@ export class Hud {
       ),
       list,
     );
-    list.scrollTop = first ? 0 : keep;
+    list.scrollTop = keep;
     if (animate) this.animateLog(list, before);
+    if (pinned) this.followLog(list, first || !animate);
     this.logWaitShown = this.waiting?.text;
+  }
+
+  /** Where the log's scroll was last pinned (NaN: the reader scrolled it themselves). */
+  private logPinTop = NaN;
+  /** The turn the log last showed as current, to notice a new one starting. */
+  private logLiveKey = '';
+  private logFollow = 0;
+
+  /**
+   * Keep the turn being played at the top of the log panel: size the spacer after it so it can
+   * scroll that far, and scroll so its top meets the panel's top (or, once it is taller than the
+   * panel, so its newest entries show). Right away on the first draw; otherwise easing there over
+   * the log's animation and following the turn's box as it grows (and earlier ones fold).
+   */
+  private followLog(list: HTMLElement, now: boolean) {
+    cancelAnimationFrame(this.logFollow);
+    const pin = () => {
+      const cards = list.querySelectorAll<HTMLElement>('.turn-card');
+      const live = cards[cards.length - 1];
+      const spacer = list.querySelector<HTMLElement>('.log-spacer');
+      if (!live || !spacer) return list.scrollTop;
+      const pad = parseFloat(getComputedStyle(list).paddingTop) || 0;
+      // The list is the box's offset parent, so this is measured from the list's top.
+      const top = live.offsetTop - pad;
+      const room = list.clientHeight - live.offsetHeight - 2 * pad;
+      spacer.style.height = `${cards.length > 1 ? Math.max(0, room) : 0}px`;
+      const target = Math.max(0, top, top + live.offsetHeight + 2 * pad - list.clientHeight);
+      this.logPinTop = target;
+      return target;
+    };
+    if (now || matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      list.scrollTop = pin();
+      this.logPinTop = list.scrollTop;
+      return;
+    }
+    const start = list.scrollTop;
+    const t0 = performance.now();
+    const stop = () => cancelAnimationFrame(this.logFollow);
+    // The reader taking over (scrolling or touching) stops the following.
+    list.addEventListener('wheel', stop, { once: true, passive: true });
+    list.addEventListener('touchstart', stop, { once: true, passive: true });
+    const step = () => {
+      if (!list.isConnected) return;
+      const p = Math.min(1, (performance.now() - t0) / LOG_SLIDE_MS);
+      const target = pin();
+      list.scrollTop = start + (target - start) * (1 - (1 - p) ** 3);
+      this.logPinTop = list.scrollTop;
+      // Keep following while anything in the log is still growing or shrinking.
+      if (p < 1 || (list.querySelector('.log-moving') && performance.now() - t0 < 4000))
+        this.logFollow = requestAnimationFrame(step);
+    };
+    step();
   }
 
   /**

@@ -104,8 +104,9 @@ export function nestLog(lines: LogLine[]): LogNode[] {
 }
 
 /**
- * The log, newest turn at the top: the turn being played is open, with new entries growing it
- * downward, and every earlier turn is folded to its header (tap one to open it: `open` lists the
+ * The log, oldest turn first and the turn being played last (the HUD scrolls so that turn sits
+ * at the top of the panel, with new entries growing it downward); every earlier turn is folded
+ * to its header (tap one to open it: `open` lists the
  * turns opened by hand, `onToggle` is told when a header is tapped). `waiting` adds a line to the
  * current turn saying who the game is waiting on; the newest `fresh` lines fade in.
  */
@@ -129,6 +130,7 @@ export function logView(
   if (!G.over && groups[0]?.key !== currentKey) {
     groups.unshift({ key: currentKey, round: G.round, pid: G.order[G.turn], lines: [] });
   }
+  groups.reverse();
   const list = h('div', { class: 'log-list' });
   if (!groups.length) list.append(h('p', { class: 'hint' }, 'Nothing has happened yet.'));
   for (const g of groups) {
@@ -136,7 +138,7 @@ export function logView(
     const color = p ? PLAYER_COLORS[p.color] : '#8a94a8';
     const live = g.key === currentKey && !G.over;
     // Earlier turns fold to their header; after the game ends the last turn stays open.
-    const folded = !live && !(G.over && g === groups[0]) && !opts.open?.has(g.key);
+    const folded = !live && !(G.over && g === groups[groups.length - 1]) && !opts.open?.has(g.key);
     const waiting = live ? opts.waiting : undefined;
     const fresh = live ? (opts.fresh ?? 0) : 0;
     // The player's whole character (no frame) on the left, their name in their color, the round
