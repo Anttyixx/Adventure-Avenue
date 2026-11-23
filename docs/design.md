@@ -1022,6 +1022,17 @@ Reopened online games keep guests on Continue Game until the host presses Resume
 
 ### 5.18 Game log
 
+- **Stacked log (the default):** no panel. The turn boxes float on the board (solid, like the
+  player cards) and stack like the player cards' Stack (`hud.stackLog`, `.log-panel.chromeless`):
+  the turn being played in front, the three turns before it peeking out above it as 7px strips
+  in their player's color, each a little narrower and fainter (older ones hidden); round headings
+  are hidden. A new turn slides in at the front (18px up, fading in) while the turn it replaces
+  drops back into place behind, its entries fading. The stack is as tall as its front turn plus
+  the strips. The **Earlier turns** chip above (a small glass pill with a chevron) or a tap on
+  the strips spreads the turns out into the list described below (no panel, round headings as
+  small dark pills, starting at the newest turn); **Stack turns** puts them back. The UI Lab's
+  "Log: stacked / panel" switches to the panel version (`LOG_STYLE_KEY`, kept on this device).
+
 - **Game log:** a toolbar button (`.log-toggle`, between the zoom chip and Music, gold `.on`
   while open) opens a glass panel (`.log-panel`) top right: `top: var(--top-free)` (just under the
   toolbar), `right: 10px`, as wide as the player cards (`--cards-w`, min 240px), max height down to

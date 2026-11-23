@@ -45,7 +45,7 @@ import { shortName } from '../names';
 import { VentureView } from './games';
 import { HotSeat } from '../host';
 import { luckyReels, memoryBlocks, coinDerby, luckyWheel, treasureSplit } from '@aa/engine';
-import { Hud } from './hud';
+import { Hud, LOG_STYLE_KEY, logStyle } from './hud';
 import { paymentActivity, paymentLogMatches } from './activity';
 import { clearGuest, loadGuest, saveGuest } from '../save';
 import { mainMenu, openPlayerCard } from './menu';
@@ -111,7 +111,7 @@ const rnd = (n: number) => Math.floor(Math.random() * n);
  * Controls for UI elements that were just added or changed: they shake once and glow so they
  * are easy to find. Update this list with each change.
  */
-const RECENT = new Set(['Log: play a turn', 'Game log']);
+const RECENT = new Set(['Game log', 'Log: stacked / panel', 'Log: play a turn']);
 
 /**
  * Which board the lab plays on: Town with portal links (square, the default) or Twin Lakes (hex),
@@ -2641,6 +2641,17 @@ export async function openLab(app: HTMLElement, section?: string) {
     row(
       s,
       btn('Game log', () => hud.toggleLog()),
+      btn('Log: stacked / panel', () => {
+        // Switch the log's look (remembered on this device) and show it.
+        try {
+          localStorage.setItem(LOG_STYLE_KEY, logStyle() === 'stack' ? 'panel' : 'stack');
+        } catch {
+          /* private mode: no switch */
+        }
+        hud.toggleLog(false);
+        hud.toggleLog(true);
+        hud.tick(`Game log: ${logStyle() === 'stack' ? 'stacked turns' : 'panel'}.`);
+      }),
       btn('Log: venture card pop-up', () => hud.showCard('allClose')),
       btn('Log: landing and purchase', async () => {
         const p = G.players[G.order[G.turn]];

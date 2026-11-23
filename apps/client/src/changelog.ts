@@ -42,7 +42,7 @@ export const CHANGELOG: ChangelogEntry[] = [
       {
         tag: 'better',
         title: 'A tidier game log',
-        text: 'The turn being played sits open at the top of the game log, and earlier turns fold away to a single line above it, under a heading for each round. The log is only as tall as the current turn. When a new turn starts, the last one folds up and the new one grows in. Tap any earlier turn to open it again.',
+        text: "The game log's turns now float over the board and stack like the player cards: the turn being played in front, the ones before it peeking out behind. Tap Earlier turns (or the strips) to spread them out and read back, under a heading for each round.",
       },
       {
         tag: 'better',

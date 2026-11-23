@@ -1618,6 +1618,134 @@ input[type='range'] {
 .log-list > .turn-card:not(:last-of-type) {
   margin-bottom: 10px;
 }
+/* The stacked log (the default; the UI Lab can switch back to the panel): no panel at all, the
+   turns float on the board and stack like the player cards (hud.ts stackLog): the turn being
+   played in front, the three before it peeking out above as strips in their player's color.
+   The chip above spreads them out into a list (the panel's list, without the panel). */
+.log-panel.chromeless {
+  background: none;
+  border: 0;
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+.log-panel.chromeless .sb-log {
+  padding: 0;
+  gap: 4px;
+}
+.log-panel.chromeless .drawer-head {
+  display: none;
+}
+/* With no panel behind them, the turn boxes are solid (like the player cards) over the board. */
+.log-panel.chromeless .turn-card {
+  background:
+    linear-gradient(
+      115deg,
+      color-mix(in srgb, var(--pc) 42%, transparent),
+      color-mix(in srgb, var(--pc) 12%, transparent) 45%,
+      transparent 80%
+    ),
+    rgba(16, 26, 51, 0.94);
+  box-shadow:
+    inset 0 0 0 2px var(--pc),
+    0 6px 18px rgba(0, 0, 0, 0.3);
+}
+.log-panel.chromeless .turn-card.live {
+  animation-name: log-live-glow-solid, log-live-float;
+}
+@keyframes log-live-glow-solid {
+  0%,
+  100% {
+    box-shadow:
+      inset 0 0 0 2px var(--pc),
+      0 6px 18px rgba(0, 0, 0, 0.3),
+      0 0 4px color-mix(in srgb, var(--pc) 30%, transparent);
+  }
+  50% {
+    box-shadow:
+      inset 0 0 0 2px var(--pc),
+      0 6px 18px rgba(0, 0, 0, 0.3),
+      0 0 18px color-mix(in srgb, var(--pc) 70%, transparent);
+  }
+}
+/* Over the board (no panel), a round heading is a small dark pill, readable on any ground. */
+.log-panel.chromeless .log-round {
+  justify-content: center;
+}
+.log-panel.chromeless .log-round::before,
+.log-panel.chromeless .log-round::after {
+  display: none;
+}
+.log-panel.chromeless .log-round span {
+  padding: 2px 12px;
+  border-radius: 999px;
+  background: rgba(16, 26, 51, 0.9);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+}
+/* Spread out, the list scrolls as far as the log's room allows (above the player cards; over
+   them on phones). */
+.log-panel.chromeless.spread .log-list {
+  max-height: none;
+}
+.log-stack-chip {
+  align-self: flex-end;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-right: 8px;
+  padding: 2px 10px;
+  border-width: 2px;
+  border-radius: 999px;
+  color: var(--text);
+  font: 700 12px var(--body);
+  cursor: pointer;
+}
+.log-stack-chip:hover {
+  border-color: var(--accent);
+}
+.log-stack-chip:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+.log-stack-chip.on .turn-chevron {
+  rotate: 45deg;
+  translate: 0 -2px;
+}
+.log-panel.chromeless:not(.spread) .log-list {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  overflow: visible;
+  max-height: none;
+  margin-top: 0;
+  cursor: default;
+}
+.log-panel.chromeless:not(.spread) .log-round {
+  display: none;
+}
+.log-panel.chromeless:not(.spread) .log-list > .turn-card {
+  grid-area: 1 / 1;
+  align-self: end;
+  margin: calc(var(--stack-n, 0) * 7px) 0 0;
+  transform-origin: 50% 0;
+}
+.log-panel.chromeless:not(.spread) .turn-card.behind {
+  /* Only a strip shows, filled with the player's color: every turn behind fills the front's row. */
+  contain: size;
+  align-self: stretch;
+  min-height: 0;
+  overflow: hidden;
+  transform: translateY(calc(var(--d) * -7px)) scale(calc(1 - var(--d) * 0.05));
+  opacity: calc(1 - var(--d) * 0.12);
+  background: color-mix(in srgb, var(--pc) 70%, var(--navy));
+  animation: none;
+  cursor: pointer;
+}
+.log-panel.chromeless:not(.spread) .turn-card.behind > * {
+  opacity: 0;
+}
+.log-panel.chromeless:not(.spread) .turn-card.deep {
+  opacity: 0;
+}
 /* A heading before the first turn of every round: "Round 3" between two thin rules. */
 .log-round {
   display: flex;
