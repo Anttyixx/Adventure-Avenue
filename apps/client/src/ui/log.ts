@@ -133,7 +133,14 @@ export function logView(
   groups.reverse();
   const list = h('div', { class: 'log-list' });
   if (!groups.length) list.append(h('p', { class: 'hint' }, 'Nothing has happened yet.'));
+  let lastRound: number | undefined;
   for (const g of groups) {
+    // A heading before the first turn of every round.
+    if (g.round != null && g.round !== lastRound)
+      list.append(
+        h('div', { class: 'log-round', 'data-key': `round:${g.round}` }, h('span', null, `Round ${g.round}`)),
+      );
+    if (g.round != null) lastRound = g.round;
     const p = g.pid >= 0 ? G.players[g.pid] : null;
     const color = p ? PLAYER_COLORS[p.color] : '#8a94a8';
     const live = g.key === currentKey && !G.over;
@@ -213,7 +220,9 @@ export function logView(
       waiting
         ? h(
             'li',
-            { class: 'log-line waiting', 'data-line': `${g.key}#wait` },
+            // Keyed by how many entries came before it: a new text in the same place keeps its
+            // key (it just changes), while the waiting line after a new entry is a new line.
+            { class: 'log-line waiting', 'data-line': `${g.key}#wait${g.lines.length}` },
             // The same icon and text columns as every other entry.
             h(
               'div',

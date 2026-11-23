@@ -235,27 +235,46 @@ const LOG_EASE = 'cubic-bezier(0.33, 1, 0.68, 1)';
 /** When several lines arrive together, each starts this much after the one before. */
 const LOG_STAGGER_MS = 110;
 
-/**
- * The action bar's typing reveal, also used by the game log: the text uncovers left to right in
- * quick steps. The whole text stays laid out in place (for wrapping, selection and screen
- * readers); only what shows changes. A JS animation, so it keeps going if a wrapper moves.
- */
-function typeIn(el: HTMLElement) {
-  if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-  el.animate(
-    [
-      { clipPath: 'inset(0 100% 0 0)', opacity: 0.6 },
-      { clipPath: 'inset(0 0% 0 0)', opacity: 1 },
-    ],
-    { duration: 220, easing: 'steps(16, end)' },
-  );
-}
-
-/** What the log showed before a redraw: each turn (folded or not), each line, the waiting line's height. */
+/** What the log showed before a redraw: each turn (folded or not), line and round heading, and the waiting line. */
 interface LogBefore {
   cards: Map<string, { folded: boolean }>;
   lines: Set<string>;
-  waitH: number;
+  rounds: Set<string>;
+  wait: { key: string; text: string; h: number } | null;
+}
+
+/**
+ * Swap a log line's text over: the old text (a copy laid over the new one) fades and lifts away
+ * while the new text uncovers left to right, `elapsed` ms in.
+ */
+function logSwapText(line: HTMLElement, oldText: string, elapsed: number) {
+  const entry = line.querySelector<HTMLElement>(':scope > .log-entry');
+  const text = entry?.querySelector<HTMLElement>(':scope > .log-text');
+  if (!entry || !text || elapsed >= LOG_SLIDE_MS) return;
+  const ghost = h('span', { class: 'log-ghost', 'aria-hidden': 'true' }, oldText);
+  Object.assign(ghost.style, {
+    left: `${text.offsetLeft}px`,
+    top: `${text.offsetTop}px`,
+    width: `${text.offsetWidth}px`,
+  });
+  entry.append(ghost);
+  const out = ghost.animate(
+    [
+      { opacity: 1, transform: 'none' },
+      { opacity: 0, transform: 'translateY(-6px)' },
+    ],
+    { duration: 300, easing: 'ease-in', fill: 'forwards' },
+  );
+  out.currentTime = elapsed;
+  out.onfinish = () => ghost.remove();
+  const inn = text.animate(
+    [
+      { clipPath: 'inset(-4px 100% -4px 0)', opacity: 0.3 },
+      { clipPath: 'inset(-4px 0% -4px 0)', opacity: 1 },
+    ],
+    { duration: 480, delay: 160, easing: 'cubic-bezier(0.25, 0.6, 0.35, 1)', fill: 'backwards' },
+  );
+  inn.currentTime = elapsed;
 }
 
 /**
@@ -1566,7 +1585,6 @@ export class Hud {
   }
 
   /** The waiting line the game log last showed, so a new one types in. */
-  private logWaitShown: string | undefined;
 
   /** Release the temporary layout before measuring or replacing the bar's content. */
   private stopAskMorph() {
@@ -1803,7 +1821,7 @@ export class Hud {
       clear(this.logBox);
       return;
     }
-    const old = this.logBox.querySelector('.log-list');
+    const old = this.logBox.querySelector<HTMLElement>('.log-list');
     // The turn being played is kept at the top of the panel, unless the reader scrolled away
     // from it (or is opening an earlier turn, below).
     const keep = old?.scrollTop ?? 0;
@@ -1814,14 +1832,20 @@ export class Hud {
     // What was there before the redraw, so what changed can grow, shrink or fade in smoothly
     // (not on the log's first draw, which just appears).
     const animate = !first && this.logSeen >= 0;
-    const before: LogBefore = { cards: new Map(), lines: new Set(), waitH: 0 };
+    const before: LogBefore = { cards: new Map(), lines: new Set(), rounds: new Set(), wait: null };
     if (old && animate) {
       for (const card of old.querySelectorAll<HTMLElement>('.turn-card'))
         before.cards.set(card.dataset.key ?? '', { folded: card.classList.contains('folded') });
       for (const line of old.querySelectorAll<HTMLElement>('[data-line]'))
         before.lines.add(line.dataset.line!);
-      before.waitH =
-        old.querySelector('.turn-card.live .log-line.waiting')?.getBoundingClientRect().height ?? 0;
+      for (const r of old.querySelectorAll<HTMLElement>('.log-round')) before.rounds.add(r.dataset.key!);
+      const w = old.querySelector<HTMLElement>('.turn-card.live .log-line.waiting');
+      if (w)
+        before.wait = {
+          key: w.dataset.line!,
+          text: w.querySelector('.log-text')?.textContent ?? '',
+          h: w.getBoundingClientRect().height,
+        };
     }
     clear(this.logBox);
     const G = this.G;
@@ -1837,8 +1861,19 @@ export class Hud {
           : Math.max(0, G.log.length - this.logSeen);
     this.logSeen = G.log.length;
     this.logHeadId = G.log[0]?.id;
-    const list = logView(G, `${G.round}:${G.turn}`, {
-      waiting: this.waiting ?? undefined,
+    // The waiting line stands for the entry that will go there, so it stays until one does: a
+    // status that clears for a moment between two waits does not take it away.
+    // Once an entry has taken its place, the same text does not come back under it.
+    let waiting = this.waiting ?? undefined;
+    const head = G.log[0]?.id;
+    const held = this.logWaitHeld?.turn === liveKey ? this.logWaitHeld : null;
+    if (waiting) {
+      if (held && held.waiting.text === waiting.text && held.head !== head) waiting = undefined;
+      else this.logWaitHeld = { turn: liveKey, head, waiting };
+    } else if (held && held.head === head) waiting = held.waiting;
+    else this.logWaitHeld = null;
+    const list = logView(G, liveKey, {
+      waiting,
       fresh,
       onTile: (id) => this.board.focusLogTile(id),
       onCard: (id) => this.showCard(id),
@@ -1850,13 +1885,8 @@ export class Hud {
         this.renderLog();
       },
     });
-    // Room after the last turn, so it can scroll up to the top of the panel (see `followLog`). It
-    // starts as tall as before, so restoring the scroll below is not cut short by a shorter list.
-    const spacerWas = old?.querySelector<HTMLElement>('.log-spacer')?.style.height ?? '0px';
-    list.append(h('div', { class: 'log-spacer', 'aria-hidden': 'true', style: `height:${spacerWas}` }));
-    // With earlier turns the panel takes its full height, so the current turn has a fixed space
-    // to sit at the top of and grow down into.
-    this.logPanel.classList.toggle('has-history', list.querySelectorAll('.turn-card').length > 1);
+    // The list starts as tall as before, so restoring the scroll is not cut short.
+    if (old?.style.height) list.style.height = old.style.height;
     this.logBox.append(
       h(
         'div',
@@ -1879,7 +1909,6 @@ export class Hud {
     list.scrollTop = keep;
     if (animate) this.animateLog(list, before);
     if (pinned) this.followLog(list, first || !animate);
-    this.logWaitShown = this.waiting?.text;
   }
 
   /** Where the log's scroll was last pinned (NaN: the reader scrolled it themselves). */
@@ -1887,35 +1916,47 @@ export class Hud {
   /** The turn the log last showed as current, to notice a new one starting. */
   private logLiveKey = '';
   private logFollow = 0;
+  /** The last waiting line, kept until an entry takes its place (see `renderLog`). */
+  private logWaitHeld: { turn: string; head?: string; waiting: { text: string; kind?: IconKind } } | null =
+    null;
+  /** Lines whose text is changing (a waiting line's new text, or the entry replacing it). */
+  private logSwap = new Map<string, { text: string; t: number; from: number }>();
 
   /**
-   * Keep the turn being played at the top of the log panel: size the spacer after it so it can
-   * scroll that far, and scroll so its top meets the panel's top (or, once it is taller than the
-   * panel, so its newest entries show). Right away on the first draw; otherwise easing there over
-   * the log's animation and following the turn's box as it grows (and earlier ones fold).
+   * Size the log to the turn being played and keep it at the top: the panel is as tall as that
+   * turn (with its round heading, when it opens the round), so it grows down as entries arrive
+   * and shrinks when a new, shorter turn starts; earlier turns sit above it, a scroll away. Once
+   * the turn is taller than the room there is, the log shows its newest entries. Right away on
+   * the first draw; otherwise easing there over the log's animation and following it as it grows.
    */
   private followLog(list: HTMLElement, now: boolean) {
     cancelAnimationFrame(this.logFollow);
-    const pin = () => {
+    const measure = () => {
       const cards = list.querySelectorAll<HTMLElement>('.turn-card');
       const live = cards[cards.length - 1];
-      const spacer = list.querySelector<HTMLElement>('.log-spacer');
-      if (!live || !spacer) return list.scrollTop;
-      const pad = parseFloat(getComputedStyle(list).paddingTop) || 0;
-      // The list is the box's offset parent, so this is measured from the list's top.
-      const top = live.offsetTop - pad;
-      const room = list.clientHeight - live.offsetHeight - 2 * pad;
-      spacer.style.height = `${cards.length > 1 ? Math.max(0, room) : 0}px`;
-      const target = Math.max(0, top, top + live.offsetHeight + 2 * pad - list.clientHeight);
-      this.logPinTop = target;
-      return target;
+      if (!live) return null;
+      const style = getComputedStyle(list);
+      const pad = (parseFloat(style.paddingTop) || 0) + (parseFloat(style.paddingBottom) || 0);
+      const before = live.previousElementSibling as HTMLElement | null;
+      const first = before?.classList.contains('log-round') ? before : live;
+      // The list is the boxes' offset parent, so these are measured from the list's top.
+      const top = first.offsetTop - (parseFloat(style.paddingTop) || 0);
+      // `scrollHeight`: the turn's full height, even while its box is still growing in.
+      const height = live.offsetTop - first.offsetTop + Math.max(live.offsetHeight, live.scrollHeight) + pad;
+      return { top, height };
     };
+    const place = (m: { top: number; height: number }) =>
+      Math.max(0, m.top, m.top + m.height - list.clientHeight);
     if (now || matchMedia('(prefers-reduced-motion: reduce)').matches) {
-      list.scrollTop = pin();
+      const m = measure();
+      if (!m) return;
+      list.style.height = `${m.height}px`;
+      list.scrollTop = place(m);
       this.logPinTop = list.scrollTop;
       return;
     }
-    const start = list.scrollTop;
+    const startTop = list.scrollTop;
+    const startH = list.getBoundingClientRect().height;
     const t0 = performance.now();
     const stop = () => cancelAnimationFrame(this.logFollow);
     // The reader taking over (scrolling or touching) stops the following.
@@ -1923,9 +1964,13 @@ export class Hud {
     list.addEventListener('touchstart', stop, { once: true, passive: true });
     const step = () => {
       if (!list.isConnected) return;
+      const m = measure();
+      if (!m) return;
       const p = Math.min(1, (performance.now() - t0) / LOG_SLIDE_MS);
-      const target = pin();
-      list.scrollTop = start + (target - start) * (1 - (1 - p) ** 3);
+      const e = 1 - (1 - p) ** 3;
+      // Growing follows the entries as they grow; only shrinking (a new, shorter turn) eases.
+      list.style.height = `${m.height >= startH ? m.height : startH + (m.height - startH) * e}px`;
+      list.scrollTop = startTop + (place(m) - startTop) * e;
       this.logPinTop = list.scrollTop;
       // Keep following while anything in the log is still growing or shrinking.
       if (p < 1 || (list.querySelector('.log-moving') && performance.now() - t0 < 4000))
@@ -1937,29 +1982,50 @@ export class Hud {
   /**
    * After a redraw of the log, what changed grows, shrinks or fades in smoothly, and because the
    * boxes really change height, everything below moves along with them (nothing jumps):
-   * - a new turn's box opens at the top, growing down from nothing;
+   * - a new turn's box (and a new round's heading) grows in from nothing;
    * - a turn that folds shrinks to its header, and one opened by hand grows back;
-   * - a new entry grows into place (taking over the waiting line's room when it answers it),
-   *   fades and rises in, its dot pops and its text uncovers; entries arriving together follow
-   *   one another.
+   * - the waiting line's text changing cross-fades in place;
+   * - the entry that answers the waiting line takes its place: the dot pops in over the waiting
+   *   dot, and the waiting text fades out as the entry's text uncovers;
+   * - any other new entry grows into place, fades and rises in, its dot pops and its text
+   *   uncovers; entries arriving together follow one another.
    * The log redraws several times per action, so anything still moving carries on from where it
-   * was (`logBorn`, `logFold`) instead of restarting or snapping.
+   * was (`logBorn`, `logFold`, `logSwap`) instead of restarting or snapping.
    */
   private animateLog(list: HTMLElement, before: LogBefore) {
     const now = performance.now();
     for (const [key, t] of this.logBorn) if (now - t > LOG_SLIDE_MS * 3) this.logBorn.delete(key);
     for (const [key, f] of this.logFold) if (now - f.t > LOG_SLIDE_MS * 3) this.logFold.delete(key);
+    for (const [key, w] of this.logSwap) if (now - w.t > LOG_SLIDE_MS * 3) this.logSwap.delete(key);
     if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
     // Measure everything first, then animate: a growing box would change what comes after it.
     const jobs: (() => void)[] = [];
     let fresh = 0;
+    for (const head of list.querySelectorAll<HTMLElement>('.log-round')) {
+      const key = head.dataset.key!;
+      const born = this.logBorn.get(key);
+      if (before.rounds.has(key) && (born == null || now - born >= LOG_SLIDE_MS)) continue;
+      const t = this.bornAt(key, now);
+      const ht = head.getBoundingClientRect().height;
+      const gap = parseFloat(getComputedStyle(head).marginBottom) || 0;
+      jobs.push(() =>
+        logGrow(
+          head,
+          [
+            { height: '0px', marginBottom: '0px', opacity: 0 },
+            { height: `${ht}px`, marginBottom: `${gap}px`, opacity: 1 },
+          ],
+          now - t,
+        ),
+      );
+    }
     for (const card of list.querySelectorAll<HTMLElement>('.turn-card')) {
       const key = card.dataset.key ?? '';
       const was = before.cards.get(key);
       const folded = card.classList.contains('folded');
       const turnBorn = this.logBorn.get(`turn:${key}`);
       if (!was || (turnBorn != null && now - turnBorn < LOG_SLIDE_MS)) {
-        // A new turn: its box grows down from nothing at the top of the log.
+        // A new turn: its box grows down from nothing.
         const born = this.bornAt(`turn:${key}`, now);
         const ht = card.getBoundingClientRect().height;
         const gap = parseFloat(getComputedStyle(card).marginBottom) || 0;
@@ -1986,37 +2052,82 @@ export class Hud {
         jobs.push(() => logGrow(body, folded ? [open, shut] : [shut, open], now - fold.t));
       }
       if (folded) continue;
-      let waitRoom =
-        card.classList.contains('live') && !card.querySelector('.log-line.waiting') ? before.waitH : 0;
+      const live = card.classList.contains('live');
+      // The waiting line: still there with a new text (cross-fade), or answered by an entry.
+      const answered = live && before.wait && !card.querySelector(`[data-line="${before.wait.key}"]`);
+      if (live && before.wait && !answered) {
+        const w = card.querySelector<HTMLElement>(`[data-line="${before.wait.key}"]`);
+        const text = w?.querySelector('.log-text')?.textContent ?? '';
+        if (w && text !== before.wait.text)
+          this.logSwap.set(before.wait.key, { text: before.wait.text, t: now, from: before.wait.h });
+      }
+      let replacing = !!answered;
       for (const line of card.querySelectorAll<HTMLElement>('[data-line]')) {
         const lineKey = line.dataset.line!;
-        if (before.lines.has(lineKey) && !this.logBorn.has(lineKey)) continue;
+        const swap = this.logSwap.get(lineKey);
+        if (before.lines.has(lineKey) && !this.logBorn.has(lineKey)) {
+          // A waiting line whose text changed: the old text fades as the new one uncovers.
+          if (swap && now - swap.t < LOG_SLIDE_MS) {
+            const ht = line.getBoundingClientRect().height;
+            jobs.push(() => {
+              if (Math.abs(ht - swap.from) > 1)
+                logGrow(line, [{ height: `${swap.from}px` }, { height: `${ht}px` }], now - swap.t);
+              logSwapText(line, swap.text, now - swap.t);
+            });
+          }
+          continue;
+        }
         // A follow-up arriving with its parent comes in as part of it.
         const parent = line.parentElement?.closest<HTMLElement>('[data-line]');
         if (parent && (!before.lines.has(parent.dataset.line!) || this.logBorn.has(parent.dataset.line!)))
           continue;
-        if (!this.logBorn.has(lineKey)) this.logBorn.set(lineKey, now + LOG_STAGGER_MS * fresh++);
+        if (!this.logBorn.has(lineKey)) {
+          // The first new entry in place of the waiting line takes it over; others follow it.
+          if (replacing && before.wait)
+            this.logSwap.set(lineKey, { text: before.wait.text, t: now, from: before.wait.h });
+          this.logBorn.set(lineKey, now + (replacing ? 0 : LOG_STAGGER_MS * ++fresh));
+        }
+        replacing = false;
         const elapsed = now - this.logBorn.get(lineKey)!;
         if (elapsed >= LOG_SLIDE_MS) continue;
         const ht = line.getBoundingClientRect().height;
-        // The first new entry takes over the room of the waiting line it answers.
-        const from = Math.min(waitRoom, ht);
-        waitRoom = 0;
+        const takeover = this.logSwap.get(lineKey);
         jobs.push(() => {
-          logGrow(line, [{ height: `${from}px` }, { height: `${ht}px` }], elapsed);
-          this.enterLogLine(line, elapsed);
+          logGrow(
+            line,
+            [{ height: `${takeover ? Math.min(takeover.from, ht) : 0}px` }, { height: `${ht}px` }],
+            elapsed,
+          );
+          if (takeover) {
+            // Replacing the waiting line: no rise; the dot pops in and the text swaps over.
+            this.popLogDot(line, elapsed);
+            logSwapText(line, takeover.text, elapsed);
+          } else this.enterLogLine(line, elapsed);
         });
       }
     }
     for (const job of jobs) job();
-    const wait = list.querySelector<HTMLElement>('.log-line.waiting > .log-entry');
-    if (wait && this.waiting?.text !== this.logWaitShown) typeIn(wait);
   }
 
   /** When a log item first appeared (`logBorn`), recording it now if it is new. */
   private bornAt(key: string, now: number) {
     if (!this.logBorn.has(key)) this.logBorn.set(key, now);
     return this.logBorn.get(key)!;
+  }
+
+  /** A log line's dot pops in (small, a soft overshoot, settled), `elapsed` ms in. */
+  private popLogDot(line: HTMLElement, elapsed: number) {
+    const icon = line.querySelector<HTMLElement>(':scope > .log-entry > .log-icon');
+    if (!icon) return;
+    const a = icon.animate(
+      [
+        { transform: 'scale(0.2)', opacity: 0 },
+        { transform: 'scale(1.3)', opacity: 1, offset: 0.5 },
+        { transform: 'scale(1)', opacity: 1 },
+      ],
+      { duration: 520, delay: 60, easing: LOG_EASE, fill: 'backwards' },
+    );
+    a.currentTime = elapsed;
   }
 
   /**
@@ -2037,18 +2148,7 @@ export class Hud {
           { duration: LOG_SLIDE_MS, easing: LOG_EASE, fill: 'backwards' },
         ),
       );
-    const icon = line.querySelector<HTMLElement>(':scope > .log-entry > .log-icon');
-    if (icon)
-      at(
-        icon.animate(
-          [
-            { transform: 'scale(0.2)', opacity: 0 },
-            { transform: 'scale(1.15)', opacity: 1, offset: 0.55 },
-            { transform: 'scale(1)', opacity: 1 },
-          ],
-          { duration: 560, delay: 60, easing: LOG_EASE, fill: 'backwards' },
-        ),
-      );
+    this.popLogDot(line, elapsed);
     const text = line.querySelector<HTMLElement>(':scope > .log-entry > .log-text');
     if (text)
       at(

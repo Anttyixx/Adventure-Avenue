@@ -42,7 +42,7 @@ export const CHANGELOG: ChangelogEntry[] = [
       {
         tag: 'better',
         title: 'A tidier game log',
-        text: 'The turn being played sits open at the top of the game log, and earlier turns fold away to a single line above it. When a new turn starts, the last one folds up and the new one grows in. Tap any earlier turn to open it again.',
+        text: 'The turn being played sits open at the top of the game log, and earlier turns fold away to a single line above it, under a heading for each round. The log is only as tall as the current turn. When a new turn starts, the last one folds up and the new one grows in. Tap any earlier turn to open it again.',
       },
       {
         tag: 'better',
@@ -54,6 +54,7 @@ export const CHANGELOG: ChangelogEntry[] = [
       'Game log entries come in more slowly and smoothly',
       'Every venture card now says what it did',
       'Tappable log entries are marked with a diamond; a thicker timeline with gaps around each dot',
+      'Waiting messages in the log change in place, and the action that follows takes their spot',
     ],
   },
   {

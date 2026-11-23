@@ -1618,16 +1618,32 @@ input[type='range'] {
 .log-list > .turn-card:not(:last-of-type) {
   margin-bottom: 10px;
 }
-/* With earlier turns the panel takes its full height (its max-height caps it), so the turn being
-   played can sit at the top and grow down into a fixed space. */
-.log-panel.has-history {
-  height: 100%;
+/* A heading before the first turn of every round: "Round 3" between two thin rules. */
+.log-round {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+  padding: 2px 4px 0;
+  color: #c3cbe4;
+  font: 400 13px var(--head);
+  letter-spacing: 0.04em;
 }
-.log-panel.has-history .log-list {
+.log-round::before,
+.log-round::after {
+  content: '';
   flex: 1;
+  height: 1px;
+  background: rgba(255, 255, 255, 0.16);
 }
-.log-spacer {
-  flex: none;
+/* The old text of a line whose text is changing, laid over the new one as it fades away. */
+.log-ghost {
+  position: absolute;
+  color: var(--muted);
+  font-style: italic;
+  line-height: 20px;
+  padding-top: 1px;
+  pointer-events: none;
 }
 /* Clipped while it grows or shrinks (hud.ts `logGrow`). */
 .log-list .log-moving {
@@ -1885,7 +1901,7 @@ input[type='range'] {
   }
 }
 
-/* New log lines type in (hud.ts `typeIn`) while the log slides up to make room (`animateLog`). */
+/* Log entry icons (the action bar's status uses them too). */
 .log-icon {
   flex: none;
   width: 22px;

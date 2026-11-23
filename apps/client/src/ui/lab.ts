@@ -111,7 +111,7 @@ const rnd = (n: number) => Math.floor(Math.random() * n);
  * Controls for UI elements that were just added or changed: they shake once and glow so they
  * are easy to find. Update this list with each change.
  */
-const RECENT = new Set(['Log: play a turn', 'Game log', 'Log: several lines at once']);
+const RECENT = new Set(['Log: play a turn', 'Game log']);
 
 /**
  * Which board the lab plays on: Town with portal links (square, the default) or Twin Lakes (hex),
@@ -321,6 +321,9 @@ export async function openLab(app: HTMLElement, section?: string) {
     await step(() =>
       game.log(`${p.name} bought a shop for ${shop.value}G.`, p.id, 'property', [], { sq: shop.id }),
     );
+    // The waiting line's text changes in place (the old text fades as the new one uncovers).
+    await step(() => hud.status(`${p.name} is deciding whether to buy stock...`, 'stock'));
+    await step(() => hud.status(`${p.name} is choosing where to go...`, 'move'));
     await step(() => game.logArrival(p, venture));
     await step(() => game.log(`${p.name} drew Holiday.`, p.id, 'card', [], { card: 'allClose' }));
     await step(async () => {
