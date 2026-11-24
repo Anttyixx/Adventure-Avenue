@@ -1669,53 +1669,10 @@ input[type='range'] {
       0 0 18px color-mix(in srgb, var(--pc) 70%, transparent);
   }
 }
-.log-panel.chromeless:not(.browsing) .log-list {
-  display: grid;
-  /* The stack sits at the top while the area shrinks to it after folding back. */
-  align-content: start;
-  grid-template-columns: minmax(0, 1fr);
-  overflow: visible;
-  max-height: none;
-  margin-top: 0;
-  cursor: default;
-}
 .log-panel.chromeless .log-round {
   display: none;
 }
-.log-panel.chromeless:not(.browsing) .log-list > .turn-card {
-  grid-area: 1 / 1;
-  align-self: end;
-  margin: calc(var(--stack-n, 0) * 7px) 0 0;
-  transform-origin: 50% 0;
-}
-.log-panel.chromeless:not(.browsing) .turn-card.behind {
-  /* Only a strip shows, filled with the player's color: every turn behind fills the front's row. */
-  contain: size;
-  align-self: stretch;
-  min-height: 0;
-  overflow: hidden;
-  transform: translateY(calc(var(--d) * -7px)) scale(calc(1 - var(--d) * 0.05));
-  opacity: calc(1 - var(--d) * 0.12);
-  background: color-mix(in srgb, var(--pc) 70%, var(--navy));
-  animation: none;
-  cursor: pointer;
-}
-.log-panel.chromeless:not(.browsing) .turn-card.behind > * {
-  opacity: 0;
-}
-.log-panel.chromeless:not(.browsing) .turn-card.deep {
-  opacity: 0;
-}
 /* Newer turns, while browsing back: out of sight below the front turn, until scrolled to. */
-.log-panel.chromeless:not(.browsing) .turn-card.ahead {
-  contain: size;
-  align-self: stretch;
-  min-height: 0;
-  overflow: hidden;
-  transform: translateY(26px) scale(0.98);
-  opacity: 0;
-  pointer-events: none;
-}
 /* Scrolled back: the turns in view (up to 3; 2 on small screens) in a column, the earliest at
    the top; the others are out of sight (0 high), so turns come and go by growing and shrinking. */
 /* The column fills a fixed area: the log takes its full height (its max-height: the room above
@@ -1727,28 +1684,29 @@ input[type='range'] {
 .log-panel.chromeless.browsing .sb-log {
   flex: 1 1 auto;
 }
-.log-panel.chromeless.browsing .log-list {
-  flex: 1 1 auto;
+.log-panel.chromeless .log-list {
   display: flex;
   flex-direction: column;
-  overflow: hidden;
+  position: relative;
+  overflow: visible;
   max-height: none;
   margin-top: 0;
+}
+.log-panel.chromeless.browsing .log-list {
+  flex: 1 1 auto;
+  overflow: hidden;
   -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 56px), transparent);
   mask-image: linear-gradient(to bottom, #000 calc(100% - 56px), transparent);
 }
-.log-panel.chromeless.browsing .log-list > .turn-card {
+.log-panel.chromeless .log-list > .turn-card {
   flex: none;
   margin: 0 0 10px;
 }
 /* The turns before the column stay stacked behind its top turn, peeking out above it. */
-.log-panel.chromeless.browsing .log-list {
-  position: relative;
-}
-.log-panel.chromeless.browsing .turn-card.col-top {
+.log-panel.chromeless .turn-card.col-top {
   margin-top: calc(var(--stack-n, 0) * 7px);
 }
-.log-panel.chromeless.browsing .turn-card.behind {
+.log-panel.chromeless .turn-card.behind {
   position: absolute;
   left: 8px;
   right: 8px;
@@ -1764,13 +1722,13 @@ input[type='range'] {
   animation: none;
   pointer-events: none;
 }
-.log-panel.chromeless.browsing .turn-card.behind > * {
+.log-panel.chromeless .turn-card.behind > * {
   opacity: 0;
 }
-.log-panel.chromeless.browsing .turn-card.deep {
+.log-panel.chromeless .turn-card.deep {
   opacity: 0;
 }
-.log-panel.chromeless.browsing .turn-card.out-view {
+.log-panel.chromeless .turn-card.out-view {
   height: 0;
   margin: 0;
   overflow: hidden;

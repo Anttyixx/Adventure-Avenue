@@ -1030,12 +1030,15 @@ Reopened online games keep guests on Continue Game until the host presses Resume
   apart, so each move can be seen; scrolling over the log never zooms the board. On phones a
   vertical swipe does the same (down for earlier turns), and a tap on the strips steps back one
   turn. A moment (700ms) after the mouse leaves the log, and whenever a new turn starts, it
-  goes back to the stack like the player cards do: each turn that was open in the column glides
-  to its place (the front, or its strip behind it), one 70ms after the other starting from the
-  back, so the last to settle is the turn in front (`LOG_RESTACK_STAGGER`); the strips that were
-  already peeking out behind the column glide from their old depth and size to their new ones, keeping its dark look while its entries fade, and turning to its
-  strip's color as it tucks in; turns that had faded out of sight travel at most 260px; the area
-  keeps its height and eases down to the stack's (`logRestack`, carried across redraws). Every turn changing place glides from its old place to
+  goes back to the stack like the player cards do: each turn that was open shrinks from where it
+  was (its size and dark look there) into its exact strip, its entries fading away first, while
+  the turn below glides up into its spot and strips that change depth glide to their new place
+  and size. The stacked log never changes layout to do this: resting and scrolled back are the
+  same layout (`stackLog`: the turns in view in a column, just the front turn when resting, and
+  the earlier turns as absolutely placed 40px strips behind its top), so every change is a move
+  between places (`logViewMove`: out of the stack, back in, a strip changing depth, or leaving
+  out of sight), each carried on across redraws; only the fixed area and its bottom fade belong
+  to scrolling back (`.browsing`). Every turn changing place glides from its old place to
   its new one (`logSlotStyle`, `logSlotMove`, carrying on across redraws); a brand-new turn
   slides up into the front (18px). The stack is as tall as its front turn plus the strips. The
   UI Lab's "Log: stacked / panel" switches to the panel version (`LOG_STYLE_KEY`, kept on this
