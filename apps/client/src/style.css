@@ -1621,7 +1621,7 @@ input[type='range'] {
 /* The stacked log (the default; the UI Lab can switch back to the panel): no panel at all, the
    turns float on the board and stack like the player cards (hud.ts stackLog): the turn being
    played in front, the three before it peeking out above as strips in their player's color.
-   The chip above spreads them out into a list (the panel's list, without the panel). */
+   Scrolling over it (or swiping, or tapping the strips) brings earlier turns to the front. */
 .log-panel.chromeless {
   background: none;
   border: 0;
@@ -1668,50 +1668,7 @@ input[type='range'] {
       0 0 18px color-mix(in srgb, var(--pc) 70%, transparent);
   }
 }
-/* Over the board (no panel), a round heading is a small dark pill, readable on any ground. */
-.log-panel.chromeless .log-round {
-  justify-content: center;
-}
-.log-panel.chromeless .log-round::before,
-.log-panel.chromeless .log-round::after {
-  display: none;
-}
-.log-panel.chromeless .log-round span {
-  padding: 2px 12px;
-  border-radius: 999px;
-  background: rgba(16, 26, 51, 0.9);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
-}
-/* Spread out, the list scrolls as far as the log's room allows (above the player cards; over
-   them on phones). */
-.log-panel.chromeless.spread .log-list {
-  max-height: none;
-}
-.log-stack-chip {
-  align-self: flex-end;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  margin-right: 8px;
-  padding: 2px 10px;
-  border-width: 2px;
-  border-radius: 999px;
-  color: var(--text);
-  font: 700 12px var(--body);
-  cursor: pointer;
-}
-.log-stack-chip:hover {
-  border-color: var(--accent);
-}
-.log-stack-chip:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 1px;
-}
-.log-stack-chip.on .turn-chevron {
-  rotate: 45deg;
-  translate: 0 -2px;
-}
-.log-panel.chromeless:not(.spread) .log-list {
+.log-panel.chromeless .log-list {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
   overflow: visible;
@@ -1719,16 +1676,16 @@ input[type='range'] {
   margin-top: 0;
   cursor: default;
 }
-.log-panel.chromeless:not(.spread) .log-round {
+.log-panel.chromeless .log-round {
   display: none;
 }
-.log-panel.chromeless:not(.spread) .log-list > .turn-card {
+.log-panel.chromeless .log-list > .turn-card {
   grid-area: 1 / 1;
   align-self: end;
   margin: calc(var(--stack-n, 0) * 7px) 0 0;
   transform-origin: 50% 0;
 }
-.log-panel.chromeless:not(.spread) .turn-card.behind {
+.log-panel.chromeless .turn-card.behind {
   /* Only a strip shows, filled with the player's color: every turn behind fills the front's row. */
   contain: size;
   align-self: stretch;
@@ -1740,11 +1697,26 @@ input[type='range'] {
   animation: none;
   cursor: pointer;
 }
-.log-panel.chromeless:not(.spread) .turn-card.behind > * {
+.log-panel.chromeless .turn-card.behind > * {
   opacity: 0;
 }
-.log-panel.chromeless:not(.spread) .turn-card.deep {
+.log-panel.chromeless .turn-card.deep {
   opacity: 0;
+}
+/* Newer turns, while browsing back: out of sight below the front turn, until scrolled to. */
+.log-panel.chromeless .turn-card.ahead {
+  contain: size;
+  align-self: stretch;
+  min-height: 0;
+  overflow: hidden;
+  transform: translateY(26px) scale(0.98);
+  opacity: 0;
+  pointer-events: none;
+}
+/* Scrolling over the stacked log browses its turns, so it never scrolls the page or zooms. */
+.log-panel.chromeless {
+  overscroll-behavior: contain;
+  touch-action: none;
 }
 /* A heading before the first turn of every round: "Round 3" between two thin rules. */
 .log-round {

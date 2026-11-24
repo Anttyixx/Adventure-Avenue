@@ -42,7 +42,7 @@ export const CHANGELOG: ChangelogEntry[] = [
       {
         tag: 'better',
         title: 'A tidier game log',
-        text: "The game log's turns now float over the board and stack like the player cards: the turn being played in front, the ones before it peeking out behind. Tap Earlier turns (or the strips) to spread them out and read back, under a heading for each round.",
+        text: "The game log's turns now float over the board and stack like the player cards: the turn being played in front, the ones before it peeking out behind. Scroll over the log (or swipe on a phone) to flip back through earlier turns.",
       },
       {
         tag: 'better',

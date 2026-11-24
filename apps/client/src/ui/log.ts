@@ -85,6 +85,13 @@ export function groupLog(G: GameState): TurnGroup[] {
   return groups;
 }
 
+/** Every turn's key in the log's order (oldest first, the turn in progress last). */
+export function turnKeys(G: GameState, currentKey: string): string[] {
+  const keys = groupLog(G).map((g) => g.key);
+  if (!G.over && keys[0] !== currentKey) keys.unshift(currentKey);
+  return keys.reverse();
+}
+
 export interface LogNode {
   line: LogLine;
   children: LogNode[];
