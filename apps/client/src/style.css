@@ -1671,6 +1671,8 @@ input[type='range'] {
 }
 .log-panel.chromeless:not(.browsing) .log-list {
   display: grid;
+  /* The stack sits at the top while the area shrinks to it after folding back. */
+  align-content: start;
   grid-template-columns: minmax(0, 1fr);
   overflow: visible;
   max-height: none;

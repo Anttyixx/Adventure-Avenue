@@ -232,6 +232,10 @@ function waveOut(layer: HTMLElement): number {
 const LOG_SLIDE_MS = 650;
 /** The log's easing: an unhurried ease-out that settles softly, with no snap at the start. */
 const LOG_EASE = 'cubic-bezier(0.33, 1, 0.68, 1)';
+/** Folding the log back into its stack: each turn starts this much after the one before it. */
+const LOG_RESTACK_STAGGER = 70;
+/** How long the log's restack lasts (with room for a few staggered turns). */
+const LOG_RESTACK_MS = LOG_SLIDE_MS + 6 * LOG_RESTACK_STAGGER;
 /** When several lines arrive together, each starts this much after the one before. */
 const LOG_STAGGER_MS = 110;
 
@@ -1860,6 +1864,7 @@ export class Hud {
       return;
     }
     const old = this.logBox.querySelector<HTMLElement>('.log-list');
+    const oldH = old?.getBoundingClientRect().height ?? 0;
     // The turn being played is kept at the top of the panel, unless the reader scrolled away
     // from it (or is opening an earlier turn, below).
     const keep = old?.scrollTop ?? 0;
@@ -1954,8 +1959,11 @@ export class Hud {
             this.renderLog();
           },
     });
-    // The list starts as tall as before, so restoring the scroll is not cut short.
+    // The list starts as tall as before, so restoring the scroll is not cut short (and folding
+    // back into the stack shrinks the area smoothly instead of all at once).
     if (old?.style.height) list.style.height = old.style.height;
+    else if (old && stacked && !browsing && this.logPanel.classList.contains('browsing'))
+      list.style.height = `${oldH}px`;
     this.logBox.append(
       h(
         'div',
@@ -1996,6 +2004,8 @@ export class Hud {
     null;
   /** Lines whose text is changing (a waiting line's new text, or the entry replacing it). */
   private logSwap = new Map<string, { text: string; t: number; from: number }>();
+  /** The column folding back into the stack: when, and where each turn comes from. */
+  private logRestack: { t: number; from: Map<string, { dy: number; order: number }> } | null = null;
   /** Turns coming into or leaving the column of turns in view, to carry on across redraws. */
   private logViewMove = new Map<string, { t: number; inView: boolean; h: number; stack: boolean }>();
   /** How many turns back the stacked log is showing (0: the turn being played). */
@@ -2203,6 +2213,21 @@ export class Hud {
     // Leaving the column for the stack: the front turn glides from where it was in the column
     // to the front, and the turns behind fade in as strips.
     const restack = stack && !browsing && before.browsing;
+    if (browsing) this.logRestack = null;
+    if (restack) {
+      // Each turn that was in view, nearest the front first: how far it has to travel (turns
+      // that were far down the column, faded out of sight, come only a short way).
+      const from = new Map<string, { dy: number; order: number }>();
+      const cards = [...list.querySelectorAll<HTMLElement>('.turn-card')].reverse();
+      let order = 0;
+      for (const card of cards) {
+        const view = before.view.get(card.dataset.key ?? '');
+        if (!view) continue;
+        const dy = Math.max(-260, Math.min(260, view.top - card.getBoundingClientRect().top));
+        from.set(card.dataset.key ?? '', { dy, order: order++ });
+      }
+      this.logRestack = { t: now, from };
+    }
     for (const card of list.querySelectorAll<HTMLElement>('.turn-card')) {
       const key = card.dataset.key ?? '';
       const was = before.cards.get(key);
@@ -2282,43 +2307,50 @@ export class Hud {
                 easing: LOG_EASE,
               });
           });
-      } else if (restack) {
-        const view = before.view.get(key);
-        if (card.classList.contains('front') && view) {
-          const dy = view.top - card.getBoundingClientRect().top;
-          jobs.push(() =>
-            card.animate([{ transform: `translateY(${dy}px)` }, { transform: 'none' }], {
-              duration: LOG_SLIDE_MS,
-              easing: LOG_EASE,
-            }),
-          );
-        } else if (view && card.classList.contains('behind')) {
-          // A turn that was open in the column slides back into its place in the stack, its
-          // entries fading as it goes.
-          const dy = view.top - card.getBoundingClientRect().top;
-          const d = Number(card.style.getPropertyValue('--d')) || 1;
+      } else if (stack && this.logRestack && now - this.logRestack.t < LOG_RESTACK_MS) {
+        // Back into the stack: like the player cards, each turn that was open in the column
+        // glides from where it was to its place (the front, or its strip behind), one a moment
+        // after the other; on the way it keeps its dark look and its entries fade, and it only
+        // turns to its strip's color as it tucks in. Carries on across redraws.
+        const from = this.logRestack.from.get(key);
+        if (from) {
+          const elapsed = now - this.logRestack.t;
+          const front = card.classList.contains('front');
+          const d = Number(card.style.getPropertyValue('--d')) || 0;
+          const pc = getComputedStyle(card).getPropertyValue('--pc').trim() || '#ffd166';
+          const delay = from.order * LOG_RESTACK_STAGGER;
           jobs.push(() => {
-            card.animate([{ transform: `translateY(${dy}px)`, opacity: 1 }, logSlotStyle(d)], {
+            const frames: Keyframe[] = front
+              ? [{ transform: `translateY(${from.dy}px)` }, { transform: 'none' }]
+              : [
+                  {
+                    transform: `translateY(${from.dy}px)`,
+                    opacity: 1,
+                    boxShadow: `inset 0 0 0 2px ${pc}, inset 0 0 0 400px #101a33, 0 6px 18px rgba(0, 0, 0, 0.3)`,
+                  },
+                  {
+                    ...logSlotStyle(d),
+                    boxShadow: `inset 0 0 0 2px ${pc}, inset 0 0 0 400px rgba(16, 26, 51, 0), 0 6px 18px rgba(0, 0, 0, 0.3)`,
+                  },
+                ];
+            const a = card.animate(frames, {
               duration: LOG_SLIDE_MS,
+              delay,
               easing: LOG_EASE,
               fill: 'backwards',
             });
-            for (const child of card.children)
-              (child as HTMLElement).animate([{ opacity: 1 }, { opacity: 0 }], {
-                duration: LOG_SLIDE_MS * 0.5,
-                easing: 'ease-out',
-                fill: 'backwards',
-              });
+            a.currentTime = elapsed;
+            if (!front)
+              for (const child of card.children) {
+                const c = (child as HTMLElement).animate([{ opacity: 1 }, { opacity: 0 }], {
+                  duration: LOG_SLIDE_MS * 0.45,
+                  delay,
+                  easing: 'ease-out',
+                  fill: 'backwards',
+                });
+                c.currentTime = elapsed;
+              }
           });
-        } else if (card.classList.contains('behind') && !card.classList.contains('deep')) {
-          jobs.push(() =>
-            card.animate([{ opacity: 0 }, {}], {
-              duration: LOG_SLIDE_MS,
-              easing: LOG_EASE,
-              delay: 120,
-              fill: 'backwards',
-            }),
-          );
         }
         continue;
       }
