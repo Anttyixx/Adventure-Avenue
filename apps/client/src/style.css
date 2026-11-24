@@ -1688,9 +1688,13 @@ input[type='range'] {
   display: flex;
   flex-direction: column;
   position: relative;
+  /* The list reaches 24px past the turns on each side (and 14px above them), so the cards'
+     shadows and glow sit inside it: clipping it while scrolling back never cuts them off in a
+     sharp line. The turns themselves stay where they were. */
+  margin: -14px -24px 0;
+  padding: 20px 32px 8px;
   overflow: visible;
   max-height: none;
-  margin-top: 0;
 }
 .log-panel.chromeless.browsing .log-list {
   flex: 1 1 auto;
@@ -1708,10 +1712,10 @@ input[type='range'] {
 }
 .log-panel.chromeless .turn-card.behind {
   position: absolute;
-  left: 8px;
-  right: 8px;
-  /* The list's 6px top padding, then each strip 7px higher than the one in front of it. */
-  top: calc(6px + (var(--stack-n, 0) - var(--d)) * 7px);
+  left: 32px;
+  right: 32px;
+  /* The list's 20px top padding, then each strip 7px higher than the one in front of it. */
+  top: calc(20px + (var(--stack-n, 0) - var(--d)) * 7px);
   height: 40px;
   margin: 0;
   overflow: hidden;

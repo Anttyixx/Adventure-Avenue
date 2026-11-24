@@ -166,8 +166,9 @@ export function logView(
         ? h(
             'span',
             { class: 'turn-round' },
-            // The key is "round:turn", the turn counted from 0 within the round.
-            `Round ${g.round} · Turn ${Number(g.key.split(':')[1] ?? 0) + 1}`,
+            // The turn's number in the whole game: every earlier round's turns, then this one's
+            // place in its round (the key is "round:turn", counted from 0).
+            `Turn ${(g.round - 1) * G.order.length + Number(g.key.split(':')[1] ?? 0) + 1}`,
           )
         : null,
     );

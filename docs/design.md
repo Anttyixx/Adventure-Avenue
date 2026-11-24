@@ -1038,7 +1038,9 @@ Reopened online games keep guests on Continue Game until the host presses Resume
   the earlier turns as absolutely placed 40px strips behind its top), so every change is a move
   between places (`logViewMove`: out of the stack, back in, a strip changing depth, or leaving
   out of sight), each carried on across redraws; only the fixed area and its bottom fade belong
-  to scrolling back (`.browsing`). Every turn changing place glides from its old place to
+  to scrolling back (`.browsing`). The list reaches 24px past the turns on each side and 14px above them (negative
+  margins, matching padding), so clipping it while scrolling back never cuts the cards' shadows
+  and glow off in a sharp line. Every turn changing place glides from its old place to
   its new one (`logSlotStyle`, `logSlotMove`, carrying on across redraws); a brand-new turn
   slides up into the front (18px). The stack is as tall as its front turn plus the strips. The
   UI Lab's "Log: stacked / panel" switches to the panel version (`LOG_STYLE_KEY`, kept on this
@@ -1058,7 +1060,7 @@ Reopened online games keep guests on Continue Game until the host presses Resume
   main icon. The turn header's portrait sits in the same 22px column.
 - **Turn cards** (`.turn-card`): each turn is a box with the player cards' look: the player's
   color fading in behind a dark glass gradient and a 2px ring in their color. The header
-  (`.turn-head`, at least 10px inside the ring on every side, character included) shows their full-body character (24x28), "Round N · Turn N" at the right, their name in a light tint of their
+  (`.turn-head`, at least 10px inside the ring on every side, character included) shows their full-body character (24x28), "Turn N" at the right (its number in the whole game), their name in a light tint of their
   color and "Round N" at the right, over a thin divider. The live turn glows softly and floats
   (`log-live-glow`, `log-live-float`). Inside, a timeline in the player's color runs down the
   left, and each line's icon becomes a 10px dot in its action color on it (a new dot pops in);
