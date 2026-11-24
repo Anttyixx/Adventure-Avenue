@@ -828,7 +828,8 @@ input[type='range'] {
   position: absolute;
   top: var(--top-free, 50px);
   right: 10px;
-  z-index: 5;
+  /* Above the player cards (their stack uses layers up to 5), which it runs over on phones. */
+  z-index: 6;
   width: var(--cards-w, 300px);
   min-width: 240px;
   box-sizing: border-box;
@@ -1645,7 +1646,7 @@ input[type='range'] {
       color-mix(in srgb, var(--pc) 12%, transparent) 45%,
       transparent 80%
     ),
-    rgba(16, 26, 51, 0.94);
+    #101a33;
   box-shadow:
     inset 0 0 0 2px var(--pc),
     0 6px 18px rgba(0, 0, 0, 0.3);
@@ -1668,7 +1669,7 @@ input[type='range'] {
       0 0 18px color-mix(in srgb, var(--pc) 70%, transparent);
   }
 }
-.log-panel.chromeless .log-list {
+.log-panel.chromeless:not(.browsing) .log-list {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
   overflow: visible;
@@ -1679,13 +1680,13 @@ input[type='range'] {
 .log-panel.chromeless .log-round {
   display: none;
 }
-.log-panel.chromeless .log-list > .turn-card {
+.log-panel.chromeless:not(.browsing) .log-list > .turn-card {
   grid-area: 1 / 1;
   align-self: end;
   margin: calc(var(--stack-n, 0) * 7px) 0 0;
   transform-origin: 50% 0;
 }
-.log-panel.chromeless .turn-card.behind {
+.log-panel.chromeless:not(.browsing) .turn-card.behind {
   /* Only a strip shows, filled with the player's color: every turn behind fills the front's row. */
   contain: size;
   align-self: stretch;
@@ -1697,14 +1698,14 @@ input[type='range'] {
   animation: none;
   cursor: pointer;
 }
-.log-panel.chromeless .turn-card.behind > * {
+.log-panel.chromeless:not(.browsing) .turn-card.behind > * {
   opacity: 0;
 }
-.log-panel.chromeless .turn-card.deep {
+.log-panel.chromeless:not(.browsing) .turn-card.deep {
   opacity: 0;
 }
 /* Newer turns, while browsing back: out of sight below the front turn, until scrolled to. */
-.log-panel.chromeless .turn-card.ahead {
+.log-panel.chromeless:not(.browsing) .turn-card.ahead {
   contain: size;
   align-self: stretch;
   min-height: 0;
@@ -1712,6 +1713,26 @@ input[type='range'] {
   transform: translateY(26px) scale(0.98);
   opacity: 0;
   pointer-events: none;
+}
+/* Scrolled back: the turns in view (up to 3; 2 on small screens) in a column, the earliest at
+   the top; the others are out of sight (0 high), so turns come and go by growing and shrinking. */
+.log-panel.chromeless.browsing .log-list {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  max-height: none;
+  margin-top: 0;
+}
+.log-panel.chromeless.browsing .log-list > .turn-card {
+  flex: none;
+  margin: 0 0 10px;
+}
+.log-panel.chromeless.browsing .turn-card.out-view {
+  height: 0;
+  margin: 0;
+  overflow: hidden;
+  opacity: 0;
+  visibility: hidden;
 }
 /* Scrolling over the stacked log browses its turns, so it never scrolls the page or zooms. */
 .log-panel.chromeless {

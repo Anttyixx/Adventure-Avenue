@@ -162,7 +162,14 @@ export function logView(
       { class: 'turn-head' },
       p ? h('img', { class: 'turn-char', src: bodyURL(p.ch), alt: '' }) : null,
       h('b', { style: `color:color-mix(in srgb, ${color} 55%, #fff)` }, p ? p.name : 'Earlier'),
-      g.round != null ? h('span', { class: 'turn-round' }, `Round ${g.round}`) : null,
+      g.round != null
+        ? h(
+            'span',
+            { class: 'turn-round' },
+            // The key is "round:turn", the turn counted from 0 within the round.
+            `Round ${g.round} · Turn ${Number(g.key.split(':')[1] ?? 0) + 1}`,
+          )
+        : null,
     );
     const freshLines = new Set(fresh ? g.lines.slice(-fresh) : []);
     // A stable key per line (its saved id, or its place in the turn for older saves), so the HUD

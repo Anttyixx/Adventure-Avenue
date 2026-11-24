@@ -1026,14 +1026,12 @@ Reopened online games keep guests on Continue Game until the host presses Resume
   player cards) and stack like the player cards' Stack (`hud.stackLog`, `.log-panel.chromeless`):
   the turn in front is open, and the three turns before it peek out above it as 7px strips in
   their player's color, each a little narrower and fainter (older ones hidden). No round
-  headings and no chips. **Scrolling over the log** browses its turns (`onLogWheel`): up brings
-  the turn before to the front (opened, its entries fading in) while the newer turns drop out of
-  sight below (`.ahead`: 26px down, faded, moving in 55% of the time so they never linger);
-  down comes back. Small trackpad scrolls add up to one step and steps are at least 220ms
+  headings and no chips. **Scrolling over the log** browses its turns (`onLogWheel`): scrolling back opens the stack into a column (`.browsing`) of up to 3 open turns (2 on screens under 500px high or 760px wide), the earliest at the top; each step back grows the turn before in at the top, pushing the others down, and once the column is full the newest shrinks away at the bottom (`.out-view`: 0 high; `logViewMove` carries the moves across redraws); scrolling forward does the reverse. Small trackpad scrolls add up to one step and steps are at least 220ms
   apart, so each move can be seen; scrolling over the log never zooms the board. On phones a
   vertical swipe does the same (down for earlier turns), and a tap on the strips steps back one
   turn. A moment (700ms) after the mouse leaves the log, and whenever a new turn starts, it
-  glides back to the turn being played. Every turn changing place glides from its old place to
+  goes back to the stack: the current turn glides from its place in the column to the front and
+  the strips fade in behind it. Every turn changing place glides from its old place to
   its new one (`logSlotStyle`, `logSlotMove`, carrying on across redraws); a brand-new turn
   slides up into the front (18px). The stack is as tall as its front turn plus the strips. The
   UI Lab's "Log: stacked / panel" switches to the panel version (`LOG_STYLE_KEY`, kept on this
@@ -1053,7 +1051,7 @@ Reopened online games keep guests on Continue Game until the host presses Resume
   main icon. The turn header's portrait sits in the same 22px column.
 - **Turn cards** (`.turn-card`): each turn is a box with the player cards' look: the player's
   color fading in behind a dark glass gradient and a 2px ring in their color. The header
-  (`.turn-head`, at least 10px inside the ring on every side, character included) shows their full-body character (24x28), their name in a light tint of their
+  (`.turn-head`, at least 10px inside the ring on every side, character included) shows their full-body character (24x28), "Round N · Turn N" at the right, their name in a light tint of their
   color and "Round N" at the right, over a thin divider. The live turn glows softly and floats
   (`log-live-glow`, `log-live-float`). Inside, a timeline in the player's color runs down the
   left, and each line's icon becomes a 10px dot in its action color on it (a new dot pops in);
