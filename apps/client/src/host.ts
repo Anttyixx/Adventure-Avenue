@@ -1172,6 +1172,8 @@ export class HotSeat implements GameIO {
         this.link?.turnStart(this.seq, G);
         if (this.saving) saveGame(G, this.link?.saveInfo?.());
         const p = G.players[e.pid];
+        // Only now does the game log move on to the new turn (with the player cards and banner).
+        hud.logTurn = `${G.round}:${G.turn}`;
         board.activePid = e.pid;
         if (this.localHuman(e.pid) && !this.auto.has(e.pid)) this.alertTurn(true);
         board.followPid = e.pid;

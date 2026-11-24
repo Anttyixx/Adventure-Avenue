@@ -1858,7 +1858,9 @@ export class Hud {
     // from it (or is opening an earlier turn, below).
     const keep = old?.scrollTop ?? 0;
     // A new turn starting brings the log back to it.
-    const liveKey = `${this.G.round}:${this.G.turn}`;
+    // The turn the log shows as current: the one handed to (`logTurn`, set when the turn is
+    // actually passed on, so the last turn stays up until then), else the game's own.
+    const liveKey = this.logTurn ?? `${this.G.round}:${this.G.turn}`;
     const pinned = !old || Math.abs(keep - this.logPinTop) < 40 || liveKey !== this.logLiveKey;
     // Browsing back through the stacked log ends when a new turn starts.
     if (liveKey !== this.logLiveKey) this.logBack = 0;
@@ -1941,7 +1943,7 @@ export class Hud {
     // During a turn there is always a waiting line: the player is always doing something, or
     // about to be asked something.
     if (!waiting && !G.over) {
-      const p = G.players[G.order[G.turn]];
+      const p = G.players[G.order[Number(liveKey.split(':')[1] ?? G.turn)]];
       if (p) waiting = { text: `${p.name} is taking their turn...`, kind: 'wait' };
     }
     const list = logView(G, liveKey, {
@@ -1996,6 +1998,11 @@ export class Hud {
     else if (pinned || stacked) this.followLog(list, first || !animate, stacked);
   }
 
+  /**
+   * The turn ("round:turn") the log shows as current, set by the host when a turn is actually
+   * handed to the next player (after a beat at the end of the last one). Null: the game's own.
+   */
+  logTurn: string | null = null;
   /** Where the log's scroll was last pinned (NaN: the reader scrolled it themselves). */
   private logPinTop = NaN;
   /** The turn the log last showed as current, to notice a new one starting. */

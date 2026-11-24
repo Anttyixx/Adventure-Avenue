@@ -1004,6 +1004,8 @@ game goes to everyone still in the room (guests on the results screen go straigh
 left is played by a CPU until they rejoin with the code), and guests see "Stay here: the host can
 start a rematch." beside their Back to start. A builder test play rematches on the same board.
 
+**Passing the turn.** When a turn ends there is a short pause (1.5 seconds) so its last log entry can come in and be read; only then does the turn pass: the game log moves on to the new turn, the player cards swap, and the turn banner shows, all at once.
+
 **Turn banner.** When a turn starts, a pill near the top of the screen says "Rosa's turn" in a
 ring of the player's color, with their character standing inside it at the left and hopping up into place. A new
 round has no banner of its own (it still plays its sound).

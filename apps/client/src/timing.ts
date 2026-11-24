@@ -54,8 +54,11 @@ export const TIMING = {
   /** Quiet buffer before returning to movement/waiting text. */
   actionIdleGrace: 1200,
   actionQueueLimit: 6,
-  /** The end of a turn, before the next player's turn starts. */
-  turnEnd: 1000,
+  /**
+   * The end of a turn, before the next player's turn starts: long enough to see the turn's last
+   * log entry come in before the log, the player cards and the banner move on.
+   */
+  turnEnd: 1500,
   /** Extra time for a smooth camera handoff between players. */
   turnPanExtra: 1000,
   /** Camera glide: the previous ~0.6 seconds plus one extra second. */
