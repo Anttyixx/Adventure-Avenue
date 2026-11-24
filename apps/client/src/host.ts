@@ -37,7 +37,7 @@ import { showResults } from './ui/results';
 import { investOnBoard } from './ui/invest';
 import { AuctionView, LiveAuction, type AuctionReq } from './ui/auction';
 import { confettiRain, fireworks } from './ui/confetti';
-import { activity, paymentActivity, paymentLogMatches, PRE_ROLL_STEPS } from './ui/activity';
+import { activity, doing, paymentActivity, paymentLogMatches, PRE_ROLL_STEPS } from './ui/activity';
 import {
   answerTradeOnBoard,
   watchTradeOnBoard,
@@ -585,6 +585,16 @@ export class HotSeat implements GameIO {
   private suitMessage: string | null = null;
 
   async decide<T extends DecisionKind>(req: DecisionRequest<T>): Promise<DecisionAnswer<T>> {
+    const ans = await this.decideNow(req);
+    // The waiting line moves on with the player: what they are doing now ("Rosa is moving...").
+    if (!this.dead && req.kind !== 'auction') {
+      const next = doing(this.G, req as DecisionRequest, ans);
+      if (next) this.hud.status(next.text, next.kind, true);
+    }
+    return ans;
+  }
+
+  private async decideNow<T extends DecisionKind>(req: DecisionRequest<T>): Promise<DecisionAnswer<T>> {
     if (this.dead) return never();
     await this.pauseGate();
     this.summarizedPayments = [];

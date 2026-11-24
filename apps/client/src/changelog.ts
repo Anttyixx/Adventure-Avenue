@@ -54,7 +54,7 @@ export const CHANGELOG: ChangelogEntry[] = [
       'Game log entries come in more slowly and smoothly',
       'Every venture card now says what it did',
       'Tappable log entries are marked with a diamond; a thicker timeline with gaps around each dot',
-      'Waiting messages in the log change in place, and the action that follows takes their spot',
+      'The log always says what the player is doing ("Rosa is moving..."), changing in place',
     ],
   },
   {

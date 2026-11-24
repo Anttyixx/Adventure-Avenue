@@ -79,6 +79,75 @@ export function activity(G: GameState, req: DecisionRequest, rolled?: number): A
   }
 }
 
+/**
+ * What a player goes on to do once they have made a choice, so the waiting line moves on with
+ * them ("Rosa is moving..." after she picks where to go). Null when the choice leads to nothing
+ * that takes a while (the log then says they are taking their turn).
+ */
+export function doing(G: GameState, req: DecisionRequest, answer: unknown): Activity | null {
+  const name = G.players[req.pid]?.name ?? 'Someone';
+  const is = (what: string, kind: IconKind): Activity => ({ text: `${name} is ${what}...`, kind });
+  const a = answer as Record<string, unknown> | null | undefined;
+  switch (req.kind) {
+    case 'preRoll':
+      switch ((a as { act?: string } | null)?.act) {
+        case 'roll':
+          return is('rolling the die', 'move');
+        case 'sellStock':
+          return is('selling stocks', 'stock');
+        case 'trade':
+          return is('waiting on a trade', 'property');
+        case 'auction':
+          return is('auctioning a shop', 'money');
+        case 'renovate':
+          return is('renovating', 'property');
+      }
+      return null;
+    case 'path':
+      return is('moving', 'move');
+    case 'buyShop':
+      return answer ? is('buying the shop', 'property') : null;
+    case 'build':
+      return answer ? is(req.renovate ? 'renovating' : 'building', 'property') : null;
+    case 'invest':
+      return answer ? is('investing', 'money') : null;
+    case 'buyout':
+      return answer ? is('buying out the shop', 'property') : null;
+    case 'circusUpgrade':
+      return answer ? is('upgrading the circus', 'property') : null;
+    case 'buyStock':
+      return answer ? is('buying stocks', 'stock') : null;
+    case 'sellStock':
+      return answer ? is('selling stocks', 'stock') : null;
+    case 'venturePanel':
+      return is('flipping a venture card', 'card');
+    case 'pickSquare':
+      if (answer == null) return null;
+      switch (req.purpose) {
+        case 'balloon':
+          return is('flying the balloon', 'move');
+        case 'zoom':
+          return is('zooming across the board', 'move');
+        case 'taxi':
+          return is('riding the taxi', 'move');
+        case 'agency':
+          return is('buying a shop', 'property');
+        case 'forcedBuyout':
+          return is('buying out a shop', 'property');
+      }
+      return null;
+    case 'cannonTarget':
+      return is('flying from the cannon', 'move');
+    case 'swapTarget':
+      return is('swapping places', 'move');
+    case 'motelStop':
+      return answer ? is('checking in at the motel', 'move') : is('moving', 'move');
+    case 'answerTrade':
+      return null;
+  }
+  return null;
+}
+
 /** Steps a player on this device takes from their turn menu before rolling. */
 export const PRE_ROLL_STEPS = {
   sell: { what: 'selling stocks', kind: 'stock' },

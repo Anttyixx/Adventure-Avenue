@@ -1938,6 +1938,12 @@ export class Hud {
       else this.logWaitHeld = { turn: liveKey, head, waiting };
     } else if (held && held.head === head) waiting = held.waiting;
     else this.logWaitHeld = null;
+    // During a turn there is always a waiting line: the player is always doing something, or
+    // about to be asked something.
+    if (!waiting && !G.over) {
+      const p = G.players[G.order[G.turn]];
+      if (p) waiting = { text: `${p.name} is taking their turn...`, kind: 'wait' };
+    }
     const list = logView(G, liveKey, {
       waiting,
       fresh,
