@@ -1875,13 +1875,11 @@ export class Hud {
     const keys = turnKeys(this.G, liveKey);
     this.logBack = Math.max(0, Math.min(this.logBack, keys.length - 1));
     const frontKey = keys[keys.length - 1];
-    // Scrolled back: a column of up to 3 turns (2 on small screens), the earliest at the top;
-    // each step back adds the turn before at the top, and once the column is full the newest
-    // leaves at the bottom.
+    // Scrolled back: a column from the turn scrolled to down to the one being played, the
+    // earliest at the top, in a fixed area on the right; turns running past its bottom fade out.
     const browsing = stacked && this.logBack > 0;
-    const most = matchMedia('(max-height: 500px), (max-width: 760px)').matches ? 2 : 3;
     const top = keys.length - 1 - this.logBack;
-    const shown = browsing ? keys.slice(top, Math.min(top + most, keys.length)) : [frontKey];
+    const shown = browsing ? keys.slice(top) : [frontKey];
     // What was there before the redraw, so what changed can grow, shrink or fade in smoothly
     // (not on the log's first draw, which just appears).
     const animate = !first && this.logSeen >= 0;

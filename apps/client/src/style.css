@@ -1716,12 +1716,24 @@ input[type='range'] {
 }
 /* Scrolled back: the turns in view (up to 3; 2 on small screens) in a column, the earliest at
    the top; the others are out of sight (0 high), so turns come and go by growing and shrinking. */
+/* The column fills a fixed area: the log takes its full height (its max-height: the room above
+   the player cards, or over them on phones), and turns running past the bottom fade out over
+   the last 56px. */
+.log-panel.chromeless.browsing {
+  height: 100%;
+}
+.log-panel.chromeless.browsing .sb-log {
+  flex: 1 1 auto;
+}
 .log-panel.chromeless.browsing .log-list {
+  flex: 1 1 auto;
   display: flex;
   flex-direction: column;
   overflow: hidden;
   max-height: none;
   margin-top: 0;
+  -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 56px), transparent);
+  mask-image: linear-gradient(to bottom, #000 calc(100% - 56px), transparent);
 }
 .log-panel.chromeless.browsing .log-list > .turn-card {
   flex: none;
