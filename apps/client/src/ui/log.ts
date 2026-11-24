@@ -121,7 +121,8 @@ export function logView(
   G: GameState,
   currentKey: string,
   opts: {
-    waiting?: { text: string; kind?: IconKind };
+    /** `ending`: the turn is over, so the line is on its way out. */
+    waiting?: { text: string; kind?: IconKind; ending?: boolean };
     fresh?: number;
     onTile?: (id: number) => void;
     /** A venture card line was selected: show that card. */
@@ -237,7 +238,10 @@ export function logView(
             'li',
             // Keyed by how many entries came before it: a new text in the same place keeps its
             // key (it just changes), while the waiting line after a new entry is a new line.
-            { class: 'log-line waiting', 'data-line': `${g.key}#wait${g.lines.length}` },
+            {
+              class: `log-line waiting ${waiting.ending ? 'ending' : ''}`,
+              'data-line': `${g.key}#wait${g.lines.length}`,
+            },
             // The same icon and text columns as every other entry.
             h(
               'div',

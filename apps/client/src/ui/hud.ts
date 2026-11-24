@@ -1932,7 +1932,7 @@ export class Hud {
     // The waiting line stands for the entry that will go there, so it stays until one does: a
     // status that clears for a moment between two waits does not take it away.
     // Once an entry has taken its place, the same text does not come back under it.
-    let waiting = this.waiting ?? undefined;
+    let waiting: { text: string; kind?: IconKind; ending?: boolean } | undefined = this.waiting ?? undefined;
     const head = G.log[0]?.id;
     const held = this.logWaitHeld?.turn === liveKey ? this.logWaitHeld : null;
     if (waiting) {
@@ -1945,6 +1945,16 @@ export class Hud {
     if (!waiting && !G.over) {
       const p = G.players[G.order[Number(liveKey.split(':')[1] ?? G.turn)]];
       if (p) waiting = { text: `${p.name} is taking their turn...`, kind: 'wait' };
+    }
+    // Once the turn is over (the game has moved on and the log is only waiting for the handoff),
+    // nothing is left to wait on: the waiting line shrinks away, then is gone.
+    const turnOver = this.logTurn != null && this.logTurn !== `${G.round}:${G.turn}`;
+    if (!turnOver) this.logWaitEnd = null;
+    else {
+      if (!this.logWaitEnd && waiting) this.logWaitEnd = { t: performance.now(), waiting };
+      const end = this.logWaitEnd;
+      waiting =
+        end && performance.now() - end.t < LOG_SLIDE_MS ? { ...end.waiting, ending: true } : undefined;
     }
     const list = logView(G, liveKey, {
       waiting,
@@ -1963,6 +1973,9 @@ export class Hud {
             this.renderLog();
           },
     });
+    // A compact log stays compact through the redraw (it is re-checked in `followLog`), so its
+    // turns are measured where they really are.
+    if (old?.classList.contains('log-tight')) list.classList.add('log-tight');
     // The list starts as tall as before, so restoring the scroll is not cut short (and folding
     // back into the stack shrinks the area smoothly instead of all at once).
     if (old?.style.height) list.style.height = old.style.height;
@@ -2011,6 +2024,8 @@ export class Hud {
   /** The last waiting line, kept until an entry takes its place (see `renderLog`). */
   private logWaitHeld: { turn: string; head?: string; waiting: { text: string; kind?: IconKind } } | null =
     null;
+  /** The waiting line on its way out at the end of a turn: when it started, and what it said. */
+  private logWaitEnd: { t: number; waiting: { text: string; kind?: IconKind } } | null = null;
   /** Lines whose text is changing (a waiting line's new text, or the entry replacing it). */
   private logSwap = new Map<string, { text: string; t: number; from: number }>();
   /** Turns coming into or leaving the column of turns in view, to carry on across redraws. */
@@ -2107,15 +2122,38 @@ export class Hud {
       if (!live) return null;
       const style = getComputedStyle(list);
       const pad = (parseFloat(style.paddingTop) || 0) + (parseFloat(style.paddingBottom) || 0);
-      // Stacked: the front turn plus the strips peeking out above it, never scrolled.
-      if (stack)
-        return {
-          top: 0,
-          height:
-            Math.max(live.offsetHeight, live.scrollHeight) +
-            (parseFloat(style.getPropertyValue('--stack-n')) || 0) * 7 +
-            pad,
-        };
+      // Stacked: the front turn plus the strips peeking out above it, never scrolled. It never
+      // reaches over the player cards: when the turn is taller than the room above them, its
+      // entries keep only the newest in view (the older ones fade out at the top), with its
+      // header still showing, so the last few actions are always there.
+      if (stack) {
+        const cards = this.cardsWrap.getBoundingClientRect();
+        const avail = cards.height
+          ? Math.max(70, cards.top - list.getBoundingClientRect().top - 6)
+          : Infinity;
+        // Very little room (a phone with the cards listed): a compact turn (slim header, tight
+        // lines, the strips tucked away), so the last few entries still fit.
+        const tight = avail < 200;
+        list.classList.toggle('log-tight', tight);
+        const st = getComputedStyle(list);
+        const room =
+          (tight ? 0 : (parseFloat(st.getPropertyValue('--stack-n')) || 0) * 7) +
+          (parseFloat(st.paddingTop) || 0) +
+          (parseFloat(st.paddingBottom) || 0);
+        const body = live.querySelector<HTMLElement>('.turn-body');
+        if (body) {
+          body.style.maxHeight = '';
+          const full = Math.max(live.offsetHeight, live.scrollHeight);
+          const over = full + room - avail;
+          const clamp = over > 0 && body.scrollHeight > 40;
+          body.classList.toggle('clamped', clamp);
+          if (clamp) {
+            body.style.maxHeight = `${Math.max(40, body.scrollHeight - over)}px`;
+            body.scrollTop = body.scrollHeight;
+          }
+        }
+        return { top: 0, height: Math.max(live.offsetHeight, live.scrollHeight) + room };
+      }
       const before = live.previousElementSibling as HTMLElement | null;
       const first = before?.classList.contains('log-round') ? before : live;
       // The list is the boxes' offset parent, so these are measured from the list's top.
@@ -2448,6 +2486,21 @@ export class Hud {
     }
     for (const job of jobs) job();
     for (const glide of glides) glide();
+    // The turn is over: its waiting line shrinks away (and stays gone until the next redraw
+    // drops it).
+    const ending = list.querySelector<HTMLElement>('.log-line.waiting.ending');
+    if (ending && this.logWaitEnd) {
+      const ht = ending.getBoundingClientRect().height;
+      ending.classList.add('log-moving');
+      const a = ending.animate(
+        [
+          { height: `${ht}px`, opacity: 1 },
+          { height: '0px', opacity: 0 },
+        ],
+        { duration: LOG_SLIDE_MS, easing: LOG_EASE, fill: 'both' },
+      );
+      a.currentTime = now - this.logWaitEnd.t;
+    }
   }
 
   /** When a log item first appeared (`logBorn`), recording it now if it is new. */

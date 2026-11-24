@@ -1739,6 +1739,48 @@ input[type='range'] {
   opacity: 0;
   visibility: hidden;
 }
+/* A turn taller than the room above the player cards keeps its newest entries in view, the
+   older ones fading out at the top (hud.ts followLog). */
+.log-panel.chromeless .turn-body.clamped {
+  overflow: hidden;
+  -webkit-mask-image: linear-gradient(to bottom, transparent, #000 24px);
+  mask-image: linear-gradient(to bottom, transparent, #000 24px);
+}
+/* Very little room above the player cards (a phone with the cards listed): a compact turn so
+   the last few entries still fit: a slim header, tight lines, the strips tucked away. */
+.log-panel.chromeless .log-list.log-tight {
+  padding-top: 14px;
+  padding-bottom: 2px;
+}
+.log-panel.chromeless .log-list.log-tight .turn-card.col-top {
+  margin-top: 0;
+}
+.log-panel.chromeless .log-list.log-tight .turn-card.behind {
+  visibility: hidden;
+}
+.log-panel.chromeless .log-list.log-tight .turn-head {
+  padding: 5px 2px 4px;
+}
+.log-panel.chromeless .log-list.log-tight .turn-char {
+  width: 18px;
+  height: 21px;
+}
+.log-panel.chromeless .log-list.log-tight .turn-lines {
+  padding: 2px 12px 4px;
+}
+.log-panel.chromeless .log-list.log-tight .log-entry {
+  padding: 2px 4px;
+}
+.log-panel.chromeless .log-list.log-tight .turn-body.clamped {
+  -webkit-mask-image: linear-gradient(to bottom, transparent, #000 12px);
+  mask-image: linear-gradient(to bottom, transparent, #000 12px);
+}
+/* Phones too: the stacked log stays above the player cards (never over them). */
+@media (max-height: 500px) {
+  .log-panel.chromeless {
+    max-height: calc(100% - var(--dock-b, 200px) - var(--top-free, 50px) - 4px);
+  }
+}
 /* Scrolling over the stacked log browses its turns, so it never scrolls the page or zooms. */
 .log-panel.chromeless {
   overscroll-behavior: contain;

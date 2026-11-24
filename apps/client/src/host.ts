@@ -1168,7 +1168,12 @@ export class HotSeat implements GameIO {
         board.frameIds = null;
         // A beat at the end of the previous turn before the next player starts.
         const handoff = board.activePid >= 0 && board.activePid !== e.pid;
-        if (handoff) await this.wait(T.turnEnd);
+        if (handoff) {
+          // The turn is over: the log drops its waiting line while the turn's last entry stays
+          // up through the beat.
+          hud.refreshLog();
+          await this.wait(T.turnEnd);
+        }
         this.link?.turnStart(this.seq, G);
         if (this.saving) saveGame(G, this.link?.saveInfo?.());
         const p = G.players[e.pid];
