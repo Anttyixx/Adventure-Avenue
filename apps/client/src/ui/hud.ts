@@ -1999,7 +1999,7 @@ export class Hud {
   /** Lines whose text is changing (a waiting line's new text, or the entry replacing it). */
   private logSwap = new Map<string, { text: string; t: number; from: number }>();
   /** Turns coming into or leaving the column of turns in view, to carry on across redraws. */
-  private logViewMove = new Map<string, { t: number; inView: boolean; h: number }>();
+  private logViewMove = new Map<string, { t: number; inView: boolean; h: number; stack: boolean }>();
   /** How many turns back the stacked log is showing (0: the turn being played). */
   private logBack = 0;
   /** Each turn's place in the stack when last drawn (see `stackLog`), to animate moves. */
@@ -2022,17 +2022,25 @@ export class Hud {
     const cards = [...list.querySelectorAll<HTMLElement>('.turn-card')];
     const n = cards.length;
     if (column) {
-      // The column: the turns in view, one under the other; the rest out of sight.
-      list.style.removeProperty('--stack-n');
+      // The column: the turns in view, one under the other. The turns before them stay stacked
+      // behind the top one, peeking out above it, so the next one back can come out of the
+      // stack; newer turns past the bottom are out of sight.
+      const top = cards.findIndex((c) => column.includes(c.dataset.key ?? ''));
+      list.style.setProperty('--stack-n', String(Math.min(Math.max(top, 0), STACK_SHOWN)));
       this.logSlots = new Map();
-      for (const card of cards) {
+      cards.forEach((card, i) => {
         const inView = column.includes(card.dataset.key ?? '');
-        card.classList.remove('front', 'behind', 'deep', 'ahead');
+        const d = i < top ? Math.min(top - i, STACK_SHOWN + 1) : 0;
+        card.classList.remove('front', 'ahead');
         card.classList.toggle('in-view', inView);
-        card.classList.toggle('out-view', !inView);
-        card.style.zIndex = '';
+        card.classList.toggle('col-top', i === top);
+        card.classList.toggle('behind', d > 0);
+        card.classList.toggle('deep', d > STACK_SHOWN);
+        card.classList.toggle('out-view', !inView && d === 0);
+        card.style.setProperty('--d', String(d));
+        card.style.zIndex = String(inView ? n + 1 : n - d);
         card.inert = !inView;
-      }
+      });
       return;
     }
     const fi = n - 1;
@@ -2205,20 +2213,76 @@ export class Hud {
         // The column: a turn coming into view grows in (at the top when going back, at the
         // bottom when coming forward), pushing the others along; one leaving shrinks away.
         // The turns staying move along with them.
+        // The top turn comes out of the stack behind it (going back) or goes back into it
+        // (coming forward): it grows from a strip in its player's color into a whole turn, or
+        // shrinks back into one. Turns at the bottom grow in or shrink away.
         const inView = card.classList.contains('in-view');
         const view = before.view.get(key);
+        const stackSide = card.classList.contains('col-top') || card.classList.contains('behind');
         if (inView !== !!view && !(inView && !was))
-          this.logViewMove.set(key, { t: now, inView, h: view?.h ?? 0 });
+          this.logViewMove.set(key, { t: now, inView, h: view?.h ?? 0, stack: stackSide });
         const move = this.logViewMove.get(key);
         if (move && move.inView === inView && now - move.t < LOG_SLIDE_MS) {
           const ht = inView ? card.getBoundingClientRect().height : move.h;
-          const gap = 10;
-          const shut = { height: '0px', marginBottom: '0px', opacity: 0, visibility: 'visible' };
-          const open = { height: `${ht}px`, marginBottom: `${gap}px`, opacity: 1, visibility: 'visible' };
-          jobs.push(() => logGrow(card, inView ? [shut, open] : [open, shut], now - move.t));
+          if (move.stack) {
+            const pc = getComputedStyle(card).getPropertyValue('--pc').trim() || '#ffd166';
+            const strip = {
+              height: '18px',
+              transform: 'translateY(-7px) scale(0.95)',
+              // The ring, then the strip's color over the whole turn (it fades rather than
+              // shrinking in from the edges), then the shadow.
+              boxShadow: `inset 0 0 0 2px ${pc}, inset 0 0 0 400px color-mix(in srgb, ${pc} 70%, #101a33), 0 6px 18px rgba(0, 0, 0, 0.3)`,
+              opacity: 1,
+              visibility: 'visible',
+            };
+            const whole = {
+              height: `${ht}px`,
+              transform: 'none',
+              boxShadow: `inset 0 0 0 2px ${pc}, inset 0 0 0 400px rgba(16, 26, 51, 0), 0 6px 18px rgba(0, 0, 0, 0.3)`,
+              opacity: 1,
+              visibility: 'visible',
+            };
+            jobs.push(() => {
+              logGrow(card, inView ? [strip, whole] : [whole, strip], now - move.t);
+              // Its entries show once it has opened out (and hide first as it goes back).
+              for (const child of card.children) {
+                const c = (child as HTMLElement).animate(
+                  [{ opacity: inView ? 0 : 1 }, { opacity: inView ? 1 : 0 }],
+                  {
+                    duration: LOG_SLIDE_MS * 0.6,
+                    delay: inView ? LOG_SLIDE_MS * 0.35 : 0,
+                    easing: 'ease-out',
+                    fill: 'both',
+                  },
+                );
+                c.currentTime = now - move.t;
+                c.onfinish = () => c.cancel();
+              }
+            });
+          } else {
+            const gap = 10;
+            const shut = { height: '0px', marginBottom: '0px', opacity: 0, visibility: 'visible' };
+            const open = { height: `${ht}px`, marginBottom: `${gap}px`, opacity: 1, visibility: 'visible' };
+            jobs.push(() => logGrow(card, inView ? [shut, open] : [open, shut], now - move.t));
+          }
           continue;
         }
         if (!inView) continue;
+        // Coming forward, the top turn leaves the column for the stack, so the turns still in
+        // view glide up from where they were.
+        if (view && before.browsing && !this.logViewMove.has(`up:${key}`)) {
+          const dy = view.top - card.getBoundingClientRect().top;
+          if (dy > 1) this.logViewMove.set(`up:${key}`, { t: now, inView: true, h: dy, stack: false });
+        }
+        const up = this.logViewMove.get(`up:${key}`);
+        if (up && now - up.t < LOG_SLIDE_MS)
+          jobs.push(() => {
+            const a = card.animate([{ transform: `translateY(${up.h}px)` }, { transform: 'none' }], {
+              duration: LOG_SLIDE_MS,
+              easing: LOG_EASE,
+            });
+            a.currentTime = now - up.t;
+          });
       } else if (restack) {
         const view = before.view.get(key);
         if (card.classList.contains('front') && view) {

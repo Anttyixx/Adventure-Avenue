@@ -1727,6 +1727,35 @@ input[type='range'] {
   flex: none;
   margin: 0 0 10px;
 }
+/* The turns before the column stay stacked behind its top turn, peeking out above it. */
+.log-panel.chromeless.browsing .log-list {
+  position: relative;
+}
+.log-panel.chromeless.browsing .turn-card.col-top {
+  margin-top: calc(var(--stack-n, 0) * 7px);
+}
+.log-panel.chromeless.browsing .turn-card.behind {
+  position: absolute;
+  left: 8px;
+  right: 8px;
+  /* The list's 6px top padding, then each strip 7px higher than the one in front of it. */
+  top: calc(6px + (var(--stack-n, 0) - var(--d)) * 7px);
+  height: 40px;
+  margin: 0;
+  overflow: hidden;
+  transform: scale(calc(1 - var(--d) * 0.05));
+  transform-origin: 50% 0;
+  opacity: calc(1 - var(--d) * 0.12);
+  background: color-mix(in srgb, var(--pc) 70%, var(--navy));
+  animation: none;
+  pointer-events: none;
+}
+.log-panel.chromeless.browsing .turn-card.behind > * {
+  opacity: 0;
+}
+.log-panel.chromeless.browsing .turn-card.deep {
+  opacity: 0;
+}
 .log-panel.chromeless.browsing .turn-card.out-view {
   height: 0;
   margin: 0;
