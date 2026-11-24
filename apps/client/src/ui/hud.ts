@@ -2180,6 +2180,7 @@ export class Hud {
     if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
     // Measure everything first, then animate: a growing box would change what comes after it.
     const jobs: (() => void)[] = [];
+    const glides: (() => void)[] = [];
     let fresh = 0;
     for (const head of list.querySelectorAll<HTMLElement>('.log-round')) {
       const key = head.dataset.key!;
@@ -2266,20 +2267,20 @@ export class Hud {
           continue;
         }
         if (!inView) continue;
-        // Coming forward, the top turn leaves the column for the stack, so the turns still in
-        // view glide up from where they were.
-        if (view && before.browsing && !this.logViewMove.has(`up:${key}`)) {
-          const dy = view.top - card.getBoundingClientRect().top;
-          if (dy > 1) this.logViewMove.set(`up:${key}`, { t: now, inView: true, h: dy, stack: false });
-        }
-        const up = this.logViewMove.get(`up:${key}`);
-        if (up && now - up.t < LOG_SLIDE_MS)
-          jobs.push(() => {
-            const a = card.animate([{ transform: `translateY(${up.h}px)` }, { transform: 'none' }], {
-              duration: LOG_SLIDE_MS,
-              easing: LOG_EASE,
-            });
-            a.currentTime = now - up.t;
+        // A turn staying in view whose place jumped (the top turn going back into the stack
+        // leaves the column at once; the stack opening into the column moves the front turn)
+        // glides from where it was on screen. Measured on screen, mid-move included, so it is
+        // always continuous however quickly the steps come.
+        // Measured after the growing and shrinking have started (`glides` run last), so the
+        // turn's new place already counts the turns around it at their current size.
+        if (view)
+          glides.push(() => {
+            const dy = view.top - card.getBoundingClientRect().top;
+            if (Math.abs(dy) > 1)
+              card.animate([{ transform: `translateY(${dy}px)` }, { transform: 'none' }], {
+                duration: LOG_SLIDE_MS,
+                easing: LOG_EASE,
+              });
           });
       } else if (restack) {
         const view = before.view.get(key);
@@ -2291,6 +2292,24 @@ export class Hud {
               easing: LOG_EASE,
             }),
           );
+        } else if (view && card.classList.contains('behind')) {
+          // A turn that was open in the column slides back into its place in the stack, its
+          // entries fading as it goes.
+          const dy = view.top - card.getBoundingClientRect().top;
+          const d = Number(card.style.getPropertyValue('--d')) || 1;
+          jobs.push(() => {
+            card.animate([{ transform: `translateY(${dy}px)`, opacity: 1 }, logSlotStyle(d)], {
+              duration: LOG_SLIDE_MS,
+              easing: LOG_EASE,
+              fill: 'backwards',
+            });
+            for (const child of card.children)
+              (child as HTMLElement).animate([{ opacity: 1 }, { opacity: 0 }], {
+                duration: LOG_SLIDE_MS * 0.5,
+                easing: 'ease-out',
+                fill: 'backwards',
+              });
+          });
         } else if (card.classList.contains('behind') && !card.classList.contains('deep')) {
           jobs.push(() =>
             card.animate([{ opacity: 0 }, {}], {
@@ -2436,6 +2455,7 @@ export class Hud {
       }
     }
     for (const job of jobs) job();
+    for (const glide of glides) glide();
   }
 
   /** When a log item first appeared (`logBorn`), recording it now if it is new. */
