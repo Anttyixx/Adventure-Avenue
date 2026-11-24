@@ -249,6 +249,8 @@ interface LogBefore {
   slots: Map<string, number>;
   /** The turns that were in view (stack front or column), with their screen top and height. */
   view: Map<string, { top: number; h: number }>;
+  /** The strips peeking out behind the column: screen top and depth. */
+  strips: Map<string, { top: number; d: number }>;
   /** The stacked log was showing the column of turns (scrolled back). */
   browsing: boolean;
 }
@@ -1895,15 +1897,23 @@ export class Hud {
       wait: null,
       slots: new Map(this.logSlots),
       view: new Map(),
+      strips: new Map(),
       browsing: !!old?.parentElement?.parentElement?.classList.contains('browsing'),
     };
     if (old && animate) {
       for (const card of old.querySelectorAll<HTMLElement>('.turn-card')) {
         before.cards.set(card.dataset.key ?? '', { folded: card.classList.contains('folded') });
-        // The turns in view (the stack's front, or the column), with where they were.
+        // The turns in view (the stack's front, or the column), with where they were, and the
+        // strips peeking out behind the column (their depth), so folding back can move them all.
         if (card.classList.contains('in-view') || card.classList.contains('front')) {
           const r = card.getBoundingClientRect();
           before.view.set(card.dataset.key ?? '', { top: r.top, h: r.height });
+        } else if (card.classList.contains('behind') && !card.classList.contains('deep')) {
+          const r = card.getBoundingClientRect();
+          before.strips.set(card.dataset.key ?? '', {
+            top: r.top,
+            d: Number(card.style.getPropertyValue('--d')) || 1,
+          });
         }
       }
       for (const line of old.querySelectorAll<HTMLElement>('[data-line]'))
@@ -2005,7 +2015,8 @@ export class Hud {
   /** Lines whose text is changing (a waiting line's new text, or the entry replacing it). */
   private logSwap = new Map<string, { text: string; t: number; from: number }>();
   /** The column folding back into the stack: when, and where each turn comes from. */
-  private logRestack: { t: number; from: Map<string, { dy: number; order: number }> } | null = null;
+  private logRestack: { t: number; from: Map<string, { dy: number; order: number; strip?: number }> } | null =
+    null;
   /** Turns coming into or leaving the column of turns in view, to carry on across redraws. */
   private logViewMove = new Map<string, { t: number; inView: boolean; h: number; stack: boolean }>();
   /** How many turns back the stacked log is showing (0: the turn being played). */
@@ -2217,14 +2228,18 @@ export class Hud {
     if (restack) {
       // Each turn that was in view, nearest the front first: how far it has to travel (turns
       // that were far down the column, faded out of sight, come only a short way).
-      const from = new Map<string, { dy: number; order: number }>();
-      const cards = [...list.querySelectorAll<HTMLElement>('.turn-card')].reverse();
+      // Starting from the back, so the last to settle is the turn in front (never an odd-sized
+      // strip still shrinking behind it).
+      const from = new Map<string, { dy: number; order: number; strip?: number }>();
       let order = 0;
-      for (const card of cards) {
-        const view = before.view.get(card.dataset.key ?? '');
-        if (!view) continue;
-        const dy = Math.max(-260, Math.min(260, view.top - card.getBoundingClientRect().top));
-        from.set(card.dataset.key ?? '', { dy, order: order++ });
+      for (const card of list.querySelectorAll<HTMLElement>('.turn-card')) {
+        const key = card.dataset.key ?? '';
+        const view = before.view.get(key);
+        const strip = before.strips.get(key);
+        if (!view && !strip) continue;
+        const top = card.getBoundingClientRect().top;
+        const dy = Math.max(-260, Math.min(260, (view ?? strip)!.top - top));
+        from.set(key, { dy, order: strip ? 0 : order++, strip: strip?.d });
       }
       this.logRestack = { t: now, from };
     }
@@ -2320,6 +2335,22 @@ export class Hud {
           const pc = getComputedStyle(card).getPropertyValue('--pc').trim() || '#ffd166';
           const delay = from.order * LOG_RESTACK_STAGGER;
           jobs.push(() => {
+            // A strip that was behind the column: it only changes depth, so it glides from its
+            // old place and size to its new ones.
+            if (from.strip != null) {
+              const sa = card.animate(
+                [
+                  {
+                    // Its new place without its old depth's lift, so it starts where it was.
+                    transform: `translateY(${from.dy + (from.strip - d) * 7}px) ${stackTransform(from.strip)}`,
+                  },
+                  { transform: stackTransform(d) },
+                ],
+                { duration: LOG_SLIDE_MS, easing: LOG_EASE, fill: 'backwards' },
+              );
+              sa.currentTime = elapsed;
+              return;
+            }
             const frames: Keyframe[] = front
               ? [{ transform: `translateY(${from.dy}px)` }, { transform: 'none' }]
               : [

@@ -1032,7 +1032,8 @@ Reopened online games keep guests on Continue Game until the host presses Resume
   turn. A moment (700ms) after the mouse leaves the log, and whenever a new turn starts, it
   goes back to the stack like the player cards do: each turn that was open in the column glides
   to its place (the front, or its strip behind it), one 70ms after the other starting from the
-  front (`LOG_RESTACK_STAGGER`), keeping its dark look while its entries fade, and turning to its
+  back, so the last to settle is the turn in front (`LOG_RESTACK_STAGGER`); the strips that were
+  already peeking out behind the column glide from their old depth and size to their new ones, keeping its dark look while its entries fade, and turning to its
   strip's color as it tucks in; turns that had faded out of sight travel at most 260px; the area
   keeps its height and eases down to the stack's (`logRestack`, carried across redraws). Every turn changing place glides from its old place to
   its new one (`logSlotStyle`, `logSlotMove`, carrying on across redraws); a brand-new turn
