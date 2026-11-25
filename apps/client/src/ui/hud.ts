@@ -230,6 +230,10 @@ function waveOut(layer: HTMLElement): number {
 
 /** How long the game log takes to slide lines into their new places, and new lines to come in. */
 const LOG_SLIDE_MS = 650;
+/** A new entry coming into the log takes a little longer than other moves, so it reads well. */
+const LOG_ENTRY_MS = LOG_SLIDE_MS + 250;
+/** A new waiting line comes in quickly, so the log stays up to date. */
+const LOG_WAIT_MS = 220;
 /** The log's easing: an unhurried ease-out that settles softly, with no snap at the start. */
 const LOG_EASE = 'cubic-bezier(0.33, 1, 0.68, 1)';
 /** When several lines arrive together, each starts this much after the one before. */
@@ -240,7 +244,7 @@ interface LogBefore {
   cards: Map<string, { folded: boolean }>;
   lines: Set<string>;
   rounds: Set<string>;
-  wait: { key: string; text: string; h: number } | null;
+  wait: { key: string; text: string; h: number; x: number } | null;
   /** The turns that were in view (stack front or column), with their screen top and height. */
   view: Map<string, { top: number; h: number }>;
   /** The strips peeking out behind the column: screen top and depth. */
@@ -253,10 +257,13 @@ interface LogBefore {
  * Swap a log line's text over: the old text (a copy laid over the new one) fades and lifts away
  * while the new text uncovers left to right, `elapsed` ms in.
  */
-function logSwapText(line: HTMLElement, oldText: string, elapsed: number) {
+function logSwapText(line: HTMLElement, oldText: string, elapsed: number, quick = false) {
   const entry = line.querySelector<HTMLElement>(':scope > .log-entry');
   const text = entry?.querySelector<HTMLElement>(':scope > .log-text');
-  if (!entry || !text || elapsed >= LOG_SLIDE_MS) return;
+  if (!entry || !text || elapsed >= LOG_ENTRY_MS) return;
+  // The waiting line's own text changes quickly (it keeps the log current); an entry taking its
+  // place swaps over at the entry's own, unhurried pace.
+  const k = quick ? 0.5 : 1.25;
   const ghost = h('span', { class: 'log-ghost', 'aria-hidden': 'true' }, oldText);
   Object.assign(ghost.style, {
     left: `${text.offsetLeft}px`,
@@ -269,7 +276,7 @@ function logSwapText(line: HTMLElement, oldText: string, elapsed: number) {
       { opacity: 1, transform: 'none' },
       { opacity: 0, transform: 'translateY(-6px)' },
     ],
-    { duration: 300, easing: 'ease-in', fill: 'forwards' },
+    { duration: 300 * k, easing: 'ease-in', fill: 'forwards' },
   );
   out.currentTime = elapsed;
   out.onfinish = () => ghost.remove();
@@ -278,7 +285,7 @@ function logSwapText(line: HTMLElement, oldText: string, elapsed: number) {
       { clipPath: 'inset(-4px 100% -4px 0)', opacity: 0.3 },
       { clipPath: 'inset(-4px 0% -4px 0)', opacity: 1 },
     ],
-    { duration: 480, delay: 160, easing: 'cubic-bezier(0.25, 0.6, 0.35, 1)', fill: 'backwards' },
+    { duration: 480 * k, delay: 160 * k, easing: 'cubic-bezier(0.25, 0.6, 0.35, 1)', fill: 'backwards' },
   );
   inn.currentTime = elapsed;
 }
@@ -287,9 +294,9 @@ function logSwapText(line: HTMLElement, oldText: string, elapsed: number) {
  * Grow or shrink a log element by animating its real height (so what comes after it moves
  * along), clipped while it moves, resumed `elapsed` ms in.
  */
-function logGrow(el: HTMLElement, frames: Keyframe[], elapsed: number) {
+function logGrow(el: HTMLElement, frames: Keyframe[], elapsed: number, duration = LOG_SLIDE_MS) {
   el.classList.add('log-moving');
-  const a = el.animate(frames, { duration: LOG_SLIDE_MS, easing: LOG_EASE, fill: 'backwards' });
+  const a = el.animate(frames, { duration, easing: LOG_EASE, fill: 'backwards' });
   a.currentTime = elapsed;
   const done = () => el.classList.remove('log-moving');
   a.onfinish = done;
@@ -1913,6 +1920,7 @@ export class Hud {
           key: w.dataset.line!,
           text: w.querySelector('.log-text')?.textContent ?? '',
           h: w.getBoundingClientRect().height,
+          x: w.querySelector(':scope > .log-entry')?.getBoundingClientRect().left ?? 0,
         };
     }
     clear(this.logBox);
@@ -1932,7 +1940,8 @@ export class Hud {
     // The waiting line stands for the entry that will go there, so it stays until one does: a
     // status that clears for a moment between two waits does not take it away.
     // Once an entry has taken its place, the same text does not come back under it.
-    let waiting: { text: string; kind?: IconKind; ending?: boolean } | undefined = this.waiting ?? undefined;
+    let waiting: { text: string; kind?: IconKind; ending?: boolean; sub?: boolean } | undefined =
+      this.waiting ?? undefined;
     const head = G.log[0]?.id;
     const held = this.logWaitHeld?.turn === liveKey ? this.logWaitHeld : null;
     if (waiting) {
@@ -1946,6 +1955,9 @@ export class Hud {
       const p = G.players[G.order[Number(liveKey.split(':')[1] ?? G.turn)]];
       if (p) waiting = { text: `${p.name} is taking their turn...`, kind: 'wait' };
     }
+    // What it waits on is a follow-up of the turn's landing (buying, building, a card...) unless
+    // it is movement or a plain wait: then it sits on the landing's branch.
+    if (waiting && waiting.kind !== 'move' && waiting.kind !== 'wait') waiting = { ...waiting, sub: true };
     // Once the turn is over (the game has moved on and the log is only waiting for the handoff),
     // nothing is left to wait on: the waiting line shrinks away, then is gone.
     const turnOver = this.logTurn != null && this.logTurn !== `${G.round}:${G.turn}`;
@@ -2211,7 +2223,7 @@ export class Hud {
    */
   private animateLog(list: HTMLElement, before: LogBefore, stack = false) {
     const now = performance.now();
-    for (const [key, t] of this.logBorn) if (now - t > LOG_SLIDE_MS * 3) this.logBorn.delete(key);
+    for (const [key, t] of this.logBorn) if (now - t > LOG_ENTRY_MS * 3) this.logBorn.delete(key);
     for (const [key, f] of this.logFold) if (now - f.t > LOG_SLIDE_MS * 3) this.logFold.delete(key);
     for (const [key, w] of this.logSwap) if (now - w.t > LOG_SLIDE_MS * 3) this.logSwap.delete(key);
     for (const [key, v] of this.logViewMove) if (now - v.t > LOG_SLIDE_MS * 3) this.logViewMove.delete(key);
@@ -2449,32 +2461,78 @@ export class Hud {
             const ht = line.getBoundingClientRect().height;
             jobs.push(() => {
               if (Math.abs(ht - swap.from) > 1)
-                logGrow(line, [{ height: `${swap.from}px` }, { height: `${ht}px` }], now - swap.t);
-              logSwapText(line, swap.text, now - swap.t);
+                logGrow(
+                  line,
+                  [{ height: `${swap.from}px` }, { height: `${ht}px` }],
+                  now - swap.t,
+                  LOG_WAIT_MS,
+                );
+              logSwapText(line, swap.text, now - swap.t, true);
             });
           }
           continue;
         }
         // A follow-up arriving with its parent comes in as part of it.
         const parent = line.parentElement?.closest<HTMLElement>('[data-line]');
-        if (parent && (!before.lines.has(parent.dataset.line!) || this.logBorn.has(parent.dataset.line!)))
+        const parentBorn = parent ? this.logBorn.get(parent.dataset.line!) : undefined;
+        if (
+          parent &&
+          (!before.lines.has(parent.dataset.line!) || (parentBorn != null && now - parentBorn < LOG_ENTRY_MS))
+        )
           continue;
         if (!this.logBorn.has(lineKey)) {
           // The first new entry in place of the waiting line takes it over; others follow it.
           if (replacing && before.wait)
             this.logSwap.set(lineKey, { text: before.wait.text, t: now, from: before.wait.h });
-          this.logBorn.set(lineKey, now + (replacing ? 0 : LOG_STAGGER_MS * ++fresh));
+          this.logBorn.set(
+            lineKey,
+            now + (replacing || line.classList.contains('waiting') ? 0 : LOG_STAGGER_MS * ++fresh),
+          );
         }
         replacing = false;
         const elapsed = now - this.logBorn.get(lineKey)!;
-        if (elapsed >= LOG_SLIDE_MS) continue;
+        const waitLine = line.classList.contains('waiting');
+        if (elapsed >= (waitLine ? LOG_WAIT_MS : LOG_ENTRY_MS)) continue;
         const ht = line.getBoundingClientRect().height;
         const takeover = this.logSwap.get(lineKey);
         jobs.push(() => {
+          if (waitLine && takeover && before.wait) {
+            // The waiting line itself moving between the main line and a branch (nothing logged
+            // in between): it keeps its room and slides over, its text changing quickly.
+            const dx =
+              before.wait.x - (line.querySelector(':scope > .log-entry')?.getBoundingClientRect().left ?? 0);
+            logGrow(line, [{ height: `${takeover.from}px` }, { height: `${ht}px` }], elapsed, LOG_WAIT_MS);
+            const entry = line.querySelector<HTMLElement>(':scope > .log-entry');
+            if (entry && Math.abs(dx) > 1) {
+              const a = entry.animate([{ transform: `translateX(${dx}px)` }, { transform: 'none' }], {
+                duration: LOG_WAIT_MS + 80,
+                easing: LOG_EASE,
+                fill: 'backwards',
+              });
+              a.currentTime = elapsed;
+            }
+            logSwapText(line, takeover.text, elapsed, true);
+            return;
+          }
+          if (waitLine) {
+            // The waiting line moves on to its next place at once (barely a fade), so the log
+            // always says what is happening now.
+            logGrow(
+              line,
+              [
+                { height: '0px', opacity: 0 },
+                { height: `${ht}px`, opacity: 1 },
+              ],
+              elapsed,
+              LOG_WAIT_MS,
+            );
+            return;
+          }
           logGrow(
             line,
             [{ height: `${takeover ? Math.min(takeover.from, ht) : 0}px` }, { height: `${ht}px` }],
             elapsed,
+            LOG_ENTRY_MS,
           );
           if (takeover) {
             // Replacing the waiting line: no rise; the dot pops in and the text swaps over.
@@ -2509,17 +2567,25 @@ export class Hud {
     return this.logBorn.get(key)!;
   }
 
-  /** A log line's dot pops in (small, a soft overshoot, settled), `elapsed` ms in. */
+  /**
+   * A log line's dot pops in: from nothing to well past full size, a little back, then settled,
+   * with a ring of its color bursting out around it. `elapsed` ms in.
+   */
   private popLogDot(line: HTMLElement, elapsed: number) {
     const icon = line.querySelector<HTMLElement>(':scope > .log-entry > .log-icon');
     if (!icon) return;
+    const color = getComputedStyle(icon).backgroundColor || 'rgb(255, 255, 255)';
+    const ring = (spread: number, alpha: number) =>
+      `0 0 0 ${spread}px color-mix(in srgb, ${color} ${Math.round(alpha * 100)}%, transparent)`;
     const a = icon.animate(
       [
-        { transform: 'scale(0.2)', opacity: 0 },
-        { transform: 'scale(1.3)', opacity: 1, offset: 0.5 },
-        { transform: 'scale(1)', opacity: 1 },
+        { transform: 'scale(0)', opacity: 0, boxShadow: ring(0, 0.7) },
+        { transform: 'scale(1.75)', opacity: 1, boxShadow: ring(2, 0.6), offset: 0.38 },
+        { transform: 'scale(0.82)', boxShadow: ring(6, 0.25), offset: 0.66 },
+        { transform: 'scale(1.06)', boxShadow: ring(9, 0), offset: 0.84 },
+        { transform: 'scale(1)', opacity: 1, boxShadow: ring(9, 0) },
       ],
-      { duration: 520, delay: 60, easing: LOG_EASE, fill: 'backwards' },
+      { duration: 640, delay: 90, easing: 'cubic-bezier(0.3, 0.7, 0.4, 1)', fill: 'backwards' },
     );
     a.currentTime = elapsed;
   }
@@ -2539,7 +2605,7 @@ export class Hud {
             { opacity: 0, transform: 'translateY(8px)' },
             { opacity: 1, transform: 'none' },
           ],
-          { duration: LOG_SLIDE_MS, easing: LOG_EASE, fill: 'backwards' },
+          { duration: LOG_ENTRY_MS, easing: LOG_EASE, fill: 'backwards' },
         ),
       );
     this.popLogDot(line, elapsed);
@@ -2551,7 +2617,7 @@ export class Hud {
             { clipPath: 'inset(-4px 100% -4px 0)', opacity: 0.3 },
             { clipPath: 'inset(-4px 0% -4px 0)', opacity: 1 },
           ],
-          { duration: 520, delay: 140, easing: 'cubic-bezier(0.25, 0.6, 0.35, 1)', fill: 'backwards' },
+          { duration: 700, delay: 180, easing: 'cubic-bezier(0.25, 0.6, 0.35, 1)', fill: 'backwards' },
         ),
       );
   }

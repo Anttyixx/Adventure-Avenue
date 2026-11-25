@@ -121,8 +121,11 @@ export function logView(
   G: GameState,
   currentKey: string,
   opts: {
-    /** `ending`: the turn is over, so the line is on its way out. */
-    waiting?: { text: string; kind?: IconKind; ending?: boolean };
+    /**
+     * `ending`: the turn is over, so the line is on its way out. `sub`: what it waits on will be a
+     * follow-up of the turn's landing, so it sits on that landing's branch.
+     */
+    waiting?: { text: string; kind?: IconKind; ending?: boolean; sub?: boolean };
     fresh?: number;
     onTile?: (id: number) => void;
     /** A venture card line was selected: show that card. */
@@ -177,7 +180,7 @@ export function logView(
     // A stable key per line (its saved id, or its place in the turn for older saves), so the HUD
     // can find the same line after a redraw and slide it smoothly into its new place.
     const lineKey = (l: LogLine) => l.id ?? `${g.key}#${g.lines.indexOf(l)}`;
-    const renderLine = ({ line: l, children }: LogNode): HTMLElement => {
+    const renderLine = ({ line: l, children }: LogNode, extra?: HTMLElement | null): HTMLElement => {
       const others = new Set(l.involves ?? []);
       if (l.color != null && l.color >= 0 && l.color !== g.pid) others.add(l.color);
       others.delete(g.pid);
@@ -219,9 +222,34 @@ export function logView(
         'li',
         { class: `log-line ${freshLines.has(l) ? 'log-new' : ''}`, 'data-line': lineKey(l) },
         entry,
-        children.length ? h('ul', { class: 'log-children' }, ...children.map(renderLine)) : null,
+        children.length || extra
+          ? h('ul', { class: 'log-children' }, ...children.map((c) => renderLine(c)), extra ?? null)
+          : null,
       );
     };
+    // The waiting line: on the landing's branch when what it waits on will be a follow-up of
+    // that landing (and the landing is the turn's latest main entry), else on the main line.
+    const roots = nestLog(g.lines);
+    const last = roots[roots.length - 1];
+    const nest = !!waiting?.sub && last?.line.action === 'land';
+    const waitLine = waiting
+      ? h(
+          'li',
+          // Keyed by how many entries came before it (and its branch): a new text in the same
+          // place keeps its key (it just changes); the waiting line after a new entry is new.
+          {
+            class: `log-line waiting ${waiting.ending ? 'ending' : ''}`,
+            'data-line': `${g.key}#wait${g.lines.length}${nest ? 's' : ''}`,
+          },
+          // The same icon and text columns as every other entry.
+          h(
+            'div',
+            { class: 'log-entry' },
+            kindIcon(waiting.kind),
+            h('span', { class: 'log-text' }, waiting.text),
+          ),
+        )
+      : null;
     const body = h(
       'ul',
       { class: 'turn-lines' },
@@ -232,25 +260,8 @@ export function logView(
             { class: 'log-line hint' },
             h('div', { class: 'log-entry' }, h('span'), 'Getting ready...'),
           ),
-      ...nestLog(g.lines).map(renderLine),
-      waiting
-        ? h(
-            'li',
-            // Keyed by how many entries came before it: a new text in the same place keeps its
-            // key (it just changes), while the waiting line after a new entry is a new line.
-            {
-              class: `log-line waiting ${waiting.ending ? 'ending' : ''}`,
-              'data-line': `${g.key}#wait${g.lines.length}`,
-            },
-            // The same icon and text columns as every other entry.
-            h(
-              'div',
-              { class: 'log-entry' },
-              kindIcon(waiting.kind),
-              h('span', { class: 'log-text' }, waiting.text),
-            ),
-          )
-        : null,
+      ...roots.map((node) => renderLine(node, nest && node === last ? waitLine : null)),
+      nest ? null : waitLine,
     );
     // An earlier turn's header is a button that folds or opens it, with how much happened and
     // a chevron; the turn's entries sit in a body the HUD can grow and shrink smoothly.

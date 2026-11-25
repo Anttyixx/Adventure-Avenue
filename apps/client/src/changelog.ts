@@ -51,7 +51,7 @@ export const CHANGELOG: ChangelogEntry[] = [
       },
     ],
     extras: [
-      'Game log entries come in more slowly and smoothly',
+      'Game log entries come in smoothly, their dots popping in with a little burst',
       'Every venture card now says what it did',
       'Tappable log entries are marked with a diamond; a thicker timeline with gaps around each dot',
       'The log always says what the player is doing ("Rosa is moving..."), changing in place',
