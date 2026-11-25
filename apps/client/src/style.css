@@ -1817,6 +1817,12 @@ input[type='range'] {
 .log-list .log-moving {
   overflow: hidden !important;
 }
+/* A log entry growing in is clipped the same way, except for 10px below it: the line joining its
+   dot to the next one reaches 9px past its bottom, and must reach that dot while it grows. */
+.log-list .log-line.log-moving {
+  overflow: visible !important;
+  clip-path: inset(-2px -40px -10px -40px);
+}
 /* Earlier turns fold to their header: tap it to open or fold the turn again. */
 .turn-toggle {
   display: block;
