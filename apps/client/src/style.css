@@ -1748,6 +1748,8 @@ input[type='range'] {
    older ones fading out at the top (hud.ts followLog). */
 .log-panel.chromeless .turn-body.clamped {
   overflow: hidden;
+  /* A change of room (a player card popping up) eases the cap instead of jumping. */
+  transition: max-height 0.35s cubic-bezier(0.33, 1, 0.68, 1);
   -webkit-mask-image: linear-gradient(to bottom, transparent, #000 24px);
   mask-image: linear-gradient(to bottom, transparent, #000 24px);
 }

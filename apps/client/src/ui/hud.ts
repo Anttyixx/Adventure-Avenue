@@ -240,6 +240,8 @@ const LOG_WAIT_MS = 220;
  * `LOG_WAIT_IN`.
  */
 const LOG_WAIT_AFTER = 420;
+/** How long the log waits, with nothing known to come, before saying "taking their turn". */
+const LOG_QUIET_MS = 1300;
 const LOG_WAIT_IN = 380;
 /** The log's easing: an unhurried ease-out that settles softly, with no snap at the start. */
 const LOG_EASE = 'cubic-bezier(0.33, 1, 0.68, 1)';
@@ -1867,6 +1869,12 @@ export class Hud {
       return;
     }
     const old = this.logBox.querySelector<HTMLElement>('.log-list');
+    // The front turn's cap (when its entries are capped to the room above the player cards), so
+    // the redrawn turn keeps it instead of starting over.
+    const oldBody = old?.querySelector<HTMLElement>('.turn-card.front .turn-body.clamped');
+    const oldCap = oldBody
+      ? { key: oldBody.closest<HTMLElement>('.turn-card')?.dataset.key, max: oldBody.style.maxHeight }
+      : null;
     const oldH = old?.getBoundingClientRect().height ?? 0;
     // The turn being played is kept at the top of the panel, unless the reader scrolled away
     // from it (or is opening an earlier turn, below).
@@ -1957,11 +1965,22 @@ export class Hud {
       else this.logWaitHeld = { turn: liveKey, head, waiting };
     } else if (held && held.head === head) waiting = held.waiting;
     else this.logWaitHeld = null;
-    // During a turn there is always a waiting line: the player is always doing something, or
-    // about to be asked something.
+    // A waiting line is only made where something will be logged: what the player is being asked
+    // or doing. Right after an entry, if nothing is known yet, none is made (the turn may well be
+    // over, and a line once made must not be taken away); only after a quiet spell does the
+    // "taking their turn" line show.
+    if (head !== this.logHeadSeen) {
+      this.logHeadSeen = head;
+      this.logHeadAt = performance.now();
+    }
     if (!waiting && !G.over) {
+      const quiet = performance.now() - this.logHeadAt;
       const p = G.players[G.order[Number(liveKey.split(':')[1] ?? G.turn)]];
-      if (p) waiting = { text: `${p.name} is taking their turn...`, kind: 'wait' };
+      if (p && quiet >= LOG_QUIET_MS) waiting = { text: `${p.name} is taking their turn...`, kind: 'wait' };
+      else if (p) {
+        clearTimeout(this.logQuietTimer);
+        this.logQuietTimer = window.setTimeout(() => this.refreshLog(), LOG_QUIET_MS - quiet + 20);
+      }
     }
     // Where the next entry will go, by the game's own rule: after a landing, everything up to the
     // next roll or landing is a follow-up on that landing's branch; rolls and landings are main
@@ -2032,6 +2051,15 @@ export class Hud {
     this.logPanel.classList.toggle('chromeless', stacked);
     this.logPanel.classList.toggle('browsing', browsing);
     if (stacked) this.stackLog(list, shown);
+    if (oldCap) {
+      const body = list.querySelector<HTMLElement>(`.turn-card.front[data-key="${oldCap.key}"] .turn-body`);
+      if (body) {
+        body.classList.add('clamped');
+        body.style.maxHeight = oldCap.max;
+        // Laid out at the old cap first, so a new cap set next eases from it (not jumps).
+        void body.offsetHeight;
+      }
+    }
     // The live turn's glow and float keep their rhythm across redraws (a new box would restart
     // them, nudging it a few pixels each time).
     const phase = `-${Math.round(performance.now() % 2400)}ms`;
@@ -2068,6 +2096,10 @@ export class Hud {
       keep: boolean;
     }
   >();
+  /** The newest log entry seen, and when it arrived (for the quiet spell before a placeholder). */
+  private logHeadSeen: string | undefined;
+  private logHeadAt = 0;
+  private logQuietTimer = 0;
   /** The waiting line on its way out at the end of a turn: when it started, and what it said. */
   private logWaitEnd: { t: number; waiting: { text: string; kind?: IconKind } } | null = null;
   /** Lines whose text is changing (a waiting line's new text, or the entry replacing it). */
@@ -2186,14 +2218,24 @@ export class Hud {
           (parseFloat(st.paddingBottom) || 0);
         const body = live.querySelector<HTMLElement>('.turn-body');
         if (body) {
-          body.style.maxHeight = '';
-          const full = Math.max(live.offsetHeight, live.scrollHeight);
+          // Measured without letting go of the current cap (the body's full content height is
+          // its scrollHeight either way), so a cap that changes eases (CSS) rather than jumping.
+          const bodyFull = body.scrollHeight;
+          const full = live.offsetHeight - body.offsetHeight + bodyFull;
           const over = full + room - avail;
-          const clamp = over > 0 && body.scrollHeight > 40;
-          body.classList.toggle('clamped', clamp);
+          const clamp = over > 0 && bodyFull > 40;
           if (clamp) {
-            body.style.maxHeight = `${Math.max(40, body.scrollHeight - over)}px`;
+            if (!body.classList.contains('clamped')) {
+              // Starts easing from its height now.
+              body.style.maxHeight = `${body.offsetHeight}px`;
+              void body.offsetHeight;
+              body.classList.add('clamped');
+            }
+            body.style.maxHeight = `${Math.max(40, bodyFull - over)}px`;
             body.scrollTop = body.scrollHeight;
+          } else if (body.classList.contains('clamped')) {
+            body.classList.remove('clamped');
+            body.style.maxHeight = '';
           }
         }
         return { top: 0, height: Math.max(live.offsetHeight, live.scrollHeight) + room };
@@ -2540,30 +2582,39 @@ export class Hud {
           });
           continue;
         }
-        if (before.lines.has(lineKey) && !this.logBorn.has(lineKey)) {
-          // A waiting line whose text changed: the old text fades as the new one uncovers.
-          if (swap && now - swap.t < LOG_SLIDE_MS) {
-            const ht = line.getBoundingClientRect().height;
-            jobs.push(() => {
-              if (Math.abs(ht - swap.from) > 1)
-                logGrow(
-                  line,
-                  [{ height: `${swap.from}px` }, { height: `${ht}px` }],
-                  now - swap.t,
-                  LOG_WAIT_MS,
-                );
-              logSwapText(line, swap.text, now - swap.t, true);
-            });
-          }
+        // A waiting line whose text changed in place: the old text fades as the new one uncovers,
+        // and the line eases to its new height (never in one step).
+        if (
+          before.lines.has(lineKey) &&
+          line.classList.contains('waiting') &&
+          swap &&
+          now - swap.t < LOG_SLIDE_MS
+        ) {
+          const ht = line.getBoundingClientRect().height;
+          jobs.push(() => {
+            if (Math.abs(ht - swap.from) > 1)
+              logGrow(
+                line,
+                [{ height: `${swap.from}px` }, { height: `${ht}px` }],
+                now - swap.t,
+                LOG_SLIDE_MS,
+              );
+            logSwapText(line, swap.text, now - swap.t, true);
+          });
           continue;
         }
+        // An entry that was already there and has finished coming in has nothing to do here.
+        const bornAt = this.logBorn.get(lineKey);
+        if (before.lines.has(lineKey) && (bornAt == null || now - bornAt >= LOG_ENTRY_MS)) continue;
         // A follow-up arriving with its parent comes in as part of it.
         const parent = line.parentElement?.closest<HTMLElement>('[data-line]');
         const parentBorn = parent ? this.logBorn.get(parent.dataset.line!) : undefined;
         // (Not the waiting line: it always makes its own entrance, after the entry above it.)
+        // (Nor the entry taking the waiting line's place: it takes over that room.)
         if (
           parent &&
           !line.classList.contains('waiting') &&
+          !(replacing && before.lines.has(parent.dataset.line!)) &&
           (!before.lines.has(parent.dataset.line!) || (parentBorn != null && now - parentBorn < LOG_ENTRY_MS))
         )
           continue;
@@ -2585,12 +2636,33 @@ export class Hud {
               : LOG_STAGGER_MS * ++fresh;
           this.logBorn.set(lineKey, now + delay);
         }
-        if (!waitLine) replacing = false;
+        // Only a genuinely new entry takes the waiting line's place (one still finishing its own
+        // entrance from an earlier redraw does not).
+        if (!waitLine && !before.lines.has(lineKey)) replacing = false;
         const elapsed = now - this.logBorn.get(lineKey)!;
         if (elapsed >= (waitLine ? LOG_WAIT_IN : LOG_ENTRY_MS)) continue;
         const ht = line.getBoundingClientRect().height;
         const takeover = this.logSwap.get(lineKey);
         jobs.push(() => {
+          const host = line.parentElement?.closest<HTMLElement>('[data-line]');
+          const hostBorn = host ? this.logBorn.get(host.dataset.line!) : undefined;
+          if (waitLine && hostBorn != null && now - hostBorn < LOG_ENTRY_MS) {
+            // Inside an entry still growing in (a new landing and its follow-up): that entry's
+            // growth makes its room, so it only fades in, its dot popping, once the entry has
+            // taken shape.
+            const e = line.querySelector<HTMLElement>(':scope > .log-entry');
+            if (e) {
+              const f = e.animate([{ opacity: 0 }, { opacity: 1 }], {
+                duration: LOG_WAIT_IN,
+                delay: LOG_WAIT_AFTER,
+                easing: 'ease-out',
+                fill: 'backwards',
+              });
+              f.currentTime = now - hostBorn;
+            }
+            this.popLogDot(line, now - hostBorn - LOG_WAIT_AFTER - LOG_WAIT_IN * 0.35);
+            return;
+          }
           if (waitLine && this.logWaitAfter.has(lineKey)) {
             // After an entry was logged: the line reaching down from that entry's dot (main line)
             // or its branch growing (follow-ups) brings the new waiting line in; its dot pops in
