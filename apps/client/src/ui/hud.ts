@@ -234,6 +234,13 @@ const LOG_SLIDE_MS = 650;
 const LOG_ENTRY_MS = LOG_SLIDE_MS + 250;
 /** A new waiting line comes in quickly, so the log stays up to date. */
 const LOG_WAIT_MS = 220;
+/**
+ * After an entry is logged where the waiting line stood: the waiting line first turns into the
+ * entry in place; this long after, the line reaches down and the new waiting line comes in, over
+ * `LOG_WAIT_IN`.
+ */
+const LOG_WAIT_AFTER = 420;
+const LOG_WAIT_IN = 380;
 /** The log's easing: an unhurried ease-out that settles softly, with no snap at the start. */
 const LOG_EASE = 'cubic-bezier(0.33, 1, 0.68, 1)';
 /** When several lines arrive together, each starts this much after the one before. */
@@ -1956,9 +1963,17 @@ export class Hud {
       const p = G.players[G.order[Number(liveKey.split(':')[1] ?? G.turn)]];
       if (p) waiting = { text: `${p.name} is taking their turn...`, kind: 'wait' };
     }
-    // What it waits on is a follow-up of the turn's landing (buying, building, a card...) unless
-    // it is movement or a plain wait: then it sits on the landing's branch.
-    if (waiting && waiting.kind !== 'move' && waiting.kind !== 'wait') waiting = { ...waiting, sub: true };
+    // Where the next entry will go, by the game's own rule: after a landing, everything up to the
+    // next roll or landing is a follow-up on that landing's branch; rolls and landings are main
+    // entries. So once the turn's latest main entry is a landing, the waiting line sits on its
+    // branch, unless it waits on movement (a roll, a move, a ride), which makes a main entry.
+    if (waiting && waiting.kind !== 'move') {
+      const [lr, lt] = liveKey.split(':').map(Number);
+      const root = G.log.find(
+        (l) => l.round === lr && l.turn === lt && (l.action === 'land' || l.action === 'roll'),
+      );
+      if (root?.action === 'land') waiting = { ...waiting, sub: true };
+    }
     // Once the turn is over (the game has moved on and the log is only waiting for the handoff),
     // nothing is left to wait on: the waiting line shrinks away, then is gone.
     const turnOver = this.logTurn != null && this.logTurn !== `${G.round}:${G.turn}`;
@@ -2042,6 +2057,8 @@ export class Hud {
   /** The last waiting line, kept until an entry takes its place (see `renderLog`). */
   private logWaitHeld: { turn: string; head?: string; waiting: { text: string; kind?: IconKind } } | null =
     null;
+  /** Waiting lines that came in after an entry was logged where the last one stood. */
+  private logWaitAfter = new Set<string>();
   /** The waiting line sliding to a new place: when, where from, and whether it keeps its room. */
   private logWaitMove = new Map<
     string,
@@ -2472,13 +2489,14 @@ export class Hud {
       // together, so it never jumps.
       const newWait = live ? card.querySelector<HTMLElement>('.log-line.waiting:not(.ending)') : null;
       const waitMoved = !!(before.wait && newWait && newWait.dataset.line !== before.wait.key);
-      if (waitMoved && newWait && !this.logWaitMove.has(newWait.dataset.line!))
-        this.logWaitMove.set(newWait.dataset.line!, {
-          t: now,
-          from: before.wait!,
-          // Nothing took its old place: it keeps its room as it slides.
-          keep: !this.logSwapOf(card, before),
-        });
+      // An entry logged where the waiting line stood: the waiting line turns into that entry
+      // in place (see the takeover below), the line then extends down from it, and only then does
+      // the new waiting line come in at the end (`LOG_WAIT_AFTER`). A waiting line that moves
+      // with nothing logged (between the main line and a branch) slides there instead.
+      const entryLogged = waitMoved && this.logSwapOf(card, before);
+      if (entryLogged && newWait) this.logWaitAfter.add(newWait.dataset.line!);
+      if (waitMoved && newWait && !entryLogged && !this.logWaitMove.has(newWait.dataset.line!))
+        this.logWaitMove.set(newWait.dataset.line!, { t: now, from: before.wait!, keep: true });
       let replacing = !!answered;
       for (const line of card.querySelectorAll<HTMLElement>('[data-line]')) {
         const lineKey = line.dataset.line!;
@@ -2542,8 +2560,10 @@ export class Hud {
         // A follow-up arriving with its parent comes in as part of it.
         const parent = line.parentElement?.closest<HTMLElement>('[data-line]');
         const parentBorn = parent ? this.logBorn.get(parent.dataset.line!) : undefined;
+        // (Not the waiting line: it always makes its own entrance, after the entry above it.)
         if (
           parent &&
+          !line.classList.contains('waiting') &&
           (!before.lines.has(parent.dataset.line!) || (parentBorn != null && now - parentBorn < LOG_ENTRY_MS))
         )
           continue;
@@ -2553,19 +2573,50 @@ export class Hud {
           // waiting line moves on (sliding to its new place) the entry simply comes in there,
           // with no old text left behind. Others follow it.
           if (replacing && before.wait && !waitLine)
-            this.logSwap.set(lineKey, {
-              text: waitMoved ? '' : before.wait.text,
-              t: now,
-              from: before.wait.h,
-            });
-          this.logBorn.set(lineKey, now + (replacing || waitLine ? 0 : LOG_STAGGER_MS * ++fresh));
+            this.logSwap.set(lineKey, { text: before.wait.text, t: now, from: before.wait.h });
+          // The new waiting line after an entry was logged waits for that entry to take shape
+          // and the line to reach down to it.
+          const delay = waitLine
+            ? entryLogged
+              ? LOG_WAIT_AFTER
+              : 0
+            : replacing
+              ? 0
+              : LOG_STAGGER_MS * ++fresh;
+          this.logBorn.set(lineKey, now + delay);
         }
         if (!waitLine) replacing = false;
         const elapsed = now - this.logBorn.get(lineKey)!;
-        if (elapsed >= (waitLine ? LOG_WAIT_MS : LOG_ENTRY_MS)) continue;
+        if (elapsed >= (waitLine ? LOG_WAIT_IN : LOG_ENTRY_MS)) continue;
         const ht = line.getBoundingClientRect().height;
         const takeover = this.logSwap.get(lineKey);
         jobs.push(() => {
+          if (waitLine && this.logWaitAfter.has(lineKey)) {
+            // After an entry was logged: the line reaching down from that entry's dot (main line)
+            // or its branch growing (follow-ups) brings the new waiting line in; its dot pops in
+            // as the line arrives.
+            const prev = line.previousElementSibling as HTMLElement | null;
+            if (prev?.matches('.log-line') && elapsed < LOG_WAIT_IN) {
+              const c = prev.animate([{ transform: 'scaleY(0)' }, { transform: 'scaleY(1)' }], {
+                duration: LOG_WAIT_IN * 0.7,
+                easing: LOG_EASE,
+                fill: 'backwards',
+                pseudoElement: '::before',
+              });
+              c.currentTime = elapsed;
+            }
+            logGrow(
+              line,
+              [
+                { height: '0px', opacity: 0 },
+                { height: `${ht}px`, opacity: 1 },
+              ],
+              elapsed,
+              LOG_WAIT_IN,
+            );
+            this.popLogDot(line, elapsed - LOG_WAIT_IN * 0.35);
+            return;
+          }
           if (waitLine) {
             // A new waiting line with nothing to slide from: it comes in at once (barely a
             // fade), so the log always says what is happening now.
@@ -2637,6 +2688,21 @@ export class Hud {
   private popLogDot(line: HTMLElement, elapsed: number) {
     const icon = line.querySelector<HTMLElement>(':scope > .log-entry > .log-icon');
     if (!icon) return;
+    if (line.classList.contains('waiting')) {
+      // The waiting dot is a hollow ring drawn with a shadow: it pops by size only (a burst
+      // would hide the ring while it plays).
+      const w = icon.animate(
+        [
+          { transform: 'scale(0)', opacity: 0 },
+          { transform: 'scale(1.5)', opacity: 1, offset: 0.45 },
+          { transform: 'scale(0.9)', offset: 0.75 },
+          { transform: 'scale(1)', opacity: 1 },
+        ],
+        { duration: 480, easing: 'cubic-bezier(0.3, 0.7, 0.4, 1)', fill: 'backwards' },
+      );
+      w.currentTime = elapsed;
+      return;
+    }
     const color = getComputedStyle(icon).backgroundColor || 'rgb(255, 255, 255)';
     const ring = (spread: number, alpha: number) =>
       `0 0 0 ${spread}px color-mix(in srgb, ${color} ${Math.round(alpha * 100)}%, transparent)`;

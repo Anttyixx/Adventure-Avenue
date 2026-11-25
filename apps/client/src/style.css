@@ -1991,6 +1991,8 @@ input[type='range'] {
   border-radius: 2px;
   background: color-mix(in srgb, var(--pc) 60%, transparent);
   pointer-events: none;
+  /* It reaches down from its dot when the next entry comes in (hud.ts). */
+  transform-origin: 50% 0;
 }
 /* The last line, and a line's branch of follow-ups, stop at their last follow-up's level. */
 .turn-lines > .log-line:last-child:has(> .log-children)::before,
