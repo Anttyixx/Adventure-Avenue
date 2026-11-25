@@ -1958,11 +1958,14 @@ export class Hud {
       this.waiting ?? undefined;
     const head = G.log[0]?.id;
     const held = this.logWaitHeld?.turn === liveKey ? this.logWaitHeld : null;
-    if (waiting) {
+    // While the finished turn is still shown (before the handoff), what the game waits on is
+    // already the next player's: kept for their turn, never filed under this one.
+    if (liveKey !== `${G.round}:${G.turn}`) waiting = undefined;
+    else if (waiting) {
       if (held && held.waiting.text === waiting.text && held.head !== head) waiting = undefined;
       else this.logWaitHeld = { turn: liveKey, head, waiting };
     } else if (held && held.head === head) waiting = held.waiting;
-    else this.logWaitHeld = null;
+    else if (held) this.logWaitHeld = null;
     // A waiting line is only made for what the player is really being asked or doing, never
     // as a placeholder: so its place (main line or branch) always follows the real next entry,
     // and a line once made is always taken over by an entry.
@@ -3117,6 +3120,14 @@ export class Hud {
    */
   status(text: string, kind?: IconKind, _immediate = false) {
     this.messages.fallback({ text, kind });
+    // The log keeps this as its waiting line until an entry is logged, even though the choice's
+    // own buttons take over the status line straight away (they clear the message).
+    if (this.G)
+      this.logWaitHeld = {
+        turn: `${this.G.round}:${this.G.turn}`,
+        head: this.G.log[0]?.id,
+        waiting: { text, kind },
+      };
     if (this.logOpen) this.renderLog();
   }
 
