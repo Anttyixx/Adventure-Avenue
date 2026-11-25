@@ -374,7 +374,7 @@ export class Hud {
   /** Whether a pop-up is up and the screen behind it is locked. */
   locked = false;
   private askFrame = 0;
-  /** Window width at which a centered action bar overflowed, so it stays bottom left at this size. */
+  /** Window width at which the current question overflowed a centered bar (it sits bottom left). */
   private abLeftAt = 0;
   /** The bar's current content (a building picker) needs the bottom-left corner's room. */
   private askLeft = false;
@@ -1663,7 +1663,7 @@ export class Hud {
 
   /** The question text squeezed into a sliver beside the buttons (cut off rather than wrapped). */
   private askTextSqueezed() {
-    const t = this.ask.querySelector<HTMLElement>('.prompt-text');
+    const t = this.ask.querySelector<HTMLElement>(':scope > .prompt-text');
     return !!t && t.clientWidth < 140 && t.scrollWidth > t.clientWidth + 2;
   }
 
@@ -1780,13 +1780,15 @@ export class Hud {
     const a = this.ask;
     this.updateInsets();
     this.chooseAskLayout();
-    // Safety net: if a centered bar still can't fit its options (a measurement taken mid-animation,
-    // an odd browser), move it bottom left for this window size instead of letting buttons spill.
+    // Safety net: if a centered bar still can't fit its options (an odd browser), move it bottom
+    // left for this question instead of letting buttons spill. Measured by layout (`askOverflows`),
+    // never by the bar's own scroll size: the main button's hop and the old options waving out
+    // poke past the bar for a moment, and must not push a bar that fits into the corner.
     if (
       a.classList.contains('show') &&
       !this.root.classList.contains('ab-left') &&
       !this.root.classList.contains('upright') &&
-      (a.scrollWidth > a.clientWidth + 2 || this.askTextSqueezed())
+      this.askOverflows()
     ) {
       this.abLeftAt = document.documentElement.clientWidth || window.innerWidth;
       this.updateInsets();
@@ -2981,6 +2983,8 @@ export class Hud {
    */
   prompt<T>(text: string | Node, buttons: PromptButton<T>[], color?: number): Promise<T> {
     this.cancelPrompt();
+    // Each question gets a fresh look: one that once overflowed doesn't keep the next in the corner.
+    this.abLeftAt = 0;
     this.messages.decision();
     // The bar morphs from whatever it showed (the status line or other options) to these.
     const from = this.askSize();
@@ -3054,6 +3058,8 @@ export class Hud {
     // The choice is complete. Never restore its old "deciding" message (or an older status) while
     // effects animate: the question waves out and the bar waits, empty, for the next message.
     this.messages.decision();
+    // A question that had to move bottom left doesn't keep the status line there after it.
+    this.abLeftAt = 0;
     this.clearAsk();
     if (this.logOpen) this.renderLog();
   }

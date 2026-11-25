@@ -56,6 +56,7 @@ export const CHANGELOG: ChangelogEntry[] = [
       'Tappable log entries are marked with a diamond; a thicker timeline with gaps around each dot',
       'The log says what the player is doing ("Rosa is moving..."), right where it will be logged',
       'A short pause before the turn passes; the log never covers the player cards',
+      'The action bar stays centered on big screens; its chips have their text centered',
     ],
   },
   {

@@ -356,7 +356,9 @@ investing, the target net worth). Never repeat it in a list.
   its actions (e.g. tile info "Leads to · The bank · Change link · Unlink").
 - **Label/value row**: label 13px muted left, value Lilita 20-22px gold right.
 - **Fact grid**: two columns of inset boxes, label small/muted, value bold.
-- **Action-bar facts**: `question(text, [[label, value, 'big'?]])` from `ui/pick.ts`.
+- **Action-bar facts**: `question(text, [[label, value, 'big'?]])` from `ui/pick.ts`. Each fact
+  chip keeps its own height (the row uses `align-items: center`, never stretching a chip to the
+  gold ticket's height) with even padding (3px 9px; 1px 6px on phones), so its text sits centered.
 - **Tables** reuse the stock screen's `.m-grid`: district swatch + name left, numbers right in
   Lilita, rows with nothing dimmed to 0.5, totals in a plain final row.
 
@@ -441,8 +443,8 @@ Each element: **purpose**, **placement**, **anatomy**, **spec**, **behavior**, t
   `justify-items: start` with the same left gap, so pop-ups line up with the bar. `hud.ts` sets
   `--ask-free` (the room the bar takes at the bottom) so pop-ups can fill the height above it. Decide by window size
   only, never by the bar's content, so the bar does not jump between prompts. Safety net: if a
-  centered bar still overflows (or squeezes its question into a sliver), it moves bottom left and
-  stays there until the window width changes.
+  centered bar's new options still overflow (or squeeze its question into a sliver), it moves
+  bottom left for that question only; old content waving out is never measured.
 - **Two modes:**
   - **Status line** (`.status`): one line, an icon for the kind of event, names in their colors,
     ellipsis when long. "Rosa is buying stocks...", "Board settings · 2 problems to fix".

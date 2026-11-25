@@ -7585,6 +7585,9 @@ input[type='range'] {
 .prompt-center .facts {
   display: flex;
   flex-wrap: wrap;
+  /* Each chip keeps its own height (never stretched to the tallest in its row), so its text
+     stays centered in it. */
+  align-items: center;
   gap: 3px 5px;
   max-height: 64px;
   overflow: hidden;
@@ -7594,14 +7597,16 @@ input[type='range'] {
   flex-direction: row;
   align-items: baseline;
   gap: 5px;
-  padding: 1px 8px;
+  padding: 3px 9px;
   border-radius: 999px;
 }
 .prompt-center .fact span {
   font-size: 11px;
+  line-height: 1.2;
 }
 .prompt-center .fact b {
   font-size: 14px;
+  line-height: 1.2;
 }
 .prompt-center .fact.big b {
   font-size: 15px;
@@ -7915,7 +7920,7 @@ input[type='range'] {
     max-height: 40px;
   }
   .prompt-center .fact {
-    padding: 0 6px;
+    padding: 1px 6px;
   }
   .prompt-center .fact span {
     font-size: 10px;

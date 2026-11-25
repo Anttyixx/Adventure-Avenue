@@ -1668,7 +1668,7 @@ show How to play, Arcade games and Venture cards.
   narrow windows such as phones in landscape, where a centered bar would have less than 520px
   between the screen edge and the player cards, it sits in the bottom left corner instead and uses
   all the width up to the cards; this depends only on the window, not on what the bar shows; as a safety net, a centered bar
-  whose options would not fit moves bottom left too and stays there at that window size). When it
+  whose options would not fit moves bottom left too, for that question only; the next one is centered again). When it
   sits bottom left, the pop-ups over the board (the stock market, auctions, the venture board, arcade
   games and the info pop-up) line up on the left with it too, between the bar and the toolbar, so they
   use all the room up to the player cards. On phones the auction pop-up is compact (a smaller lot
