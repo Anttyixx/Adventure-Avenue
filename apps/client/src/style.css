@@ -1570,6 +1570,11 @@ input[type='range'] {
   color: var(--muted);
 }
 /* The line saying who the game is waiting on; the action that answers it fades in in its place. */
+/* A block like every other entry (a general .waiting rule elsewhere would make it a centred flex
+   box, so its text drifted to the middle while the line resized). */
+.log-line.waiting {
+  display: block;
+}
 .log-line.waiting .log-entry {
   color: var(--muted);
   font-style: italic;

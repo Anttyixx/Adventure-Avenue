@@ -244,7 +244,7 @@ interface LogBefore {
   cards: Map<string, { folded: boolean }>;
   lines: Set<string>;
   rounds: Set<string>;
-  wait: { key: string; text: string; h: number; x: number } | null;
+  wait: { key: string; text: string; h: number; x: number; y: number } | null;
   /** The turns that were in view (stack front or column), with their screen top and height. */
   view: Map<string, { top: number; h: number }>;
   /** The strips peeking out behind the column: screen top and depth. */
@@ -1921,6 +1921,7 @@ export class Hud {
           text: w.querySelector('.log-text')?.textContent ?? '',
           h: w.getBoundingClientRect().height,
           x: w.querySelector(':scope > .log-entry')?.getBoundingClientRect().left ?? 0,
+          y: w.querySelector(':scope > .log-entry')?.getBoundingClientRect().top ?? 0,
         };
     }
     clear(this.logBox);
@@ -2016,6 +2017,11 @@ export class Hud {
     this.logPanel.classList.toggle('chromeless', stacked);
     this.logPanel.classList.toggle('browsing', browsing);
     if (stacked) this.stackLog(list, shown);
+    // The live turn's glow and float keep their rhythm across redraws (a new box would restart
+    // them, nudging it a few pixels each time).
+    const phase = `-${Math.round(performance.now() % 2400)}ms`;
+    for (const card of list.querySelectorAll<HTMLElement>('.turn-card.live'))
+      card.style.animationDelay = `${phase}, ${phase}`;
     list.scrollTop = keep;
     if (animate) this.animateLog(list, before, stacked);
     // The column sizes itself as its turns grow and shrink; the stack follows its front turn.
@@ -2036,6 +2042,15 @@ export class Hud {
   /** The last waiting line, kept until an entry takes its place (see `renderLog`). */
   private logWaitHeld: { turn: string; head?: string; waiting: { text: string; kind?: IconKind } } | null =
     null;
+  /** The waiting line sliding to a new place: when, where from, and whether it keeps its room. */
+  private logWaitMove = new Map<
+    string,
+    {
+      t: number;
+      from: { key: string; text: string; h: number; x: number; y: number };
+      keep: boolean;
+    }
+  >();
   /** The waiting line on its way out at the end of a turn: when it started, and what it said. */
   private logWaitEnd: { t: number; waiting: { text: string; kind?: IconKind } } | null = null;
   /** Lines whose text is changing (a waiting line's new text, or the entry replacing it). */
@@ -2227,6 +2242,7 @@ export class Hud {
     for (const [key, f] of this.logFold) if (now - f.t > LOG_SLIDE_MS * 3) this.logFold.delete(key);
     for (const [key, w] of this.logSwap) if (now - w.t > LOG_SLIDE_MS * 3) this.logSwap.delete(key);
     for (const [key, v] of this.logViewMove) if (now - v.t > LOG_SLIDE_MS * 3) this.logViewMove.delete(key);
+    for (const [key, v] of this.logWaitMove) if (now - v.t > LOG_SLIDE_MS * 3) this.logWaitMove.delete(key);
     if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
     // Measure everything first, then animate: a growing box would change what comes after it.
     const jobs: (() => void)[] = [];
@@ -2451,10 +2467,61 @@ export class Hud {
         if (w && text !== before.wait.text)
           this.logSwap.set(before.wait.key, { text: before.wait.text, t: now, from: before.wait.h });
       }
+      // The waiting line moving to a new place (an entry was logged where it was, or it moved
+      // between the main line and a branch): it slides there from where it was, dot and text
+      // together, so it never jumps.
+      const newWait = live ? card.querySelector<HTMLElement>('.log-line.waiting:not(.ending)') : null;
+      const waitMoved = !!(before.wait && newWait && newWait.dataset.line !== before.wait.key);
+      if (waitMoved && newWait && !this.logWaitMove.has(newWait.dataset.line!))
+        this.logWaitMove.set(newWait.dataset.line!, {
+          t: now,
+          from: before.wait!,
+          // Nothing took its old place: it keeps its room as it slides.
+          keep: !this.logSwapOf(card, before),
+        });
       let replacing = !!answered;
       for (const line of card.querySelectorAll<HTMLElement>('[data-line]')) {
         const lineKey = line.dataset.line!;
         const swap = this.logSwap.get(lineKey);
+        const slide = this.logWaitMove.get(lineKey);
+        if (slide && now - slide.t < LOG_SLIDE_MS) {
+          // The waiting line sliding to its new place (see above): it grows into its room (or
+          // keeps the one it had, when nothing took its old place), and its dot and text glide
+          // from where they were, the text changing as it goes. Resumed across redraws.
+          const elapsed = now - slide.t;
+          const ht = line.getBoundingClientRect().height;
+          const keepsRoom = slide.keep;
+          jobs.push(() => {
+            logGrow(
+              line,
+              [
+                { height: `${keepsRoom ? slide.from.h : 0}px`, opacity: keepsRoom ? 1 : 0.6 },
+                { height: `${ht}px`, opacity: 1 },
+              ],
+              elapsed,
+              LOG_SLIDE_MS,
+            );
+            if (slide.from.text !== (line.querySelector('.log-text')?.textContent ?? ''))
+              logSwapText(line, slide.from.text, elapsed, true);
+          });
+          glides.push(() => {
+            const entry = line.querySelector<HTMLElement>(':scope > .log-entry');
+            if (!entry) return;
+            // From where the waiting entry is on screen right now (mid-slide included) to its
+            // place, over the time left: each redraw carries on from exactly where it was, so
+            // it never jumps, however often the log redraws.
+            const from = before.wait ?? slide.from;
+            const r = entry.getBoundingClientRect();
+            const dx = from.x - r.left;
+            const dy = from.y - r.top;
+            if (Math.abs(dx) < 0.5 && Math.abs(dy) < 0.5) return;
+            entry.animate([{ transform: `translate(${dx}px, ${dy}px)` }, { transform: 'none' }], {
+              duration: Math.max(60, LOG_SLIDE_MS - elapsed),
+              easing: 'cubic-bezier(0.25, 0.7, 0.35, 1)',
+            });
+          });
+          continue;
+        }
         if (before.lines.has(lineKey) && !this.logBorn.has(lineKey)) {
           // A waiting line whose text changed: the old text fades as the new one uncovers.
           if (swap && now - swap.t < LOG_SLIDE_MS) {
@@ -2480,43 +2547,28 @@ export class Hud {
           (!before.lines.has(parent.dataset.line!) || (parentBorn != null && now - parentBorn < LOG_ENTRY_MS))
         )
           continue;
-        if (!this.logBorn.has(lineKey)) {
-          // The first new entry in place of the waiting line takes it over; others follow it.
-          if (replacing && before.wait)
-            this.logSwap.set(lineKey, { text: before.wait.text, t: now, from: before.wait.h });
-          this.logBorn.set(
-            lineKey,
-            now + (replacing || line.classList.contains('waiting') ? 0 : LOG_STAGGER_MS * ++fresh),
-          );
-        }
-        replacing = false;
-        const elapsed = now - this.logBorn.get(lineKey)!;
         const waitLine = line.classList.contains('waiting');
+        if (!this.logBorn.has(lineKey)) {
+          // The first new entry in place of the waiting line takes over its room; when the
+          // waiting line moves on (sliding to its new place) the entry simply comes in there,
+          // with no old text left behind. Others follow it.
+          if (replacing && before.wait && !waitLine)
+            this.logSwap.set(lineKey, {
+              text: waitMoved ? '' : before.wait.text,
+              t: now,
+              from: before.wait.h,
+            });
+          this.logBorn.set(lineKey, now + (replacing || waitLine ? 0 : LOG_STAGGER_MS * ++fresh));
+        }
+        if (!waitLine) replacing = false;
+        const elapsed = now - this.logBorn.get(lineKey)!;
         if (elapsed >= (waitLine ? LOG_WAIT_MS : LOG_ENTRY_MS)) continue;
         const ht = line.getBoundingClientRect().height;
         const takeover = this.logSwap.get(lineKey);
         jobs.push(() => {
-          if (waitLine && takeover && before.wait) {
-            // The waiting line itself moving between the main line and a branch (nothing logged
-            // in between): it keeps its room and slides over, its text changing quickly.
-            const dx =
-              before.wait.x - (line.querySelector(':scope > .log-entry')?.getBoundingClientRect().left ?? 0);
-            logGrow(line, [{ height: `${takeover.from}px` }, { height: `${ht}px` }], elapsed, LOG_WAIT_MS);
-            const entry = line.querySelector<HTMLElement>(':scope > .log-entry');
-            if (entry && Math.abs(dx) > 1) {
-              const a = entry.animate([{ transform: `translateX(${dx}px)` }, { transform: 'none' }], {
-                duration: LOG_WAIT_MS + 80,
-                easing: LOG_EASE,
-                fill: 'backwards',
-              });
-              a.currentTime = elapsed;
-            }
-            logSwapText(line, takeover.text, elapsed, true);
-            return;
-          }
           if (waitLine) {
-            // The waiting line moves on to its next place at once (barely a fade), so the log
-            // always says what is happening now.
+            // A new waiting line with nothing to slide from: it comes in at once (barely a
+            // fade), so the log always says what is happening now.
             logGrow(
               line,
               [
@@ -2534,8 +2586,9 @@ export class Hud {
             elapsed,
             LOG_ENTRY_MS,
           );
-          if (takeover) {
-            // Replacing the waiting line: no rise; the dot pops in and the text swaps over.
+          if (takeover && takeover.text) {
+            // Replacing the waiting line where it stood: no rise; the dot pops in and the text
+            // swaps over.
             this.popLogDot(line, elapsed);
             logSwapText(line, takeover.text, elapsed);
           } else this.enterLogLine(line, elapsed);
@@ -2559,6 +2612,16 @@ export class Hud {
       );
       a.currentTime = now - this.logWaitEnd.t;
     }
+  }
+
+  /**
+   * Whether a new entry took the old waiting line's place in this turn (true), or the waiting line
+   * only moved (false: it keeps its room as it slides).
+   */
+  private logSwapOf(card: HTMLElement, before: LogBefore): boolean {
+    for (const line of card.querySelectorAll<HTMLElement>('[data-line]:not(.waiting)'))
+      if (!before.lines.has(line.dataset.line!)) return true;
+    return false;
   }
 
   /** When a log item first appeared (`logBorn`), recording it now if it is new. */
