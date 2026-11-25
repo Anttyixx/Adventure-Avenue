@@ -82,7 +82,7 @@ export function activity(G: GameState, req: DecisionRequest, rolled?: number): A
 /**
  * What a player goes on to do once they have made a choice, so the waiting line moves on with
  * them ("Rosa is moving..." after she picks where to go). Null when the choice leads to nothing
- * that takes a while (the log then says they are taking their turn).
+ * that takes a while.
  */
 export function doing(G: GameState, req: DecisionRequest, answer: unknown): Activity | null {
   const name = G.players[req.pid]?.name ?? 'Someone';

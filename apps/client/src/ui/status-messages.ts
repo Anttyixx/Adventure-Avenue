@@ -48,6 +48,15 @@ export class StatusMessages {
     } else this.present(message, hold || T.actionResult);
     this.schedule();
   }
+  /**
+   * Something for the status line to say while nothing else is up ("Rosa's turn..."). Unlike
+   * `fallback`, it is not something anyone is waiting on, so the game log does not show it.
+   */
+  filler(message: StatusMessage) {
+    if (this.current) return;
+    this.current = message;
+    this.changed();
+  }
   fallback(message: StatusMessage) {
     const same = this.waiting?.text === message.text && this.waiting.kind === message.kind;
     this.waiting = message;

@@ -54,7 +54,7 @@ export const CHANGELOG: ChangelogEntry[] = [
       'Game log entries come in smoothly, their dots popping in with a little burst',
       'Every venture card now says what it did',
       'Tappable log entries are marked with a diamond; a thicker timeline with gaps around each dot',
-      'The log always says what the player is doing ("Rosa is moving..."), changing in place',
+      'The log says what the player is doing ("Rosa is moving..."), right where it will be logged',
       'A short pause before the turn passes; the log never covers the player cards',
     ],
   },

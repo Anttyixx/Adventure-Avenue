@@ -240,8 +240,6 @@ const LOG_WAIT_MS = 220;
  * `LOG_WAIT_IN`.
  */
 const LOG_WAIT_AFTER = 420;
-/** How long the log waits, with nothing known to come, before saying "taking their turn". */
-const LOG_QUIET_MS = 1300;
 const LOG_WAIT_IN = 380;
 /** The log's easing: an unhurried ease-out that settles softly, with no snap at the start. */
 const LOG_EASE = 'cubic-bezier(0.33, 1, 0.68, 1)';
@@ -1965,23 +1963,9 @@ export class Hud {
       else this.logWaitHeld = { turn: liveKey, head, waiting };
     } else if (held && held.head === head) waiting = held.waiting;
     else this.logWaitHeld = null;
-    // A waiting line is only made where something will be logged: what the player is being asked
-    // or doing. Right after an entry, if nothing is known yet, none is made (the turn may well be
-    // over, and a line once made must not be taken away); only after a quiet spell does the
-    // "taking their turn" line show.
-    if (head !== this.logHeadSeen) {
-      this.logHeadSeen = head;
-      this.logHeadAt = performance.now();
-    }
-    if (!waiting && !G.over) {
-      const quiet = performance.now() - this.logHeadAt;
-      const p = G.players[G.order[Number(liveKey.split(':')[1] ?? G.turn)]];
-      if (p && quiet >= LOG_QUIET_MS) waiting = { text: `${p.name} is taking their turn...`, kind: 'wait' };
-      else if (p) {
-        clearTimeout(this.logQuietTimer);
-        this.logQuietTimer = window.setTimeout(() => this.refreshLog(), LOG_QUIET_MS - quiet + 20);
-      }
-    }
+    // A waiting line is only made for what the player is really being asked or doing, never
+    // as a placeholder: so its place (main line or branch) always follows the real next entry,
+    // and a line once made is always taken over by an entry.
     // Where the next entry will go, by the game's own rule: after a landing, everything up to the
     // next roll or landing is a follow-up on that landing's branch; rolls and landings are main
     // entries. So once the turn's latest main entry is a landing, the waiting line sits on its
@@ -1998,11 +1982,14 @@ export class Hud {
     const turnOver = this.logTurn != null && this.logTurn !== `${G.round}:${G.turn}`;
     if (!turnOver) this.logWaitEnd = null;
     else {
-      if (!this.logWaitEnd && waiting) this.logWaitEnd = { t: performance.now(), waiting };
+      if (!this.logWaitEnd && this.logWaitShown)
+        this.logWaitEnd = { t: performance.now(), waiting: this.logWaitShown };
       const end = this.logWaitEnd;
       waiting =
         end && performance.now() - end.t < LOG_SLIDE_MS ? { ...end.waiting, ending: true } : undefined;
     }
+    // The waiting line as drawn now, so the end of a turn knows whether one was showing.
+    this.logWaitShown = waiting && !waiting.ending ? waiting : this.logWaitEnd ? this.logWaitShown : null;
     const list = logView(G, liveKey, {
       waiting,
       fresh,
@@ -2096,10 +2083,8 @@ export class Hud {
       keep: boolean;
     }
   >();
-  /** The newest log entry seen, and when it arrived (for the quiet spell before a placeholder). */
-  private logHeadSeen: string | undefined;
-  private logHeadAt = 0;
-  private logQuietTimer = 0;
+  /** The waiting line the log last drew (null: none), for the end of a turn. */
+  private logWaitShown: { text: string; kind?: IconKind; sub?: boolean } | null = null;
   /** The waiting line on its way out at the end of a turn: when it started, and what it said. */
   private logWaitEnd: { t: number; waiting: { text: string; kind?: IconKind } } | null = null;
   /** Lines whose text is changing (a waiting line's new text, or the entry replacing it). */
@@ -3101,7 +3086,7 @@ export class Hud {
     this.askEmptyTimer = window.setTimeout(() => {
       if (this.promptResolve || !this.askHeld) return;
       // Nothing new yet: say whose turn it is until the next real message replaces it.
-      if (!this.currentStatus()) this.messages.fallback(this.turnStatus());
+      if (!this.currentStatus()) this.messages.filler(this.turnStatus());
       this.showStatus();
     }, ASK_EMPTY_HOLD);
   }

@@ -253,7 +253,9 @@ export function logView(
     const body = h(
       'ul',
       { class: 'turn-lines' },
-      g.lines.length || waiting
+      // "Getting ready" only for a past turn with nothing in it: the turn being played starts with
+      // just its header, and its first waiting line grows in (a line once made is never removed).
+      g.lines.length || waiting || live
         ? null
         : h(
             'li',
